@@ -1,2 +1,8 @@
+# Basic toplevel package includes
 include README.rst
 include COPYING
+
+# Documentation package includes
+include doc/Makefile
+include doc/source/conf.py
+include doc/source/index.rst
