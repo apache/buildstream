@@ -1,3 +1,6 @@
+BuildStream
+===========
+
 BuildStream is a flexible and extensible framework for the modelling of build
 and CI pipelines in a declarative YAML format, written in python.
 
