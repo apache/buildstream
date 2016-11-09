@@ -18,8 +18,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from pluginbase import PluginBase
-
 class _PluginError(Exception):
     """Raised when initializing plugins"""
     pass
