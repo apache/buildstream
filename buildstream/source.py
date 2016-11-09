@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from buildstream.config import _site_info
-from buildstream.plugin import _PluginContext
+from buildstream._plugin import _PluginContext
 
 ################################################
 #              Base Source Class               #
