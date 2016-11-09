@@ -8,6 +8,10 @@ BuildStream documentation
 
 Contents:
 
+Here is a link to the :class:`GitSource`
+
+And here is a link to :class:`Element`
+
 .. toctree::
    :maxdepth: 2
 
