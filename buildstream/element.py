@@ -18,12 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from buildstream.config import _site_info
-from buildstream._plugin import _PluginContext
 
-################################################
-#              Base Element Class              #
-################################################
 class Element():
     """Base Element class.
 
@@ -38,40 +33,3 @@ class Element():
     class wide default configuration is overridden from other sources, such
     as the Element declarations in the project YAML.
     """
-
-################################################
-#                 Element Factory              #
-################################################
-#
-# A ElementFactory creates Element instances
-# in the context of a given factory
-#
-# Args:
-#     plugin_base (PluginBase): The main PluginBase object to work with
-#     searchpath (list):        A list of external paths to search for Element plugins
-#
-class _ElementFactory(_PluginContext):
-
-    def __init__(self, plugin_base, searchpath=None):
-
-        if searchpath is None:
-            searchpath = []
-        
-        searchpath.insert(0, _site_info['element_plugins'])
-        super().__init__(plugin_base, Element, searchpath)
-
-    # create():
-    #
-    # Create an Element object, the pipeline uses this to create Element
-    # objects on demand for a given pipeline.
-    #
-    # Args:
-    #     kind (str): The kind of Element to create
-    #
-    # Returns: A newly created Element object of the appropriate kind
-    #
-    # Raises: PluginError
-    #
-    def create(self, kind):
-        element_type = self.lookup(kind)
-        return element_type()
