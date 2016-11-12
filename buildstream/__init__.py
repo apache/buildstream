@@ -18,5 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from buildstream.source import Source
-from buildstream.element import Element
+# Exceptions first
+from .exceptions import PluginError
+
+# Base data model
+from .source import Source
+from .element import Element
