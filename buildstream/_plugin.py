@@ -18,9 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-class _PluginError(Exception):
-    """Raised when initializing plugins"""
-    pass
+from .exceptions import PluginError
 
 # A Context for loading plugin types
 #
@@ -41,7 +39,7 @@ class _PluginContext():
     def __init__(self, plugin_base, base_type, searchpath=None):
 
         if not searchpath:
-            raise _PluginError ("Cannot create plugin context without any searchpath")
+            raise PluginError ("Cannot create plugin context without any searchpath")
 
         self.base_type = base_type; # The expected base class which plugins are to derive from
         self.source    = None       # The PluginSource object
@@ -58,12 +56,12 @@ class _PluginContext():
     #
     # Returns: the type associated with the given kind
     #
-    # Raises: _PluginError
+    # Raises: PluginError
     #
     def lookup(self, kind):
         if not kind in self.types:
-            raise _PluginError ("No %s type registered for kind '%s'" %
-                                (self.base_type.__name__, kind))
+            raise PluginError ("No %s type registered for kind '%s'" %
+                               (self.base_type.__name__, kind))
 
         return self.types[kind]
 
@@ -85,12 +83,12 @@ class _PluginContext():
 
     def assert_plugin(self, kind, plugin_type):
         if kind in self.types:
-            raise _PluginError ("Tried to register %s plugin for existing kind '%s' (already registered %s)" %
-                                (self.base_type.__name__, kind, self.types[kind].__name__))
+            raise PluginError ("Tried to register %s plugin for existing kind '%s' (already registered %s)" %
+                               (self.base_type.__name__, kind, self.types[kind].__name__))
         try:
             if not issubclass(plugin_type, self.base_type):
-                raise _PluginError ("%s plugin '%s' returned type '%s', which is not a subclass of Plugin" %
-                                    (self.base_type.__name__, kind, plugin_type.__name__))
+                raise PluginError ("%s plugin '%s' returned type '%s', which is not a subclass of Plugin" %
+                                   (self.base_type.__name__, kind, plugin_type.__name__))
         except TypeError as e:
-            raise _PluginError ("%s plugin '%s' returned something that is not an Plugin subclass" %
-                                (self.base_type.__name__, kind)) from e
+            raise PluginError ("%s plugin '%s' returned something that is not an Plugin subclass" %
+                               (self.base_type.__name__, kind)) from e
