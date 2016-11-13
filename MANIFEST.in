@@ -6,3 +6,6 @@ include COPYING
 include doc/Makefile
 include doc/source/conf.py
 include doc/source/index.rst
+
+# Tests
+recursive-include tests *.py
