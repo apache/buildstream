@@ -21,11 +21,6 @@
 import buildstream
 import argparse
 
-# XXX
-from pluginbase import PluginBase
-from buildstream.source import Source, _SourceFactory
-from buildstream.element import Element, _ElementFactory
-
 # This is the BuildStream CLI frontend.
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -35,14 +30,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print ("Target is: %s" % args.target)
-
-    # XXX
-    plugin_base = PluginBase(package='test.plugins')
-
-    source_factory = _SourceFactory(plugin_base)
-    element_factory = _ElementFactory(plugin_base)
-
-    source = source_factory.create('git')
-    element = element_factory.create('build')
-
-    another_source_factory = _SourceFactory(plugin_base)
