@@ -81,7 +81,10 @@ class _PluginContext():
         try:
             plugin_type = plugin.setup()
         except AttributeError as e:
-            raise PluginError ("%s plugin '%s' did not provide a setup() method" %
+            raise PluginError ("%s plugin '%s' did not provide a setup() function" %
+                               (self.base_type.__name__, kind)) from e
+        except TypeError as e:
+            raise PluginError ("setup symbol in %s plugin '%s' is not a function" %
                                (self.base_type.__name__, kind)) from e
 
         self.assert_plugin (kind, plugin_type)
