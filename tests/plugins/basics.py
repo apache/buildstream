@@ -96,11 +96,25 @@ def test_conflict_element(plugin_fixture, datafiles):
 def test_source_notatype(plugin_fixture, datafiles):
     with pytest.raises(PluginError) as exc:
         factory = _SourceFactory(plugin_fixture['base'],
-                                  [ os.path.join(datafiles.dirname, datafiles.basename) ])
+                                 [ os.path.join(datafiles.dirname, datafiles.basename) ])
 
 # Load a factory with a plugin that returns a value instead of a Element subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'notatype'))
 def test_element_notatype(plugin_fixture, datafiles):
+    with pytest.raises(PluginError) as exc:
+        factory = _ElementFactory(plugin_fixture['base'],
+                                  [ os.path.join(datafiles.dirname, datafiles.basename) ])
+
+# Load a factory with a plugin that returns a type which is not a Source subclass
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'wrongtype'))
+def test_source_wrongtype(plugin_fixture, datafiles):
+    with pytest.raises(PluginError) as exc:
+        factory = _SourceFactory(plugin_fixture['base'],
+                                 [ os.path.join(datafiles.dirname, datafiles.basename) ])
+
+# Load a factory with a plugin that returns a type which is not a Element subclass
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'wrongtype'))
+def test_element_wrongtype(plugin_fixture, datafiles):
     with pytest.raises(PluginError) as exc:
         factory = _ElementFactory(plugin_fixture['base'],
                                   [ os.path.join(datafiles.dirname, datafiles.basename) ])
