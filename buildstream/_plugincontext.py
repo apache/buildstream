@@ -92,11 +92,11 @@ class _PluginContext():
                                (self.base_type.__name__, kind, self.types[kind].__name__))
         try:
             if not issubclass(plugin_type, self.base_type):
-                raise PluginError ("%s plugin '%s' returned type '%s', which is not a subclass of Plugin" %
-                                   (self.base_type.__name__, kind, plugin_type.__name__))
+                raise PluginError ("%s plugin '%s' returned type '%s', which is not a subclass of %s" %
+                                   (self.base_type.__name__, kind, plugin_type.__name__, self.base_type.__name__))
         except TypeError as e:
-            raise PluginError ("%s plugin '%s' returned something that is not an Plugin subclass" %
-                               (self.base_type.__name__, kind)) from e
+            raise PluginError ("%s plugin '%s' returned something that is not an %s subclass" %
+                               (self.base_type.__name__, kind, self.base_type.__name__)) from e
 
     # We want a PluginError when trying to create a context
     # where more than one plugin has the same name
