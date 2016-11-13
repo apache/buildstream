@@ -118,3 +118,17 @@ def test_element_wrongtype(plugin_fixture, datafiles):
     with pytest.raises(PluginError) as exc:
         factory = _ElementFactory(plugin_fixture['base'],
                                   [ os.path.join(datafiles.dirname, datafiles.basename) ])
+
+# Load a factory with a plugin which fails to provide a setup() function
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'nosetup'))
+def test_source_missing_setup(plugin_fixture, datafiles):
+    with pytest.raises(PluginError) as exc:
+        factory = _SourceFactory(plugin_fixture['base'],
+                                 [ os.path.join(datafiles.dirname, datafiles.basename) ])
+
+# Load a factory with a plugin which fails to provide a setup() function
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'nosetup'))
+def test_element_missing_setup(plugin_fixture, datafiles):
+    with pytest.raises(PluginError) as exc:
+        factory = _ElementFactory(plugin_fixture['base'],
+                                  [ os.path.join(datafiles.dirname, datafiles.basename) ])
