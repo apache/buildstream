@@ -18,6 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import os
 from .exceptions import PluginError
 
 # A Context for loading plugin types
@@ -66,6 +67,10 @@ class _PluginContext():
         return self.types[kind]
 
     def load_plugins(self, base, searchpath):
+
+        # Raise an error if we have more than one plugin with the same name
+        self.assert_searchpath(searchpath)
+
         self.source = base.make_plugin_source(searchpath=searchpath)
         for kind in self.source.list_plugins():
             self.load_plugin(kind)
@@ -92,3 +97,26 @@ class _PluginContext():
         except TypeError as e:
             raise PluginError ("%s plugin '%s' returned something that is not an Plugin subclass" %
                                (self.base_type.__name__, kind)) from e
+
+    # We want a PluginError when trying to create a context
+    # where more than one plugin has the same name
+    def assert_searchpath(self, searchpath):
+        names=[]
+        fullnames=[]
+        for path in searchpath:
+            for filename in os.listdir(path):
+                basename = os.path.basename(filename)
+                name, extension = os.path.splitext(basename)
+                if extension == '.py' and name != '__init__':
+                    fullname = os.path.join (path, filename)
+
+                    if name in names:
+                        idx = names.index(name)
+                        raise PluginError (
+                            "Failed to register %s plugin '%s' from: %s\n"
+                            "%s plugin '%s' is already registered by: %s" %
+                            (self.base_type.__name__, name, fullname,
+                             self.base_type.__name__, name, fullnames[idx]))
+
+                    names.append(name)
+                    fullnames.append(fullname)
