@@ -146,3 +146,41 @@ def test_element_bad_setup(plugin_fixture, datafiles):
     with pytest.raises(PluginError) as exc:
         factory = _ElementFactory(plugin_fixture['base'],
                                   [ os.path.join(datafiles.dirname, datafiles.basename) ])
+
+##############################################################
+#      Check we can load different contexts of plugin        #
+##############################################################
+
+# Load two factories, both of which define a different 'foo' plugin
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_multicontext(plugin_fixture, datafiles):
+    plugins1 = os.path.join(datafiles.dirname, datafiles.basename, 'customsource')
+    plugins2 = os.path.join(datafiles.dirname, datafiles.basename, 'anothersource')
+
+    factory1 = _SourceFactory(plugin_fixture['base'], [ plugins1 ])
+    factory2 = _SourceFactory(plugin_fixture['base'], [ plugins2 ])
+    assert(isinstance(factory1, _SourceFactory))
+    assert(isinstance(factory2, _SourceFactory))
+
+    foo_type1 = factory1.lookup('foo')
+    foo_type2 = factory2.lookup('foo')
+
+    assert(foo_type1.__name__ == 'FooSource')
+    assert(foo_type2.__name__ == 'AnotherFooSource')
+
+# Load two factories, both of which define a different 'foo' plugin
+@pytest.mark.datafiles(DATA_DIR)
+def test_element_multicontext(plugin_fixture, datafiles):
+    plugins1 = os.path.join(datafiles.dirname, datafiles.basename, 'customelement')
+    plugins2 = os.path.join(datafiles.dirname, datafiles.basename, 'anotherelement')
+
+    factory1 = _ElementFactory(plugin_fixture['base'], [ plugins1 ])
+    factory2 = _ElementFactory(plugin_fixture['base'], [ plugins2 ])
+    assert(isinstance(factory1, _ElementFactory))
+    assert(isinstance(factory2, _ElementFactory))
+
+    foo_type1 = factory1.lookup('foo')
+    foo_type2 = factory2.lookup('foo')
+
+    assert(foo_type1.__name__ == 'FooElement')
+    assert(foo_type2.__name__ == 'AnotherFooElement')
