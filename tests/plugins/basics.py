@@ -14,7 +14,7 @@ DATA_DIR = os.path.join(
 # Simple fixture to create a PluginBase object that
 # we use for loading plugins.
 @pytest.fixture()
-def plugin_fixture(datafiles):
+def plugin_fixture():
     return {
         'base' : PluginBase(package='buildstream.plugins')
     }
@@ -164,7 +164,6 @@ def test_source_multicontext(plugin_fixture, datafiles):
 
     foo_type1 = factory1.lookup('foo')
     foo_type2 = factory2.lookup('foo')
-
     assert(foo_type1.__name__ == 'FooSource')
     assert(foo_type2.__name__ == 'AnotherFooSource')
 
@@ -181,6 +180,5 @@ def test_element_multicontext(plugin_fixture, datafiles):
 
     foo_type1 = factory1.lookup('foo')
     foo_type2 = factory2.lookup('foo')
-
     assert(foo_type1.__name__ == 'FooElement')
     assert(foo_type2.__name__ == 'AnotherFooElement')
