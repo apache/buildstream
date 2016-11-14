@@ -72,3 +72,15 @@ def test_context_load_missing_config(context_fixture, datafiles):
 
     with pytest.raises(ContextError) as exc:
         context.load(conf_file)
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_context_load_malformed_config(context_fixture, datafiles):
+    context = context_fixture['context']
+    assert(isinstance(context, InvocationContext))
+
+    conf_file = os.path.join(datafiles.dirname,
+                             datafiles.basename,
+                             'malformed.yaml')
+
+    with pytest.raises(ContextError) as exc:
+        context.load(conf_file)
