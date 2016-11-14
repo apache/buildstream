@@ -2,6 +2,7 @@ import os
 import pytest
 
 from buildstream import InvocationContext
+from buildstream import ContextError
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -55,3 +56,19 @@ def test_context_load_user_config(context_fixture, datafiles):
     assert(context.deploydir == '~/buildstream/deploy')
     assert(context.artifactdir == '~/buildstream/artifacts')
     assert(context.ccachedir == '~/buildstream/ccache')
+
+#######################################
+#          Test failure modes         #
+#######################################
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_context_load_missing_config(context_fixture, datafiles):
+    context = context_fixture['context']
+    assert(isinstance(context, InvocationContext))
+
+    conf_file = os.path.join(datafiles.dirname,
+                             datafiles.basename,
+                             'nonexistant.yaml')
+
+    with pytest.raises(ContextError) as exc:
+        context.load(conf_file)
