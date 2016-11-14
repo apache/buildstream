@@ -37,3 +37,21 @@ def test_context_load(context_fixture):
     assert(context.deploydir == '~/buildstream/deploy')
     assert(context.artifactdir == '~/buildstream/artifacts')
     assert(context.ccachedir == '~/buildstream/ccache')
+
+# Test that values in a user specified config file
+# override the defaults
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_context_load_user_config(context_fixture, datafiles):
+    context = context_fixture['context']
+    assert(isinstance(context, InvocationContext))
+
+    conf_file = os.path.join(datafiles.dirname,
+                             datafiles.basename,
+                             'userconf.yaml')
+    context.load(conf_file)
+
+    assert(context.sourcedir == '~/pony')
+    assert(context.builddir == '~/buildstream/build')
+    assert(context.deploydir == '~/buildstream/deploy')
+    assert(context.artifactdir == '~/buildstream/artifacts')
+    assert(context.ccachedir == '~/buildstream/ccache')
