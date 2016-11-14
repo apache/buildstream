@@ -33,3 +33,6 @@ _site_info['element_plugins']  = os.path.join (_site_info['root'], 'plugins', 'e
 
 # The Source plugin directory
 _site_info['source_plugins']   = os.path.join (_site_info['root'], 'plugins', 'sources')
+
+# Default user configuration
+_site_info['default_config']   = os.path.join (_site_info['root'], 'data', 'default.yaml')

@@ -1,0 +1,16 @@
+# Default BuildStream user configuration.
+
+# Location to store sources
+sourcedir: ~/buildstream/sources
+
+# Location to perform builds
+builddir: ~/buildstream/build
+
+# Location to create deployments
+deploydir: ~/buildstream/deploy
+
+# Location to store local binary artifacts
+artifactdir: ~/buildstream/artifacts
+
+# Location of the ccache directory
+ccachedir: ~/buildstream/ccache

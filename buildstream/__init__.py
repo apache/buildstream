@@ -21,6 +21,12 @@
 # Exceptions first
 from .exceptions import PluginError
 
-# Base data model
+# Common stuff
+from .utils import dictionary_override
+
+# Plugin auther facing APIs
 from .source import Source
 from .element import Element
+
+# Frontend facing APIs
+from .invocationcontext import InvocationContext
