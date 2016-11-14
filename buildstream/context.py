@@ -25,7 +25,7 @@ from ._site import _site_info
 from .utils import dictionary_override
 from .exceptions import ContextError
 
-class InvocationContext():
+class Context():
     """Context of how BuildStream was invoked
 
     Args:

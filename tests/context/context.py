@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream import InvocationContext
+from buildstream import Context
 from buildstream import ContextError
 
 DATA_DIR = os.path.join(
@@ -14,7 +14,7 @@ DATA_DIR = os.path.join(
 @pytest.fixture()
 def context_fixture():
     return {
-        'context' : InvocationContext('x86_64')
+        'context' : Context('x86_64')
     }
 
 #######################################
@@ -22,7 +22,7 @@ def context_fixture():
 #######################################
 def test_context_create(context_fixture):
     context = context_fixture['context']
-    assert(isinstance(context, InvocationContext))
+    assert(isinstance(context, Context))
     assert(context.arch == 'x86_64')
 
 #######################################
@@ -30,7 +30,7 @@ def test_context_create(context_fixture):
 #######################################
 def test_context_load(context_fixture):
     context = context_fixture['context']
-    assert(isinstance(context, InvocationContext))
+    assert(isinstance(context, Context))
 
     context.load()
     assert(context.sourcedir == '~/buildstream/sources')
@@ -44,7 +44,7 @@ def test_context_load(context_fixture):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_user_config(context_fixture, datafiles):
     context = context_fixture['context']
-    assert(isinstance(context, InvocationContext))
+    assert(isinstance(context, Context))
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,
@@ -64,7 +64,7 @@ def test_context_load_user_config(context_fixture, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_missing_config(context_fixture, datafiles):
     context = context_fixture['context']
-    assert(isinstance(context, InvocationContext))
+    assert(isinstance(context, Context))
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,
@@ -76,7 +76,7 @@ def test_context_load_missing_config(context_fixture, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_malformed_config(context_fixture, datafiles):
     context = context_fixture['context']
-    assert(isinstance(context, InvocationContext))
+    assert(isinstance(context, Context))
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,
@@ -88,7 +88,7 @@ def test_context_load_malformed_config(context_fixture, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_notdict_config(context_fixture, datafiles):
     context = context_fixture['context']
-    assert(isinstance(context, InvocationContext))
+    assert(isinstance(context, Context))
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,

@@ -29,4 +29,4 @@ from .source import Source
 from .element import Element
 
 # Frontend facing APIs
-from .invocationcontext import InvocationContext
+from .context import Context

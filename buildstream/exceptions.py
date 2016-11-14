@@ -30,7 +30,7 @@ class PluginError(Exception):
 class ContextError(Exception):
     """Raised while interpreting invocation context.
 
-    This exception is raised when creating the :class:`.InvocationContext`
+    This exception is raised when creating the :class:`.Context`
     when the user configuration is missing or malformed or if some
     of the context is nonsensical
     """

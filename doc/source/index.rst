@@ -26,7 +26,7 @@ software in special ways.
 Core Framework
 --------------
 
-* :class:`~buildstream.invocationcontext.InvocationContext` - User preferences and invocation state
+* :class:`~buildstream.context.Context` - Invocation Context
 * :class:`~buildstream.element.Element` - Base Element Class
 * :class:`~buildstream.source.Source` - Base Source Class
 
