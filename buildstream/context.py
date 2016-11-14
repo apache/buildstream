@@ -62,6 +62,9 @@ class Context():
         Args:
            config (filename): The user specified configuration file, if any
 
+        Raises:
+           :class:`.ContextError`
+
         This will first load the BuildStream default configuration and then
         override that configuration with a user provided configuration file.
  
