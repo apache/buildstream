@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from ._plugincontext import _PluginContext
-from .config import _site_info
+from ._site import _site_info
 from .source import Source
 
 # A SourceFactory creates Source instances

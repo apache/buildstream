@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from ._plugincontext import _PluginContext
-from .config import _site_info
+from ._site import _site_info
 from .element import Element
 
 # A ElementFactory creates Element instances

@@ -21,7 +21,7 @@
 import ruamel.yaml
 from ruamel.yaml.scanner import ScannerError
 
-from .config import _site_info
+from ._site import _site_info
 from .utils import dictionary_override
 from .exceptions import ContextError
 
