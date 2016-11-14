@@ -73,7 +73,7 @@ class InvocationContext():
         defaults = self._load_config(_site_info['default_config'])
         if config:
             user_config = self._load_config(config)
-            defaults = utils.dictionary_override(defaults, user_config)
+            defaults = dictionary_override(defaults, user_config)
 
         # Should have a loop here, but we suck
         #
