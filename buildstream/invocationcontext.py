@@ -22,6 +22,7 @@ import ruamel.yaml
 
 from .config import _site_info
 from .utils import dictionary_override
+from .exceptions import ContextError
 
 class InvocationContext():
     """Context of how BuildStream was invoked
@@ -68,7 +69,7 @@ class InvocationContext():
         ``$XDG_CONFIG_HOME/buildstream.yaml`` will be made.
         """
 
-        # Load em
+        # Load default config
         #
         defaults = self._load_config(_site_info['default_config'])
         if config:
@@ -84,8 +85,11 @@ class InvocationContext():
         self.ccachedir = defaults.get('ccachedir')
 
     def _load_config(self, filename):
-        with open(filename) as f:
-            text = f.read()
-            contents = ruamel.yaml.safe_load(text)
+        try:
+            with open(filename) as f:
+                text = f.read()
+                contents = ruamel.yaml.safe_load(text)
+        except FileNotFoundError as e:
+            raise ContextError("Failed to load configuration file %s" % filename) from e
 
         return contents

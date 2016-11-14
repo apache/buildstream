@@ -20,9 +20,18 @@
 
 class PluginError(Exception):
     """Raised on plugin related errors.
-    
+
     This exception is raised when a plugin was not loaded correctly,
     or when the appropriate plugin could not be found to implement
     a given :class:`.Source` or :class:`.Element`
+    """
+    pass
+
+class ContextError(Exception):
+    """Raised while interpreting invocation context.
+
+    This exception is raised when creating the :class:`.InvocationContext`
+    when the user configuration is missing or malformed or if some
+    of the context is nonsensical
     """
     pass

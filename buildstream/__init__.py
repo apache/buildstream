@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 # Exceptions first
-from .exceptions import PluginError
+from .exceptions import PluginError, ContextError
 
 # Common stuff
 from .utils import dictionary_override
