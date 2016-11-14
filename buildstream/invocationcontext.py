@@ -19,6 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import ruamel.yaml
+from ruamel.yaml.scanner import ScannerError
 
 from .config import _site_info
 from .utils import dictionary_override
@@ -87,9 +88,10 @@ class InvocationContext():
     def _load_config(self, filename):
         try:
             with open(filename) as f:
-                text = f.read()
-                contents = ruamel.yaml.safe_load(text)
+                contents = ruamel.yaml.safe_load(f)
         except FileNotFoundError as e:
-            raise ContextError("Failed to load configuration file %s" % filename) from e
+            raise ContextError("Could not find configuration file at %s" % filename) from e
+        except ScannerError as e:
+            raise ContextError("Problem loading malformed configuration file:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
 
         return contents
