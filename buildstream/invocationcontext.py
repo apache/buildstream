@@ -94,4 +94,7 @@ class InvocationContext():
         except ScannerError as e:
             raise ContextError("Problem loading malformed configuration file:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
 
+        if not isinstance(contents, dict):
+            raise ContextError("Loading configuration file did not specify a dictionary: %s" % filename)
+
         return contents
