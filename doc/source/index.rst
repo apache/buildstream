@@ -26,9 +26,9 @@ software in special ways.
 Core Framework
 --------------
 
-* :class:`~buildstream.context.Context` - Invocation Context
-* :class:`~buildstream.element.Element` - Base Element Class
-* :class:`~buildstream.source.Source` - Base Source Class
+* :mod:`Context <buildstream.context>` - Invocation Context
+* :mod:`Element <buildstream.element>` - Base Element Class
+* :mod:`Source <buildstream.source>` - Base Source Class
 
 
 Plugins
@@ -37,12 +37,12 @@ Plugins
 Elements
 ~~~~~~~~
 
-* :class:`~build.BuildElement` - Abstract Software Building Element
+* :mod:`build` - Abstract Software Building Element
 
 Sources
 ~~~~~~~
 
-* :class:`~git.GitSource` - A Source implementation for git
+* :mod:`git` - A Source implementation for git
 
 
 Indices and tables
