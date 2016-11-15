@@ -1,5 +1,6 @@
 # Basic toplevel package includes
 include README.rst
+include HACKING.rst
 include COPYING
 
 # Documentation package includes
