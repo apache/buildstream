@@ -18,19 +18,32 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+"""Context for running BuildStream pipelines
+
+The :class:`.Context` object holds all of the user preferences
+and context for a given invocation of BuildStream.
+
+This is a collection of data from configuration files and command
+line arguments and consists of information such as where to store
+logs and artifacts, where to perform builds and cache downloaded sources,
+verbosity levels and basically anything pertaining to the context
+in which BuildStream was invoked.
+
+Users can provide a configuration file to override parameters in
+the default configuration.
+
+The default BuildStream configuration is included here for reference:
+  .. literalinclude:: ../../buildstream/data/default.yaml
+"""
+
 from ._site import _site_info
-from .utils import dictionary_override, load_yaml_dict
+from . import utils
 
 class Context():
     """Context of how BuildStream was invoked
 
     Args:
        arch (string): The target architecture to build for
-
-    The invocation context holds state describing how BuildStream was
-    invoked, this includes data such as where to store logs and artifacts,
-    where to perform builds and cache downloaded sources and options
-    given on the command line.
     """
     def __init__(self, arch):
 
@@ -68,10 +81,10 @@ class Context():
 
         # Load default config
         #
-        defaults = load_yaml_dict(_site_info['default_config'])
+        defaults = utils.load_yaml_dict(_site_info['default_config'])
         if config:
-            user_config = load_yaml_dict(config)
-            defaults = dictionary_override(defaults, user_config)
+            user_config = utils.load_yaml_dict(config)
+            defaults = utils.dictionary_override(defaults, user_config)
 
         # Should have a loop here, but we suck
         #
