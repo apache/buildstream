@@ -21,9 +21,6 @@
 # Exceptions first
 from .exceptions import PluginError, LoadError
 
-# Common stuff
-from .utils import dictionary_override
-
 # Plugin auther facing APIs
 from .source import Source
 from .element import Element
