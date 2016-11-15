@@ -69,19 +69,24 @@ An element plugin will derive from Element by importing::
 
   from buildstream import Element
 
-When importing utilities specifically, dont import random
-function names from there, 
+When importing utilities specifically, dont import function names
+from there, instead::
+
+  from . import utils
+
+This makes things clear when reading code that said functions
+are not defined in the same file but come from utils.py for example.
 
 
 One Class One Module
 ~~~~~~~~~~~~~~~~~~~~
 BuildStream is mostly Object Oriented with a few utility files.
 
-Every object should go into it's own file (module) inside the
-buildstream package, and it should be named after the class in lower
-case with no underscore. This is to say a class named FooBar will
-certainly reside in a file named foobar.py. Unless FooBar is private
-in which case the file is of course _foobar.py.
+* Every object should go into it's own file (module) inside the buildstream package
+* Files should be named after their class in lower case with no underscore.
+
+This is to say a class named FooBar will certainly reside in a file named foobar.py.
+Unless FooBar is private in which case the file is of course _foobar.py.
 
 When adding a public class, it should be imported in toplevel __init__.py
 so that buildstream consumers can import it directly from the buildstream
@@ -98,7 +103,11 @@ of custom plugin Elements and Sources.
 Python does not have a real concept of private API, but as a convention
 anything which is private uses an underscore prefix.
 
-Principle of least underscores:
+* Modules which are private have their file named _module.py
+* Private classes are named _Class
+* Private methods, class variables and instance variables have a leading underscore as well
+
+Exceptions to the above rules is to follow a principle of least underscores:
 
 * If a module is entirely private, there is no need for the classes
   it contains to have a leading underscore.
@@ -139,21 +148,21 @@ a bit nicer docstrings than the default sphinx docstrings.
 A docstring for a method, class or function should have the following
 format::
 
-   """Brief description of entity
+  """Brief description of entity
 
-   Args:
-      argument1 (type): Description of arg
-      argument2 (type): Description of arg
+  Args:
+     argument1 (type): Description of arg
+     argument2 (type): Description of arg
 
-   Returns:
-      Description of returned thing indicating its type
+  Returns:
+     Description of returned thing indicating its type
 
-   Raises:
-      SomeError, SomeOtherError
+  Raises:
+     SomeError, SomeOtherError
 
-   A detailed description can go here if one is needed, only
-   after the above part documents the calling conventions.
-   """
+  A detailed description can go here if one is needed, only
+  after the above part documents the calling conventions.
+  """
 
 
 Testing BuildStream
@@ -183,11 +192,14 @@ function to feed arguments to pytest as such::
 
 Adding Tests
 ~~~~~~~~~~~~
-Tests are found in the tests/<domain>/ directory, all tests
-are collected as tests/*/*.py
+Tests are found in the tests subdirectory, inside of which
+there is a separarate directory for each *domain* of tests.
+All tests are collected as::
+
+  tests/*/*.py
 
 If the new test is not appropriate for the existing test domains,
-then simply create a new directory for it under tests/
+then simply create a new directory for it under the tests subdirectory.
 
 Various tests may include data files to test on, there are examples
 of this in the existing tests. When adding data for a test, create
