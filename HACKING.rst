@@ -221,8 +221,7 @@ update setup.py accordingly.
 When adding data files for the purpose of docs or tests, or anything that is not covered by
 setup.py, it's important to update the MANIFEST.in accordingly.
 
-At all times, running::
+At any time, running the following command to create a source distribution should result in
+creating a tarball which contains everything we want it to include::
 
   ./setup.py sdist
-
-Should result in creating a tarball which contains everything we want it to include.
