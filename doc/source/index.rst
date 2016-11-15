@@ -6,7 +6,7 @@
 .. toctree::
    :maxdepth: 2
 
-BuildStream documentation
+BuildStream Documentation
 =========================
 
 About BuildStream
@@ -45,11 +45,7 @@ Sources
 * :class:`~git.GitSource` - A Source implementation for git
 
 
-
 Indices and tables
-==================
-
-* :ref:`genindex`
+------------------
 * :ref:`modindex`
-* :ref:`search`
-
+* :ref:`genindex`

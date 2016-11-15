@@ -180,6 +180,11 @@ html_static_path = ['.static']
 #
 # html_sidebars = {}
 
+# Remove the obnoxious "This Page" and view page source shortcut
+html_sidebars = {
+   '**': ['localtoc.html', 'relations.html', 'searchbox.html']
+}
+
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 #
