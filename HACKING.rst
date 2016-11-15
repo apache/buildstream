@@ -87,7 +87,10 @@ Useful links:
 
 Building Docs
 ~~~~~~~~~~~~~
-To build the current set of docs, enter the docs directory and type `make`
+To build the current set of docs, just::
+
+  cd doc
+  make
 
 This will give you a build/html directory with the html docs.
 
