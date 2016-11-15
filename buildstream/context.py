@@ -33,7 +33,7 @@ Users can provide a configuration file to override parameters in
 the default configuration.
 
 The default BuildStream configuration is included here for reference:
-  .. literalinclude:: ../../buildstream/data/default.yaml
+  .. literalinclude:: ../../buildstream/data/defaultconfig.yaml
 """
 
 from ._site import _site_info
