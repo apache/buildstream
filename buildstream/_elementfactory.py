@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from . import _site
-from ._plugincontext import _PluginContext
+from ._plugincontext import PluginContext
 from .element import Element
 
 # A ElementFactory creates Element instances
@@ -29,7 +29,7 @@ from .element import Element
 #     plugin_base (PluginBase): The main PluginBase object to work with
 #     searchpath (list):        A list of external paths to search for Element plugins
 #
-class _ElementFactory(_PluginContext):
+class ElementFactory(PluginContext):
 
     def __init__(self, plugin_base, searchpath=None):
 

@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from . import _site
-from ._plugincontext import _PluginContext
+from ._plugincontext import PluginContext
 from .source import Source
 
 # A SourceFactory creates Source instances
@@ -29,7 +29,7 @@ from .source import Source
 #     plugin_base (PluginBase): The main PluginBase object to work with
 #     searchpath (list):        A list of external paths to search for Source plugins
 #
-class _SourceFactory(_PluginContext):
+class SourceFactory(PluginContext):
 
     def __init__(self, plugin_base, searchpath=None):
 

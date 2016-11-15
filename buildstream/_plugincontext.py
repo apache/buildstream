@@ -35,7 +35,7 @@ from .exceptions import PluginError
 # a given BuildStream project are isolated to their respective
 # Pipelines.
 #
-class _PluginContext():
+class PluginContext():
 
     def __init__(self, plugin_base, base_type, searchpath=None):
 
