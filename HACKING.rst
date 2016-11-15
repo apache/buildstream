@@ -1,7 +1,39 @@
 Hacking on BuildStream
 ======================
-
 Some tips and guidelines for developers hacking on BuildStream
+
+
+Getting Started
+---------------
+After cloning the BuildStream module with git, you will want a development installation.
+
+To do this::
+
+  sudo ./setup.py develop
+
+The above will install some symlinks in system directories but should not effect your
+build directory, you can at any time later uninstall with::
+
+  sudo ./setup.py develop --uninstall
+
+The benefit of this approach is that any changes you make to your local BuildStream
+checkout will take effect immediately without needing to reinstall later.
+
+To really install BuildStream, you can::
+
+  ./setup.py build
+  sudo setup.py install
+
+To create a source distribution of BuildStream, run::
+
+  ./setup.py sdist
+
+To clean up your directory at any time and be **careful**, enter the directory and run::
+
+  git clean -xdf
+
+This will remove any files not currently tracked by git, so handle the above command with care.
+
 
 
 Coding Style
@@ -165,3 +197,20 @@ When creating a test that needs data, use the datafiles extension
 to decorate your test case (again, examples exist in the existing
 tests for this), documentation on the datafiles extension can
 be found here: https://pypi.python.org/pypi/pytest-datafiles
+
+
+The MANIFEST.in and setup.py
+----------------------------
+When adding a dependency to BuildStream, it's important to update the setup.py accordingly.
+
+When adding data files which need to be discovered at runtime by BuildStream, it's important
+update setup.py accordingly.
+
+When adding data files for the purpose of docs or tests, or anything that is not covered by
+setup.py, it's important to update the MANIFEST.in accordingly.
+
+At all times, running::
+
+  ./setup.py sdist
+
+Should result in creating a tarball which contains everything we want it to include.
