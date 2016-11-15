@@ -36,7 +36,7 @@ The default BuildStream configuration is included here for reference:
   .. literalinclude:: ../../buildstream/data/defaultconfig.yaml
 """
 
-from ._site import _site_info
+from . import _site
 from . import utils
 
 class Context():
@@ -81,7 +81,7 @@ class Context():
 
         # Load default config
         #
-        defaults = utils.load_yaml_dict(_site_info['default_config'])
+        defaults = utils.load_yaml_dict(_site.default_config)
         if config:
             user_config = utils.load_yaml_dict(config)
             defaults = utils.dictionary_override(defaults, user_config)

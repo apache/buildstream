@@ -18,8 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from . import _site
 from ._plugincontext import _PluginContext
-from ._site import _site_info
 from .element import Element
 
 # A ElementFactory creates Element instances
@@ -36,7 +36,7 @@ class _ElementFactory(_PluginContext):
         if searchpath is None:
             searchpath = []
         
-        searchpath.insert(0, _site_info['element_plugins'])
+        searchpath.insert(0, _site.element_plugins)
         super().__init__(plugin_base, Element, searchpath)
 
     # create():

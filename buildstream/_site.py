@@ -21,18 +21,18 @@
 import os
 
 #
-# Some information about where we are installed
+# Private module declaring some info about where the buildstream
+# is installed so we can lookup package relative resources easily
 #
-_site_info = {}
 
 # The package root, wherever we are running the package from
-_site_info['root']             = os.path.dirname(os.path.abspath(__file__))
+root = os.path.dirname(os.path.abspath(__file__))
 
 # The Element plugin directory
-_site_info['element_plugins']  = os.path.join (_site_info['root'], 'plugins', 'elements')
+element_plugins = os.path.join (root, 'plugins', 'elements')
 
 # The Source plugin directory
-_site_info['source_plugins']   = os.path.join (_site_info['root'], 'plugins', 'sources')
+source_plugins = os.path.join (root, 'plugins', 'sources')
 
 # Default user configuration
-_site_info['default_config']   = os.path.join (_site_info['root'], 'data', 'defaultconfig.yaml')
+default_config = os.path.join (root, 'data', 'defaultconfig.yaml')
