@@ -28,19 +28,19 @@ from .exceptions import LoadError
 def dictionary_override(dictionary, override):
     """Overrides values in *dictionary* with values from *override*
 
-    This function overrides values in *dictionary* with values from *override*.
-
-    Unlike the dictionary *update()* method, nested values in *override*
-    will not obsolete entire subdictionaries in *dictionary*
-
-    This is useful for overriding configuration files and element configurations.
-
     Args:
        dictionary (dict): A simple dictionary
        override (dict): Another simple dictionary
 
     Returns:
        A new dictionary which includes the values of both
+
+    This function overrides values in *dictionary* with values from *override*.
+
+    Unlike the dictionary *update()* method, nested values in *override*
+    will not obsolete entire subdictionaries in *dictionary*
+
+    This is useful for overriding configuration files and element configurations.
     """
     result = copy.deepcopy(dictionary)
 
