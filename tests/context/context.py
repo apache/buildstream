@@ -2,7 +2,7 @@ import os
 import pytest
 
 from buildstream import Context
-from buildstream import ContextError
+from buildstream import LoadError
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -70,7 +70,7 @@ def test_context_load_missing_config(context_fixture, datafiles):
                              datafiles.basename,
                              'nonexistant.yaml')
 
-    with pytest.raises(ContextError) as exc:
+    with pytest.raises(LoadError) as exc:
         context.load(conf_file)
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -82,7 +82,7 @@ def test_context_load_malformed_config(context_fixture, datafiles):
                              datafiles.basename,
                              'malformed.yaml')
 
-    with pytest.raises(ContextError) as exc:
+    with pytest.raises(LoadError) as exc:
         context.load(conf_file)
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -94,5 +94,5 @@ def test_context_load_notdict_config(context_fixture, datafiles):
                              datafiles.basename,
                              'notdict.yaml')
 
-    with pytest.raises(ContextError) as exc:
+    with pytest.raises(LoadError) as exc:
         context.load(conf_file)
