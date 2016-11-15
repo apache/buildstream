@@ -27,11 +27,9 @@ class PluginError(Exception):
     """
     pass
 
-class ContextError(Exception):
-    """Raised while interpreting invocation context.
+class LoadError(Exception):
+    """Raised while loading some YAML.
 
-    This exception is raised when creating the :class:`.Context`
-    when the user configuration is missing or malformed or if some
-    of the context is nonsensical
+    This exception is raised when loading or parsing YAML.
     """
     pass

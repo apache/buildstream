@@ -20,6 +20,10 @@
 
 import collections
 import copy
+import ruamel.yaml
+from ruamel.yaml.scanner import ScannerError
+
+from .exceptions import LoadError
 
 def dictionary_override(dictionary, override):
     """Overrides values in *dictionary* with values from *override*
@@ -48,3 +52,26 @@ def dictionary_override(dictionary, override):
             result[k] = override[k]
 
     return result
+
+
+def load_yaml_dict(filename):
+    """Loads a dictionary from some YAML
+
+    Args:
+       filename (str): The YAML file to load
+
+    Raises:
+       :class:`.LoadError`
+    """
+    try:
+        with open(filename) as f:
+            contents = ruamel.yaml.safe_load(f)
+    except FileNotFoundError as e:
+        raise LoadError("Could not find file at %s" % filename) from e
+    except ScannerError as e:
+        raise LoadError("Malformed YAML:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
+
+    if not isinstance(contents, dict):
+        raise LoadError("Loading YAML file did not specify a dictionary: %s" % filename)
+
+    return contents

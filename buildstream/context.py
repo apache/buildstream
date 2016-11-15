@@ -18,12 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-import ruamel.yaml
-from ruamel.yaml.scanner import ScannerError
-
 from ._site import _site_info
-from .utils import dictionary_override
-from .exceptions import ContextError
+from .utils import dictionary_override, load_yaml_dict
 
 class Context():
     """Context of how BuildStream was invoked
@@ -63,21 +59,18 @@ class Context():
            config (filename): The user specified configuration file, if any
 
         Raises:
-           :class:`.ContextError`
+           :class:`.LoadError`
 
         This will first load the BuildStream default configuration and then
-        override that configuration with a user provided configuration file.
- 
-        If the config parameter is specified the user configuration will be
-        loaded from that file. Otherwise an attempt to read a file at
-        ``$XDG_CONFIG_HOME/buildstream.yaml`` will be made.
+        override that configuration with the configuration file indicated
+        by *config*, if any was specified.
         """
 
         # Load default config
         #
-        defaults = self._load_config(_site_info['default_config'])
+        defaults = load_yaml_dict(_site_info['default_config'])
         if config:
-            user_config = self._load_config(config)
+            user_config = load_yaml_dict(config)
             defaults = dictionary_override(defaults, user_config)
 
         # Should have a loop here, but we suck
@@ -87,17 +80,3 @@ class Context():
         self.deploydir = defaults.get('deploydir')
         self.artifactdir = defaults.get('artifactdir')
         self.ccachedir = defaults.get('ccachedir')
-
-    def _load_config(self, filename):
-        try:
-            with open(filename) as f:
-                contents = ruamel.yaml.safe_load(f)
-        except FileNotFoundError as e:
-            raise ContextError("Could not find configuration file at %s" % filename) from e
-        except ScannerError as e:
-            raise ContextError("Problem loading malformed configuration file:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
-
-        if not isinstance(contents, dict):
-            raise ContextError("Loading configuration file did not specify a dictionary: %s" % filename)
-
-        return contents
