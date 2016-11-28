@@ -11,3 +11,4 @@ include doc/source/index.rst
 # Tests
 recursive-include tests *.py
 recursive-include tests *.yaml
+recursive-include tests *.bst
