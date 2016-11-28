@@ -1,0 +1,26 @@
+kind: pony
+description: The vehicle of choice for rainbow travel
+moods:
+- happy
+- sad
+children:
+- name: dopey
+  mood: silly
+- name: grumpy
+  mood: grumpy
+- name: happy
+  mood: happy
+- name: doc
+  mood: happy
+- name: sneezy
+  mood: curious
+- name: bashful
+  mood: bashful
+- name: sleepy
+  mood: sleepy
+extra:
+  this: that
+  old: new
+
+
+

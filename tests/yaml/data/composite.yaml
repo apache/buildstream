@@ -1,0 +1,9 @@
+kind: horse
+description: The horse you ride
+children:
+- name: extra
+  mood: funny
+extra:
+  another:
+    one: one
+    two: two
