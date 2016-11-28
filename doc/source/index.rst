@@ -23,6 +23,15 @@ elements for doing more elaborate things such as running custom CI tests or depl
 software in special ways.
 
 
+Using BuildStream
+-----------------
+Here are some resources to help you get off the ground when creating your very first
+BuildStream project.
+
+* :ref:`format`
+
+
+
 Core Framework
 --------------
 
