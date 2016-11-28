@@ -37,7 +37,9 @@ The default BuildStream configuration is included here for reference:
 """
 
 from . import _site
-from . import utils
+from . import _yaml
+from ._yaml import CompositeTypeError
+from . import LoadError, LoadErrorReason
 
 class Context():
     """Context of how BuildStream was invoked
@@ -81,10 +83,17 @@ class Context():
 
         # Load default config
         #
-        defaults = utils.load_yaml_dict(_site.default_config)
+        defaults = _yaml.load(_site.default_config)
         if config:
-            user_config = utils.load_yaml_dict(config)
-            defaults = utils.dictionary_override(defaults, user_config)
+            user_config = _yaml.load(config)
+            try:
+                _yaml.composite_dict(defaults, user_config, typesafe=True)
+            except CompositeTypeError as e:
+                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                                "Expected '%s' type for configuration '%s', instead received '%s'" %
+                                (e.expected_type.__name__,
+                                 e.path,
+                                 e.actual_type.__name__)) from e
 
         # Should have a loop here, but we suck
         #
