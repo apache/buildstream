@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 # Exceptions first
-from .exceptions import PluginError, LoadError
+from .exceptions import PluginError, LoadError, LoadErrorReason
 
 # Plugin auther facing APIs
 from .source import Source
