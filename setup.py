@@ -28,6 +28,21 @@ except ImportError:
           " install setuptools).")
     sys.exit(1)
 
+try:
+    import gi
+except ImportError:
+    print("BuildStream requires PyGObject (aka PyGI). Install it using"
+          " your package manager (usually pygobject3 or python-gi).")
+    sys.exit(1)
+
+try:
+    gi.require_version('OSTree', '1.0')
+    from gi.repository import OSTree
+except:
+    print("BuildStream requires OSTree with Python bindings. Install it using"
+          " your package manager (usually ostree or gir1.2-ostree-1.0).")
+    sys.exit(1)
+
 setup(name='buildstream',
       version='0.1',
       description='A framework for modelling build pipelines in YAML',
