@@ -18,6 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import sys
+
 try:
     from setuptools import setup, find_packages
 except ImportError:
