@@ -18,12 +18,29 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import sys
+
 try:
     from setuptools import setup, find_packages
 except ImportError:
     print("BuildStream requires setuptools in order to build. Install it using"
           " your package manager (usually python3-setuptools) or via pip (pip3"
           " install setuptools).")
+    sys.exit(1)
+
+try:
+    import gi
+except ImportError:
+    print("BuildStream requires PyGObject (aka PyGI). Install it using"
+          " your package manager (usually pygobject3 or python-gi).")
+    sys.exit(1)
+
+try:
+    gi.require_version('OSTree', '1.0')
+    from gi.repository import OSTree
+except:
+    print("BuildStream requires OSTree with Python bindings. Install it using"
+          " your package manager (usually ostree or gir1.2-ostree-1.0).")
     sys.exit(1)
 
 setup(name='buildstream',
