@@ -49,16 +49,20 @@ class Symbol():
     SOURCES = "sources"
     CONFIG = "config"
     NAME = "name"
+    TYPE = "type"
+    BUILD = "build"
+    RUNTIME = "runtime"
 
 
 # A simple dependency object
 #
 class Dependency():
-    def __init__(self, owner_name, name, variant_name=None, filename=None):
+    def __init__(self, owner_name, name, variant_name=None, filename=None, type=None):
         self.owner = owner_name
         self.name = name
         self.variant_name = variant_name
         self.filename = filename
+        self.type = type
 
 
 # Holds a variant dictionary and normalized Dependency list
@@ -387,13 +391,24 @@ def extract_depends_from_node(owner, data, stack=False):
             if not variant:
                 variant = None
 
+            # Make type optional, for this we set it to None after
+            type = _yaml.node_get(dep, str, Symbol.TYPE, default_value="")
+            if not type:
+                type = None
+            elif type not in [Symbol.BUILD, Symbol.RUNTIME]:
+                provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
+
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "%s [line %s column %s]: Dependency type is not 'build' or 'runtime'" %
+                                (provenance.filename, provenance.line, provenance.col))
+
             if stack:
                 name = _yaml.node_get(dep, str, Symbol.NAME)
-                dependency = Dependency(owner, name, variant_name=variant)
+                dependency = Dependency(owner, name, variant_name=variant, type=type)
             else:
                 filename = _yaml.node_get(dep, str, Symbol.FILENAME)
                 name = element_name_from_filename(filename)
-                dependency = Dependency(owner, name, variant_name=variant, filename=filename)
+                dependency = Dependency(owner, name, variant_name=variant, filename=filename, type=type)
 
         else:
             index = depends.index(dep)
