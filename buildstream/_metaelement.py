@@ -37,4 +37,5 @@ class MetaElement():
         self.sources = sources
         self.config = config
 
+        self.build_dependencies = []
         self.dependencies = []

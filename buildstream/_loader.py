@@ -839,7 +839,10 @@ class Loader():
 
         for dep in element.deps:
             meta_dep = self.collect_element(dep.name)
-            meta_element.dependencies.append(meta_dep)
+            if dep.type != 'runtime':
+                meta_element.build_dependencies.append(meta_dep)
+            if dep.type != 'build':
+                meta_element.dependencies.append(meta_dep)
 
         # Cache it, just to make sure we dont build the same one twice !
         self.meta_elements[element_name] = meta_element
