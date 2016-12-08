@@ -100,3 +100,14 @@ class FetchError(Exception):
 class ImplError(Exception):
     """Raised when a plugin fails to implement a mandatory method"""
     pass
+
+
+class ProgramNotFound(Exception):
+    """Raised if a required program is not found
+
+    BuildSource requires various software to exist on the host for
+    it to work correctly. This exception is thrown if that software
+    can not be found. E.g. The :class:`.Sandbox` class expects that
+    bubblewrap is installed for it to work.
+    """
+    pass

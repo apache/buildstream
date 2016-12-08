@@ -40,6 +40,7 @@ Core Framework
 * :mod:`Element <buildstream.element>` - Base Element Class
 * :mod:`Source <buildstream.source>` - Base Source Class
 * :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
+* :mod:`Sandbox <buildstream.sandbox>` - Sandbox Abstraction Class
 
 
 Plugins
