@@ -72,6 +72,21 @@ def test_shared_dependency(datafiles):
     assert(shareddepdep is firstdep)
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_dependency_dict(datafiles):
+
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(basedir, 'elements/target-depdict.bst', None, None)
+    element = loader.load()
+
+    assert(isinstance(element, MetaElement))
+    assert(element.kind == 'pony')
+
+    assert(len(element.dependencies) == 1)
+    firstdep = element.dependencies[0]
+    assert(isinstance(firstdep, MetaElement))
+    assert(firstdep.kind == 'thefirstdep')
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_invalid_dependency_declaration(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(basedir, 'elements/invaliddep.bst', None, None)

@@ -371,7 +371,7 @@ def extract_depends_from_node(owner, data, stack=False):
 
         elif isinstance(dep, dict):
             # Make variant optional, for this we set it to None after
-            variant = _yaml.node_get(dep, str, Symbol.VARIANT, "")
+            variant = _yaml.node_get(dep, str, Symbol.VARIANT, default_value="")
             if not variant:
                 variant = None
 
