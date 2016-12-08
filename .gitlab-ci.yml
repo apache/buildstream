@@ -1,0 +1,26 @@
+before_script:
+  - echo "deb http://ftp.uk.debian.org/debian/ jessie-backports main" >> /etc/apt/sources.list
+  - apt-get update --fix-missing -qq
+  - apt-get install -y -qq bubblewrap
+  - apt-get install -y -qq python3
+  - apt-get install -y -qq python3-pip
+  - pip3 install pep8
+  - apt-get install --force-yes -qq ostree gir1.2-ostree-1.0 python3-dev python3-gi
+
+
+
+tests:
+    script:
+        - python3 setup.py test
+
+pep8:
+    script:
+        - cd buildstream
+        - pep8 .
+
+
+doc-build:
+    script:
+        - apt-get -t jessie-backports install -y -qq sphinx-common
+        - cd doc
+        - make
