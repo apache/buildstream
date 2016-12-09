@@ -56,5 +56,8 @@ setup(name='buildstream',
           'argparse'
       ],
       setup_requires=['pytest-runner'],
-      tests_require=['pytest-datafiles', 'pytest'],
+      tests_require=['pep8',
+                     'pytest-datafiles',
+                     'pytest-pep8',
+                     'pytest'],
       zip_safe=False)
