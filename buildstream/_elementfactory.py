@@ -22,12 +22,13 @@ from . import _site
 from ._plugincontext import PluginContext
 from .element import Element
 
+
 # A ElementFactory creates Element instances
 # in the context of a given factory
 #
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
-#     searchpath (list):        A list of external paths to search for Element plugins
+#     searchpath (list):        Search path for external Source plugins
 #
 class ElementFactory(PluginContext):
 
@@ -35,7 +36,7 @@ class ElementFactory(PluginContext):
 
         if searchpath is None:
             searchpath = []
-        
+
         searchpath.insert(0, _site.element_plugins)
         super().__init__(plugin_base, Element, searchpath)
 
