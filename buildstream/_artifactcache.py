@@ -22,11 +22,13 @@ import os
 import tempfile
 import gi
 gi.require_version('OSTree', '1.0')
-from gi.repository import GLib, Gio, OSTree
+from gi.repository import GLib, Gio, OSTree  # nopep8
+
 
 def buildref(project, element, key):
     # assume project and element names are not allowed to contain slashes
     return '{0}/{1}/{2}'.format(project, element, key)
+
 
 # An ArtifactCache manages artifacts in an OSTree repository
 #
