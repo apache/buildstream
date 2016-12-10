@@ -20,9 +20,11 @@
 
 from buildstream import Element
 
+
 # Element implementation for the 'build' kind.
 class BuildElement(Element):
     pass
+
 
 # Plugin entry point
 def setup():
