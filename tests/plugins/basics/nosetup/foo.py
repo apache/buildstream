@@ -2,5 +2,7 @@
 # which returns the type that the plugin provides
 #
 # This plugin fails to do so
+
+
 def useless():
-    print ("Hello World")
+    print("Hello World")
