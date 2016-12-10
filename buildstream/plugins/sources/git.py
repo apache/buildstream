@@ -20,9 +20,11 @@
 
 from buildstream import Source
 
+
 # Source implementation for the 'git' kind.
 class GitSource(Source):
     pass
+
 
 # Plugin entry point
 def setup():
