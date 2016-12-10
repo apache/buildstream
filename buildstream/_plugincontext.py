@@ -41,8 +41,7 @@ class PluginContext():
     def __init__(self, plugin_base, base_type, searchpath=None):
 
         if not searchpath:
-            raise PluginError(
-                "Cannot create plugin context without any searchpath")
+            raise PluginError("Cannot create plugin context without any searchpath")
 
         self.base_type = base_type  # The base class plugins derive from
         self.source = None          # The PluginSource object
@@ -83,13 +82,11 @@ class PluginContext():
         try:
             plugin_type = plugin.setup()
         except AttributeError as e:
-            raise PluginError(
-                "%s plugin '%s' did not provide a setup() function" %
-                (self.base_type.__name__, kind)) from e
+            raise PluginError("%s plugin '%s' did not provide a setup() function" %
+                              (self.base_type.__name__, kind)) from e
         except TypeError as e:
-            raise PluginError(
-                "setup symbol in %s plugin '%s' is not a function" %
-                (self.base_type.__name__, kind)) from e
+            raise PluginError("setup symbol in %s plugin '%s' is not a function" %
+                              (self.base_type.__name__, kind)) from e
 
         self.assert_plugin(kind, plugin_type)
 
@@ -99,24 +96,19 @@ class PluginContext():
 
     def assert_plugin(self, kind, plugin_type):
         if kind in self.types:
-            raise PluginError(
-                "Tried to register %s plugin for existing kind '%s' "
-                "(already registered %s)" %
-                (self.base_type.__name__, kind, self.types[kind].__name__))
+            raise PluginError("Tried to register %s plugin for existing kind '%s' "
+                              "(already registered %s)" %
+                              (self.base_type.__name__, kind, self.types[kind].__name__))
         try:
             if not issubclass(plugin_type, self.base_type):
-                raise PluginError(
-                    "%s plugin '%s' returned type '%s', "
-                    "which is not a subclass of %s" %
-                    (self.base_type.__name__, kind,
-                     plugin_type.__name__,
-                     self.base_type.__name__))
+                raise PluginError("%s plugin '%s' returned type '%s', which is not a subclass of %s" %
+                                  (self.base_type.__name__, kind,
+                                   plugin_type.__name__,
+                                   self.base_type.__name__))
         except TypeError as e:
-            raise PluginError(
-                "%s plugin '%s' returned something that is not a type "
-                "(expected subclass of %s)" %
-                (self.base_type.__name__, kind,
-                 self.base_type.__name__)) from e
+            raise PluginError("%s plugin '%s' returned something that is not a type (expected subclass of %s)" %
+                              (self.base_type.__name__, kind,
+                               self.base_type.__name__)) from e
 
     # We want a PluginError when trying to create a context
     # where more than one plugin has the same name
@@ -132,11 +124,10 @@ class PluginContext():
 
                     if name in names:
                         idx = names.index(name)
-                        raise PluginError(
-                            "Failed to register %s plugin '%s' from: %s\n"
-                            "%s plugin '%s' is already registered by: %s" %
-                            (self.base_type.__name__, name, fullname,
-                             self.base_type.__name__, name, fullnames[idx]))
+                        raise PluginError("Failed to register %s plugin '%s' from: %s\n"
+                                          "%s plugin '%s' is already registered by: %s" %
+                                          (self.base_type.__name__, name, fullname,
+                                           self.base_type.__name__, name, fullnames[idx]))
 
                     names.append(name)
                     fullnames.append(fullname)
