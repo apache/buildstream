@@ -29,6 +29,7 @@ from . import LoadError, LoadErrorReason
 # stored in all dictionaries under this key
 PROVENANCE_KEY = '__bst_provenance_info'
 
+
 # Provenance tracks the origin of a given node in the parsed dictionary.
 #
 # Args:
@@ -46,15 +47,18 @@ class Provenance():
         self.line = line
         self.col = col
 
+
 # A Provenance for dictionaries, these are stored in the copy of the
 # loaded YAML tree and track the provenance of all members
 #
 class DictProvenance(Provenance):
     def __init__(self, filename, node, toplevel):
-        super(DictProvenance, self).__init__(filename, node, toplevel,
-                                             line=node.lc.line + 1, col=node.lc.col)
+        super(DictProvenance, self).__init__(
+            filename, node, toplevel,
+            line=node.lc.line + 1, col=node.lc.col)
 
         self.members = {}
+
 
 # A Provenance for dict members
 #
@@ -62,10 +66,12 @@ class MemberProvenance(Provenance):
     def __init__(self, filename, parent_dict, member_name, toplevel):
         node = parent_dict[member_name]
         line, col = parent_dict.lc.value(member_name)
-        super(MemberProvenance, self).__init__(filename, node, toplevel, line=line+1, col=col)
+        super(MemberProvenance, self).__init__(
+            filename, node, toplevel, line=line + 1, col=col)
 
         # Only used if member is a list
         elements = []
+
 
 # A Provenance for list elements
 #
@@ -73,10 +79,12 @@ class ElementProvenance(Provenance):
     def __init__(self, filename, parent_list, index, toplevel):
         node = parent_list[index]
         line, col = parent_list.lc.item(index)
-        super(ElementProvenance, self).__init__(filename, node, toplevel, line=line+1, col=col)
+        super(ElementProvenance, self).__init__(
+            filename, node, toplevel, line=line + 1, col=col)
 
         # Only used if element is a list
         elements = []
+
 
 # These exceptions are intended to be caught entirely within
 # the BuildStream framework, hence they do not reside in the
@@ -86,18 +94,25 @@ class CompositeError(Exception):
         super(CompositeError, self).__init__(message)
         self.path = path
 
+
 class CompositeOverrideError(CompositeError):
     def __init__(self, path):
-        super(CompositeOverrideError, self).__init__(path,
-            "Error compositing dictionary, not allowed to override key '%s'" % path)
+        super(CompositeOverrideError, self).__init__(
+            path,
+            "Error compositing dictionary, not allowed to override key '%s'" %
+            path)
+
 
 class CompositeTypeError(CompositeError):
     def __init__(self, path, expected_type, actual_type):
-        super(CompositeTypeError, self).__init__(path,
-            "Error compositing dictionary key '%s', expected source type '%s' but received type '%s'" %
+        super(CompositeTypeError, self).__init__(
+            path,
+            "Error compositing dictionary key '%s', expected source type '%s' "
+            "but received type '%s'" %
             (path, expected_type.__name__, actual_type.__name__))
         self.expected_type = expected_type
         self.actual_type = actual_type
+
 
 # CompositePolicy
 #
@@ -106,7 +121,7 @@ class CompositeTypeError(CompositeError):
 #
 class CompositePolicy(Enum):
 
-    # Everything that is not a mapping from the overriding dict composites the target dict
+    # Every dict member overwrites members in the target dict
     OVERWRITE = 1
 
     # Arrays from the overriding dict are appended to arrays in the target dict
@@ -114,6 +129,7 @@ class CompositePolicy(Enum):
 
     # Dictionary memebers may never replace existing members
     STRICT = 3
+
 
 # Loads a dictionary from some YAML
 #
@@ -131,12 +147,15 @@ def load(filename):
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Could not find file at %s" % filename) from e
     except (yaml.scanner.ScannerError, yaml.composer.ComposerError) as e:
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Malformed YAML:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
+        raise LoadError(
+            LoadErrorReason.INVALID_YAML,
+            "Malformed YAML:\n\n%s\n\n%s\n" %
+            (e.problem, e.problem_mark)) from e
 
     if not isinstance(contents, dict):
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Loading YAML file did not specify a dictionary: %s" % filename)
+        raise LoadError(
+            LoadErrorReason.INVALID_YAML,
+            "Loading YAML file did not specify a dictionary: %s" % filename)
 
     return node_decorated_copy(filename, contents)
 
@@ -159,6 +178,7 @@ def node_decorated_copy(filename, toplevel):
 
     return result
 
+
 def node_decorate_dict(filename, target, source, toplevel):
     provenance = DictProvenance(filename, source, toplevel)
     target[PROVENANCE_KEY] = provenance
@@ -171,7 +191,9 @@ def node_decorate_dict(filename, target, source, toplevel):
         if isinstance(value, collections.Mapping):
             node_decorate_dict(filename, target_value, value, toplevel)
         elif isinstance(value, list):
-            member.elements = node_decorate_list(filename, target_value, value, toplevel)
+            member.elements = node_decorate_list(
+                filename, target_value, value, toplevel)
+
 
 def node_decorate_list(filename, target, source, toplevel):
 
@@ -185,11 +207,13 @@ def node_decorate_list(filename, target, source, toplevel):
         if isinstance(item, collections.Mapping):
             node_decorate_dict(filename, target_item, item, toplevel)
         elif isinstance(item, list):
-            element.elements = node_decorate_list(filename, target_item, item, toplevel)
+            element.elements = node_decorate_list(
+                filename, target_item, item, toplevel)
 
         elements.append(element)
 
     return elements
+
 
 # node_get_provenance()
 #
@@ -235,9 +259,11 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
     value = node.get(key, default_value)
     provenance = node_get_provenance(node)
     if value is None:
-        raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "%s [line %s column %s]: Dictionary did not contain expected key '%s'" %
-                        (provenance.filename, provenance.line, provenance.col, key))
+        raise LoadError(
+            LoadErrorReason.INVALID_DATA,
+            "%s [line %s column %s]: "
+            "Dictionary did not contain expected key '%s'" %
+            (provenance.filename, provenance.line, provenance.col, key))
 
     provenance = node_get_provenance(node, key=key, indices=indices)
     path = key
@@ -250,15 +276,18 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
             path += '[%d]' % index
 
     if not isinstance(value, expected_type):
-        raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "%s [line %s column %s]: Value of '%s' is not of the expected type '%s'" %
-                        (provenance.filename, provenance.line, provenance.col, path, expected_type.__name__))
+        raise LoadError(
+            LoadErrorReason.INVALID_DATA,
+            "%s [line %s column %s]: "
+            "Value of '%s' is not of the expected type '%s'" %
+            (provenance.filename, provenance.line, provenance.col,
+             path, expected_type.__name__))
 
     return value
 
 
 # composite_dict():
-# 
+#
 # Composites values in target with values from source
 #
 # Args:
@@ -277,11 +306,14 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
 # This is useful for overriding configuration files and element
 # configurations.
 #
-def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
+def composite_dict(target, source, policy=CompositePolicy.OVERWRITE,
+                   typesafe=False):
     source = copy.deepcopy(source)
     composite_dict_recurse(target, source, policy=policy, typesafe=typesafe)
 
-def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False, path=None):
+
+def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
+                           typesafe=False, path=None):
     target_provenance = target.get(PROVENANCE_KEY)
     source_provenance = source.get(PROVENANCE_KEY)
 
@@ -290,7 +322,7 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE, typ
         # Handle the provenance keys specially
         if key == PROVENANCE_KEY:
             continue
-        
+
         # Track the full path of keys, only for raising CompositeError
         if path:
             thispath = path + '.' + key
@@ -309,17 +341,20 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE, typ
                 # Give the new dict provenance
                 value_provenance = value.get(PROVENANCE_KEY)
                 if value_provenance:
-                    target_value[PROVENANCE_KEY] = copy.deepcopy(value_provenance)
+                    target_value[PROVENANCE_KEY] = copy.deepcopy(
+                        value_provenance)
 
                 # Add a new provenance member element to the containing dict
                 target_provenance.members[key] = source_provenance.members[key]
 
             if not isinstance(target_value, collections.Mapping):
-                raise CompositeTypeError(thispath, type(target_value), type(value))
+                raise CompositeTypeError(
+                    thispath, type(target_value), type(value))
 
             # Recurse into matching dictionary
-            composite_dict_recurse(target_value, value,
-                policy=policy, typesafe=typesafe, path=thispath)
+            composite_dict_recurse(
+                target_value, value, policy=policy,
+                typesafe=typesafe, path=thispath)
 
         else:
 
@@ -327,7 +362,8 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE, typ
             if (typesafe and
                 target_value is not None and
                 not isinstance(value, type(target_value))):
-                raise CompositeTypeError(thispath, type(target_value), type(value))
+                raise CompositeTypeError(
+                    thispath, type(target_value), type(value))
 
             if policy == CompositePolicy.OVERWRITE:
 
@@ -341,21 +377,23 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE, typ
                     isinstance(value, list)):
                     target[key] += value
 
-                    # Append element provenances from source list to target list
+                    # Append element provenances from source list to target
                     target_list_provenance = target_provenance.members[key]
                     source_list_provenance = source_provenance.members[key]
                     for item in source_list_provenance.elements:
-                        target_list_provenance.elements.append (item)
+                        target_list_provenance.elements.append(item)
                 else:
                     # Provenance is overwritten
-                    target_provenance.members[key] = source_provenance.members[key]
                     target[key] = value
+                    target_provenance.members[key] = \
+                        source_provenance.members[key]
 
             elif policy == CompositePolicy.STRICT:
 
                 if target_value is None:
                     target[key] = value
-                    target_provenance.members[key] = source_provenance.members[key]
+                    target_provenance.members[key] = \
+                        source_provenance.members[key]
                 else:
                     raise CompositeOverrideError(thispath)
 
