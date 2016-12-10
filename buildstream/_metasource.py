@@ -18,6 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+
 class MetaSource():
 
     # MetaSource()
@@ -29,12 +30,12 @@ class MetaSource():
     #    config: The configuration data for the source
     #    origin_node: The original YAML dictionary node defining this source
     #    origin_toplevel: The toplevel YAML loaded from the original file
-    #    origin_filename: The filename in which the original node was loaded from
+    #    origin_filename: The filename in which the node was loaded from
     #
-    def __init__(self, kind, config, origin_node, origin_toplevel, origin_filename):
+    def __init__(self, kind, config, origin_node, origin_toplevel,
+                 origin_filename):
         self.kind = kind
         self.config = config
         self.origin_node = origin_node
         self.origin_toplevel = origin_toplevel
         self.origin_filename = origin_filename
-
