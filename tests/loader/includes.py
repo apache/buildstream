@@ -10,6 +10,7 @@ DATA_DIR = os.path.join(
     'includes',
 )
 
+
 ##############################################################
 #              Test Basic Include Functionality              #
 ##############################################################
@@ -31,6 +32,7 @@ def test_basic_include(datafiles):
     assert(thelist[0] == 'Element 1')
     assert(thelist[1] == 'Element 2')
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_type_include(datafiles):
 
@@ -42,6 +44,7 @@ def test_invalid_type_include(datafiles):
 
     assert (exc.value.reason == LoadErrorReason.ILLEGAL_COMPOSITE)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_overwrite_kind_include(datafiles):
 
@@ -52,6 +55,7 @@ def test_overwrite_kind_include(datafiles):
         element = loader.load()
 
     assert (exc.value.reason == LoadErrorReason.ILLEGAL_COMPOSITE)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_missing_include(datafiles):
