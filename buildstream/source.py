@@ -18,6 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+
 class Source():
     """Base Source class.
 
