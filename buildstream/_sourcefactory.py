@@ -22,12 +22,13 @@ from . import _site
 from ._plugincontext import PluginContext
 from .source import Source
 
+
 # A SourceFactory creates Source instances
 # in the context of a given factory
 #
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
-#     searchpath (list):        A list of external paths to search for Source plugins
+#     searchpath (list):        Search path for external Source plugins
 #
 class SourceFactory(PluginContext):
 
@@ -35,7 +36,7 @@ class SourceFactory(PluginContext):
 
         if searchpath is None:
             searchpath = []
-        
+
         searchpath.insert(0, _site.source_plugins)
         super().__init__(plugin_base, Source, searchpath)
 
