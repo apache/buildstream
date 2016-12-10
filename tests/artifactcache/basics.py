@@ -5,6 +5,7 @@ import tempfile
 from buildstream import Context
 from buildstream._artifactcache import ArtifactCache
 
+
 @pytest.fixture()
 def context(tmpdir):
     context = Context('x86_64')
@@ -15,16 +16,20 @@ def context(tmpdir):
 
     return context
 
+
 @pytest.fixture()
 def artifactcache(context):
     return ArtifactCache(context)
 
+
 def test_empty_contains(context, artifactcache):
     assert(not artifactcache.contains('foo', 'bar', 'a1b2c3'))
+
 
 @pytest.mark.xfail()
 def test_empty_extract(context, artifactcache):
     artifactcache.extract('foo', 'bar', 'a1b2c3')
+
 
 def test_commit_extract(context, artifactcache):
     os.makedirs(context.deploydir, exist_ok=True)
