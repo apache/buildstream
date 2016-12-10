@@ -10,6 +10,7 @@ DATA_DIR = os.path.join(
     'variants',
 )
 
+
 ##############################################################
 #                 Test Basic Failure Modes                   #
 ##############################################################
@@ -24,6 +25,7 @@ def test_variant_not_list(datafiles):
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_unnamed(datafiles):
 
@@ -34,6 +36,7 @@ def test_variant_unnamed(datafiles):
         element = loader.load()
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_bad_name(datafiles):
@@ -46,6 +49,7 @@ def test_variant_bad_name(datafiles):
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_only_one(datafiles):
 
@@ -57,6 +61,7 @@ def test_variant_only_one(datafiles):
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
+
 ##############################################################
 #                Test Simple Variant Compositing             #
 ##############################################################
@@ -64,7 +69,8 @@ def test_variant_only_one(datafiles):
 def test_variant_simple_composite_default(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-variant-compositing.bst', None, None)
+    loader = Loader(
+        basedir, 'elements/simple-variant-compositing.bst', None, None)
 
     element = loader.load()
 
@@ -75,11 +81,13 @@ def test_variant_simple_composite_default(datafiles):
     assert(element.config.get('somedata') == 5)
     assert(element.config.get('pony-color') == 'pink')
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_simple_composite_pink_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-variant-compositing.bst', 'pink', None)
+    loader = Loader(
+        basedir, 'elements/simple-variant-compositing.bst', 'pink', None)
 
     element = loader.load()
 
@@ -90,11 +98,13 @@ def test_variant_simple_composite_pink_pony(datafiles):
     assert(element.config.get('somedata') == 5)
     assert(element.config.get('pony-color') == 'pink')
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_simple_composite_blue_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-variant-compositing.bst', 'blue', None)
+    loader = Loader(
+        basedir, 'elements/simple-variant-compositing.bst', 'blue', None)
 
     element = loader.load()
 
@@ -106,10 +116,11 @@ def test_variant_simple_composite_blue_pony(datafiles):
     assert(element.config.get('somedata') == 6)
     assert(element.config.get('pony-color') == 'blue')
 
+
 ##############################################################
 #               Test Variant Dependency Plotting             #
 ##############################################################
-
+#
 # Convenience for asserting dependencies
 #
 def assert_dependency(element, index, name, key, value):
@@ -130,7 +141,8 @@ def assert_dependency(element, index, name, key, value):
 def test_variant_simple_dependency_default(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-dependency-variants.bst', None, None)
+    loader = Loader(
+        basedir, 'elements/simple-dependency-variants.bst', None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -139,11 +151,13 @@ def test_variant_simple_dependency_default(datafiles):
     # Test that the default is a pink pony
     assert_dependency(element, 0, 'simply-pink', 'color', 'pink')
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_simple_dependency_pink_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-dependency-variants.bst', 'pink', None)
+    loader = Loader(
+        basedir, 'elements/simple-dependency-variants.bst', 'pink', None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -152,11 +166,13 @@ def test_variant_simple_dependency_pink_pony(datafiles):
     # Test that the explicit pink dependency is correct
     assert_dependency(element, 0, 'simply-pink', 'color', 'pink')
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_simple_dependency_blue_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-dependency-variants.bst', 'blue', None)
+    loader = Loader(
+        basedir, 'elements/simple-dependency-variants.bst', 'blue', None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -165,34 +181,40 @@ def test_variant_simple_dependency_blue_pony(datafiles):
     # Test that the explicit blue dependency is correct
     assert_dependency(element, 0, 'simply-blue', 'color', 'blue')
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_indirect_dependency_default(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/indirect-dependency-variants.bst', None, None)
+    loader = Loader(
+        basedir, 'elements/indirect-dependency-variants.bst', None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
     assert(element.kind == 'pony')
 
     # Test that the default is a blue pony-color by default
-    simple = assert_dependency(element, 0, 'simple-dependency-variants', 'pony-color', 'blue')
+    simple = assert_dependency(
+        element, 0, 'simple-dependency-variants', 'pony-color', 'blue')
 
     # Test that the element we depend on now depends on the blue color
     assert_dependency(simple, 0, 'simply-blue', 'color', 'blue')
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_indirect_dependency_blue_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/indirect-dependency-variants.bst', 'blue', None)
+    loader = Loader(
+        basedir, 'elements/indirect-dependency-variants.bst', 'blue', None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
     assert(element.kind == 'pony')
 
     # Test for a blue pony-color
-    simple = assert_dependency(element, 0, 'simple-dependency-variants', 'pony-color', 'blue')
+    simple = assert_dependency(
+        element, 0, 'simple-dependency-variants', 'pony-color', 'blue')
 
     # Test that the element we depend on now depends on the blue color
     assert_dependency(simple, 0, 'simply-blue', 'color', 'blue')
@@ -202,14 +224,16 @@ def test_variant_indirect_dependency_blue_pony(datafiles):
 def test_variant_indirect_dependency_pink_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/indirect-dependency-variants.bst', 'pink', None)
+    loader = Loader(
+        basedir, 'elements/indirect-dependency-variants.bst', 'pink', None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
     assert(element.kind == 'pony')
 
     # Test for a blue pony-color
-    simple = assert_dependency(element, 0, 'simple-dependency-variants', 'pony-color', 'pink')
+    simple = assert_dependency(
+        element, 0, 'simple-dependency-variants', 'pony-color', 'pink')
 
     # Test that the element we depend on now depends on the blue color
     assert_dependency(simple, 0, 'simply-pink', 'color', 'pink')
