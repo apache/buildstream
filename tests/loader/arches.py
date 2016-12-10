@@ -10,6 +10,7 @@ DATA_DIR = os.path.join(
     'arches',
 )
 
+
 ##############################################################
 #                Test Simple Arch Conditionals               #
 ##############################################################
@@ -17,7 +18,8 @@ DATA_DIR = os.path.join(
 def test_simple_conditional_nomatch(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-conditional.bst', None, 'arm')
+    loader = Loader(
+        basedir, 'elements/simple-conditional.bst', None, 'arm')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -26,11 +28,13 @@ def test_simple_conditional_nomatch(datafiles):
     # Did not provide any arch specific data for 'arm', number remains 5
     assert(number == 5)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_simple_conditional_x86_64(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-conditional.bst', None, 'x86_64')
+    loader = Loader(
+        basedir, 'elements/simple-conditional.bst', None, 'x86_64')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -39,11 +43,13 @@ def test_simple_conditional_x86_64(datafiles):
     # x86_64 arch overrides the number to 6
     assert(number == 6)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_simple_conditional_x86_32(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/simple-conditional.bst', None, 'x86_32')
+    loader = Loader(
+        basedir, 'elements/simple-conditional.bst', None, 'x86_32')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -52,6 +58,7 @@ def test_simple_conditional_x86_32(datafiles):
     # x86_32 arch overrides the number to 7
     assert(number == 7)
 
+
 ##############################################################
 #            Test Arch Conditionals inside Variants          #
 ##############################################################
@@ -59,7 +66,8 @@ def test_simple_conditional_x86_32(datafiles):
 def test_variant_arch_default(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', None, 'arm')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', None, 'arm')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -67,12 +75,14 @@ def test_variant_arch_default(datafiles):
 
     # The default "pink" variant sets number to 6
     assert(number == 6)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_default_x86_64(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', None, 'x86_64')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', None, 'x86_64')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -80,11 +90,13 @@ def test_variant_arch_default_x86_64(datafiles):
 
     assert(number == 7)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_default_x86_32(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', None, 'x86_32')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', None, 'x86_32')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -92,11 +104,13 @@ def test_variant_arch_default_x86_32(datafiles):
 
     assert(number == 8)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_pink_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', 'pink', 'arm')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', 'pink', 'arm')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -105,11 +119,13 @@ def test_variant_arch_pink_pony(datafiles):
     # The default "pink" variant sets number to 6
     assert(number == 6)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_pink_pony_x86_64(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', 'pink', 'x86_64')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', 'pink', 'x86_64')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -117,25 +133,27 @@ def test_variant_arch_pink_pony_x86_64(datafiles):
 
     assert(number == 7)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_pink_pony_x86_32(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', 'pink', 'x86_32')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', 'pink', 'x86_32')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
     number = element.config.get('number')
 
     assert(number == 8)
-
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_blue_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', 'blue', 'arm')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', 'blue', 'arm')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -144,11 +162,13 @@ def test_variant_arch_blue_pony(datafiles):
     # The "blue" variant sets number to 4
     assert(number == 4)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_blue_pony_x86_64(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', 'blue', 'x86_64')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', 'blue', 'x86_64')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -156,11 +176,13 @@ def test_variant_arch_blue_pony_x86_64(datafiles):
 
     assert(number == 3)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_variant_arch_blue_pony_x86_32(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-arch-conditional.bst', 'blue', 'x86_32')
+    loader = Loader(
+        basedir, 'elements/variant-arch-conditional.bst', 'blue', 'x86_32')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
