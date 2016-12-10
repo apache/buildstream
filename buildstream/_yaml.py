@@ -47,6 +47,10 @@ class Provenance():
         self.line = line
         self.col = col
 
+    # Convert a Provenance to a string for error reporting
+    def __str__(self):
+        return "%s [line %d column %d]" % (self.filename, self.line, self.col)
+
 
 # A Provenance for dictionaries, these are stored in the copy of the
 # loaded YAML tree and track the provenance of all members
@@ -147,15 +151,12 @@ def load(filename):
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Could not find file at %s" % filename) from e
     except (yaml.scanner.ScannerError, yaml.composer.ComposerError) as e:
-        raise LoadError(
-            LoadErrorReason.INVALID_YAML,
-            "Malformed YAML:\n\n%s\n\n%s\n" %
-            (e.problem, e.problem_mark)) from e
+        raise LoadError(LoadErrorReason.INVALID_YAML,
+                        "Malformed YAML:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
 
     if not isinstance(contents, dict):
-        raise LoadError(
-            LoadErrorReason.INVALID_YAML,
-            "Loading YAML file did not specify a dictionary: %s" % filename)
+        raise LoadError(LoadErrorReason.INVALID_YAML,
+                        "Loading YAML file did not specify a dictionary: %s" % filename)
 
     return node_decorated_copy(filename, contents)
 
@@ -259,11 +260,8 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
     value = node.get(key, default_value)
     provenance = node_get_provenance(node)
     if value is None:
-        raise LoadError(
-            LoadErrorReason.INVALID_DATA,
-            "%s [line %s column %s]: "
-            "Dictionary did not contain expected key '%s'" %
-            (provenance.filename, provenance.line, provenance.col, key))
+        raise LoadError(LoadErrorReason.INVALID_DATA,
+                        "%s: Dictionary did not contain expected key '%s'" % (str(provenance), key))
 
     provenance = node_get_provenance(node, key=key, indices=indices)
     path = key
@@ -276,12 +274,9 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
             path += '[%d]' % index
 
     if not isinstance(value, expected_type):
-        raise LoadError(
-            LoadErrorReason.INVALID_DATA,
-            "%s [line %s column %s]: "
-            "Value of '%s' is not of the expected type '%s'" %
-            (provenance.filename, provenance.line, provenance.col,
-             path, expected_type.__name__))
+        raise LoadError(LoadErrorReason.INVALID_DATA,
+                        "%s: Value of '%s' is not of the expected type '%s'" %
+                        (str(provenance), path, expected_type.__name__))
 
     return value
 
@@ -348,13 +343,10 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
                 target_provenance.members[key] = source_provenance.members[key]
 
             if not isinstance(target_value, collections.Mapping):
-                raise CompositeTypeError(
-                    thispath, type(target_value), type(value))
+                raise CompositeTypeError(thispath, type(target_value), type(value))
 
             # Recurse into matching dictionary
-            composite_dict_recurse(
-                target_value, value, policy=policy,
-                typesafe=typesafe, path=thispath)
+            composite_dict_recurse(target_value, value, policy=policy, typesafe=typesafe, path=thispath)
 
         else:
 
@@ -362,8 +354,7 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
             if (typesafe and
                 target_value is not None and
                 not isinstance(value, type(target_value))):
-                raise CompositeTypeError(
-                    thispath, type(target_value), type(value))
+                raise CompositeTypeError(thispath, type(target_value), type(value))
 
             if policy == CompositePolicy.OVERWRITE:
 
@@ -385,15 +376,13 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
                 else:
                     # Provenance is overwritten
                     target[key] = value
-                    target_provenance.members[key] = \
-                        source_provenance.members[key]
+                    target_provenance.members[key] = source_provenance.members[key]
 
             elif policy == CompositePolicy.STRICT:
 
                 if target_value is None:
                     target[key] = value
-                    target_provenance.members[key] = \
-                        source_provenance.members[key]
+                    target_provenance.members[key] = source_provenance.members[key]
                 else:
                     raise CompositeOverrideError(thispath)
 
