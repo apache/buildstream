@@ -98,8 +98,7 @@ class VariantError(Exception):
             "Variant disagreement occurred.\n"
             "Element '%s' requested element '%s (%s)'\n"
             "Element '%s' requested element '%s (%s)" %
-            (element_config.dependency.owner,
-             element_config.filename,
+            (element_config.dependency.owner, element_config.filename,
              element_config.dependency.variant_name,
              dependency.owner, element_config.filename,
              dependency.variant_name))
@@ -157,13 +156,11 @@ class LoadElement():
             self.variants.append(variant)
 
         if not stack and len(self.variants) == 1:
-            provenance = _yaml.node_get_provenance(self.data,
-                                                   key=Symbol.VARIANTS)
-            raise LoadError(
-                LoadErrorReason.INVALID_DATA,
-                "%s [line %s column %s]: Only one variant declared, an element"
-                " declaring variants must declare at least two variants\n" %
-                (provenance.filename, provenance.line, provenance.col))
+            provenance = _yaml.node_get_provenance(self.data, key=Symbol.VARIANTS)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "%s: Only one variant declared, an element "
+                            "declaring variants must declare at least two variants" %
+                            str(provenance))
 
         # Strip em from the data now
         del self.data[Symbol.VARIANTS]
@@ -225,7 +222,7 @@ class LoadElement():
             variant = self.lookup_variant(self.variant_name)
 
         if variant:
-            provenance = _yaml.node_get_provenance(self.data)
+            provenance = _yaml.node_get_provenance(variant.data)
 
             # Composite anything from the variant data into the element data
             #
@@ -240,11 +237,10 @@ class LoadElement():
             except CompositeTypeError as e:
                 raise LoadError(
                     LoadErrorReason.ILLEGAL_COMPOSITE,
-                    "%s: Variant %s specifies type '%s' for path '%s', "
-                    "expected '%s'" %
-                    (provenance.filename, element_config.variant_name,
-                     e.actual_type.__name__,
-                     e.path,
+                    "%s: Variant '%s' specifies type '%s' for path '%s', expected '%s'" %
+                    (str(provenance),
+                     element_config.variant_name,
+                     e.actual_type.__name__, e.path,
                      e.expected_type.__name__)) from e
 
     #############################################
@@ -272,20 +268,14 @@ class LoadElement():
             data, str, Symbol.INCLUDE, default_value="")
 
         if include_file:
-            provenance = _yaml.node_get_provenance(self.data,
-                                                   key=Symbol.INCLUDE)
+            provenance = _yaml.node_get_provenance(self.data, key=Symbol.INCLUDE)
 
             try:
                 include = self.load_include(include_file)
             except LoadError as e:
-                raise LoadError(
-                    e.reason,
-                    "%s [line %s column %s]: "
-                    "Failed to load include %s:\n%s" %
-                    (provenance.filename,
-                     provenance.line,
-                     provenance.col,
-                     include_file, str(e))) from e
+                raise LoadError(e.reason,
+                                "%s: Failed to load include %s:\n%s" %
+                                (str(provenance), include_file, str(e))) from e
 
             #
             # Delete the include node
@@ -300,22 +290,15 @@ class LoadElement():
                 _yaml.composite_dict(data, include,
                                      policy=CompositePolicy.STRICT)
             except CompositeOverrideError as e:
-                raise LoadError(
-                    LoadErrorReason.ILLEGAL_COMPOSITE,
-                    "%s [line %s column %s]: Included file '%s' "
-                    "overwrites target value at path '%s'" %
-                    (provenance.filename, provenance.line,
-                     provenance.col, include_file, e.path)) from e
+                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                                "%s: Included file '%s' overwrites target value at path '%s'" %
+                                (str(provenance), include_file, e.path)) from e
             except CompositeTypeError as e:
-                raise LoadError(
-                    LoadErrorReason.ILLEGAL_COMPOSITE,
-                    "%s [line %s column %s]: Included file '%s' "
-                    "specifies type '%s' for path '%s', expected '%s'" %
-                    (provenance.filename, provenance.line, provenance.col,
-                     include_file,
-                     e.actual_type.__name__,
-                     e.path,
-                     e.expected_type.__name__)) from e
+                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                                "%s: Included file '%s' specifies type '%s' for path '%s', expected '%s'" %
+                                (str(provenance), include_file,
+                                 e.actual_type.__name__, e.path,
+                                 e.expected_type.__name__)) from e
 
     def process_includes(self):
 
@@ -331,8 +314,7 @@ class LoadElement():
                 index = embeds.index(embed)
 
                 # Assert the embed list element is in fact a dict
-                _yaml.node_get(self.data, dict, Symbol.EMBEDS,
-                               indices=[index], default_value=[])
+                _yaml.node_get(self.data, dict, Symbol.EMBEDS, indices=[index], default_value=[])
 
                 # Process possible includes for each element
                 self.process_include(embed)
@@ -350,15 +332,12 @@ class LoadElement():
                                      typesafe=True)
             except CompositeTypeError as e:
                 provenance = _yaml.node_get_provenance(arch, key=self.arch)
-                raise LoadError(
-                    LoadErrorReason.ILLEGAL_COMPOSITE,
-                    "%s [line %s column %s]: Arch %s specifies type '%s' "
-                    "for path '%s', expected '%s'" %
-                    (provenance.filename, provenance.line, provenance.col,
-                     self.arch,
-                     e.actual_type.__name__,
-                     e.path,
-                     e.expected_type.__name__)) from e
+                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                                "%s: Arch %s specifies type '%s' for path '%s', expected '%s'" %
+                                (str(provenance), self.arch,
+                                 e.actual_type.__name__,
+                                 e.path,
+                                 e.expected_type.__name__)) from e
 
         del data[Symbol.ARCHES]
 
@@ -370,15 +349,13 @@ class LoadElement():
         # Process stack embedded element includes
         kind = _yaml.node_get(self.data, str, Symbol.KIND)
         if kind == Symbol.STACK:
-            embeds = _yaml.node_get(
-                self.data, list, Symbol.EMBEDS, default_value=[])
+            embeds = _yaml.node_get(self.data, list, Symbol.EMBEDS, default_value=[])
 
             for embed in embeds:
                 index = embeds.index(embed)
 
                 # Assert the embed list element is in fact a dict
-                embed = _yaml.node_get(
-                    self.data, dict, Symbol.EMBEDS, indices=[index])
+                embed = _yaml.node_get(self.data, dict, Symbol.EMBEDS, indices=[index])
 
                 # Process possible arch conditionals for each element
                 self.process_arch(embed)
@@ -401,8 +378,7 @@ def extract_depends_from_node(owner, data, stack=False):
             if stack:
                 dependency = Dependency(owner, dep)
             else:
-                dependency = Dependency(
-                    owner, element_name_from_filename(dep), filename=dep)
+                dependency = Dependency(owner, element_name_from_filename(dep), filename=dep)
 
         elif isinstance(dep, dict):
             # Make variant optional, for this we set it to None after
@@ -417,20 +393,15 @@ def extract_depends_from_node(owner, data, stack=False):
             else:
                 filename = _yaml.node_get(dep, str, Symbol.FILENAME)
                 name = element_name_from_filename(filename)
-                dependency = Dependency(
-                    owner, name, variant_name=variant, filename=filename)
+                dependency = Dependency(owner, name, variant_name=variant, filename=filename)
 
         else:
             index = depends.index(dep)
-            provenance = _yaml.node_get_provenance(
-                data, key=Symbol.DEPENDS, indices=[index])
+            provenance = _yaml.node_get_provenance(data, key=Symbol.DEPENDS, indices=[index])
 
-            raise LoadError(
-                LoadErrorReason.INVALID_DATA,
-                "%s [line %s column %s]: "
-                "List '%s' element %d is not a list or dict" %
-                (provenance.filename, provenance.line, provenance.col,
-                 Symbol.DEPENDS, index))
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "%s: List '%s' element %d is not a list or dict" %
+                            (str(provenance), Symbol.DEPENDS, index))
 
         output_deps.append(dependency)
 
@@ -542,18 +513,16 @@ class Loader():
         element_name = element_name_from_filename(filename)
         if element_name in self.elements:
             element = self.elements[element_name]
-            raise LoadError(
-                LoadErrorReason.INVALID_DATA,
-                "Tried to load file '%s' "
-                "but existing file '%s' has the same name" %
-                (filename, element.filename))
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Tried to load file '%s' "
+                            "but existing file '%s' has the same name" %
+                            (filename, element.filename))
 
         fullpath = os.path.join(self.basedir, filename)
 
         # Load the element and track it in our elements table
         data = _yaml.load(fullpath)
-        element = LoadElement(
-            data, filename, self.basedir, self.includes, self.arch)
+        element = LoadElement(data, filename, self.basedir, self.includes, self.arch)
 
         self.elements[element_name] = element
 
@@ -614,8 +583,7 @@ class Loader():
         try:
             pool = self.configure_variants(toplevel_config, [])
         except VariantError as e:
-            raise LoadError(
-                LoadErrorReason.VARIANT_DISAGREEMENT, str(e)) from e
+            raise LoadError(LoadErrorReason.VARIANT_DISAGREEMENT, str(e)) from e
 
         # Now apply the chosen variant configurations
         #
@@ -651,10 +619,9 @@ class Loader():
                 #
                 depending_element = self.elements[conf_dep.owner]
                 if depending_element is element_config.element:
-                    raise LoadError(
-                        LoadErrorReason.CIRCULAR_DEPENDENCY,
-                        "Circular dependency detected for element: %s" %
-                        element_config.filename)
+                    raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
+                                    "Circular dependency detected for element: %s" %
+                                    element_config.filename)
 
                 if (conf_dep.filename == element_config.filename and
                     conf_dep.variant_name and
@@ -671,7 +638,6 @@ class Loader():
         for config in pool:
 
             append_config = config
-
             if config.filename == element_config.filename:
                 appended_self = True
                 if element_config.variant_name:
@@ -687,8 +653,7 @@ class Loader():
             # VariantError only if all possible variants of the dependencies
             # are invalid
             #
-            return self.configure_dependency_variants(
-                element_config.deps, new_pool)
+            return self.configure_dependency_variants(element_config.deps, new_pool)
 
         # No more dependencies, just return the new configuration pool
         #
@@ -709,16 +674,14 @@ class Loader():
         #
         element_configs_to_try = []
         if dependency.variant_name:
-            config = LoadElementConfig(
-                dependency, element, dependency.variant_name)
+            config = LoadElementConfig(dependency, element, dependency.variant_name)
             element_configs_to_try.append(config)
         elif len(element.variants) == 0:
             config = LoadElementConfig(dependency, element, None)
             element_configs_to_try.append(config)
         else:
             for variant in element.variants:
-                config = LoadElementConfig(
-                    dependency, element, variant.name)
+                config = LoadElementConfig(dependency, element, variant.name)
                 element_configs_to_try.append(config)
 
         # Loop over every possible element configuration for this dependency
@@ -736,8 +699,7 @@ class Loader():
                 accum_pool = self.configure_variants(element_config, pool)
 
                 # ... Then recurse into sibling elements
-                accum_pool = self.configure_dependency_variants(
-                    deps[1:], accum_pool)
+                accum_pool = self.configure_dependency_variants(deps[1:], accum_pool)
 
             except VariantError as e:
 
@@ -765,15 +727,13 @@ class Loader():
                 self.resolve_stack(element)
 
     def resolve_stack(self, element):
-        embeds = _yaml.node_get(
-            element.data, list, Symbol.EMBEDS, default_value=[])
+        embeds = _yaml.node_get(element.data, list, Symbol.EMBEDS, default_value=[])
         new_elements = {}
         element_deps = copy.copy(element.deps)
 
         for embed in embeds:
             index = embeds.index(embed)
-            embed = _yaml.node_get(
-                element.data, dict, Symbol.EMBEDS, indices=[index])
+            embed = _yaml.node_get(element.data, dict, Symbol.EMBEDS, indices=[index])
             embed_name = _yaml.node_get(embed, str, Symbol.NAME)
             embed_kind = _yaml.node_get(embed, str, Symbol.KIND)
             new_element_name = element.name + '-' + embed_name
@@ -781,11 +741,8 @@ class Loader():
             # Assert we dont have someone trying to nest a stack into a stack
             if embed_kind == Symbol.STACK:
                 provenance = _yaml.node_get_provenance(embed)
-                raise LoadError(
-                    LoadErrorReason.INVALID_DATA,
-                    "%s [line %s column %s]: "
-                    "Stacks cannot be embedded in stacks\n" %
-                    (provenance.filename, provenance.line, provenance.col))
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "%s: Stacks cannot be embedded in stacks" % str(provenance))
 
             # Create the element
             new_element = LoadElement(embed, element.filename,
@@ -793,11 +750,9 @@ class Loader():
                                       name=new_element_name, stack=True)
 
             # Apply variant configuration
-            dependency = Dependency(
-                element.name, new_element.name,
-                variant_name=element.variant_name)
-            new_element_config = LoadElementConfig(
-                dependency, new_element, element.variant_name)
+            dependency = Dependency(element.name, new_element.name,
+                                    variant_name=element.variant_name)
+            new_element_config = LoadElementConfig(dependency, new_element, element.variant_name)
 
             new_element.apply_element_config(new_element_config)
             element.deps.append(dependency)
@@ -808,9 +763,7 @@ class Loader():
 
             # Each embedded element depends on all of the stack's dependencies
             for dep in element_deps:
-                dependency = Dependency(new_element.name,
-                                        dep.name,
-                                        variant_name=dep.variant_name)
+                dependency = Dependency(new_element.name, dep.name, variant_name=dep.variant_name)
                 new_element.deps.append(dependency)
 
             new_elements[new_element_name] = new_element
@@ -818,10 +771,8 @@ class Loader():
         # Add the new elements to the table
         for new_element_name, new_element in new_elements.items():
             if new_element_name in self.elements:
-                raise LoadError(
-                    LoadErrorReason.INVALID_DATA,
-                    "Conflicting definitions for element name '%s'" %
-                    new_element_name)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "Conflicting definitions for element name '%s'" % new_element_name)
             self.elements[new_element_name] = new_element
 
         # Detect any circular dependency internal to embedded stack elements
@@ -829,11 +780,9 @@ class Loader():
             self.detect_circular_dependency([], new_element)
 
     def detect_circular_dependency(self, element_cache, element):
-
         if element.name in element_cache:
-            raise LoadError(
-                LoadErrorReason.CIRCULAR_DEPENDENCY,
-                "Circular dependency detected for element: %s" % element.name)
+            raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
+                            "Circular dependency detected for element: %s" % element.name)
 
         element_cache.append(element.name)
 
@@ -869,15 +818,10 @@ class Loader():
             kind = _yaml.node_get(source, str, Symbol.KIND)
             del source[Symbol.KIND]
 
-            meta_source = MetaSource(
-                kind, source, provenance.node, provenance.toplevel,
-                provenance.filename)
+            meta_source = MetaSource(kind, source, provenance.node, provenance.toplevel, provenance.filename)
             meta_sources.append(meta_source)
 
-        meta_element = MetaElement(element_name,
-                                   data.get('kind'),
-                                   meta_sources,
-                                   data.get(Symbol.CONFIG, {}))
+        meta_element = MetaElement(element_name, data.get('kind'), meta_sources, data.get(Symbol.CONFIG, {}))
 
         for dep in element.deps:
             meta_dep = self.collect_element(dep.name)
