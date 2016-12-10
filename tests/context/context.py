@@ -9,13 +9,15 @@ DATA_DIR = os.path.join(
     'data',
 )
 
+
 # Simple fixture to create a PluginBase object that
 # we use for loading plugins.
 @pytest.fixture()
 def context_fixture():
     return {
-        'context' : Context('x86_64')
+        'context': Context('x86_64')
     }
+
 
 #######################################
 #        Test instantiation           #
@@ -24,6 +26,7 @@ def test_context_create(context_fixture):
     context = context_fixture['context']
     assert(isinstance(context, Context))
     assert(context.arch == 'x86_64')
+
 
 #######################################
 #     Test configuration loading      #
@@ -38,6 +41,7 @@ def test_context_load(context_fixture):
     assert(context.deploydir == '~/buildstream/deploy')
     assert(context.artifactdir == '~/buildstream/artifacts')
     assert(context.ccachedir == '~/buildstream/ccache')
+
 
 # Test that values in a user specified config file
 # override the defaults
@@ -57,10 +61,10 @@ def test_context_load_user_config(context_fixture, datafiles):
     assert(context.artifactdir == '~/buildstream/artifacts')
     assert(context.ccachedir == '~/buildstream/ccache')
 
+
 #######################################
 #          Test failure modes         #
 #######################################
-
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_missing_config(context_fixture, datafiles):
     context = context_fixture['context']
@@ -74,6 +78,7 @@ def test_context_load_missing_config(context_fixture, datafiles):
         context.load(conf_file)
 
     assert (exc.value.reason == LoadErrorReason.MISSING_FILE)
+
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_malformed_config(context_fixture, datafiles):
@@ -89,6 +94,7 @@ def test_context_load_malformed_config(context_fixture, datafiles):
 
     assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
 
+
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_notdict_config(context_fixture, datafiles):
     context = context_fixture['context']
@@ -103,6 +109,7 @@ def test_context_load_notdict_config(context_fixture, datafiles):
 
     # XXX Should this be a different LoadErrorReason ?
     assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
+
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_invalid_type(context_fixture, datafiles):
