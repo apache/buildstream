@@ -20,6 +20,7 @@
 
 from enum import Enum
 
+
 class PluginError(Exception):
     """Raised on plugin related errors.
 
@@ -28,6 +29,7 @@ class PluginError(Exception):
     a given :class:`.Source` or :class:`.Element`
     """
     pass
+
 
 class LoadErrorReason(Enum):
     """Describes the reason why a :class:`.LoadError` was raised.
@@ -56,6 +58,7 @@ class LoadErrorReason(Enum):
 
     CIRCULAR_DEPENDENCY = 6
     """An circular dependency chain was detected"""
+
 
 class LoadError(Exception):
     """Raised while loading some YAML.
