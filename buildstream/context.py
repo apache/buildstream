@@ -41,6 +41,7 @@ from . import _yaml
 from ._yaml import CompositeTypeError
 from . import LoadError, LoadErrorReason
 
+
 class Context():
     """Context of how BuildStream was invoked
 
@@ -89,11 +90,13 @@ class Context():
             try:
                 _yaml.composite_dict(defaults, user_config, typesafe=True)
             except CompositeTypeError as e:
-                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                                "Expected '%s' type for configuration '%s', instead received '%s'" %
-                                (e.expected_type.__name__,
-                                 e.path,
-                                 e.actual_type.__name__)) from e
+                raise LoadError(
+                    LoadErrorReason.ILLEGAL_COMPOSITE,
+                    "Expected '%s' type for configuration '%s', "
+                    "instead received '%s'" %
+                    (e.expected_type.__name__,
+                     e.path,
+                     e.actual_type.__name__)) from e
 
         # Should have a loop here, but we suck
         #
