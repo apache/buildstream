@@ -29,10 +29,10 @@ import os
 root = os.path.dirname(os.path.abspath(__file__))
 
 # The Element plugin directory
-element_plugins = os.path.join (root, 'plugins', 'elements')
+element_plugins = os.path.join(root, 'plugins', 'elements')
 
 # The Source plugin directory
-source_plugins = os.path.join (root, 'plugins', 'sources')
+source_plugins = os.path.join(root, 'plugins', 'sources')
 
 # Default user configuration
-default_config = os.path.join (root, 'data', 'defaultconfig.yaml')
+default_config = os.path.join(root, 'data', 'defaultconfig.yaml')
