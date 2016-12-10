@@ -62,6 +62,19 @@ def test_variant_only_one(datafiles):
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
 
+@pytest.mark.datafiles(DATA_DIR)
+def test_variant_illegal_composite(datafiles):
+
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(
+        basedir, 'elements/variant-illegal-composite.bst', None, None)
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load()
+
+    assert (exc.value.reason == LoadErrorReason.ILLEGAL_COMPOSITE)
+
+
 ##############################################################
 #                Test Simple Variant Compositing             #
 ##############################################################
