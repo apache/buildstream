@@ -67,7 +67,7 @@ def test_stack_dependencies(datafiles):
     ponyleaf = pony.dependencies[0]
     assert(isinstance(ponyleaf, MetaElement))
     assert(ponyleaf.kind == 'element')
-    
+
     horse = element.dependencies[2]
     assert(isinstance(horse, MetaElement))
     assert(horse.kind == 'horsy')
@@ -126,6 +126,7 @@ def test_stack_arch_default(datafiles):
     rider = element.dependencies[0]
     assert(isinstance(rider, MetaElement))
     assert(rider.kind == 'rider')
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_stack_arch_x86_64(datafiles):
@@ -408,6 +409,7 @@ def test_stack_internal_circular_dependency(datafiles):
         element = loader.load()
 
     assert (exc.value.reason == LoadErrorReason.CIRCULAR_DEPENDENCY)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_stack_embedded_in_stack(datafiles):
