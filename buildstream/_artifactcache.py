@@ -104,8 +104,7 @@ class ArtifactCache():
         _, rev = self.repo.resolve_rev(ref, False)
 
         os.makedirs(self.extractdir, exist_ok=True)
-        with tempfile.TemporaryDirectory(None, 'tmp', self.extractdir) \
-                as tmpdir:
+        with tempfile.TemporaryDirectory(None, 'tmp', self.extractdir) as tmpdir:
 
             checkoutdir = os.path.join(tmpdir, ref)
             os.makedirs(os.path.dirname(checkoutdir))
