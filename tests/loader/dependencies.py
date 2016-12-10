@@ -10,6 +10,7 @@ DATA_DIR = os.path.join(
     'dependencies',
 )
 
+
 ##############################################################
 #  Basics: Test behavior loading projects with dependencies  #
 ##############################################################
@@ -71,6 +72,7 @@ def test_shared_dependency(datafiles):
     #
     assert(shareddepdep is firstdep)
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_dependency_dict(datafiles):
 
@@ -86,6 +88,7 @@ def test_dependency_dict(datafiles):
     assert(isinstance(firstdep, MetaElement))
     assert(firstdep.kind == 'thefirstdep')
 
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_dependency_declaration(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
@@ -95,6 +98,7 @@ def test_invalid_dependency_declaration(datafiles):
         element = loader.load()
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_circular_dependency(datafiles):
