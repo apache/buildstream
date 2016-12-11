@@ -198,8 +198,7 @@ def node_decorate_dict(filename, target, source, toplevel):
         if isinstance(value, collections.Mapping):
             node_decorate_dict(filename, target_value, value, toplevel)
         elif isinstance(value, list):
-            member.elements = node_decorate_list(
-                filename, target_value, value, toplevel)
+            member.elements = node_decorate_list(filename, target_value, value, toplevel)
 
 
 def node_decorate_list(filename, target, source, toplevel):
@@ -214,8 +213,7 @@ def node_decorate_list(filename, target, source, toplevel):
         if isinstance(item, collections.Mapping):
             node_decorate_dict(filename, target_item, item, toplevel)
         elif isinstance(item, list):
-            element.elements = node_decorate_list(
-                filename, target_item, item, toplevel)
+            element.elements = node_decorate_list(filename, target_item, item, toplevel)
 
         elements.append(element)
 
@@ -342,8 +340,7 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
                 # Give the new dict provenance
                 value_provenance = value.get(PROVENANCE_KEY)
                 if value_provenance:
-                    target_value[PROVENANCE_KEY] = copy.deepcopy(
-                        value_provenance)
+                    target_value[PROVENANCE_KEY] = copy.deepcopy(value_provenance)
 
                 # Add a new provenance member element to the containing dict
                 target_provenance.members[key] = source_provenance.members[key]
