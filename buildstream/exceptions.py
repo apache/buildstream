@@ -84,3 +84,14 @@ class PreflightError(Exception):
     erroneous.
     """
     pass
+
+
+class FetchError(Exception):
+    """Raised while fetching sources
+
+    This exception is raised while fetching sources, either if
+    there is some network error or if the source reference could
+    not be matched in the repository, or if a file or tarball source
+    sha256 sum was not properly matched.
+    """
+    pass
