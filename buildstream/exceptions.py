@@ -72,3 +72,15 @@ class LoadError(Exception):
         self.reason = reason
         """The :class:`.LoadErrorReason` for which this exception was raised
         """
+
+
+class PreflightError(Exception):
+    """Raised during preflight checks.
+
+    This exception is raised while running preflight checks on the
+    pipeline. :class:`.Element` and :class:`.Source` plugins implement
+    their own preflight checks and raise this exception when they
+    deem the environment or constructed pipeline is unsuitable or
+    erroneous.
+    """
+    pass
