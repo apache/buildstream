@@ -32,8 +32,7 @@ class MetaSource():
     #    origin_toplevel: The toplevel YAML loaded from the original file
     #    origin_filename: The filename in which the node was loaded from
     #
-    def __init__(self, kind, config, origin_node, origin_toplevel,
-                 origin_filename):
+    def __init__(self, kind, config, origin_node, origin_toplevel, origin_filename):
         self.kind = kind
         self.config = config
         self.origin_node = origin_node
