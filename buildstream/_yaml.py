@@ -139,10 +139,13 @@ class CompositePolicy(Enum):
 #
 # Args:
 #    filename (str): The YAML file to load
+#    shortname (str): The filename in shorthand for error reporting (or None)
+#
+# Returns (dict): A loaded copy of the YAML file with provenance information
 #
 # Raises: LoadError
 #
-def load(filename):
+def load(filename, shortname=None):
 
     try:
         with open(filename) as f:
@@ -158,7 +161,10 @@ def load(filename):
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Loading YAML file did not specify a dictionary: %s" % filename)
 
-    return node_decorated_copy(filename, contents)
+    if not shortname:
+        shortname = filename
+
+    return node_decorated_copy(shortname, contents)
 
 
 # node_decorated_copy()
