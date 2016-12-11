@@ -255,7 +255,7 @@ class LoadElement():
         include = self.include_map.get(filename)
         if not include:
             fullpath = os.path.join(self.basedir, filename)
-            include = _yaml.load(fullpath)
+            include = _yaml.load(fullpath, filename)
             self.include_map[filename] = include
 
         return include
@@ -514,14 +514,13 @@ class Loader():
         if element_name in self.elements:
             element = self.elements[element_name]
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Tried to load file '%s' "
-                            "but existing file '%s' has the same name" %
+                            "Tried to load file '%s' but existing file '%s' has the same name" %
                             (filename, element.filename))
 
         fullpath = os.path.join(self.basedir, filename)
 
         # Load the element and track it in our elements table
-        data = _yaml.load(fullpath)
+        data = _yaml.load(fullpath, filename)
         element = LoadElement(data, filename, self.basedir, self.includes, self.arch)
 
         self.elements[element_name] = element
