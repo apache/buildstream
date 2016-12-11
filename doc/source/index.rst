@@ -38,6 +38,7 @@ Core Framework
 * :mod:`Context <buildstream.context>` - Invocation Context
 * :mod:`Element <buildstream.element>` - Base Element Class
 * :mod:`Source <buildstream.source>` - Base Source Class
+* :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
 
 
 Plugins
