@@ -95,3 +95,8 @@ class FetchError(Exception):
     sha256 sum was not properly matched.
     """
     pass
+
+
+class ImplError(Exception):
+    """Raised when a plugin fails to implement a mandatory method"""
+    pass
