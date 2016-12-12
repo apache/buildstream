@@ -109,3 +109,63 @@ def test_circular_dependency(datafiles):
         element = loader.load()
 
     assert (exc.value.reason == LoadErrorReason.CIRCULAR_DEPENDENCY)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_dependency_type(datafiles):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(basedir, 'elements/invaliddeptype.bst', None, None)
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load()
+
+    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_dependency(datafiles):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(basedir, 'elements/builddep.bst', None, None)
+    element = loader.load()
+
+    assert(isinstance(element, MetaElement))
+    assert(element.kind == 'pony')
+
+    assert(len(element.build_dependencies) == 1)
+    firstdep = element.build_dependencies[0]
+    assert(isinstance(firstdep, MetaElement))
+
+    assert(len(element.dependencies) == 0)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_runtime_dependency(datafiles):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(basedir, 'elements/runtimedep.bst', None, None)
+    element = loader.load()
+
+    assert(isinstance(element, MetaElement))
+    assert(element.kind == 'pony')
+
+    assert(len(element.dependencies) == 1)
+    firstdep = element.dependencies[0]
+    assert(isinstance(firstdep, MetaElement))
+
+    assert(len(element.build_dependencies) == 0)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_runtime_dependency(datafiles):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(basedir, 'elements/target.bst', None, None)
+    element = loader.load()
+
+    assert(isinstance(element, MetaElement))
+    assert(element.kind == 'pony')
+
+    assert(len(element.dependencies) == 1)
+    assert(len(element.build_dependencies) == 1)
+    firstdep = element.dependencies[0]
+    assert(isinstance(firstdep, MetaElement))
+    firstbuilddep = element.build_dependencies[0]
+    assert(firstdep == firstbuilddep)
