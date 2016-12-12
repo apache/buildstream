@@ -16,13 +16,43 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 all: docs
 
+# Canned recipe for generating plugin api skeletons
+#   $1 = the plugin directory
+#   $2 = the output docs directory
+#
+# Explanation:
+#
+#   Sphinx does not have any option for skipping documentation,
+#   we dont want to document plugin code because nobody uses that
+#   but we do want to use module-level docstrings in plugins in
+#   order to explain how plugins work.
+#
+#   For this purpose, we replace sphinx-apidoc with a simple
+#   makefile rule which generates a template slightly differently
+#   from how sphinx does it, allowing us to get what we want
+#   from plugin documentation.
+#
+define plugin-doc-skeleton
+	@for file in $$(find ${1} -name "*.py"); do 		\
+	    base=$$(basename $$file);				\
+	    modname=$${base%.py};				\
+	    echo -n "Generating ${2}/$${modname}.rst... ";	\
+	    sed -e "s|@@MODULE@@|$${modname}|g" 		\
+		source/plugin.rsttemplate > 			\
+                ${2}/$${modname}.rst.tmp && 			\
+		mv ${2}/$${modname}.rst.tmp ${2}/$${modname}.rst || exit 1; \
+	    echo "Done."; \
+	done
+endef
+
+
 .PHONY: apidoc
 apidoc:
 	mkdir -p source/elements
 	mkdir -p source/sources
 	sphinx-apidoc --separate -o source $(CURDIR)/../buildstream
-	sphinx-apidoc --separate -o source/elements $(CURDIR)/../buildstream/plugins/elements
-	sphinx-apidoc --separate -o source/sources $(CURDIR)/../buildstream/plugins/sources
+	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,source/elements)
+	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,source/sources)
 
 # We set PYTHONPATH here because source/conf.py sys.modules hacks dont seem to help sphinx-build import the plugins
 .PHONY: docs
