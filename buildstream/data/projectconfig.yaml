@@ -1,0 +1,39 @@
+# Default BuildStream project configuration.
+
+# Project name
+#
+# name: myproject
+
+# Alias configuration
+#
+# Aliases are entirely project specific, they are
+# configured as a simple dictionary, example:
+#
+# aliases:
+#   baserock: git://git.baserock.org/baserock/
+#   freedesktop: git://anongit.freedesktop.org/
+
+
+# Sandbox configuration
+#
+sandbox:
+
+  # Specify sandbox environment
+  environment:
+    PATH: /usr/bin:/bin:/usr/sbin:/sbin
+    SHELL: /bin/sh
+    TERM: dumb
+    USER: tomjon
+    USERNAME: tomjon
+    LOGNAME: tomjon
+    LC_ALL: C
+    HOME: /tmp
+    TZ: UTC
+
+  # Specify devices which should be available in the sandbox
+  devices:
+  - /dev/console
+  - /dev/full
+  - /dev/null
+  - /dev/urandom
+  - /dev/zero
