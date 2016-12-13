@@ -33,7 +33,7 @@ Users can provide a configuration file to override parameters in
 the default configuration.
 
 The default BuildStream configuration is included here for reference:
-  .. literalinclude:: ../../buildstream/data/defaultconfig.yaml
+  .. literalinclude:: ../../buildstream/data/userconfig.yaml
 """
 
 from . import _site
@@ -84,7 +84,7 @@ class Context():
 
         # Load default config
         #
-        defaults = _yaml.load(_site.default_config)
+        defaults = _yaml.load(_site.default_user_config)
         if config:
             user_config = _yaml.load(config)
             try:
