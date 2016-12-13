@@ -10,8 +10,7 @@ DATA_DIR = os.path.join(
 )
 
 
-# Simple fixture to create a PluginBase object that
-# we use for loading plugins.
+# Simple fixture to create a Context object.
 @pytest.fixture()
 def context_fixture():
     return {
