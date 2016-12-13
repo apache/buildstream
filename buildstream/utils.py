@@ -21,6 +21,27 @@
 from . import _yaml
 
 
+def node_items(node):
+    """Iterate over a dictionary loaded from YAML
+
+    Args:
+       dict: The YAML loaded dictionary object
+
+    Returns:
+       list: List of key/value tuples to iterate over
+
+    BuildStream holds some private data in dictionaries loaded from
+    the YAML in order to preserve information to report in errors.
+
+    This convenience function should be used instead of the dict.items()
+    builtin function provided by python.
+    """
+    for key, value in node.items():
+        if key == _yaml.PROVENANCE_KEY:
+            continue
+        yield (key, value)
+
+
 def node_get_member(node, expected_type, member_name, default_value=None):
     """Fetch the value of a node member, raising an error if the value is
     missing or incorrectly typed.
