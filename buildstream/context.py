@@ -98,8 +98,8 @@ class Context():
 
         # Should have a loop here, but we suck
         #
-        self.sourcedir = defaults.get('sourcedir')
-        self.builddir = defaults.get('builddir')
-        self.deploydir = defaults.get('deploydir')
-        self.artifactdir = defaults.get('artifactdir')
-        self.ccachedir = defaults.get('ccachedir')
+        self.sourcedir = _yaml.node_get(defaults, str, 'sourcedir')
+        self.builddir = _yaml.node_get(defaults, str, 'builddir')
+        self.deploydir = _yaml.node_get(defaults, str, 'deploydir')
+        self.artifactdir = _yaml.node_get(defaults, str, 'artifactdir')
+        self.ccachedir = _yaml.node_get(defaults, str, 'ccachedir')
