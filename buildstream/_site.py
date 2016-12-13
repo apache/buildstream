@@ -36,3 +36,6 @@ source_plugins = os.path.join(root, 'plugins', 'sources')
 
 # Default user configuration
 default_user_config = os.path.join(root, 'data', 'userconfig.yaml')
+
+# Default project configuration
+default_project_config = os.path.join(root, 'data', 'projectconfig.yaml')
