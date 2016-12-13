@@ -1,0 +1,7 @@
+# A project configuration which overrides the sandbox PATH environment variable
+
+name: foo
+
+sandbox:
+  environment:
+    PATH: /bin:/sbin

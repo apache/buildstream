@@ -1,0 +1,5 @@
+# A project configuration that has no name
+#
+
+# It must be a dict anyway, otherwise it's another error
+foo: bar
