@@ -52,6 +52,7 @@ class Symbol():
     TYPE = "type"
     BUILD = "build"
     RUNTIME = "runtime"
+    DIRECTORY = "directory"
 
 
 # A simple dependency object
@@ -832,7 +833,17 @@ class Loader():
             kind = _yaml.node_get(source, str, Symbol.KIND)
             del source[Symbol.KIND]
 
-            meta_source = MetaSource(kind, source, provenance.node, provenance.toplevel, provenance.filename)
+            # Directory is optional
+            directory = _yaml.node_get(source, str, Symbol.DIRECTORY, default_value='')
+            if directory:
+                del source[Symbol.DIRECTORY]
+            else:
+                directory = None
+
+            meta_source = MetaSource(kind, source, directory,
+                                     provenance.node,
+                                     provenance.toplevel,
+                                     provenance.filename)
             meta_sources.append(meta_source)
 
         meta_element = MetaElement(element_name, data.get('kind'), meta_sources, data.get(Symbol.CONFIG, {}))
