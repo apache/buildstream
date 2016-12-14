@@ -46,12 +46,18 @@ class SourceFactory(PluginContext):
     # objects on demand for a given pipeline.
     #
     # Args:
-    #     kind (str): The kind of Source to create
+    #    kind (str): The kind of Source to create
+    #    context (object): The Context object for processing
+    #    project (object): The project object
+    #    meta (object): The loaded MetaSource
     #
-    # Returns: A newly created Source object of the appropriate kind
+    # Returns:
+    #    A newly created Source object of the appropriate kind
     #
-    # Raises: PluginError
+    # Raises:
+    #    PluginError (if the kind lookup failed)
+    #    LoadError (if the source itself took issue with the config)
     #
-    def create(self, kind):
+    def create(self, kind, context, project, meta):
         source_type = self.lookup(kind)
-        return source_type()
+        return source_type(context, project, meta)
