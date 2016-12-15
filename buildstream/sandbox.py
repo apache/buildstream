@@ -20,14 +20,13 @@
 
 """ Sandbox abstraction layer. Allows interfacing of multiple sandbox
 backends without having to know implementation details. Currently supports
-chroot and bubblewrap
+bubblewrap only
 """
 
 from enum import Enum
 from ._sandboxbwrap import SandboxBwrap
-from ._sandboxchroot import SandboxChroot
 
-Executors = Enum('chroot', 'bwrap')
+Executors = Enum(value='Executors', names=['bwrap'])
 """List of the supported internal sandbox executor interfaces"""
 
 
@@ -57,16 +56,14 @@ class Sandbox:
         """Object reference to actual executor being used"""
 
         # Set the executor based on the type provided
-        if executor is Executors.chroot:
-            self.executor = SandboxChroot(kwargs)
-        elif executor is Executors.bwrap:
-            self.executor = SandboxBwrap(kwargs)
+        if executor is Executors.bwrap:
+            self.executor = SandboxBwrap(**kwargs)
 
     def get_executor(self):
         """Exposes the internal executor object the sandbox abstraction is using
 
         Returns:
-            Sandbox executor object - e.g. _sandboxbwrap or _sandboxchroot
+            Sandbox executor object - e.g. _sandboxbwrap
         """
         return self.executor
 
