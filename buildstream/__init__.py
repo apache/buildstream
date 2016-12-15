@@ -21,7 +21,6 @@
 # Exceptions and utilities first
 from .exceptions import PluginError, LoadError, LoadErrorReason, \
     PreflightError, FetchError, ImplError
-from .utils import node_get_member, node_get_list_element
 
 # Plugin auther facing APIs
 from .source import Source
