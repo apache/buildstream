@@ -53,6 +53,7 @@ Elements
 Sources
 ~~~~~~~
 
+* :mod:`local` - A Source implementation local files and directories
 * :mod:`git` - A Source implementation for git
 
 
