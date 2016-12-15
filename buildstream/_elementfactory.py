@@ -46,12 +46,17 @@ class ElementFactory(PluginContext):
     # objects on demand for a given pipeline.
     #
     # Args:
-    #     kind (str): The kind of Element to create
+    #    kind (str): The kind of Element to create
+    #    context (object): The Context object for processing
+    #    project (object): The project object
+    #    meta (object): The loaded MetaElement
     #
     # Returns: A newly created Element object of the appropriate kind
     #
-    # Raises: PluginError
+    # Raises:
+    #    PluginError (if the kind lookup failed)
+    #    LoadError (if the element itself took issue with the config)
     #
-    def create(self, kind):
+    def create(self, kind, context, project, meta):
         element_type = self.lookup(kind)
-        return element_type()
+        return element_type(context, project, meta)
