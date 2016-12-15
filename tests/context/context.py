@@ -35,11 +35,11 @@ def test_context_load(context_fixture):
     assert(isinstance(context, Context))
 
     context.load()
-    assert(context.sourcedir == '~/buildstream/sources')
-    assert(context.builddir == '~/buildstream/build')
-    assert(context.deploydir == '~/buildstream/deploy')
-    assert(context.artifactdir == '~/buildstream/artifacts')
-    assert(context.ccachedir == '~/buildstream/ccache')
+    assert(context.sourcedir == os.path.expanduser('~/buildstream/sources'))
+    assert(context.builddir == os.path.expanduser('~/buildstream/build'))
+    assert(context.deploydir == os.path.expanduser('~/buildstream/deploy'))
+    assert(context.artifactdir == os.path.expanduser('~/buildstream/artifacts'))
+    assert(context.ccachedir == os.path.expanduser('~/buildstream/ccache'))
 
 
 # Test that values in a user specified config file
@@ -54,11 +54,11 @@ def test_context_load_user_config(context_fixture, datafiles):
                              'userconf.yaml')
     context.load(conf_file)
 
-    assert(context.sourcedir == '~/pony')
-    assert(context.builddir == '~/buildstream/build')
-    assert(context.deploydir == '~/buildstream/deploy')
-    assert(context.artifactdir == '~/buildstream/artifacts')
-    assert(context.ccachedir == '~/buildstream/ccache')
+    assert(context.sourcedir == os.path.expanduser('~/pony'))
+    assert(context.builddir == os.path.expanduser('~/buildstream/build'))
+    assert(context.deploydir == os.path.expanduser('~/buildstream/deploy'))
+    assert(context.artifactdir == os.path.expanduser('~/buildstream/artifacts'))
+    assert(context.ccachedir == os.path.expanduser('~/buildstream/ccache'))
 
 
 #######################################

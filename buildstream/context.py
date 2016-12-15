@@ -36,6 +36,7 @@ The default BuildStream configuration is included here for reference:
   .. literalinclude:: ../../buildstream/data/userconfig.yaml
 """
 
+import os
 from . import _site
 from . import _yaml
 from ._yaml import CompositeTypeError
@@ -97,4 +98,4 @@ class Context():
                                  e.actual_type.__name__)) from e
 
         for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'ccachedir']:
-            setattr(self, dir, _yaml.node_get(defaults, str, dir))
+            setattr(self, dir, os.path.expanduser(_yaml.node_get(defaults, str, dir)))
