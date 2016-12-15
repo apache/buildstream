@@ -96,10 +96,5 @@ class Context():
                                  e.path,
                                  e.actual_type.__name__)) from e
 
-        # Should have a loop here, but we suck
-        #
-        self.sourcedir = _yaml.node_get(defaults, str, 'sourcedir')
-        self.builddir = _yaml.node_get(defaults, str, 'builddir')
-        self.deploydir = _yaml.node_get(defaults, str, 'deploydir')
-        self.artifactdir = _yaml.node_get(defaults, str, 'artifactdir')
-        self.ccachedir = _yaml.node_get(defaults, str, 'ccachedir')
+        for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'ccachedir']:
+            setattr(self, dir, _yaml.node_get(defaults, str, dir))
