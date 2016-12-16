@@ -29,3 +29,4 @@ from .element import Element
 # Frontend facing APIs
 from .context import Context
 from .project import Project
+from .sandbox import Sandbox
