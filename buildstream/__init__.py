@@ -20,7 +20,7 @@
 
 # Exceptions and utilities first
 from .exceptions import PluginError, LoadError, LoadErrorReason, \
-    PreflightError, FetchError, ImplError
+    PreflightError, FetchError, ImplError, ProgramNotFoundError
 
 # Plugin auther facing APIs
 from .source import Source
