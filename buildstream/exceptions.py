@@ -102,7 +102,7 @@ class ImplError(Exception):
     pass
 
 
-class ProgramNotFound(Exception):
+class ProgramNotFoundError(Exception):
     """Raised if a required program is not found
 
     BuildSource requires various software to exist on the host for
