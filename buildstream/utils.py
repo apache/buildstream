@@ -22,6 +22,7 @@ import os
 import errno
 import stat
 import shutil
+import string
 from . import _yaml
 from . import ProgramNotFoundError
 
@@ -235,6 +236,23 @@ def get_host_tool(name):
         raise ProgramNotFoundError("Did not find '%s' in PATH: %s" % (name, search_path))
 
     return program_path
+
+
+def url_directory_name(url):
+    """Normalizes a url into a directory name
+
+    Args:
+       url (str): A url string
+
+    Returns:
+       A string which can be used as a directory name
+    """
+    valid_chars = string.digits + string.ascii_letters + '%_'
+
+    def transl(x):
+        return x if x in valid_chars else '_'
+
+    return ''.join([transl(x) for x in url])
 
 
 # Recursively make directories in target area and copy permissions
