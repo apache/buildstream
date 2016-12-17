@@ -18,6 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import os
+
 from . import ImplError
 
 
@@ -48,6 +50,18 @@ class Source():
         """
         modulename = type(self).__module__
         return modulename.split('.')[-1]
+
+    def get_mirror_directory(self):
+        """Fetches the directory where this source should store things
+
+        Returns:
+           (str): The directory belonging to this source
+        """
+
+        # Create the directory if it doesnt exist
+        directory = os.path.join(self.__context.sourcedir, self.get_kind())
+        os.makedirs(directory, exist_ok=True)
+        return directory
 
     def get_context(self):
         """Fetches the context
@@ -89,14 +103,15 @@ class Source():
 
         Raises:
            :class:`.SourceError`
+           :class:`.ProgramNotFoundError`
 
         The method is run during pipeline preflight check, sources
         should use this method to determine if they are able to
         function in the host environment or if the data is unsuitable.
 
         Sources should check for the presence of any host tooling they may
-        require to fetch source code, and also whether a specific ref
-        has been chosen which could be obtained by running refresh.
+        require to fetch source code using :func:`.utils.get_host_tool` which
+        will raise :class:`.ProgramNotFoundError` automatically.
 
         Implementors should simply raise :class:`.SourceError` with
         an informative message in the case that the host environment is
