@@ -20,6 +20,10 @@
 
 import sys
 
+if sys.version_info[0] != 3 or sys.version_info[1] < 5:
+    print("BuildStream requires Python >= 3.5")
+    sys.exit(1)
+
 try:
     from setuptools import setup, find_packages
 except ImportError:
