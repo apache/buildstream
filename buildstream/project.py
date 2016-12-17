@@ -45,11 +45,6 @@ from .utils import node_items
 _ALIAS_SEPARATOR = ':'
 
 
-# The default for creating a fully qualified url from a matched alias
-def _default_alias_resolver(alias_url, url):
-    return alias_url + url
-
-
 class Project():
     """Project Configuration
 
