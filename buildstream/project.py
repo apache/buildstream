@@ -86,7 +86,7 @@ class Project():
         fully qualified urls based on the shorthand which is allowed
         to be specified in the YAML
         """
-        if url:
+        if url and _ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(_ALIAS_SEPARATOR, 1)
             alias_url = self._aliases.get(url_alias)
             if alias_url:
