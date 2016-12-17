@@ -23,6 +23,7 @@ import errno
 import stat
 import shutil
 from . import _yaml
+from . import ProgramNotFoundError
 
 
 def node_items(node):
@@ -213,6 +214,27 @@ def link_files(src, dest, files=None):
         files = list_relative_paths(src, includedirs=True)
 
     _process_list(src, dest, files, safe_link)
+
+
+def get_host_tool(name):
+    """Get the full path of a host tool
+
+    Args:
+       name (str): The name of the program to search for
+
+    Returns:
+       The full path to the program, if found
+
+    Raises:
+       :class:`.ProgramNotFoundError`
+    """
+    search_path = os.environ.get('PATH')
+    program_path = shutil.which(name, path=search_path)
+
+    if not program_path:
+        raise ProgramNotFoundError("Did not find '%s' in PATH: %s" % (name, search_path))
+
+    return program_path
 
 
 # Recursively make directories in target area and copy permissions
