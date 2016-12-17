@@ -30,7 +30,7 @@ import shutil
 import re
 import tempfile
 
-from .exceptions import ProgramNotFound
+from . import utils
 
 # Special value for 'stderr' and 'stdout' parameters to indicate 'capture
 # and return the data'.
@@ -110,7 +110,7 @@ class SandboxBwrap():
             command = [command]
 
         # Grab the full path of the bwrap binary
-        bwrap_command = [self.get_binary()]
+        bwrap_command = [utils.get_host_tool('bwrap')]
 
         # Add in the root filesystem stuff first
         # rootfs is mounted as RW initially so that further mounts can be
@@ -222,37 +222,6 @@ class SandboxBwrap():
         #
 
         self.network_enable = is_enabled
-
-    def get_binary(self):
-        # Get the absolute path for bwrap
-        #
-        # Raises:
-        #     :class'`.ProgramNotfound` If bwrap(bubblewrap) binary can not be found
-        #
-        # Returns:
-        #     /path/to/bwrap
-
-        program_name = "bwrap"
-
-        search_path = os.environ.get('PATH')
-
-        # Python 3.3 and newer provide a 'find program in PATH' function. Otherwise
-        # we fall back to the `which` program.
-        if sys.version_info.major >= 3 and sys.version_info.minor >= 3:
-            program_path = shutil.which(program_name, path=search_path)
-        else:
-            try:
-                argv = ['which', program_name]
-                program_path = subprocess.check_output(argv).strip()
-            except subprocess.CalledProcessError as e:
-                program_path = None
-
-        if program_path is None:
-            raise ProgramNotFound(
-                "Did not find '%s' in PATH. Searched '%s'" % (
-                    program_name, search_path))
-
-        return program_path
 
     def create_mount_points(self):
         # Creates any mount points that do not currently exist but have
