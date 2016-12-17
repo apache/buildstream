@@ -27,6 +27,9 @@
    # Specify the local source kind
    kind: local
 
+   # Optionally specify a relative staging directory
+   # directory: path/to/stage
+
    # Specify the project relative path to a file or directory
    path: files/somefile.txt
 """
