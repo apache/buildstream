@@ -278,9 +278,21 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
             path += '[%d]' % index
 
     if not isinstance(value, expected_type):
-        raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "%s: Value of '%s' is not of the expected type '%s'" %
-                        (str(provenance), path, expected_type.__name__))
+        # Attempt basic conversions if possible, typically we want to
+        # be able to specify numeric values and convert them to strings,
+        # but we dont want to try converting dicts/lists
+        try:
+            if not (expected_type == list or
+                    expected_type == dict or
+                    isinstance(value, list) or
+                    isinstance(value, dict)):
+                value = expected_type(value)
+            else:
+                raise ValueError()
+        except ValueError:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "%s: Value of '%s' is not of the expected type '%s'" %
+                            (str(provenance), path, expected_type.__name__))
 
     return value
 
