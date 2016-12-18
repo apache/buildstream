@@ -21,6 +21,7 @@
 import os
 
 from . import ImplError
+from . import _yaml
 
 
 class Source():
@@ -39,8 +40,13 @@ class Source():
         self.__origin_node = meta.origin_node           # YAML node this Source was loaded from
         self.__origin_toplevel = meta.origin_toplevel   # Toplevel YAML node for the file
         self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
+        self.__provenance = _yaml.node_get_provenance(meta.config)  # Provenance information
 
         self.configure(meta.config)
+
+    # Source implementations may stringify themselves for the purpose of logging and errors
+    def __str__(self):
+        return "%s source declared at %s" % (self.get_kind(), str(self.__provenance))
 
     def get_kind(self):
         """Fetches kind of this source
