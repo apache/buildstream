@@ -255,7 +255,7 @@ def _copy_directories(srcdir, destdir, target):
                 os.makedirs(new_dir)
                 shutil.copystat(old_dir, new_dir)
             else:
-                raise IOError('Source directory tree has file where '
+                raise OSError('Source directory tree has file where '
                               'directory expected: %s' % dir)
 
 
@@ -278,7 +278,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
                 os.makedirs(destpath)
             dest_stat = os.stat(os.path.realpath(destpath))
             if not stat.S_ISDIR(dest_stat.st_mode):
-                raise IOError('Destination not a directory. source has %s'
+                raise OSError('Destination not a directory. source has %s'
                               ' destination has %s' % (srcpath, destpath))
             shutil.copystat(srcpath, destpath)
 
@@ -307,5 +307,4 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
 
         else:
             # Unsupported type.
-            raise IOError('Cannot extract %s into staging-area. Unsupported'
-                          ' type.' % srcpath)
+            raise OSError('Cannot extract %s into staging-area. Unsupported type.' % srcpath)
