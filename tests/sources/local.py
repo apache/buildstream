@@ -4,7 +4,7 @@ import tempfile
 
 from pluginbase import PluginBase
 from buildstream import Context, Project
-from buildstream import PreflightError
+from buildstream import SourceError
 from buildstream._loader import Loader
 from buildstream._sourcefactory import SourceFactory
 
@@ -66,7 +66,7 @@ def test_preflight_fail(datafiles):
     os.remove(localfile)
 
     # Expect a preflight error
-    with pytest.raises(PreflightError) as exc:
+    with pytest.raises(SourceError) as exc:
         setup.source.preflight()
 
 

@@ -36,7 +36,7 @@
 
 import os
 import hashlib
-from buildstream import Source, PreflightError
+from buildstream import Source, SourceError
 from buildstream import utils
 
 
@@ -51,7 +51,7 @@ class LocalSource(Source):
     def preflight(self):
         # Check if the configured file or directory really exists
         if not os.path.exists(self.fullpath):
-            raise PreflightError("Specified path '%s' does not exist" % self.path)
+            raise SourceError("Specified path '%s' does not exist" % self.path)
 
     def get_unique_key(self):
         # Get a list of tuples of the the project relative paths and fullpaths

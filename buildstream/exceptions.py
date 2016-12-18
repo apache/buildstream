@@ -74,31 +74,25 @@ class LoadError(Exception):
         """
 
 
-class PreflightError(Exception):
-    """Raised during preflight checks.
+class SourceError(Exception):
+    """Raised by Source implementations.
 
-    This exception is raised while running preflight checks on the
-    pipeline. :class:`.Element` and :class:`.Source` plugins implement
-    their own preflight checks and raise this exception when they
-    deem the environment or constructed pipeline is unsuitable or
-    erroneous.
+    This exception is raised when a :class:`.Source` encounters an error.
     """
     pass
 
 
-class FetchError(Exception):
-    """Raised while fetching sources
+class ElementError(Exception):
+    """Raised by Element implementations.
 
-    This exception is raised while fetching sources, either if
-    there is some network error or if the source reference could
-    not be matched in the repository, or if a file or tarball source
-    sha256 sum was not properly matched.
+    This exception is raised when an :class:`.Element` encounters an error.
     """
     pass
 
 
 class ImplError(Exception):
-    """Raised when a plugin fails to implement a mandatory method"""
+    """Raised when a :class:`.Source` or :class:`.Element` plugin fails to
+    implement a mandatory method"""
     pass
 
 

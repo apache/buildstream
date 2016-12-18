@@ -72,12 +72,15 @@ class Source():
            node (dict): The loaded configuration dictionary
 
         Raises:
+           :class:`.SourceError`
            :class:`.LoadError`
 
         Source implementors should implement this method to read configuration
         data and store it. Use of the the :func:`~buildstream.utils.node_get_member`
         convenience method will ensure that a nice :class:`.LoadError` is triggered
         whenever the YAML input configuration is faulty.
+
+        Implementations may raise :class:`.SourceError` for any other error.
         """
         raise ImplError("Source plugin '%s' does not implement configure()" % self.get_kind())
 
@@ -85,7 +88,7 @@ class Source():
         """Preflight Check
 
         Raises:
-           :class:`.PreflightError`
+           :class:`.SourceError`
 
         The method is run during pipeline preflight check, sources
         should use this method to determine if they are able to
@@ -95,7 +98,7 @@ class Source():
         require to fetch source code, and also whether a specific ref
         has been chosen which could be obtained by running refresh.
 
-        Implementors should simply raise :class:`.PreflightError` with
+        Implementors should simply raise :class:`.SourceError` with
         an informative message in the case that the host environment is
         unsuitable for operation.
         """
@@ -108,6 +111,9 @@ class Source():
            node (dict): The same dictionary which was previously passed
                         to :func:`~buildstream.source.Source.configure`
 
+        Raises:
+           :class:`.SourceError`
+
         Sources which implement some revision control system should
         implement this by updating the commit reference from a symbolic
         tracking branch or tag. The commit reference should be updated
@@ -117,6 +123,9 @@ class Source():
 
         Sources which implement a tarball or file should implement this
         by updating an sha256 sum.
+
+        Implementors should raise :class:`.SourceError` if some error is
+        encountered while attempting to refresh.
         """
         raise ImplError("Source plugin '%s' does not implement refresh()" % self.get_kind())
 
@@ -134,16 +143,16 @@ class Source():
         been obtained as we have passed the :func:`~buildstream.source.Source.preflight`
         stage and :func:`~buildstream.source.Source.refresh` was called if necessary.
         """
-        raise ImplError("Source plugin '%s' does not implement enrich_key()" % self.get_kind())
+        raise ImplError("Source plugin '%s' does not implement get_unique_key()" % self.get_kind())
 
     def fetch(self):
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
         Raises:
-           :class:`.FetchError`
+           :class:`.SourceError`
 
-        Implementors should raise :class:`.FetchError` if the there is some
+        Implementors should raise :class:`.SourceError` if the there is some
         network error or if the source reference could not be matched.
         """
         raise ImplError("Source plugin '%s' does not implement fetch()" % self.get_kind())
@@ -154,8 +163,13 @@ class Source():
         Args:
            directory (str): Path to stage the source
 
+        Raises:
+           :class:`.SourceError`
+
         Implementors should assume that *directory* already exists
         and stage already cached sources to the passed directory.
-        Hardlinks should be employed if possible.
+
+        Implementors should raise :class:`.SourceError` when encountering
+        some system error.
         """
         raise ImplError("Source plugin '%s' does not implement stage()" % self.get_kind())
