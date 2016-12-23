@@ -92,6 +92,15 @@ class Sandbox:
         self.executor.set_mounts(mnt_list=mnt_list, global_write=global_write,
                                  append=append)
 
+    def set_cwd(self, cwd):
+        """Set the CWD for the sandbox
+
+        Args:
+            cwd (string): Path to desired working directory when the sandbox is entered
+        """
+
+        self.executor.set_cwd(cwd)
+
     def run(self, command):
         """Runs a command inside the sandbox environment
 
