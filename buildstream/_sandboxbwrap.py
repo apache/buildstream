@@ -318,44 +318,30 @@ class SandboxBwrap():
         #
         # This function blocks until the subprocess has terminated.
         #
-        # Unlike the subprocess.Popen() function, if stdout or stderr are None then
-        # output is discarded.
-        #
         # It then returns a tuple of (exit code, stdout output, stderr output).
         # If stdout was not equal to subprocess.PIPE, stdout will be None. Same for
         # stderr.
         #
 
-        if stdout is None or stderr is None:
-            dev_null = open(os.devnull, 'w')
-            stdout = stdout or dev_null
-            stderr = stderr or dev_null
-        else:
-            dev_null = None
+        process = subprocess.Popen(
+            argv,
+            # The default is to share file descriptors from the parent process
+            # to the subprocess, which is rarely good for sandboxing.
+            close_fds=True,
+            cwd=cwd,
+            env=env,
+            stdout=stdout,
+            stderr=stderr,
+        )
 
-        try:
-            process = subprocess.Popen(
-                argv,
-                # The default is to share file descriptors from the parent process
-                # to the subprocess, which is rarely good for sandboxing.
-                close_fds=True,
-                cwd=cwd,
-                env=env,
-                stdout=stdout,
-                stderr=stderr,
-            )
+        # The 'out' variable will be None unless subprocess.PIPE was passed as
+        # 'stdout' to subprocess.Popen(). Same for 'err' and 'stderr'. If
+        # subprocess.PIPE wasn't passed for either it'd be safe to use .wait()
+        # instead of .communicate(), but if they were then we must use
+        # .communicate() to avoid blocking the subprocess if one of the pipes
+        # becomes full. It's safe to use .communicate() in all cases.
 
-            # The 'out' variable will be None unless subprocess.PIPE was passed as
-            # 'stdout' to subprocess.Popen(). Same for 'err' and 'stderr'. If
-            # subprocess.PIPE wasn't passed for either it'd be safe to use .wait()
-            # instead of .communicate(), but if they were then we must use
-            # .communicate() to avoid blocking the subprocess if one of the pipes
-            # becomes full. It's safe to use .communicate() in all cases.
-
-            out, err = process.communicate()
-        finally:
-            if dev_null is not None:
-                dev_null.close()
+        out, err = process.communicate()
 
         return process.returncode, out, err
 
