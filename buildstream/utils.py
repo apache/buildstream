@@ -307,7 +307,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
 
             # Ensure that the symlink target is a relative path
             target = os.readlink(srcpath)
-            target = relative_symlink_target(destdir, destpath, target)
+            target = _relative_symlink_target(destdir, destpath, target)
             os.symlink(target, destpath)
 
         elif stat.S_ISREG(mode):
@@ -326,3 +326,49 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
         else:
             # Unsupported type.
             raise OSError('Cannot extract %s into staging-area. Unsupported type.' % srcpath)
+
+
+# _relative_symlink_target()
+#
+# Fetches a relative path for symlink with an absolute target
+#
+# @root:    The staging area root location
+# @symlink: Location of the symlink in staging area (including the root path)
+# @target:  The symbolic link target, which may be an absolute path
+#
+# If @target is an absolute path, a relative path from the symbolic link
+# location will be returned, otherwise if @target is a relative path, it will
+# be returned unchanged.
+#
+# Using relative symlinks helps to keep the target self contained when staging
+# files onto the target.
+#
+def _relative_symlink_target(root, symlink, target):
+
+    if os.path.isabs(target):
+
+        # First fix the input a little, the symlink itself must not have a
+        # trailing slash, otherwise we fail to remove the symlink filename
+        # from it's directory components in os.path.split()
+        #
+        # The absolute target filename must have it's leading separator
+        # removed, otherwise os.path.join() will discard the prefix
+        symlink = symlink.rstrip(os.path.sep)
+        target = target.lstrip(os.path.sep)
+
+        # We want a relative path from the directory in which symlink
+        # is located, not from the symlink itself.
+        symlinkdir, _ = os.path.split(symlink)
+
+        # Create a full path to the target, including the leading staging
+        # directory
+        fulltarget = os.path.join(root, target)
+
+        # now get the relative path from the directory where the symlink
+        # is located within the staging root, to the target within the same
+        # staging root
+        newtarget = os.path.relpath(fulltarget, symlinkdir)
+
+        return newtarget
+    else:
+        return target
