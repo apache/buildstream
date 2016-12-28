@@ -89,13 +89,13 @@ class Element():
         """Preflight Check
 
         Raises:
-           :class:`.PreflightError`
+           :class:`.ElementError`
 
         The method is run during pipeline preflight check, elements
         should use this method to determine if they are able to
         function in the host environment or if the data is unsuitable.
 
-        Implementors should simply raise :class:`.PreflightError` with
+        Implementors should simply raise :class:`.ElementError` with
         an informative message in the case that the host environment is
         unsuitable for operation.
         """
