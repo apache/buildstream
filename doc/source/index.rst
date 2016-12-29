@@ -52,6 +52,7 @@ Elements
 
 * :mod:`manual` - Manual Build Element
 * :mod:`autotools` - Autotools Build Element
+* :mod:`cmake` - CMake Build Element
 
 Sources
 ~~~~~~~
