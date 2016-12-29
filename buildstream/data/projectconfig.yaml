@@ -18,7 +18,7 @@
 #
 sandbox:
 
-  # Specify sandbox environment
+  # Base sandbox environment, can be overridden by plugins
   environment:
     PATH: /usr/bin:/bin:/usr/sbin:/sbin
     SHELL: /bin/sh
@@ -37,3 +37,26 @@ sandbox:
   - /dev/null
   - /dev/urandom
   - /dev/zero
+
+
+# Element Overrides
+#
+# Base attributes declared by element default yaml files
+# can be overridden on a project wide basis. The elements
+# dictionary can be used to override variables, environments
+# or plugin specific configuration data as shown below.
+#
+#
+# elements:
+#
+#   autotools:
+#
+#     variables:
+#       bindir: %{prefix}/bin
+#
+#     config:
+#       configure-commands: ...
+#
+#     environment:
+#       PKG_CONFIG_PATH=%{libdir}/pkgconfig
+#
