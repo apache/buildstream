@@ -106,7 +106,7 @@ def node_get_list_element(node, expected_type, member_name, indices):
          # Fetch dict things
          thing = node_get_list_element(node, dict, 'things', [ i ])
     """
-    _yaml.node_get(node, expected_type, member_name, indices=indices)
+    return _yaml.node_get(node, expected_type, member_name, indices=indices)
 
 
 def list_relative_paths(directory, includedirs=False):
