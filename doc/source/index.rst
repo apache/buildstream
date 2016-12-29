@@ -35,12 +35,13 @@ BuildStream project.
 Core Framework
 --------------
 
+* :mod:`Source <buildstream.source>` - Base Source Class
+* :mod:`Element <buildstream.element>` - Base Element Class
+* :mod:`BuildElement <buildstream.buildelement>` - Build Element Class
 * :mod:`Context <buildstream.context>` - Invocation Context
 * :mod:`Project <buildstream.project>` - Loaded Project
-* :mod:`Element <buildstream.element>` - Base Element Class
-* :mod:`Source <buildstream.source>` - Base Source Class
-* :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
 * :mod:`Sandbox <buildstream.sandbox>` - Sandbox Abstraction Class
+* :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
 
 
 Plugins
@@ -49,7 +50,7 @@ Plugins
 Elements
 ~~~~~~~~
 
-* :mod:`build` - Abstract Software Building Element
+* :mod:`manual` - Abstract Software Building Element
 
 Sources
 ~~~~~~~
