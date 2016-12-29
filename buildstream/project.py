@@ -36,7 +36,6 @@ The default BuildStream project configuration is included here for reference:
 import os
 from . import _site
 from . import _yaml
-from ._yaml import CompositeTypeError
 from . import LoadError, LoadErrorReason
 from .utils import node_items
 
@@ -100,15 +99,7 @@ class Project():
 
         config = _yaml.load(_site.default_project_config)
         project_conf = _yaml.load(projectfile)
-        try:
-            _yaml.composite_dict(config, project_conf, typesafe=True)
-        except CompositeTypeError as e:
-            raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                            "%s: Expected '%s' type for configuration '%s', instead received '%s'" %
-                            (projectfile,
-                             e.expected_type.__name__,
-                             e.path,
-                             e.actual_type.__name__)) from e
+        _yaml.composite(config, project_conf, typesafe=True)
 
         # The project name
         self.name = _yaml.node_get(config, str, 'name')
