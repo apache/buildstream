@@ -18,14 +18,23 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from buildstream import Element
+"""Manual build element
+
+The most basic build element does nothing but allows users to
+add custom build commands to the array understood by the :mod:`BuildElement <buildstream.buildelement>`
+
+The empty configuration is as such:
+  .. literalinclude:: ../../../buildstream/plugins/elements/manual.yaml
+"""
+
+from buildstream import BuildElement
 
 
-# Element implementation for the 'build' kind.
-class BuildElement(Element):
+# Element implementation for the 'manual' kind.
+class ManualElement(BuildElement):
     pass
 
 
 # Plugin entry point
 def setup():
-    return BuildElement
+    return ManualElement
