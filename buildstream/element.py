@@ -18,31 +18,42 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import os
+import copy
+import inspect
+
+from . import _yaml
 from . import ImplError
 
 
 class Element():
-    """Base Element class.
+    """Element()
+
+    Base Element class.
 
     All elements derive from this class, this interface defines how
     the core will be interacting with Elements.
     """
+    __defaults = {}          # The defaults from the yaml file and project
+    __defaults_set = False   # Flag, in case there are no defaults at all
 
-    defaults = {}
-    """The default configuration for elements of a given *kind*
-
-    Specifies the default configuration for Elements of the given *kind*. The
-    class wide default configuration is overridden from other sources, such
-    as the Element declarations in the project YAML.
-    """
     def __init__(self, context, project, meta):
 
-        self.__context = context                        # The Context object
-        self.__project = project                        # The Project object
+        self.__context = context                                    # The Context object
+        self.__project = project                                    # The Project object
+        self.__provenance = _yaml.node_get_provenance(meta.config)  # Provenance information
 
         self.name = meta.name
+        """The element name"""
 
-        self.configure(meta.config)
+        self.__init_defaults()
+
+        config = self.__extract_config(meta)
+        self.configure(config)
+
+    # Element implementations may stringify themselves for the purpose of logging and errors
+    def __str__(self):
+        return "%s - %s element declared in %s" % (self.name, self.get_kind(), self.__provenance.filename)
 
     def get_kind(self):
         """Fetches kind of this element
@@ -108,3 +119,57 @@ class Element():
            A string, list or dictionary which uniquely identifies the element to use
         """
         raise ImplError("Element plugin '%s' does not implement get_unique_key()" % self.get_kind())
+
+    #############################################################
+    #                       Private Methods                     #
+    #############################################################
+    def __init_defaults(self):
+
+        # Defaults are loaded once per class and then reused
+        #
+        if not self.__defaults_set:
+
+            # Get the yaml file in the same directory as the plugin
+            plugin_file = inspect.getfile(type(self))
+            plugin_dir = os.path.dirname(plugin_file)
+            plugin_conf_name = "%s.yaml" % self.get_kind()
+            plugin_conf = os.path.join(plugin_dir, "%s.yaml" % self.get_kind())
+
+            # Override some plugin defaults with project overrides
+            #
+            defaults = {}
+            elements = self.__project._elements
+            overrides = elements.get(self.get_kind)
+            try:
+                defaults = _yaml.load(plugin_conf, plugin_conf_name)
+                if overrides:
+                    _yaml.composite(defaults, overrides, typesafe=True)
+            except LoadError as e:
+                # Ignore missing file errors, element's may omit a config file.
+                if e.reason == LoadErrorReason.MISSING_FILE:
+                    if overrides:
+                        defaults = copy.deepcopy(overrides)
+                else:
+                    raise e
+
+            # Set the data class wide
+            type(self).__defaults = defaults
+            self.__defaults_set = True
+
+    # This will resolve the final configuration to be handed
+    # off to element.configure()
+    #
+    def __extract_config(self, meta):
+        default_config = _yaml.node_get(self.__defaults, dict, 'config', default_value={})
+        config = meta.config
+
+        if not config:
+            config = default_config
+        elif default_config:
+            _yaml.composite(default_config, config, typesafe=True)
+            config = default_config
+
+        if not config:
+            config = {}
+
+        return config
