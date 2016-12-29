@@ -50,7 +50,8 @@ Plugins
 Elements
 ~~~~~~~~
 
-* :mod:`manual` - Abstract Software Building Element
+* :mod:`manual` - Manual Build Element
+* :mod:`autotools` - Autotools Build Element
 
 Sources
 ~~~~~~~
