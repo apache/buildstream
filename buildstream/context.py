@@ -39,7 +39,6 @@ The default BuildStream configuration is included here for reference:
 import os
 from . import _site
 from . import _yaml
-from ._yaml import CompositeTypeError
 from . import LoadError, LoadErrorReason
 
 
@@ -88,14 +87,7 @@ class Context():
         defaults = _yaml.load(_site.default_user_config)
         if config:
             user_config = _yaml.load(config)
-            try:
-                _yaml.composite_dict(defaults, user_config, typesafe=True)
-            except CompositeTypeError as e:
-                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                                "Expected '%s' type for configuration '%s', instead received '%s'" %
-                                (e.expected_type.__name__,
-                                 e.path,
-                                 e.actual_type.__name__)) from e
+            _yaml.composite(defaults, user_config, typesafe=True)
 
         for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'ccachedir']:
             setattr(self, dir, os.path.expanduser(_yaml.node_get(defaults, str, dir)))
