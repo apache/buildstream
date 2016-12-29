@@ -52,7 +52,7 @@ setup(name='buildstream',
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
       packages=find_packages(),
-      package_data={'buildstream': ['plugins/*/*.py', 'data/*.yaml']},
+      package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml']},
       scripts=['bin/build-stream'],
       install_requires=[
           'ruamel.yaml',
