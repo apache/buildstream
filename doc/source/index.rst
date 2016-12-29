@@ -54,6 +54,7 @@ Elements
 * :mod:`autotools` - Autotools Build Element
 * :mod:`cmake` - CMake Build Element
 * :mod:`qmake` - QMake Build Element
+* :mod:`distutils` - Python Distutils Element
 
 Sources
 ~~~~~~~
