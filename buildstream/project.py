@@ -67,7 +67,8 @@ class Project():
         self.devices = []
         """list: List of device descriptions required for the sandbox"""
 
-        self._aliases = {}  # Aliases dictionary
+        self._elements = {}  # Element specific configurations
+        self._aliases = {}   # Aliases dictionary
 
         self._load()
 
@@ -109,5 +110,6 @@ class Project():
         self.environment = _yaml.node_get(sandbox_node, dict, 'environment')
         self.devices = _yaml.node_get(sandbox_node, list, 'devices')
 
-        # The aliases
+        # Aliases & Element configurations
+        self._elements = _yaml.node_get(config, dict, 'elements', default_value={})
         self._aliases = _yaml.node_get(config, dict, 'aliases', default_value={})
