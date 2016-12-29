@@ -246,7 +246,7 @@ def node_decorate_list(filename, target, source, toplevel):
 def node_get_provenance(node, key=None, indices=[]):
 
     provenance = node.get(PROVENANCE_KEY)
-    if key:
+    if provenance and key:
         provenance = provenance.members.get(key)
         for index in indices:
             provenance = provenance.elements[index]
