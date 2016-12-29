@@ -329,10 +329,27 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
 # This is useful for overriding configuration files and element
 # configurations.
 #
-def composite_dict(target, source, policy=CompositePolicy.OVERWRITE,
-                   typesafe=False):
+def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
     source = copy.deepcopy(source)
     composite_dict_recurse(target, source, policy=policy, typesafe=typesafe)
+
+
+# Like composite_dict(), but raises an all purpose LoadError for convenience
+#
+def composite(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
+    provenance = node_get_provenance(source)
+    try:
+        composite_dict(target, source, policy=policy, typesafe=typesafe)
+    except CompositeTypeError as e:
+        error_prefix = ""
+        if provenance:
+            error_prefix = "[%s]: " % str(provenance)
+        raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                        "%sExpected '%s' type for configuration '%s', instead received '%s'" %
+                        (error_prefix,
+                         e.expected_type.__name__,
+                         e.path,
+                         e.actual_type.__name__)) from e
 
 
 def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
