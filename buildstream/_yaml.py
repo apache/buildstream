@@ -57,9 +57,16 @@ class Provenance():
 #
 class DictProvenance(Provenance):
     def __init__(self, filename, node, toplevel):
-        super(DictProvenance, self).__init__(
-            filename, node, toplevel,
-            line=node.lc.line + 1, col=node.lc.col)
+
+        # Special case for loading an empty dict
+        if hasattr(node, 'lc'):
+            line = node.lc.line + 1
+            col = node.lc.col
+        else:
+            line = 1
+            col = 0
+
+        super(DictProvenance, self).__init__(filename, node, toplevel, line=line, col=col)
 
         self.members = {}
 
@@ -158,8 +165,13 @@ def load(filename, shortname=None):
                         "Malformed YAML:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
 
     if not isinstance(contents, dict):
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Loading YAML file did not specify a dictionary: %s" % filename)
+        # Special case allowance for None, when the loaded file has only comments in it.
+        if contents is None:
+            contents = {}
+        else:
+            raise LoadError(LoadErrorReason.INVALID_YAML,
+                            "YAML file has content of type '%s' instead of expected type 'dict': %s" %
+                            (type(contents).__name__, filename))
 
     if not shortname:
         shortname = filename
