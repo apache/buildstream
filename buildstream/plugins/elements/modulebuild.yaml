@@ -1,0 +1,58 @@
+# Default commands for using The Perl Module::Build
+# build system.
+config:
+
+  # Commands for configuring the software
+  #
+
+  # To install perl distributions into the correct location
+  # in our chroot we need to set PREFIX to <destdir>/<prefix>
+  # in the configure-commands.
+  #
+  # The mapping between PREFIX and the final installation
+  # directories is complex and depends upon the configuration
+  # of perl see,
+  # https://metacpan.org/pod/distribution/perl/INSTALL#Installation-Directories
+  # and ExtUtil::MakeMaker's documentation for more details.
+  configure-commands:
+  - perl Build.PL --prefix "$DESTDIR$PREFIX"
+
+  # Commands for building the software
+  #
+  build-commands:
+  - ./Build
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands:
+  - ./Build install
+
+  # Commands for stripping installed binaries
+  #
+  strip-commands:
+
+  # TODO: Make idempotent when files are hardlinks
+  # Strip all ELF binary files that are executable or named like a library.
+  # .so files for C, .cmxs for OCaml and .node for Node.
+  #
+  # The file name and permissions checks are done with the `find` command before
+  # the ELF header is checked with the shell command, because it is a lot cheaper
+  # to check the mode and file name first, because it is a metadata check, rather
+  # than a subprocess and a file read.
+  #
+  # `file` is not used, to keep the dependency requirements down.
+  - |
+    find "$DESTDIR" -type f \
+      '(' -perm -111 -o -name '*.so*' -o -name '*.cmxs' -o -name '*.node' ')' \
+      -exec sh -ec \
+      'read -n4 hdr <"$1" # check for elf header
+       if [ "$hdr" != "$(printf \\x7fELF)" ]; then
+           exit 0
+       fi
+       debugfile="$DESTDIR$PREFIX/lib/debug/$(basename "$1")"
+       mkdir -p "$(dirname "$debugfile")"
+       objcopy --only-keep-debug "$1" "$debugfile"
+       chmod 644 "$debugfile"
+       strip --remove-section=.comment --remove-section=.note --strip-unneeded "$1"
+       objcopy --add-gnu-debuglink "$debugfile" "$1"' - {} ';'

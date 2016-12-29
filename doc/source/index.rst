@@ -56,6 +56,7 @@ Elements
 * :mod:`qmake` - QMake Build Element
 * :mod:`distutils` - Python Distutils Build Element
 * :mod:`makemaker` - Perl MakeMaker Build Element
+* :mod:`modulebuild` - Perl Module::Build Build Element
 
 Sources
 ~~~~~~~
