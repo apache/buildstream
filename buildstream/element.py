@@ -46,6 +46,12 @@ class Element():
         self.name = meta.name
         """The element name"""
 
+        self.runtime_dependencies = []
+        """Elements required for this element to run"""
+
+        self.build_dependencies = []
+        """Elements required to build this element"""
+
         self.__init_defaults()
 
         config = self.__extract_config(meta)

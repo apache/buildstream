@@ -47,7 +47,7 @@ class Resolver():
 
         # resolve dependencies
         for dep in meta_element.dependencies:
-            element.dependencies.append(self.resolve_element(dep))
+            element.runtime_dependencies.append(self.resolve_element(dep))
         for dep in meta_element.build_dependencies:
             element.build_dependencies.append(self.resolve_element(dep))
 
