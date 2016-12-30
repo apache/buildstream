@@ -53,12 +53,15 @@ setup(name='buildstream',
       license='LGPL',
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml']},
-      scripts=['bin/build-stream'],
       install_requires=[
           'ruamel.yaml',
           'pluginbase',
-          'click'
+          'Click'
       ],
+      entry_points='''
+      [console_scripts]
+      build-stream=buildstream._main:cli
+      ''',
       setup_requires=['pytest-runner'],
       tests_require=['pep8',
                      'coverage',
