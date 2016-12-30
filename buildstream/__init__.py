@@ -24,7 +24,7 @@ from .exceptions import PluginError, LoadError, LoadErrorReason, \
 
 # Plugin auther facing APIs
 from .source import Source
-from .element import Element
+from .element import Element, Scope
 from .buildelement import BuildElement
 
 # Frontend facing APIs

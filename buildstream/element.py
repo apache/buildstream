@@ -21,9 +21,29 @@
 import os
 import copy
 import inspect
+from enum import Enum
 
 from . import _yaml
 from . import ImplError
+
+
+class Scope(Enum):
+    """Types of scope for a given element"""
+
+    ALL = 1
+    """All elements which the given element depends on, following
+    all elements required for building. Including the element itself.
+    """
+
+    BUILD = 2
+    """All elements required for building the element, including their
+    respective run dependencies. Not including the given element itself.
+    """
+
+    RUN = 3
+    """All elements required for running the element. Including the element
+    itself.
+    """
 
 
 class Element():
@@ -60,6 +80,51 @@ class Element():
     # Element implementations may stringify themselves for the purpose of logging and errors
     def __str__(self):
         return "%s - %s element declared in %s" % (self.name, self.get_kind(), self.__provenance.filename)
+
+    def dependencies(self, scope, mask=None):
+        """dependencies(scope)
+
+        A generator function which lists the dependencies of the given element
+        deterministically, starting with the basemost elements in the given scope.
+
+        Args:
+           scope (:class:`.Scope`): The scope to iterate in
+
+        Returns:
+           (list): The dependencies in *scope*, in deterministic staging order
+        """
+
+        # A little reentrancy protection, this loop could be
+        # optimized but not bothering at this point.
+        #
+        if mask is None:
+            mask = []
+        if self.name in mask:
+            return
+        mask.append(self.name)
+
+        if scope == Scope.ALL:
+            for dep in self.build_dependencies:
+                for elt in dep.dependencies(Scope.ALL, mask=mask):
+                    yield elt
+            for dep in self.runtime_dependencies:
+                if dep not in self.build_dependencies:
+                    for elt in dep.dependencies(Scope.ALL, mask=mask):
+                        yield elt
+
+        elif scope == Scope.BUILD:
+            for dep in self.build_dependencies:
+                for elt in dep.dependencies(Scope.RUN, mask=mask):
+                    yield elt
+
+        elif scope == Scope.RUN:
+            for dep in self.runtime_dependencies:
+                for elt in dep.dependencies(Scope.RUN, mask=mask):
+                    yield elt
+
+        # Yeild self only at the end, after anything needed has been traversed
+        if (scope == Scope.ALL or scope == Scope.RUN):
+            yield self
 
     def get_kind(self):
         """Fetches kind of this element
