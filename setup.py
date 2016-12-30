@@ -57,7 +57,7 @@ setup(name='buildstream',
       install_requires=[
           'ruamel.yaml',
           'pluginbase',
-          'argparse'
+          'click'
       ],
       setup_requires=['pytest-runner'],
       tests_require=['pep8',
