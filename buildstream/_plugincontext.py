@@ -89,9 +89,6 @@ class PluginContext():
                               (self.base_type.__name__, kind)) from e
 
         self.assert_plugin(kind, plugin_type)
-
-        print("Registering %s plugin %s for kind %s" %
-              (self.base_type.__name__, plugin_type.__name__, kind))
         self.types[kind] = plugin_type
 
     def assert_plugin(self, kind, plugin_type):
