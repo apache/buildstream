@@ -638,7 +638,9 @@ class Loader():
         # Cache it now, make sure it's already there before recursing
         self.meta_elements[element_name] = meta_element
 
-        for dep in element.deps:
+        # Sort dependencies once per element at load time
+        sorted_deps = sorted(element.deps, key=lambda dep: dep.name)
+        for dep in sorted_deps:
             meta_dep = self.collect_element(dep.name)
             if dep.dep_type != 'runtime':
                 meta_element.build_dependencies.append(meta_dep)
