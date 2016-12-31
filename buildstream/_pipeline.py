@@ -19,12 +19,15 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+import os
 from pluginbase import PluginBase
 
 from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
+from . import Scope
+from . import _yaml
 
 
 # The Resolver class instantiates plugin-provided Element and Source classes
@@ -87,3 +90,22 @@ class Pipeline():
 
         resolver = Resolver(self.context, self.project, self.element_factory, self.source_factory)
         self.target = resolver.resolve_element(meta_element)
+
+    # refresh()
+    #
+    # Refreshes all the sources of all the elements in the pipeline,
+    # i.e. all of the elements which the target somehow depends on.
+    #
+    # If no error is encountered while refreshing, then the project files
+    # are rewritten inline.
+    #
+    def refresh(self):
+
+        files = {}
+        for elt in self.target.dependencies(Scope.ALL):
+            elt_files = elt._refresh()
+            files.update(elt_files)
+
+        for filename, toplevel in files.items():
+            fullname = os.path.join(self.project.directory, filename)
+            _yaml.dump(toplevel, fullname)
