@@ -72,6 +72,9 @@ class Element():
         self.build_dependencies = []
         """Elements required to build this element"""
 
+        self.sources = []
+        """The :class:`.Source` objects declared on this element"""
+
         self.__init_defaults()
 
         config = self.__extract_config(meta)
@@ -192,7 +195,30 @@ class Element():
         raise ImplError("Element plugin '%s' does not implement get_unique_key()" % self.get_kind())
 
     #############################################################
-    #                       Private Methods                     #
+    #            Private Methods used in BuildStream            #
+    #############################################################
+
+    # _refresh():
+    #
+    # Calls refresh on the Element sources
+    #
+    # Raises:
+    #    SourceError
+    #
+    # Returns: (dict) A mapping of filenames and toplevel yaml nodes which
+    #                 need to be saved
+    #
+    def _refresh(self):
+        files = {}
+
+        for source in self.sources:
+            source.refresh(source._Source__origin_node)
+            files[source._Source__origin_filename] = source._Source__origin_toplevel
+
+        return files
+
+    #############################################################
+    #                   Private Local Methods                   #
     #############################################################
     def __init_defaults(self):
 
