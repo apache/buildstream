@@ -179,6 +179,19 @@ def load(filename, shortname=None):
     return node_decorated_copy(shortname, contents)
 
 
+# Dumps a previously loaded YAML node to a file
+#
+# Args:
+#    node (dict): A node previously loaded with _yaml.load() above
+#    filename (str): The YAML file to load
+#
+#
+def dump(node, filename):
+
+    with open(filename, 'w') as f:
+        yaml.round_trip_dump(node, f)
+
+
 # node_decorated_copy()
 #
 # Create a copy of a loaded dict tree decorated with Provenance
