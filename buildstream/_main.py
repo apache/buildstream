@@ -23,9 +23,9 @@ import sys
 import click
 import pkg_resources  # From setuptools
 
-from buildstream import Context, Project
-from buildstream import LoadError
-from buildstream._pipeline import Pipeline
+from . import Context, Project
+from . import LoadError, SourceError, ElementError
+from ._pipeline import Pipeline
 
 # Some nasty globals
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -88,3 +88,12 @@ def cli(config, verbose):
 def refresh(directory, target, arch, variant):
 
     pipeline = create_pipeline(directory, target, arch, variant, main_options['config'])
+
+    try:
+        pipeline.refresh()
+    except (SourceError, ElementError) as e:
+        click.echo("Error refreshing pipeline: %s" % str(e))
+        sys.exit(1)
+
+    click.echo("Successfully refreshed sources in pipeline with target '%s' in directory: %s" %
+               (target, directory))
