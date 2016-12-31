@@ -111,18 +111,16 @@ class VariantError(Exception):
 #
 class LoadElement():
 
-    def __init__(self, data, filename, basedir, arch):
+    def __init__(self, data, filename, basedir, arch, elements):
 
         self.filename = filename
         self.data = data
         self.arch = arch
         self.name = element_name_from_filename(filename)
+        self.elements = elements
 
         # These are shared with the owning Loader object
         self.basedir = basedir
-
-        # The final dependencies (refers to other LoadElements)
-        self.dependencies = []
 
         # Process arch conditionals
         self.process_arch(self.data)
@@ -159,6 +157,19 @@ class LoadElement():
     #############################################
     #        Routines used by the Loader        #
     #############################################
+
+    # Checks if this element depends on another element, directly
+    # or indirectly. This does NOT follow variants and is only
+    # useful after variants are resolved.
+    #
+    def depends(self, other):
+        for dep in self.deps:
+            elt = self.elements[dep.name]
+            if elt == other:
+                return True
+            elif elt.depends(other):
+                return True
+        return False
 
     # Fetch a Variant by name
     #
@@ -383,7 +394,7 @@ class Loader():
 
         # Finally, wrap what we have into LoadElements and return the target
         #
-        return self.collect_elements()
+        return self.collect_element(self.target)
 
     ########################################
     #             Loading Files            #
@@ -410,7 +421,7 @@ class Loader():
 
         # Load the element and track it in our elements table
         data = _yaml.load(fullpath, filename)
-        element = LoadElement(data, filename, self.basedir, self.arch)
+        element = LoadElement(data, filename, self.basedir, self.arch, self.elements)
 
         self.elements[element_name] = element
 
@@ -494,54 +505,27 @@ class Loader():
     #
     def configure_variants(self, element_config, pool):
 
-        # If there is an element configuration in this pool which depends
-        # on this element in a conflicting way; raise VariantError
+        # First, check the new element configuration to try against
+        # the existing ones in the pool for conflicts.
         #
         for config in pool:
-            for conf_dep in config.deps:
 
-                # Detect circular dependency error here
-                #
-                depending_element = self.elements[conf_dep.owner]
-                if depending_element is element_config.element:
-                    raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                                    "Circular dependency detected for element: %s" %
-                                    element_config.filename)
-
-                if (conf_dep.filename == element_config.filename and
-                    conf_dep.variant_name and
-                    conf_dep.variant_name != element_config.variant_name):
-                    raise VariantError(element_config, conf_dep)
-
-        # Create a copy of the pool, adding ourself to the pool. Ensure
-        # that there is only one configuration for this element and that
-        # the most specific configuration is chosen.
-        #
-        new_pool = []
-        appended_self = False
-        for config in pool:
-
-            append_config = config
-            if config.filename == element_config.filename:
-                appended_self = True
-                if element_config.variant_name:
-                    append_config = element_config
-
-            new_pool.append(append_config)
-
-        if not appended_self:
-            new_pool.append(element_config)
-
-        if element_config.deps:
-            # Recurse through the list of dependencies, this should raise
-            # VariantError only if all possible variants of the dependencies
-            # are invalid
+            # The configuration pool can have only one selected configuration
+            # for each element, handle intersections and conflicts.
             #
-            return self.configure_dependency_variants(element_config.deps, new_pool)
+            if config.element is element_config.element:
+                if config.variant_name == element_config.variant_name:
+                    # A path converges on the same element configuration,
+                    # this iteration can be safely discarded.
+                    return pool
+                else:
+                    # Two different variants of the same element should be reached
+                    # on a path of variant agreement.
+                    raise VariantError(element_config, config.dependency)
 
-        # No more dependencies, just return the new configuration pool
-        #
-        return new_pool
+        # Now add ourselves to the pool and recurse into the dependency list
+        new_pool = pool + [element_config]
+        return self.configure_dependency_variants(element_config.deps, new_pool)
 
     def configure_dependency_variants(self, deps, pool):
 
@@ -580,10 +564,10 @@ class Loader():
 
             try:
                 # If this configuration of the this element succeeds...
-                accum_pool = self.configure_variants(element_config, pool)
+                try_pool = self.configure_variants(element_config, pool)
 
                 # ... Then recurse into sibling elements
-                accum_pool = self.configure_dependency_variants(deps[1:], accum_pool)
+                accum_pool = self.configure_dependency_variants(deps[1:], try_pool)
 
             except VariantError as e:
 
@@ -606,9 +590,6 @@ class Loader():
 
     # Collect the toplevel elements we have, resolve their deps and return !
     #
-    def collect_elements(self):
-        return self.collect_element(self.target)
-
     def collect_element(self, element_name):
 
         element = self.elements[element_name]
@@ -643,14 +624,25 @@ class Loader():
 
         meta_element = MetaElement(element_name, data.get('kind'), meta_sources, data.get(Symbol.CONFIG, {}))
 
+        # Check circular dependencies, if we're adding something
+        # which depends on something already there, it's a circular dep
+        for elt_name, _ in self.meta_elements.items():
+            elt = self.elements[elt_name]
+
+            # XXX FIXME: This is horribly expensive
+            if element.depends(elt) and elt.depends(element):
+                raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
+                                "Circular dependency detected for element: %s" %
+                                element.filename)
+
+        # Cache it now, make sure it's already there before recursing
+        self.meta_elements[element_name] = meta_element
+
         for dep in element.deps:
             meta_dep = self.collect_element(dep.name)
             if dep.dep_type != 'runtime':
                 meta_element.build_dependencies.append(meta_dep)
             if dep.dep_type != 'build':
                 meta_element.dependencies.append(meta_dep)
-
-        # Cache it, just to make sure we dont build the same one twice !
-        self.meta_elements[element_name] = meta_element
 
         return meta_element
