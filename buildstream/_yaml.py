@@ -160,7 +160,7 @@ def load(filename, shortname=None):
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Could not find file at %s" % filename) from e
-    except (yaml.scanner.ScannerError, yaml.composer.ComposerError) as e:
+    except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Malformed YAML:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
 
