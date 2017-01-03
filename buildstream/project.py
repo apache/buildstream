@@ -24,7 +24,7 @@ The :class:`.Project` object holds all of the project settings from
 the project configuration file including the project directory it
 was loaded from.
 
-The project configuration file should be named ``project.yaml`` and
+The project configuration file should be named ``project.conf`` and
 be located at the project root. It holds information such as Source
 aliases relevant for the sources used in the given project as well as
 overrides for the configuration of element types used in the project.
@@ -96,7 +96,7 @@ class Project():
 
     def _load(self):
 
-        projectfile = os.path.join(self.directory, "project.yaml")
+        projectfile = os.path.join(self.directory, "project.conf")
 
         config = _yaml.load(_site.default_project_config)
         project_conf = _yaml.load(projectfile)
