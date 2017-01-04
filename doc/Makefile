@@ -14,6 +14,21 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
+# Fix for when python is mapped to python2 not python3
+# This is an issue in the sphinx-build script provided in the default install
+# because it uses the generic python env, so we need to have a copy of this script
+# but with an explicit call to python3.
+#
+# Why python3? We are using some features of sphinx that are only implemented
+# currently in python3
+#
+PYV=$(shell python -c "import sys;t='{v[0]}'.format(v=list(sys.version_info[:2]));sys.stdout.write(t)")
+
+ifeq ($(PYV), 2)
+	SPHINXBUILD = ./sphinx-build3
+endif
+
+
 all: docs
 
 # Canned recipe for generating plugin api skeletons
@@ -65,3 +80,6 @@ docs: apidoc
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
+testy:
+	@echo "Using $(SPHINXBUILD)"
+	@echo "Py is $(PYV)"
