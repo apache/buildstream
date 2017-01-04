@@ -23,7 +23,7 @@ DATA_DIR = os.path.join(
 #
 class GitSetup(Setup):
 
-    def __init__(self, datafiles, tmpdir, ref, track=None, bstfile=None):
+    def __init__(self, datafiles, tmpdir, ref=None, track=None, bstfile=None):
 
         if not bstfile:
             bstfile = 'target.bst'
@@ -38,21 +38,23 @@ class GitSetup(Setup):
 
         # Generate a target file with a file:// url in the tmpdir
         self.url = 'file://' + os.path.join(self.origin_dir, 'repo')
-        self.generate_target_bst(directory, self.url, ref, track=track, bstfile=bstfile)
+        self.generate_target_bst(directory, self.url, ref=ref, track=track, bstfile=bstfile)
 
         super().__init__(datafiles, bstfile, tmpdir)
 
-    def generate_target_bst(self, directory, url, ref, track=None, bstfile=None):
+    def generate_target_bst(self, directory, url, ref=None, track=None, bstfile=None):
         template = "kind: pony\n" + \
                    "description: This is the pony\n" + \
                    "sources:\n" + \
                    "- kind: git\n" + \
-                   "  url: {url}\n" + \
-                   "  ref: {ref}\n"
-        final = template.format(url=url, ref=ref)
+                   "  url: {url}\n"
 
         if track:
-            final = final + "  track: {track}\n".format(track=track)
+            template += "  track: {track}\n"
+        if url:
+            template += "  ref: {ref}\n"
+
+        final = template.format(url=url, ref=ref, track=track)
 
         filename = os.path.join(directory, bstfile)
         with open(filename, 'w') as f:
@@ -61,34 +63,47 @@ class GitSetup(Setup):
 
 class GitSubmoduleSetup(GitSetup):
 
-    def generate_target_bst(self, directory, url, ref, track=None, bstfile=None):
+    def generate_target_bst(self, directory, url, ref=None, track=None, bstfile=None):
+
+        self.subrepo_url = 'file://' + os.path.join(self.origin_dir, 'subrepo')
 
         template = "kind: pony\n" + \
                    "description: This is the pony\n" + \
                    "sources:\n" + \
                    "- kind: git\n" + \
-                   "  url: {url}\n" + \
-                   "  ref: {ref}\n" + \
-                   "submodules:\n" + \
-                   "  subrepo:\n" + \
-                   "    url: {subrepo}\n"
-
-        self.subrepo_url = 'file://' + os.path.join(self.origin_dir, 'subrepo')
-        final = template.format(url=url, ref=ref, subrepo=self.subrepo_url)
+                   "  url: {url}\n"
 
         if track:
-            final = final + "  track: {track}\n".format(track=track)
+            template += "  track: {track}\n"
+        if url:
+            template += "  ref: {ref}\n"
+
+        template += "submodules:\n" + \
+                    "  subrepo:\n" + \
+                    "    url: {subrepo}\n"
+
+        final = template.format(url=url, ref=ref, track=track, subrepo=self.subrepo_url)
 
         filename = os.path.join(directory, bstfile)
         with open(filename, 'w') as f:
             f.write(final)
 
 
+GIT_ENV = {
+    'GIT_AUTHOR_DATE': '1320966000 +0200',
+    'GIT_AUTHOR_NAME': 'tomjon',
+    'GIT_AUTHOR_EMAIL': 'tom@jon.com',
+    'GIT_COMMITTER_DATE': '1320966000 +0200',
+    'GIT_COMMITTER_NAME': 'tomjon',
+    'GIT_COMMITTER_EMAIL': 'tom@jon.com'
+}
+
+
 # Create a git repository at the setup.origin_dir
 def git_create(setup, reponame):
     repodir = os.path.join(setup.origin_dir, reponame)
     os.mkdir(repodir)
-    subprocess.call(['git', 'init', '.'], cwd=repodir)
+    subprocess.call(['git', 'init', '.'], env=GIT_ENV, cwd=repodir)
 
 
 # Add a file to the git
@@ -99,15 +114,8 @@ def git_add_file(setup, reponame, filename, content):
         f.write(content)
 
     # We rely on deterministic commit shas for testing, so set date and author
-    subprocess.call(['git', 'add', filename], cwd=repodir)
-    subprocess.call(['git', 'commit', '-m', 'Added the file'],
-                    env={'GIT_AUTHOR_DATE': '1320966000 +0200',
-                         'GIT_AUTHOR_NAME': 'tomjon',
-                         'GIT_AUTHOR_EMAIL': 'tom@jon.com',
-                         'GIT_COMMITTER_DATE': '1320966000 +0200',
-                         'GIT_COMMITTER_NAME': 'tomjon',
-                         'GIT_COMMITTER_EMAIL': 'tom@jon.com'},
-                    cwd=repodir)
+    subprocess.call(['git', 'add', filename], env=GIT_ENV, cwd=repodir)
+    subprocess.call(['git', 'commit', '-m', 'Added the file'], env=GIT_ENV, cwd=repodir)
 
 
 # Add a submodule to the git
@@ -115,15 +123,8 @@ def git_add_submodule(setup, reponame, url, path):
     repodir = os.path.join(setup.origin_dir, reponame)
 
     # We rely on deterministic commit shas for testing, so set date and author
-    subprocess.call(['git', 'submodule', 'add', url, path], cwd=repodir)
-    subprocess.call(['git', 'commit', '-m', 'Added the submodule'],
-                    env={'GIT_AUTHOR_DATE': '1320966000 +0200',
-                         'GIT_AUTHOR_NAME': 'tomjon',
-                         'GIT_AUTHOR_EMAIL': 'tom@jon.com',
-                         'GIT_COMMITTER_DATE': '1320966000 +0200',
-                         'GIT_COMMITTER_NAME': 'tomjon',
-                         'GIT_COMMITTER_EMAIL': 'tom@jon.com'},
-                    cwd=repodir)
+    subprocess.call(['git', 'submodule', 'add', url, path], env=GIT_ENV, cwd=repodir)
+    subprocess.call(['git', 'commit', '-m', 'Added the submodule'], env=GIT_ENV, cwd=repodir)
 
 
 ###############################################################
@@ -271,8 +272,10 @@ def test_refresh(tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch(tmpdir, datafiles):
 
-    # We know this is the right commit sha for the repo we create
-    setup = GitSubmoduleSetup(datafiles, tmpdir, 'e65c898f8b4a42024ced731def6a2f7bde0ea138')
+    # We cannot guess the submodule commit shas really, because we
+    # need to encode the submodule uri in the commit which adds the
+    # submodule, so let's use refresh and track in this case.
+    setup = GitSubmoduleSetup(datafiles, tmpdir, track='master')
     assert(setup.source.get_kind() == 'git')
 
     git_create(setup, 'repo')
@@ -281,10 +284,9 @@ def test_submodule_fetch(tmpdir, datafiles):
     git_add_file(setup, 'subrepo', 'ponyfile.txt', 'file')
     git_add_submodule(setup, 'repo', setup.subrepo_url, 'subrepo')
 
-    # Make sure we preflight first
+    # Preflight, refresh and fetch
     setup.source.preflight()
-
-    # This should result in the mirror being created in the git sources dir
+    setup.source.refresh(setup.source._Source__origin_node)
     setup.source.fetch()
 
     # Check that there is now a mirrored git repository at the expected directory
@@ -296,8 +298,10 @@ def test_submodule_fetch(tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_stage(tmpdir, datafiles):
 
-    # We know this is the right commit sha for the repo we create
-    setup = GitSubmoduleSetup(datafiles, tmpdir, 'cea8dbfe21eaa069c28094418afa55bf2223838f')
+    # We cannot guess the submodule commit shas really, because we
+    # need to encode the submodule uri in the commit which adds the
+    # submodule, so let's use refresh and track in this case.
+    setup = GitSubmoduleSetup(datafiles, tmpdir, track='master')
     assert(setup.source.get_kind() == 'git')
 
     git_create(setup, 'repo')
@@ -306,8 +310,9 @@ def test_submodule_stage(tmpdir, datafiles):
     git_add_file(setup, 'subrepo', 'ponyfile.txt', 'file')
     git_add_submodule(setup, 'repo', setup.subrepo_url, 'subrepo')
 
-    # Make sure we preflight and fetch first
+    # Preflight, refresh and fetch
     setup.source.preflight()
+    setup.source.refresh(setup.source._Source__origin_node)
     setup.source.fetch()
 
     # Stage the file and just check that it's there
@@ -322,7 +327,7 @@ def test_submodule_stage(tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_fetch_new_ref_with_submodule(tmpdir, datafiles):
 
-    # We know this is the right commit sha for the repo we create
+    # We know this is the right commit sha for the repo before adding a submodule
     setup = GitSetup(datafiles, tmpdir, 'a3f9511fd3e4f043692f34234b4d2c7108de61fc')
     assert(setup.source.get_kind() == 'git')
 
@@ -344,11 +349,14 @@ def test_fetch_new_ref_with_submodule(tmpdir, datafiles):
     subrepo_url = 'file://' + os.path.join(setup.origin_dir, 'subrepo')
     git_add_submodule(setup, 'repo', subrepo_url, 'subrepo')
 
-    setup2 = GitSubmoduleSetup(datafiles, tmpdir, '7b5a9a0da6752c5b9a3fe52055e016354cda704e',
-                               bstfile='another.bst')
+    # This time we need to refresh and use master, we can't predict this commit sha
+    #
+    setup2 = GitSubmoduleSetup(datafiles, tmpdir, track='master', bstfile='another.bst')
     assert(setup.source.get_kind() == 'git')
 
+    # Preflight, refresh and fetch
     setup2.source.preflight()
+    setup2.source.refresh(setup.source._Source__origin_node)
     setup2.source.fetch()
 
     # Stage the file and just check that it's there
