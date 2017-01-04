@@ -59,6 +59,31 @@ class GitSetup(Setup):
             f.write(final)
 
 
+class GitSubmoduleSetup(GitSetup):
+
+    def generate_target_bst(self, directory, url, ref, track=None, bstfile=None):
+
+        template = "kind: pony\n" + \
+                   "description: This is the pony\n" + \
+                   "sources:\n" + \
+                   "- kind: git\n" + \
+                   "  url: {url}\n" + \
+                   "  ref: {ref}\n" + \
+                   "submodules:\n" + \
+                   "  subrepo:\n" + \
+                   "    url: {subrepo}\n"
+
+        self.subrepo_url = 'file://' + os.path.join(self.origin_dir, 'subrepo')
+        final = template.format(url=url, ref=ref, subrepo=self.subrepo_url)
+
+        if track:
+            final = final + "  track: {track}\n".format(track=track)
+
+        filename = os.path.join(directory, bstfile)
+        with open(filename, 'w') as f:
+            f.write(final)
+
+
 # Create a git repository at the setup.origin_dir
 def git_create(setup, reponame):
     repodir = os.path.join(setup.origin_dir, reponame)
@@ -76,6 +101,22 @@ def git_add_file(setup, reponame, filename, content):
     # We rely on deterministic commit shas for testing, so set date and author
     subprocess.call(['git', 'add', filename], cwd=repodir)
     subprocess.call(['git', 'commit', '-m', 'Added the file'],
+                    env={'GIT_AUTHOR_DATE': '1320966000 +0200',
+                         'GIT_AUTHOR_NAME': 'tomjon',
+                         'GIT_AUTHOR_EMAIL': 'tom@jon.com',
+                         'GIT_COMMITTER_DATE': '1320966000 +0200',
+                         'GIT_COMMITTER_NAME': 'tomjon',
+                         'GIT_COMMITTER_EMAIL': 'tom@jon.com'},
+                    cwd=repodir)
+
+
+# Add a submodule to the git
+def git_add_submodule(setup, reponame, url, path):
+    repodir = os.path.join(setup.origin_dir, reponame)
+
+    # We rely on deterministic commit shas for testing, so set date and author
+    subprocess.call(['git', 'submodule', 'add', url, path], cwd=repodir)
+    subprocess.call(['git', 'commit', '-m', 'Added the submodule'],
                     env={'GIT_AUTHOR_DATE': '1320966000 +0200',
                          'GIT_AUTHOR_NAME': 'tomjon',
                          'GIT_AUTHOR_EMAIL': 'tom@jon.com',
@@ -222,6 +263,98 @@ def test_refresh(tmpdir, datafiles):
     setup.source.preflight()
 
     # Test that the ref has changed to latest on master after refreshing
-    assert(setup.source.ref == 'a3f9511fd3e4f043692f34234b4d2c7108de61fc')
+    assert(setup.source.mirror.ref == 'a3f9511fd3e4f043692f34234b4d2c7108de61fc')
     setup.source.refresh(setup.source._Source__origin_node)
-    assert(setup.source.ref == '3ac9cce94dd57e50a101e03dd6d43e0fc8a56b95')
+    assert(setup.source.mirror.ref == '3ac9cce94dd57e50a101e03dd6d43e0fc8a56b95')
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_submodule_fetch(tmpdir, datafiles):
+
+    # We know this is the right commit sha for the repo we create
+    setup = GitSubmoduleSetup(datafiles, tmpdir, 'e65c898f8b4a42024ced731def6a2f7bde0ea138')
+    assert(setup.source.get_kind() == 'git')
+
+    git_create(setup, 'repo')
+    git_add_file(setup, 'repo', 'file.txt', 'pony')
+    git_create(setup, 'subrepo')
+    git_add_file(setup, 'subrepo', 'ponyfile.txt', 'file')
+    git_add_submodule(setup, 'repo', setup.subrepo_url, 'subrepo')
+
+    # Make sure we preflight first
+    setup.source.preflight()
+
+    # This should result in the mirror being created in the git sources dir
+    setup.source.fetch()
+
+    # Check that there is now a mirrored git repository at the expected directory
+    directory_name = utils.url_directory_name(setup.url)
+    fullpath = os.path.join(setup.context.sourcedir, 'git', directory_name)
+    assert(os.path.isdir(fullpath))
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_submodule_stage(tmpdir, datafiles):
+
+    # We know this is the right commit sha for the repo we create
+    setup = GitSubmoduleSetup(datafiles, tmpdir, 'cea8dbfe21eaa069c28094418afa55bf2223838f')
+    assert(setup.source.get_kind() == 'git')
+
+    git_create(setup, 'repo')
+    git_add_file(setup, 'repo', 'file.txt', 'pony')
+    git_create(setup, 'subrepo')
+    git_add_file(setup, 'subrepo', 'ponyfile.txt', 'file')
+    git_add_submodule(setup, 'repo', setup.subrepo_url, 'subrepo')
+
+    # Make sure we preflight and fetch first
+    setup.source.preflight()
+    setup.source.fetch()
+
+    # Stage the file and just check that it's there
+    stagedir = os.path.join(setup.context.builddir, 'repo')
+    setup.source.stage(stagedir)
+    assert(os.path.exists(os.path.join(stagedir, 'file.txt')))
+
+    # Assert the submodule file made it there
+    assert(os.path.exists(os.path.join(stagedir, 'subrepo', 'ponyfile.txt')))
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_fetch_new_ref_with_submodule(tmpdir, datafiles):
+
+    # We know this is the right commit sha for the repo we create
+    setup = GitSetup(datafiles, tmpdir, 'a3f9511fd3e4f043692f34234b4d2c7108de61fc')
+    assert(setup.source.get_kind() == 'git')
+
+    git_create(setup, 'repo')
+    git_add_file(setup, 'repo', 'file.txt', 'pony')
+
+    setup.source.preflight()
+    setup.source.fetch()
+
+    # Check that there is now a mirrored git repository at the expected directory
+    directory_name = utils.url_directory_name(setup.url)
+    fullpath = os.path.join(setup.context.sourcedir, 'git', directory_name)
+    assert(os.path.isdir(fullpath))
+
+    # Now add another repo and add a commit to the main repo making the
+    # other repo a submodule
+    git_create(setup, 'subrepo')
+    git_add_file(setup, 'subrepo', 'ponyfile.txt', 'file')
+    subrepo_url = 'file://' + os.path.join(setup.origin_dir, 'subrepo')
+    git_add_submodule(setup, 'repo', subrepo_url, 'subrepo')
+
+    setup2 = GitSubmoduleSetup(datafiles, tmpdir, '7b5a9a0da6752c5b9a3fe52055e016354cda704e',
+                               bstfile='another.bst')
+    assert(setup.source.get_kind() == 'git')
+
+    setup2.source.preflight()
+    setup2.source.fetch()
+
+    # Stage the file and just check that it's there
+    stagedir = os.path.join(setup.context.builddir, 'repo')
+    setup2.source.stage(stagedir)
+    assert(os.path.exists(os.path.join(stagedir, 'file.txt')))
+
+    # Assert the submodule file made it there
+    assert(os.path.exists(os.path.join(stagedir, 'subrepo', 'ponyfile.txt')))
