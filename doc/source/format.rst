@@ -19,7 +19,7 @@ A BuildStream project is a directory consisting of:
 
 A typical project structure may look like this::
 
-  myproject/project.yaml
+  myproject/project.conf
   myproject/elements/element1.bst
   myproject/elements/element2.bst
   myproject/elements/...
@@ -169,7 +169,7 @@ Config
 
 Here we configure the element itself. The autotools element provides sane defaults for
 building sources which use autotools. Element default configurations can be overridden
-in the ``project.yaml`` file and additionally overridden in the declaration of an element.
+in the ``project.conf`` file and additionally overridden in the declaration of an element.
 
 For meaningful documentation on what can be specified in the ``config`` section for a given
 element ``kind``, refer to the element specific documentation. 
