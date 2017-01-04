@@ -123,16 +123,16 @@ class GitMirror():
                 raise SourceError("%s: Failed to fetch from remote git repository: '%s'" %
                                   (str(self.source), self.url))
 
-        # It is an error if the expected ref is not found in the mirror
-        if not self.has_ref():
-            raise SourceError("%s: expected ref '%s' was not found in git repository: '%s'" %
-                              (str(self.source), self.ref, self.url))
-
     def has_ref(self):
         with open(os.devnull, "w") as fnull:
             out = subprocess.call([self.source.host_git, 'cat-file', '-t', self.ref],
                                   cwd=self.mirror, stdout=fnull, stderr=fnull)
             return out == 0
+
+    def assert_ref(self):
+        if not self.has_ref():
+            raise SourceError("%s: expected ref '%s' was not found in git repository: '%s'" %
+                              (str(self.source), self.ref, self.url))
 
     def latest_commit(self, tracking):
         with open(os.devnull, "w") as fnull:
@@ -259,6 +259,7 @@ class GitSource(Source):
         self.mirror.ensure()
         self.mirror.fetch()
         node['ref'] = self.mirror.ref = self.mirror.latest_commit(self.track)
+        self.mirror.assert_ref()
 
         # After refreshing we may have a new ref, so we need to ensure
         # that we've cached the desired refs in our mirrors of submodules.
@@ -272,6 +273,7 @@ class GitSource(Source):
         self.mirror.ensure()
         if not self.mirror.has_ref():
             self.mirror.fetch()
+        self.mirror.assert_ref()
 
         # Here after performing any fetches, we need to also ensure that
         # we've cached the desired refs in our mirrors of submodules.
@@ -328,6 +330,7 @@ class GitSource(Source):
             mirror.ensure()
             if not mirror.has_ref():
                 mirror.fetch()
+                mirror.assert_ref()
 
 
 # Plugin entry point
