@@ -4,6 +4,7 @@
 #
 # name: myproject
 
+
 # Alias configuration
 #
 # Aliases are entirely project specific, they are
@@ -14,29 +15,73 @@
 #   freedesktop: git://anongit.freedesktop.org/
 
 
-# Sandbox configuration
+# Variable Configuration
 #
-sandbox:
+# You may override the defaults of variables on a project wide
+# basis by specifying the 'variables' attribute.
+#
+# The defaults for this version of buildstream are listed below.
+#
+variables:
 
-  # Base sandbox environment, can be overridden by plugins
-  environment:
-    PATH: /usr/bin:/bin:/usr/sbin:/sbin
-    SHELL: /bin/sh
-    TERM: dumb
-    USER: tomjon
-    USERNAME: tomjon
-    LOGNAME: tomjon
-    LC_ALL: C
-    HOME: /tmp
-    TZ: UTC
+  # Path configuration, to be used in build instructions.
+  #
+  prefix: "/usr"
+  exec_prefix: "%{prefix}"
+  bindir: "%{exec_prefix}/bin"
+  sbindir: "%{exec_prefix}/sbin"
+  libexecdir: "%{exec_prefix}/libexecdir"
+  datadir: "%{prefix}/share"
+  sysconfdir: "/etc"
+  sharedstatedir: "%{prefix}/com"
+  localstatedir: "/var"
+  lib: "lib"
+  libdir: "%{prefix}/%{lib}"
+  includedir: "%{prefix}/include"
+  infodir: "%{prefix}/info"
+  mandir: "%{prefix}/man"
 
-  # Specify devices which should be available in the sandbox
-  devices:
-  - /dev/console
-  - /dev/full
-  - /dev/null
-  - /dev/urandom
-  - /dev/zero
+  # Indicates the build installation directory in the sandbox
+  install-root: /buildstream/install
+
+  # Define some patterns which might be used in multiple elements
+  strip-binaries: |
+
+    find "%{install-root}" -type f \
+      '(' -perm -111 -o -name '*.so*' -o -name '*.cmxs' -o -name '*.node' ')' \
+      -exec sh -ec \
+      'read -n4 hdr <"$1" # check for elf header
+       if [ "$hdr" != "$(printf \\x7fELF)" ]; then
+           exit 0
+       fi
+       debugfile="%{install-root}%{libdir}/debug/$(basename "$1")"
+       mkdir -p "$(dirname "$debugfile")"
+       objcopy --only-keep-debug "$1" "$debugfile"
+       chmod 644 "$debugfile"
+       strip --remove-section=.comment --remove-section=.note --strip-unneeded "$1"
+       objcopy --add-gnu-debuglink "$debugfile" "$1"' - {} ';'
+
+
+# Base sandbox environment, can be overridden by plugins
+environment:
+  PATH: /usr/bin:/bin:/usr/sbin:/sbin
+  SHELL: /bin/sh
+  TERM: dumb
+  USER: tomjon
+  USERNAME: tomjon
+  LOGNAME: tomjon
+  LC_ALL: C
+  HOME: /tmp
+  TZ: UTC
+
+
+# Specify devices which should be available in the sandbox
+devices:
+- /dev/console
+- /dev/full
+- /dev/null
+- /dev/urandom
+- /dev/zero
 
 
 # Element Overrides

@@ -31,13 +31,13 @@ overrides for the configuration of element types used in the project.
 
 The default BuildStream project configuration is included here for reference:
   .. literalinclude:: ../../buildstream/data/projectconfig.yaml
+     :language: yaml
 """
 
 import os
 from . import _site
 from . import _yaml
 from . import LoadError, LoadErrorReason
-from .utils import node_items
 
 
 # The separator we use for user specified aliases
@@ -61,14 +61,11 @@ class Project():
         self.directory = directory
         """str: The project directory"""
 
-        self.environment = {}
-        """dict: The base sandbox environment"""
-
-        self.devices = []
-        """list: List of device descriptions required for the sandbox"""
-
-        self._elements = {}  # Element specific configurations
-        self._aliases = {}   # Aliases dictionary
+        self._variables = {}    # The default variables overridden with project wide overrides
+        self._environment = {}  # The base sandbox environment
+        self._devices = []      # List of device descriptions required for the sandbox
+        self._elements = {}     # Element specific configurations
+        self._aliases = {}      # Aliases dictionary
 
         self._load()
 
@@ -94,6 +91,13 @@ class Project():
 
         return url
 
+    # _load():
+    #
+    # Loads the project configuration file in the project directory
+    # and extracts some things.
+    #
+    # Raises: LoadError if there was a problem with the project.conf
+    #
     def _load(self):
 
         projectfile = os.path.join(self.directory, "project.conf")
@@ -105,11 +109,13 @@ class Project():
         # The project name
         self.name = _yaml.node_get(config, str, 'name')
 
-        # Load sandbox configuration
-        sandbox_node = _yaml.node_get(config, dict, 'sandbox')
-        self.environment = _yaml.node_get(sandbox_node, dict, 'environment')
-        self.devices = _yaml.node_get(sandbox_node, list, 'devices')
-
-        # Aliases & Element configurations
-        self._elements = _yaml.node_get(config, dict, 'elements', default_value={})
+        # Source url aliases
         self._aliases = _yaml.node_get(config, dict, 'aliases', default_value={})
+
+        # Load sandbox configuration
+        self._variables = _yaml.node_get(config, dict, 'variables')
+        self._environment = _yaml.node_get(config, dict, 'environment')
+        self._devices = _yaml.node_get(config, list, 'devices')
+
+        # Element configurations
+        self._elements = _yaml.node_get(config, dict, 'elements', default_value={})

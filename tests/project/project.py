@@ -40,9 +40,9 @@ def test_load_basic_project(datafiles):
     assert (project.name == "pony")
 
     # Some of the defaults
-    assert (project.environment['USER'] == "tomjon")
-    assert (project.environment['TERM'] == "dumb")
-    assert (project.environment['PATH'] == "/usr/bin:/bin:/usr/sbin:/sbin")
+    assert (project._environment['USER'] == "tomjon")
+    assert (project._environment['TERM'] == "dumb")
+    assert (project._environment['PATH'] == "/usr/bin:/bin:/usr/sbin:/sbin")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -52,7 +52,7 @@ def test_override_project_path(datafiles):
     project = Project(directory)
 
     # Test the override
-    assert (project.environment['PATH'] == "/bin:/sbin")
+    assert (project._environment['PATH'] == "/bin:/sbin")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
