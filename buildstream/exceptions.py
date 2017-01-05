@@ -59,6 +59,12 @@ class LoadErrorReason(Enum):
     CIRCULAR_DEPENDENCY = 6
     """An circular dependency chain was detected"""
 
+    UNRESOLVED_VARIABLE = 7
+    """A variable could not be resolved. This can happen if your project
+    has cyclic dependencies in variable declarations, or, when substituting
+    a string which refers to an undefined variable.
+    """
+
 
 class LoadError(Exception):
     """Raised while loading some YAML.
