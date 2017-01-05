@@ -30,12 +30,16 @@ class MetaElement():
     #    kind: The element kind
     #    sources: An array of MetaSource objects
     #    config: The configuration data for the element
+    #    variables: The variables declared or overridden on this element
+    #    environment: The environment variables declared or overridden on this element
     #
-    def __init__(self, name, kind, sources, config):
+    def __init__(self, name, kind, sources, config, variables, environment):
         self.name = name
         self.kind = kind
         self.sources = sources
         self.config = config
+        self.variables = variables
+        self.environment = environment
 
         self.build_dependencies = []
         self.dependencies = []

@@ -45,6 +45,8 @@ class Symbol():
     ARCHES = "arches"
     SOURCES = "sources"
     CONFIG = "config"
+    VARIABLES = "variables"
+    ENVIRONMENT = "environment"
     TYPE = "type"
     BUILD = "build"
     RUNTIME = "runtime"
@@ -622,7 +624,10 @@ class Loader():
                                      provenance.filename)
             meta_sources.append(meta_source)
 
-        meta_element = MetaElement(element_name, data.get('kind'), meta_sources, data.get(Symbol.CONFIG, {}))
+        meta_element = MetaElement(element_name, data.get('kind'), meta_sources,
+                                   data.get(Symbol.CONFIG, {}),
+                                   data.get(Symbol.VARIABLES, {}),
+                                   data.get(Symbol.ENVIRONMENT, {}))
 
         # Check circular dependencies, if we're adding something
         # which depends on something already there, it's a circular dep
