@@ -23,6 +23,7 @@ from .exceptions import PluginError, LoadError, LoadErrorReason, \
     SourceError, ElementError, ImplError, ProgramNotFoundError
 
 # Plugin auther facing APIs
+from .plugin import Plugin
 from .source import Source
 from .element import Element, Scope
 from .buildelement import BuildElement

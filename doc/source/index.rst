@@ -35,6 +35,7 @@ BuildStream project.
 Core Framework
 --------------
 
+* :mod:`Plugin <buildstream.plugin>` - Base Class for all plugins
 * :mod:`Source <buildstream.source>` - Base Source Class
 * :mod:`Element <buildstream.element>` - Base Element Class
 * :mod:`BuildElement <buildstream.buildelement>` - Build Element Class
