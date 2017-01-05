@@ -24,7 +24,9 @@ import inspect
 from enum import Enum
 
 from . import _yaml
+from ._variables import Variables
 from . import ImplError
+from . import Plugin
 
 
 class Scope(Enum):
@@ -46,7 +48,7 @@ class Scope(Enum):
     """
 
 
-class Element():
+class Element(Plugin):
     """Element()
 
     Base Element class.
@@ -58,31 +60,30 @@ class Element():
     __defaults_set = False   # Flag, in case there are no defaults at all
 
     def __init__(self, context, project, meta):
-
-        self.__context = context                                    # The Context object
-        self.__project = project                                    # The Project object
-        self.__provenance = _yaml.node_get_provenance(meta.config)  # Provenance information
+        provenance = _yaml.node_get_provenance(meta.config)
+        super().__init__(context, project, provenance, "element")
 
         self.name = meta.name
         """The element name"""
 
-        self.runtime_dependencies = []
-        """Elements required for this element to run"""
-
-        self.build_dependencies = []
-        """Elements required to build this element"""
-
-        self.sources = []
-        """The :class:`.Source` objects declared on this element"""
+        self.__runtime_dependencies = []
+        self.__build_dependencies = []
+        self.__sources = []
 
         self.__init_defaults()
 
+        # Collect the composited environment
+        env = self.__extract_environment(meta)
+        self.__environment = env
+
+        # Collect the composited variables and resolve them
+        variables = self.__extract_variables(meta)
+        self.__variables = Variables(variables)
+
+        # Collect the composited element configuration and
+        # ask the element to configure itself.
         config = self.__extract_config(meta)
         self.configure(config)
-
-    # Element implementations may stringify themselves for the purpose of logging and errors
-    def __str__(self):
-        return "%s - %s element declared in %s" % (self.name, self.get_kind(), self.__provenance.filename)
 
     def dependencies(self, scope, mask=None):
         """dependencies(scope)
@@ -107,21 +108,21 @@ class Element():
         mask.append(self.name)
 
         if scope == Scope.ALL:
-            for dep in self.build_dependencies:
+            for dep in self.__build_dependencies:
                 for elt in dep.dependencies(Scope.ALL, mask=mask):
                     yield elt
-            for dep in self.runtime_dependencies:
-                if dep not in self.build_dependencies:
+            for dep in self.__runtime_dependencies:
+                if dep not in self.__build_dependencies:
                     for elt in dep.dependencies(Scope.ALL, mask=mask):
                         yield elt
 
         elif scope == Scope.BUILD:
-            for dep in self.build_dependencies:
+            for dep in self.__build_dependencies:
                 for elt in dep.dependencies(Scope.RUN, mask=mask):
                     yield elt
 
         elif scope == Scope.RUN:
-            for dep in self.runtime_dependencies:
+            for dep in self.__runtime_dependencies:
                 for elt in dep.dependencies(Scope.RUN, mask=mask):
                     yield elt
 
@@ -129,70 +130,72 @@ class Element():
         if (scope == Scope.ALL or scope == Scope.RUN):
             yield self
 
-    def get_kind(self):
-        """Fetches kind of this element
-
-        Returns:
-           (str): The kind of this element
-        """
-        modulename = type(self).__module__
-        return modulename.split('.')[-1]
-
-    def get_context(self):
-        """Fetches the context
-
-        Returns:
-           (object): The :class:`.Context`
-        """
-        return self.__context
-
-    def get_project(self):
-        """Fetches the project
-
-        Returns:
-           (object): The :class:`.Project`
-        """
-        return self.__project
-
-    def configure(self, node):
-        """Configure the Element from loaded configuration data
+    def node_subst_member(self, node, member_name, default_value=None):
+        """Fetch the value of a string node member, substituting any variables
+        in the loaded value with the element contextual variables.
 
         Args:
-           node (dict): The loaded configuration dictionary
+           node (dict): A dictionary loaded from YAML
+           member_name (str): The name of the member to fetch
+           default_value (str): A value to return when *member_name* is not specified in *node*
+
+        Returns:
+           The value of *member_name* in *node*, otherwise *default_value*
+
+        Raises:
+           :class:`.LoadError`: When *member_name* is not found and no *default_value* was provided
+
+        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_member`
+        except that it assumes the expected type is a string and will also perform variable
+        substitutions.
+
+        **Example:**
+
+        .. code:: python
+
+          # Expect a string 'name' in 'node', substituting any
+          # variables in the returned string
+          name = self.node_subst_member(node, 'name')
+        """
+        value = self.node_get_member(node, str, member_name, default_value=default_value)
+        return self.__variables.subst(value)
+
+    def node_subst_list_element(self, node, member_name, indices):
+        """Fetch the value of a list element from a node member, substituting any variables
+        in the loaded value with the element contextual variables.
+
+        Args:
+           node (dict): A dictionary loaded from YAML
+           member_name (str): The name of the member to fetch
+           indices (list of int): List of indices to search, in case of nested lists
+
+        Returns:
+           The value of the list element in *member_name* at the specified *indices*
 
         Raises:
            :class:`.LoadError`
 
-        Element implementors should implement this method to read configuration
-        data and store it. Use of the the :func:`~buildstream.utils.node_get_member`
-        convenience method will ensure that a nice :class:`.LoadError` is triggered
-        whenever the YAML input configuration is faulty.
+        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_list_element`
+        except that it assumes the expected type is a string and will also perform variable
+        substitutions.
+
+        **Example:**
+
+        .. code:: python
+
+          # Fetch the list itself
+          strings = self.node_get_member(node, list, 'strings')
+
+          # Iterate over the list indices
+          for i in range(len(strings)):
+
+              # Fetch the strings in this list, substituting content
+              # with our element's variables if needed
+              string = self.node_subst_list_element(
+                  node, 'strings', [ i ])
         """
-        raise ImplError("Element plugin '%s' does not implement configure()" % self.get_kind())
-
-    def preflight(self):
-        """Preflight Check
-
-        Raises:
-           :class:`.ElementError`
-
-        The method is run during pipeline preflight check, elements
-        should use this method to determine if they are able to
-        function in the host environment or if the data is unsuitable.
-
-        Implementors should simply raise :class:`.ElementError` with
-        an informative message in the case that the host environment is
-        unsuitable for operation.
-        """
-        raise ImplError("Element plugin '%s' does not implement preflight()" % self.get_kind())
-
-    def get_unique_key(self):
-        """Return something which uniquely identifies the element
-
-        Returns:
-           A string, list or dictionary which uniquely identifies the element to use
-        """
-        raise ImplError("Element plugin '%s' does not implement get_unique_key()" % self.get_kind())
+        value = self.node_get_list_element(node, str, member_name, indices)
+        return self.__variables.subst(value)
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -211,7 +214,7 @@ class Element():
     def _refresh(self):
         files = {}
 
-        for source in self.sources:
+        for source in self.__sources:
             source.refresh(source._Source__origin_node)
             files[source._Source__origin_filename] = source._Source__origin_toplevel
 
@@ -235,8 +238,10 @@ class Element():
             # Override some plugin defaults with project overrides
             #
             defaults = {}
-            elements = self.__project._elements
-            overrides = elements.get(self.get_kind)
+            project = self.get_project()
+            elements = project._elements
+            overrides = elements.get(self.get_kind())
+
             try:
                 defaults = _yaml.load(plugin_conf, plugin_conf_name)
                 if overrides:
@@ -253,20 +258,60 @@ class Element():
             type(self).__defaults = defaults
             self.__defaults_set = True
 
+    # This will resolve the final environment to be used when
+    # creating sandboxes for this element
+    #
+    def __extract_environment(self, meta):
+        project = self.get_project()
+        default_env = _yaml.node_get(self.__defaults, dict, 'environment', default_value={})
+        element_env = meta.environment
+
+        # Overlay default_env with element_env
+        if element_env and default_env:
+            _yaml.composite(default_env, element_env, typesafe=True)
+        element_env = default_env
+
+        # Overlay base_env with element_env
+        base_env = copy.copy(project._environment)
+        if element_env and base_env:
+            _yaml.composite(base_env, element_env, typesafe=True)
+        element_env = base_env
+
+        return element_env
+
+    # This will resolve the final variables to be used when
+    # substituting command strings to be run in the sandbox
+    #
+    def __extract_variables(self, meta):
+        project = self.get_project()
+        default_vars = _yaml.node_get(self.__defaults, dict, 'variables', default_value={})
+        element_vars = meta.variables
+
+        # Overlay default_vars with element_vars
+        if element_vars and default_vars:
+            _yaml.composite(default_vars, element_vars, typesafe=True)
+        element_vars = default_vars
+
+        # Overlay base_vars with element_vars
+        base_vars = copy.copy(project._variables)
+        if element_vars and base_vars:
+            _yaml.composite(base_vars, element_vars, typesafe=True)
+        element_vars = base_vars
+
+        return element_vars
+
     # This will resolve the final configuration to be handed
     # off to element.configure()
     #
     def __extract_config(self, meta):
+
+        # The default config is already composited with the project overrides
         default_config = _yaml.node_get(self.__defaults, dict, 'config', default_value={})
-        config = meta.config
+        element_config = meta.config
 
-        if not config:
-            config = default_config
-        elif default_config:
-            _yaml.composite(default_config, config, typesafe=True)
-            config = default_config
+        # Overlay default_config with element_config
+        if element_config and default_config:
+            _yaml.composite(default_config, element_config, typesafe=True)
+        element_config = default_config
 
-        if not config:
-            config = {}
-
-        return config
+        return element_config

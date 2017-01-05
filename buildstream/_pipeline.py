@@ -50,13 +50,13 @@ class Resolver():
 
         # resolve dependencies
         for dep in meta_element.dependencies:
-            element.runtime_dependencies.append(self.resolve_element(dep))
+            element._Element__runtime_dependencies.append(self.resolve_element(dep))
         for dep in meta_element.build_dependencies:
-            element.build_dependencies.append(self.resolve_element(dep))
+            element._Element__build_dependencies.append(self.resolve_element(dep))
 
         # resolve sources
         for meta_source in meta_element.sources:
-            element.sources.append(self.resolve_source(meta_source))
+            element._Element__sources.append(self.resolve_source(meta_source))
 
         # XXX Preflighting should be postponed and only run on elements
         # which are in scope of what we're going to do
