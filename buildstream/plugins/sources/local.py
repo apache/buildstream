@@ -67,7 +67,7 @@ class LocalSource(Source):
 
     def refresh(self, node):
         # Nothing to do here for a local source
-        pass
+        return False
 
     def fetch(self):
         # Nothing to do here for a local source
