@@ -206,19 +206,23 @@ class Element(Plugin):
     # Calls refresh on the Element sources
     #
     # Raises:
-    #    SourceError
+    #    SourceError: If one of the element sources has an error
     #
-    # Returns: (dict) A mapping of filenames and toplevel yaml nodes which
-    #                 need to be saved
+    # Returns:
+    #    (dict): A mapping of filenames and toplevel yaml nodes which
+    #            need to be saved
+    #    (list): A list of Source objects which changed
     #
     def _refresh(self):
         files = {}
+        changed = []
 
         for source in self.__sources:
-            source.refresh(source._Source__origin_node)
-            files[source._Source__origin_filename] = source._Source__origin_toplevel
+            if source.refresh(source._Source__origin_node):
+                files[source._Source__origin_filename] = source._Source__origin_toplevel
+                changed.append(source)
 
-        return files
+        return files, changed
 
     #############################################################
     #                   Private Local Methods                   #
