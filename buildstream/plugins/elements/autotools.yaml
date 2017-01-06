@@ -1,4 +1,26 @@
-# Default commands for using autotools build scripts
+# Autotools default configurations
+
+variables:
+
+  configure: |
+
+    ./configure --prefix=%{prefix} \
+                --exec-prefix=%{exec_prefix} \
+                --bindir=%{bindir} \
+                --sbindir=%{sbindir} \
+                --sysconfdir=%{sysconfdir} \
+                --datadir=%{datadir} \
+                --includedir=%{includedir} \
+                --libdir=%{libdir} \
+                --libexecdir=%{libexecdir} \
+                --localstatedir=%{localstatedir} \
+                --sharedstatedir=%{sharedstatedir} \
+                --mandir=%{mandir} \
+                --infodir=%{infodir}
+
+  make: make
+  make-install: make DESTDIR="%{install-root}" install
+
 config:
 
   # Commands for configuring the software
@@ -12,46 +34,25 @@ config:
     elif [ -e bootstrap.sh ]; then ./bootstrap.sh;
     elif [ ! -e ./configure ]; then autoreconf -ivf;
     fi
-  - ./configure --prefix="$PREFIX"
-                --sysconfdir=/etc
-                --localstatedir=/var
+  - |
+    %{configure}
 
   # Commands for building the software
   #
   build-commands:
-  - make
+  - |
+    %{make}
 
   # Commands for installing the software into a
   # destination folder
   #
   install-commands:
-  - make DESTDIR="$DESTDIR" install
+  - |
+    %{make-install}
 
-  # Commands for stripping installed binaries
+  # Commands for stripping debugging information out of
+  # installed binaries
   #
   strip-commands:
-
-  # TODO: Make idempotent when files are hardlinks
-  # Strip all ELF binary files that are executable or named like a library.
-  # .so files for C, .cmxs for OCaml and .node for Node.
-  #
-  # The file name and permissions checks are done with the `find` command before
-  # the ELF header is checked with the shell command, because it is a lot cheaper
-  # to check the mode and file name first, because it is a metadata check, rather
-  # than a subprocess and a file read.
-  #
-  # `file` is not used, to keep the dependency requirements down.
   - |
-    find "$DESTDIR" -type f \
-      '(' -perm -111 -o -name '*.so*' -o -name '*.cmxs' -o -name '*.node' ')' \
-      -exec sh -ec \
-      'read -n4 hdr <"$1" # check for elf header
-       if [ "$hdr" != "$(printf \\x7fELF)" ]; then
-           exit 0
-       fi
-       debugfile="$DESTDIR$PREFIX/lib/debug/$(basename "$1")"
-       mkdir -p "$(dirname "$debugfile")"
-       objcopy --only-keep-debug "$1" "$debugfile"
-       chmod 644 "$debugfile"
-       strip --remove-section=.comment --remove-section=.note --strip-unneeded "$1"
-       objcopy --add-gnu-debuglink "$debugfile" "$1"' - {} ';'
+    %{strip-binaries}

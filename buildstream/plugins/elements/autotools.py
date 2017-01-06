@@ -25,6 +25,7 @@ autotools build scripts
 
 The autotools default configuration:
   .. literalinclude:: ../../../buildstream/plugins/elements/autotools.yaml
+     :language: yaml
 """
 
 from buildstream import BuildElement
