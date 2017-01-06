@@ -25,6 +25,7 @@ the qmake build system
 
 The qmake default configuration:
   .. literalinclude:: ../../../buildstream/plugins/elements/qmake.yaml
+     :language: yaml
 """
 
 from buildstream import BuildElement
