@@ -68,32 +68,45 @@ def create_pipeline(directory, target, arch, variant, config):
               help="Configuration file to use")
 @click.option('--verbose', '-v', default=False, is_flag=True,
               help="Whether to be extra verbose")
-def cli(config, verbose):
+@click.option('--directory', '-C', default=os.getcwd(),
+              type=click.Path(exists=True, file_okay=False, readable=True),
+              help="Project directory (default: %s)" % os.getcwd())
+def cli(config, verbose, directory):
     main_options['config'] = config
     main_options['verbose'] = verbose
+    main_options['directory'] = directory
 
 
 ##################################################################
 #                         Refresh Command                        #
 ##################################################################
 @cli.command()
-@click.option('--directory', '-C', default=os.getcwd(),
-              type=click.Path(exists=True, file_okay=False, readable=True),
-              help="Project directory (default: %s)" % os.getcwd())
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
+@click.option('--list', '-l', default=False, is_flag=True,
+              help='List the sources which were refreshed')
 @click.argument('target')
-def refresh(directory, target, arch, variant):
+def refresh(target, arch, variant, list):
 
-    pipeline = create_pipeline(directory, target, arch, variant, main_options['config'])
+    pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
 
     try:
-        pipeline.refresh()
+        sources = pipeline.refresh()
     except (SourceError, ElementError) as e:
         click.echo("Error refreshing pipeline: %s" % str(e))
         sys.exit(1)
 
-    click.echo("Successfully refreshed sources in pipeline with target '%s' in directory: %s" %
-               (target, directory))
+    if list:
+        # --list output
+        for source in sources:
+            click.echo("{}".format(source))
+
+    elif len(sources) > 0:
+        click.echo(("Successfully refreshed {n_sources} sources in pipeline " +
+                    "with target '{target}' in directory: {directory}").format(
+                        n_sources=len(sources), target=target, directory=main_options['directory']))
+    else:
+        click.echo(("Pipeline with target '{target}' already up to date in directory: {directory}").format(
+            target=target, directory=main_options['directory']))
