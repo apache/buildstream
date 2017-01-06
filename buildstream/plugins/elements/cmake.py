@@ -25,6 +25,7 @@ cmake build scripts
 
 The cmake default configuration:
   .. literalinclude:: ../../../buildstream/plugins/elements/cmake.yaml
+     :language: yaml
 """
 
 from buildstream import BuildElement
