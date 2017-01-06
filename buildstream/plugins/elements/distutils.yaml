@@ -1,4 +1,22 @@
-# Default commands for using python distutils build scripts
+# Default python distutils configuration
+
+variables:
+
+  # When building for python2 distutils, simply
+  # override this in the element declaration
+  python: python3
+
+  python-build: |
+
+    %{python} setup.py build
+
+  python-install: |
+
+    %{python} setup.py install \
+                --prefix "%{prefix}" \
+                --root "%{install-root}"
+
+
 config:
 
   # Commands for configuring the software
@@ -8,39 +26,19 @@ config:
   # Commands for building the software
   #
   build-commands:
-  - python setup.py build
+  - |
+    %{python-build}
 
   # Commands for installing the software into a
   # destination folder
   #
   install-commands:
-  - python setup.py install --prefix "$PREFIX" --root "$DESTDIR"
+  - |
+    %{python-install}
 
-  # Commands for stripping installed binaries
+  # Commands for stripping debugging information out of
+  # installed binaries
   #
   strip-commands:
-
-  # TODO: Make idempotent when files are hardlinks
-  # Strip all ELF binary files that are executable or named like a library.
-  # .so files for C, .cmxs for OCaml and .node for Node.
-  #
-  # The file name and permissions checks are done with the `find` command before
-  # the ELF header is checked with the shell command, because it is a lot cheaper
-  # to check the mode and file name first, because it is a metadata check, rather
-  # than a subprocess and a file read.
-  #
-  # `file` is not used, to keep the dependency requirements down.
   - |
-    find "$DESTDIR" -type f \
-      '(' -perm -111 -o -name '*.so*' -o -name '*.cmxs' -o -name '*.node' ')' \
-      -exec sh -ec \
-      'read -n4 hdr <"$1" # check for elf header
-       if [ "$hdr" != "$(printf \\x7fELF)" ]; then
-           exit 0
-       fi
-       debugfile="$DESTDIR$PREFIX/lib/debug/$(basename "$1")"
-       mkdir -p "$(dirname "$debugfile")"
-       objcopy --only-keep-debug "$1" "$debugfile"
-       chmod 644 "$debugfile"
-       strip --remove-section=.comment --remove-section=.note --strip-unneeded "$1"
-       objcopy --add-gnu-debuglink "$debugfile" "$1"' - {} ';'
+    %{strip-binaries}

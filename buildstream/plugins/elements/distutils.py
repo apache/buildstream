@@ -25,6 +25,7 @@ python distutils
 
 The distutils default configuration:
   .. literalinclude:: ../../../buildstream/plugins/elements/distutils.yaml
+     :language: yaml
 """
 
 from buildstream import BuildElement
