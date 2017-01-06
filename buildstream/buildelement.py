@@ -24,7 +24,6 @@ implementing the most common case of element.
 
 from collections import OrderedDict
 
-from . import utils
 from . import Element
 
 
@@ -60,11 +59,11 @@ class BuildElement(Element):
         return dictionary
 
     def _get_commands(self, node, name):
-        list_node = utils.node_get_member(node, list, name, default_value=[])
+        list_node = self.node_get_member(node, list, name, default_value=[])
         commands = []
 
         for i in range(len(list_node)):
-            command = utils.node_get_list_element(node, str, name, [i])
+            command = self.node_subst_list_element(node, name, [i])
             commands.append(command)
 
         return commands
