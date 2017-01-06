@@ -58,18 +58,10 @@ class Resolver():
         for meta_source in meta_element.sources:
             element._Element__sources.append(self.resolve_source(meta_source))
 
-        # XXX Preflighting should be postponed and only run on elements
-        # which are in scope of what we're going to do
-        element.preflight()
-
         return element
 
     def resolve_source(self, meta_source):
         source = self.source_factory.create(meta_source.kind, self.context, self.project, meta_source)
-
-        # XXX Preflighting should be postponed and only run on elements
-        # which are in scope of what we're going to do
-        source.preflight()
 
         return source
 
@@ -91,10 +83,31 @@ class Pipeline():
         resolver = Resolver(self.context, self.project, self.element_factory, self.source_factory)
         self.target = resolver.resolve_element(meta_element)
 
+        # Right away, after constructing the tree
+        self.preflight()
+
+    # preflight()
+    #
+    # Runs preflight checks on the pipeline.
+    #
+    # Raises:
+    #    SourceError
+    #    ElementError
+    #    ProgramNotFoundError
+    #
+    def preflight(self):
+        for elt in self.target.dependencies(Scope.ALL):
+            for source in elt._Element__sources:
+                source.preflight()
+            elt.preflight()
+
     # refresh()
     #
     # Refreshes all the sources of all the elements in the pipeline,
     # i.e. all of the elements which the target somehow depends on.
+    #
+    # Returns:
+    #    (list): The Source objects which have changed due to the refresh
     #
     # If no error is encountered while refreshing, then the project files
     # are rewritten inline.
@@ -102,10 +115,14 @@ class Pipeline():
     def refresh(self):
 
         files = {}
+        sources = []
         for elt in self.target.dependencies(Scope.ALL):
-            elt_files = elt._refresh()
+            elt_files, elt_sources = elt._refresh()
+            sources += elt_sources
             files.update(elt_files)
 
         for filename, toplevel in files.items():
             fullname = os.path.join(self.project.directory, filename)
             _yaml.dump(toplevel, fullname)
+
+        return sources
