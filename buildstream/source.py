@@ -64,6 +64,9 @@ class Source(Plugin):
            node (dict): The same dictionary which was previously passed
                         to :func:`~buildstream.source.Source.configure`
 
+        Returns:
+           (bool): True if the refresh resulted in any update or change
+
         Raises:
            :class:`.SourceError`
 
