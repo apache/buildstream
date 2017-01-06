@@ -34,6 +34,7 @@ the default configuration.
 
 The default BuildStream configuration is included here for reference:
   .. literalinclude:: ../../buildstream/data/userconfig.yaml
+     :language: yaml
 """
 
 import os
