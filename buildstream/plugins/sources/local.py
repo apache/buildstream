@@ -45,7 +45,7 @@ class LocalSource(Source):
     def configure(self, node):
         project = self.get_project()
 
-        self.path = utils.node_get_member(node, str, 'path')
+        self.path = self.node_get_member(node, str, 'path')
         self.fullpath = os.path.join(project.directory, self.path)
 
     def preflight(self):
