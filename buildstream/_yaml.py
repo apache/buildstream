@@ -285,6 +285,9 @@ def node_get_provenance(node, key=None, indices=[]):
 # Raises:
 #    LoadError, when the value found is not of the expected type
 #
+# Note:
+#    Returned strings are stripped of leading and trailing whitespace
+#
 def node_get(node, expected_type, key, indices=[], default_value=None):
     value = node.get(key, default_value)
     provenance = node_get_provenance(node)
@@ -318,6 +321,10 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "%s: Value of '%s' is not of the expected type '%s'" %
                             (str(provenance), path, expected_type.__name__))
+
+    # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
+    if isinstance(value, str):
+        value = value.strip()
 
     return value
 
