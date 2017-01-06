@@ -25,6 +25,7 @@ the Perl Module::Build build system
 
 The modulebuild default configuration:
   .. literalinclude:: ../../../buildstream/plugins/elements/modulebuild.yaml
+     :language: yaml
 """
 
 from buildstream import BuildElement
