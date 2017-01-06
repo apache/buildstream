@@ -253,19 +253,26 @@ class GitSource(Source):
     def refresh(self, node):
         # If self.track is not specified it's not an error, just silently return
         if not self.track:
-            return
+            return False
 
-        # Update self.mirror.ref and node.ref from the self.track branch
         self.mirror.ensure()
         self.mirror.fetch()
-        node['ref'] = self.mirror.ref = self.mirror.latest_commit(self.track)
-        self.mirror.assert_ref()
+
+        # Update self.mirror.ref and node.ref from the self.track branch
+        new_ref = self.mirror.latest_commit(self.track)
+        changed = False
+        if self.mirror.ref != new_ref:
+            changed = True
+            node['ref'] = self.mirror.ref = new_ref
+            self.mirror.assert_ref()
 
         # After refreshing we may have a new ref, so we need to ensure
         # that we've cached the desired refs in our mirrors of submodules.
         #
         self.refresh_submodules()
         self.fetch_submodules()
+
+        return changed
 
     def fetch(self):
         # Here we are only interested in ensuring that our mirror contains
