@@ -17,4 +17,6 @@ config:
 
   # Commands for stripping installed binaries
   #
-  strip-commands: []
+  strip-commands:
+  - |
+    %{strip-binaries}
