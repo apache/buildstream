@@ -226,19 +226,19 @@ class GitSource(Source):
     def configure(self, node):
         project = self.get_project()
 
-        ref = utils.node_get_member(node, str, 'ref', '')
+        ref = self.node_get_member(node, str, 'ref', '')
 
-        self.original_url = utils.node_get_member(node, str, 'url')
+        self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
-        self.track = utils.node_get_member(node, str, 'track', '')
+        self.track = self.node_get_member(node, str, 'track', '')
         self.submodules = []
 
         # Parse a list of path/uri tuples for the submodule overrides dictionary
         self.submodule_overrides = {}
-        modules = utils.node_get_member(node, dict, 'submodules', {})
-        for path, _ in utils.node_items(modules):
-            submodule = utils.node_get_member(modules, dict, path)
-            self.submodule_overrides['path'] = utils.node_get_member(submodule, str, 'url')
+        modules = self.node_get_member(node, dict, 'submodules', {})
+        for path, _ in self.node_items(modules):
+            submodule = self.node_get_member(modules, dict, path)
+            self.submodule_overrides['path'] = self.node_get_member(submodule, str, 'url')
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
