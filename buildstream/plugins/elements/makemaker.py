@@ -25,6 +25,7 @@ the Perl ExtUtil::MakeMaker build system
 
 The MakeMaker default configuration:
   .. literalinclude:: ../../../buildstream/plugins/elements/makemaker.yaml
+     :language: yaml
 """
 
 from buildstream import BuildElement
