@@ -2,6 +2,10 @@
 
 The BuildStream Format
 ======================
+At the core of BuildStream is a data model of :mod:`Elements <buildstream.element>` which
+are parsed from ``.bst`` files in a project directory and configured from a few different
+sources.
+
 This page should tell you everything you need to know about the base YAML format
 which BuildStream uses.
 
@@ -41,9 +45,56 @@ The important part to remember is that when you declare dependency relationships
 a project relative path to the element one depends on must be provided.
 
 
+Element Composition
+-------------------
+Below are the various sources of configuration which go into an element in the order
+in which they are applied. Configurations which are applied later have a higher priority
+and override configurations which precede them.
+
+
+1. Builtin Defaults
+~~~~~~~~~~~~~~~~~~~
+The :mod:`Project <buildstream.project>` provides a set of default values for *variables*
+and the *environment* which are all documented with your copy of BuildStream. 
+
+
+2. Project Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+The project wide defaults are now applied on top of builtin defaults. If you specify
+anything in the *variables* or *environment* sections in your ``project.conf`` then it
+will override the builtin defaults.
+
+
+3. Element Defaults
+~~~~~~~~~~~~~~~~~~~
+Elements are all implemented as plugins. Each plugin installs a ``.yaml`` file along side
+their plugin to define the default *variables*, *environment* and *config*. The *config*
+is element specific and as such this is the first place where defaults can be set on the
+*config* section.
+
+The *variables* and *environment* specified in the declaring plugin's defaults here override
+the project configuration defaults for the given element ``kind``.
+
+
+4. Project Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+The ``project.conf`` now gives you another opportunity to override *variables*, *environment*
+and *config* sections on a per element basis.
+
+Configurations specified in the *elements* section of the ``project.conf`` will override
+the given element's default.
+
+
+5. Element Declarations
+~~~~~~~~~~~~~~~~~~~~~~~
+Finally, after having resolved any `Architecture Conditionals`_ or `Variant Conditionals`_
+in the parsing phase of loading element declarations; the configurations specified in a
+``.bst`` file have the last word on any configuration in the data model.
+
+
 Element Basics
 --------------
-Here is a basic example using the autotools element kind and git source kind:
+Here is a rather complete example using the autotools element kind and git source kind:
 
 .. code:: yaml
 
@@ -58,16 +109,24 @@ Here is a basic example using the autotools element kind and git source kind:
    # Specify the source which should be built
    sources:
    - kind: git
-     uri: upstream:modulename.git
+     url: upstream:modulename.git
      track: master
      ref: d0b38561afb8122a3fc6bafc5a733ec502fcaed6
+
+   # Override some variables
+   variables:
+     sysconfdir: %{prefix}/etc
+
+   # Tweak the sandbox shell environment
+   environment:
+     LD_LIBRARY_PATH: /some/custom/path
 
    # Specify the configuration of the element
    config:
 
      # Override autotools element default configure-commands
      configure-commands:
-     - ./configure --enable-fancy-feature
+     - "%{configure} --enable-fancy-feature"
 
    # Specify public domain visible to other elements.
    public:
@@ -75,9 +134,8 @@ Here is a basic example using the autotools element kind and git source kind:
      commands:
      - /usr/bin/update-fancy-feature-cache
 
-The above is a pretty simple example, and for most cases you would not have to specify
-explicit configure commands or commands in the integration domain, we've just provided
-that here to have a more complete initial example.
+For most use cases you would not need to specify this much detail, we've provided
+details here in order to have a more complete initial example.
 
 Let's break down the above and give a brief explanation of what these attributes mean.
 
@@ -119,7 +177,7 @@ Sources
    # Specify the source which should be built
    sources:
    - kind: git
-     uri: upstream:modulename.git
+     url: upstream:modulename.git
      track: master
      ref: d0b38561afb8122a3fc6bafc5a733ec502fcaed6
 
@@ -138,7 +196,7 @@ in order to build itself, in this case the sources might be listed as:
 
    # Specify the source which should be built
    - kind: git
-     uri: upstream:modulename.git
+     url: upstream:modulename.git
      track: master
      ref: d0b38561afb8122a3fc6bafc5a733ec502fcaed6
 
@@ -146,13 +204,46 @@ in order to build itself, in this case the sources might be listed as:
    # we need it to be unpacked in a src/frobdir
    - kind: tarball
      directory: src/frobdir
-     uri: data:frobs.tgz
+     url: data:frobs.tgz
      sha256sum: 9d4b1147f8cf244b0002ba74bfb0b8dfb3...
 
 Like Elements, Source types are plugins which are indicated by the ``kind`` attribute.
 Asides from the common ``kind`` and ``directory`` attributes which may be applied to all
 Sources, refer to the Source specific documentation for meaningful attributes for the
 particular Source.
+
+
+Variables
+~~~~~~~~~
+
+.. code:: yaml
+
+   # Override some variables
+   variables:
+     sysconfdir: "%{prefix}/etc"
+
+Variables can be declared or overridden from an element. Variables can also be
+declared and overridden in the :mod:`Project Configuration <buildstream.project>`
+
+See `Using Variables`_ below for a more in depth discussion on variables in BuildStream.
+
+
+Environment
+~~~~~~~~~~~
+
+.. code:: yaml
+
+   # Tweak the sandbox shell environment
+   environment:
+     LD_LIBRARY_PATH: /some/custom/path
+
+Environment variables can be set to literal values here, these environment
+variables will be effective in the :mod:`Sandbox <buildstream.sandbox>` where
+build instructions are run for this element.
+
+
+Environment variables can also be
+declared and overridden in the :mod:`Project Configuration <buildstream.project>`
 
 
 Config
@@ -165,7 +256,7 @@ Config
 
      # Override autotools element default configure-commands
      configure-commands:
-     - ./configure --enable-fancy-feature
+     - "%{configure} --enable-fancy-feature"
 
 Here we configure the element itself. The autotools element provides sane defaults for
 building sources which use autotools. Element default configurations can be overridden
@@ -264,6 +355,77 @@ required both at build time and runtime.
    ``runtime`` dependencies will also be staged for the purpose of building.
 
 
+
+Using Variables
+---------------
+Variables in BuildStream are a way to make your build instructions and
+element configurations more dynamic.
+
+
+Referring to Variables
+~~~~~~~~~~~~~~~~~~~~~~
+Variables are expressed as ``%{...}``, where ``...`` must contain only
+alphanumeric characters and the separators ``_`` and ``-``. Further, the
+first letter of ``...`` must be an alphabetic character.
+
+.. code:: yaml
+
+   This is release version %{version}
+
+
+Declaring and Overriding Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To declare or override a variable, one need only specify a value
+in the relevant *variables* section:
+
+.. code:: yaml
+
+   variables:
+     hello: Hello World
+
+You can refer to another variable while declaring a variable:
+
+.. code:: yaml
+
+   variables:
+     release-text: This is release version %{version}
+
+The order in which you declare variables is arbitrary, so long as there is no cyclic
+dependency and that all referenced variables are declared, the following is fine:
+
+.. code:: yaml
+
+   variables:
+     release-text: This is release version %{version}
+     version: 5.5
+
+.. note::
+
+   It should be noted that variable resolution only happens after all `Element Composition`_
+   has already taken place.
+
+   This is to say that overriding ``%{version}`` at a higher priority will effect
+   the final result of ``%{release-text}``.
+
+
+**Example:**
+
+.. code:: yaml
+
+   kind: autotools
+
+   # Declare variable, expect %{version} was already declared
+   variables:
+     release-text: This is release version %{version}
+
+   config:
+
+     # Customize the installation
+     install-commands:
+     - |
+       %{make-install} RELEASE_TEXT="%{release-text}"
+
+
 Architecture Conditionals
 -------------------------
 To BuildStream, an architecture is simply an arbitrary name that is associated with
@@ -353,7 +515,7 @@ Here is an example of how an element declares multiple variants:
    - variant: default
      config:
        configure-commands:
-       - ./configure --without-flying-ponies
+       - "%{configure} --without-flying-ponies"
 
    # For the flying-ponies variant, we want to pull in the extra
    # ponies so they will be available for flying
