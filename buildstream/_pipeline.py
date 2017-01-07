@@ -74,8 +74,8 @@ class Pipeline():
         self.artifactcache = ArtifactCache(self.context)
 
         pluginbase = PluginBase(package='buildstream.plugins')
-        self.element_factory = ElementFactory(pluginbase)
-        self.source_factory = SourceFactory(pluginbase)
+        self.element_factory = ElementFactory(pluginbase, project._plugin_element_paths)
+        self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
 
         loader = Loader(self.project.directory, target, target_variant, context.arch)
         meta_element = loader.load()
