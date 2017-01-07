@@ -37,7 +37,6 @@ The default BuildStream project configuration is included here for reference:
 import os
 from . import _site
 from . import _yaml
-from . import LoadError, LoadErrorReason
 
 
 # The separator we use for user specified aliases
@@ -66,6 +65,8 @@ class Project():
         self._devices = []      # List of device descriptions required for the sandbox
         self._elements = {}     # Element specific configurations
         self._aliases = {}      # Aliases dictionary
+        self._plugin_source_paths = []   # Paths to custom sources
+        self._plugin_element_paths = []  # Paths to custom plugins
 
         self._load()
 
@@ -109,6 +110,13 @@ class Project():
         # The project name
         self.name = _yaml.node_get(config, str, 'name')
 
+        # Load the plugin paths
+        plugins = _yaml.node_get(config, dict, 'plugins', default_value={})
+        self._plugin_source_paths = [os.path.join(self.directory, path)
+                                     for path in self._extract_plugin_paths(plugins, 'sources')]
+        self._plugin_element_paths = [os.path.join(self.directory, path)
+                                      for path in self._extract_plugin_paths(plugins, 'elements')]
+
         # Source url aliases
         self._aliases = _yaml.node_get(config, dict, 'aliases', default_value={})
 
@@ -119,3 +127,11 @@ class Project():
 
         # Element configurations
         self._elements = _yaml.node_get(config, dict, 'elements', default_value={})
+
+    def _extract_plugin_paths(self, node, name):
+        if not node:
+            return
+        path_list = _yaml.node_get(node, list, name, default_value=[])
+        for i in range(len(path_list)):
+            path = _yaml.node_get(node, str, name, indices=[i])
+            yield path

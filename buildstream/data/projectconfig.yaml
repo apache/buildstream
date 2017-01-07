@@ -15,12 +15,28 @@
 #   freedesktop: git://anongit.freedesktop.org/
 
 
+# Plugin path configuration
+#
+# You may specify one or more project relative paths to
+# subdirectories where plugins should be loaded from.
+#
+# plugins:
+#
+#   elements:
+#   - plugins/local-elements
+#   - plugins/shared-elements
+#
+#   sources:
+#   - plugins/local-sources
+
+
 # Variable Configuration
 #
 # You may override the defaults of variables on a project wide
 # basis by specifying the 'variables' attribute.
 #
-# The defaults for this version of buildstream are listed below.
+# The defaults for this version of buildstream are listed
+# below.
 #
 variables:
 
@@ -44,7 +60,8 @@ variables:
   # Indicates the build installation directory in the sandbox
   install-root: /buildstream/install
 
-  # Define some patterns which might be used in multiple elements
+  # Define some patterns which might be used in multiple
+  # elements
   strip-binaries: |
 
     find "%{install-root}" -type f \
