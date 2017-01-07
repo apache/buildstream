@@ -28,7 +28,7 @@ from .element import Element
 #
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
-#     searchpath (list):        Search path for external Source plugins
+#     searchpath (list):        Search path for external Element plugins
 #
 class ElementFactory(PluginContext):
 
