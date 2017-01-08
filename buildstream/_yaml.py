@@ -372,10 +372,21 @@ def composite(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
                          e.actual_type.__name__)) from e
 
 
+# Gives a node a dummy provenance, in case of compositing dictionaries
+# where the target is an empty {}
+def ensure_provenance(node):
+    provenance = node.get(PROVENANCE_KEY)
+    if not provenance:
+        provenance = DictProvenance('', node, node)
+    node[PROVENANCE_KEY] = provenance
+
+    return provenance
+
+
 def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
                            typesafe=False, path=None):
-    target_provenance = target.get(PROVENANCE_KEY)
-    source_provenance = source.get(PROVENANCE_KEY)
+    target_provenance = ensure_provenance(target)
+    source_provenance = ensure_provenance(source)
 
     for key, value in source.items():
 
