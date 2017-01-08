@@ -625,9 +625,9 @@ class Loader():
             meta_sources.append(meta_source)
 
         meta_element = MetaElement(element_name, data.get('kind'), meta_sources,
-                                   data.get(Symbol.CONFIG, {}),
-                                   data.get(Symbol.VARIABLES, {}),
-                                   data.get(Symbol.ENVIRONMENT, {}))
+                                   _yaml.node_get(data, dict, Symbol.CONFIG, default_value={}),
+                                   _yaml.node_get(data, dict, Symbol.VARIABLES, default_value={}),
+                                   _yaml.node_get(data, dict, Symbol.ENVIRONMENT, default_value={}))
 
         # Check circular dependencies, if we're adding something
         # which depends on something already there, it's a circular dep
