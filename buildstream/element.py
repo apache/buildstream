@@ -25,7 +25,7 @@ from enum import Enum
 
 from . import _yaml
 from ._variables import Variables
-from . import ImplError
+from . import ImplError, LoadError, LoadErrorReason
 from . import Plugin
 
 
@@ -271,14 +271,13 @@ class Element(Plugin):
         element_env = meta.environment
 
         # Overlay default_env with element_env
-        if element_env and default_env:
-            _yaml.composite(default_env, element_env, typesafe=True)
+        default_env = copy.deepcopy(default_env)
+        _yaml.composite(default_env, element_env, typesafe=True)
         element_env = default_env
 
         # Overlay base_env with element_env
-        base_env = copy.copy(project._environment)
-        if element_env and base_env:
-            _yaml.composite(base_env, element_env, typesafe=True)
+        base_env = copy.deepcopy(project._environment)
+        _yaml.composite(base_env, element_env, typesafe=True)
         element_env = base_env
 
         return element_env
@@ -292,14 +291,13 @@ class Element(Plugin):
         element_vars = meta.variables
 
         # Overlay default_vars with element_vars
-        if element_vars and default_vars:
-            _yaml.composite(default_vars, element_vars, typesafe=True)
+        default_vars = copy.deepcopy(default_vars)
+        _yaml.composite(default_vars, element_vars, typesafe=True)
         element_vars = default_vars
 
         # Overlay base_vars with element_vars
-        base_vars = copy.copy(project._variables)
-        if element_vars and base_vars:
-            _yaml.composite(base_vars, element_vars, typesafe=True)
+        base_vars = copy.deepcopy(project._variables)
+        _yaml.composite(base_vars, element_vars, typesafe=True)
         element_vars = base_vars
 
         return element_vars
@@ -313,9 +311,8 @@ class Element(Plugin):
         default_config = _yaml.node_get(self.__defaults, dict, 'config', default_value={})
         element_config = meta.config
 
-        # Overlay default_config with element_config
-        if element_config and default_config:
-            _yaml.composite(default_config, element_config, typesafe=True)
+        default_config = copy.deepcopy(default_config)
+        _yaml.composite(default_config, element_config, typesafe=True)
         element_config = default_config
 
         return element_config
