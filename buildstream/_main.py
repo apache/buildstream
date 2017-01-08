@@ -51,7 +51,7 @@ def create_pipeline(directory, target, arch, variant, config):
 
     try:
         pipeline = Pipeline(context, project, target, variant)
-    except LoadError as e:
+    except (LoadError, PluginError, SourceError, ElementError, ProgramNotFoundError) as e:
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
 
