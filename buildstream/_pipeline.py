@@ -66,6 +66,21 @@ class Resolver():
         return source
 
 
+# Pipeline()
+#
+# Args:
+#    context (Context): The Context object
+#    project (Project): The Project object
+#    target (str): A bst filename relative to the project directory
+#    target_variant (str): The selected variant of 'target', or None for the default
+#
+# Raises:
+#    LoadError
+#    PluginError
+#    SourceError
+#    ElementError
+#    ProgramNotFoundError
+#
 class Pipeline():
 
     def __init__(self, context, project, target, target_variant):
@@ -83,23 +98,19 @@ class Pipeline():
         resolver = Resolver(self.context, self.project, self.element_factory, self.source_factory)
         self.target = resolver.resolve_element(meta_element)
 
-        # Right away, after constructing the tree
-        self.preflight()
+        # Preflight right away, after constructing the tree
+        for plugin in self.dependencies(Scope.ALL, include_sources=True):
+            plugin.preflight()
 
-    # preflight()
+    # Generator function to iterate over elements and optionally
+    # also iterate over sources.
     #
-    # Runs preflight checks on the pipeline.
-    #
-    # Raises:
-    #    SourceError
-    #    ElementError
-    #    ProgramNotFoundError
-    #
-    def preflight(self):
-        for elt in self.target.dependencies(Scope.ALL):
-            for source in elt._Element__sources:
-                source.preflight()
-            elt.preflight()
+    def dependencies(self, scope, include_sources=False):
+        for element in self.target.dependencies(scope):
+            if include_sources:
+                for source in element._Element__sources:
+                    yield source
+            yield element
 
     # refresh()
     #
