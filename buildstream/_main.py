@@ -72,6 +72,7 @@ def create_pipeline(directory, target, arch, variant, config):
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="Project directory (default: %s)" % os.getcwd())
 def cli(config, verbose, directory):
+    """Build and manipulate BuildStream projects"""
     main_options['config'] = config
     main_options['verbose'] = verbose
     main_options['directory'] = directory
@@ -80,7 +81,7 @@ def cli(config, verbose, directory):
 ##################################################################
 #                         Refresh Command                        #
 ##################################################################
-@cli.command()
+@cli.command(short_help="Refresh sources in a pipeline")
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
@@ -89,7 +90,12 @@ def cli(config, verbose, directory):
               help='List the sources which were refreshed')
 @click.argument('target')
 def refresh(target, arch, variant, list):
+    """Refresh sources in a pipeline
 
+    Updates the project with new source references from
+    any sources which are configured to track a remote
+    branch or tag.
+    """
     pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
 
     try:
