@@ -112,6 +112,20 @@ class Pipeline():
                     yield source
             yield element
 
+    # inconsistent()
+    #
+    # Reports a list of inconsistent sources.
+    #
+    # If a pipeline has inconsistent sources, it must
+    # be refreshed before cache keys can be calculated
+    # or anything else.
+    #
+    def inconsistent(self):
+        sources = []
+        for elt in self.target.dependencies(Scope.ALL):
+            sources += elt._inconsistent()
+        return sources
+
     # refresh()
     #
     # Refreshes all the sources of all the elements in the pipeline,
