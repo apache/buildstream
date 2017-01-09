@@ -111,6 +111,9 @@ def show(target, arch, variant, keys):
     pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
     report = ''
 
+    if keys:
+        assert_consistent(pipeline, "Unable to calculate cache keys with inconsistent sources")
+
     for element in pipeline.dependencies(Scope.ALL):
         line = "{: <26}".format(console_format(element.name, color=Color.BLUE))
 
@@ -153,6 +156,23 @@ def create_pipeline(directory, target, arch, variant, config):
         sys.exit(1)
 
     return pipeline
+
+
+def assert_consistent(pipeline, error_message):
+    inconsistent = pipeline.inconsistent()
+    if inconsistent:
+        message = console_format("ERROR: ", color=Color.RED, attrs=[Attr.BOLD]) + \
+            error_message + "\n"
+
+        for source in inconsistent:
+            message += "  " + str(source) + "\n"
+
+        message += "\n"
+        message += "Use the " + \
+            console_format("refresh", color=Color.YELLOW, attrs=[Attr.BOLD]) + \
+            " command to resolve any inconsistent sources"
+        click.echo(message)
+        sys.exit(1)
 
 
 #
