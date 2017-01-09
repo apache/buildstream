@@ -65,6 +65,9 @@ class LocalSource(Source):
         # has already been returned by list_relative_paths()
         return [(relpath, sha256sum(fullpath)) for relpath, fullpath in filelist]
 
+    def consistent(self):
+        return True
+
     def refresh(self, node):
         # Nothing to do here for a local source
         return False
