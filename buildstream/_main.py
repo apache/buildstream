@@ -106,7 +106,7 @@ def refresh(target, arch, variant, list):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def show(target, arch, variant, scope, keys):
+def show(target, arch, variant, keys):
     """Show information about a pipeline"""
     pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
     report = ''
@@ -180,8 +180,8 @@ class Attr():
     DARK = "2"
     ITALIC = "3"
     UNDERLINE = "4"
-    BLINK_ON = "5"
-    REVERSE_VIDEO_ON = "7"
+    BLINK = "5"
+    REVERSE_VIDEO = "7"
     CONCEALED = "8"
 
 
