@@ -54,7 +54,7 @@ class BuildElement(Element):
         for command_name, command_list in self.commands.items():
             dictionary[command_name] = command_list
 
-        return sorted(dictionary)
+        return dictionary
 
     def _get_commands(self, node, name):
         list_node = self.node_get_member(node, list, name, default_value=[])
