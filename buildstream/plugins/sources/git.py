@@ -250,6 +250,11 @@ class GitSource(Source):
         # from another location, it should not effect the cache key.
         return [self.original_url, self.mirror.ref]
 
+    def consistent(self):
+        if self.mirror.ref:
+            return True
+        return False
+
     def refresh(self, node):
         # If self.track is not specified it's not an error, just silently return
         if not self.track:
