@@ -203,6 +203,14 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # _inconsistent():
+    #
+    # Returns:
+    #    (list): A list of inconsistent sources
+    #
+    def _inconsistent(self):
+        return [source for source in self.__sources if not source.consistent()]
+
     # _get_cache_key():
     #
     # Returns the cache key, calculating it if necessary
