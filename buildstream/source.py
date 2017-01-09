@@ -57,6 +57,19 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
+    def consistent(self):
+        """Report whether the source has a resolved reference
+
+        Returns:
+           (bool): True if the source has a reference
+
+        Before building, every source must have an exact reference,
+        although it is not an error to load a project which contains
+        sources that do not have references, they can be fetched
+        later with :func:`~buildstream.source.Source.refresh`
+        """
+        raise ImplError("Source plugin '%s' does not implement consistent()" % self.get_kind())
+
     def refresh(self, node):
         """Refresh specific source references
 
