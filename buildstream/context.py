@@ -42,6 +42,7 @@ import hashlib
 import pickle
 from . import _site
 from . import _yaml
+from . import utils
 from . import LoadError, LoadErrorReason
 
 
@@ -113,11 +114,8 @@ class Context():
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
-            unique_key = {
+            self.__cache_key = utils._generate_key({
                 'arch': self.arch
-            }
-
-            s = pickle.dumps(unique_key)
-            self.__cache_key = hashlib.sha256(s).hexdigest()
+            })
 
         return self.__cache_key
