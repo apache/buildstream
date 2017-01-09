@@ -22,8 +22,6 @@
 implementing the most common case of element.
 """
 
-from collections import OrderedDict
-
 from . import Element
 
 
@@ -51,12 +49,12 @@ class BuildElement(Element):
         pass
 
     def get_unique_key(self):
-        dictionary = OrderedDict()
+        dictionary = {}
 
         for command_name, command_list in self.commands.items():
             dictionary[command_name] = command_list
 
-        return dictionary
+        return sorted(dictionary)
 
     def _get_commands(self, node, name):
         list_node = self.node_get_member(node, list, name, default_value=[])
