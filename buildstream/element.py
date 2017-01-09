@@ -19,9 +19,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import hashlib
-import pickle
-from collections import OrderedDict
 import copy
 import inspect
 from enum import Enum
@@ -30,6 +27,7 @@ from . import _yaml
 from ._variables import Variables
 from . import ImplError, LoadError, LoadErrorReason
 from . import Plugin
+from . import utils
 
 
 class Scope(Enum):
@@ -215,15 +213,12 @@ class Element(Plugin):
     def _get_cache_key(self):
         if self.__cache_key is None:
             context = self.get_context()
-
-            d = OrderedDict()
-            d['context'] = context._get_cache_key()
-            d['element'] = self.get_unique_key()
-            d['sources'] = [s.get_unique_key() for s in self.__sources]
-            d['dependencies'] = [e._get_cache_key() for e in self.dependencies(Scope.BUILD)]
-
-            s = pickle.dumps(d)
-            self.__cache_key = hashlib.sha256(s).hexdigest()
+            self.__cache_key = utils._generate_key({
+                'context': context._get_cache_key(),
+                'element': self.get_unique_key(),
+                'sources': [s.get_unique_key() for s in self.__sources],
+                'dependencies': [e._get_cache_key() for e in self.dependencies(Scope.BUILD)],
+            })
 
         return self.__cache_key
 
