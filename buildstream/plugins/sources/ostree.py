@@ -22,43 +22,44 @@
 
 """
 
-import os
-import subprocess
 from gi.repository import OSTree, Gio
-
-from buildstream import Source, SourceError, ProgramNotFoundError
-from buildstream import utils
+from buildstream import Source, LoadError
 
 
 class OSTreeSource(Source):
 
     def configure(self, node):
+        project = self.get_project()
+
         self.remote_name = "origin"
-        self.url = utils.node_get_member(node, str, 'url')
-        self.ref = utils.node_get_member(node, str, 'ref', '')
-        self.branch = utils.node_get_member(node, str, 'branch', '')
+        self.url = project.translate_url(self.node_get_member(node, str, 'url'))
+        self.ref = self.node_get_member(node, str, 'ref')
+        self.track = self.node_get_member(node, str, 'track', '')
 
         # (optional) Not all repos are signed. But if they are, get the gpg key
-        self.gpg_key = utils.node_get_member(node, str, 'gpg_key', None)
+        try:
+            self.gpg_key = self.node_get_member(node, str, 'gpg_key', None)
+        except LoadError:
+            self.gpg_key = None
 
         self.ostree_dir = "repo"    # Assume to be some tmp dir
 
     def preflight(self):
-        # Check if OSTree is installed, get the binary at the same time
-        # TODO Actually, this isn't needed due to python bindings?
-        try:
-            self.host_ostree = utils.get_host_tool("ostree")
-        except ProgramNotFoundError as e:
-            raise SourceError("Prerequisite programs not found in host environment for OSTree", e)
+        return
 
     def get_unique_key(self):
         return [self.url, self.ref]
 
     def refresh(self, node):
-        # Not sure what to put here
+        # Not sure what else to put here
 
         self.load_ostree(self.ostree_dir)
         self.fetch_ostree(self.remote_name, self.ref)
+
+        # TODO Only return true if things have been updated. Not sure
+        # how I'd do this with OSTree. Surely the ref used means nothing
+        # is different, unless this has not been pulled yet.
+        return True
 
     def fetch(self):
         # Pull the OSTree from the remote
@@ -72,6 +73,9 @@ class OSTreeSource(Source):
         self.checkout_ostree(directory, self.ref)
         pass
 
+    def consistent(self):
+        return True
+
     ###########################################################
     #                     Local Functions                     #
     ###########################################################
@@ -81,7 +85,7 @@ class OSTreeSource(Source):
         # ostree --repo=repo init --mode=archive-z2
 
         self.ost = OSTree.Repo.new(Gio.File.new_for_path(repo_dir))
-        self.ost.create(OSTree.RepoMode.ARCHIVE_Z2 , None)
+        self.ost.create(OSTree.RepoMode.ARCHIVE_Z2, None)
 
     def load_ostree(self, repo_dir):
         # Loads an existing OSTree repo from the given `repo_dir`
@@ -92,7 +96,7 @@ class OSTreeSource(Source):
     def fetch_ostree(self, remote, ref):
         # ostree --repo=repo pull --mirror freedesktop:runtime/org.freedesktop.Sdk/x86_64/1.4
 
-        progress = None  # Alternatively OSTree.AsyncProgress
+        progress = None  # Alternatively OSTree.AsyncProgress, None assumed to block
         cancellable = None  # Alternatively Gio.Cancellable
 
         self.ost.pull(remote, ref, OSTree.RepoPullFlags.MIRROR, progress, cancellable)
@@ -117,18 +121,18 @@ class OSTreeSource(Source):
         self.ost.remote_gpg_import(name, stream, None, 0, None)
         return
 
-    def ls_branches(self):
-        # Grab the named refs/branches that exist in this repo
+    def ls_tracks(self):
+        # Grab the named refs/tracks that exist in this repo
         # ostree --repo=repo refs
         _, refs = self.ost.list_refs()
 
         # Returns a dict of {branch: head-ref}
         return refs.keys()
 
-    def branch_head(self, branch_name):
-        # Get the checksum of the head commit of the branch `branch_name`
+    def track_head(self, track_name):
+        # Get the checksum of the head commit of the branch `track_name`
         # ostree --repo=repo log runtime/org.freedesktop.Sdk/x86_64/1.4
-        _, head_ref = self.ost.resolve_ref(branch_name)
+        _, head_ref = self.ost.resolve_ref(track_name)
 
         return head_ref
 
