@@ -38,6 +38,8 @@ The default BuildStream configuration is included here for reference:
 """
 
 import os
+import hashlib
+import pickle
 from . import _site
 from . import _yaml
 from . import LoadError, LoadErrorReason
@@ -69,6 +71,9 @@ class Context():
         self.ccachedir = None
         """The directory for holding ccache state"""
 
+        # Private variables
+        self._cache_key = None
+
     def load(self, config=None):
         """Loads the configuration files
 
@@ -92,3 +97,27 @@ class Context():
 
         for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'ccachedir']:
             setattr(self, dir, os.path.expanduser(_yaml.node_get(defaults, str, dir)))
+
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
+
+    # _get_cache_key():
+    #
+    # Returns the cache key, calculating it if necessary
+    #
+    # Returns:
+    #    (str): A hex digest cache key for the Context
+    #
+    def _get_cache_key(self):
+        if self._cache_key is None:
+
+            # Anything that alters the build goes into the unique key
+            unique_key = {
+                'arch': self.arch
+            }
+
+            s = pickle.dumps(unique_key)
+            self.__cache_key = hashlib.sha256(s).hexdigest()
+
+        return self.__cache_key
