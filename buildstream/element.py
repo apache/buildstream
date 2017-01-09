@@ -19,6 +19,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import hashlib
+import pickle
+from collections import OrderedDict
 import copy
 import inspect
 from enum import Enum
@@ -69,6 +72,7 @@ class Element(Plugin):
         self.__runtime_dependencies = []
         self.__build_dependencies = []
         self.__sources = []
+        self.__cache_key = None
 
         self.__init_defaults()
 
@@ -200,6 +204,28 @@ class Element(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
+
+    # _get_cache_key():
+    #
+    # Returns the cache key, calculating it if necessary
+    #
+    # Returns:
+    #    (str): A hex digest cache key for this Element
+    #
+    def _get_cache_key(self):
+        if self.__cache_key is None:
+            context = self.get_context()
+
+            d = OrderedDict()
+            d['context'] = context._get_cache_key()
+            d['element'] = self.get_unique_key()
+            d['sources'] = [s.get_unique_key() for s in self.__sources]
+            d['dependencies'] = [e._get_cache_key() for e in self.dependencies(Scope.BUILD)]
+
+            s = pickle.dumps(d)
+            self.__cache_key = hashlib.sha256(s).hexdigest()
+
+        return self.__cache_key
 
     # _refresh():
     #
