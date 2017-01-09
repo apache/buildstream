@@ -23,6 +23,10 @@ import errno
 import stat
 import shutil
 import string
+import collections
+import hashlib
+import pickle
+from collections import OrderedDict
 from . import _yaml
 from . import ProgramNotFoundError
 
@@ -290,3 +294,42 @@ def _relative_symlink_target(root, symlink, target):
         return newtarget
     else:
         return target
+
+
+# _generate_key()
+#
+# Generate an sha256 hex digest from the given value. The value
+# can be a simple value or recursive dictionary with lists etc,
+# anything simple enough to serialize.
+#
+# Args:
+#    value: A value to get a key for
+#
+# Returns:
+#    (str): An sha256 hex digest of the given value
+#
+def _generate_key(value):
+    ordered = _ordered_copy(value)
+    string = pickle.dumps(ordered)
+    return hashlib.sha256(string).hexdigest()
+
+
+# _ordered_copy()
+#
+# Recurse into lists and mappings and return stable ordered dicts
+# suitable for pickling in the result
+#
+def _ordered_copy(source):
+
+    if isinstance(source, collections.Mapping):
+
+        result = OrderedDict()
+        for key in sorted(source):
+            result[key] = _ordered_copy(source[key])
+
+        return result
+
+    elif isinstance(source, list):
+        return [_ordered_copy(elt) for elt in source]
+
+    return source
