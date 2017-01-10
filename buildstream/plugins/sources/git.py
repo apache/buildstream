@@ -224,8 +224,6 @@ class GitMirror():
 class GitSource(Source):
 
     def configure(self, node):
-        project = self.get_project()
-
         ref = self.node_get_member(node, str, 'ref', '')
 
         self.original_url = self.node_get_member(node, str, 'url')
@@ -311,7 +309,6 @@ class GitSource(Source):
     #
     def refresh_submodules(self):
         submodules = []
-        project = self.get_project()
 
         # XXX Here we should issue a warning if either:
         #   A.) A submodule exists but is not defined in the element configuration
