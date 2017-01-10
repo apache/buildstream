@@ -33,9 +33,10 @@ from . import _yaml
 # The Resolver class instantiates plugin-provided Element and Source classes
 # from MetaElement and MetaSource objects
 class Resolver():
-    def __init__(self, context, project, element_factory, source_factory):
+    def __init__(self, context, project, artifacts, element_factory, source_factory):
         self.context = context
         self.project = project
+        self.artifacts = artifacts
         self.element_factory = element_factory
         self.source_factory = source_factory
         self.resolved_elements = {}
@@ -44,7 +45,11 @@ class Resolver():
         if meta_element in self.resolved_elements:
             return self.resolved_elements[meta_element]
 
-        element = self.element_factory.create(meta_element.kind, self.context, self.project, meta_element)
+        element = self.element_factory.create(meta_element.kind,
+                                              self.context,
+                                              self.project,
+                                              self.artifacts,
+                                              meta_element)
 
         self.resolved_elements[meta_element] = element
 
@@ -95,7 +100,11 @@ class Pipeline():
         loader = Loader(self.project.directory, target, target_variant, context.arch)
         meta_element = loader.load()
 
-        resolver = Resolver(self.context, self.project, self.element_factory, self.source_factory)
+        resolver = Resolver(self.context,
+                            self.project,
+                            self.artifactcache,
+                            self.element_factory,
+                            self.source_factory)
         self.target = resolver.resolve_element(meta_element)
 
         # Preflight right away, after constructing the tree
