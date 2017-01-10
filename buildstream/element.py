@@ -87,8 +87,8 @@ class Element(Plugin):
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
-        config = self.__extract_config(meta)
-        self.configure(config)
+        self.__config = self.__extract_config(meta)
+        self.configure(self.__config)
 
     def __lt__(self, other):
         return self.name < other.name
