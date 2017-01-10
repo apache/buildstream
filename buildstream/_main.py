@@ -23,11 +23,13 @@ import sys
 import re
 import click
 import pkg_resources  # From setuptools
+from ruamel import yaml
 
 from . import Context, Project, Scope
 from . import LoadError, SourceError, ElementError, PluginError, ProgramNotFoundError
 from ._pipeline import Pipeline
 from . import _pipeline
+from . import utils
 
 # Some nasty globals
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -124,7 +126,10 @@ def show(target, arch, variant, scope, order, format):
     \b
         %{name}   The element name
         %{key}    The cache key (if all sources are consistent)
-        %{state}  Whether the element is cached, buildable or inconsistent
+        %{state}  cached, buildable, waiting or inconsistent
+        %{config} The element configuration
+        %{vars}   Variable configuration
+        %{env}    Environment settings
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
@@ -132,8 +137,13 @@ def show(target, arch, variant, scope, order, format):
 
     \b
         build-stream show target.bst --format \\
-            "Name: %{name: ^20} Key: %{key: ^64} State: %{state}"
+            'Name: %{name: ^20} Key: %{key: ^64} State: %{state}'
 
+    If you want to use a newline in a format string in bash, use the '$' modifier:
+
+    \b
+        build-stream show target.bst --format \\
+            $'---------- %{name} ----------\\n%{variables}'
     """
     pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
     report = ''
@@ -162,6 +172,25 @@ def show(target, arch, variant, scope, order, format):
                 line = format_symbol(line, 'state', "buildable", color=Color.GREEN)
             else:
                 line = format_symbol(line, 'state', "waiting", color=Color.BLUE)
+
+        # Element configuration
+        config = utils._node_sanitize(element._Element__config, ordered=True)
+        line = format_symbol(
+            line, 'config',
+            yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
+
+        # Variables
+        variables = utils._node_sanitize(element._Element__variables.variables, ordered=True)
+        line = format_symbol(
+            line, 'vars',
+            yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
+
+        # Environment
+        environment = utils._node_sanitize(element._Element__environment, ordered=True)
+        line = format_symbol(
+            line, 'env',
+            yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+
         report += line + '\n'
 
     click.echo(report.rstrip('\n'))
