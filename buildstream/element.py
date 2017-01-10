@@ -25,7 +25,7 @@ from enum import Enum
 
 from . import _yaml
 from ._variables import Variables
-from . import ImplError, LoadError, LoadErrorReason
+from . import LoadError, LoadErrorReason
 from . import Plugin
 from . import utils
 
@@ -60,7 +60,7 @@ class Element(Plugin):
     __defaults = {}          # The defaults from the yaml file and project
     __defaults_set = False   # Flag, in case there are no defaults at all
 
-    def __init__(self, context, project, meta):
+    def __init__(self, context, project, artifacts, meta):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__(context, project, provenance, "element")
 
@@ -71,7 +71,10 @@ class Element(Plugin):
         self.__build_dependencies = []
         self.__sources = []
         self.__cache_key = None
+        self.__artifacts = artifacts
+        self.__cached = False
 
+        # Ensure we have loaded this class's defaults
         self.__init_defaults()
 
         # Collect the composited environment
@@ -210,6 +213,45 @@ class Element(Plugin):
     #
     def _inconsistent(self):
         return [source for source in self.__sources if not source.consistent()]
+
+    # _cached():
+    #
+    # Args:
+    #    recalculate (bool): Whether to recalculate the cached state again
+    #
+    # Returns:
+    #    (bool): Whether this element is already present in
+    #            the artifact cache
+    #
+    def _cached(self, recalculate=False):
+
+        if self._inconsistent():
+            return False
+
+        project = self.get_project()
+        key = self._get_cache_key()
+
+        if self.__cached is None or recalculate:
+            self.__cached = self.__artifacts.contains(project.name, self.name, key)
+
+        return self.__cached
+
+    # _buildable():
+    #
+    # Returns:
+    #    (bool): Whether this element can currently be built
+    #
+    def _buildable(self):
+
+        if self._inconsistent():
+            return False
+
+        for dependency in self.dependencies(Scope.BUILD):
+            if not (dependency._cached() or
+                    dependency._cached(recalculate=True)):
+                return False
+
+        return True
 
     # _get_cache_key():
     #
