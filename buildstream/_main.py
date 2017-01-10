@@ -174,19 +174,19 @@ def show(target, arch, variant, scope, order, format):
                 line = format_symbol(line, 'state', "waiting", color=Color.BLUE)
 
         # Element configuration
-        config = utils._node_sanitize(element._Element__config, ordered=True)
+        config = utils._node_sanitize(element._Element__config)
         line = format_symbol(
             line, 'config',
             yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
 
         # Variables
-        variables = utils._node_sanitize(element._Element__variables.variables, ordered=True)
+        variables = utils._node_sanitize(element._Element__variables.variables)
         line = format_symbol(
             line, 'vars',
             yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
         # Environment
-        environment = utils._node_sanitize(element._Element__environment, ordered=True)
+        environment = utils._node_sanitize(element._Element__environment)
         line = format_symbol(
             line, 'env',
             yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
