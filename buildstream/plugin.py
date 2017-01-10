@@ -19,6 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from . import _yaml
+from . import ImplError
 
 
 class Plugin():
