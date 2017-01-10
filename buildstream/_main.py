@@ -20,13 +20,14 @@
 
 import os
 import sys
+import re
 import click
 import pkg_resources  # From setuptools
 
 from . import Context, Project, Scope
-from . import LoadError, SourceError, ElementError
+from . import LoadError, SourceError, ElementError, PluginError, ProgramNotFoundError
 from ._pipeline import Pipeline
-
+from . import _pipeline
 
 # Some nasty globals
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -98,33 +99,72 @@ def refresh(target, arch, variant, list):
 ##################################################################
 #                           Show Command                         #
 ##################################################################
-@cli.command(short_help="Show information about a pipeline")
-@click.option('--keys', '-k', default=False, is_flag=True,
-              help='List cache keys for the pipeline')
+@cli.command(short_help="Show elements in the pipeline")
+@click.option('--scope', '-s', default="all",
+              type=click.Choice(['all', 'build', 'run']))
+@click.option('--order', default="stage",
+              type=click.Choice(['stage', 'alpha']))
+@click.option('--format', '-f', metavar='FORMAT', default="%{name: >20}: %{key: <64} (%{state})",
+              type=click.STRING,
+              help='Format string for each element')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def show(target, arch, variant, keys):
-    """Show information about a pipeline"""
+def show(target, arch, variant, scope, order, format):
+    """Show elements in the pipeline
+
+    \b
+    FORMAT
+    ~~~~~~
+    The --format option controls what should be printed for each element,
+    the following symbols can be used in the format string:
+
+    \b
+        %{name}   The element name
+        %{key}    The cache key (if all sources are consistent)
+        %{state}  Whether the element is cached, buildable or inconsistent
+
+    The value of the %{symbol} without the leading '%' character is understood
+    as a pythonic formatting string, so python formatting features apply,
+    examle:
+
+    \b
+        build-stream show target.bst --format \\
+            "Name: %{name: ^20} Key: %{key: ^64} State: %{state}"
+
+    """
     pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
     report = ''
 
-    if keys:
-        assert_consistent(pipeline, "Unable to calculate cache keys with inconsistent sources")
+    if scope == "all":
+        scope = Scope.ALL
+    elif scope == "build":
+        scope = Scope.BUILD
+    else:
+        scope = Scope.RUN
 
-    for element in pipeline.dependencies(Scope.ALL):
-        line = "{: <26}".format(console_format(element.name, color=Color.BLUE))
+    dependencies = pipeline.dependencies(scope)
+    if order == "alpha":
+        dependencies = sorted(pipeline.dependencies(scope))
 
-        if keys:
-            line += " {: <40}".format(console_format(element._get_cache_key(),
-                                                     color=Color.YELLOW,
-                                                     attrs=[Attr.BOLD]))
-
+    for element in dependencies:
+        line = format_symbol(format, 'name', element.name, color=Color.BLUE, attrs=[Attr.BOLD])
+        if element._inconsistent():
+            line = format_symbol(line, 'key', "")
+            line = format_symbol(line, 'state', "inconsistent", color=Color.RED)
+        else:
+            line = format_symbol(line, 'key', element._get_cache_key(), color=Color.YELLOW)
+            if element._cached():
+                line = format_symbol(line, 'state', "cached", color=Color.MAGENTA)
+            elif element._buildable():
+                line = format_symbol(line, 'state', "buildable", color=Color.GREEN)
+            else:
+                line = format_symbol(line, 'state', "waiting", color=Color.BLUE)
         report += line + '\n'
 
-    click.echo(report)
+    click.echo(report.rstrip('\n'))
 
 
 ##################################################################
@@ -156,23 +196,6 @@ def create_pipeline(directory, target, arch, variant, config):
         sys.exit(1)
 
     return pipeline
-
-
-def assert_consistent(pipeline, error_message):
-    inconsistent = pipeline.inconsistent()
-    if inconsistent:
-        message = console_format("ERROR: ", color=Color.RED, attrs=[Attr.BOLD]) + \
-            error_message + "\n"
-
-        for source in inconsistent:
-            message += "  " + str(source) + "\n"
-
-        message += "\n"
-        message += "Use the " + \
-            console_format("refresh", color=Color.YELLOW, attrs=[Attr.BOLD]) + \
-            " command to resolve any inconsistent sources"
-        click.echo(message)
-        sys.exit(1)
 
 
 #
@@ -239,3 +262,27 @@ def console_format(text, color=None, attrs=[]):
     new_text += (CNTL_START + Attr.CLEAR + CNTL_END)
 
     return new_text
+
+
+# Can be used to format python strings with % prefixed.
+#
+# This will first center the %{name} in a 20 char width
+# and format the %{name} in blue.
+#
+#    formatted = format_symbol("This is your %{name: ^20}", "name", "Bob", color=Color.BLUE)
+#
+# We use this because python formatting methods which use
+# padding will consider the ansi escape sequences we use.
+#
+def format_symbol(text, varname, value, color=None, attrs=[]):
+
+    def subst_callback(match):
+        # Extract and format the "{(varname)...}" portion of the match
+        inner_token = match.group(1)
+        formatted = inner_token.format(**{varname: value})
+
+        # Colorize after the pythonic format formatting, which may have padding
+        return console_format(formatted, color, attrs)
+
+    # Lazy regex, after our word, match anything that does not have '%'
+    return re.sub(r"%(\{(" + varname + r")[^%]*\})", subst_callback, text)
