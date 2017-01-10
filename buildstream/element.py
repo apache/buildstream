@@ -90,6 +90,9 @@ class Element(Plugin):
         config = self.__extract_config(meta)
         self.configure(config)
 
+    def __lt__(self, other):
+        return self.name < other.name
+
     def dependencies(self, scope, mask=None):
         """dependencies(scope)
 
