@@ -309,27 +309,33 @@ def _relative_symlink_target(root, symlink, target):
 #    (str): An sha256 hex digest of the given value
 #
 def _generate_key(value):
-    ordered = _ordered_copy(value)
+    ordered = _node_sanitize(value, ordered=True)
     string = pickle.dumps(ordered)
     return hashlib.sha256(string).hexdigest()
 
 
-# _ordered_copy()
+# _node_sanitize()
 #
-# Recurse into lists and mappings and return stable ordered dicts
-# suitable for pickling in the result
+# Returnes an optionally ordered recursive copy of the
+# source node with internal provenance information stripped.
 #
-def _ordered_copy(source):
+def _node_sanitize(source, ordered=False):
 
     if isinstance(source, collections.Mapping):
 
-        result = OrderedDict()
+        if ordered:
+            result = OrderedDict()
+        else:
+            result = {}
+
         for key in sorted(source):
-            result[key] = _ordered_copy(source[key])
+            if key == _yaml.PROVENANCE_KEY:
+                continue
+            result[key] = _node_sanitize(source[key])
 
         return result
 
     elif isinstance(source, list):
-        return [_ordered_copy(elt) for elt in source]
+        return [_node_sanitize(elt) for elt in source]
 
     return source
