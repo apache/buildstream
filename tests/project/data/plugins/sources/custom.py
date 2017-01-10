@@ -10,6 +10,12 @@ class CustomSource(Source):
     def preflight(self):
         pass
 
+    def get_unique_key(self):
+        return self.configuration
+
+    def consistent(self):
+        return True
+
     def refresh(self, node):
         return False
 
