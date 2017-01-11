@@ -10,7 +10,7 @@ if [ ! -d "$REPO" ]; then
     mkdir -p $REPO
     mkdir -p $DATA_DIR
 
-    ostree --repo=$REPO init
+    ostree --repo=$REPO init --mode=archive-z2
 
     cd $DATA_DIR
 

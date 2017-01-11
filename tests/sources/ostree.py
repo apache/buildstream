@@ -132,9 +132,11 @@ def test_ostree_conf(tmpdir, datafiles):
     setup = OSTreeSetup(datafiles, tmpdir)
     assert(setup.source.get_kind() == 'ostree')
 
+    print(setup.source.url)
+
     # Test other config settings
     assert(setup.source.remote_name == 'origin')
-    assert(setup.source.url == '127.0.0.1:8000')
+    assert(setup.source.url == 'http://127.0.0.1:8000')
     assert(setup.source.track == 'my-branch')
     assert(setup.source.gpg_key is None)
     assert(setup.source.ostree_dir == 'repo')

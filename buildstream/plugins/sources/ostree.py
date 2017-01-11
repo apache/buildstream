@@ -22,7 +22,9 @@
 
 """
 
-from gi.repository import OSTree, Gio
+from gi.repository import OSTree, Gio, GLib
+from gi.repository.GLib import Variant, VariantDict
+
 from buildstream import Source, LoadError
 
 
@@ -100,17 +102,34 @@ class OSTreeSource(Source):
         progress = None  # Alternatively OSTree.AsyncProgress, None assumed to block
         cancellable = None  # Alternatively Gio.Cancellable
 
-        self.ost.pull(remote, ref, OSTree.RepoPullFlags.MIRROR, progress, cancellable)
+        vd = VariantDict.new()
+        vd.insert_value('gpg-verify', Variant.new_boolean(False))
+        vd.insert_value('flags', Variant.new_uint16(OSTree.RepoPullFlags.MIRROR))
+        options = vd.end()
+
+        self.ost.pull_with_options(remote, options, progress, cancellable)
+
+    REMOTE_ADDED = 1
+    REMOTE_DUPLICATE = 2
+    REMOTE_KEY_FAIL = 3
 
     def add_remote(self, name, url, key=None):
         options = None  # or GLib.Variant of type a{sv}
         cancellable = None  # or Gio.Cancellable
 
-        self.ost.remote_add(name, url, options, cancellable)
+        try:
+            self.ost.remote_add(name, url, options, cancellable)
+        except GLib.GError:
+            return self.REMOTE_DUPLICATE
 
         # Remote needs to exist before adding key
         if key is not None:
-            self.add_pgp_key(name, key)
+            try:
+                self.add_pgp_key(name, key)
+            except GLib.GError:
+                return self.REMOTE_KEY_FAIL
+
+        return self.REMOTE_ADDED
 
     def add_pgp_key(self, name, url):
         # wget https://sdk.gnome.org/keys/gnome-sdk.gpg
