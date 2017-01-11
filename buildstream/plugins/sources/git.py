@@ -95,25 +95,27 @@ class GitMirror():
         # of bytes.
         if not os.path.exists(self.mirror):
 
+            context = self.source.get_context()
+
             # Do the initial clone in a tmpdir just because we want an atomic move
             # after a long standing clone which could fail overtime, for now do
             # this directly in our git directory, eliminating the chances that the
             # system configured tmpdir is not on the same partition.
             #
-            tmpdir = tempfile.mkdtemp(dir=self.source.get_mirror_directory())
+            os.makedirs(context.builddir, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix='clone', dir=context.builddir) as tmpdir:
 
-            # XXX stdout/stderr should be propagated to the calling pipeline
-            if subprocess.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir]):
+                tmpdir = tempfile.mkdtemp(dir=self.source.get_mirror_directory())
 
-                # We failed, remove the tmpdir now
-                shutil.rmtree(tmpdir, ignore_errors=True)
-                raise SourceError("%s: Failed to clone git repository %s" % (str(self.source), self.url))
+                # XXX stdout/stderr should be propagated to the calling pipeline
+                if subprocess.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir]):
+                    raise SourceError("%s: Failed to clone git repository %s" % (str(self.source), self.url))
 
-            try:
-                shutil.move(tmpdir, self.mirror)
-            except (shutil.Error, OSError) as e:
-                raise SourceError("%s: Failed to move cloned git repository %s from '%s' to '%s'" %
-                                  (str(self.source), self.url, tmpdir, self.mirror)) from e
+                try:
+                    shutil.move(tmpdir, self.mirror)
+                except (shutil.Error, OSError) as e:
+                    raise SourceError("%s: Failed to move cloned git repository %s from '%s' to '%s'" %
+                                      (str(self.source), self.url, tmpdir, self.mirror)) from e
 
     def fetch(self):
         with open(os.devnull, "w") as fnull:
@@ -236,7 +238,7 @@ class GitSource(Source):
         modules = self.node_get_member(node, dict, 'submodules', {})
         for path, _ in self.node_items(modules):
             submodule = self.node_get_member(modules, dict, path)
-            self.submodule_overrides['path'] = self.node_get_member(submodule, str, 'url')
+            self.submodule_overrides[path] = self.node_get_member(submodule, str, 'url')
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
