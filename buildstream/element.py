@@ -93,7 +93,7 @@ class Element(Plugin):
     def __lt__(self, other):
         return self.name < other.name
 
-    def dependencies(self, scope, mask=None):
+    def dependencies(self, scope, visiting=None):
         """dependencies(scope)
 
         A generator function which lists the dependencies of the given element
@@ -109,29 +109,29 @@ class Element(Plugin):
         # A little reentrancy protection, this loop could be
         # optimized but not bothering at this point.
         #
-        if mask is None:
-            mask = []
-        if self.name in mask:
+        if visiting is None:
+            visiting = []
+        if self.name in visiting:
             return
-        mask.append(self.name)
+        visiting.append(self.name)
 
         if scope == Scope.ALL:
             for dep in self.__build_dependencies:
-                for elt in dep.dependencies(Scope.ALL, mask=mask):
+                for elt in dep.dependencies(Scope.ALL, visiting=visiting):
                     yield elt
             for dep in self.__runtime_dependencies:
                 if dep not in self.__build_dependencies:
-                    for elt in dep.dependencies(Scope.ALL, mask=mask):
+                    for elt in dep.dependencies(Scope.ALL, visiting=visiting):
                         yield elt
 
         elif scope == Scope.BUILD:
             for dep in self.__build_dependencies:
-                for elt in dep.dependencies(Scope.RUN, mask=mask):
+                for elt in dep.dependencies(Scope.RUN, visiting=visiting):
                     yield elt
 
         elif scope == Scope.RUN:
             for dep in self.__runtime_dependencies:
-                for elt in dep.dependencies(Scope.RUN, mask=mask):
+                for elt in dep.dependencies(Scope.RUN, visiting=visiting):
                     yield elt
 
         # Yeild self only at the end, after anything needed has been traversed
@@ -209,13 +209,58 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # _add_source():
+    #
+    # Adds a source, for pipeline construction
+    #
+    def _add_source(self, source):
+        self.__sources.append(source)
+
+    # _sources():
+    #
+    # Generator function for the element sources
+    #
+    def _sources(self):
+        for source in self.__sources:
+            yield source
+
+    # _add_dependency()
+    #
+    # Adds a dependency
+    #
+    def _add_dependency(self, dependency, scope):
+        if scope != Scope.RUN:
+            self.__build_dependencies.append(dependency)
+        if scope != Scope.BUILD:
+            self.__runtime_dependencies.append(dependency)
+
+    # _direct_deps():
+    #
+    # Generator function for the element's direct dependencies
+    #
+    # Note this is not recursive like the public element.dependencies().
+    #
+    def _direct_deps(self, scope):
+        if scope == Scope.RUN:
+            for element in self.__runtime_dependencies:
+                yield element
+        elif scope != Scope.BUILD:
+            for element in self.__build_dependencies:
+                yield element
+        else:
+            for element in self.__runtime_dependencies:
+                yield element
+            for element in self.__build_dependencies:
+                if element not in self.__runtime_dependencies:
+                    yield element
+
     # _inconsistent():
     #
     # Returns:
     #    (list): A list of inconsistent sources
     #
     def _inconsistent(self):
-        return [source for source in self.__sources if not source.consistent()]
+        return [source for source in self.__sources if not source._consistent()]
 
     # _cached():
     #
@@ -261,16 +306,29 @@ class Element(Plugin):
     # Returns the cache key, calculating it if necessary
     #
     # Returns:
-    #    (str): A hex digest cache key for this Element
+    #    (str): A hex digest cache key for this Element, or None
+    #
+    # None is returned if information for the cache key is missing.
     #
     def _get_cache_key(self):
+
+        if self._inconsistent():
+            return None
+
         if self.__cache_key is None:
+
+            # No cache keys for dependencies which have no cache keys
+            dependencies = [e._get_cache_key() for e in self.dependencies(Scope.BUILD)]
+            for dep in dependencies:
+                if dep is None:
+                    return None
+
             context = self.get_context()
             self.__cache_key = utils._generate_key({
                 'context': context._get_cache_key(),
                 'element': self.get_unique_key(),
                 'sources': [s.get_unique_key() for s in self.__sources],
-                'dependencies': [e._get_cache_key() for e in self.dependencies(Scope.BUILD)],
+                'dependencies': dependencies,
             })
 
         return self.__cache_key
@@ -288,15 +346,12 @@ class Element(Plugin):
     #    (list): A list of Source objects which changed
     #
     def _refresh(self):
-        files = {}
         changed = []
-
         for source in self.__sources:
-            if source.refresh(source._Source__origin_node):
-                files[source._Source__origin_filename] = source._Source__origin_toplevel
+            if source._refresh(source._Source__origin_node):
                 changed.append(source)
 
-        return files, changed
+        return changed
 
     #############################################################
     #                   Private Local Methods                   #
