@@ -59,9 +59,36 @@ def cli(config, verbose, directory):
 
 
 ##################################################################
+#                          Fetch Command                         #
+##################################################################
+@cli.command(short_help="Fetch sources in a pipeline")
+@click.option('--all', default=False, is_flag=True,
+              help="Fetch all sources, even if the build can complete without some of them")
+@click.option('--arch', '-a', default=host_machine,
+              help="The target architecture (default: %s)" % host_machine)
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.argument('target')
+def fetch(target, arch, variant, all):
+    """Fetch sources in a pipeline"""
+    pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
+    try:
+        sources = pipeline.fetch(all)
+    except (SourceError, ElementError) as e:
+        click.echo("Error fetching sources for this pipeline: %s" % str(e))
+        sys.exit(1)
+
+    click.echo(("Successfully fetched sources in pipeline " +
+                "with target '{target}' in directory: {directory}").format(
+                    target=target, directory=main_options['directory']))
+
+
+##################################################################
 #                         Refresh Command                        #
 ##################################################################
 @cli.command(short_help="Refresh sources in a pipeline")
+@click.option('--all', default=False, is_flag=True,
+              help="Refresh all sources, even if the build can complete without some of them")
 @click.option('--list', '-l', default=False, is_flag=True,
               help='List the sources which were refreshed')
 @click.option('--arch', '-a', default=host_machine,
@@ -69,7 +96,7 @@ def cli(config, verbose, directory):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def refresh(target, arch, variant, list):
+def refresh(target, arch, variant, all, list):
     """Refresh sources in a pipeline
 
     Updates the project with new source references from
@@ -79,7 +106,7 @@ def refresh(target, arch, variant, list):
     pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
 
     try:
-        sources = pipeline.refresh()
+        sources = pipeline.refresh(all)
     except (SourceError, ElementError) as e:
         click.echo("Error refreshing pipeline: %s" % str(e))
         sys.exit(1)
@@ -161,11 +188,15 @@ def show(target, arch, variant, scope, order, format):
 
     for element in dependencies:
         line = format_symbol(format, 'name', element.name, color=Color.BLUE, attrs=[Attr.BOLD])
+        cache_key = element._get_cache_key()
+        if cache_key is None:
+            cache_key = ''
+
         if element._inconsistent():
             line = format_symbol(line, 'key', "")
             line = format_symbol(line, 'state', "inconsistent", color=Color.RED)
         else:
-            line = format_symbol(line, 'key', element._get_cache_key(), color=Color.YELLOW)
+            line = format_symbol(line, 'key', cache_key, color=Color.YELLOW)
             if element._cached():
                 line = format_symbol(line, 'state', "cached", color=Color.MAGENTA)
             elif element._buildable():
