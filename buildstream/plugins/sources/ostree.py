@@ -64,7 +64,7 @@ class OSTreeSource(Source):
     def fetch(self):
         # Pull the OSTree from the remote
 
-        self.init_ostree(self.ostree_dir)
+        self.init_ostree(self.ostree_dir, self.remote_name, self.url)
         self.fetch_ostree(self.remote_name, self.ref)
 
     def stage(self, directory):
@@ -80,12 +80,13 @@ class OSTreeSource(Source):
     #                     Local Functions                     #
     ###########################################################
 
-    def init_ostree(self, repo_dir):
+    def init_ostree(self, repo_dir, remote_name, remote_url):
         # Initialises a new empty OSTree repo
         # ostree --repo=repo init --mode=archive-z2
 
         self.ost = OSTree.Repo.new(Gio.File.new_for_path(repo_dir))
         self.ost.create(OSTree.RepoMode.ARCHIVE_Z2, None)
+        self.add_remote(remote_name, remote_url)
 
     def load_ostree(self, repo_dir):
         # Loads an existing OSTree repo from the given `repo_dir`
