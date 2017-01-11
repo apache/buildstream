@@ -41,6 +41,7 @@ class Source(Plugin):
         self.__origin_node = meta.origin_node           # YAML node this Source was loaded from
         self.__origin_toplevel = meta.origin_toplevel   # Toplevel YAML node for the file
         self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
+        self.__consistent = None
 
         self.configure(meta.config)
 
@@ -126,3 +127,28 @@ class Source(Plugin):
         some system error.
         """
         raise ImplError("Source plugin '%s' does not implement stage()" % self.get_kind())
+
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
+
+    # Wrapper for consistent() api which caches the result, we
+    # know we're consistent after a successful refresh
+    #
+    def _consistent(self):
+
+        if self.__consistent is None:
+            self.__consistent = self.consistent()
+
+        return self.__consistent
+
+    # Wrapper for refresh()
+    #
+    def _refresh(self, node):
+
+        changed = self.refresh(node)
+
+        # It's consistent unless it reported an error
+        self.__consistent = True
+
+        return changed
