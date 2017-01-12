@@ -28,6 +28,7 @@ from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
 from ._scheduler import Scheduler, Queue
+from .plugin import _plugin_lookup
 from . import SourceError, ElementError
 from . import Scope
 from . import _yaml
@@ -36,46 +37,10 @@ MAX_FETCHERS = 4
 MAX_BUILDERS = 4
 
 
-# The Resolver class instantiates plugin-provided Element and Source classes
-# from MetaElement and MetaSource objects
-class Resolver():
-    def __init__(self, context, project, artifacts, element_factory, source_factory):
-        self.context = context
-        self.project = project
-        self.element_factory = element_factory
-        self.source_factory = source_factory
-        self.resolved_elements = {}
-        self.artifacts = artifacts
-
-    def resolve_element(self, meta_element):
-        if meta_element in self.resolved_elements:
-            return self.resolved_elements[meta_element]
-
-        element = self.element_factory.create(meta_element.kind,
-                                              self.context,
-                                              self.project,
-                                              self.artifacts,
-                                              meta_element)
-
-        self.resolved_elements[meta_element] = element
-
-        # resolve dependencies
-        for dep in meta_element.dependencies:
-            element._add_dependency(self.resolve_element(dep), Scope.RUN)
-
-        for dep in meta_element.build_dependencies:
-            element._add_dependency(self.resolve_element(dep), Scope.BUILD)
-
-        # resolve sources
-        for meta_source in meta_element.sources:
-            element._add_source(self.resolve_source(meta_source))
-
-        return element
-
-    def resolve_source(self, meta_source):
-        source = self.source_factory.create(meta_source.kind, self.context, self.project, meta_source)
-
-        return source
+# Internal exception raised when a pipeline fails
+#
+class PipelineError(Exception):
+    pass
 
 
 class Planner():
@@ -120,15 +85,13 @@ class Planner():
 class FetchQueue(Queue):
 
     def process(self, element):
-        try:
-            # For remote artifact cache support
-            # cachekey = element._get_cache_key()
-            # if self.artifacts.fetch(self.project.name, element.name, cachekey):
-            #     return
-            for source in element._sources():
-                source.fetch()
-        except SourceError as e:
-            print("ERROR: %s" % e)
+
+        # For remote artifact cache support
+        # cachekey = element._get_cache_key()
+        # if self.artifacts.fetch(self.project.name, element.name, cachekey):
+        #     return
+        for source in element._sources():
+            source.fetch()
 
 
 # A queue which refreshes element sources
@@ -136,13 +99,14 @@ class FetchQueue(Queue):
 class RefreshQueue(Queue):
 
     def process(self, element):
-
-        try:
-            changed = element._refresh()
-        except (SourceError, ElementError) as e:
-            print("ERROR: %s" % e)
-
-        return changed
+        sources = element._refresh()
+        if sources:
+            source = sources[0]
+            return {
+                'filename': source._Source__origin_filename,
+                'toplevel': source._Source__origin_toplevel,
+                'sources': [source._get_unique_id() for source in sources]
+            }
 
 
 # Pipeline()
@@ -174,8 +138,7 @@ class Pipeline():
         loader = Loader(self.project.directory, target, target_variant, context.arch)
         meta_element = loader.load()
 
-        resolver = Resolver(context, project, self.artifacts, self.element_factory, self.source_factory)
-        self.target = resolver.resolve_element(meta_element)
+        self.target = self.resolve(meta_element)
 
         # Preflight right away, after constructing the tree
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
@@ -221,15 +184,16 @@ class Pipeline():
     # are rewritten inline.
     #
     def refresh(self, refresh_all):
-        refresh = RefreshQueue(MAX_FETCHERS)
-        scheduler = Scheduler([refresh])
+        refresh = RefreshQueue("Refresh", MAX_FETCHERS)
+        scheduler = Scheduler(self.context, [refresh])
 
         if refresh_all:
             plan = self.dependencies(Scope.ALL)
         else:
             plan = Planner().plan(self.target)
 
-        scheduler.run(plan)
+        if not scheduler.run(plan):
+            raise PipelineError()
 
         # If we were to parallelize the corner case of multiple
         # sources per element, then we would have to merge them
@@ -239,21 +203,16 @@ class Pipeline():
         #
         files = {}
         changed = []
-        source_list = refresh.pop_result()
-        while source_list is not None:
-            for source in source_list:
-                files[source._Source__origin_filename] = source._Source__origin_toplevel
-                changed.append(source)
-            source_list = refresh.pop_result()
+        for result in refresh.results:
+            files[result['filename']] = result['toplevel']
+            changed += result['sources']
 
         # Dump the files which changed
         for filename, toplevel in files.items():
             fullname = os.path.join(self.project.directory, filename)
-
-            # print("Writing file: %s with value:\n%s" % (filename, toplevel))
             _yaml.dump(toplevel, fullname)
 
-        return changed
+        return [_plugin_lookup(unique_id) for unique_id in changed]
 
     # fetch()
     #
@@ -262,9 +221,14 @@ class Pipeline():
     # Args:
     #    fetch_all (bool): Whether to fetch all sources, or only those
     #                      which are required for the current build plan
+    #
+    # Returns:
+    #    (list): A list of inconsistent elements which would have
+    #            been fetched if we had a ref to fetch
+    #
     def fetch(self, fetch_all):
-        fetch = FetchQueue(MAX_FETCHERS)
-        scheduler = Scheduler([fetch])
+        fetch = FetchQueue("Fetch", MAX_FETCHERS)
+        scheduler = Scheduler(self.context, [fetch])
 
         if fetch_all:
             plan = self.dependencies(Scope.ALL)
@@ -272,9 +236,47 @@ class Pipeline():
             plan = Planner().plan(self.target)
 
         # Filter out inconsistent elements
-        plan = [elt for elt in plan if not elt._inconsistent()]
+        inconsistent = [elt for elt in plan if elt._inconsistent()]
+        plan = [elt for elt in plan if elt not in inconsistent]
 
-        scheduler.run(plan)
+        if not scheduler.run(plan):
+            raise PipelineError()
 
-        # XXX Warn about remaining inconsistent elements
-        # at this time
+        return inconsistent
+
+    # Internal: Instantiates plugin-provided Element and Source instances
+    # from MetaElement and MetaSource objects
+    #
+    def resolve(self, meta_element, resolved={}):
+
+        if meta_element in resolved:
+            return resolved[meta_element]
+
+        element = self.element_factory.create(meta_element.kind,
+                                              meta_element.name,
+                                              self.context,
+                                              self.project,
+                                              self.artifacts,
+                                              meta_element)
+
+        resolved[meta_element] = element
+
+        # resolve dependencies
+        for dep in meta_element.dependencies:
+            element._add_dependency(self.resolve(dep), Scope.RUN)
+        for dep in meta_element.build_dependencies:
+            element._add_dependency(self.resolve(dep), Scope.BUILD)
+
+        # resolve sources
+        for meta_source in meta_element.sources:
+            index = meta_element.sources.index(meta_source)
+            display_name = "{}-{}".format(meta_element.name, index)
+            element._add_source(
+                self.source_factory.create(meta_source.kind,
+                                           display_name,
+                                           self.context,
+                                           self.project,
+                                           meta_source)
+            )
+
+        return element
