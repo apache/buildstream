@@ -74,6 +74,7 @@ class Context():
 
         # Private variables
         self._cache_key = None
+        self._message_handler = None
 
     def load(self, config=None):
         """Loads the configuration files
@@ -103,6 +104,16 @@ class Context():
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # _set_message_handler()
+    #
+    # Sets the handler for any status messages propagated through
+    # the context.
+    #
+    # The message handler should have the same signature as
+    # the _message() method
+    def _set_message_handler(self, handler):
+        self._message_handler = handler
+
     # _get_cache_key():
     #
     # Returns the cache key, calculating it if necessary
@@ -119,3 +130,26 @@ class Context():
             })
 
         return self.__cache_key
+
+    # _message():
+    #
+    # Proxies a message back to the caller
+    #
+    # Args:
+    #    message: A _Message object (from plugin.py)
+    #
+    def _message(self, message):
+        # Send it off to the frontend
+        if self._message_handler is not None:
+            self._message_handler(message)
+            return
+
+        # Dummy default implementation
+        fmt = "{type}: {message}"
+        if message.detail is not None:
+            fmt += "\n\n{detail}\n"
+
+        message = fmt.format(type=message.message_type,
+                             message=message.message,
+                             detail=message.detail)
+        print(message)
