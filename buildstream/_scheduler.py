@@ -17,28 +17,138 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Jürg Billeter <juerg.billeter@codethink.co.uk>
+
+import os
+import sys
 import asyncio
 import multiprocessing
+import datetime
 from collections import deque
+
+from ._message import Message, MessageType
+from .exceptions import _ALL_EXCEPTIONS
+
+
+# Process class that doesn't call waitpid on its own.
+# This prevents conflicts with the asyncio child watcher.
+class Process(multiprocessing.Process):
+    def start(self):
+        self._popen = self._Popen(self)
+        self._sentinel = self._popen.sentinel
+
+
+# Scheduler()
+#
+# The scheduler operates on a list queues, each of which is meant to accomplish
+# a specific task. Elements enter the first queue when Scheduler.run() is called
+# and into the next queue when complete. Scheduler.run() returns when all of the
+# elements have been traversed or when an occurs.
+#
+# Using the scheduler is a matter of:
+#   a.) Deriving the Queue class and implementing it's abstract methods
+#   b.) Instantiating a Scheduler with one or more queues
+#   c.) Calling Scheduler.run(elements) with a list of elements
+#   d.) Fetching results from your queues at queue.results
+#
+# Args:
+#    context: The Context in the parent scheduling process
+#    queues: A list of Queues, implemented by the caller
+#
+class Scheduler():
+
+    def __init__(self, context, queues):
+        self.loop = asyncio.get_event_loop()
+        self.queues = queues
+        self.context = context
+
+        # Attach the queues
+        for queue in queues:
+            queue.attach(self)
+
+    # run()
+    #
+    # Args:
+    #    plan (list): A list of elements to process
+    #    queues (list): A list of Queue objects
+    #
+    # Returns:
+    #    (bool): Whether processing was successful
+    #
+    # Elements in the 'plan' will be processed by each
+    # queue in order. Processing will complete when all
+    # elements have been processed by each queue or when
+    # an error arises
+    #
+    def run(self, plan):
+
+        # Append directly into first queue
+        self.queues[0].enqueue(list(plan))
+        self.sched()
+        self.loop.run_forever()
+        self.loop.close()
+
+        success = True
+        for queue in self.queues:
+            if queue.failed_elements:
+                success = False
+
+        return success
+
+    def sched(self):
+
+        # Pull elements forward through queues
+        elements = []
+        for queue in self.queues:
+            queue.enqueue(elements)
+            elements = queue.dequeue()
+
+        # Kickoff whatever processes can be processed at this time
+        for queue in self.queues:
+            queue.process_ready()
+
+        # If nothings ticking, time to bail out
+        ticking = 0
+        for queue in self.queues:
+            ticking += len(queue.active_jobs)
+
+        if ticking == 0:
+            self.loop.stop()
 
 
 # Queue()
 #
 # Args:
+#    action_name (str): A name for printing status messages about this queue
 #    max_jobs (int): Maximum parallel jobs for this queue
-#
 #
 class Queue():
 
-    def __init__(self, max_jobs):
-        self.count = 0
+    def __init__(self, action_name, max_jobs):
+        self.action_name = action_name
         self.max_jobs = max_jobs
         self.wait_queue = deque()
         self.done_queue = deque()
-        self.rqueue = multiprocessing.Queue()
-
-        # Sneaky set by the scheduler in it's constructor
         self.scheduler = None
+        self.active_jobs = []
+        self.failed_elements = []
+        self.results = []
+
+    # message()
+    #
+    # Send a status message to the frontend
+    #
+    def message(self, plugin, message_type, message, detail=None):
+
+        # Forward this through to the context, if this
+        # is in a child process it will be propagated
+        # to the parent.
+        self.scheduler.context._message(
+            Message(plugin._get_unique_id(),
+                    message_type,
+                    message,
+                    detail)
+        )
 
     # process()
     #
@@ -69,21 +179,9 @@ class Queue():
     def element_ready(self, element):
         return True
 
-    # pop_result()
-    #
-    # Obtain a result in the scheduling process
-    # after Scheduler.run() has completed.
-    #
-    # Returns:
-    #   The next result in the queue
-    #
-    # Results are returned in the order in which
-    # their respective elements were processed.
-    #
-    def pop_result(self):
-        if not self.rqueue.empty():
-            return self.rqueue.get()
-        return None
+    # Attach to the scheduler
+    def attach(self, scheduler):
+        self.scheduler = scheduler
 
     def enqueue(self, elts):
         if not elts:
@@ -100,118 +198,157 @@ class Queue():
     def process_ready(self):
         unready = []
 
-        while len(self.wait_queue) > 0 and self.count < self.max_jobs:
+        while len(self.wait_queue) > 0 and len(self.active_jobs) < self.max_jobs:
             element = self.wait_queue.popleft()
 
             if not self.element_ready(element):
                 unready.append(element)
                 continue
 
-            print('Processing {0} started'.format(element.name))
-            run_async(self.do_process, self.done, element, self.rqueue)
-            self.count += 1
+            job = Job(self.scheduler)
+            job.spawn(self.action_name, self.process, self.done, element)
+            self.active_jobs.append(job)
 
         # These were not ready but were in the beginning, give em
         # first priority again next time around
         self.wait_queue.extendleft(unready)
 
-    def done(self, pid, returncode, element):
+    def done(self, job, returncode, element):
         if returncode == 0:
-            print('Processing {0} complete'.format(element.name))
             self.done_queue.append(element)
         else:
-            print('Processing {0} failed {1}'.format(element.name, returncode))
+            self.failed_elements.append(element)
 
-        self.count -= 1
+        # Get our pipe cleaned once more...
+        job.parent_process_queue()
+        if job.result:
+            self.results.append(job.result)
+
+        self.active_jobs.remove(job)
         self.scheduler.sched()
 
-    def do_process(self, element, rqueue):
-        result = self.process(element)
-        if result is not None:
-            rqueue.put(result)
+
+# Used to distinguish between status messages and return values
+class Envelope():
+    def __init__(self, message_type, message):
+        self.message_type = message_type
+        self.message = message
 
 
-# Scheduler()
-#
-# The scheduler operates on a list queues, each of which is meant to accomplish
-# a specific task. Elements enter the first queue when Scheduler.run() is called
-# and into the next queue when complete. Scheduler.run() returns when all of the
-# elements have been traversed or when an occurs.
-#
-# Using the scheduler is a matter of:
-#   a.) Deriving the Queue class and implementing it's abstract methods
-#   b.) Instantiating a Scheduler with one or more queues
-#   c.) Calling Scheduler.run(elements) with a list of elements
-#   d.) Fetching results from your queues with queue.pop_result()
+# Job()
 #
 # Args:
-#    queues: A list of Queues
+#    scheduler (Scheduler): The scheduler
 #
-class Scheduler():
+class Job():
 
-    def __init__(self, queues):
-        self.loop = asyncio.get_event_loop()
-        self.queues = queues
-        self.success = False
+    def __init__(self, scheduler):
+        self.scheduler = scheduler
+        self.queue = multiprocessing.Queue()
+        self.process = None
+        self.watcher = None
+        self.action = None
+        self.complete = None
+        self.element = None
+        self.pid = None
+        self.result = None
 
-        # Set the sneaky backpointer
-        for queue in queues:
-            queue.scheduler = self
+        # Watch for messages
+        scheduler.loop.add_reader(
+            self.queue._reader.fileno(),
+            self.parent_recv)
 
-    # run()
+    # spawn()
     #
     # Args:
-    #    plan (list): A list of elements to process
-    #    queues (list): A list of Queue objects
+    #    action_name (str): A name to appear in the status messages
+    #    action (callable): The action function
+    #    complete (callable): The function to call when complete
+    #    element (Element): The element to operate on
     #
-    # Returns:
-    #    (bool): Whether processing was successful
-    #
-    # Elements in the 'plan' will be processed by each
-    # queue in order. Processing will complete when all
-    # elements have been processed by each queue or when
-    # an error arises
-    #
-    def run(self, plan):
+    def spawn(self, action_name, action, complete, element):
+        self.action_name = action_name
+        self.action = action
+        self.complete = complete
+        self.element = element
 
-        # Append directly into first queue
-        self.queues[0].enqueue(list(plan))
-        self.sched()
-        self.loop.run_forever()
-        self.loop.close()
+        # Spawn the process
+        self.process = Process(target=self.child_action,
+                               args=[element, self.queue])
+        self.process.start()
+        self.pid = self.process.pid
 
-        return self.success
+        # Wait for it to complete
+        self.watcher = asyncio.get_child_watcher()
+        self.watcher.add_child_handler(self.pid, self.child_complete, element)
 
-    def sched(self):
+    def child_action(self, element, queue):
 
-        # Pull elements forward through queues
-        elements = []
-        for queue in self.queues:
-            queue.enqueue(elements)
-            elements = queue.dequeue()
+        # Assign the queue we passed across the process boundaries
+        self.queue = queue
 
-        # Kickoff whatever processes can be processed at this time
-        for queue in self.queues:
-            queue.process_ready()
+        # Set the global message handler in this child
+        # process to forward messages to the parent process
+        self.scheduler.context._set_message_handler(self.child_send)
 
-        # If nothings ticking, time to bail out
-        ticking = 0
-        for queue in self.queues:
-            ticking += queue.count
-        if ticking == 0:
-            self.loop.stop()
+        # Time and run the action function
+        #
+        starttime = datetime.datetime.now()
+        try:
+            self.message(element, MessageType.START, self.action_name)
 
+            result = self.action(element)
+            if result is not None:
+                envelope = Envelope('result', result)
+                self.queue.put(envelope)
 
-# Process class that doesn't call waitpid on its own.
-# This prevents conflicts with the asyncio child watcher.
-class Process(multiprocessing.Process):
-    def start(self):
-        self._popen = self._Popen(self)
-        self._sentinel = self._popen.sentinel
+        except _ALL_EXCEPTIONS as e:
+            elapsed = datetime.datetime.now() - starttime
+            self.message(element, MessageType.FAIL, self.action_name,
+                         elapsed=elapsed, detail=str(e))
+            self.child_shutdown(1)
 
+        elapsed = datetime.datetime.now() - starttime
+        self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed)
 
-def run_async(func, cb, arg, rqueue):
-    p = Process(target=func, args=[arg, rqueue])
-    p.start()
-    watcher = asyncio.get_child_watcher()
-    watcher.add_child_handler(p.pid, cb, arg)
+        self.child_shutdown(0)
+
+    def child_complete(self, pid, returncode, element):
+        self.complete(self, returncode, element)
+
+    def parent_process_envelope(self, envelope):
+        if envelope.message_type == 'message':
+            # Propagate received messages from children
+            # back through the context.
+            self.scheduler.context._message(envelope.message)
+        elif envelope.message_type == 'result':
+            assert(self.result is None)
+            self.result = envelope.message
+        else:
+            raise Exception()
+
+    def parent_process_queue(self):
+        while not self.queue.empty():
+            envelope = self.queue.get_nowait()
+            self.parent_process_envelope(envelope)
+
+    def parent_recv(self, *args):
+        self.parent_process_queue()
+
+    def child_shutdown(self, exit_code):
+        self.queue.close()
+        sys.exit(exit_code)
+
+    def child_send(self, message):
+        self.queue.put(Envelope('message', message))
+
+    def message(self, plugin, message_type, message,
+                detail=None,
+                elapsed=None):
+        self.scheduler.context._message(
+            Message(plugin._get_unique_id(),
+                    message_type,
+                    message,
+                    detail=detail,
+                    elapsed=elapsed)
+        )
