@@ -111,3 +111,11 @@ class ProgramNotFoundError(Exception):
     bubblewrap is installed for it to work.
     """
     pass
+
+
+_ALL_EXCEPTIONS = (PluginError,
+                   LoadError,
+                   SourceError,
+                   ElementError,
+                   ImplError,
+                   ProgramNotFoundError)
