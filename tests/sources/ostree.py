@@ -65,7 +65,6 @@ def run_ostree_mini_server():
     PORT = 8000
     Handler = http.server.SimpleHTTPRequestHandler
     httpd = socketserver.TCPServer(("", PORT), Handler)
-
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 ###############################################################
@@ -136,7 +135,7 @@ def test_ostree_conf(tmpdir, datafiles):
 
     # Test other config settings
     assert(setup.source.remote_name == 'origin')
-    assert(setup.source.url == 'http://127.0.0.1:8000')
+    assert(setup.source.url == 'http://127.0.0.1:8000/tmp/repo')
     assert(setup.source.track == 'my-branch')
     assert(setup.source.gpg_key is None)
     assert(setup.source.ostree_dir == 'repo')
@@ -147,6 +146,7 @@ def test_ostree_fetch(tmpdir, datafiles):
     setup = OSTreeSetup(datafiles, tmpdir)
     assert(setup.source.get_kind() == 'ostree')
 
+    print("fetch cwd : {}".format(os.getcwd()))
     # Make sure we preflight and fetch first, cant stage without fetching
     setup.source.preflight()
     setup.source.fetch()

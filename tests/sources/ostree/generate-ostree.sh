@@ -24,4 +24,6 @@ if [ ! -d "$REPO" ]; then
     rm foo
     echo "1" > bar
     ostree --repo=$REPO commit --branch=my-branch --subject="Another commit" --body="Removing foo and adding bar"
+
+    ostree --repo=$REPO summary -u
 fi

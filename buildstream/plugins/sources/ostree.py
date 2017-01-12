@@ -34,7 +34,8 @@ class OSTreeSource(Source):
         project = self.get_project()
 
         self.remote_name = "origin"
-        self.url = project.translate_url(self.node_get_member(node, str, 'url'))
+        #self.url = project.translate_url(self.node_get_member(node, str, 'url'))
+        self.url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref')
         self.track = self.node_get_member(node, str, 'track', '')
 
@@ -53,8 +54,6 @@ class OSTreeSource(Source):
         return [self.url, self.ref]
 
     def refresh(self, node):
-        # Not sure what else to put here
-
         self.load_ostree(self.ostree_dir)
         self.fetch_ostree(self.remote_name, self.ref)
 
@@ -72,8 +71,8 @@ class OSTreeSource(Source):
     def stage(self, directory):
         # Checkout self.ref into the specified directory
 
+        # TODO catch exception thrown for wrong ref
         self.checkout_ostree(directory, self.ref)
-        pass
 
     def consistent(self):
         return True
@@ -83,39 +82,54 @@ class OSTreeSource(Source):
     ###########################################################
 
     def init_ostree(self, repo_dir, remote_name, remote_url):
-        # Initialises a new empty OSTree repo
-        # ostree --repo=repo init --mode=archive-z2
+        # Initialises a new empty OSTree repo and set the mode
+        #
+        # cli example:
+        #   ostree --repo=repo init --mode=archive-z2
 
         self.ost = OSTree.Repo.new(Gio.File.new_for_path(repo_dir))
         self.ost.create(OSTree.RepoMode.ARCHIVE_Z2, None)
         self.add_remote(remote_name, remote_url)
 
     def load_ostree(self, repo_dir):
-        # Loads an existing OSTree repo from the given `repo_dir`
+        # Loads an existing OSTree repo from the given `repo_dir` and make sure we have an OSTree reference
 
         self.ost = OSTree.Repo.new(Gio.File.new_for_path(repo_dir))
         self.ost.open()
 
     def fetch_ostree(self, remote, ref):
-        # ostree --repo=repo pull --mirror freedesktop:runtime/org.freedesktop.Sdk/x86_64/1.4
+        # Fetch metadata of the repo from a remote
+        #
+        # cli example:
+        #  ostree --repo=repo pull --mirror freedesktop:runtime/org.freedesktop.Sdk/x86_64/1.4
 
         progress = None  # Alternatively OSTree.AsyncProgress, None assumed to block
         cancellable = None  # Alternatively Gio.Cancellable
 
-        vd = VariantDict.new()
-        vd.insert_value('gpg-verify', Variant.new_boolean(False))
-        vd.insert_value('flags', Variant.new_uint16(OSTree.RepoPullFlags.MIRROR))
-        options = vd.end()
-
-        self.ost.pull_with_options(remote, options, progress, cancellable)
+        self.ost.pull(remote, None, OSTree.RepoPullFlags.MIRROR, progress, cancellable)
 
     REMOTE_ADDED = 1
     REMOTE_DUPLICATE = 2
     REMOTE_KEY_FAIL = 3
 
     def add_remote(self, name, url, key=None):
+        # Add a remote OSTree repo. If no key is given, we disable gpg checking.
+        # Returns REMOTE_* , where
+        #   REMOTE_ADDED is a success.
+        #   REMOTE_DUPLICATE if remote already exists
+        #   REMOTE_KEY_FAIL key could not be added for some reason (wrong file/ corrupt key)
+        #
+        # cli exmaple:
+        #   wget https://sdk.gnome.org/keys/gnome-sdk.gpg
+        #   ostree --repo=repo --gpg-import=gnome-sdk.gpg remote add freedesktop https://sdk.gnome.org/repo
+
         options = None  # or GLib.Variant of type a{sv}
         cancellable = None  # or Gio.Cancellable
+
+        if key is None:
+            vd = VariantDict.new()
+            vd.insert_value('gpg-verify', Variant.new_boolean(False))
+            options = vd.end()
 
         try:
             self.ost.remote_add(name, url, options, cancellable)
@@ -125,21 +139,47 @@ class OSTreeSource(Source):
         # Remote needs to exist before adding key
         if key is not None:
             try:
-                self.add_pgp_key(name, key)
+                self.add_gpg_key(name, key)
             except GLib.GError:
                 return self.REMOTE_KEY_FAIL
 
         return self.REMOTE_ADDED
 
-    def add_pgp_key(self, name, url):
-        # wget https://sdk.gnome.org/keys/gnome-sdk.gpg
-        # ostree --repo=repo --gpg-import=gnome-sdk.gpg remote add freedesktop https://sdk.gnome.org/repo
+    def add_gpg_key(self, remote, url):
+        # Add a gpg key for a given remote
+        #
+        # cli exmaple:
+        #   wget https://sdk.gnome.org/keys/gnome-sdk.gpg
+        #   ostree --repo=repo --gpg-import=gnome-sdk.gpg remote add freedesktop https://sdk.gnome.org/repo
 
         gfile = Gio.File.new_for_uri(url)
         stream = gfile.read()
 
-        self.ost.remote_gpg_import(name, stream, None, 0, None)
+        self.ost.remote_gpg_import(remote, stream, None, 0, None)
         return
+
+    def checkout_ostree(self, checkout_dir, ref):
+        # Check out a full copy of an OSTree at a given ref to some directory.
+        # Note: OSTree does not like updating directories inline/sync, therefore
+        # make sure you checkout to a clean directory or add additional code to support
+        # union mode or (if it exists) file replacement/update.
+        #
+        # Returns True on success
+        #
+        # cli exmaple:
+        #   ostree --repo=repo checkout --user-mode runtime/org.freedesktop.Sdk/x86_64/1.4 foo
+
+        options = OSTree.RepoCheckoutAtOptions()
+        # ignore uid/gid to allow checkout as non-root
+        options.mode = OSTree.RepoCheckoutMode.USER
+
+        # from fcntl.h
+        AT_FDCWD = -100
+        try:
+            self.ost.checkout_at(options, AT_FDCWD, checkout_dir, ref)
+            return True
+        except:
+            return False
 
     def ls_tracks(self):
         # Grab the named refs/tracks that exist in this repo
@@ -160,16 +200,6 @@ class OSTreeSource(Source):
         # ostree --repo=repo ls -R 6fe05489235bcae562f0afa5aca9bb8d350bdf93ea8f4645adb694b907f48190
         pass
 
-    def checkout_ostree(self, checkout_dir, ref):
-        # ostree --repo=repo checkout --user-mode runtime/org.freedesktop.Sdk/x86_64/1.4 foo
-
-        options = OSTree.RepoCheckoutAtOptions()
-        # ignore uid/gid to allow checkout as non-root
-        options.mode = OSTree.RepoCheckoutMode.USER
-
-        # from fcntl.h
-        AT_FDCWD = -100
-        self.repo.checkout_at(options, AT_FDCWD, checkout_dir, ref)
 
 
 # Plugin entry point
