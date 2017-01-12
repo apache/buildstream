@@ -95,16 +95,14 @@ class GitMirror():
         # of bytes.
         if not os.path.exists(self.mirror):
 
-            context = self.source.get_context()
+            with self.source.timed_activity("Mirroring {}".format(self.url)):
+                context = self.source.get_context()
 
-            # Do the initial clone in a tmpdir just because we want an atomic move
-            # after a long standing clone which could fail overtime, for now do
-            # this directly in our git directory, eliminating the chances that the
-            # system configured tmpdir is not on the same partition.
-            #
-            os.makedirs(context.builddir, exist_ok=True)
-            with tempfile.TemporaryDirectory(prefix='clone', dir=context.builddir) as tmpdir:
-
+                # Do the initial clone in a tmpdir just because we want an atomic move
+                # after a long standing clone which could fail overtime, for now do
+                # this directly in our git directory, eliminating the chances that the
+                # system configured tmpdir is not on the same partition.
+                #
                 tmpdir = tempfile.mkdtemp(dir=self.source.get_mirror_directory())
 
                 # XXX stdout/stderr should be propagated to the calling pipeline
@@ -118,12 +116,13 @@ class GitMirror():
                                       (str(self.source), self.url, tmpdir, self.mirror)) from e
 
     def fetch(self):
-        with open(os.devnull, "w") as fnull:
-            # XXX stdout/stderr should be propagated to the calling pipeline
-            if subprocess.call([self.source.host_git, 'fetch', 'origin'],
-                               cwd=self.mirror, stdout=fnull, stderr=fnull):
-                raise SourceError("%s: Failed to fetch from remote git repository: '%s'" %
-                                  (str(self.source), self.url))
+        with self.source.timed_activity("Fetching {}".format(self.url)):
+            with open(os.devnull, "w") as fnull:
+                # XXX stdout/stderr should be propagated to the calling pipeline
+                if subprocess.call([self.source.host_git, 'fetch', 'origin'],
+                                   cwd=self.mirror, stdout=fnull, stderr=fnull):
+                    raise SourceError("%s: Failed to fetch from remote git repository: '%s'" %
+                                      (str(self.source), self.url))
 
     def has_ref(self):
         with open(os.devnull, "w") as fnull:
@@ -149,20 +148,22 @@ class GitMirror():
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
-        # Checkout self.ref into the specified directory
-        #
-        with open(os.devnull, "w") as fnull:
-            # We need to pass '--no-hardlinks' because there's nothing to
-            # stop the build from overwriting the files in the .git directory
-            # inside the sandbox.
-            if subprocess.call([self.source.host_git, 'clone', '--no-hardlinks', self.mirror, fullpath],
-                               stdout=fnull, stderr=fnull):
-                raise SourceError("%s: Failed to checkout git mirror '%s' in directory: %s" %
-                                  (str(self.source), self.mirror, fullpath))
+        with self.source.timed_activity("Staging {}".format(self.url)):
 
-            if subprocess.call([self.source.host_git, 'checkout', '--force', self.ref],
-                               cwd=fullpath, stdout=fnull, stderr=fnull):
-                raise SourceError("%s: Failed to checkout git ref '%s'" % (str(self.source), self.ref))
+            # Checkout self.ref into the specified directory
+            #
+            with open(os.devnull, "w") as fnull:
+                # We need to pass '--no-hardlinks' because there's nothing to
+                # stop the build from overwriting the files in the .git directory
+                # inside the sandbox.
+                if subprocess.call([self.source.host_git, 'clone', '--no-hardlinks', self.mirror, fullpath],
+                                   stdout=fnull, stderr=fnull):
+                    raise SourceError("%s: Failed to checkout git mirror '%s' in directory: %s" %
+                                      (str(self.source), self.mirror, fullpath))
+
+                if subprocess.call([self.source.host_git, 'checkout', '--force', self.ref],
+                                   cwd=fullpath, stdout=fnull, stderr=fnull):
+                    raise SourceError("%s: Failed to checkout git ref '%s'" % (str(self.source), self.ref))
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
@@ -285,6 +286,7 @@ class GitSource(Source):
         self.mirror.ensure()
         if not self.mirror.has_ref():
             self.mirror.fetch()
+
         self.mirror.assert_ref()
 
         # Here after performing any fetches, we need to also ensure that
