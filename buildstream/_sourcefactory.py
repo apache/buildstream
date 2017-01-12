@@ -47,6 +47,7 @@ class SourceFactory(PluginContext):
     #
     # Args:
     #    kind (str): The kind of Source to create
+    #    display_name (str): A name to display the Source
     #    context (object): The Context object for processing
     #    project (object): The project object
     #    meta (object): The loaded MetaSource
@@ -58,6 +59,6 @@ class SourceFactory(PluginContext):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the source itself took issue with the config)
     #
-    def create(self, kind, context, project, meta):
+    def create(self, kind, display_name, context, project, meta):
         source_type = self.lookup(kind)
-        return source_type(context, project, meta)
+        return source_type(display_name, context, project, meta)
