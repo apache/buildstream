@@ -18,8 +18,14 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import datetime
+from contextlib import contextmanager
+from weakref import WeakValueDictionary
+
 from . import _yaml
 from . import ImplError
+from .exceptions import _ALL_EXCEPTIONS
+from ._message import Message, MessageType
 
 
 class Plugin():
@@ -30,11 +36,19 @@ class Plugin():
     Some common features to both Sources and Elements are found
     in this class.
     """
-    def __init__(self, context, project, provenance, type_tag):
+    def __init__(self, display_name, context, project, provenance, type_tag):
         self.__context = context        # The Context object
         self.__project = project        # The Project object
         self.__provenance = provenance  # The Provenance information
         self.__type_tag = type_tag      # The type of plugin (element or source)
+        self.__unique_id = _plugin_register(self)  # Unique ID
+        self.__display_name = display_name
+
+        self.debug("Created: {}".format(self))
+
+    def __del__(self):
+        self.debug("Destroyed: {}".format(self))
+        _plugin_unregister(self.__unique_id)
 
     def __str__(self):
         return "{kind} {typetag} at {provenance}".format(
@@ -212,3 +226,145 @@ class Plugin():
         """
         raise ImplError("{tag} plugin '{kind}' does not implement get_unique_key()".format(
             tag=self.__type_tag, kind=self.get_kind()))
+
+    def debug(self, brief, detail=None):
+        """Print a debugging message
+
+        Args:
+           brief (str): The brief message
+           detail (str): An optional detailed message, can be multiline output
+        """
+        self._message(MessageType.DEBUG, brief, detail=detail)
+
+    def status(self, brief, detail=None):
+        """Print a status message
+
+        Args:
+           brief (str): The brief message
+           detail (str): An optional detailed message, can be multiline output
+        """
+        self._message(MessageType.STATUS, brief, detail=detail)
+
+    def warn(self, brief, detail=None):
+        """Print a warning message
+
+        Args:
+           brief (str): The brief message
+           detail (str): An optional detailed message, can be multiline output
+        """
+        self._message(MessageType.WARN, brief, detail=detail)
+
+    def error(self, brief, detail=None):
+        """Print an error message
+
+        Args:
+           brief (str): The brief message
+           detail (str): An optional detailed message, can be multiline output
+        """
+        self._message(MessageType.ERROR, brief, detail=detail)
+
+    @contextmanager
+    def timed_activity(self, activity_name):
+        """Context manager for performing timed activities in plugins
+
+        Args:
+           activity_name: The name of the activity
+
+        This function lets you perform timed tasks in your plugin,
+        the core will take care of timing the duration of your
+        task and printing start / fail / success messages.
+
+        **Example**
+
+        .. code:: python
+
+          # Activity will be logged and timed
+          with self.timed_activity("Mirroring {}".format(self.url)):
+
+              # Non-zero is an error
+              if subprocess.call(... command to create mirror ...):
+                  raise SourceError(...)
+        """
+        starttime = datetime.datetime.now()
+        try:
+            self._message(MessageType.START, activity_name)
+            yield
+        except _ALL_EXCEPTIONS as e:
+            # Re raise after queueing a fail message, the scheduler needs to know
+            # there was an exception
+            elapsed = datetime.datetime.now() - starttime
+            self._message(MessageType.FAIL, activity_name, elapsed=elapsed)
+            raise e
+
+        elapsed = datetime.datetime.now() - starttime
+        self._message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
+
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
+
+    # _get_display_name():
+    #
+    # Fetch the plugin's display name, to be used in message titles
+    # and such.
+    #
+    def _get_display_name(self):
+        return self.__display_name
+
+    # _get_unique_id():
+    #
+    # Fetch the plugin's unique identifier
+    #
+    def _get_unique_id(self):
+        return self.__unique_id
+
+    def _message(self, message_type, brief, detail=None, elapsed=None):
+        message = Message(self.__unique_id, message_type, brief,
+                          detail=detail,
+                          elapsed=elapsed)
+        self.__context._message(message)
+
+# Hold on to a lookup table by counter of all instantiated plugins.
+# We use this to send the id back from child processes so we can lookup
+# corresponding element/source in the master process.
+#
+# Use WeakValueDictionary() so the map we use to lookup objects does not
+# keep the plugins alive after pipeline destruction.
+#
+# Note that Plugins can only be instantiated in the main process before
+# scheduling tasks.
+__PLUGINS_UNIQUE_ID = 0
+__PLUGINS_TABLE = WeakValueDictionary()
+
+
+# _plugin_lookup():
+#
+# Fetch a plugin in the current process by it's
+# unique identifier
+#
+# Args:
+#    unique_id: The unique identifier as returned by
+#               plugin._get_unique_id()
+#
+# Returns:
+#    (Plugin): The plugin for the given ID, or None
+#
+def _plugin_lookup(unique_id):
+    try:
+        plugin = __PLUGINS_TABLE[unique_id]
+    except (AttributeError, KeyError):
+        print("Could not find plugin with ID {}".format(unique_id))
+        raise e
+
+    return plugin
+
+
+def _plugin_register(plugin):
+    global __PLUGINS_UNIQUE_ID
+    __PLUGINS_UNIQUE_ID += 1
+    __PLUGINS_TABLE[__PLUGINS_UNIQUE_ID] = plugin
+    return __PLUGINS_UNIQUE_ID
+
+
+def _plugin_unregister(unique_id):
+    del __PLUGINS_TABLE[str(unique_id)]
