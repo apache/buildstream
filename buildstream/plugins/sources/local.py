@@ -78,11 +78,12 @@ class LocalSource(Source):
 
     def stage(self, directory):
         # Use hardlinks for staging
-        if os.path.isdir(self.fullpath):
-            utils.link_files(self.fullpath, directory)
-        else:
-            destfile = os.path.join(directory, os.path.basename(self.path))
-            utils.safe_link(self.fullpath, destfile)
+        with self.timed_activity("Staging local files at {}".format(self.path)):
+            if os.path.isdir(self.fullpath):
+                utils.copy_files(self.fullpath, directory)
+            else:
+                destfile = os.path.join(directory, os.path.basename(self.path))
+                utils.safe_copy(self.fullpath, destfile)
 
 
 # Get the sha256 sum for the content of a file
