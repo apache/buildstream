@@ -33,9 +33,9 @@ class Source(Plugin):
     All Sources derive from this class, this interface defines how
     the core will be interacting with Sources.
     """
-    def __init__(self, context, project, meta):
+    def __init__(self, display_name, context, project, meta):
         provenance = _yaml.node_get_provenance(meta.config)
-        super().__init__(context, project, provenance, "source")
+        super().__init__(display_name, context, project, provenance, "source")
 
         self.__directory = meta.directory               # Staging relative directory
         self.__origin_node = meta.origin_node           # YAML node this Source was loaded from
