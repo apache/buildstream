@@ -47,6 +47,7 @@ class ElementFactory(PluginContext):
     #
     # Args:
     #    kind (str): The kind of Element to create
+    #    display_name (str): A name to display the Element
     #    context (object): The Context object for processing
     #    project (object): The project object
     #    meta (object): The loaded MetaElement
@@ -57,6 +58,6 @@ class ElementFactory(PluginContext):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the element itself took issue with the config)
     #
-    def create(self, kind, context, project, artifacts, meta):
+    def create(self, kind, display_name, context, project, artifacts, meta):
         element_type = self.lookup(kind)
-        return element_type(context, project, artifacts, meta)
+        return element_type(display_name, context, project, artifacts, meta)
