@@ -20,16 +20,18 @@
 
 import os
 import sys
-import re
 import click
 import pkg_resources  # From setuptools
 from ruamel import yaml
 
 from . import Context, Project, Scope
-from . import LoadError, SourceError, ElementError, PluginError, ProgramNotFoundError
-from ._pipeline import Pipeline
+from .exceptions import _ALL_EXCEPTIONS
+from .plugin import MessageType, _plugin_lookup
 from . import _pipeline
+from ._pipeline import Pipeline, PipelineError
 from . import utils
+from . import _term
+from ._term import Color, Attr
 
 # Some nasty globals
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -48,14 +50,17 @@ main_options = {}
               help="Configuration file to use")
 @click.option('--verbose', '-v', default=False, is_flag=True,
               help="Whether to be extra verbose")
+@click.option('--debug', default=False, is_flag=True,
+              help="Print debugging output")
 @click.option('--directory', '-C', default=os.getcwd(),
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="Project directory (default: %s)" % os.getcwd())
-def cli(config, verbose, directory):
+def cli(config, verbose, debug, directory):
     """Build and manipulate BuildStream projects"""
     main_options['config'] = config
     main_options['verbose'] = verbose
     main_options['directory'] = directory
+    main_options['debug'] = debug
 
 
 ##################################################################
@@ -73,14 +78,22 @@ def fetch(target, arch, variant, all):
     """Fetch sources in a pipeline"""
     pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
     try:
-        sources = pipeline.fetch(all)
-    except (SourceError, ElementError) as e:
-        click.echo("Error fetching sources for this pipeline: %s" % str(e))
+        inconsistent = pipeline.fetch(all)
+        click.echo("")
+    except PipelineError:
+        click.echo("")
+        click.echo("Error fetching sources for this pipeline")
         sys.exit(1)
 
-    click.echo(("Successfully fetched sources in pipeline " +
-                "with target '{target}' in directory: {directory}").format(
-                    target=target, directory=main_options['directory']))
+    if inconsistent:
+        report = "Inconsistent sources on the following elements could not be fetched:\n"
+        for element in inconsistent:
+            report += "  {}".format(element)
+        click.echo(report)
+    else:
+        click.echo(("Successfully fetched sources in pipeline " +
+                    "with target '{target}' in directory: {directory}").format(
+                        target=target, directory=main_options['directory']))
 
 
 ##################################################################
@@ -107,8 +120,10 @@ def refresh(target, arch, variant, all, list):
 
     try:
         sources = pipeline.refresh(all)
-    except (SourceError, ElementError) as e:
-        click.echo("Error refreshing pipeline: %s" % str(e))
+        click.echo("")
+    except PipelineError:
+        click.echo("")
+        click.echo("Error refreshing pipeline")
         sys.exit(1)
 
     if list:
@@ -187,38 +202,38 @@ def show(target, arch, variant, scope, order, format):
         dependencies = sorted(pipeline.dependencies(scope))
 
     for element in dependencies:
-        line = format_symbol(format, 'name', element.name, color=Color.BLUE, attrs=[Attr.BOLD])
+        line = _term.fmt_subst(format, 'name', element.name, color=Color.BLUE, attrs=[Attr.BOLD])
         cache_key = element._get_cache_key()
         if cache_key is None:
             cache_key = ''
 
         if element._inconsistent():
-            line = format_symbol(line, 'key', "")
-            line = format_symbol(line, 'state', "inconsistent", color=Color.RED)
+            line = _term.fmt_subst(line, 'key', "")
+            line = _term.fmt_subst(line, 'state', "inconsistent", color=Color.RED)
         else:
-            line = format_symbol(line, 'key', cache_key, color=Color.YELLOW)
+            line = _term.fmt_subst(line, 'key', cache_key, color=Color.YELLOW)
             if element._cached():
-                line = format_symbol(line, 'state', "cached", color=Color.MAGENTA)
+                line = _term.fmt_subst(line, 'state', "cached", color=Color.MAGENTA)
             elif element._buildable():
-                line = format_symbol(line, 'state', "buildable", color=Color.GREEN)
+                line = _term.fmt_subst(line, 'state', "buildable", color=Color.GREEN)
             else:
-                line = format_symbol(line, 'state', "waiting", color=Color.BLUE)
+                line = _term.fmt_subst(line, 'state', "waiting", color=Color.BLUE)
 
         # Element configuration
         config = utils._node_sanitize(element._Element__config)
-        line = format_symbol(
+        line = _term.fmt_subst(
             line, 'config',
             yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
 
         # Variables
         variables = utils._node_sanitize(element._Element__variables.variables)
-        line = format_symbol(
+        line = _term.fmt_subst(
             line, 'vars',
             yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
         # Environment
         environment = utils._node_sanitize(element._Element__environment)
-        line = format_symbol(
+        line = _term.fmt_subst(
             line, 'env',
             yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
@@ -231,6 +246,77 @@ def show(target, arch, variant, scope, order, format):
 #                        Helper Functions                        #
 ##################################################################
 
+
+# Colors we use for labels of various message types
+message_colors = {}
+message_colors[MessageType.DEBUG] = Color.MAGENTA
+message_colors[MessageType.STATUS] = Color.BLUE
+message_colors[MessageType.WARN] = Color.YELLOW
+message_colors[MessageType.ERROR] = Color.RED
+message_colors[MessageType.START] = Color.CYAN
+message_colors[MessageType.SUCCESS] = Color.GREEN
+message_colors[MessageType.FAIL] = Color.RED
+
+
+#
+# Handle messages from the pipeline
+#
+def message_handler(message):
+
+    # The detail indentation
+    INDENT = "    "
+    STARTTIME = "[--:--:--]"
+    TIMELEN = 10
+
+    def _format_duration(duration):
+        hours, remainder = divmod(int(duration.total_seconds()), 60 * 60)
+        minutes, seconds = divmod(remainder, 60)
+        return "%02d:%02d:%02d" % (hours, minutes, seconds)
+
+    # Silently ignore debugging messages
+    enable_debug = main_options['debug']
+    if not enable_debug and message.message_type == MessageType.DEBUG:
+        return
+
+    plugin = _plugin_lookup(message.unique_id)
+    name = plugin._get_display_name()
+    color = message_colors[message.message_type]
+
+    # Compose string...
+    text = ''
+    if enable_debug:
+        text += "[%{tagpid} %{pid: <5} %{tagid} %{id:0>3}] "
+    text += "%{timespec: <10} %{type: <7} %{name: <15} %{message}"
+    if message.detail is not None:
+        text += "\n\n%{detail}\n"
+
+    # Format string...
+    if message.message_type == MessageType.START:
+        text = _term.fmt_subst(text, 'timespec', STARTTIME,
+                               color=Color.CYAN, attrs=[Attr.DARK])
+    elif message.message_type in (MessageType.SUCCESS or MessageType.FAIL):
+        text = _term.fmt_subst(text, 'timespec',
+                               "[{}]".format(_format_duration(message.elapsed)),
+                               color=Color.CYAN, attrs=[Attr.DARK])
+    else:
+        text = _term.fmt_subst(text, 'timespec', '')
+
+    if enable_debug:
+        text = _term.fmt_subst(text, 'pid', message.pid, color=Color.YELLOW, attrs=[Attr.DARK])
+        text = _term.fmt_subst(text, 'tagpid', 'PID:', color=Color.CYAN, attrs=[Attr.DARK])
+        text = _term.fmt_subst(text, 'id', message.unique_id, color=Color.YELLOW, attrs=[Attr.DARK])
+        text = _term.fmt_subst(text, 'tagid', 'ID:', color=Color.CYAN, attrs=[Attr.DARK])
+
+    text = _term.fmt_subst(text, 'type', message.message_type.upper(), color=color, attrs=[Attr.BOLD, Attr.DARK])
+    text = _term.fmt_subst(text, 'name', '[' + name + ']', color=Color.BLUE, attrs=[Attr.BOLD, Attr.DARK])
+    text = _term.fmt_subst(text, 'message', message.message)
+    if message.detail is not None:
+        text = _term.fmt_subst(text, 'detail',
+                               INDENT + INDENT.join((message.detail.splitlines(True))),
+                               attrs=[Attr.ITALIC, Attr.DARK])
+    click.echo(text)
+
+
 #
 # Create a pipeline
 #
@@ -239,110 +325,23 @@ def create_pipeline(directory, target, arch, variant, config):
     try:
         context = Context(arch)
         context.load(config)
-    except LoadError as e:
+    except _ALL_EXCEPTIONS as e:
         click.echo("Error loading user configuration: %s" % str(e))
         sys.exit(1)
 
+    # Propagate pipeline feedback to the user
+    context._set_message_handler(message_handler)
+
     try:
         project = Project(directory)
-    except LoadError as e:
+    except _ALL_EXCEPTIONS as e:
         click.echo("Error loading project: %s" % str(e))
         sys.exit(1)
 
     try:
         pipeline = Pipeline(context, project, target, variant)
-    except (LoadError, PluginError, SourceError, ElementError, ProgramNotFoundError) as e:
+    except _ALL_EXCEPTIONS as e:
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
 
     return pipeline
-
-
-#
-# Text formatting for the console
-#
-# Note that because we use click, the output we send to the terminal
-# with click.echo() will be stripped of ansi control unless displayed
-# on the console to the user (there are also some compatibility features
-# for text formatting on windows)
-#
-class Color():
-    BLACK = "30"
-    RED = "31"
-    GREEN = "32"
-    YELLOW = "33"
-    BLUE = "34"
-    MAGENTA = "35"
-    CYAN = "36"
-    WHITE = "37"
-
-
-class Attr():
-    CLEAR = "0"
-    BOLD = "1"
-    DARK = "2"
-    ITALIC = "3"
-    UNDERLINE = "4"
-    BLINK = "5"
-    REVERSE_VIDEO = "7"
-    CONCEALED = "8"
-
-
-def console_format(text, color=None, attrs=[]):
-
-    if color is None and not attrs:
-        return text
-
-    CNTL_START = "\033["
-    CNTL_END = "m"
-    CNTL_SEPARATOR = ";"
-
-    attr_count = 0
-
-    # Set graphics mode
-    new_text = CNTL_START
-    for attr in attrs:
-        if attr_count > 0:
-            new_text += CNTL_SEPARATOR
-        new_text += attr
-        attr_count += 1
-
-    if color is not None:
-        if attr_count > 0:
-            new_text += CNTL_SEPARATOR
-        new_text += color
-        attr_count += 1
-
-    new_text += CNTL_END
-
-    # Add text
-    new_text += text
-
-    # Clear graphics mode settings
-    new_text += (CNTL_START + Attr.CLEAR + CNTL_END)
-
-    return new_text
-
-
-# Can be used to format python strings with % prefixed.
-#
-# This will first center the %{name} in a 20 char width
-# and format the %{name} in blue.
-#
-#    formatted = format_symbol("This is your %{name: ^20}", "name", "Bob", color=Color.BLUE)
-#
-# We use this because python formatting methods which use
-# padding will consider the ansi escape sequences we use.
-#
-def format_symbol(text, varname, value, color=None, attrs=[]):
-
-    def subst_callback(match):
-        # Extract and format the "{(varname)...}" portion of the match
-        inner_token = match.group(1)
-        formatted = inner_token.format(**{varname: value})
-
-        # Colorize after the pythonic format formatting, which may have padding
-        return console_format(formatted, color, attrs)
-
-    # Lazy regex, after our word, match anything that does not have '%'
-    return re.sub(r"%(\{(" + varname + r")[^%]*\})", subst_callback, text)
