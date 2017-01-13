@@ -380,6 +380,8 @@ class Job():
             output.write('{}\n'.format(message_text))
             output.flush()
 
+        # Tag them on the way out the door...
+        message.action_name = self.parent_action
         self.queue.put(Envelope('message', message))
 
     def message(self, plugin, message_type, message,
