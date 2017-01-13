@@ -22,11 +22,13 @@ import os
 import sys
 import click
 import pkg_resources  # From setuptools
+import subprocess
 from ruamel import yaml
 
 from . import Context, Project, Scope
 from .exceptions import _ALL_EXCEPTIONS
-from .plugin import MessageType, _plugin_lookup
+from .plugin import _plugin_lookup
+from ._message import MessageType
 from . import _pipeline
 from ._pipeline import Pipeline, PipelineError
 from . import utils
@@ -38,6 +40,13 @@ build_stream_version = pkg_resources.require("buildstream")[0].version
 _, _, _, _, host_machine = os.uname()
 
 main_options = {}
+main_options_set = {}
+main_context = None
+
+
+def record_options(ctx, param, value):
+    main_options_set[param.name] = True
+    return value
 
 
 ##################################################################
@@ -48,18 +57,22 @@ main_options = {}
 @click.option('--config', '-c',
               type=click.Path(exists=True, dir_okay=False, readable=True),
               help="Configuration file to use")
-@click.option('--verbose', '-v', default=False, is_flag=True,
+@click.option('--verbose/--no-verbose', callback=record_options,
               help="Whether to be extra verbose")
-@click.option('--debug', default=False, is_flag=True,
+@click.option('--debug/--no-debug', callback=record_options,
+              help="Print debugging output")
+@click.option('--error-lines', default=20, is_eager=True,
+              type=click.INT, callback=record_options,
               help="Print debugging output")
 @click.option('--directory', '-C', default=os.getcwd(),
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="Project directory (default: %s)" % os.getcwd())
-def cli(config, verbose, debug, directory):
+def cli(config, verbose, debug, error_lines, directory):
     """Build and manipulate BuildStream projects"""
     main_options['config'] = config
     main_options['verbose'] = verbose
     main_options['directory'] = directory
+    main_options['error_lines'] = error_lines
     main_options['debug'] = debug
 
 
@@ -258,20 +271,25 @@ message_colors[MessageType.SUCCESS] = Color.GREEN
 message_colors[MessageType.FAIL] = Color.RED
 
 
+# This would be better as native python code, rather than requiring
+# tail specifically.
+def read_last_lines(logfile, n_lines):
+    tail_command = utils.get_host_tool('tail')
+
+    # Lets just expect this to always pass for now...
+    output = subprocess.check_output([tail_command, '-n', str(n_lines), logfile])
+    output = output.decode('UTF-8')
+    return output.rstrip()
+
+
 #
 # Handle messages from the pipeline
 #
-def message_handler(message):
+def message_handler(message, context):
 
     # The detail indentation
     INDENT = "    "
-    STARTTIME = "[--:--:--]"
-    TIMELEN = 10
-
-    def _format_duration(duration):
-        hours, remainder = divmod(int(duration.total_seconds()), 60 * 60)
-        minutes, seconds = divmod(remainder, 60)
-        return "%02d:%02d:%02d" % (hours, minutes, seconds)
+    EMPTYTIME = "[--:--:--]"
 
     # Silently ignore debugging messages
     enable_debug = main_options['debug']
@@ -286,20 +304,44 @@ def message_handler(message):
     text = ''
     if enable_debug:
         text += "[%{tagpid} %{pid: <5} %{tagid} %{id:0>3}] "
-    text += "%{timespec: <10} %{type: <7} %{name: <15} %{message}"
+    text += "%{timespec: <10} %{type: <7} %{name: <15}"
+
+    if message.logfile and message.scheduler:
+        # Longest task name is 'refresh'
+        text += " [%{message: ^7}] %{logfile}"
+    else:
+        text += " %{message}"
+
     if message.detail is not None:
         text += "\n\n%{detail}\n"
 
+    # Are we going to print some log file ?
+    if message.scheduler and message.message_type == MessageType.FAIL:
+        text = text.rstrip('\n')
+        text += "\n\n%{logcontent}\n"
+
     # Format string...
-    if message.message_type == MessageType.START:
-        text = _term.fmt_subst(text, 'timespec', STARTTIME,
-                               color=Color.CYAN, attrs=[Attr.DARK])
-    elif message.message_type in (MessageType.SUCCESS or MessageType.FAIL):
+    if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
         text = _term.fmt_subst(text, 'timespec',
-                               "[{}]".format(_format_duration(message.elapsed)),
+                               "[{}]".format(utils._format_duration(message.elapsed)),
                                color=Color.CYAN, attrs=[Attr.DARK])
     else:
-        text = _term.fmt_subst(text, 'timespec', '')
+        text = _term.fmt_subst(text, 'timespec', EMPTYTIME,
+                               color=Color.CYAN, attrs=[Attr.DARK])
+
+    # Handle scheduler messages differently
+    if message.scheduler:
+        text = _term.fmt_subst(text, 'logfile', message.logfile, color=Color.YELLOW, attrs=[Attr.DARK])
+        text = _term.fmt_subst(text, 'message', message.message, color=Color.YELLOW, attrs=[Attr.DARK])
+
+        # Dump some log content
+        if message.message_type == MessageType.FAIL:
+            log_content = read_last_lines(message.logfile, context.log_error_lines)
+            text = _term.fmt_subst(text, 'logcontent',
+                                   INDENT + INDENT.join(log_content.splitlines(True)),
+                                   attrs=[Attr.ITALIC, Attr.DARK])
+    else:
+        text = _term.fmt_subst(text, 'message', message.message)
 
     if enable_debug:
         text = _term.fmt_subst(text, 'pid', message.pid, color=Color.YELLOW, attrs=[Attr.DARK])
@@ -308,12 +350,16 @@ def message_handler(message):
         text = _term.fmt_subst(text, 'tagid', 'ID:', color=Color.CYAN, attrs=[Attr.DARK])
 
     text = _term.fmt_subst(text, 'type', message.message_type.upper(), color=color, attrs=[Attr.BOLD, Attr.DARK])
-    text = _term.fmt_subst(text, 'name', '[' + name + ']', color=Color.BLUE, attrs=[Attr.BOLD, Attr.DARK])
-    text = _term.fmt_subst(text, 'message', message.message)
+    text = _term.fmt_subst(text, 'name', '[' + name + ']', color=Color.BLUE, attrs=[Attr.DARK])
     if message.detail is not None:
+        detail = message.detail.rstrip('\n')
+
+        color = Color.WHITE
+        if message.message_type == MessageType.FAIL:
+            color = Color.RED
         text = _term.fmt_subst(text, 'detail',
-                               INDENT + INDENT.join((message.detail.splitlines(True))),
-                               attrs=[Attr.ITALIC, Attr.DARK])
+                               INDENT + INDENT.join((detail.splitlines(True))),
+                               color=color, attrs=[Attr.ITALIC, Attr.BOLD, Attr.DARK])
     click.echo(text)
 
 
@@ -328,6 +374,16 @@ def create_pipeline(directory, target, arch, variant, config):
     except _ALL_EXCEPTIONS as e:
         click.echo("Error loading user configuration: %s" % str(e))
         sys.exit(1)
+
+    # Override things in the context from our command line options,
+    # the command line when used, trumps the config files.
+    #
+    if main_options_set.get('debug'):
+        context.log_debug = main_options['debug']
+    if main_options_set.get('verbose'):
+        context.log_verbose = main_options['verbose']
+    if main_options_set.get('error_lines'):
+        context.log_error_lines = main_options['error_lines']
 
     # Propagate pipeline feedback to the user
     context._set_message_handler(message_handler)
