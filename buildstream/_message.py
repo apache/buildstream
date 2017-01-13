@@ -40,12 +40,14 @@ class MessageType():
 class Message():
     def __init__(self, unique_id, message_type, message,
                  detail=None,
+                 action_name=None,
                  elapsed=None,
                  logfile=None,
                  scheduler=False):
         self.message_type = message_type  # Message type
         self.message = message            # The message string
         self.detail = detail              # An additional detail string
+        self.action_name = action_name    # Name of the task queue (fetch, refresh, build, etc)
         self.elapsed = elapsed            # The elapsed time, for SUCCESS and FAIL types
         self.logfile = logfile            # The log file path where commands took place
         self.pid = os.getpid()            # The process pid
