@@ -26,8 +26,10 @@ import multiprocessing
 import datetime
 from collections import deque
 
+from . import utils
 from ._message import Message, MessageType
 from .exceptions import _ALL_EXCEPTIONS
+from .plugin import _plugin_lookup
 
 
 # Process class that doesn't call waitpid on its own.
@@ -186,10 +188,7 @@ class Queue():
     def enqueue(self, elts):
         if not elts:
             return
-        if isinstance(elts, list):
-            self.wait_queue.extend(elts)
-        else:
-            self.wait_queue.append(elts)
+        self.wait_queue.extend(elts)
 
     def dequeue(self):
         while len(self.done_queue) > 0:
@@ -205,7 +204,7 @@ class Queue():
                 unready.append(element)
                 continue
 
-            job = Job(self.scheduler)
+            job = Job(self.scheduler, self.action_name)
             job.spawn(self.action_name, self.process, self.done, element)
             self.active_jobs.append(job)
 
@@ -219,7 +218,6 @@ class Queue():
         else:
             self.failed_elements.append(element)
 
-        # Get our pipe cleaned once more...
         job.parent_process_queue()
         if job.result:
             self.results.append(job.result)
@@ -239,21 +237,27 @@ class Envelope():
 #
 # Args:
 #    scheduler (Scheduler): The scheduler
+#    action_name (str): The queue action name
 #
 class Job():
 
-    def __init__(self, scheduler):
-        self.scheduler = scheduler
-        self.queue = multiprocessing.Queue()
-        self.process = None
-        self.watcher = None
-        self.action = None
-        self.complete = None
-        self.element = None
-        self.pid = None
-        self.result = None
+    def __init__(self, scheduler, action_name):
 
-        # Watch for messages
+        # Shared with child process
+        self.scheduler = scheduler            # The scheduler
+        self.queue = multiprocessing.Queue()  # A message passing queue
+        self.process = None                   # The Process object
+        self.watcher = None                   # Child process watcher
+        self.parent_action = action_name      # The action name for the Queue
+        self.action = None                    # The action callable function
+        self.complete = None                  # The complete callable function
+        self.element = None                   # The element we're processing
+
+        # Only relevant in parent process after spawning
+        self.pid = None                       # The child's pid in the parent
+        self.result = None                    # Return value of child action in the parent
+
+        # Watch for envelopes in the parent process
         scheduler.loop.add_reader(
             self.queue._reader.fileno(),
             self.parent_recv)
@@ -274,7 +278,7 @@ class Job():
 
         # Spawn the process
         self.process = Process(target=self.child_action,
-                               args=[element, self.queue])
+                               args=[element, self.queue, self.parent_action])
         self.process.start()
         self.pid = self.process.pid
 
@@ -282,36 +286,40 @@ class Job():
         self.watcher = asyncio.get_child_watcher()
         self.watcher.add_child_handler(self.pid, self.child_complete, element)
 
-    def child_action(self, element, queue):
+    def child_action(self, element, queue, action_name):
 
         # Assign the queue we passed across the process boundaries
-        self.queue = queue
-
+        #
         # Set the global message handler in this child
         # process to forward messages to the parent process
+        self.queue = queue
         self.scheduler.context._set_message_handler(self.child_send)
 
-        # Time and run the action function
+        # Time, log and and run the action function
         #
-        starttime = datetime.datetime.now()
-        try:
-            self.message(element, MessageType.START, self.action_name)
+        with element._logging_enabled(action_name) as filename:
+            starttime = datetime.datetime.now()
+            try:
+                self.message(element, MessageType.START, self.action_name,
+                             logfile=filename, scheduler=True)
 
-            result = self.action(element)
-            if result is not None:
-                envelope = Envelope('result', result)
-                self.queue.put(envelope)
+                result = self.action(element)
+                if result is not None:
+                    envelope = Envelope('result', result)
+                    self.queue.put(envelope)
 
-        except _ALL_EXCEPTIONS as e:
+            except _ALL_EXCEPTIONS as e:
+                elapsed = datetime.datetime.now() - starttime
+                self.message(element, MessageType.FAIL, self.action_name,
+                             elapsed=elapsed, detail=str(e),
+                             logfile=filename, scheduler=True)
+                self.child_shutdown(1)
+
             elapsed = datetime.datetime.now() - starttime
-            self.message(element, MessageType.FAIL, self.action_name,
-                         elapsed=elapsed, detail=str(e))
-            self.child_shutdown(1)
+            self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed,
+                         logfile=filename, scheduler=True)
 
-        elapsed = datetime.datetime.now() - starttime
-        self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed)
-
-        self.child_shutdown(0)
+            self.child_shutdown(0)
 
     def child_complete(self, pid, returncode, element):
         self.complete(self, returncode, element)
@@ -339,16 +347,52 @@ class Job():
         self.queue.close()
         sys.exit(exit_code)
 
-    def child_send(self, message):
+    def child_send(self, message, context):
+
+        # Before sending the message to the parent, write it
+        # out to the local log file
+        #
+        plugin = _plugin_lookup(message.unique_id)
+
+        with plugin._output_file() as output:
+            INDENT = "    "
+            EMPTYTIME = "--:--:--"
+
+            name = '[' + plugin._get_display_name() + ']'
+
+            fmt = "[{timecode: <8}] {type: <7} {name: <15}: {message}"
+            detail = ''
+            if message.detail is not None:
+                fmt += "\n\n{detail}"
+                detail = message.detail.rstrip('\n')
+                detail = INDENT + INDENT.join(detail.splitlines(True))
+
+            timecode = EMPTYTIME
+            if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
+                timecode = utils._format_duration(message.elapsed)
+
+            message_text = fmt.format(timecode=timecode,
+                                      type=message.message_type.upper(),
+                                      name=name,
+                                      message=message.message,
+                                      detail=detail)
+
+            output.write('{}\n'.format(message_text))
+            output.flush()
+
         self.queue.put(Envelope('message', message))
 
     def message(self, plugin, message_type, message,
                 detail=None,
-                elapsed=None):
+                elapsed=None,
+                logfile=None,
+                scheduler=False):
         self.scheduler.context._message(
             Message(plugin._get_unique_id(),
                     message_type,
                     message,
                     detail=detail,
-                    elapsed=elapsed)
+                    elapsed=elapsed,
+                    logfile=logfile,
+                    scheduler=scheduler)
         )
