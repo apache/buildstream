@@ -20,9 +20,11 @@
 
 import os
 import sys
+import re
 import click
 import pkg_resources  # From setuptools
 import subprocess
+import copy
 from ruamel import yaml
 
 from . import Context, Project, Scope
@@ -32,8 +34,6 @@ from ._message import MessageType
 from . import _pipeline
 from ._pipeline import Pipeline, PipelineError
 from . import utils
-from . import _term
-from ._term import Color, Attr
 
 # Some nasty globals
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -215,38 +215,38 @@ def show(target, arch, variant, scope, order, format):
         dependencies = sorted(pipeline.dependencies(scope))
 
     for element in dependencies:
-        line = _term.fmt_subst(format, 'name', element.name, color=Color.BLUE, attrs=[Attr.BOLD])
+        line = fmt_subst(format, 'name', element.name, fg='blue', bold=True)
         cache_key = element._get_cache_key()
         if cache_key is None:
             cache_key = ''
 
         if element._inconsistent():
-            line = _term.fmt_subst(line, 'key', "")
-            line = _term.fmt_subst(line, 'state', "inconsistent", color=Color.RED)
+            line = fmt_subst(line, 'key', "")
+            line = fmt_subst(line, 'state', "inconsistent", fg='red')
         else:
-            line = _term.fmt_subst(line, 'key', cache_key, color=Color.YELLOW)
+            line = fmt_subst(line, 'key', cache_key, fg='yellow')
             if element._cached():
-                line = _term.fmt_subst(line, 'state', "cached", color=Color.MAGENTA)
+                line = fmt_subst(line, 'state', "cached", fg='magenta')
             elif element._buildable():
-                line = _term.fmt_subst(line, 'state', "buildable", color=Color.GREEN)
+                line = fmt_subst(line, 'state', "buildable", fg='green')
             else:
-                line = _term.fmt_subst(line, 'state', "waiting", color=Color.BLUE)
+                line = fmt_subst(line, 'state', "waiting", fg='blue')
 
         # Element configuration
         config = utils._node_sanitize(element._Element__config)
-        line = _term.fmt_subst(
+        line = fmt_subst(
             line, 'config',
             yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
 
         # Variables
         variables = utils._node_sanitize(element._Element__variables.variables)
-        line = _term.fmt_subst(
+        line = fmt_subst(
             line, 'vars',
             yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
         # Environment
         environment = utils._node_sanitize(element._Element__environment)
-        line = _term.fmt_subst(
+        line = fmt_subst(
             line, 'env',
             yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
@@ -260,15 +260,65 @@ def show(target, arch, variant, scope, order, format):
 ##################################################################
 
 
-# Colors we use for labels of various message types
-message_colors = {}
-message_colors[MessageType.DEBUG] = Color.MAGENTA
-message_colors[MessageType.STATUS] = Color.BLUE
-message_colors[MessageType.WARN] = Color.YELLOW
-message_colors[MessageType.ERROR] = Color.RED
-message_colors[MessageType.START] = Color.CYAN
-message_colors[MessageType.SUCCESS] = Color.GREEN
-message_colors[MessageType.FAIL] = Color.RED
+# Basic profiles
+class Profile():
+    def __init__(self, **kwargs):
+        self.kwargs = dict(kwargs)
+
+    def fmt(self, text, **kwargs):
+        kwargs = dict(kwargs)
+        fmtargs = copy.copy(self.kwargs)
+        fmtargs.update(kwargs)
+        return click.style(text, **fmtargs)
+
+    def fmt_subst(self, text, varname, value, **kwargs):
+
+        def subst_callback(match):
+            # Extract and format the "{(varname)...}" portion of the match
+            inner_token = match.group(1)
+            formatted = inner_token.format(**{varname: value})
+
+            # Colorize after the pythonic format formatting, which may have padding
+            return self.fmt(formatted, **kwargs)
+
+        # Lazy regex, after our word, match anything that does not have '%'
+        return re.sub(r"%(\{(" + varname + r")[^%]*\})", subst_callback, text)
+
+
+def fmt_subst(text, varname, value, **kwargs):
+    return Style.NONE.fmt_subst(text, varname, value, **kwargs)
+
+
+# Palette of text styles
+#
+class Style():
+    NONE = Profile()
+
+    DEBUG_FG = Profile(fg='yellow')
+    DEBUG_BG = Profile(fg='cyan', dim=True)
+    TC_FG = Profile(fg='yellow')
+    TC_BG = Profile(fg='cyan', dim=True)
+    NAME_FG = Profile(fg='blue', bold=True)
+    NAME_BG = Profile(fg='blue', bold=True, dim=True)
+    TASK_FG = Profile(fg='yellow')
+    TASK_BG = Profile(fg='cyan', dim=True)
+
+    ACTION = Profile(bold=True)
+    LOG = Profile(fg='yellow', dim=True)
+    LOG_ERROR = Profile(fg='red')
+    DETAIL = Profile(dim=True)
+    ERR_HEAD = Profile(fg='red', bold=True, dim=True)
+    ERR_BODY = Profile(dim=True)
+
+
+action_colors = {}
+action_colors[MessageType.DEBUG] = "magenta"
+action_colors[MessageType.STATUS] = "blue"
+action_colors[MessageType.WARN] = "yellow"
+action_colors[MessageType.ERROR] = "red"
+action_colors[MessageType.START] = "cyan"
+action_colors[MessageType.SUCCESS] = "green"
+action_colors[MessageType.FAIL] = "red"
 
 
 # This would be better as native python code, rather than requiring
@@ -298,17 +348,32 @@ def message_handler(message, context):
 
     plugin = _plugin_lookup(message.unique_id)
     name = plugin._get_display_name()
-    color = message_colors[message.message_type]
 
-    # Compose string...
-    text = ''
+    # Debug output
     if enable_debug:
-        text += "[%{tagpid} %{pid: <5} %{tagid} %{id:0>3}] "
-    text += "%{timespec: <10} %{type: <7} %{name: <15}"
+        text = "%{debugopen}%{tagpid} %{pid: <5} %{tagid} %{id:0>3}%{debugclose}"
+    else:
+        text = ''
+
+    # Time code
+    text += "%{timespec: <10}"
+
+    # Action name (like refresh, fetch, build, etc)
+    if message.action_name:
+        text += "%{openaction}%{actionname: ^9}%{closeaction}"
+    else:
+        # These only happen at load time, after that everything is done
+        # in a child process and everything has an action queue name.
+        text += "           "
+
+    # The plugin display name
+    text += "%{openname}%{name: ^15}%{closename}"
+
+    # The message type
+    text += " %{type: ^7}"
 
     if message.logfile and message.scheduler:
-        # Longest task name is 'refresh'
-        text += " [%{message: ^7}] %{logfile}"
+        text += " %{logfile}"
     else:
         text += " %{message}"
 
@@ -321,46 +386,76 @@ def message_handler(message, context):
         text += "\n\n%{logcontent}\n"
 
     # Format string...
-    if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
-        text = _term.fmt_subst(text, 'timespec',
-                               "[{}]".format(utils._format_duration(message.elapsed)),
-                               color=Color.CYAN, attrs=[Attr.DARK])
-    else:
-        text = _term.fmt_subst(text, 'timespec', EMPTYTIME,
-                               color=Color.CYAN, attrs=[Attr.DARK])
+    text = fmt_subst(text, 'timespec', format_duration(message.elapsed))
 
     # Handle scheduler messages differently
     if message.scheduler:
-        text = _term.fmt_subst(text, 'logfile', message.logfile, color=Color.YELLOW, attrs=[Attr.DARK])
-        text = _term.fmt_subst(text, 'message', message.message, color=Color.YELLOW, attrs=[Attr.DARK])
+        text = fmt_subst(
+            text, 'message',
+            Style.TASK_BG.fmt('[') + Style.TASK_FG.fmt(message.message) + Style.TASK_BG.fmt(']'))
 
         # Dump some log content
         if message.message_type == MessageType.FAIL:
+            text = Style.LOG_ERROR.fmt_subst(text, 'logfile', message.logfile)
             log_content = read_last_lines(message.logfile, context.log_error_lines)
-            text = _term.fmt_subst(text, 'logcontent',
-                                   INDENT + INDENT.join(log_content.splitlines(True)),
-                                   attrs=[Attr.ITALIC, Attr.DARK])
-    else:
-        text = _term.fmt_subst(text, 'message', message.message)
+            text = Style.ERR_BODY.fmt_subst(
+                text, 'logcontent',
+                INDENT + INDENT.join(log_content.splitlines(True)))
+        else:
+            text = Style.LOG.fmt_subst(text, 'logfile', message.logfile)
+
+    if message.action_name:
+        text = Style.TASK_BG.fmt_subst(text, 'openaction', '[')
+        text = Style.TASK_FG.fmt_subst(text, 'actionname', message.action_name)
+        text = Style.TASK_BG.fmt_subst(text, 'closeaction', ']')
+
+    text = fmt_subst(text, 'message', message.message)
 
     if enable_debug:
-        text = _term.fmt_subst(text, 'pid', message.pid, color=Color.YELLOW, attrs=[Attr.DARK])
-        text = _term.fmt_subst(text, 'tagpid', 'PID:', color=Color.CYAN, attrs=[Attr.DARK])
-        text = _term.fmt_subst(text, 'id', message.unique_id, color=Color.YELLOW, attrs=[Attr.DARK])
-        text = _term.fmt_subst(text, 'tagid', 'ID:', color=Color.CYAN, attrs=[Attr.DARK])
+        text = Style.DEBUG_BG.fmt_subst(text, 'debugopen', '[')
+        text = Style.DEBUG_BG.fmt_subst(text, 'tagpid', 'PID:')
+        text = Style.DEBUG_FG.fmt_subst(text, 'pid', message.pid)
+        text = Style.DEBUG_BG.fmt_subst(text, 'tagid', 'ID:')
+        text = Style.DEBUG_FG.fmt_subst(text, 'id', message.unique_id)
+        text = Style.DEBUG_BG.fmt_subst(text, 'debugclose', ']')
 
-    text = _term.fmt_subst(text, 'type', message.message_type.upper(), color=color, attrs=[Attr.BOLD, Attr.DARK])
-    text = _term.fmt_subst(text, 'name', '[' + name + ']', color=Color.BLUE, attrs=[Attr.DARK])
+    text = Style.ACTION.fmt_subst(
+        text, 'type', message.message_type.upper(),
+        fg=action_colors[message.message_type])
+
+    text = Style.NAME_BG.fmt_subst(text, 'openname', '[')
+    text = Style.NAME_FG.fmt_subst(text, 'name', name)
+    text = Style.NAME_BG.fmt_subst(text, 'closename', ']')
+
     if message.detail is not None:
         detail = message.detail.rstrip('\n')
+        detail = INDENT + INDENT.join((detail.splitlines(True)))
 
-        color = Color.WHITE
         if message.message_type == MessageType.FAIL:
-            color = Color.RED
-        text = _term.fmt_subst(text, 'detail',
-                               INDENT + INDENT.join((detail.splitlines(True))),
-                               color=color, attrs=[Attr.ITALIC, Attr.BOLD, Attr.DARK])
+            text = Style.ERR_HEAD.fmt_subst(text, 'detail', detail)
+        else:
+            text = Style.DETAIL.fmt_subst(text, 'detail', detail)
+
     click.echo(text)
+
+
+# Formats a pretty [00:00:00] duration
+#
+def format_duration(elapsed):
+
+    if elapsed is None:
+        fields = [Style.TC_BG.fmt('--') for i in range(3)]
+    else:
+        hours, remainder = divmod(int(elapsed.total_seconds()), 60 * 60)
+        minutes, seconds = divmod(remainder, 60)
+        fields = [
+            Style.TC_FG.fmt("{0:02d}".format(field))
+            for field in [hours, minutes, seconds]
+        ]
+
+    return Style.TC_BG.fmt('[') + \
+        Style.TC_BG.fmt(':').join(fields) + \
+        Style.TC_BG.fmt(']')
 
 
 #
