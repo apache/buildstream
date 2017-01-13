@@ -33,9 +33,6 @@ from . import SourceError, ElementError
 from . import Scope
 from . import _yaml
 
-MAX_FETCHERS = 4
-MAX_BUILDERS = 4
-
 
 # Internal exception raised when a pipeline fails
 #
@@ -184,7 +181,7 @@ class Pipeline():
     # are rewritten inline.
     #
     def refresh(self, refresh_all):
-        refresh = RefreshQueue("Refresh", MAX_FETCHERS)
+        refresh = RefreshQueue("Refresh", self.context.sched_fetchers)
         scheduler = Scheduler(self.context, [refresh])
 
         if refresh_all:
@@ -227,7 +224,7 @@ class Pipeline():
     #            been fetched if we had a ref to fetch
     #
     def fetch(self, fetch_all):
-        fetch = FetchQueue("Fetch", MAX_FETCHERS)
+        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
         scheduler = Scheduler(self.context, [fetch])
 
         if fetch_all:
