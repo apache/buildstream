@@ -40,13 +40,17 @@ class MessageType():
 class Message():
     def __init__(self, unique_id, message_type, message,
                  detail=None,
-                 elapsed=None):
-        self.pid = os.getpid()
-        self.unique_id = unique_id
-        self.message_type = message_type
-        self.message = message
-        self.detail = detail
-        self.elapsed = elapsed
+                 elapsed=None,
+                 logfile=None,
+                 scheduler=False):
+        self.message_type = message_type  # Message type
+        self.message = message            # The message string
+        self.detail = detail              # An additional detail string
+        self.elapsed = elapsed            # The elapsed time, for SUCCESS and FAIL types
+        self.logfile = logfile            # The log file path where commands took place
+        self.pid = os.getpid()            # The process pid
+        self.unique_id = unique_id        # The plugin object unique identifier
+        self.scheduler = scheduler        # Whether this is a scheduler level message
 
         if message_type in (MessageType.SUCCESS, MessageType.FAIL):
             assert(elapsed is not None)
