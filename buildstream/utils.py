@@ -338,3 +338,11 @@ def _node_sanitize(node):
         return [_node_sanitize(elt) for elt in node]
 
     return node
+
+
+# Formats a duration in hours minutes and seconds
+#
+def _format_duration(duration):
+    hours, remainder = divmod(int(duration.total_seconds()), 60 * 60)
+    minutes, seconds = divmod(remainder, 60)
+    return "%02d:%02d:%02d" % (hours, minutes, seconds)
