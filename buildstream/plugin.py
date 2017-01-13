@@ -52,7 +52,6 @@ class Plugin():
 
     def __del__(self):
         self.debug("Destroyed: {}".format(self))
-        _plugin_unregister(self.__unique_id)
 
     def __str__(self):
         return "{kind} {typetag} at {provenance}".format(
@@ -238,7 +237,8 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
         """
-        self.__message(MessageType.DEBUG, brief, detail=detail)
+        if self.__context.log_debug:
+            self.__message(MessageType.DEBUG, brief, detail=detail)
 
     def status(self, brief, detail=None):
         """Print a status message
@@ -246,8 +246,22 @@ class Plugin():
         Args:
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
+
+        Note: Status messages tell about what a plugin is currently doing
         """
         self.__message(MessageType.STATUS, brief, detail=detail)
+
+    def info(self, brief, detail=None):
+        """Print an informative message
+
+        Args:
+           brief (str): The brief message
+           detail (str): An optional detailed message, can be multiline output
+
+        Note: Informative messages tell the user something they might want
+              to know, like if refreshing an element caused it to change.
+        """
+        self.__message(MessageType.INFO, brief, detail=detail)
 
     def warn(self, brief, detail=None):
         """Print a warning message
@@ -285,37 +299,42 @@ class Plugin():
           # Activity will be logged and timed
           with self.timed_activity("Mirroring {}".format(self.url)):
 
-              # Non-zero is an error
-              if subprocess.call(... command to create mirror ...):
-                  raise SourceError(...)
+              # This will raise SourceError on it's own
+              self.call(... command which takes time ...)
         """
         starttime = datetime.datetime.now()
         try:
+            # Push activity depth for status messages
+            self.__context._push_message_depth()
             self.__message(MessageType.START, activity_name)
             yield
+
         except _ALL_EXCEPTIONS as e:
-            # Re raise after queueing a fail message, the scheduler needs to know
-            # there was an exception
+            # Note the failure in status messages and reraise, the scheduler
+            # expects an error when there is an error.
             elapsed = datetime.datetime.now() - starttime
             self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
+            self.__context._pop_message_depth()
             raise e
 
         elapsed = datetime.datetime.now() - starttime
         self.__message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
+        self.__context._pop_message_depth()
 
     def call(self, *popenargs, fail=None, **kwargs):
         """A wrapper for subprocess.call()
 
         Args:
+           popenargs (list): Popen() arguments
            fail (str): A message to display if the process returns
-                       a failure code
-           rest_of_args: Same as subprocess.call()
+                       a non zero exit code
+           rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
-           (int): The process return code, if no exception was raised.
+           (int): The process exit code.
 
         Raises:
-           (:class:`.PluginError`): If fail is specified and a non-zero return code is received.
+           (:class:`.PluginError`): If a non-zero return code is received and *fail* is specified
 
         Note: If *fail* is not specified, then the return value of subprocess.call()
               is returned even on error, and no exception is automatically raised.
@@ -326,18 +345,19 @@ class Plugin():
 
           # Call some host tool
           self.tool = utils.get_host_tool('toolname')
-          self.call([self.tool, '--download-ponies', self.mirror_directory],
-                    "Failed to download ponies from {}".format(self.mirror_directory),
-                    cwd=self.workdir)
+          self.call(
+              [self.tool, '--download-ponies', self.mirror_directory],
+              "Failed to download ponies from {}".format(
+                  self.mirror_directory))
         """
         if 'stdout' in kwargs or 'stderr' in kwargs:
             raise ValueError('May not override destination output')
 
-        with self._output_file() as output:
-            kwargs['stdout'] = output
-            kwargs['stderr'] = output
+        with self._output_file() as output_file:
+            kwargs['stdout'] = output_file
+            kwargs['stderr'] = output_file
 
-            self.__note_command(output, *popenargs, **kwargs)
+            self.__note_command(output_file, *popenargs, **kwargs)
             exit_code = subprocess.call(*popenargs, **kwargs)
             if fail and exit_code:
                 raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
@@ -346,53 +366,72 @@ class Plugin():
         # Should not reach here
         raise Exception()
 
-    def check_output(self, *popenargs, fail=None, original_error=False, **kwargs):
+    def check_output(self, *popenargs, fail=None, **kwargs):
         """A wrapper for subprocess.check_output()
 
         Args:
+           popenargs (list): Popen() arguments
            fail (str): A message to display if the process returns
-                       a failure code
-           original_error (bool): Whether the original error is desirable
-           rest_of_args: Same as subprocess.check_output()
+                       a non zero exit code
+           rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
+           (int): The process exit code
            (str): The process standard output
 
         Raises:
-           (:class:`.PluginError`): If fail is specified and a non-zero return code is received.
-           (CalledProcessError): If a non-zero return code is received and *original_error* is specified
+           (:class:`.PluginError`): If a non-zero return code is received and *fail* is specified
 
-        Note: If *fail* is not specified, then the return value of subprocess.call()
+        Note: If *fail* is not specified, then the return value of subprocess.check_output()
               is returned even on error, and no exception is automatically raised.
 
         **Example**
 
         .. code:: python
 
-          # Call some host tool
+          # Get the tool at preflight time
           self.tool = utils.get_host_tool('toolname')
-          output = self.check_output([self.tool, '--print-ponies', self.mirror_directory],
-                    "Failed to print the ponies in {}".format(self.mirror_directory),
-                    cwd=self.workdir)
+
+          # Call the tool, automatically raise an error
+          _, output = self.check_output(
+              [self.tool, '--print-ponies'],
+              "Failed to print the ponies in {}".format(
+                  self.mirror_directory),
+              cwd=self.mirror_directory)
+
+          # Call the tool, inspect exit code
+          exit_code, output = self.check_output(
+              [self.tool, 'get-ref', tracking],
+              cwd=self.mirror_directory)
+
+          if exit_code == 128:
+              return
+          elif exit_code != 0:
+              fmt = "{plugin}: Failed to get ref for tracking: {track}"
+              raise SourceError(
+                  fmt.format(plugin=self, track=tracking)) from e
         """
         if 'stdout' in kwargs or 'stderr' in kwargs:
             raise ValueError('May not override destination output')
 
-        with self._output_file() as output:
-            kwargs['stderr'] = output
+        with self._output_file() as output_file:
+            kwargs['stderr'] = output_file
+            exit_code = 0
+            output = None
 
-            self.__note_command(output, *popenargs, **kwargs)
+            self.__note_command(output_file, *popenargs, **kwargs)
             try:
                 output = subprocess.check_output(*popenargs, **kwargs)
             except CalledProcessError as e:
-                if original_error:
-                    raise e
-                elif fail:
+                if fail:
                     raise PluginError("{plugin}: {message}".format(plugin=self, message=fail)) from e
+                exit_code = e.returncode
 
-            # Program output is returned as 'bytes', but we want plain strings,
-            # which for us is utf8
-            return output.decode('UTF-8')
+            # Program output is returned as bytes, we want utf8 strings
+            if output is not None:
+                output = output.decode('UTF-8')
+
+            return (exit_code, output)
 
         # Should not reach here
         raise Exception()
@@ -415,6 +454,13 @@ class Plugin():
     #
     def _get_unique_id(self):
         return self.__unique_id
+
+    # _get_provenance():
+    #
+    # Fetch bst file, line and column of the entity
+    #
+    def _get_provenance(self):
+        return self.__provenance
 
     # Accessor for logging handle
     #
@@ -441,10 +487,8 @@ class Plugin():
     #############################################################
     #                     Local Private Methods                 #
     #############################################################
-    def __message(self, message_type, brief, detail=None, elapsed=None):
-        message = Message(self.__unique_id, message_type, brief,
-                          detail=detail,
-                          elapsed=elapsed)
+    def __message(self, message_type, brief, **kwargs):
+        message = Message(self.__unique_id, message_type, brief, **kwargs)
         self.__context._message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
@@ -452,8 +496,9 @@ class Plugin():
         if 'cwd' in kwargs:
             workdir = kwargs['cwd']
         command = " ".join(popenargs[0])
-        output.write('Running command in directory {}: {}\n'.format(workdir, command))
+        output.write('Running host command {}: {}\n'.format(workdir, command))
         output.flush()
+        self.status('Running host command: {}'.format(command))
 
 
 # Hold on to a lookup table by counter of all instantiated plugins.
@@ -491,12 +536,10 @@ def _plugin_lookup(unique_id):
     return plugin
 
 
+# No need for unregister, WeakValueDictionary() will remove entries
+# in itself when the referenced plugins are garbage collected.
 def _plugin_register(plugin):
     global __PLUGINS_UNIQUE_ID
     __PLUGINS_UNIQUE_ID += 1
     __PLUGINS_TABLE[__PLUGINS_UNIQUE_ID] = plugin
     return __PLUGINS_UNIQUE_ID
-
-
-def _plugin_unregister(unique_id):
-    del __PLUGINS_TABLE[str(unique_id)]
