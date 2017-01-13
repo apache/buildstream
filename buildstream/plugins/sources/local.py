@@ -77,7 +77,9 @@ class LocalSource(Source):
         pass
 
     def stage(self, directory):
-        # Use hardlinks for staging
+
+        # Dont use hardlinks to stage sources, they are not write protected
+        # in the sandbox.
         with self.timed_activity("Staging local files at {}".format(self.path)):
             if os.path.isdir(self.fullpath):
                 utils.copy_files(self.fullpath, directory)
