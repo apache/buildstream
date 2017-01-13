@@ -84,9 +84,16 @@ class Context():
         self.log_error_lines = 0
         """Maximum number of lines to print from build logs"""
 
+        self.sched_fetchers = 4
+        """Maximum number of fetch or refresh tasks"""
+
+        self.sched_builders = 4
+        """Maximum number of build tasks"""
+
         # Private variables
         self._cache_key = None
         self._message_handler = None
+        self._message_depth = 0
 
     def load(self, config=None):
         """Loads the configuration files
@@ -112,11 +119,24 @@ class Context():
         for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'logdir', 'ccachedir']:
             setattr(self, dir, os.path.expanduser(_yaml.node_get(defaults, str, dir)))
 
-        # Load logging info
+        # Load logging config
         logging = _yaml.node_get(defaults, dict, 'logging')
         self.log_debug = _yaml.node_get(logging, bool, 'debug')
         self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
+
+        # Load scheduler config
+        scheduler = _yaml.node_get(defaults, dict, 'scheduler')
+        self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
+        self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
+        self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
+
+        valid_actions = ['continue', 'quit']
+        if self.sched_error_action not in valid_actions:
+            provenance = _yaml.node_get_provenance(scheduler, 'on-error')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: on-error should be one of: {}".format(
+                                provenance, ", ".join(valid_actions)))
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -149,14 +169,32 @@ class Context():
 
         return self.__cache_key
 
+    # _push_message_depth() / _pop_message_depth()
+    #
+    # For status messages, send the depth of timed
+    # activities inside a given task through the message
+    #
+    def _push_message_depth(self):
+        self._message_depth += 1
+
+    def _pop_message_depth(self):
+        assert(self._message_depth > 0)
+        self._message_depth -= 1
+
     # _message():
     #
-    # Proxies a message back to the caller
+    # Proxies a message back to the caller, this is the central
+    # point through which all messages pass.
     #
     # Args:
-    #    message: A _Message object (from plugin.py)
+    #    message: A Message object
     #
     def _message(self, message):
+
+        # Tag message only once
+        if message.depth is None:
+            message.depth = self._message_depth
+
         # Send it off to the frontend
         if self._message_handler is not None:
             self._message_handler(message, context=self)
