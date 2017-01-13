@@ -57,7 +57,6 @@
 """
 
 import os
-import subprocess
 import tempfile
 import shutil
 import re
@@ -104,10 +103,8 @@ class GitMirror():
                 # system configured tmpdir is not on the same partition.
                 #
                 tmpdir = tempfile.mkdtemp(dir=self.source.get_mirror_directory())
-
-                # XXX stdout/stderr should be propagated to the calling pipeline
-                if subprocess.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir]):
-                    raise SourceError("%s: Failed to clone git repository %s" % (str(self.source), self.url))
+                self.source.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir],
+                                 fail="Failed to clone git repository {}".format(self.url))
 
                 try:
                     shutil.move(tmpdir, self.mirror)
@@ -117,18 +114,13 @@ class GitMirror():
 
     def fetch(self):
         with self.source.timed_activity("Fetching {}".format(self.url)):
-            with open(os.devnull, "w") as fnull:
-                # XXX stdout/stderr should be propagated to the calling pipeline
-                if subprocess.call([self.source.host_git, 'fetch', 'origin'],
-                                   cwd=self.mirror, stdout=fnull, stderr=fnull):
-                    raise SourceError("%s: Failed to fetch from remote git repository: '%s'" %
-                                      (str(self.source), self.url))
+            self.source.call([self.source.host_git, 'fetch', 'origin'],
+                             fail="Failed to fetch from remote git repository: {}".format(self.url),
+                             cwd=self.mirror)
 
     def has_ref(self):
-        with open(os.devnull, "w") as fnull:
-            out = subprocess.call([self.source.host_git, 'cat-file', '-t', self.ref],
-                                  cwd=self.mirror, stdout=fnull, stderr=fnull)
-            return out == 0
+        rc = self.source.call([self.source.host_git, 'cat-file', '-t', self.ref], cwd=self.mirror)
+        return rc == 0
 
     def assert_ref(self):
         if not self.has_ref():
@@ -136,51 +128,39 @@ class GitMirror():
                               (str(self.source), self.ref, self.url))
 
     def latest_commit(self, tracking):
-        with open(os.devnull, "w") as fnull:
-            output = subprocess.check_output([self.source.host_git, 'rev-parse', tracking],
-                                             cwd=self.mirror, stderr=fnull)
-
-            # Program output is returned as 'bytes', but we want plain strings,
-            # which for us is utf8
-            output = output.decode('UTF-8')
-            return output.rstrip('\n')
+        output = self.source.check_output([self.source.host_git, 'rev-parse', tracking],
+                                          cwd=self.mirror)
+        return output.rstrip('\n')
 
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
         with self.source.timed_activity("Staging {}".format(self.url)):
+            # We need to pass '--no-hardlinks' because there's nothing to
+            # stop the build from overwriting the files in the .git directory
+            # inside the sandbox.
+            self.source.call([self.source.host_git, 'clone', '--no-hardlinks', self.mirror, fullpath],
+                             fail="Failed to checkout git mirror {} in directory: {}".format(self.mirror, fullpath))
 
-            # Checkout self.ref into the specified directory
-            #
-            with open(os.devnull, "w") as fnull:
-                # We need to pass '--no-hardlinks' because there's nothing to
-                # stop the build from overwriting the files in the .git directory
-                # inside the sandbox.
-                if subprocess.call([self.source.host_git, 'clone', '--no-hardlinks', self.mirror, fullpath],
-                                   stdout=fnull, stderr=fnull):
-                    raise SourceError("%s: Failed to checkout git mirror '%s' in directory: %s" %
-                                      (str(self.source), self.mirror, fullpath))
-
-                if subprocess.call([self.source.host_git, 'checkout', '--force', self.ref],
-                                   cwd=fullpath, stdout=fnull, stderr=fnull):
-                    raise SourceError("%s: Failed to checkout git ref '%s'" % (str(self.source), self.ref))
+            self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
+                             fail="Failed to checkout git ref {}".format(self.ref),
+                             cwd=fullpath)
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
         modules = "%s:%s" % (self.ref, GIT_MODULES)
+        try:
+            output = self.source.check_output([self.source.host_git, 'show', modules],
+                                              original_error=True, cwd=self.mirror)
+        except CalledProcessError as e:
+            # If git show reports error code 128 here, we take it to mean there is
+            # no .gitmodules file to display for the given revision.
+            if e.returncode == 128:
+                return
+            raise SourceError(
+                "{plugin}: Failed to show gitmodules at ref {ref}".format(
+                    plugin=self, ref=self.ref)) from e
 
-        with open(os.devnull, "w") as fnull:
-            try:
-                output = subprocess.check_output([self.source.host_git, 'show', modules],
-                                                 cwd=self.mirror, stderr=fnull)
-            except CalledProcessError as e:
-                # If git show reports error code 128 here, we take it to mean there is
-                # no .gitmodules file to display for the given revision.
-                if e.returncode == 128:
-                    return
-                raise e
-
-        output = output.decode('UTF-8')
         content = '\n'.join([l.strip() for l in output.splitlines()])
 
         io = StringIO(content)
@@ -201,11 +181,10 @@ class GitMirror():
 
         # list objects in the parent repo tree to find the commit
         # object that corresponds to the submodule
-        with open(os.devnull, "w") as fnull:
-            output = subprocess.check_output([self.source.host_git, 'ls-tree', self.ref, submodule],
-                                             cwd=self.mirror, stderr=fnull)
-
-        output = output.decode('UTF-8')
+        output = self.source.check_output([self.source.host_git, 'ls-tree', self.ref, submodule],
+                                          fail="ls-tree failed for commit {} and submodule: {}".format(
+                                              self.ref, submodule),
+                                          cwd=self.mirror)
 
         # read the commit hash from the output
         fields = output.split()
