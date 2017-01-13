@@ -26,7 +26,6 @@ import multiprocessing
 import datetime
 from collections import deque
 
-from . import utils
 from ._message import Message, MessageType
 from .exceptions import _ALL_EXCEPTIONS
 from .plugin import _plugin_lookup
@@ -90,24 +89,36 @@ class Scheduler():
         self.loop.run_forever()
         self.loop.close()
 
-        success = True
+        return not self.failed_elements()
+
+    def failed_elements(self):
+        failed = False
         for queue in self.queues:
             if queue.failed_elements:
-                success = False
-
-        return success
+                failed = True
+                break
+        return failed
 
     def sched(self):
 
-        # Pull elements forward through queues
-        elements = []
-        for queue in self.queues:
-            queue.enqueue(elements)
-            elements = queue.dequeue()
+        queue_jobs = True
 
-        # Kickoff whatever processes can be processed at this time
-        for queue in self.queues:
-            queue.process_ready()
+        # Stop queuing jobs when there is an error
+        if self.failed_elements():
+            if self.context.sched_error_action == 'quit':
+                queue_jobs = False
+
+        if queue_jobs:
+
+            # Pull elements forward through queues
+            elements = []
+            for queue in self.queues:
+                queue.enqueue(elements)
+                elements = queue.dequeue()
+
+            # Kickoff whatever processes can be processed at this time
+            for queue in self.queues:
+                queue.process_ready()
 
         # If nothings ticking, time to bail out
         ticking = 0
@@ -257,10 +268,7 @@ class Job():
         self.pid = None                       # The child's pid in the parent
         self.result = None                    # Return value of child action in the parent
 
-        # Watch for envelopes in the parent process
-        scheduler.loop.add_reader(
-            self.queue._reader.fileno(),
-            self.parent_recv)
+        self.parent_listen()
 
     # spawn()
     #
@@ -286,6 +294,17 @@ class Job():
         self.watcher = asyncio.get_child_watcher()
         self.watcher.add_child_handler(self.pid, self.child_complete, element)
 
+    # Local message wrapper
+    def message(self, plugin, message_type, message, **kwargs):
+        self.scheduler.context._message(
+            Message(plugin._get_unique_id(),
+                    message_type,
+                    message,
+                    **kwargs))
+
+    #######################################################
+    #                  Child Process                      #
+    #######################################################
     def child_action(self, element, queue, action_name):
 
         # Assign the queue we passed across the process boundaries
@@ -293,7 +312,7 @@ class Job():
         # Set the global message handler in this child
         # process to forward messages to the parent process
         self.queue = queue
-        self.scheduler.context._set_message_handler(self.child_send)
+        self.scheduler.context._set_message_handler(self.child_message_handler)
 
         # Time, log and and run the action function
         #
@@ -324,6 +343,55 @@ class Job():
     def child_complete(self, pid, returncode, element):
         self.complete(self, returncode, element)
 
+    def child_shutdown(self, exit_code):
+        self.queue.close()
+        sys.exit(exit_code)
+
+    def child_log(self, plugin, message, context):
+
+        with plugin._output_file() as output:
+            INDENT = "    "
+            EMPTYTIME = "--:--:--"
+
+            name = '[' + plugin._get_display_name() + ']'
+
+            fmt = "[{timecode: <8}] {type: <7} {name: <15}: {message}"
+            detail = ''
+            if message.detail is not None:
+                fmt += "\n\n{detail}"
+                detail = message.detail.rstrip('\n')
+                detail = INDENT + INDENT.join(detail.splitlines(True))
+
+            timecode = EMPTYTIME
+            if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
+                hours, remainder = divmod(int(message.elapsed.total_seconds()), 60 * 60)
+                minutes, seconds = divmod(remainder, 60)
+                timecode = "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds)
+
+            message_text = fmt.format(timecode=timecode,
+                                      type=message.message_type.upper(),
+                                      name=name,
+                                      message=message.message,
+                                      detail=detail)
+
+            output.write('{}\n'.format(message_text))
+            output.flush()
+
+    def child_message_handler(self, message, context):
+        plugin = _plugin_lookup(message.unique_id)
+
+        # Tag them on the way out the door...
+        message.action_name = self.parent_action
+
+        # Log first
+        self.child_log(plugin, message, context)
+
+        # Send to frontend
+        self.queue.put(Envelope('message', message))
+
+    #######################################################
+    #                 Parent Process                      #
+    #######################################################
     def parent_process_envelope(self, envelope):
         if envelope.message_type == 'message':
             # Propagate received messages from children
@@ -343,58 +411,17 @@ class Job():
     def parent_recv(self, *args):
         self.parent_process_queue()
 
-    def child_shutdown(self, exit_code):
-        self.queue.close()
-        sys.exit(exit_code)
-
-    def child_send(self, message, context):
-
-        # Before sending the message to the parent, write it
-        # out to the local log file
+    def parent_listen(self):
+        # Warning: Platform specific code up ahead
         #
-        plugin = _plugin_lookup(message.unique_id)
-
-        with plugin._output_file() as output:
-            INDENT = "    "
-            EMPTYTIME = "--:--:--"
-
-            name = '[' + plugin._get_display_name() + ']'
-
-            fmt = "[{timecode: <8}] {type: <7} {name: <15}: {message}"
-            detail = ''
-            if message.detail is not None:
-                fmt += "\n\n{detail}"
-                detail = message.detail.rstrip('\n')
-                detail = INDENT + INDENT.join(detail.splitlines(True))
-
-            timecode = EMPTYTIME
-            if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
-                timecode = utils._format_duration(message.elapsed)
-
-            message_text = fmt.format(timecode=timecode,
-                                      type=message.message_type.upper(),
-                                      name=name,
-                                      message=message.message,
-                                      detail=detail)
-
-            output.write('{}\n'.format(message_text))
-            output.flush()
-
-        # Tag them on the way out the door...
-        message.action_name = self.parent_action
-        self.queue.put(Envelope('message', message))
-
-    def message(self, plugin, message_type, message,
-                detail=None,
-                elapsed=None,
-                logfile=None,
-                scheduler=False):
-        self.scheduler.context._message(
-            Message(plugin._get_unique_id(),
-                    message_type,
-                    message,
-                    detail=detail,
-                    elapsed=elapsed,
-                    logfile=logfile,
-                    scheduler=scheduler)
-        )
+        #   The multiprocessing.Queue object does not tell us how
+        #   to receive io events in the receiving process, so we
+        #   need to sneak in and get it's file descriptor.
+        #
+        #   The _reader member of the Queue is currently private
+        #   but well known, perhaps it will become public:
+        #
+        #      http://bugs.python.org/issue3831
+        #
+        self.scheduler.loop.add_reader(
+            self.queue._reader.fileno(), self.parent_recv)
