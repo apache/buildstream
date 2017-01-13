@@ -18,12 +18,15 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import os
 import datetime
+import subprocess
+from subprocess import CalledProcessError
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
 from . import _yaml
-from . import ImplError
+from . import PluginError, ImplError
 from .exceptions import _ALL_EXCEPTIONS
 from ._message import Message, MessageType
 
@@ -42,7 +45,8 @@ class Plugin():
         self.__provenance = provenance  # The Provenance information
         self.__type_tag = type_tag      # The type of plugin (element or source)
         self.__unique_id = _plugin_register(self)  # Unique ID
-        self.__display_name = display_name
+        self.__display_name = display_name         # Plugin display name
+        self.__log = None               # The log handle when running a task
 
         self.debug("Created: {}".format(self))
 
@@ -234,7 +238,7 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
         """
-        self._message(MessageType.DEBUG, brief, detail=detail)
+        self.__message(MessageType.DEBUG, brief, detail=detail)
 
     def status(self, brief, detail=None):
         """Print a status message
@@ -243,7 +247,7 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
         """
-        self._message(MessageType.STATUS, brief, detail=detail)
+        self.__message(MessageType.STATUS, brief, detail=detail)
 
     def warn(self, brief, detail=None):
         """Print a warning message
@@ -252,7 +256,7 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
         """
-        self._message(MessageType.WARN, brief, detail=detail)
+        self.__message(MessageType.WARN, brief, detail=detail)
 
     def error(self, brief, detail=None):
         """Print an error message
@@ -261,7 +265,7 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
         """
-        self._message(MessageType.ERROR, brief, detail=detail)
+        self.__message(MessageType.ERROR, brief, detail=detail)
 
     @contextmanager
     def timed_activity(self, activity_name):
@@ -287,17 +291,111 @@ class Plugin():
         """
         starttime = datetime.datetime.now()
         try:
-            self._message(MessageType.START, activity_name)
+            self.__message(MessageType.START, activity_name)
             yield
         except _ALL_EXCEPTIONS as e:
             # Re raise after queueing a fail message, the scheduler needs to know
             # there was an exception
             elapsed = datetime.datetime.now() - starttime
-            self._message(MessageType.FAIL, activity_name, elapsed=elapsed)
+            self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
             raise e
 
         elapsed = datetime.datetime.now() - starttime
-        self._message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
+        self.__message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
+
+    def call(self, *popenargs, fail=None, **kwargs):
+        """A wrapper for subprocess.call()
+
+        Args:
+           fail (str): A message to display if the process returns
+                       a failure code
+           rest_of_args: Same as subprocess.call()
+
+        Returns:
+           (int): The process return code, if no exception was raised.
+
+        Raises:
+           (:class:`.PluginError`): If fail is specified and a non-zero return code is received.
+
+        Note: If *fail* is not specified, then the return value of subprocess.call()
+              is returned even on error, and no exception is automatically raised.
+
+        **Example**
+
+        .. code:: python
+
+          # Call some host tool
+          self.tool = utils.get_host_tool('toolname')
+          self.call([self.tool, '--download-ponies', self.mirror_directory],
+                    "Failed to download ponies from {}".format(self.mirror_directory),
+                    cwd=self.workdir)
+        """
+        if 'stdout' in kwargs or 'stderr' in kwargs:
+            raise ValueError('May not override destination output')
+
+        with self._output_file() as output:
+            kwargs['stdout'] = output
+            kwargs['stderr'] = output
+
+            self.__note_command(output, *popenargs, **kwargs)
+            exit_code = subprocess.call(*popenargs, **kwargs)
+            if fail and exit_code:
+                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
+            return exit_code
+
+        # Should not reach here
+        raise Exception()
+
+    def check_output(self, *popenargs, fail=None, original_error=False, **kwargs):
+        """A wrapper for subprocess.check_output()
+
+        Args:
+           fail (str): A message to display if the process returns
+                       a failure code
+           original_error (bool): Whether the original error is desirable
+           rest_of_args: Same as subprocess.check_output()
+
+        Returns:
+           (str): The process standard output
+
+        Raises:
+           (:class:`.PluginError`): If fail is specified and a non-zero return code is received.
+           (CalledProcessError): If a non-zero return code is received and *original_error* is specified
+
+        Note: If *fail* is not specified, then the return value of subprocess.call()
+              is returned even on error, and no exception is automatically raised.
+
+        **Example**
+
+        .. code:: python
+
+          # Call some host tool
+          self.tool = utils.get_host_tool('toolname')
+          output = self.check_output([self.tool, '--print-ponies', self.mirror_directory],
+                    "Failed to print the ponies in {}".format(self.mirror_directory),
+                    cwd=self.workdir)
+        """
+        if 'stdout' in kwargs or 'stderr' in kwargs:
+            raise ValueError('May not override destination output')
+
+        with self._output_file() as output:
+            kwargs['stderr'] = output
+
+            self.__note_command(output, *popenargs, **kwargs)
+            try:
+                output = subprocess.check_output(*popenargs, **kwargs)
+            except CalledProcessError as e:
+                if original_error:
+                    raise e
+                elif fail:
+                    raise PluginError("{plugin}: {message}".format(plugin=self, message=fail)) from e
+
+            # Program output is returned as 'bytes', but we want plain strings,
+            # which for us is utf8
+            return output.decode('UTF-8')
+
+        # Should not reach here
+        raise Exception()
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -318,11 +416,45 @@ class Plugin():
     def _get_unique_id(self):
         return self.__unique_id
 
-    def _message(self, message_type, brief, detail=None, elapsed=None):
+    # Accessor for logging handle
+    #
+    def _get_log_handle(self, log):
+        return self.__log
+
+    # Mutator for logging handle
+    #
+    def _set_log_handle(self, log):
+        self.__log = log
+
+    # Context manager for getting the open file handle to this
+    # plugin's log. Used in the child context to add stuff to
+    # a log.
+    #
+    @contextmanager
+    def _output_file(self):
+        if not self.__log:
+            with open(os.devnull, "w") as output:
+                yield output
+        else:
+            yield self.__log
+
+    #############################################################
+    #                     Local Private Methods                 #
+    #############################################################
+    def __message(self, message_type, brief, detail=None, elapsed=None):
         message = Message(self.__unique_id, message_type, brief,
                           detail=detail,
                           elapsed=elapsed)
         self.__context._message(message)
+
+    def __note_command(self, output, *popenargs, **kwargs):
+        workdir = os.getcwd()
+        if 'cwd' in kwargs:
+            workdir = kwargs['cwd']
+        command = " ".join(popenargs[0])
+        output.write('Running command in directory {}: {}\n'.format(workdir, command))
+        output.flush()
+
 
 # Hold on to a lookup table by counter of all instantiated plugins.
 # We use this to send the id back from child processes so we can lookup
