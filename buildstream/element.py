@@ -21,6 +21,7 @@
 import os
 import copy
 import inspect
+from contextlib import contextmanager
 from enum import Enum
 
 from . import _yaml
@@ -67,12 +68,12 @@ class Element(Plugin):
         self.name = meta.name
         """The element name"""
 
-        self.__runtime_dependencies = []
-        self.__build_dependencies = []
-        self.__sources = []
-        self.__cache_key = None
-        self.__artifacts = artifacts
-        self.__cached = False
+        self.__runtime_dependencies = []  # Direct runtime dependency Elements
+        self.__build_dependencies = []    # Direct build dependency Elements
+        self.__sources = []               # List of Sources
+        self.__cache_key = None           # Our cached cache key
+        self.__artifacts = artifacts      # Artifact cache
+        self.__cached = False             # Whether we have a cached artifact
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults()
@@ -353,9 +354,71 @@ class Element(Plugin):
 
         return changed
 
+    # _logfile()
+    #
+    # Compose the log file for this action & pid.
+    #
+    # Args:
+    #    action_name (str): The action name
+    #    pid (int): Optional pid, current pid is assumed if not provided.
+    #
+    # Returns:
+    #    (string): The log file full path
+    #
+    # Log file format, when there is a cache key, is:
+    #
+    #    '{logdir}/{project}/{element}/{cachekey}-{action}.{pid}.log'
+    #
+    # Otherwise, it is:
+    #
+    #    '{logdir}/{project}/{element}/{:0<64}-{action}.{pid}.log'
+    #
+    # This matches the order in which things are stored in the artifact cache
+    #
+    def _logfile(self, action_name, pid=None):
+        project = self.get_project()
+        context = self.get_context()
+        key = self._get_cache_key()
+        if pid is None:
+            pid = os.getpid()
+
+        # Just put 64 zeros if there is no key yet, this
+        # happens when fetching sources only, never when building
+        if not key:
+            key = "{:0<64}".format('')
+
+        action = action_name.lower()
+        logfile = "{key}-{action}.{pid}.log".format(
+            key=key, action=action, pid=pid)
+
+        directory = os.path.join(context.logdir, project.name, self.name)
+
+        os.makedirs(directory, exist_ok=True)
+        return os.path.join(directory, logfile)
+
+    # Run some element methods with logging directed to
+    # a dedicated log file, here we yield the filename
+    # we decided on for logging
+    #
+    @contextmanager
+    def _logging_enabled(self, action_name):
+        fullpath = self._logfile(action_name)
+        with open(fullpath, 'a') as logfile:
+            self._set_log_handle(logfile)
+            yield fullpath
+            self._set_log_handle(None)
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
+
+    # Override plugin _set_log_handle(), set it for our sources too
+    #
+    def _set_log_handle(self, logfile):
+        super()._set_log_handle(logfile)
+        for source in self._sources():
+            source._set_log_handle(logfile)
+
     def __init_defaults(self):
 
         # Defaults are loaded once per class and then reused
