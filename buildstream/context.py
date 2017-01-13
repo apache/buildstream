@@ -69,8 +69,20 @@ class Context():
         self.artifactdir = None
         """The local binary artifact cache directory"""
 
+        self.logdir = None
+        """The directory to store build logs"""
+
         self.ccachedir = None
         """The directory for holding ccache state"""
+
+        self.log_debug = False
+        """Whether debug mode is enabled"""
+
+        self.log_verbose = False
+        """Whether verbose mode is enabled"""
+
+        self.log_error_lines = 0
+        """Maximum number of lines to print from build logs"""
 
         # Private variables
         self._cache_key = None
@@ -97,8 +109,14 @@ class Context():
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config, typesafe=True)
 
-        for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'ccachedir']:
+        for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'logdir', 'ccachedir']:
             setattr(self, dir, os.path.expanduser(_yaml.node_get(defaults, str, dir)))
+
+        # Load logging info
+        logging = _yaml.node_get(defaults, dict, 'logging')
+        self.log_debug = _yaml.node_get(logging, bool, 'debug')
+        self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
+        self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -141,7 +159,7 @@ class Context():
     def _message(self, message):
         # Send it off to the frontend
         if self._message_handler is not None:
-            self._message_handler(message)
+            self._message_handler(message, context=self)
             return
 
         # Dummy default implementation

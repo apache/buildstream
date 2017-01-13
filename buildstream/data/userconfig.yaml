@@ -1,5 +1,9 @@
 # Default BuildStream user configuration.
 
+#
+#    Work Directories
+#
+
 # Location to store sources
 sourcedir: ~/buildstream/sources
 
@@ -12,5 +16,23 @@ deploydir: ~/buildstream/deploy
 # Location to store local binary artifacts
 artifactdir: ~/buildstream/artifacts
 
+# Location to store build logs
+logdir: ~/buildstream/logs
+
 # Location of the ccache directory
 ccachedir: ~/buildstream/ccache
+
+#
+#    Logging
+#
+logging:
+
+  # Whether to enable debugging messages
+  debug: False
+
+  # Whether to show extra detailed messages
+  verbose: True
+
+  # Maximum number of lines to print from the
+  # end of a failing build log
+  error-lines: 20
