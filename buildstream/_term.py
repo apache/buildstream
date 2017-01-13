@@ -21,6 +21,9 @@
 import re
 
 
+# XXX: This should be removed in favor of using click.style()
+#      to compose styled text instead !
+#
 # Text formatting for the console
 #
 # Note that because we use click, the output we send to the terminal
