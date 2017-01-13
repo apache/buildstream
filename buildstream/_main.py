@@ -43,10 +43,7 @@ main_options = {}
 main_options_set = {}
 main_context = None
 
-
-def record_options(ctx, param, value):
-    main_options_set[param.name] = True
-    return value
+longest_element_name = 0
 
 
 ##################################################################
@@ -57,23 +54,31 @@ def record_options(ctx, param, value):
 @click.option('--config', '-c',
               type=click.Path(exists=True, dir_okay=False, readable=True),
               help="Configuration file to use")
-@click.option('--verbose/--no-verbose', callback=record_options,
-              help="Whether to be extra verbose")
-@click.option('--debug/--no-debug', callback=record_options,
-              help="Print debugging output")
-@click.option('--error-lines', default=20, is_eager=True,
-              type=click.INT, callback=record_options,
-              help="Print debugging output")
 @click.option('--directory', '-C', default=os.getcwd(),
               type=click.Path(exists=True, file_okay=False, readable=True),
-              help="Project directory (default: %s)" % os.getcwd())
-def cli(config, verbose, debug, error_lines, directory):
-    """Build and manipulate BuildStream projects"""
-    main_options['config'] = config
-    main_options['verbose'] = verbose
-    main_options['directory'] = directory
-    main_options['error_lines'] = error_lines
-    main_options['debug'] = debug
+              help="Project directory (default: current directory)")
+@click.option('--on-error', default=None,
+              type=click.Choice(['continue', 'quit']),
+              help="What to do when an error is encountered")
+@click.option('--fetchers', type=click.INT, default=None,
+              help="Maximum simultaneous download tasks")
+@click.option('--builders', type=click.INT, default=None,
+              help="Maximum simultaneous build tasks")
+@click.option('--verbose/--no-verbose', default=None,
+              help="Be extra verbose")
+@click.option('--debug/--no-debug', default=None,
+              help="Print debugging output")
+@click.option('--error-lines', type=click.INT, default=None,
+              help="Maximum number of lines to show from a task log")
+def cli(**kwargs):
+    """Build and manipulate BuildStream projects
+
+    Most of the main options override options in the
+    user preferences configuration file.
+    """
+    # Record main options for usage in create_pipeline()
+    for key, value in dict(kwargs).items():
+        main_options[key] = value
 
 
 ##################################################################
@@ -81,7 +86,7 @@ def cli(config, verbose, debug, error_lines, directory):
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
 @click.option('--all', default=False, is_flag=True,
-              help="Fetch all sources, even if the build can complete without some of them")
+              help="Fetch sources that would not be needed for the current build plan")
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
@@ -89,7 +94,7 @@ def cli(config, verbose, debug, error_lines, directory):
 @click.argument('target')
 def fetch(target, arch, variant, all):
     """Fetch sources in a pipeline"""
-    pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
+    pipeline = create_pipeline(target, arch, variant)
     try:
         inconsistent = pipeline.fetch(all)
         click.echo("")
@@ -114,7 +119,7 @@ def fetch(target, arch, variant, all):
 ##################################################################
 @cli.command(short_help="Refresh sources in a pipeline")
 @click.option('--all', default=False, is_flag=True,
-              help="Refresh all sources, even if the build can complete without some of them")
+              help="Refresh sources that would not be needed for the current build plan")
 @click.option('--list', '-l', default=False, is_flag=True,
               help='List the sources which were refreshed')
 @click.option('--arch', '-a', default=host_machine,
@@ -129,8 +134,7 @@ def refresh(target, arch, variant, all, list):
     any sources which are configured to track a remote
     branch or tag.
     """
-    pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
-
+    pipeline = create_pipeline(target, arch, variant)
     try:
         sources = pipeline.refresh(all)
         click.echo("")
@@ -200,7 +204,7 @@ def show(target, arch, variant, scope, order, format):
         build-stream show target.bst --format \\
             $'---------- %{name} ----------\\n%{variables}'
     """
-    pipeline = create_pipeline(main_options['directory'], target, arch, variant, main_options['config'])
+    pipeline = create_pipeline(target, arch, variant)
     report = ''
 
     if scope == "all":
@@ -298,25 +302,27 @@ class Style():
     DEBUG_BG = Profile(fg='cyan', dim=True)
     TC_FG = Profile(fg='yellow')
     TC_BG = Profile(fg='cyan', dim=True)
-    NAME_FG = Profile(fg='blue', bold=True)
-    NAME_BG = Profile(fg='blue', bold=True, dim=True)
+    NAME_FG = Profile(fg='yellow')
+    NAME_BG = Profile(fg='cyan', dim=True)
     TASK_FG = Profile(fg='yellow')
     TASK_BG = Profile(fg='cyan', dim=True)
+    DEPTH = Profile(fg='white', bold=True)
 
-    ACTION = Profile(bold=True)
+    ACTION = Profile(bold=True, dim=True)
     LOG = Profile(fg='yellow', dim=True)
-    LOG_ERROR = Profile(fg='red')
+    LOG_ERROR = Profile(fg='red', dim=True)
     DETAIL = Profile(dim=True)
     ERR_HEAD = Profile(fg='red', bold=True, dim=True)
     ERR_BODY = Profile(dim=True)
 
 
 action_colors = {}
-action_colors[MessageType.DEBUG] = "magenta"
-action_colors[MessageType.STATUS] = "blue"
+action_colors[MessageType.DEBUG] = "cyan"
+action_colors[MessageType.STATUS] = "cyan"
+action_colors[MessageType.INFO] = "magenta"
 action_colors[MessageType.WARN] = "yellow"
 action_colors[MessageType.ERROR] = "red"
-action_colors[MessageType.START] = "cyan"
+action_colors[MessageType.START] = "blue"
 action_colors[MessageType.SUCCESS] = "green"
 action_colors[MessageType.FAIL] = "red"
 
@@ -341,17 +347,18 @@ def message_handler(message, context):
     INDENT = "    "
     EMPTYTIME = "[--:--:--]"
 
-    # Silently ignore debugging messages
-    enable_debug = main_options['debug']
-    if not enable_debug and message.message_type == MessageType.DEBUG:
-        return
-
     plugin = _plugin_lookup(message.unique_id)
     name = plugin._get_display_name()
 
+    # Drop status messages from the UI if not verbose, we'll still see
+    # info messages and status messages will still go to the log files.
+    if not context.log_verbose and message.message_type == MessageType.STATUS:
+        return
+
     # Debug output
+    enable_debug = main_options['debug']
     if enable_debug:
-        text = "%{debugopen}%{tagpid} %{pid: <5} %{tagid} %{id:0>3}%{debugclose}"
+        text = "%{debugopen}%{tagpid}%{pid: <5} %{tagid}%{id:0>3}%{debugclose}"
     else:
         text = ''
 
@@ -360,17 +367,19 @@ def message_handler(message, context):
 
     # Action name (like refresh, fetch, build, etc)
     if message.action_name:
-        text += "%{openaction}%{actionname: ^9}%{closeaction}"
+        text += "%{openaction}%{actionname: ^7}%{closeaction}"
     else:
         # These only happen at load time, after that everything is done
         # in a child process and everything has an action queue name.
-        text += "           "
+        text += "         "
 
-    # The plugin display name
-    text += "%{openname}%{name: ^15}%{closename}"
+    # The plugin display name, expect maximum 2 indentations
+    namechars = max(longest_element_name, 8) + 4 + 2
+    namechars = namechars - (message.depth * 2)
+    text += "%{openname}%{taskdepth}%{name: <" + str(namechars) + "}%{closename}"
 
     # The message type
-    text += " %{type: ^7}"
+    text += " %{type: <7}"
 
     if message.logfile and message.scheduler:
         text += " %{logfile}"
@@ -413,9 +422,9 @@ def message_handler(message, context):
 
     if enable_debug:
         text = Style.DEBUG_BG.fmt_subst(text, 'debugopen', '[')
-        text = Style.DEBUG_BG.fmt_subst(text, 'tagpid', 'PID:')
+        text = Style.DEBUG_BG.fmt_subst(text, 'tagpid', 'pid:')
         text = Style.DEBUG_FG.fmt_subst(text, 'pid', message.pid)
-        text = Style.DEBUG_BG.fmt_subst(text, 'tagid', 'ID:')
+        text = Style.DEBUG_BG.fmt_subst(text, 'tagid', 'id:')
         text = Style.DEBUG_FG.fmt_subst(text, 'id', message.unique_id)
         text = Style.DEBUG_BG.fmt_subst(text, 'debugclose', ']')
 
@@ -424,6 +433,7 @@ def message_handler(message, context):
         fg=action_colors[message.message_type])
 
     text = Style.NAME_BG.fmt_subst(text, 'openname', '[')
+    text = Style.DEPTH.fmt_subst(text, 'taskdepth', '> ' * message.depth)
     text = Style.NAME_FG.fmt_subst(text, 'name', name)
     text = Style.NAME_BG.fmt_subst(text, 'closename', ']')
 
@@ -461,7 +471,11 @@ def format_duration(elapsed):
 #
 # Create a pipeline
 #
-def create_pipeline(directory, target, arch, variant, config):
+def create_pipeline(target, arch, variant):
+    global longest_element_name
+
+    directory = main_options['directory']
+    config = main_options['config']
 
     try:
         context = Context(arch)
@@ -473,12 +487,18 @@ def create_pipeline(directory, target, arch, variant, config):
     # Override things in the context from our command line options,
     # the command line when used, trumps the config files.
     #
-    if main_options_set.get('debug'):
+    if main_options.get('debug') is not None:
         context.log_debug = main_options['debug']
-    if main_options_set.get('verbose'):
+    if main_options.get('verbose') is not None:
         context.log_verbose = main_options['verbose']
-    if main_options_set.get('error_lines'):
+    if main_options.get('on_error') is not None:
+        context.sched_error_action = main_options['on_error']
+    if main_options.get('error_lines') is not None:
         context.log_error_lines = main_options['error_lines']
+    if main_options.get('fetchers') is not None:
+        context.sched_fetchers = main_options['fetchers']
+    if main_options.get('builders') is not None:
+        context.sched_builders = main_options['builders']
 
     # Propagate pipeline feedback to the user
     context._set_message_handler(message_handler)
@@ -494,5 +514,10 @@ def create_pipeline(directory, target, arch, variant, config):
     except _ALL_EXCEPTIONS as e:
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
+
+    # Get the longest element name for logging purposes
+    longest_element_name = 0
+    for element in pipeline.dependencies(Scope.ALL):
+        longest_element_name = max(len(element._get_display_name()), longest_element_name)
 
     return pipeline
