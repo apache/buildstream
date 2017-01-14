@@ -61,7 +61,6 @@ import tempfile
 import shutil
 import re
 
-from subprocess import CalledProcessError
 from configparser import RawConfigParser
 from io import StringIO
 
@@ -128,8 +127,10 @@ class GitMirror():
                               (str(self.source), self.ref, self.url))
 
     def latest_commit(self, tracking):
-        output = self.source.check_output([self.source.host_git, 'rev-parse', tracking],
-                                          cwd=self.mirror)
+        _, output = self.source.check_output(
+            [self.source.host_git, 'rev-parse', tracking],
+            fail="Unable to find commit for specified branch name '{}'".format(tracking),
+            cwd=self.mirror)
         return output.rstrip('\n')
 
     def stage(self, directory):
@@ -148,15 +149,15 @@ class GitMirror():
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
-        modules = "%s:%s" % (self.ref, GIT_MODULES)
-        try:
-            output = self.source.check_output([self.source.host_git, 'show', modules],
-                                              original_error=True, cwd=self.mirror)
-        except CalledProcessError as e:
-            # If git show reports error code 128 here, we take it to mean there is
-            # no .gitmodules file to display for the given revision.
-            if e.returncode == 128:
-                return
+        modules = "{}:{}".format(self.ref, GIT_MODULES)
+        exit_code, output = self.source.check_output(
+            [self.source.host_git, 'show', modules], cwd=self.mirror)
+
+        # If git show reports error code 128 here, we take it to mean there is
+        # no .gitmodules file to display for the given revision.
+        if exit_code == 128:
+            return
+        elif exit_code != 0:
             raise SourceError(
                 "{plugin}: Failed to show gitmodules at ref {ref}".format(
                     plugin=self, ref=self.ref)) from e
@@ -181,10 +182,10 @@ class GitMirror():
 
         # list objects in the parent repo tree to find the commit
         # object that corresponds to the submodule
-        output = self.source.check_output([self.source.host_git, 'ls-tree', self.ref, submodule],
-                                          fail="ls-tree failed for commit {} and submodule: {}".format(
-                                              self.ref, submodule),
-                                          cwd=self.mirror)
+        _, output = self.source.check_output([self.source.host_git, 'ls-tree', self.ref, submodule],
+                                             fail="ls-tree failed for commit {} and submodule: {}".format(
+                                                 self.ref, submodule),
+                                             cwd=self.mirror)
 
         # read the commit hash from the output
         fields = output.split()
