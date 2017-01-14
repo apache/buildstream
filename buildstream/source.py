@@ -150,5 +150,7 @@ class Source(Plugin):
 
         # It's consistent unless it reported an error
         self.__consistent = True
+        if changed:
+            self.info("Revision updated at: {}".format(self._get_provenance()))
 
         return changed
