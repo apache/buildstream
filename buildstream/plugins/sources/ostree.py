@@ -34,7 +34,7 @@ class OSTreeSource(Source):
         project = self.get_project()
 
         self.remote_name = "origin"
-        #self.url = project.translate_url(self.node_get_member(node, str, 'url'))
+        # self.url = project.translate_url(self.node_get_member(node, str, 'url'))
         self.url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref')
         self.track = self.node_get_member(node, str, 'track', '')
@@ -199,7 +199,6 @@ class OSTreeSource(Source):
     def ls_files(self, ref):
         # ostree --repo=repo ls -R 6fe05489235bcae562f0afa5aca9bb8d350bdf93ea8f4645adb694b907f48190
         pass
-
 
 
 # Plugin entry point
