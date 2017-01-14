@@ -207,11 +207,11 @@ class GitMirror():
 class GitSource(Source):
 
     def configure(self, node):
-        ref = self.node_get_member(node, str, 'ref', '')
+        ref = self.node_get_member(node, str, 'ref', '') or None
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
-        self.track = self.node_get_member(node, str, 'track', '')
+        self.track = self.node_get_member(node, str, 'track', '') or None
         self.submodules = []
 
         # Parse a list of path/uri tuples for the submodule overrides dictionary
@@ -220,6 +220,9 @@ class GitSource(Source):
         for path, _ in self.node_items(modules):
             submodule = self.node_get_member(modules, dict, path)
             self.submodule_overrides[path] = self.node_get_member(submodule, str, 'url')
+
+        if not (ref or self.track):
+            raise SourceError("Must specify either 'ref' or 'track' parameters")
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
@@ -232,9 +235,7 @@ class GitSource(Source):
         return [self.original_url, self.mirror.ref]
 
     def consistent(self):
-        if self.mirror.ref:
-            return True
-        return False
+        return self.mirror.ref is not None
 
     def refresh(self, node):
         # If self.track is not specified it's not an error, just silently return
