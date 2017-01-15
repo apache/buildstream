@@ -32,6 +32,17 @@ except ImportError:
           " install setuptools).")
     sys.exit(1)
 
+
+##################################################################
+# We require at least v2016.8 of OSTree, which contain the
+# fixes in this bug:
+#   https://github.com/ostreedev/ostree/pull/417
+##################################################################
+def exit_ostree(reason):
+    print(reason + ": BuildStream requires OSTree >= v2016.8 with Python bindings. "
+          "Install it using your package manager (usually ostree or gir1.2-ostree-1.0).")
+    sys.exit(1)
+
 try:
     import gi
 except ImportError:
@@ -43,9 +54,13 @@ try:
     gi.require_version('OSTree', '1.0')
     from gi.repository import OSTree
 except:
-    print("BuildStream requires OSTree with Python bindings. Install it using"
-          " your package manager (usually ostree or gir1.2-ostree-1.0).")
-    sys.exit(1)
+    exit_ostree("OSTree not found")
+
+try:
+    checkout_at = OSTree.Repo.checkout_at
+except AttributeError:
+    exit_ostree("OSTree too old")
+
 
 setup(name='buildstream',
       version='0.1',
