@@ -20,9 +20,8 @@
 
 import os
 import tempfile
-import gi
-gi.require_version('OSTree', '1.0')
-from gi.repository import GLib, Gio, OSTree  # nopep8
+
+from . import _ostree
 
 
 def buildref(project, element, key):
@@ -43,23 +42,7 @@ class ArtifactCache():
         os.makedirs(context.artifactdir, exist_ok=True)
         ostreedir = os.path.join(context.artifactdir, 'ostree')
         self.extractdir = os.path.join(context.artifactdir, 'extract')
-
-        self.repo = OSTree.Repo.new(Gio.File.new_for_path(ostreedir))
-
-        # create also succeeds on existing repository
-        self.repo.create(OSTree.RepoMode.BARE_USER)
-
-        # construct commit filter that resets file ownership
-        self.commit_modifier = OSTree.RepoCommitModifier.new(
-            OSTree.RepoCommitModifierFlags.NONE,
-            self.commit_filter)
-
-    def commit_filter(self, repo, path, file_info):
-        # force uid and gid to 0
-        file_info.set_attribute_uint32('unix::uid', 0)
-        file_info.set_attribute_uint32('unix::gid', 0)
-
-        return OSTree.RepoCommitFilterResult.ALLOW
+        self.repo = _ostree.ensure(ostreedir, False)
 
     # contains():
     #
@@ -75,10 +58,7 @@ class ArtifactCache():
     #
     def contains(self, project, element, key):
         ref = buildref(project, element, key)
-
-        # check whether the ref is already available locally
-        _, rev = self.repo.resolve_rev(ref, True)
-        return rev is not None
+        return _ostree.exists(self.repo, ref)
 
     # extract():
     #
@@ -101,21 +81,14 @@ class ArtifactCache():
             return dest
 
         # resolve ref to checksum
-        _, rev = self.repo.resolve_rev(ref, False)
+        rev = _ostree.checksum(self.repo, ref)
 
         os.makedirs(self.extractdir, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix='tmp', dir=self.extractdir) as tmpdir:
 
             checkoutdir = os.path.join(tmpdir, ref)
-            os.makedirs(os.path.dirname(checkoutdir))
 
-            options = OSTree.RepoCheckoutAtOptions()
-            # ignore uid/gid to allow checkout as non-root
-            options.mode = OSTree.RepoCheckoutMode.USER
-
-            # from fcntl.h
-            AT_FDCWD = -100
-            self.repo.checkout_at(options, AT_FDCWD, checkoutdir, rev)
+            _ostree.checkout(self.repo, checkoutdir, rev)
 
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             try:
@@ -141,22 +114,4 @@ class ArtifactCache():
     def commit(self, project, element, key, dir):
         ref = buildref(project, element, key)
 
-        self.repo.prepare_transaction()
-        try:
-            # add tree to repository
-            mtree = OSTree.MutableTree.new()
-            self.repo.write_directory_to_mtree(Gio.File.new_for_path(dir),
-                                               mtree, self.commit_modifier)
-            _, root = self.repo.write_mtree(mtree)
-
-            # create root commit object, no parent, no branch
-            _, rev = self.repo.write_commit(None, ref, None, None, root)
-
-            # create tag
-            self.repo.transaction_set_ref(None, ref, rev)
-
-            # complete repo transaction
-            self.repo.commit_transaction(None)
-        except:
-            self.repo.abort_transaction()
-            raise
+        _ostree.commit(self.repo, dir, ref)
