@@ -51,7 +51,10 @@ class Plugin():
         self.debug("Created: {}".format(self))
 
     def __del__(self):
-        self.debug("Destroyed: {}".format(self))
+        # Dont send anything through the Message() pipeline at destruction time,
+        # any subsequent lookup of plugin by unique id would raise KeyError.
+        if self.__context.log_debug:
+            print("DEBUG: Destroyed: {}".format(self))
 
     def __str__(self):
         return "{kind} {typetag} at {provenance}".format(
@@ -529,7 +532,7 @@ __PLUGINS_TABLE = WeakValueDictionary()
 def _plugin_lookup(unique_id):
     try:
         plugin = __PLUGINS_TABLE[unique_id]
-    except (AttributeError, KeyError):
+    except (AttributeError, KeyError) as e:
         print("Could not find plugin with ID {}".format(unique_id))
         raise e
 
