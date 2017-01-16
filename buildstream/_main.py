@@ -43,7 +43,8 @@ main_options = {}
 main_options_set = {}
 main_context = None
 
-longest_element_name = 0
+longest_plugin_name = 0
+longest_plugin_kind = 0
 
 
 ##################################################################
@@ -306,7 +307,9 @@ class Style():
     NAME_BG = Profile(fg='cyan', dim=True)
     TASK_FG = Profile(fg='yellow')
     TASK_BG = Profile(fg='cyan', dim=True)
-    DEPTH = Profile(fg='white', bold=True)
+    KIND_FG = Profile(fg='yellow')
+    KIND_BG = Profile(fg='cyan', dim=True)
+    DEPTH = Profile(fg='cyan', dim=True)
 
     ACTION = Profile(bold=True, dim=True)
     LOG = Profile(fg='yellow', dim=True)
@@ -373,10 +376,12 @@ def message_handler(message, context):
         # in a child process and everything has an action queue name.
         text += "         "
 
-    # The plugin display name, expect maximum 2 indentations
-    namechars = max(longest_element_name, 8) + 4 + 2
+    # The plugin display name, allow for 2 indentations (4 chars) in 'taskdepth'
+    kindchars = max(longest_plugin_kind, 8)
+    namechars = max(longest_plugin_name, 8) + 4
     namechars = namechars - (message.depth * 2)
-    text += "%{openname}%{taskdepth}%{name: <" + str(namechars) + "}%{closename}"
+    text += "%{openname} %{kindname: >" + str(kindchars) + "}" + \
+            "%{kindsep}%{taskdepth}%{name: <" + str(namechars) + "}%{closename}"
 
     # The message type
     text += " %{type: <7}"
@@ -417,6 +422,9 @@ def message_handler(message, context):
         text = Style.TASK_BG.fmt_subst(text, 'openaction', '[')
         text = Style.TASK_FG.fmt_subst(text, 'actionname', message.action_name)
         text = Style.TASK_BG.fmt_subst(text, 'closeaction', ']')
+
+    text = Style.KIND_BG.fmt_subst(text, 'kindsep', ':')
+    text = Style.TASK_FG.fmt_subst(text, 'kindname', plugin.get_kind())
 
     text = fmt_subst(text, 'message', message.message)
 
@@ -472,7 +480,8 @@ def format_duration(elapsed):
 # Create a pipeline
 #
 def create_pipeline(target, arch, variant):
-    global longest_element_name
+    global longest_plugin_name
+    global longest_plugin_kind
 
     directory = main_options['directory']
     config = main_options['config']
@@ -516,8 +525,10 @@ def create_pipeline(target, arch, variant):
         sys.exit(1)
 
     # Get the longest element name for logging purposes
-    longest_element_name = 0
-    for element in pipeline.dependencies(Scope.ALL):
-        longest_element_name = max(len(element._get_display_name()), longest_element_name)
+    longest_plugin_name = 0
+    longest_plugin_kind = 0
+    for plugin in pipeline.dependencies(Scope.ALL, include_sources=True):
+        longest_plugin_name = max(len(plugin._get_display_name()), longest_plugin_name)
+        longest_plugin_kind = max(len(plugin.get_kind()), longest_plugin_kind)
 
     return pipeline
