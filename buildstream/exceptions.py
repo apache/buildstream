@@ -24,9 +24,8 @@ from enum import Enum
 class PluginError(Exception):
     """Raised on plugin related errors.
 
-    This exception is raised when a plugin was not loaded correctly,
-    or when the appropriate plugin could not be found to implement
-    a given :class:`.Source` or :class:`.Element`
+    This exception is raised either by the plugin loading process,
+    or by the base :class:`.Plugin` element itself.
     """
     pass
 
