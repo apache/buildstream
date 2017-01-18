@@ -142,6 +142,15 @@ class Source(Plugin):
 
         return self.__consistent
 
+    # Wrapper for stage() api which gives the source
+    # plugin a fully constructed path considering the
+    # 'directory' option
+    #
+    def _stage(self, directory):
+        if self.__directory is not None:
+            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
+        self.stage(directory)
+
     # Wrapper for refresh()
     #
     def _refresh(self, node):
