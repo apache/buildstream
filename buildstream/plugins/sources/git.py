@@ -118,6 +118,8 @@ class GitMirror():
                              cwd=self.mirror)
 
     def has_ref(self):
+        if not self.ref:
+            return False
         rc = self.source.call([self.source.host_git, 'cat-file', '-t', self.ref], cwd=self.mirror)
         return rc == 0
 
