@@ -66,7 +66,7 @@ class OSTreeSource(Source):
         self.original_url = self.node_get_member(node, str, 'url')
         self.url = project.translate_url(self.original_url)
         self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.track = self.node_get_member(node, str, 'track', '') or None
+        self.tracking = self.node_get_member(node, str, 'track', '') or None
         self.mirror = os.path.join(self.get_mirror_directory(),
                                    utils.url_directory_name(self.url))
 
@@ -79,7 +79,7 @@ class OSTreeSource(Source):
         # Our OSTree repo handle
         self.repo = None
 
-        if not (self.ref or self.track):
+        if not (self.ref or self.tracking):
             raise SourceError("Must specify either 'ref' or 'track' parameters")
 
     def preflight(self):
@@ -88,26 +88,27 @@ class OSTreeSource(Source):
     def get_unique_key(self):
         return [self.original_url, self.ref]
 
-    def refresh(self, node):
-        # If self.track is not specified it's not an error, just silently return
-        if not self.track:
-            return False
+    def get_ref(self):
+        return self.ref
+
+    def set_ref(self, ref, node):
+        node['ref'] = self.ref = ref
+
+    def track(self):
+        # If self.tracking is not specified it's not an error, just silently return
+        if not self.tracking:
+            return None
 
         self.ensure()
         with self.timed_activity("Fetching tracking ref '{}' from origin: {}"
-                                 .format(self.track, self.url)):
+                                 .format(self.tracking, self.url)):
             try:
-                _ostree.fetch(self.repo, ref=self.track, progress=self.progress)
+                _ostree.fetch(self.repo, ref=self.tracking, progress=self.progress)
             except OSTreeError as e:
                 raise SourceError("{}: Failed to fetch tracking ref '{}' from origin {}\n\n{}"
-                                  .format(self, self.track, self.url, e)) from e
+                                  .format(self, self.tracking, self.url, e)) from e
 
-        new_ref = _ostree.checksum(self.repo, self.track)
-        if self.ref != new_ref:
-            node['ref'] = self.ref = new_ref
-            return True
-
-        return False
+        return _ostree.checksum(self.repo, self.tracking)
 
     def fetch(self):
         self.ensure()
