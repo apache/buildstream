@@ -67,37 +67,57 @@ class Source(Plugin):
         Before building, every source must have an exact reference,
         although it is not an error to load a project which contains
         sources that do not have references, they can be fetched
-        later with :func:`~buildstream.source.Source.refresh`
+        later with :func:`~buildstream.source.Source.track`
         """
         raise ImplError("Source plugin '%s' does not implement consistent()" % self.get_kind())
 
-    def refresh(self, node):
-        """Refresh specific source references
+    def get_ref(self):
+        """Fetch the internal ref, however it is represented
+
+        Returns:
+           (simple object): The internal source reference
+
+        Note:
+           The reference is the user provided (or track resolved) value
+           the plugin uses to represent a specific input, like a commit
+           in a VCS or a tarball's checksum. Usually the reference is a string,
+           but the plugin may choose to represent it with a tuple or such.
+        """
+        raise ImplError("Source plugin '%s' does not implement get_ref()" % self.get_kind())
+
+    def set_ref(self, ref, node):
+        """Applies the internal ref, however it is represented
 
         Args:
+           ref (simple object): The internal source reference to set
            node (dict): The same dictionary which was previously passed
                         to :func:`~buildstream.source.Source.configure`
 
-        Returns:
-           (bool): True if the refresh resulted in any update or change
-
-        Raises:
-           :class:`.SourceError`
-
-        Sources which implement some revision control system should
-        implement this by updating the commit reference from a symbolic
-        tracking branch or tag. The commit reference should be updated
-        internally on the given Source object and also in the passed *node*
-        parameter so that a user's project may optionally be updated
-        with the new reference.
-
-        Sources which implement a tarball or file should implement this
-        by updating an sha256 sum.
-
-        Implementors should raise :class:`.SourceError` if some error is
-        encountered while attempting to refresh.
+        See :func:`~buildstream.source.Source.get_ref` for a discussion on
+        the *ref* parameter.
         """
-        raise ImplError("Source plugin '%s' does not implement refresh()" % self.get_kind())
+        raise ImplError("Source plugin '%s' does not implement set_ref()" % self.get_kind())
+
+    def track(self):
+        """Resolve a new ref from the plugin's track option
+
+        Returns:
+           (simple object): A new internal source reference, or None
+
+        If the backend in question supports resolving references from
+        a symbolic tracking branch or tag, then this should be implemented
+        to perform this task on behalf of ``build-stream track`` commands.
+
+        This usually requires fetching new content from a remote origin
+        to see if a new ref has appeared for your branch or tag. If the
+        backend store allows one to query for a new ref from a symbolic
+        tracking data without downloading then that is desirable.
+
+        See :func:`~buildstream.source.Source.get_ref` for a discussion on
+        the *ref* parameter.
+        """
+        # Allow a non implementation
+        return None
 
     def fetch(self):
         """Fetch remote sources and mirror them locally, ensuring at least
@@ -132,8 +152,7 @@ class Source(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # Wrapper for consistent() api which caches the result, we
-    # know we're consistent after a successful refresh
+    # Wrapper for consistent() api which caches the result
     #
     def _consistent(self):
 
@@ -151,15 +170,32 @@ class Source(Plugin):
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
         self.stage(directory)
 
-    # Wrapper for refresh()
+    # Wrapper for set_ref(), also returns whether it changed.
     #
-    def _refresh(self, node):
+    def _set_ref(self, ref, node):
+        current_ref = self.get_ref()
+        changed = False
 
-        changed = self.refresh(node)
+        # This comparison should work even for tuples and lists,
+        # but we're mostly concerned about simple strings anyway.
+        if current_ref != ref:
+            self.set_ref(ref, node)
+            changed = True
+
+        if ref is not None:
+            self.__consistent = True
+
+        return changed
+
+    # Wrapper for track()
+    #
+    def _track(self):
+        new_ref = self.track()
+        current_ref = self.get_ref()
 
         # It's consistent unless it reported an error
         self.__consistent = True
-        if changed:
-            self.info("Revision updated at: {}".format(self._get_provenance()))
+        if current_ref != new_ref:
+            self.info("Found new revision: {}".format(new_ref))
 
-        return changed
+        return new_ref
