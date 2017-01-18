@@ -22,7 +22,7 @@
 implementing the most common case of element.
 """
 
-from . import Element
+from . import Element, Scope, ElementError
 
 
 _command_steps = ['bootstrap-commands',
@@ -55,6 +55,33 @@ class BuildElement(Element):
             dictionary[command_name] = command_list
 
         return dictionary
+
+    def assemble(self, sandbox):
+
+        # Stage deps in the sandbox root
+        for dep in self.dependencies(Scope.BUILD):
+            dep.stage(sandbox)
+
+        # Stage sources in /buildstream/build
+        self.stage_sources(sandbox, '/buildstream/build')
+
+        # And set the sandbox work directory too
+        sandbox.set_cwd('/buildstream/build')
+
+        # Run commands
+        for step in _command_steps:
+            for prefix in _command_prefixes:
+                command_name = prefix + step
+                commands = self.commands[command_name]
+                for cmd in commands:
+                    with self.timed_activity("Running %s" % command_name):
+                        self.status("Running %s" % command_name, detail=cmd)
+                        exitcode, _, _ = sandbox.run(['/bin/sh', '-c', cmd])
+                        if exitcode != 0:
+                            raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+
+        # Return the payload (XXX TODO: expand 'install-root' variable)
+        return '/buildstream/install'
 
     def _get_commands(self, node, name):
         list_node = self.node_get_member(node, list, name, default_value=[])
