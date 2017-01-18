@@ -22,13 +22,13 @@
 from .exceptions import PluginError, LoadError, LoadErrorReason, \
     SourceError, ElementError, ImplError, ProgramNotFoundError
 
+# Core components
+from .context import Context
+from .project import Project
+from .sandbox import Sandbox
+
 # Plugin auther facing APIs
 from .plugin import Plugin
 from .source import Source
 from .element import Element, Scope
 from .buildelement import BuildElement
-
-# Frontend facing APIs
-from .context import Context
-from .project import Project
-from .sandbox import Sandbox
