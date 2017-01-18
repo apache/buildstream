@@ -39,7 +39,7 @@ def assert_command(datafiles, tmpdir, target, command, expected):
 ###############################################################
 @pytest.mark.parametrize("target,command,expected", [
     ('autotools.bst', 'install-commands', "make DESTDIR=\"/buildstream/install\" install"),
-    ('cmake.bst', 'configure-commands', "cmake -DCMAKE_INSTALL_PREFIX=\"/usr\""),
+    ('cmake.bst', 'configure-commands', "cmake -DCMAKE_INSTALL_PREFIX:PATH=\"/usr\""),
     ('distutils.bst', 'install-commands',
      "python3 setup.py install \\\n" +
      "            --prefix \"/usr\" \\\n" +
@@ -58,7 +58,7 @@ def test_defaults(datafiles, tmpdir, target, command, expected):
 ################################################################
 @pytest.mark.parametrize("target,command,expected", [
     ('autotools.bst', 'install-commands', "make DESTDIR=\"/custom/install/root\" install"),
-    ('cmake.bst', 'configure-commands', "cmake -DCMAKE_INSTALL_PREFIX=\"/opt\""),
+    ('cmake.bst', 'configure-commands', "cmake -DCMAKE_INSTALL_PREFIX:PATH=\"/opt\""),
     ('distutils.bst', 'install-commands',
      "python3 setup.py install \\\n" +
      "            --prefix \"/opt\" \\\n" +

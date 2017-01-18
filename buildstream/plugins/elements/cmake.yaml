@@ -3,7 +3,7 @@
 variables:
 
   # FIXME: Get a more complete cmake invocation
-  cmake: cmake -DCMAKE_INSTALL_PREFIX="%{prefix}"
+  cmake: cmake -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}"
   make: make
   make-install: make DESTDIR="%{install-root}" install
 
