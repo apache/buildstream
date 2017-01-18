@@ -143,32 +143,34 @@ def fetch(target, arch, variant, all):
 
 
 ##################################################################
-#                         Refresh Command                        #
+#                          Track Command                         #
 ##################################################################
-@cli.command(short_help="Refresh sources in a pipeline")
+@cli.command(short_help="Track new source references")
 @click.option('--all', default=False, is_flag=True,
-              help="Refresh sources that would not be needed for the current build plan")
+              help="Track sources that would not be needed for the current build plan")
 @click.option('--list', '-l', default=False, is_flag=True,
-              help='List the sources which were refreshed')
+              help='List the sources which were tracked')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def refresh(target, arch, variant, all, list):
-    """Refresh sources in a pipeline
+def track(target, arch, variant, all, list):
+    """Track new source references
 
     Updates the project with new source references from
     any sources which are configured to track a remote
     branch or tag.
+
+    The project data will be rewritten inline.
     """
     pipeline = create_pipeline(target, arch, variant)
     try:
-        sources = pipeline.refresh(all)
+        sources = pipeline.track(all)
         click.echo("")
     except PipelineError:
         click.echo("")
-        click.echo("Error refreshing pipeline")
+        click.echo("Error tracking sources in pipeline")
         sys.exit(1)
 
     if list:
@@ -177,7 +179,7 @@ def refresh(target, arch, variant, all, list):
             click.echo("{}".format(source))
 
     elif len(sources) > 0:
-        click.echo(("Successfully refreshed {n_sources} sources in pipeline " +
+        click.echo(("Successfully updated {n_sources} source references in pipeline " +
                     "with target '{target}' in directory: {directory}").format(
                         n_sources=len(sources), target=target, directory=main_options['directory']))
     else:
@@ -395,9 +397,9 @@ def message_handler(message, context):
     # Time code
     text += "%{timespec: <10}"
 
-    # Action name (like refresh, fetch, build, etc)
+    # Action name (like track, fetch, build, etc)
     if message.action_name:
-        text += "%{openaction}%{actionname: ^7}%{closeaction}"
+        text += "%{openaction}%{actionname: ^5}%{closeaction}"
     else:
         # These only happen at load time, after that everything is done
         # in a child process and everything has an action queue name.
