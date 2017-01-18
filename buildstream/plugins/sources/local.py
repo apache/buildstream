@@ -68,9 +68,12 @@ class LocalSource(Source):
     def consistent(self):
         return True
 
-    def refresh(self, node):
-        # Nothing to do here for a local source
-        return False
+    # We dont have a ref, we're a local file...
+    def get_ref(self):
+        return None
+
+    def set_ref(self, ref, node):
+        pass
 
     def fetch(self):
         # Nothing to do here for a local source
