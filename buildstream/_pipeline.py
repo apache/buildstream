@@ -29,7 +29,7 @@ from ._loader import Loader
 from ._sourcefactory import SourceFactory
 from ._scheduler import Scheduler, Queue
 from .plugin import _plugin_lookup
-from . import SourceError, ElementError
+from . import SourceError, ElementError, Consistency
 from . import Scope
 from . import _yaml
 
@@ -88,7 +88,10 @@ class FetchQueue(Queue):
         # if self.artifacts.fetch(self.project.name, element.name, cachekey):
         #     return
         for source in element._sources():
-            source.fetch()
+            source._fetch()
+
+    def element_skip(self, element):
+        return element._consistency() == Consistency.CACHED
 
 
 # A queue which tracks sources
@@ -110,6 +113,9 @@ class AssembleQueue(Queue):
 
     def element_ready(self, element):
         return element._buildable()
+
+    def element_skip(self, element):
+        return element._cached()
 
 
 # Pipeline()
@@ -156,20 +162,6 @@ class Pipeline():
                 for source in element._sources():
                     yield source
             yield element
-
-    # inconsistent()
-    #
-    # Reports a list of inconsistent sources.
-    #
-    # If a pipeline has inconsistent sources, it must
-    # be tracked before cache keys can be calculated
-    # or anything else.
-    #
-    def inconsistent(self):
-        sources = []
-        for elt in self.dependencies(Scope.ALL):
-            sources += elt._inconsistent()
-        return sources
 
     # track()
     #
@@ -226,8 +218,9 @@ class Pipeline():
     #                      which are required for the current build plan
     #
     # Returns:
-    #    (list): A list of inconsistent elements which would have
-    #            been fetched if we had a ref to fetch
+    #    (list): Inconsistent elements, which have no refs
+    #    (list): Already cached elements, which were not fetched
+    #    (list): Fetched elements
     #
     def fetch(self, fetch_all):
         fetch = FetchQueue("Fetch", self.context.sched_fetchers)
@@ -238,14 +231,15 @@ class Pipeline():
         else:
             plan = Planner().plan(self.target)
 
-        # Filter out inconsistent elements
-        inconsistent = [elt for elt in plan if elt._inconsistent()]
+        # Filter out elements with inconsistent sources, they can't be fetched.
+        inconsistent = [elt for elt in plan if elt._consistency() == Consistency.INCONSISTENT]
         plan = [elt for elt in plan if elt not in inconsistent]
+        cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
 
         if not scheduler.run(plan):
             raise PipelineError()
 
-        return inconsistent
+        return (inconsistent, cached, plan)
 
     # Internal: Instantiates plugin-provided Element and Source instances
     # from MetaElement and MetaSource objects
