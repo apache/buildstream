@@ -83,6 +83,33 @@ def cli(**kwargs):
 
 
 ##################################################################
+#                          Build Command                         #
+##################################################################
+@cli.command(short_help="Build elements in a pipeline")
+@click.option('--all', default=False, is_flag=True,
+              help="Build elements that would not be needed for the current build plan")
+@click.option('--arch', '-a', default=host_machine,
+              help="The target architecture (default: %s)" % host_machine)
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.argument('target')
+def build(target, arch, variant, all):
+    """Build elements in a pipeline"""
+    pipeline = create_pipeline(target, arch, variant)
+    try:
+        changed = pipeline.build(all)
+        click.echo("")
+    except PipelineError:
+        click.echo("")
+        click.echo("Error building this pipeline")
+        sys.exit(1)
+
+    click.echo(("Successfully built {changed} elements in pipeline " +
+                "with target '{target}' in directory: {directory}").format(
+                    changed=len(changed), target=target, directory=main_options['directory']))
+
+
+##################################################################
 #                          Fetch Command                         #
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
@@ -230,7 +257,7 @@ def show(target, arch, variant, scope, order, format):
             line = fmt_subst(line, 'state', "inconsistent", fg='red')
         else:
             line = fmt_subst(line, 'key', cache_key, fg='yellow')
-            if element._cached():
+            if element._cached(recalculate=True):
                 line = fmt_subst(line, 'state', "cached", fg='magenta')
             elif element._buildable():
                 line = fmt_subst(line, 'state', "buildable", fg='green')
@@ -407,16 +434,8 @@ def message_handler(message, context):
         text = fmt_subst(
             text, 'message',
             Style.TASK_BG.fmt('[') + Style.TASK_FG.fmt(message.message) + Style.TASK_BG.fmt(']'))
-
-        # Dump some log content
-        if message.message_type == MessageType.FAIL:
-            text = Style.LOG_ERROR.fmt_subst(text, 'logfile', message.logfile)
-            log_content = read_last_lines(message.logfile, context.log_error_lines)
-            text = Style.ERR_BODY.fmt_subst(
-                text, 'logcontent',
-                INDENT + INDENT.join(log_content.splitlines(True)))
-        else:
-            text = Style.LOG.fmt_subst(text, 'logfile', message.logfile)
+    else:
+        text = fmt_subst(text, 'message', message.message)
 
     if message.action_name:
         text = Style.TASK_BG.fmt_subst(text, 'openaction', '[')
@@ -425,8 +444,6 @@ def message_handler(message, context):
 
     text = Style.KIND_BG.fmt_subst(text, 'kindsep', ':')
     text = Style.TASK_FG.fmt_subst(text, 'kindname', plugin.get_kind())
-
-    text = fmt_subst(text, 'message', message.message)
 
     if enable_debug:
         text = Style.DEBUG_BG.fmt_subst(text, 'debugopen', '[')
@@ -448,11 +465,22 @@ def message_handler(message, context):
     if message.detail is not None:
         detail = message.detail.rstrip('\n')
         detail = INDENT + INDENT.join((detail.splitlines(True)))
-
         if message.message_type == MessageType.FAIL:
             text = Style.ERR_HEAD.fmt_subst(text, 'detail', detail)
         else:
             text = Style.DETAIL.fmt_subst(text, 'detail', detail)
+
+    # Log content needs to be formatted last, as it may introduce symbols
+    # which match our regex
+    if message.scheduler:
+        if message.message_type == MessageType.FAIL:
+            text = Style.LOG_ERROR.fmt_subst(text, 'logfile', message.logfile)
+            log_content = read_last_lines(message.logfile, context.log_error_lines)
+            text = Style.ERR_BODY.fmt_subst(
+                text, 'logcontent',
+                INDENT + INDENT.join(log_content.splitlines(True)))
+        else:
+            text = Style.LOG.fmt_subst(text, 'logfile', message.logfile)
 
     click.echo(text)
 
