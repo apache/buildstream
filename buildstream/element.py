@@ -30,7 +30,7 @@ from . import _yaml
 from ._variables import Variables
 from . import LoadError, LoadErrorReason, ElementError
 from . import Sandbox
-from . import Plugin
+from . import Plugin, Consistency
 from . import utils
 
 
@@ -338,13 +338,18 @@ class Element(Plugin):
                 if element not in self.__runtime_dependencies:
                     yield element
 
-    # _inconsistent():
+    # _consistency():
     #
     # Returns:
-    #    (list): A list of inconsistent sources
+    #    (list): The minimum consistency of the elements sources
     #
-    def _inconsistent(self):
-        return [source for source in self.__sources if not source._consistent()]
+    # If the element has no sources, this returns Consistency.CACHED
+    def _consistency(self):
+        consistency = Consistency.CACHED
+        for source in self.__sources:
+            source_consistency = source._get_consistency()
+            consistency = min(consistency, source_consistency)
+        return consistency
 
     # _cached():
     #
@@ -358,7 +363,7 @@ class Element(Plugin):
     #
     def _cached(self, recalculate=False, assert_cached=False):
 
-        if not self._inconsistent():
+        if self._consistency() == Consistency.CACHED:
             project = self.get_project()
             key = self._get_cache_key()
 
@@ -372,8 +377,8 @@ class Element(Plugin):
                                        name=self.name,
                                        key=key))
 
-        # Return False for inconsistent state and retain the None value
-        return False if self._inconsistent() else self.__cached
+        # Return False when sources are not present but retain the None value
+        return False if self._consistency() != Consistency.CACHED else self.__cached
 
     # _buildable():
     #
@@ -382,7 +387,7 @@ class Element(Plugin):
     #
     def _buildable(self):
 
-        if self._inconsistent():
+        if self._consistency() != Consistency.CACHED:
             return False
 
         for dependency in self.dependencies(Scope.BUILD):
@@ -403,7 +408,7 @@ class Element(Plugin):
     #
     def _get_cache_key(self):
 
-        if self._inconsistent():
+        if self._consistency() == Consistency.INCONSISTENT:
             return None
 
         if self.__cache_key is None:
