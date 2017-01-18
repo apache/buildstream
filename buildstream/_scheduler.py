@@ -192,6 +192,20 @@ class Queue():
     def element_ready(self, element):
         return True
 
+    # element_skip()
+    #
+    # Abstract method for reporting whether an element
+    # can be skipped for this phase.
+    #
+    # Args:
+    #    element (Element): An element to process
+    #
+    # Returns:
+    #    (bool): Whether the element can be skipped
+    #
+    def element_skip(self, element):
+        return False
+
     # Attach to the scheduler
     def attach(self, scheduler):
         self.scheduler = scheduler
@@ -199,7 +213,12 @@ class Queue():
     def enqueue(self, elts):
         if not elts:
             return
+
+        # Place skip elements directly on the done queue
+        skip = [elt for elt in elts if self.element_skip(elt)]
+        wait = [elt for elt in elts if elt not in skip]
         self.wait_queue.extend(elts)
+        self.done_queue.extend(skip)
 
     def dequeue(self):
         while len(self.done_queue) > 0:
