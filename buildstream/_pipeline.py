@@ -106,6 +106,19 @@ class RefreshQueue(Queue):
             }
 
 
+# A queue which assembles elements
+#
+class AssembleQueue(Queue):
+
+    def process(self, element):
+        if element._assemble():
+            return element._get_unique_id()
+        return 0
+
+    def element_ready(self, element):
+        return element._buildable()
+
+
 # Pipeline()
 #
 # Args:
@@ -277,3 +290,38 @@ class Pipeline():
             )
 
         return element
+
+    # build()
+    #
+    # Builds (assembles) elements in the pipeline.
+    #
+    # Args:
+    #    build_all (bool): Whether to build all elements, or only those
+    #                      which are required to build the target.
+    #
+    # Returns:
+    #    (list): A list of all Elements in the pipeline which were updated
+    #            by this build session.
+    #
+    def build(self, build_all):
+        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
+        build = AssembleQueue("Build", self.context.sched_builders)
+        scheduler = Scheduler(self.context, [fetch, build])
+
+        if build_all:
+            plan = self.dependencies(Scope.ALL)
+        else:
+            plan = Planner().plan(self.target)
+
+        # We could bail out here on inconsistent elements, but
+        # it could be the user wants to get as far as possible
+        # even if some elements have failures.
+        if not scheduler.run(plan):
+            raise PipelineError()
+
+        updated = []
+        for unique_id in build.results:
+            if unique_id > 0:
+                updated.append(_plugin_lookup(unique_id))
+
+        return updated
