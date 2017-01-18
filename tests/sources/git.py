@@ -248,7 +248,7 @@ def test_fetch_new_ref_and_stage(tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
-def test_refresh(tmpdir, datafiles):
+def test_track(tmpdir, datafiles):
 
     # Setup with the initial ref pointing to the first commit, but tracking master
     setup = GitSetup(datafiles, tmpdir, 'a3f9511fd3e4f043692f34234b4d2c7108de61fc', track='master')
@@ -263,10 +263,10 @@ def test_refresh(tmpdir, datafiles):
 
     setup.source.preflight()
 
-    # Test that the ref has changed to latest on master after refreshing
+    # Test that the new ref is the latest on master after tracking
     assert(setup.source.mirror.ref == 'a3f9511fd3e4f043692f34234b4d2c7108de61fc')
-    setup.source.refresh(setup.source._Source__origin_node)
-    assert(setup.source.mirror.ref == '3ac9cce94dd57e50a101e03dd6d43e0fc8a56b95')
+    new_ref = setup.source.track()
+    assert(new_ref == '3ac9cce94dd57e50a101e03dd6d43e0fc8a56b95')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
@@ -274,7 +274,7 @@ def test_submodule_fetch(tmpdir, datafiles):
 
     # We cannot guess the submodule commit shas really, because we
     # need to encode the submodule uri in the commit which adds the
-    # submodule, so let's use refresh and track in this case.
+    # submodule, so let's use track() in this case.
     setup = GitSubmoduleSetup(datafiles, tmpdir, track='master')
     assert(setup.source.get_kind() == 'git')
 
@@ -284,9 +284,10 @@ def test_submodule_fetch(tmpdir, datafiles):
     git_add_file(setup, 'subrepo', 'ponyfile.txt', 'file')
     git_add_submodule(setup, 'repo', setup.subrepo_url, 'subrepo')
 
-    # Preflight, refresh and fetch
+    # Preflight, track and fetch
     setup.source.preflight()
-    setup.source.refresh(setup.source._Source__origin_node)
+    ref = setup.source.track()
+    setup.source.set_ref(ref, setup.source._Source__origin_node)
     setup.source.fetch()
 
     # Check that there is now a mirrored git repository at the expected directory
@@ -300,7 +301,7 @@ def test_submodule_stage(tmpdir, datafiles):
 
     # We cannot guess the submodule commit shas really, because we
     # need to encode the submodule uri in the commit which adds the
-    # submodule, so let's use refresh and track in this case.
+    # submodule, so let's use track() in this case.
     setup = GitSubmoduleSetup(datafiles, tmpdir, track='master')
     assert(setup.source.get_kind() == 'git')
 
@@ -310,9 +311,10 @@ def test_submodule_stage(tmpdir, datafiles):
     git_add_file(setup, 'subrepo', 'ponyfile.txt', 'file')
     git_add_submodule(setup, 'repo', setup.subrepo_url, 'subrepo')
 
-    # Preflight, refresh and fetch
+    # Preflight, track and fetch
     setup.source.preflight()
-    setup.source.refresh(setup.source._Source__origin_node)
+    ref = setup.source.track()
+    setup.source.set_ref(ref, setup.source._Source__origin_node)
     setup.source.fetch()
 
     # Stage the file and just check that it's there
@@ -349,14 +351,15 @@ def test_fetch_new_ref_with_submodule(tmpdir, datafiles):
     subrepo_url = 'file://' + os.path.join(setup.origin_dir, 'subrepo')
     git_add_submodule(setup, 'repo', subrepo_url, 'subrepo')
 
-    # This time we need to refresh and use master, we can't predict this commit sha
+    # This time we need to track and use master, we can't predict this commit sha
     #
     setup2 = GitSubmoduleSetup(datafiles, tmpdir, track='master', bstfile='another.bst')
     assert(setup.source.get_kind() == 'git')
 
-    # Preflight, refresh and fetch
+    # Preflight, track and fetch
     setup2.source.preflight()
-    setup2.source.refresh(setup.source._Source__origin_node)
+    ref = setup2.source.track()
+    setup2.source.set_ref(ref, setup2.source._Source__origin_node)
     setup2.source.fetch()
 
     # Stage the file and just check that it's there

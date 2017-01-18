@@ -133,7 +133,7 @@ def test_ostree_conf(tmpdir, datafiles):
 
     # Test other config settings
     assert(setup.source.url == 'http://127.0.0.1:8000/tmp/repo')
-    assert(setup.source.track == 'my/branch')
+    assert(setup.source.tracking == 'my/branch')
     assert(setup.source.gpg_key is None)
 
 
