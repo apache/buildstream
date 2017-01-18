@@ -201,9 +201,21 @@ def _copy_directories(srcdir, destdir, target):
 
 def _process_list(srcdir, destdir, filelist, actionfunc):
 
+    def remove_if_exists(file_or_directory):
+        if os.path.lexists(file_or_directory):
+            # XXX We need to collect these to issue a report as a status message
+            print("WARNING: Removing: {}".format(file_or_directory))
+            try:
+                os.unlink(file_or_directory)
+            except OSError as e:
+                if e.errno == errno.EISDIR:
+                    shutil.rmtree(file_or_directory)
+                else:
+                    raise e
+
     for path in filelist:
-        srcpath = os.path.join(srcdir, path).encode('UTF-8')
-        destpath = os.path.join(destdir, path).encode('UTF-8')
+        srcpath = os.path.join(srcdir, path)
+        destpath = os.path.join(destdir, path)
 
         # The destination directory may not have been created separately
         _copy_directories(srcdir, destdir, path)
@@ -223,23 +235,23 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
             shutil.copystat(srcpath, destpath)
 
         elif stat.S_ISLNK(mode):
-            # Copy the symlink.
-            if os.path.lexists(destpath):
-                os.remove(destpath)
-
-            # Ensure that the symlink target is a relative path
+            # Should we really nuke directories which symlinks replace ?
+            # Should it be an error condition or just a warning ?
+            # If a warning, should we drop the symlink instead ?
+            remove_if_exists(destpath)
             target = os.readlink(srcpath)
-            target = _relative_symlink_target(destdir, destpath, target)
             os.symlink(target, destpath)
 
         elif stat.S_ISREG(mode):
+
             # Process the file.
-            if os.path.lexists(destpath):
-                os.remove(destpath)
+            remove_if_exists(destpath)
             actionfunc(srcpath, destpath)
 
         elif stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
+
             # Block or character device. Put contents of st_dev in a mknod.
+            remove_if_exists(destpath)
             if os.path.lexists(destpath):
                 os.remove(destpath)
             os.mknod(destpath, file_stat.st_mode, file_stat.st_rdev)
@@ -268,7 +280,6 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
 def _relative_symlink_target(root, symlink, target):
 
     if os.path.isabs(target):
-
         # First fix the input a little, the symlink itself must not have a
         # trailing slash, otherwise we fail to remove the symlink filename
         # from it's directory components in os.path.split()
