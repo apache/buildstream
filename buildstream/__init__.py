@@ -29,6 +29,6 @@ from .sandbox import Sandbox
 
 # Plugin auther facing APIs
 from .plugin import Plugin
-from .source import Source
+from .source import Source, Consistency
 from .element import Element, Scope
 from .buildelement import BuildElement

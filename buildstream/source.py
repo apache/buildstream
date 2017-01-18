@@ -25,6 +25,29 @@ from . import ImplError
 from . import Plugin
 
 
+class Consistency():
+    INCONSISTENT = 0
+    """Inconsistent
+
+    Inconsistent sources have no explicit reference set. They cannot
+    produce a cache key, be fetched or staged. They can only be tracked.
+    """
+
+    RESOLVED = 1
+    """Resolved
+
+    Resolved sources have a reference and can produce a cache key and
+    be fetched, however they cannot be staged.
+    """
+
+    CACHED = 2
+    """Cached
+
+    Cached sources have a reference which is present in the local
+    source cache. Only cached sources can be staged.
+    """
+
+
 class Source(Plugin):
     """Source()
 
@@ -41,7 +64,7 @@ class Source(Plugin):
         self.__origin_node = meta.origin_node           # YAML node this Source was loaded from
         self.__origin_toplevel = meta.origin_toplevel   # Toplevel YAML node for the file
         self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
-        self.__consistent = None
+        self.__consistency = None                       # Cached consistency state
 
         self.configure(meta.config)
 
@@ -58,18 +81,13 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
-    def consistent(self):
+    def get_consistency(self):
         """Report whether the source has a resolved reference
 
         Returns:
-           (bool): True if the source has a reference
-
-        Before building, every source must have an exact reference,
-        although it is not an error to load a project which contains
-        sources that do not have references, they can be fetched
-        later with :func:`~buildstream.source.Source.track`
+           (:class:`.Consistency`): The source consistency
         """
-        raise ImplError("Source plugin '%s' does not implement consistent()" % self.get_kind())
+        raise ImplError("Source plugin '%s' does not implement get_consistency()" % self.get_kind())
 
     def get_ref(self):
         """Fetch the internal ref, however it is represented
@@ -152,14 +170,22 @@ class Source(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # Wrapper for consistent() api which caches the result
+    # Wrapper for get_consistency() api which caches the result
     #
-    def _consistent(self):
+    def _get_consistency(self, recalculate=False):
+        if (self.__consistency is None) or recalculate:
+            self.__consistency = self.get_consistency()
+        return self.__consistency
 
-        if self.__consistent is None:
-            self.__consistent = self.consistent()
+    def _bump_consistency(self, consistency):
+        if (self.__consistency is None or
+            consistency > self.__consistency):
+            self.__consistency = consistency
 
-        return self.__consistent
+    def _fetch(self):
+        self.fetch()
+        # If there was no error, we are cached
+        self._bump_consistency(Consistency.CACHED)
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
@@ -180,10 +206,8 @@ class Source(Plugin):
         # but we're mostly concerned about simple strings anyway.
         if current_ref != ref:
             self.set_ref(ref, node)
+            self._get_consistency(recalculate=True)
             changed = True
-
-        if ref is not None:
-            self.__consistent = True
 
         return changed
 
@@ -194,7 +218,7 @@ class Source(Plugin):
         current_ref = self.get_ref()
 
         # It's consistent unless it reported an error
-        self.__consistent = True
+        self._bump_consistency(Consistency.RESOLVED)
         if current_ref != new_ref:
             self.info("Found new revision: {}".format(new_ref))
 
