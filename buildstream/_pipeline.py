@@ -91,19 +91,12 @@ class FetchQueue(Queue):
             source.fetch()
 
 
-# A queue which refreshes element sources
+# A queue which tracks sources
 #
-class RefreshQueue(Queue):
+class TrackQueue(Queue):
 
     def process(self, element):
-        sources = element._refresh()
-        if sources:
-            source = sources[0]
-            return {
-                'filename': source._Source__origin_filename,
-                'toplevel': source._Source__origin_toplevel,
-                'sources': [source._get_unique_id() for source in sources]
-            }
+        return element._track()
 
 
 # A queue which assembles elements
@@ -169,7 +162,7 @@ class Pipeline():
     # Reports a list of inconsistent sources.
     #
     # If a pipeline has inconsistent sources, it must
-    # be refreshed before cache keys can be calculated
+    # be tracked before cache keys can be calculated
     # or anything else.
     #
     def inconsistent(self):
@@ -178,26 +171,26 @@ class Pipeline():
             sources += elt._inconsistent()
         return sources
 
-    # refresh()
+    # track()
     #
-    # Refreshes all the sources of all the elements in the pipeline,
+    # Trackes all the sources of all the elements in the pipeline,
     # i.e. all of the elements which the target somehow depends on.
     #
     # Args:
-    #    refresh_all (bool): Whether to refresh all sources, or only those
-    #                        which are required for the current build plan
+    #    track_all (bool): Whether to track all sources, or only those
+    #                      which are required for the current build plan
     #
     # Returns:
-    #    (list): The Source objects which have changed due to the refresh
+    #    (list): The Source objects which have changed due to the track
     #
-    # If no error is encountered while refreshing, then the project files
+    # If no error is encountered while tracking, then the project files
     # are rewritten inline.
     #
-    def refresh(self, refresh_all):
-        refresh = RefreshQueue("Refresh", self.context.sched_fetchers)
-        scheduler = Scheduler(self.context, [refresh])
+    def track(self, track_all):
+        track = TrackQueue("Track", self.context.sched_fetchers)
+        scheduler = Scheduler(self.context, [track])
 
-        if refresh_all:
+        if track_all:
             plan = self.dependencies(Scope.ALL)
         else:
             plan = Planner().plan(self.target)
@@ -205,24 +198,24 @@ class Pipeline():
         if not scheduler.run(plan):
             raise PipelineError()
 
-        # If we were to parallelize the corner case of multiple
-        # sources per element, then we would have to merge them
-        # back here somehow, currently this works well because
-        # the entire toplevel modified in the child process is
-        # returned in one piece.
-        #
+        # Run the Source.set_ref() bits in the master process on all of
+        # the sources which have new refs, and then rewrite the files which
+        # have changed as a result.
         files = {}
         changed = []
-        for result in refresh.results:
-            files[result['filename']] = result['toplevel']
-            changed += result['sources']
+        for result_list in track.results:
+            for unique_id, new_ref in result_list:
+                source = _plugin_lookup(unique_id)
+                if source._set_ref(new_ref, source._Source__origin_node):
+                    files[source._Source__origin_filename] = source._Source__origin_toplevel
+                    changed.append(source)
 
         # Dump the files which changed
         for filename, toplevel in files.items():
             fullname = os.path.join(self.project.directory, filename)
             _yaml.dump(toplevel, fullname)
 
-        return [_plugin_lookup(unique_id) for unique_id in changed]
+        return changed
 
     # fetch()
     #
