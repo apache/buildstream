@@ -424,23 +424,22 @@ class Element(Plugin):
 
         return self.__cache_key
 
-    # _refresh():
+    # _track():
     #
-    # Calls refresh on the Element sources
+    # Calls track() on the Element sources
     #
     # Raises:
     #    SourceError: If one of the element sources has an error
     #
     # Returns:
-    #    (dict): A mapping of filenames and toplevel yaml nodes which
-    #            need to be saved
-    #    (list): A list of Source objects which changed
+    #    (list): A list of Source object ids and their new references
     #
-    def _refresh(self):
+    def _track(self):
         changed = []
         for source in self.__sources:
-            if source._refresh(source._Source__origin_node):
-                changed.append(source)
+            new_ref = source._track()
+            if new_ref is not None:
+                changed.append((source._get_unique_id(), new_ref))
 
         return changed
 
