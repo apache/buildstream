@@ -23,10 +23,13 @@ import copy
 import inspect
 from contextlib import contextmanager
 from enum import Enum
+import tempfile
+import shutil
 
 from . import _yaml
 from ._variables import Variables
-from . import LoadError, LoadErrorReason
+from . import LoadError, LoadErrorReason, ElementError
+from . import Sandbox
 from . import Plugin
 from . import utils
 
@@ -206,6 +209,86 @@ class Element(Plugin):
         value = self.node_get_list_element(node, str, member_name, indices)
         return self.__variables.subst(value)
 
+    def stage(self, sandbox, path=None):
+        """Stage this element's output in the sandbox
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+           path (str): An optional sandbox relative path
+
+        Raises:
+           (:class:`.ElementError`): If the element output does not exist
+
+        **Example:**
+
+        .. code:: python
+
+          # Stage the dependencies for a build of 'self'
+          for dep in self.dependencies(Scope.BUILD):
+              dep.stage(sandbox)
+        """
+        project = self.get_project()
+        key = self._get_cache_key()
+
+        # Time to use the artifact, check once more that it's there
+        self._cached(recalculate=True, assert_cached=True)
+
+        with self.timed_activity("Staging {}/{}/{}".format(project.name, self.name, key)):
+            # Get the extracted artifact
+            artifact = self.__artifacts.extract(project.name, self.name, key)
+
+            # Hard link it into the staging area
+            #
+            # XXX For now assuming that it's a read-only location
+            basedir = sandbox.executor.fs_root
+            stagedir = basedir \
+                if path is None \
+                else os.path.join(basedir, path.lstrip(os.sep))
+            utils.link_files(artifact, stagedir)
+
+    def stage_sources(self, sandbox, path=None):
+        """Stage this element's source input
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+           path (str): An optional sandbox relative path
+
+        **Example:**
+
+        .. code:: python
+
+          # Stage the sources of 'self' to the /build directory
+          # in the sandbox
+          self.stage_sources(sandbox, '/build')
+        """
+        basedir = sandbox.executor.fs_root
+        stagedir = basedir \
+            if path is None \
+            else os.path.join(basedir, path.lstrip(os.sep))
+        for source in self.__sources:
+            source._stage(stagedir)
+
+    #############################################################
+    #                  Abstract Element Methods                 #
+    #############################################################
+    def assemble(self, sandbox):
+        """Assemble the output artifact
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        Returns:
+           (str): A sandbox relative path to collect
+
+        Raises:
+           (:class:`.ElementError`): When the element raises an error
+
+        Elements must implement this method to create an output
+        artifact from it's sources and dependencies.
+        """
+        raise ImplError("element plugin '{kind}' does not implement assemble()".format(
+            kind=self.get_kind()))
+
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
@@ -267,23 +350,30 @@ class Element(Plugin):
     #
     # Args:
     #    recalculate (bool): Whether to recalculate the cached state again
+    #    assert_cached (bool): Whether to raise an exception if the artifact is missing
     #
     # Returns:
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self, recalculate=False):
+    def _cached(self, recalculate=False, assert_cached=False):
 
-        if self._inconsistent():
-            return False
+        if not self._inconsistent():
+            project = self.get_project()
+            key = self._get_cache_key()
 
-        project = self.get_project()
-        key = self._get_cache_key()
+            if self.__cached is None or recalculate:
+                self.__cached = self.__artifacts.contains(project.name, self.name, key)
 
-        if self.__cached is None or recalculate:
-            self.__cached = self.__artifacts.contains(project.name, self.name, key)
+        if assert_cached and not self.__cached:
+            raise ElementError("{element}: Missing artifact {project}/{name}/{key}"
+                               .format(element=self,
+                                       project=project.name,
+                                       name=self.name,
+                                       key=key))
 
-        return self.__cached
+        # Return False for inconsistent state and retain the None value
+        return False if self._inconsistent() else self.__cached
 
     # _buildable():
     #
@@ -354,6 +444,62 @@ class Element(Plugin):
 
         return changed
 
+    # _assemble():
+    #
+    # Internal method for calling public abstract assemble() method.
+    #
+    # Returns:
+    #    (bool): True if something was assembled, False if the item was cached
+    def _assemble(self):
+
+        # No need to assemble
+        if self._cached(self):
+            return False
+
+        context = self.get_context()
+        with self._output_file() as output_file:
+
+            # Explicitly clean it up, keep the build dir around if exceptions are raised
+            os.makedirs(context.builddir, exist_ok=True)
+            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
+
+            environment = utils._node_sanitize(self.__environment)
+            sandbox = Sandbox(fs_root=rootdir,
+                              env=environment,
+                              stdout=output_file,
+                              stderr=output_file)
+
+            # sandbox.executor.debug = True
+
+            # root is temp directory
+            sandbox.executor.root_ro = False
+            os.mkdir(os.path.join(rootdir, 'tmp'))
+
+            mounts = []
+            mounts.append({'dest': '/dev', 'type': 'host-dev'})
+            mounts.append({'dest': '/proc', 'type': 'proc'})
+            sandbox.set_mounts(mounts)
+
+            # Call the abstract plugin method
+            collect = self.assemble(sandbox)
+
+            # Note important use of lstrip() here
+            collectdir = os.path.join(rootdir, collect.lstrip(os.sep))
+
+            # At this point, we expect an exception was raised leading to
+            # an error message, or we have good output to collect.
+            project = self.get_project()
+            key = self._get_cache_key()
+            self.__artifacts.commit(project.name,
+                                    self.name,
+                                    key,
+                                    collectdir)
+
+            # Finally cleanup the build dir
+            shutil.rmtree(rootdir)
+
+        return True
+
     # _logfile()
     #
     # Compose the log file for this action & pid.
@@ -408,16 +554,16 @@ class Element(Plugin):
             yield fullpath
             self._set_log_handle(None)
 
-    #############################################################
-    #                   Private Local Methods                   #
-    #############################################################
-
     # Override plugin _set_log_handle(), set it for our sources too
     #
     def _set_log_handle(self, logfile):
         super()._set_log_handle(logfile)
         for source in self._sources():
             source._set_log_handle(logfile)
+
+    #############################################################
+    #                   Private Local Methods                   #
+    #############################################################
 
     def __init_defaults(self):
 
