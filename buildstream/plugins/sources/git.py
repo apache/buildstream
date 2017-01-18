@@ -180,13 +180,15 @@ class GitMirror():
 
     # Fetch the ref which this mirror requires it's submodule to have,
     # at the given ref of this mirror.
-    def submodule_ref(self, submodule):
+    def submodule_ref(self, submodule, ref=None):
+        if not ref:
+            ref = self.ref
 
         # list objects in the parent repo tree to find the commit
         # object that corresponds to the submodule
-        _, output = self.source.check_output([self.source.host_git, 'ls-tree', self.ref, submodule],
+        _, output = self.source.check_output([self.source.host_git, 'ls-tree', ref, submodule],
                                              fail="ls-tree failed for commit {} and submodule: {}".format(
-                                                 self.ref, submodule),
+                                                 ref, submodule),
                                              cwd=self.mirror)
 
         # read the commit hash from the output
@@ -213,7 +215,7 @@ class GitSource(Source):
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
-        self.track = self.node_get_member(node, str, 'track', '') or None
+        self.tracking = self.node_get_member(node, str, 'track', '') or None
         self.submodules = []
 
         # Parse a list of path/uri tuples for the submodule overrides dictionary
@@ -223,7 +225,7 @@ class GitSource(Source):
             submodule = self.node_get_member(modules, dict, path)
             self.submodule_overrides[path] = self.node_get_member(submodule, str, 'url')
 
-        if not (ref or self.track):
+        if not (ref or self.tracking):
             raise SourceError("Must specify either 'ref' or 'track' parameters")
 
     def preflight(self):
@@ -239,29 +241,23 @@ class GitSource(Source):
     def consistent(self):
         return self.mirror.ref is not None
 
-    def refresh(self, node):
-        # If self.track is not specified it's not an error, just silently return
-        if not self.track:
-            return False
+    def get_ref(self):
+        return self.mirror.ref
+
+    def set_ref(self, ref, node):
+        node['ref'] = self.mirror.ref = ref
+
+    def track(self):
+
+        # If self.tracking is not specified it's not an error, just silently return
+        if not self.tracking:
+            return None
 
         self.mirror.ensure()
         self.mirror.fetch()
 
-        # Update self.mirror.ref and node.ref from the self.track branch
-        new_ref = self.mirror.latest_commit(self.track)
-        changed = False
-        if self.mirror.ref != new_ref:
-            changed = True
-            node['ref'] = self.mirror.ref = new_ref
-            self.mirror.assert_ref()
-
-        # After refreshing we may have a new ref, so we need to ensure
-        # that we've cached the desired refs in our mirrors of submodules.
-        #
-        self.refresh_submodules()
-        self.fetch_submodules()
-
-        return changed
+        # Update self.mirror.ref and node.ref from the self.tracking branch
+        return self.mirror.latest_commit(self.tracking)
 
     def fetch(self):
         # Here we are only interested in ensuring that our mirror contains
