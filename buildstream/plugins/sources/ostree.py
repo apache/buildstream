@@ -52,7 +52,7 @@ import os
 import tempfile
 import shutil
 
-from buildstream import Source, SourceError
+from buildstream import Source, SourceError, Consistency
 from buildstream import utils
 from buildstream import _ostree
 from buildstream._ostree import OSTreeError
@@ -145,8 +145,14 @@ class OSTreeSource(Source):
                 raise SourceError("{}: Failed to move ostree checkout {} from '{}' to '{}'\n\n{}"
                                   .format(self, self.url, tmpdir, directory, e)) from e
 
-    def consistent(self):
-        return self.ref is not None
+    def get_consistency(self):
+        if self.ref is None:
+            return Consistency.INCONSISTENT
+
+        self.ensure()
+        if _ostree.exists(self.repo, self.ref):
+            return Consistency.CACHED
+        return Consistency.RESOLVED
 
     #
     # Local helpers
