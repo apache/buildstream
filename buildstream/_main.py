@@ -302,6 +302,66 @@ def show(target, arch, variant, deps, order, format):
 
 
 ##################################################################
+#                          Shell Command                         #
+##################################################################
+@cli.command(short_help="Shell into a build environment")
+@click.option('--builddir', '-b', default=None,
+              type=click.Path(exists=True, file_okay=False, readable=True),
+              help="Existing build directory")
+@click.option('--scope', '-s', default=None,
+              type=click.Choice(['build', 'run']),
+              help='Specify element scope to stage')
+@click.option('--arch', '-a', default=host_machine,
+              help="The target architecture (default: %s)" % host_machine)
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.argument('target')
+def shell(target, arch, variant, builddir, scope):
+    """Shell into an environment environment
+
+    This can be used either to debug building or to launch
+    test and debug successful build results.
+
+    Use the --builddir option with an existing build directory
+    or use the --scope option instead to create a new staging
+    area automatically.
+    """
+    if builddir is None and scope is None:
+        click.echo("Must specify either --builddir or --scope")
+        sys.exit(1)
+
+    if scope == "run":
+        scope = Scope.RUN
+    elif scope == "build":
+        scope = Scope.BUILD
+
+    pipeline = create_pipeline(target, arch, variant)
+
+    # Assert we have everything we need built.
+    missing_deps = []
+    if scope is not None:
+        for dep in pipeline.dependencies(scope):
+            if not dep._cached():
+                missing_deps.append(dep)
+
+    if missing_deps:
+        click.echo("")
+        click.echo("Missing elements for staging an environment for a shell:")
+        for dep in missing_deps:
+            click.echo("   {}".format(dep._get_display_name()))
+        click.echo("")
+        click.echo("Try building them first")
+        sys.exit(1)
+
+    try:
+        pipeline.target._shell(scope, builddir)
+    except PipelineError:
+        click.echo("")
+        click.echo("Errors shelling into this pipeline")
+        sys.exit(1)
+
+
+##################################################################
 #                        Helper Functions                        #
 ##################################################################
 
