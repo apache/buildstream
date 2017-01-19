@@ -340,14 +340,17 @@ class Element(Plugin):
 
     # _consistency():
     #
+    # Args:
+    #    recalculate (bool): Whether to recalculate the consistency state
+    #
     # Returns:
     #    (list): The minimum consistency of the elements sources
     #
     # If the element has no sources, this returns Consistency.CACHED
-    def _consistency(self):
+    def _consistency(self, recalculate=False):
         consistency = Consistency.CACHED
         for source in self.__sources:
-            source_consistency = source._get_consistency()
+            source_consistency = source._get_consistency(recalculate=recalculate)
             consistency = min(consistency, source_consistency)
         return consistency
 
@@ -363,7 +366,9 @@ class Element(Plugin):
     #
     def _cached(self, recalculate=False, assert_cached=False):
 
-        if self._consistency() == Consistency.CACHED:
+        # We can calculate the cache key if we have a ref, even if we dont
+        # have the sources cached yet we may have an artifact.
+        if self._consistency(recalculate=recalculate) != Consistency.INCONSISTENT:
             project = self.get_project()
             key = self._get_cache_key()
 
@@ -385,14 +390,14 @@ class Element(Plugin):
     # Returns:
     #    (bool): Whether this element can currently be built
     #
-    def _buildable(self):
+    def _buildable(self, recalculate=False):
 
-        if self._consistency() != Consistency.CACHED:
+        if self._consistency(recalculate=recalculate) != Consistency.CACHED:
             return False
 
         for dependency in self.dependencies(Scope.BUILD):
             if not (dependency._cached() or
-                    dependency._cached(recalculate=True)):
+                    dependency._cached(recalculate=recalculate)):
                 return False
 
         return True
