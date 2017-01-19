@@ -501,7 +501,7 @@ class Plugin():
         command = " ".join(popenargs[0])
         output.write('Running host command {}: {}\n'.format(workdir, command))
         output.flush()
-        self.status('Running host command: {}'.format(command))
+        self.status('Running host command', detail=command)
 
 
 # Hold on to a lookup table by counter of all instantiated plugins.
