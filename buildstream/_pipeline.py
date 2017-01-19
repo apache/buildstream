@@ -29,6 +29,7 @@ from ._loader import Loader
 from ._sourcefactory import SourceFactory
 from ._scheduler import Scheduler, Queue
 from .plugin import _plugin_lookup
+from . import Element
 from . import SourceError, ElementError, Consistency
 from . import Scope
 from . import _yaml
@@ -112,10 +113,10 @@ class AssembleQueue(Queue):
         return 0
 
     def element_ready(self, element):
-        return element._buildable()
+        return element._buildable(recalculate=True)
 
     def element_skip(self, element):
-        return element._cached()
+        return element._cached(recalculate=False)
 
 
 # Pipeline()
@@ -153,6 +154,11 @@ class Pipeline():
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
             plugin.preflight()
 
+            # XXX FIXME: Caches need to be combed, looks like we need
+            # a kickstart here and we need to recalculate them too often also
+            if isinstance(plugin, Element):
+                plugin._cached(recalculate=True)
+
     # Generator function to iterate over elements and optionally
     # also iterate over sources.
     #
@@ -169,8 +175,10 @@ class Pipeline():
     # i.e. all of the elements which the target somehow depends on.
     #
     # Args:
-    #    track_all (bool): Whether to track all sources, or only those
-    #                      which are required for the current build plan
+    #    needed (bool): If specified, track only sources that are
+    #                   needed to build the artifacts of the pipeline
+    #                   target. This does nothing when the pipeline
+    #                   artifacts are already built.
     #
     # Returns:
     #    (list): The Source objects which have changed due to the track
@@ -178,14 +186,14 @@ class Pipeline():
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
     #
-    def track(self, track_all):
+    def track(self, needed):
         track = TrackQueue("Track", self.context.sched_fetchers)
         scheduler = Scheduler(self.context, [track])
 
-        if track_all:
-            plan = self.dependencies(Scope.ALL)
-        else:
+        if needed:
             plan = Planner().plan(self.target)
+        else:
+            plan = self.dependencies(Scope.ALL)
 
         if not scheduler.run(plan):
             raise PipelineError()
@@ -214,27 +222,32 @@ class Pipeline():
     # Fetches sources on the pipeline.
     #
     # Args:
-    #    fetch_all (bool): Whether to fetch all sources, or only those
-    #                      which are required for the current build plan
+    #    needed (bool): If specified, track only sources that are
+    #                   needed to build the artifacts of the pipeline
+    #                   target. This does nothing when the pipeline
+    #                   artifacts are already built.
     #
     # Returns:
     #    (list): Inconsistent elements, which have no refs
     #    (list): Already cached elements, which were not fetched
     #    (list): Fetched elements
     #
-    def fetch(self, fetch_all):
+    def fetch(self, needed):
         fetch = FetchQueue("Fetch", self.context.sched_fetchers)
         scheduler = Scheduler(self.context, [fetch])
 
-        if fetch_all:
-            plan = self.dependencies(Scope.ALL)
-        else:
+        if needed:
             plan = Planner().plan(self.target)
+        else:
+            plan = self.dependencies(Scope.ALL)
 
         # Filter out elements with inconsistent sources, they can't be fetched.
         inconsistent = [elt for elt in plan if elt._consistency() == Consistency.INCONSISTENT]
         plan = [elt for elt in plan if elt not in inconsistent]
-        cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
+
+        # Filter out elements with cached sources, we already have them.
+        cached = [elt for elt in plan if elt._consistency(recalculate=True) == Consistency.CACHED]
+        plan = [elt for elt in plan if elt not in cached]
 
         if not scheduler.run(plan):
             raise PipelineError()
