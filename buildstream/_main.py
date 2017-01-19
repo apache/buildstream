@@ -27,7 +27,7 @@ import subprocess
 import copy
 from ruamel import yaml
 
-from . import Context, Project, Scope
+from . import Context, Project, Scope, Consistency
 from .exceptions import _ALL_EXCEPTIONS
 from .plugin import _plugin_lookup
 from ._message import MessageType
@@ -45,6 +45,7 @@ main_context = None
 
 longest_plugin_name = 0
 longest_plugin_kind = 0
+messaging_enabled = False
 
 
 ##################################################################
@@ -81,6 +82,12 @@ def cli(**kwargs):
     for key, value in dict(kwargs).items():
         main_options[key] = value
 
+    # Early enable messaging in debug mode
+    global messaging_enabled
+    if main_options['debug']:
+        print("DEBUG: Early enablement of messages")
+        messaging_enabled = True
+
 
 ##################################################################
 #                          Build Command                         #
@@ -113,41 +120,34 @@ def build(target, arch, variant, all):
 #                          Fetch Command                         #
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
-@click.option('--all', default=False, is_flag=True,
-              help="Fetch sources that would not be needed for the current build plan")
+@click.option('--needed', default=False, is_flag=True,
+              help="Fetch only sources required to build missing artifacts")
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def fetch(target, arch, variant, all):
+def fetch(target, arch, variant, needed):
     """Fetch sources in a pipeline"""
     pipeline = create_pipeline(target, arch, variant)
     try:
-        inconsistent = pipeline.fetch(all)
+        inconsistent, cached, plan = pipeline.fetch(needed)
         click.echo("")
     except PipelineError:
         click.echo("")
         click.echo("Error fetching sources for this pipeline")
         sys.exit(1)
 
-    if inconsistent:
-        report = "Inconsistent sources on the following elements could not be fetched:\n"
-        for element in inconsistent:
-            report += "  {}".format(element)
-        click.echo(report)
-    else:
-        click.echo(("Successfully fetched sources in pipeline " +
-                    "with target '{target}' in directory: {directory}").format(
-                        target=target, directory=main_options['directory']))
+    click.echo("Fetched sources for {} elements, {} inconsistent elements, {} cached elements"
+               .format(len(plan), len(inconsistent), len(cached)))
 
 
 ##################################################################
 #                          Track Command                         #
 ##################################################################
 @cli.command(short_help="Track new source references")
-@click.option('--all', default=False, is_flag=True,
-              help="Track sources that would not be needed for the current build plan")
+@click.option('--needed', default=False, is_flag=True,
+              help="Track only sources required to build missing artifacts")
 @click.option('--list', '-l', default=False, is_flag=True,
               help='List the sources which were tracked')
 @click.option('--arch', '-a', default=host_machine,
@@ -155,7 +155,7 @@ def fetch(target, arch, variant, all):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def track(target, arch, variant, all, list):
+def track(target, arch, variant, needed, list):
     """Track new source references
 
     Updates the project with new source references from
@@ -166,7 +166,7 @@ def track(target, arch, variant, all, list):
     """
     pipeline = create_pipeline(target, arch, variant)
     try:
-        sources = pipeline.track(all)
+        sources = pipeline.track(needed)
         click.echo("")
     except PipelineError:
         click.echo("")
@@ -191,10 +191,12 @@ def track(target, arch, variant, all, list):
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
-@click.option('--scope', '-s', default="all",
-              type=click.Choice(['all', 'build', 'run']))
+@click.option('--deps', '-d', default=None,
+              type=click.Choice(['all', 'build', 'run']),
+              help='Optionally specify a dependency scope to show')
 @click.option('--order', default="stage",
-              type=click.Choice(['stage', 'alpha']))
+              type=click.Choice(['stage', 'alpha']),
+              help='Staging or alphabetic ordering of dependencies')
 @click.option('--format', '-f', metavar='FORMAT', default="%{name: >20}: %{key: <64} (%{state})",
               type=click.STRING,
               help='Format string for each element')
@@ -203,8 +205,11 @@ def track(target, arch, variant, all, list):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def show(target, arch, variant, scope, order, format):
+def show(target, arch, variant, deps, order, format):
     """Show elements in the pipeline
+
+    By default this will only show the specified element, use
+    the --deps option to show an entire pipeline.
 
     \b
     FORMAT
@@ -237,16 +242,20 @@ def show(target, arch, variant, scope, order, format):
     pipeline = create_pipeline(target, arch, variant)
     report = ''
 
-    if scope == "all":
-        scope = Scope.ALL
-    elif scope == "build":
-        scope = Scope.BUILD
-    else:
-        scope = Scope.RUN
+    if deps is not None:
+        scope = deps
+        if scope == "all":
+            scope = Scope.ALL
+        elif scope == "build":
+            scope = Scope.BUILD
+        else:
+            scope = Scope.RUN
 
-    dependencies = pipeline.dependencies(scope)
-    if order == "alpha":
-        dependencies = sorted(pipeline.dependencies(scope))
+        dependencies = pipeline.dependencies(scope)
+        if order == "alpha":
+            dependencies = sorted(pipeline.dependencies(scope))
+    else:
+        dependencies = [pipeline.target]
 
     for element in dependencies:
         line = fmt_subst(format, 'name', element.name, fg='blue', bold=True)
@@ -254,13 +263,16 @@ def show(target, arch, variant, scope, order, format):
         if cache_key is None:
             cache_key = ''
 
-        if element._inconsistent():
+        consistency = element._consistency()
+        if consistency == Consistency.INCONSISTENT:
             line = fmt_subst(line, 'key', "")
-            line = fmt_subst(line, 'state', "inconsistent", fg='red')
+            line = fmt_subst(line, 'state', "no reference", fg='red')
         else:
             line = fmt_subst(line, 'key', cache_key, fg='yellow')
-            if element._cached(recalculate=True):
+            if element._cached():
                 line = fmt_subst(line, 'state', "cached", fg='magenta')
+            elif consistency == Consistency.RESOLVED:
+                line = fmt_subst(line, 'state', "fetch needed", fg='red')
             elif element._buildable():
                 line = fmt_subst(line, 'state', "buildable", fg='green')
             else:
@@ -375,12 +387,21 @@ def read_last_lines(logfile, n_lines):
 #
 def message_handler(message, context):
 
+    # Drop messages by default in the beginning while
+    # loading the pipeline, unless debug is specified.
+    if not messaging_enabled:
+        return
+
     # The detail indentation
     INDENT = "    "
     EMPTYTIME = "[--:--:--]"
 
-    plugin = _plugin_lookup(message.unique_id)
-    name = plugin._get_display_name()
+    plugin = None
+    if message.unique_id is not None:
+        plugin = _plugin_lookup(message.unique_id)
+        name = plugin._get_display_name()
+    else:
+        name = ''
 
     # Drop status messages from the UI if not verbose, we'll still see
     # info messages and status messages will still go to the log files.
@@ -401,9 +422,7 @@ def message_handler(message, context):
     if message.action_name:
         text += "%{openaction}%{actionname: ^5}%{closeaction}"
     else:
-        # These only happen at load time, after that everything is done
-        # in a child process and everything has an action queue name.
-        text += "         "
+        text += "       "
 
     # The plugin display name, allow for 2 indentations (4 chars) in 'taskdepth'
     kindchars = max(longest_plugin_kind, 8)
@@ -444,15 +463,19 @@ def message_handler(message, context):
         text = Style.TASK_FG.fmt_subst(text, 'actionname', message.action_name)
         text = Style.TASK_BG.fmt_subst(text, 'closeaction', ']')
 
+    kindname = ''
+    if plugin is not None:
+        kindname = plugin.get_kind()
     text = Style.KIND_BG.fmt_subst(text, 'kindsep', ':')
-    text = Style.TASK_FG.fmt_subst(text, 'kindname', plugin.get_kind())
+    text = Style.TASK_FG.fmt_subst(text, 'kindname', kindname)
 
     if enable_debug:
+        unique_id = 0 if message.unique_id is None else message.unique_id
         text = Style.DEBUG_BG.fmt_subst(text, 'debugopen', '[')
         text = Style.DEBUG_BG.fmt_subst(text, 'tagpid', 'pid:')
         text = Style.DEBUG_FG.fmt_subst(text, 'pid', message.pid)
         text = Style.DEBUG_BG.fmt_subst(text, 'tagid', 'id:')
-        text = Style.DEBUG_FG.fmt_subst(text, 'id', message.unique_id)
+        text = Style.DEBUG_FG.fmt_subst(text, 'id', unique_id)
         text = Style.DEBUG_BG.fmt_subst(text, 'debugclose', ']')
 
     text = Style.ACTION.fmt_subst(
@@ -512,6 +535,7 @@ def format_duration(elapsed):
 def create_pipeline(target, arch, variant):
     global longest_plugin_name
     global longest_plugin_kind
+    global messaging_enabled
 
     directory = main_options['directory']
     config = main_options['config']
@@ -560,5 +584,8 @@ def create_pipeline(target, arch, variant):
     for plugin in pipeline.dependencies(Scope.ALL, include_sources=True):
         longest_plugin_name = max(len(plugin._get_display_name()), longest_plugin_name)
         longest_plugin_kind = max(len(plugin.get_kind()), longest_plugin_kind)
+
+    # Pipeline is loaded, lets start displaying pipeline messages from tasks
+    messaging_enabled = True
 
     return pipeline
