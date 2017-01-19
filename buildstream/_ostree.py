@@ -137,8 +137,8 @@ def commit(repo, dir, ref):
 
 # exists():
 #
-# Checks wether a given commit or symbolic ref exists in
-# the specified repo.
+# Checks wether a given commit or symbolic ref exists and
+# is locally cached in the specified repo.
 #
 # Args:
 #    repo (OSTree.Repo): The repo
@@ -149,8 +149,24 @@ def commit(repo, dir, ref):
 #
 def exists(repo, ref):
 
-    _, commit = repo.resolve_rev(ref, True)
-    return commit is not None
+    # Get the commit checksum, this will:
+    #
+    #  o Return a commit checksum if ref is a symbolic branch
+    #  o Return the same commit checksum if ref is a valid commit checksum
+    #  o Return None if the ostree repo doesnt know this ref.
+    #
+    ref = checksum(repo, ref)
+    if ref is None:
+        return False
+
+    # If we do have a ref which the ostree knows about, this does
+    # not mean we necessarily have the object locally (we may just
+    # have some metadata about it, this can happen).
+    #
+    # Use has_object() only with a resolved valid commit checksum
+    # to check if we actually have the object locally.
+    _, has_object = repo.has_object(OSTree.ObjectType.COMMIT, ref, None)
+    return has_object
 
 
 # checksum():
