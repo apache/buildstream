@@ -36,7 +36,7 @@
 
 import os
 import hashlib
-from buildstream import Source, SourceError
+from buildstream import Source, SourceError, Consistency
 from buildstream import utils
 
 
@@ -65,8 +65,8 @@ class LocalSource(Source):
         # has already been returned by list_relative_paths()
         return [(relpath, sha256sum(fullpath)) for relpath, fullpath in filelist]
 
-    def consistent(self):
-        return True
+    def get_consistency(self):
+        return Consistency.CACHED
 
     # We dont have a ref, we're a local file...
     def get_ref(self):
