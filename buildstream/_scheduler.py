@@ -113,8 +113,12 @@ class Scheduler():
             # Pull elements forward through queues
             elements = []
             for queue in self.queues:
+                # Enqueue elements complete from the last queue
                 queue.enqueue(elements)
-                elements = queue.dequeue()
+
+                # Dequeue processed elements for the next queue
+                elements = list(queue.dequeue())
+                elements = list(elements)
 
             # Kickoff whatever processes can be processed at this time
             for queue in self.queues:
@@ -146,22 +150,6 @@ class Queue():
         self.active_jobs = []
         self.failed_elements = []
         self.results = []
-
-    # message()
-    #
-    # Send a status message to the frontend
-    #
-    def message(self, plugin, message_type, message, detail=None):
-
-        # Forward this through to the context, if this
-        # is in a child process it will be propagated
-        # to the parent.
-        self.scheduler.context._message(
-            Message(plugin._get_unique_id(),
-                    message_type,
-                    message,
-                    detail)
-        )
 
     # process()
     #
@@ -214,10 +202,12 @@ class Queue():
         if not elts:
             return
 
-        # Place skip elements directly on the done queue
+        # Place skipped elements directly on the done queue
+        elts = list(elts)
         skip = [elt for elt in elts if self.element_skip(elt)]
         wait = [elt for elt in elts if elt not in skip]
-        self.wait_queue.extend(elts)
+
+        self.wait_queue.extend(wait)
         self.done_queue.extend(skip)
 
     def dequeue(self):
