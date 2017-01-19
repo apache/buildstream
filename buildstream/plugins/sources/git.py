@@ -64,7 +64,7 @@ import re
 from configparser import RawConfigParser
 from io import StringIO
 
-from buildstream import Source, SourceError
+from buildstream import Source, SourceError, Consistency
 from buildstream import utils
 
 GIT_MODULES = '.gitmodules'
@@ -120,6 +120,12 @@ class GitMirror():
     def has_ref(self):
         if not self.ref:
             return False
+
+        # If the mirror doesnt exist, we also dont have the ref
+        if not os.path.exists(self.mirror):
+            return False
+
+        # Check if the ref is really there
         rc = self.source.call([self.source.host_git, 'cat-file', '-t', self.ref], cwd=self.mirror)
         return rc == 0
 
@@ -238,8 +244,12 @@ class GitSource(Source):
         # from another location, it should not effect the cache key.
         return [self.original_url, self.mirror.ref]
 
-    def consistent(self):
-        return self.mirror.ref is not None
+    def get_consistency(self):
+        if self.have_all_refs():
+            return Consistency.CACHED
+        elif self.mirror.ref is not None:
+            return Consistency.RESOLVED
+        return Consistency.INCONSISTENT
 
     def get_ref(self):
         return self.mirror.ref
@@ -285,6 +295,18 @@ class GitSource(Source):
     ###########################################################
     #                     Local Functions                     #
     ###########################################################
+    def have_all_refs(self):
+        if not self.mirror.has_ref():
+            return False
+
+        self.refresh_submodules()
+        for mirror in self.submodules:
+            if not os.path.exists(mirror.mirror):
+                return False
+            if not mirror.has_ref():
+                return False
+
+        return True
 
     # Refreshes the GitMirror objects for submodules
     #
