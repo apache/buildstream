@@ -11,9 +11,10 @@ variables:
     elif [ ! -e ./configure ]; then autoreconf -ivf;
     fi
 
+  conf-cmd: ./configure
   configure: |
 
-    ./configure --prefix=%{prefix} \
+    %{conf-cmd} --prefix=%{prefix} \
                 --exec-prefix=%{exec_prefix} \
                 --bindir=%{bindir} \
                 --sbindir=%{sbindir} \
