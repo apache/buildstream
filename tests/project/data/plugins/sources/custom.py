@@ -1,4 +1,4 @@
-from buildstream import Source
+from buildstream import Source, Consistency
 
 
 class CustomSource(Source):
@@ -13,8 +13,8 @@ class CustomSource(Source):
     def get_unique_key(self):
         return self.configuration
 
-    def consistent(self):
-        return True
+    def get_consistency(self):
+        return Consistency.INCONSISTENT
 
     def refresh(self, node):
         return False
