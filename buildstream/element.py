@@ -19,6 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import sys
 import copy
 import inspect
 from contextlib import contextmanager
@@ -472,37 +473,22 @@ class Element(Plugin):
             os.makedirs(context.builddir, exist_ok=True)
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
 
-            environment = utils._node_sanitize(self.__environment)
-            sandbox = Sandbox(fs_root=rootdir,
-                              env=environment,
-                              stdout=output_file,
-                              stderr=output_file)
+            with self.__sandbox(None, rootdir, output_file, output_file) as sandbox:
 
-            # sandbox.executor.debug = True
+                # Call the abstract plugin method
+                collect = self.assemble(sandbox)
 
-            # root is temp directory
-            sandbox.executor.root_ro = False
-            os.mkdir(os.path.join(rootdir, 'tmp'))
+                # Note important use of lstrip() here
+                collectdir = os.path.join(rootdir, collect.lstrip(os.sep))
 
-            mounts = []
-            mounts.append({'dest': '/dev', 'type': 'host-dev'})
-            mounts.append({'dest': '/proc', 'type': 'proc'})
-            sandbox.set_mounts(mounts)
-
-            # Call the abstract plugin method
-            collect = self.assemble(sandbox)
-
-            # Note important use of lstrip() here
-            collectdir = os.path.join(rootdir, collect.lstrip(os.sep))
-
-            # At this point, we expect an exception was raised leading to
-            # an error message, or we have good output to collect.
-            project = self.get_project()
-            key = self._get_cache_key()
-            self.__artifacts.commit(project.name,
-                                    self.name,
-                                    key,
-                                    collectdir)
+                # At this point, we expect an exception was raised leading to
+                # an error message, or we have good output to collect.
+                project = self.get_project()
+                key = self._get_cache_key()
+                self.__artifacts.commit(project.name,
+                                        self.name,
+                                        key,
+                                        collectdir)
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
@@ -570,9 +556,89 @@ class Element(Plugin):
         for source in self._sources():
             source._set_log_handle(logfile)
 
+    # _shell():
+    #
+    # Connects the terminal with a shell running in a staged
+    # environment
+    #
+    # Args:
+    #    scope (Scope): Either BUILD or RUN scopes are valid, or None
+    #    directory (str): A directory to an existing sandbox, or None
+    #
+    # If directory is not specified, one will be staged using scope
+    def _shell(self, scope=None, directory=None):
+        with self.__sandbox(scope, directory, sys.stdout, sys.stderr) as sandbox:
+            self.__run_shell(sandbox)
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
+    @contextmanager
+    def __sandbox(self, scope, directory, stdout, stderr):
+        environment = utils._node_sanitize(self.__environment)
+        if directory is not None and os.path.exists(directory):
+
+            # sandbox.executor.debug = True
+            sandbox = Sandbox(fs_root=directory,
+                              env=environment,
+                              stdout=stdout,
+                              stderr=stderr)
+
+            # root is temp directory
+            sandbox.executor.root_ro = False
+            os.makedirs(os.path.join(directory, 'tmp'), exist_ok=True)
+
+            mounts = []
+            mounts.append({'dest': '/dev', 'type': 'host-dev'})
+            mounts.append({'dest': '/proc', 'type': 'proc'})
+            sandbox.set_mounts(mounts)
+
+            yield sandbox
+
+        else:
+            context = self.get_context()
+            os.makedirs(context.builddir, exist_ok=True)
+            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
+
+            # Recursive contextmanager...
+            with self.__sandbox(scope, rootdir, stdout, stderr) as sandbox:
+
+                # Stage deps in the sandbox root
+                for dep in self.dependencies(scope):
+                    dep.stage(sandbox)
+
+                if scope == Scope.BUILD:
+                    # Stage sources in /buildstream/build
+                    self.stage_sources(sandbox, '/buildstream/build')
+
+                    # And set the sandbox work directory too
+                    sandbox.set_cwd('/buildstream/build')
+
+                yield sandbox
+
+            # Cleanup the build dir
+            shutil.rmtree(rootdir)
+
+    def __run_shell(self, sandbox):
+
+        # Totally open sandbox for running a shell
+        sandbox.executor.network_enable = True
+        sandbox.executor.namespace_pid = False
+        sandbox.executor.namespace_ipc = False
+        sandbox.executor.namespace_uts = False
+        sandbox.executor.namespace_cgroup = False
+
+        # Composite the element environment on top of the host
+        # environment and use that for the shell environment.
+        #
+        # XXX Hard code should be removed
+        overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
+        for override in overrides:
+            sandbox.executor.env[override] = os.environ.get(override)
+
+        exitcode, _, _ = sandbox.run(['/bin/sh', '-i'])
+        if exitcode != 0:
+            raise ElementError("Running shell failed with exitcode {}".format(exitcode))
 
     def __init_defaults(self):
 
