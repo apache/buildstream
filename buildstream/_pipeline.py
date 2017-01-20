@@ -91,7 +91,7 @@ class FetchQueue(Queue):
         for source in element._sources():
             source._fetch()
 
-    def element_skip(self, element):
+    def skip(self, element):
         return element._consistency() == Consistency.CACHED
 
 
@@ -99,24 +99,47 @@ class FetchQueue(Queue):
 #
 class TrackQueue(Queue):
 
+    def init(self):
+        self.changed_files = {}
+        self.changed_sources = []
+
     def process(self, element):
         return element._track()
+
+    def done(self, element, result):
+
+        # Set the new refs in the main process one by one as they complete
+        for unique_id, new_ref in result:
+            source = _plugin_lookup(unique_id)
+            if source._set_ref(new_ref, source._Source__origin_node):
+                self.changed_files[source._Source__origin_filename] = source._Source__origin_toplevel
+                self.changed_sources.append(source)
 
 
 # A queue which assembles elements
 #
 class AssembleQueue(Queue):
 
+    def init(self):
+        self.built_elements = []
+
     def process(self, element):
         if element._assemble():
             return element._get_unique_id()
         return 0
 
-    def element_ready(self, element):
+    def ready(self, element):
         return element._buildable(recalculate=True)
 
-    def element_skip(self, element):
+    def skip(self, element):
         return element._cached(recalculate=False)
+
+    def done(self, element, result):
+
+        # This element should be the same one we're passed
+        if result > 0:
+            element = _plugin_lookup(result)
+            self.built_elements.append(element)
 
 
 # Pipeline()
@@ -198,22 +221,15 @@ class Pipeline():
         if not scheduler.run(plan):
             raise PipelineError()
 
-        # Run the Source.set_ref() bits in the master process on all of
-        # the sources which have new refs, and then rewrite the files which
-        # have changed as a result.
-        files = {}
-        changed = []
-        for result_list in track.results:
-            for unique_id, new_ref in result_list:
-                source = _plugin_lookup(unique_id)
-                if source._set_ref(new_ref, source._Source__origin_node):
-                    files[source._Source__origin_filename] = source._Source__origin_toplevel
-                    changed.append(source)
-
         # Dump the files which changed
-        for filename, toplevel in files.items():
+        for filename, toplevel in track.changed_files.items():
             fullname = os.path.join(self.project.directory, filename)
             _yaml.dump(toplevel, fullname)
+
+        # Allow destruction of any result objects we've processed
+        changed = track.changed_sources
+        track.changed_sources = []
+        track.changed_files = {}
 
         return changed
 
@@ -319,9 +335,7 @@ class Pipeline():
         if not scheduler.run(plan):
             raise PipelineError()
 
-        updated = []
-        for unique_id in build.results:
-            if unique_id > 0:
-                updated.append(_plugin_lookup(unique_id))
+        updated = build.built_elements
+        build.built_elements = []
 
         return updated
