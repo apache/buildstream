@@ -172,11 +172,14 @@ class Source(Plugin):
 
     # Wrapper for get_consistency() api which caches the result
     #
-    def _get_consistency(self, recalculate=False):
-        if (self.__consistency is None) or recalculate:
+    def _get_consistency(self):
+        if self.__consistency is None:
             self.__consistency = self.get_consistency()
         return self.__consistency
 
+    # Bump local cached consistency state, this is done from
+    # the pipeline after the completion of fetch and track jobs.
+    #
     def _bump_consistency(self, consistency):
         if (self.__consistency is None or
             consistency > self.__consistency):
@@ -184,8 +187,6 @@ class Source(Plugin):
 
     def _fetch(self):
         self.fetch()
-        # If there was no error, we are cached
-        self._bump_consistency(Consistency.CACHED)
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
