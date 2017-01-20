@@ -232,7 +232,7 @@ class Element(Plugin):
         key = self._get_cache_key()
 
         # Time to use the artifact, check once more that it's there
-        self._cached(recalculate=True, assert_cached=True)
+        self._assert_cached()
 
         with self.timed_activity("Staging {}/{}/{}".format(project.name, self.name, key)):
             # Get the extracted artifact
@@ -341,64 +341,71 @@ class Element(Plugin):
 
     # _consistency():
     #
-    # Args:
-    #    recalculate (bool): Whether to recalculate the consistency state
-    #
     # Returns:
     #    (list): The minimum consistency of the elements sources
     #
     # If the element has no sources, this returns Consistency.CACHED
-    def _consistency(self, recalculate=False):
+    def _consistency(self):
         consistency = Consistency.CACHED
         for source in self.__sources:
-            source_consistency = source._get_consistency(recalculate=recalculate)
+            source_consistency = source._get_consistency()
             consistency = min(consistency, source_consistency)
         return consistency
 
     # _cached():
     #
     # Args:
-    #    recalculate (bool): Whether to recalculate the cached state again
-    #    assert_cached (bool): Whether to raise an exception if the artifact is missing
+    #    recalcualte (bool): Whether to forcefully recalculate
     #
     # Returns:
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self, recalculate=False, assert_cached=False):
+    def _cached(self, recalculate=False):
+        project = self.get_project()
+        key = self._get_cache_key()
+        if (self.__cached is None or recalculate) and project is not None and key is not None:
+            self.__cached = self.__artifacts.contains(project.name, self.name, key)
 
-        # We can calculate the cache key if we have a ref, even if we dont
-        # have the sources cached yet we may have an artifact.
-        if self._consistency(recalculate=recalculate) != Consistency.INCONSISTENT:
+        return False if self.__cached is None else self.__cached
+
+    # _assert_cached()
+    #
+    # Raises an error if the artifact is not cached.
+    def _assert_cached(self):
+        if not self._cached():
             project = self.get_project()
             key = self._get_cache_key()
+            if not key:
+                key = '0' * 64
 
-            if self.__cached is None or recalculate:
-                self.__cached = self.__artifacts.contains(project.name, self.name, key)
-
-        if assert_cached and not self.__cached:
             raise ElementError("{element}: Missing artifact {project}/{name}/{key}"
                                .format(element=self,
                                        project=project.name,
                                        name=self.name,
                                        key=key))
 
-        # Return False when sources are not present but retain the None value
-        return False if self._consistency() != Consistency.CACHED else self.__cached
+    # _set_cached():
+    #
+    # Forcefully set the cached state on the element.
+    #
+    # This is done by the Pipeline when an element successfully
+    # completes a build.
+    #
+    def _set_cached(self):
+        self.__cached = True
 
     # _buildable():
     #
     # Returns:
     #    (bool): Whether this element can currently be built
     #
-    def _buildable(self, recalculate=False):
-
-        if self._consistency(recalculate=recalculate) != Consistency.CACHED:
+    def _buildable(self):
+        if self._consistency() != Consistency.CACHED:
             return False
 
         for dependency in self.dependencies(Scope.BUILD):
-            if not (dependency._cached() or
-                    dependency._cached(recalculate=recalculate)):
+            if not (dependency._cached()):
                 return False
 
         return True
@@ -458,13 +465,10 @@ class Element(Plugin):
     #
     # Internal method for calling public abstract assemble() method.
     #
-    # Returns:
-    #    (bool): True if something was assembled, False if the item was cached
     def _assemble(self):
 
-        # No need to assemble
-        if self._cached(self):
-            return False
+        # Assert call ordering
+        assert(self._cached())
 
         context = self.get_context()
         with self._output_file() as output_file:
@@ -492,8 +496,6 @@ class Element(Plugin):
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
-
-        return True
 
     # _logfile()
     #
