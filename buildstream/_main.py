@@ -304,7 +304,7 @@ def show(target, arch, variant, deps, order, format):
 ##################################################################
 #                          Shell Command                         #
 ##################################################################
-@cli.command(short_help="Shell into a build environment")
+@cli.command(short_help="Shell into an element's sandbox environment")
 @click.option('--builddir', '-b', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="Existing build directory")
@@ -317,7 +317,7 @@ def show(target, arch, variant, deps, order, format):
               help='A variant of the specified target')
 @click.argument('target')
 def shell(target, arch, variant, builddir, scope):
-    """Shell into an environment environment
+    """Shell into an element's sandbox environment
 
     This can be used either to debug building or to launch
     test and debug successful build results.
