@@ -151,6 +151,20 @@ class Queue():
         self.failed_elements = []
         self.results = []
 
+        # Subclass initializer
+        self.init()
+
+    #####################################################
+    #     Abstract Methods for Queue implementations    #
+    #####################################################
+
+    # init()
+    #
+    # Initialize the queue, instead of overriding constructor.
+    #
+    def init(self):
+        pass
+
     # process()
     #
     # Abstract method for processing an element
@@ -166,7 +180,7 @@ class Queue():
     def process(self, element):
         pass
 
-    # element_ready()
+    # ready()
     #
     # Abstract method for reporting whether an element
     # is ready for processing in this queue or not.
@@ -177,10 +191,10 @@ class Queue():
     # Returns:
     #    (bool): Whether the element is ready for processing
     #
-    def element_ready(self, element):
+    def ready(self, element):
         return True
 
-    # element_skip()
+    # skip()
     #
     # Abstract method for reporting whether an element
     # can be skipped for this phase.
@@ -191,8 +205,23 @@ class Queue():
     # Returns:
     #    (bool): Whether the element can be skipped
     #
-    def element_skip(self, element):
+    def skip(self, element):
         return False
+
+    # done()
+    #
+    # Abstract method for handling a successful job completion.
+    #
+    # Args:
+    #    element (Element): The element which completed processing
+    #    result (any): The return value of the process() implementation
+    #
+    def done(self, element, result):
+        pass
+
+    #####################################################
+    #     Queue internals and Scheduler facing APIs     #
+    #####################################################
 
     # Attach to the scheduler
     def attach(self, scheduler):
@@ -204,7 +233,7 @@ class Queue():
 
         # Place skipped elements directly on the done queue
         elts = list(elts)
-        skip = [elt for elt in elts if self.element_skip(elt)]
+        skip = [elt for elt in elts if self.skip(elt)]
         wait = [elt for elt in elts if elt not in skip]
 
         self.wait_queue.extend(wait)
@@ -220,29 +249,30 @@ class Queue():
         while len(self.wait_queue) > 0 and len(self.active_jobs) < self.max_jobs:
             element = self.wait_queue.popleft()
 
-            if not self.element_ready(element):
+            if not self.ready(element):
                 unready.append(element)
                 continue
 
             job = Job(self.scheduler, self.action_name)
-            job.spawn(self.action_name, self.process, self.done, element)
+            job.spawn(self.action_name, self.process, self.job_done, element)
             self.active_jobs.append(job)
 
         # These were not ready but were in the beginning, give em
         # first priority again next time around
         self.wait_queue.extendleft(unready)
 
-    def done(self, job, returncode, element):
+    def job_done(self, job, returncode, element):
         if returncode == 0:
             self.done_queue.append(element)
         else:
             self.failed_elements.append(element)
 
         job.parent_process_queue()
-        if job.result:
-            self.results.append(job.result)
-
         self.active_jobs.remove(job)
+
+        # Give the result of the job to the Queue implementor
+        self.done(element, job.result)
+
         self.scheduler.sched()
 
 
