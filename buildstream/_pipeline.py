@@ -94,6 +94,12 @@ class FetchQueue(Queue):
     def skip(self, element):
         return element._consistency() == Consistency.CACHED
 
+    def done(self, element, result):
+        for source in element._sources():
+
+            # Successful fetch, we must be CACHED now
+            source._bump_consistency(Consistency.CACHED)
+
 
 # A queue which tracks sources
 #
@@ -111,6 +117,10 @@ class TrackQueue(Queue):
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
             source = _plugin_lookup(unique_id)
+
+            # Successful update of ref, we're at least resolved now
+            source._bump_consistency(Consistency.RESOLVED)
+
             if source._set_ref(new_ref, source._Source__origin_node):
                 self.changed_files[source._Source__origin_filename] = source._Source__origin_toplevel
                 self.changed_sources.append(source)
@@ -124,22 +134,19 @@ class AssembleQueue(Queue):
         self.built_elements = []
 
     def process(self, element):
-        if element._assemble():
-            return element._get_unique_id()
-        return 0
+        element._assemble()
+        return element._get_unique_id()
 
     def ready(self, element):
-        return element._buildable(recalculate=True)
+        return element._buildable()
 
     def skip(self, element):
-        return element._cached(recalculate=False)
+        return element._cached()
 
     def done(self, element, result):
-
-        # This element should be the same one we're passed
-        if result > 0:
-            element = _plugin_lookup(result)
-            self.built_elements.append(element)
+        # Elements are cached after they are successfully assembled
+        element._set_cached()
+        self.built_elements.append(element)
 
 
 # Pipeline()
@@ -177,10 +184,10 @@ class Pipeline():
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
             plugin.preflight()
 
-            # XXX FIXME: Caches need to be combed, looks like we need
-            # a kickstart here and we need to recalculate them too often also
-            if isinstance(plugin, Element):
-                plugin._cached(recalculate=True)
+        # Force interrogate the cache, ensure that elements have loaded
+        # their consistency and cached states.
+        for element in self.dependencies(Scope.ALL):
+            element._cached(recalculate=True)
 
     # Generator function to iterate over elements and optionally
     # also iterate over sources.
@@ -262,7 +269,7 @@ class Pipeline():
         plan = [elt for elt in plan if elt not in inconsistent]
 
         # Filter out elements with cached sources, we already have them.
-        cached = [elt for elt in plan if elt._consistency(recalculate=True) == Consistency.CACHED]
+        cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
         plan = [elt for elt in plan if elt not in cached]
 
         if not scheduler.run(plan):
