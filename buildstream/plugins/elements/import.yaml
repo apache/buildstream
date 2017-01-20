@@ -4,8 +4,9 @@
 #
 config:
 
-  # By default we collect everything staged, specify a directory
-  # here to output only a subset of the staged input sources.
+  # By default we collect everything staged, specify a
+  # directory here to output only a subset of the staged
+  # input sources.
   source: /
 
   # Prefix the output with an optional directory, by default

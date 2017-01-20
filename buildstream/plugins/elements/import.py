@@ -20,8 +20,10 @@
 
 """Import build element
 
-The most basic build element does nothing but allows users to
-add custom build commands to the array understood by the :mod:`BuildElement <buildstream.buildelement>`
+Import elements produce artifacts directly from it's sources
+without any kind of processing. These are typically used to
+import an SDK to build on top of or to overlay your build with
+some configuration data.
 
 The empty configuration is as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/import.yaml
