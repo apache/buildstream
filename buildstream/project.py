@@ -57,7 +57,7 @@ class Project():
         self.name = None
         """str: The project name"""
 
-        self.directory = directory
+        self.directory = os.path.abspath(directory)
         """str: The project directory"""
 
         self._variables = {}    # The default variables overridden with project wide overrides
