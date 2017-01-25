@@ -468,7 +468,7 @@ class Element(Plugin):
     def _assemble(self):
 
         # Assert call ordering
-        assert(self._cached())
+        assert(not self._cached())
 
         context = self.get_context()
         with self._output_file() as output_file:
