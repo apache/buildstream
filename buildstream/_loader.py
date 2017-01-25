@@ -47,6 +47,7 @@ class Symbol():
     CONFIG = "config"
     VARIABLES = "variables"
     ENVIRONMENT = "environment"
+    PUBLIC = "public"
     TYPE = "type"
     BUILD = "build"
     RUNTIME = "runtime"
@@ -627,7 +628,8 @@ class Loader():
         meta_element = MetaElement(element_name, data.get('kind'), meta_sources,
                                    _yaml.node_get(data, dict, Symbol.CONFIG, default_value={}),
                                    _yaml.node_get(data, dict, Symbol.VARIABLES, default_value={}),
-                                   _yaml.node_get(data, dict, Symbol.ENVIRONMENT, default_value={}))
+                                   _yaml.node_get(data, dict, Symbol.ENVIRONMENT, default_value={}),
+                                   _yaml.node_get(data, dict, Symbol.PUBLIC, default_value={}))
 
         # Check circular dependencies, if we're adding something
         # which depends on something already there, it's a circular dep
