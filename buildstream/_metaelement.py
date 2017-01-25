@@ -32,14 +32,16 @@ class MetaElement():
     #    config: The configuration data for the element
     #    variables: The variables declared or overridden on this element
     #    environment: The environment variables declared or overridden on this element
+    #    public: Public domain data dictionary
     #
-    def __init__(self, name, kind, sources, config, variables, environment):
+    def __init__(self, name, kind, sources, config, variables, environment, public):
         self.name = name
         self.kind = kind
         self.sources = sources
         self.config = config
         self.variables = variables
         self.environment = environment
+        self.public = public
 
         self.build_dependencies = []
         self.dependencies = []
