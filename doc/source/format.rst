@@ -128,11 +128,11 @@ Here is a rather complete example using the autotools element kind and git sourc
      configure-commands:
      - "%{configure} --enable-fancy-feature"
 
-   # Specify public domain visible to other elements.
+   # Specify public domain data, visible to other elements.
    public:
-   - domain: integration
-     commands:
-     - /usr/bin/update-fancy-feature-cache
+     bst:
+       integration-commands:
+       - /usr/bin/update-fancy-feature-cache
 
 For most use cases you would not need to specify this much detail, we've provided
 details here in order to have a more complete initial example.
@@ -271,21 +271,21 @@ Public
 
 .. code:: yaml
 
-   # Specify public domain visible to other elements.
+   # Specify public domain data, visible to other elements.
    public:
-   - domain: integration
-     commands:
-     - /usr/bin/update-fancy-feature-cache
+     bst:
+       integration-commands:
+       - /usr/bin/update-fancy-feature-cache
 
 Metadata declared in the ``public`` section of an element is visible to
 any other element which depends on the declaring element in a given pipeline.
-BuildStream itself supports some built-in domains, for instance the ``integration``
-domain demonstrated above describes commands which should be run in an environment
-where the given element is installed.
+BuildStream itself consumes public data from the ``bst`` domain. The ``integration-commands``
+demonstrated above for example, describe commands which should be run in an
+environment where the given element is installed but before anything should be run.
 
-That said, users may add their own domain names which are understood by their
-own element plugins. This allows one to use custom domain data on their project
-to provide additional context for any custom element plugins one wants to use.
+An element is allowed to read domain data from any element it depends on, and users
+may specify additional domains to be understood and processed by their own element
+plugins.
 
 
 Dependencies
