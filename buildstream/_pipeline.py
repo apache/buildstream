@@ -117,11 +117,10 @@ class TrackQueue(Queue):
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
             source = _plugin_lookup(unique_id)
-
-            # Successful update of ref, we're at least resolved now
-            source._bump_consistency(Consistency.RESOLVED)
-
             if source._set_ref(new_ref, source._Source__origin_node):
+
+                # Successful update of ref, we're at least resolved now
+                source._bump_consistency(Consistency.RESOLVED)
                 self.changed_files[source._Source__origin_filename] = source._Source__origin_toplevel
                 self.changed_sources.append(source)
 
