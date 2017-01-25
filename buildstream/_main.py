@@ -355,9 +355,9 @@ def shell(target, arch, variant, builddir, scope):
 
     try:
         pipeline.target._shell(scope, builddir)
-    except PipelineError:
+    except _ALL_EXCEPTIONS as e:
         click.echo("")
-        click.echo("Errors shelling into this pipeline")
+        click.echo("Errors shelling into this pipeline: %s" % str(e))
         sys.exit(1)
 
 
