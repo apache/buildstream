@@ -90,6 +90,9 @@ class Element(Plugin):
         variables = self.__extract_variables(meta)
         self.__variables = Variables(variables)
 
+        # Grab public domain data declared for this instance
+        self.__public = copy.deepcopy(meta.public)
+
         # Collect the composited element configuration and
         # ask the element to configure itself.
         self.__config = self.__extract_config(meta)
@@ -247,6 +250,27 @@ class Element(Plugin):
                 else os.path.join(basedir, path.lstrip(os.sep))
             utils.link_files(artifact, stagedir)
 
+    def integrate(self, sandbox):
+        """Integrate currently staged filesystem against this artifact.
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        This modifies the sysroot staged inside the sandbox so that
+        the sysroot is *integrated*. Only an *integrated* sandbox
+        may be trusted for running the software therein, as the integration
+        commands will create and update important system cache files
+        required for running the installed software (such as the ld.so.cache).
+        """
+        bstdata = self.get_public_data('bst')
+        if bstdata is not None:
+            commands = self.node_get_member(bstdata, list, 'integration-commands', default_value=[])
+            for cmd in commands:
+                self.status("Running integration command", detail=cmd)
+                exitcode, _, _ = sandbox.run(['/bin/sh', '-c', cmd])
+                if exitcode != 0:
+                    raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+
     def stage_sources(self, sandbox, path=None):
         """Stage this element's source input
 
@@ -268,6 +292,17 @@ class Element(Plugin):
             else os.path.join(basedir, path.lstrip(os.sep))
         for source in self.__sources:
             source._stage(stagedir)
+
+    def get_public_data(self, domain):
+        """Fetch public data on this element
+
+        Args:
+           domain (str): A public domain name to fetch data for
+
+        Returns:
+           (dict): The public data dictionary for the given domain
+        """
+        return self.__public.get(domain)
 
     #############################################################
     #                  Abstract Element Methods                 #
@@ -608,6 +643,11 @@ class Element(Plugin):
                 # Stage deps in the sandbox root
                 for dep in self.dependencies(scope):
                     dep.stage(sandbox)
+
+                # Run any integration commands provided by the dependencies
+                # once they are all staged and ready
+                for dep in self.dependencies(scope):
+                    dep.integrate(sandbox)
 
                 if scope == Scope.BUILD:
                     # Stage sources in /buildstream/build
