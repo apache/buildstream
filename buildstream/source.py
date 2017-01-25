@@ -207,7 +207,6 @@ class Source(Plugin):
         # but we're mostly concerned about simple strings anyway.
         if current_ref != ref:
             self.set_ref(ref, node)
-            self._get_consistency(recalculate=True)
             changed = True
 
         return changed
