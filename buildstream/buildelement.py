@@ -62,6 +62,11 @@ class BuildElement(Element):
         for dep in self.dependencies(Scope.BUILD):
             dep.stage(sandbox)
 
+        # Run any integration commands provided by the dependencies
+        # once they are all staged and ready
+        for dep in self.dependencies(Scope.BUILD):
+            dep.integrate(sandbox)
+
         # Stage sources in /buildstream/build
         self.stage_sources(sandbox, '/buildstream/build')
 
