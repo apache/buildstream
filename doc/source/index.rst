@@ -12,15 +12,14 @@ BuildStream Documentation
 About BuildStream
 -----------------
 BuildStream is a flexible and extensible framework for the modelling of build
-and CI pipelines in a declarative YAML format, written in python.
+pipelines in a declarative YAML format, written in python.
 
 BuildStream defines a pipeline as abstract elements related by their dependencies,
 and stacks to conveniently group dependencies together. Basic element types for
 importing SDKs in the form of tarballs or ostree checkouts, building software
 components and exporting SDKs or deploying bootable filesystem images will be
 included in BuildStream, but it is expected that projects forge their own custom
-elements for doing more elaborate things such as running custom CI tests or deploying
-software in special ways.
+elements for doing more elaborate things such as deploying software in special ways.
 
 
 Using BuildStream
@@ -65,6 +64,7 @@ Sources
 
 * :mod:`local` - A Source implementation local files and directories
 * :mod:`git` - A Source implementation for git
+* :mod:`ostree` - A Source implementation for ostree
 
 
 Indices and tables

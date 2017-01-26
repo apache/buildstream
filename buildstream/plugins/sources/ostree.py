@@ -18,7 +18,7 @@
 #  Authors:
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
 
-"""A Source implementation for OSTree based directory artifacts
+"""A Source implementation for importing/staging of OSTree checkouts.
 
 **Usage:**
 
