@@ -90,6 +90,10 @@ class Element(Plugin):
         env = self.__extract_environment(meta)
         self.__environment = env
 
+        # Collect the environment nocache blacklist list
+        nocache = self.__extract_env_nocache(meta)
+        self.__env_nocache = nocache
+
         # Grab public domain data declared for this instance
         self.__public = copy.deepcopy(meta.public)
 
@@ -467,10 +471,18 @@ class Element(Plugin):
                 if dep is None:
                     return None
 
+            # Filter out nocache variables from the element's environment
+            cache_env = {
+                key: value
+                for key, value in self.node_items(self.__environment)
+                if key not in self.__env_nocache
+            }
+
             context = self.get_context()
             self.__cache_key = utils._generate_key({
                 'context': context._get_cache_key(),
                 'element': self.get_unique_key(),
+                'environment': cache_env,
                 'sources': [s.get_unique_key() for s in self.__sources],
                 'dependencies': dependencies,
             })
@@ -691,27 +703,24 @@ class Element(Plugin):
             # Get the yaml file in the same directory as the plugin
             plugin_file = inspect.getfile(type(self))
             plugin_dir = os.path.dirname(plugin_file)
-            plugin_conf_name = "%s.yaml" % self.get_kind()
-            plugin_conf = os.path.join(plugin_dir, "%s.yaml" % self.get_kind())
+            plugin_conf_name = "{}.yaml".format(self.get_kind())
+            plugin_conf = os.path.join(plugin_dir, plugin_conf_name)
 
-            # Override some plugin defaults with project overrides
-            #
+            # Load the plugin's accompanying .yaml file if one was provided
             defaults = {}
+            try:
+                defaults = _yaml.load(plugin_conf, plugin_conf_name)
+            except LoadError as e:
+                if e.reason != LoadErrorReason.MISSING_FILE:
+                    raise e
+
+            # Override the element's defaults with element specific
+            # overrides from the project.conf
             project = self.get_project()
             elements = project._elements
             overrides = elements.get(self.get_kind())
-
-            try:
-                defaults = _yaml.load(plugin_conf, plugin_conf_name)
-                if overrides:
-                    _yaml.composite(defaults, overrides, typesafe=True)
-            except LoadError as e:
-                # Ignore missing file errors, element's may omit a config file.
-                if e.reason == LoadErrorReason.MISSING_FILE:
-                    if overrides:
-                        defaults = copy.deepcopy(overrides)
-                else:
-                    raise e
+            if overrides:
+                _yaml.composite(defaults, overrides, typesafe=True)
 
             # Set the data class wide
             type(self).__defaults = defaults
@@ -740,7 +749,20 @@ class Element(Plugin):
         for key, value in self.node_items(element_env):
             final_env[key] = self.node_subst_member(element_env, key)
 
-        return element_env
+        return final_env
+
+    def __extract_env_nocache(self, meta):
+        project = self.get_project()
+        project_nocache = project._env_nocache
+        default_nocache = _yaml.node_get(self.__defaults, list, 'environment-nocache', default_value=[])
+        element_nocache = meta.env_nocache
+
+        # Accumulate values from the element default, the project and the element
+        # itself to form a complete list of nocache env vars.
+        env_nocache = set(project_nocache + default_nocache + element_nocache)
+
+        # Convert back to list now we know they're unique
+        return list(env_nocache)
 
     # This will resolve the final variables to be used when
     # substituting command strings to be run in the sandbox
