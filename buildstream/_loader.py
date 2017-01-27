@@ -47,6 +47,7 @@ class Symbol():
     CONFIG = "config"
     VARIABLES = "variables"
     ENVIRONMENT = "environment"
+    ENV_NOCACHE = "environment-nocache"
     PUBLIC = "public"
     TYPE = "type"
     BUILD = "build"
@@ -629,6 +630,7 @@ class Loader():
                                    _yaml.node_get(data, dict, Symbol.CONFIG, default_value={}),
                                    _yaml.node_get(data, dict, Symbol.VARIABLES, default_value={}),
                                    _yaml.node_get(data, dict, Symbol.ENVIRONMENT, default_value={}),
+                                   _yaml.node_get(data, list, Symbol.ENV_NOCACHE, default_value=[]),
                                    _yaml.node_get(data, dict, Symbol.PUBLIC, default_value={}))
 
         # Check circular dependencies, if we're adding something
