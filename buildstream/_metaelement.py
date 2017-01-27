@@ -32,15 +32,17 @@ class MetaElement():
     #    config: The configuration data for the element
     #    variables: The variables declared or overridden on this element
     #    environment: The environment variables declared or overridden on this element
+    #    env_nocache: List of environment vars which should not be considered in cache keys
     #    public: Public domain data dictionary
     #
-    def __init__(self, name, kind, sources, config, variables, environment, public):
+    def __init__(self, name, kind, sources, config, variables, environment, env_nocache, public):
         self.name = name
         self.kind = kind
         self.sources = sources
         self.config = config
         self.variables = variables
         self.environment = environment
+        self.env_nocache = env_nocache
         self.public = public
 
         self.build_dependencies = []
