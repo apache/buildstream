@@ -25,10 +25,12 @@ import asyncio
 import multiprocessing
 import datetime
 from collections import deque
+from ruamel import yaml
 
 from ._message import Message, MessageType
 from .exceptions import _ALL_EXCEPTIONS
 from .plugin import _plugin_lookup
+from . import utils
 
 
 # Process class that doesn't call waitpid on its own.
@@ -335,11 +337,13 @@ class Job():
 
     # Local message wrapper
     def message(self, plugin, message_type, message, **kwargs):
+        args = dict(kwargs)
+        args['scheduler'] = True
         self.scheduler.context._message(
             Message(plugin._get_unique_id(),
                     message_type,
                     message,
-                    **kwargs))
+                    **args))
 
     #######################################################
     #                  Child Process                      #
@@ -357,10 +361,19 @@ class Job():
         #
         with element._logging_enabled(action_name) as filename:
             starttime = datetime.datetime.now()
-            try:
-                self.message(element, MessageType.START, self.action_name,
-                             logfile=filename, scheduler=True)
+            self.message(element, MessageType.START, self.action_name,
+                         logfile=filename)
 
+            # Print the element's environment at the beginning of any element's log file.
+            #
+            # This should probably be omitted for non-build tasks but it's harmless here
+            elt_env = utils._node_sanitize(element._Element__environment)
+            env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
+            self.message(element, MessageType.LOG,
+                         "Build environment for element {}".format(element._get_display_name()),
+                         detail=env_dump, logfile=filename)
+
+            try:
                 result = self.action(element)
                 if result is not None:
                     envelope = Envelope('result', result)
@@ -370,12 +383,12 @@ class Job():
                 elapsed = datetime.datetime.now() - starttime
                 self.message(element, MessageType.FAIL, self.action_name,
                              elapsed=elapsed, detail=str(e),
-                             logfile=filename, scheduler=True)
+                             logfile=filename)
                 self.child_shutdown(1)
 
             elapsed = datetime.datetime.now() - starttime
             self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed,
-                         logfile=filename, scheduler=True)
+                         logfile=filename)
 
             self.child_shutdown(0)
 
@@ -425,8 +438,9 @@ class Job():
         # Log first
         self.child_log(plugin, message, context)
 
-        # Send to frontend
-        self.queue.put(Envelope('message', message))
+        # Send to frontend if appropriate
+        if message.message_type != MessageType.LOG:
+            self.queue.put(Envelope('message', message))
 
     #######################################################
     #                 Parent Process                      #
