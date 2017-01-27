@@ -82,13 +82,13 @@ class Element(Plugin):
         # Ensure we have loaded this class's defaults
         self.__init_defaults()
 
-        # Collect the composited environment
-        env = self.__extract_environment(meta)
-        self.__environment = env
-
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(meta)
         self.__variables = Variables(variables)
+
+        # Collect the composited environment now that we have variables
+        env = self.__extract_environment(meta)
+        self.__environment = env
 
         # Grab public domain data declared for this instance
         self.__public = copy.deepcopy(meta.public)
@@ -734,6 +734,11 @@ class Element(Plugin):
         base_env = copy.deepcopy(project._environment)
         _yaml.composite(base_env, element_env, typesafe=True)
         element_env = base_env
+
+        # Resolve variables in environment value strings
+        final_env = {}
+        for key, value in self.node_items(element_env):
+            final_env[key] = self.node_subst_member(element_env, key)
 
         return element_env
 
