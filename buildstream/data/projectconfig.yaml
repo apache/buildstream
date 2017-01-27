@@ -40,6 +40,14 @@
 #
 variables:
 
+  # Maximum number of parallel build processes within a given
+  # build, support for this is conditional on the element type
+  # and the build system used (any element using 'make' can
+  # implement this).
+  #
+  # Note: this value defaults to the number of cores available
+  max-jobs: 4
+
   # Path configuration, to be used in build instructions.
   #
   prefix: "/usr"
@@ -90,6 +98,13 @@ environment:
   LC_ALL: C
   HOME: /tmp
   TZ: UTC
+
+# List of environment variables which should not be taken into
+# account when calculating a cache key for a given element.
+#
+# E.g.
+#
+environment-nocache: []
 
 
 # Specify devices which should be available in the sandbox

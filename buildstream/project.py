@@ -35,6 +35,7 @@ The default BuildStream project configuration is included here for reference:
 """
 
 import os
+import multiprocessing  # for cpu_count()
 from . import _site
 from . import _yaml
 
@@ -101,9 +102,16 @@ class Project():
     #
     def _load(self):
 
+        # Load builtin default
         projectfile = os.path.join(self.directory, "project.conf")
-
         config = _yaml.load(_site.default_project_config)
+
+        # Special variables which have a computed default value must
+        # be processed here before compositing any overrides
+        variables = _yaml.node_get(config, dict, 'variables')
+        variables['max-jobs'] = multiprocessing.cpu_count()
+
+        # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf, typesafe=True)
 
@@ -120,9 +128,12 @@ class Project():
         # Source url aliases
         self._aliases = _yaml.node_get(config, dict, 'aliases', default_value={})
 
-        # Load sandbox configuration
+        # Load base variables
         self._variables = _yaml.node_get(config, dict, 'variables')
+
+        # Load sandbox configuration
         self._environment = _yaml.node_get(config, dict, 'environment')
+        self._env_nocache = _yaml.node_get(config, list, 'environment-nocache')
         self._devices = _yaml.node_get(config, list, 'devices')
 
         # Element configurations
