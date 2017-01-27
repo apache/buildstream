@@ -29,6 +29,7 @@ class MessageType():
     INFO = "info"          # Informative messages
     WARN = "warning"       # Warning messages
     ERROR = "error"        # Error messages
+    LOG = "log"            # Messages for log files _only_, never in the frontend
 
     # Timed Messages: SUCCESS and FAIL have duration timestamps
     START = "start"        # Status start message
