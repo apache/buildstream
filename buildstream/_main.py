@@ -237,7 +237,7 @@ def show(target, arch, variant, deps, order, format):
 
     \b
         build-stream show target.bst --format \\
-            $'---------- %{name} ----------\\n%{variables}'
+            $'---------- %{name} ----------\\n%{vars}'
     """
     pipeline = create_pipeline(target, arch, variant)
     report = ''
