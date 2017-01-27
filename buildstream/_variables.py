@@ -123,6 +123,9 @@ class Variables():
                 if key == _yaml.PROVENANCE_KEY:
                     continue
 
+                # Ensure stringness of the value before substitution
+                value = _yaml.node_get(variables, str, key)
+
                 resolved_var, item_unmatched = self.subst_internal(value, variables)
                 resolved[key] = resolved_var
                 unmatched += item_unmatched
