@@ -50,6 +50,7 @@ Plugins
 Elements
 ~~~~~~~~
 
+* :mod:`stack` - Symbolic Element for dependency grouping
 * :mod:`import` - Import sources directly
 * :mod:`manual` - Manual Build Element
 * :mod:`autotools` - Autotools Build Element
