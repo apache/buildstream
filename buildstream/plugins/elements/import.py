@@ -18,7 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Import build element
+"""Import element
 
 Import elements produce artifacts directly from it's sources
 without any kind of processing. These are typically used to
@@ -32,7 +32,6 @@ The empty configuration is as such:
 
 import os
 import shutil
-import tempfile
 from buildstream import BuildElement
 
 
