@@ -20,3 +20,14 @@ config:
   strip-commands:
   - |
     %{strip-binaries}
+
+# Use max-jobs CPUs for building and enable verbosity
+environment:
+  MAKEFLAGS: -j%{max-jobs}
+  V: 1
+
+# And dont consider MAKEFLAGS or V as something which may
+# effect build output.
+environment-nocache:
+- MAKEFLAGS
+- V
