@@ -38,6 +38,7 @@ import os
 import multiprocessing  # for cpu_count()
 from . import _site
 from . import _yaml
+from . import _loader  # For resolve_arch()
 
 
 # The separator we use for user specified aliases
@@ -48,12 +49,13 @@ class Project():
     """Project Configuration
 
     Args:
-       directory (string): The project directory
+       directory (str): The project directory
+       arch (str): Symbolic machine architecture name
 
     Raises:
        :class:`.LoadError`
     """
-    def __init__(self, directory):
+    def __init__(self, directory, arch):
 
         self.name = None
         """str: The project name"""
@@ -69,7 +71,7 @@ class Project():
         self._plugin_source_paths = []   # Paths to custom sources
         self._plugin_element_paths = []  # Paths to custom plugins
 
-        self._load()
+        self._load(arch)
 
     def translate_url(self, url):
         """Translates the given url which may be specified with an alias
@@ -100,7 +102,7 @@ class Project():
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self):
+    def _load(self, arch):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, "project.conf")
@@ -110,10 +112,14 @@ class Project():
         # be processed here before compositing any overrides
         variables = _yaml.node_get(config, dict, 'variables')
         variables['max-jobs'] = multiprocessing.cpu_count()
+        variables['bst-arch'] = arch
 
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf, typesafe=True)
+
+        # Resolve arches keyword, project may have arch conditionals
+        _loader.resolve_arch(config, arch)
 
         # The project name
         self.name = _yaml.node_get(config, str, 'name')
