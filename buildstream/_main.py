@@ -627,7 +627,7 @@ def create_pipeline(target, arch, variant):
     context._set_message_handler(message_handler)
 
     try:
-        project = Project(directory)
+        project = Project(directory, arch)
     except _ALL_EXCEPTIONS as e:
         click.echo("Error loading project: %s" % str(e))
         sys.exit(1)
