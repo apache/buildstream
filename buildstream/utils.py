@@ -26,6 +26,7 @@ import string
 import collections
 import hashlib
 import pickle
+import calendar
 from collections import OrderedDict
 from . import _yaml
 from . import ProgramNotFoundError
@@ -349,3 +350,37 @@ def _node_sanitize(node):
         return [_node_sanitize(elt) for elt in node]
 
     return node
+
+
+# _set_deterministic_mtime()
+#
+# Set the mtime for every file in a directory tree to the same.
+#
+# Args:
+#    directory (str): The directory to recursively set the mtime on
+#
+def _set_deterministic_mtime(directory):
+    # The magic number for timestamps: 2011-11-11 11:11:11
+    magic_timestamp = calendar.timegm([2011, 11, 11, 11, 11, 11])
+
+    for dirname, _, filenames in os.walk(directory.encode("utf-8"), topdown=False):
+        for filename in filenames:
+            pathname = os.path.join(dirname, filename)
+
+            # Python's os.utime only ever modifies the timestamp
+            # of the target, it is not acceptable to set the timestamp
+            # of the target here, if we are staging the link target we
+            # will also set it's timestamp.
+            #
+            # We should however find a way to modify the actual link's
+            # timestamp, this outdated python bug report claims that
+            # it is impossible:
+            #
+            #   http://bugs.python.org/issue623782
+            #
+            # However, nowadays it is possible at least on gnuish systems
+            # with with the lutimes glibc function.
+            if not os.path.islink(pathname):
+                os.utime(pathname, (magic_timestamp, magic_timestamp))
+
+        os.utime(dirname, (magic_timestamp, magic_timestamp))
