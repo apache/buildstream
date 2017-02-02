@@ -309,7 +309,7 @@ class SandboxBwrap():
         #
 
         if self.namespace_uid is not None:
-            return ['--unshare-user', '--uid', self.namespace_uid, '--gid', self.namespace_gid]
+            return ['--unshare-user', '--uid', str(self.namespace_uid), '--gid', str(self.namespace_gid)]
         else:
             return []
 
