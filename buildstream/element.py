@@ -642,6 +642,9 @@ class Element(Plugin):
             mounts.append({'dest': '/proc', 'type': 'proc'})
             sandbox.set_mounts(mounts)
 
+            # Be root in the sandbox
+            sandbox.executor.set_user_namespace(0, 0)
+
             yield sandbox
 
         else:
@@ -675,12 +678,8 @@ class Element(Plugin):
 
     def __run_shell(self, sandbox):
 
-        # Totally open sandbox for running a shell
-        sandbox.executor.network_enable = True
-        sandbox.executor.namespace_pid = False
-        sandbox.executor.namespace_ipc = False
-        sandbox.executor.namespace_uts = False
-        sandbox.executor.namespace_cgroup = False
+        # More permissive sandbox for running a shell
+        sandbox.executor.set_network_enable(True)
 
         # Composite the element environment on top of the host
         # environment and use that for the shell environment.
