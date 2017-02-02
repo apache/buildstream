@@ -109,6 +109,36 @@ class VariantError(Exception):
              dependency.variant_name))
 
 
+# resolve_arch()
+#
+# Composites the data node with the active arch dict and discards
+# the arches dict from the data node afterwards, this is shared
+# with project.py
+#
+def resolve_arch(data, active_arch):
+
+        arches = _yaml.node_get(data, dict, Symbol.ARCHES, default_value={})
+        arch = {}
+        if arches:
+            arch = _yaml.node_get(arches, dict, active_arch, default_value={})
+
+        if arch:
+            try:
+                _yaml.composite_dict(data, arch,
+                                     policy=CompositePolicy.ARRAY_APPEND,
+                                     typesafe=True)
+            except CompositeTypeError as e:
+                provenance = _yaml.node_get_provenance(arch, key=active_arch)
+                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                                "%s: Arch %s specifies type '%s' for path '%s', expected '%s'" %
+                                (str(provenance), active_arch,
+                                 e.actual_type.__name__,
+                                 e.path,
+                                 e.expected_type.__name__)) from e
+
+        del data[Symbol.ARCHES]
+
+
 # A transient object breaking down what is loaded
 # allowing us to do complex operations in multiple
 # passes
@@ -127,7 +157,7 @@ class LoadElement():
         self.basedir = basedir
 
         # Process arch conditionals
-        self.process_arch(self.data)
+        resolve_arch(self.data, self.arch)
 
         # Dependency objects after resolving variants
         self.variant_name = None
@@ -145,7 +175,7 @@ class LoadElement():
             variant = Variant(self.name, variant_node)
 
             # Process arch conditionals on individual variants
-            self.process_arch(variant.data)
+            resolve_arch(variant.data, self.arch)
             self.variants.append(variant)
 
         if len(self.variants) == 1:
@@ -247,32 +277,6 @@ class LoadElement():
                      element_config.variant_name,
                      e.actual_type.__name__, e.path,
                      e.expected_type.__name__)) from e
-
-    #############################################
-    #        Internal to the LoadElement        #
-    #############################################
-    def process_arch(self, data):
-
-        arches = _yaml.node_get(data, dict, Symbol.ARCHES, default_value={})
-        arch = {}
-        if arches:
-            arch = _yaml.node_get(arches, dict, self.arch, default_value={})
-
-        if arch:
-            try:
-                _yaml.composite_dict(data, arch,
-                                     policy=CompositePolicy.ARRAY_APPEND,
-                                     typesafe=True)
-            except CompositeTypeError as e:
-                provenance = _yaml.node_get_provenance(arch, key=self.arch)
-                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                                "%s: Arch %s specifies type '%s' for path '%s', expected '%s'" %
-                                (str(provenance), self.arch,
-                                 e.actual_type.__name__,
-                                 e.path,
-                                 e.expected_type.__name__)) from e
-
-        del self.data[Symbol.ARCHES]
 
 
 # Creates an array of dependency dicts from a given dict node 'data',
