@@ -22,6 +22,7 @@
 implementing the most common case of element.
 """
 
+import os
 from . import Element, Scope, ElementError
 
 
@@ -69,6 +70,12 @@ class BuildElement(Element):
 
         # Stage sources in /buildstream/build
         self.stage_sources(sandbox, '/buildstream/build')
+
+        # Create the build dir incase there is no sources staged
+        os.makedirs(os.path.join(
+            sandbox.executor.fs_root,
+            'buildstream',
+            'build'), exist_ok=True)
 
         # And set the sandbox work directory too
         sandbox.set_cwd('/buildstream/build')
