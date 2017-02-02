@@ -15,7 +15,7 @@ def test_missing_project_conf(datafiles):
     directory = os.path.join(datafiles.dirname, datafiles.basename)
 
     with pytest.raises(LoadError) as exc:
-        project = Project(directory)
+        project = Project(directory, 'x86_64')
 
     assert (exc.value.reason == LoadErrorReason.MISSING_FILE)
 
@@ -25,7 +25,7 @@ def test_missing_project_name(datafiles):
     directory = os.path.join(datafiles.dirname, datafiles.basename, "missingname")
 
     with pytest.raises(LoadError) as exc:
-        project = Project(directory)
+        project = Project(directory, 'x86_64')
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
@@ -34,7 +34,7 @@ def test_missing_project_name(datafiles):
 def test_load_basic_project(datafiles):
     directory = os.path.join(datafiles.dirname, datafiles.basename, "basic")
 
-    project = Project(directory)
+    project = Project(directory, 'x86_64')
 
     # User provided
     assert (project.name == "pony")
@@ -49,7 +49,7 @@ def test_load_basic_project(datafiles):
 def test_override_project_path(datafiles):
     directory = os.path.join(datafiles.dirname, datafiles.basename, "overridepath")
 
-    project = Project(directory)
+    project = Project(directory, 'x86_64')
 
     # Test the override
     assert (project._environment['PATH'] == "/bin:/sbin")
@@ -59,7 +59,7 @@ def test_override_project_path(datafiles):
 def test_project_alias(datafiles):
     directory = os.path.join(datafiles.dirname, datafiles.basename, "alias")
 
-    project = Project(directory)
+    project = Project(directory, 'x86_64')
 
     # Test the override
     assert (project.translate_url('baserock:foo') == 'git://git.baserock.org/baserock/foo')

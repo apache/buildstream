@@ -18,7 +18,7 @@ class Setup():
         directory = os.path.join(datafiles.dirname, datafiles.basename)
 
         self.context = Context('x86_64')
-        self.project = Project(directory)
+        self.project = Project(directory, 'x86_64')
 
         self.context.sourcedir = os.path.join(str(tmpdir), 'sources')
         self.context.builddir = os.path.join(str(tmpdir), 'build')
