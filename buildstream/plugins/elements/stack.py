@@ -44,14 +44,10 @@ class StackElement(Element):
 
     def assemble(self, sandbox):
 
-        # Stage sources into the input directory
-        self.stage_sources(sandbox, 'input')
-
         # Just create a dummy empty artifact, it's existence is a statement
         # that all this stack's dependencies are built.
         rootdir = sandbox.executor.fs_root
-        inputdir = os.path.join(rootdir, 'input')
-        outputdir = os.path.join(rootdir, 'output')
+        outputdir = os.path.join(rootdir, 'output', 'bst')
 
         # Ensure target directory parent
         os.makedirs(os.path.dirname(outputdir), exist_ok=True)
