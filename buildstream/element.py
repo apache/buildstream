@@ -539,10 +539,12 @@ class Element(Plugin):
                 # an error message, or we have good output to collect.
                 project = self.get_project()
                 key = self._get_cache_key()
-                self.__artifacts.commit(project.name,
-                                        self.name,
-                                        key,
-                                        collectdir)
+
+                with self.timed_activity("Creating artifact {}/{}/{}".format(project.name, self.name, key)):
+                    self.__artifacts.commit(project.name,
+                                            self.name,
+                                            key,
+                                            collectdir)
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
