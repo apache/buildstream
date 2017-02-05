@@ -30,8 +30,10 @@ Style Guide
 ~~~~~~~~~~~
 Python coding style for BuildStream is pep8, which is documented here: https://www.python.org/dev/peps/pep-0008/
 
-You may find deviances from this standard in the sources, if so
-then feel free to file that as a bug and it will be fixed.
+We have a couple of minor exceptions to this standard, we dont want to compromise
+code readability by being overly restrictive on line length for instance.
+
+The pep8 linter will run automatically when running the test suite.
 
 
 Imports
