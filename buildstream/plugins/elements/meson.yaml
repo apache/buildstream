@@ -16,7 +16,7 @@ variables:
                        --sharedstatedir=%{sharedstatedir} \
                        --mandir=%{mandir} \
                        --infodir=%{infodir}
-  ninja: ninja -j %{max-jobs} -C %{build-dir}
+  ninja: ninja -j ${NINJAJOBS} -C %{build-dir}
   ninja-install: env DESTDIR="%{install-root}" ninja -C %{build-dir} install
 
 config:
@@ -46,3 +46,13 @@ config:
   strip-commands:
   - |
     %{strip-binaries}
+
+
+# Use max-jobs CPUs for building
+environment:
+  NINJAJOBS: %{max-jobs}
+
+# And dont consider NINJAJOBS as something which may
+# effect build output.
+environment-nocache:
+- NINJAJOBS
