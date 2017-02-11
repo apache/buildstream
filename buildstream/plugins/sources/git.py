@@ -184,7 +184,7 @@ class GitMirror():
 
                 yield (path, url)
 
-    # Fetch the ref which this mirror requires it's submodule to have,
+    # Fetch the ref which this mirror requires its submodule to have,
     # at the given ref of this mirror.
     def submodule_ref(self, submodule, ref=None):
         if not ref:

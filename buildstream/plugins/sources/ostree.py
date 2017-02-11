@@ -95,7 +95,7 @@ class OSTreeSource(Source):
         node['ref'] = self.ref = ref
 
     def track(self):
-        # If self.tracking is not specified it's not an error, just silently return
+        # If self.tracking is not specified its' not an error, just silently return
         if not self.tracking:
             return None
 

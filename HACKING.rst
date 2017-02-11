@@ -69,7 +69,7 @@ One Class One Module
 ~~~~~~~~~~~~~~~~~~~~
 BuildStream is mostly Object Oriented with a few utility files.
 
-* Every object should go into it's own file (module) inside the buildstream package
+* Every object should go into its own file (module) inside the buildstream package
 * Files should be named after their class in lower case with no underscore.
 
 This is to say a class named FooBar will certainly reside in a file named foobar.py.
@@ -98,7 +98,7 @@ Exceptions to the above rules is to follow a principle of least underscores:
 
 * If a module is entirely private, there is no need for the classes
   it contains to have a leading underscore.
-* If a class is entirely private, there is no need to mark it's members
+* If a class is entirely private, there is no need to mark its members
   as private with leading underscores.
 
 

@@ -32,7 +32,7 @@ VARIABLE_MATCH = r'\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}'
 # the given dictionary, expecting that any dictionary values which contain
 # variable references can be resolved from the same dictionary.
 #
-# Each Element creates it's own Variables instance to track the configured
+# Each Element creates its own Variables instance to track the configured
 # variable settings for the element.
 #
 # Args:

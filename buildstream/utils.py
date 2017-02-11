@@ -283,9 +283,9 @@ def _relative_symlink_target(root, symlink, target):
     if os.path.isabs(target):
         # First fix the input a little, the symlink itself must not have a
         # trailing slash, otherwise we fail to remove the symlink filename
-        # from it's directory components in os.path.split()
+        # from its directory components in os.path.split()
         #
-        # The absolute target filename must have it's leading separator
+        # The absolute target filename must have its leading separator
         # removed, otherwise os.path.join() will discard the prefix
         symlink = symlink.rstrip(os.path.sep)
         target = target.lstrip(os.path.sep)
@@ -370,7 +370,7 @@ def _set_deterministic_mtime(directory):
             # Python's os.utime only ever modifies the timestamp
             # of the target, it is not acceptable to set the timestamp
             # of the target here, if we are staging the link target we
-            # will also set it's timestamp.
+            # will also set its timestamp.
             #
             # We should however find a way to modify the actual link's
             # timestamp, this outdated python bug report claims that

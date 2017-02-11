@@ -44,7 +44,7 @@ class StackElement(Element):
 
     def assemble(self, sandbox):
 
-        # Just create a dummy empty artifact, it's existence is a statement
+        # Just create a dummy empty artifact, its existence is a statement
         # that all this stack's dependencies are built.
         rootdir = sandbox.executor.fs_root
         outputdir = os.path.join(rootdir, 'output', 'bst')

@@ -327,7 +327,7 @@ class Element(Plugin):
            (:class:`.ElementError`): When the element raises an error
 
         Elements must implement this method to create an output
-        artifact from it's sources and dependencies.
+        artifact from its sources and dependencies.
         """
         raise ImplError("element plugin '{kind}' does not implement assemble()".format(
             kind=self.get_kind()))

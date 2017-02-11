@@ -149,7 +149,7 @@ Kind
    kind: autotools
 
 The ``kind`` attribute specifies which plugin will be operating on the element's input to
-produce it's output. Plugins define element types and each of them can be referred to by
+produce its output. Plugins define element types and each of them can be referred to by
 name with the ``kind`` attribute.
 
 
@@ -295,7 +295,7 @@ and software building as separate problem spaces. This is to say that one elemen
 can only ever depend on another element but never on a subset of the product which
 another element produces.
 
-In this section we'll quickly go over the few features BuildStream offers in it's
+In this section we'll quickly go over the few features BuildStream offers in its
 dependency model.
 
 

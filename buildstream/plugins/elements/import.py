@@ -20,7 +20,7 @@
 
 """Import element
 
-Import elements produce artifacts directly from it's sources
+Import elements produce artifacts directly from its sources
 without any kind of processing. These are typically used to
 import an SDK to build on top of or to overlay your build with
 some configuration data.
