@@ -94,7 +94,6 @@ class GitMirror():
         if not os.path.exists(self.mirror):
 
             with self.source.timed_activity("Mirroring {}".format(self.url)):
-                context = self.source.get_context()
 
                 # Do the initial clone in a tmpdir just because we want an atomic move
                 # after a long standing clone which could fail overtime, for now do
