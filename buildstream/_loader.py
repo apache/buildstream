@@ -470,7 +470,7 @@ class Loader():
     #
     #  2.) Starting at the top level, try to resolve the
     #
-    #      For each element; collect an array of it's variants; each member of
+    #      For each element; collect an array of its variants; each member of
     #      the variant array speaks for the dependencies of the given element
     #
     def resolve_variants(self):
@@ -508,7 +508,7 @@ class Loader():
     # With a given configuration in context, reports whether the configuration
     # is a valid one for the given element and all of the possible elements on
     # which this element depends, returning a new configuration comprised of
-    # the given configuration and the first valid configuration of it's
+    # the given configuration and the first valid configuration of its
     # dependencies
     #
     def configure_variants(self, element_config, pool):

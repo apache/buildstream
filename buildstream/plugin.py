@@ -302,7 +302,7 @@ class Plugin():
           # Activity will be logged and timed
           with self.timed_activity("Mirroring {}".format(self.url)):
 
-              # This will raise SourceError on it's own
+              # This will raise SourceError on its own
               self.call(... command which takes time ...)
         """
         starttime = datetime.datetime.now()
@@ -519,7 +519,7 @@ __PLUGINS_TABLE = WeakValueDictionary()
 
 # _plugin_lookup():
 #
-# Fetch a plugin in the current process by it's
+# Fetch a plugin in the current process by its
 # unique identifier
 #
 # Args:

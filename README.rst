@@ -13,6 +13,6 @@ elements for doing more elaborate things such as running custom CI tests or depl
 software in special ways.
 
 The build pipeline is a flow based concept which operates on filesystem data as
-input and output. An element's input is the sum of it's dependencies, sources and
+input and output. An element's input is the sum of its dependencies, sources and
 configuration loaded from the YAML, while the output is something on the filesystem
 which another element can then depend on.

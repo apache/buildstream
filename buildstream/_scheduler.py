@@ -49,7 +49,7 @@ class Process(multiprocessing.Process):
 # elements have been traversed or when an occurs.
 #
 # Using the scheduler is a matter of:
-#   a.) Deriving the Queue class and implementing it's abstract methods
+#   a.) Deriving the Queue class and implementing its abstract methods
 #   b.) Instantiating a Scheduler with one or more queues
 #   c.) Calling Scheduler.run(elements) with a list of elements
 #   d.) Fetching results from your queues at queue.results
@@ -469,7 +469,7 @@ class Job():
         #
         #   The multiprocessing.Queue object does not tell us how
         #   to receive io events in the receiving process, so we
-        #   need to sneak in and get it's file descriptor.
+        #   need to sneak in and get its file descriptor.
         #
         #   The _reader member of the Queue is currently private
         #   but well known, perhaps it will become public:

@@ -7,7 +7,7 @@ from buildstream._sourcefactory import SourceFactory
 
 
 # Hacked hand fashioned fixture, just a helper function
-# because it's tricky to have a pytest fixture take arguments
+# because its tricky to have a pytest fixture take arguments
 #
 # datafiles: A project directory datafiles
 # target: A target element bst file
