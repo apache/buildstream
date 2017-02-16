@@ -29,6 +29,7 @@ import shutil
 
 from . import _yaml
 from ._variables import Variables
+from .exceptions import _BstError
 from . import LoadError, LoadErrorReason, ElementError
 from . import Sandbox
 from . import Plugin, Consistency
@@ -543,7 +544,13 @@ class Element(Plugin):
             with self.__sandbox(None, rootdir, output_file, output_file) as sandbox:
 
                 # Call the abstract plugin method
-                collect = self.assemble(sandbox)
+                try:
+                    collect = self.assemble(sandbox)
+                except _BstError as e:
+                    # If an error occurred assembling an element in a sandbox,
+                    # then tack on the sandbox directory to the error
+                    e.sandbox = rootdir
+                    raise
 
                 # Note important use of lstrip() here
                 collectdir = os.path.join(rootdir, collect.lstrip(os.sep))
