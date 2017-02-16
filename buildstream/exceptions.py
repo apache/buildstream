@@ -21,7 +21,25 @@
 from enum import Enum
 
 
-class PluginError(Exception):
+# BstError is an internal base exception class for BuildSream
+# exceptions.
+#
+# The sole purpose of using the base class is to add additional
+# context to exceptions raised by plugins in child tasks, this
+# context can then be communicated back to the main process.
+#
+class _BstError(Exception):
+
+    def __init__(self, message):
+        super(_BstError, self).__init__(message)
+
+        # The build sandbox in which the error occurred, if the
+        # error occurred at element assembly time.
+        #
+        self.sandbox = None
+
+
+class PluginError(_BstError):
     """Raised on plugin related errors.
 
     This exception is raised either by the plugin loading process,
@@ -65,7 +83,7 @@ class LoadErrorReason(Enum):
     """
 
 
-class LoadError(Exception):
+class LoadError(_BstError):
     """Raised while loading some YAML.
 
     This exception is raised when loading or parsing YAML, or when
@@ -79,7 +97,7 @@ class LoadError(Exception):
         """
 
 
-class SourceError(Exception):
+class SourceError(_BstError):
     """Raised by Source implementations.
 
     This exception is raised when a :class:`.Source` encounters an error.
@@ -87,7 +105,7 @@ class SourceError(Exception):
     pass
 
 
-class ElementError(Exception):
+class ElementError(_BstError):
     """Raised by Element implementations.
 
     This exception is raised when an :class:`.Element` encounters an error.
@@ -95,13 +113,13 @@ class ElementError(Exception):
     pass
 
 
-class ImplError(Exception):
+class ImplError(_BstError):
     """Raised when a :class:`.Source` or :class:`.Element` plugin fails to
     implement a mandatory method"""
     pass
 
 
-class ProgramNotFoundError(Exception):
+class ProgramNotFoundError(_BstError):
     """Raised if a required program is not found
 
     BuildSource requires various software to exist on the host for
@@ -110,11 +128,3 @@ class ProgramNotFoundError(Exception):
     bubblewrap is installed for it to work.
     """
     pass
-
-
-_ALL_EXCEPTIONS = (PluginError,
-                   LoadError,
-                   SourceError,
-                   ElementError,
-                   ImplError,
-                   ProgramNotFoundError)

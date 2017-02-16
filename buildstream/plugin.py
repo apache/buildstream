@@ -27,7 +27,7 @@ from weakref import WeakValueDictionary
 
 from . import _yaml
 from . import PluginError, ImplError
-from .exceptions import _ALL_EXCEPTIONS
+from .exceptions import _BstError
 from ._message import Message, MessageType
 
 
@@ -312,7 +312,7 @@ class Plugin():
             self.__message(MessageType.START, activity_name)
             yield
 
-        except _ALL_EXCEPTIONS as e:
+        except _BstError as e:
             # Note the failure in status messages and reraise, the scheduler
             # expects an error when there is an error.
             elapsed = datetime.datetime.now() - starttime

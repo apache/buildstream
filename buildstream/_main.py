@@ -28,7 +28,7 @@ import copy
 from ruamel import yaml
 
 from . import Context, Project, Scope, Consistency
-from .exceptions import _ALL_EXCEPTIONS
+from .exceptions import _BstError
 from .plugin import _plugin_lookup
 from ._message import MessageType
 from . import _pipeline
@@ -355,7 +355,7 @@ def shell(target, arch, variant, builddir, scope):
 
     try:
         pipeline.target._shell(scope, builddir)
-    except _ALL_EXCEPTIONS as e:
+    except _BstError as e:
         click.echo("")
         click.echo("Errors shelling into this pipeline: %s" % str(e))
         sys.exit(1)
@@ -603,7 +603,7 @@ def create_pipeline(target, arch, variant):
     try:
         context = Context(arch)
         context.load(config)
-    except _ALL_EXCEPTIONS as e:
+    except _BstError as e:
         click.echo("Error loading user configuration: %s" % str(e))
         sys.exit(1)
 
@@ -628,13 +628,13 @@ def create_pipeline(target, arch, variant):
 
     try:
         project = Project(directory, arch)
-    except _ALL_EXCEPTIONS as e:
+    except _BstError as e:
         click.echo("Error loading project: %s" % str(e))
         sys.exit(1)
 
     try:
         pipeline = Pipeline(context, project, target, variant)
-    except _ALL_EXCEPTIONS as e:
+    except _BstError as e:
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
 

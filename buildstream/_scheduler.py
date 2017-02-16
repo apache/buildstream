@@ -28,7 +28,7 @@ from collections import deque
 from ruamel import yaml
 
 from ._message import Message, MessageType
-from .exceptions import _ALL_EXCEPTIONS
+from .exceptions import _BstError
 from .plugin import _plugin_lookup
 from . import utils
 
@@ -379,7 +379,7 @@ class Job():
                     envelope = Envelope('result', result)
                     self.queue.put(envelope)
 
-            except _ALL_EXCEPTIONS as e:
+            except _BstError as e:
                 elapsed = datetime.datetime.now() - starttime
                 self.message(element, MessageType.FAIL, self.action_name,
                              elapsed=elapsed, detail=str(e),
