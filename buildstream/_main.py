@@ -502,6 +502,9 @@ def message_handler(message, context):
     if message.detail is not None:
         text += "\n\n%{detail}\n"
 
+    if message.sandbox is not None:
+        text += "\n\n%{sandbox}\n"
+
     # Are we going to print some log file ?
     if message.scheduler and message.message_type == MessageType.FAIL:
         text = text.rstrip('\n')
@@ -554,6 +557,14 @@ def message_handler(message, context):
             text = Style.ERR_HEAD.fmt_subst(text, 'detail', detail)
         else:
             text = Style.DETAIL.fmt_subst(text, 'detail', detail)
+
+    if message.sandbox is not None:
+        sandbox = INDENT + 'Sandbox directory: ' + message.sandbox
+
+        if message.message_type == MessageType.FAIL:
+            text = Style.ERR_HEAD.fmt_subst(text, 'sandbox', sandbox)
+        else:
+            text = Style.DETAIL.fmt_subst(text, 'sandbox', sandbox)
 
     # Log content needs to be formatted last, as it may introduce symbols
     # which match our regex
