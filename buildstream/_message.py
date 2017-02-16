@@ -47,6 +47,7 @@ class Message():
                  elapsed=None,
                  depth=None,
                  logfile=None,
+                 sandbox=None,
                  scheduler=False):
         self.message_type = message_type  # Message type
         self.message = message            # The message string
@@ -55,6 +56,7 @@ class Message():
         self.elapsed = elapsed            # The elapsed time, in timed messages
         self.depth = depth                # The depth of a timed message
         self.logfile = logfile            # The log file path where commands took place
+        self.sandbox = sandbox            # The sandbox directory where an error occurred (if any)
         self.pid = os.getpid()            # The process pid
         self.unique_id = unique_id        # The plugin object unique identifier
         self.scheduler = scheduler        # Whether this is a scheduler level message
