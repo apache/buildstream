@@ -383,7 +383,7 @@ class Job():
                 elapsed = datetime.datetime.now() - starttime
                 self.message(element, MessageType.FAIL, self.action_name,
                              elapsed=elapsed, detail=str(e),
-                             logfile=filename)
+                             logfile=filename, sandbox=e.sandbox)
                 self.child_shutdown(1)
 
             elapsed = datetime.datetime.now() - starttime
