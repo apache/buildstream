@@ -481,6 +481,18 @@ class Element(Plugin):
                 if key not in self.__env_nocache
             }
 
+            # Integration commands imposed on depending elements do not effect
+            # a given element's cache key, the sum of an element's dependency
+            # integration commands however does effect the cache key.
+            integration = [
+                {
+                    'elt': e.name,
+                    'commands': e.get_public_data('bst').get('integration-commands', [])
+                }
+                for e in self.dependencies(Scope.BUILD)
+                if e.get_public_data('bst') is not None
+            ]
+
             context = self.get_context()
             self.__cache_key = utils._generate_key({
                 'context': context._get_cache_key(),
@@ -488,6 +500,7 @@ class Element(Plugin):
                 'environment': cache_env,
                 'sources': [s.get_unique_key() for s in self.__sources],
                 'dependencies': dependencies,
+                'integration': integration
             })
 
         return self.__cache_key
