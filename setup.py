@@ -18,10 +18,19 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import os
+import shutil
 import sys
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 5:
     print("BuildStream requires Python >= 3.5")
+    sys.exit(1)
+
+bwrap_path = shutil.which('bwrap')
+if not bwrap_path:
+    print("Bubblewrap not found: BuildStream requires Bubblewrap (bwrap) for"
+          " sandboxing the build environment. Install it using your package manager"
+          " (usually bwrap or bubblewrap)")
     sys.exit(1)
 
 try:
