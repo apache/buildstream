@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2016-2017 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -410,7 +410,12 @@ class Loader():
 
     # Recursively load bst files
     #
-    def load_file(self, filename):
+    def load_file(self, filename, list_files_loaded=[]):
+
+        # Raise error if load cycle detected
+        if filename in list_files_loaded:
+            raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
+                            "Circular dependency detected for element: %s" % filename)
 
         # Silently ignore already loaded files
         if filename in self.loaded_files:
@@ -435,11 +440,11 @@ class Loader():
 
         # Load all possible dependency files for the new LoadElement
         for dep in element.base_deps:
-            self.load_file(dep.filename)
+            self.load_file(dep.filename, list_files_loaded + [filename])
 
         for variant in element.variants:
             for dep in variant.dependencies:
-                self.load_file(dep.filename)
+                self.load_file(dep.filename, list_files_loaded + [filename])
 
     ########################################
     #          Resolving Variants          #
@@ -641,12 +646,6 @@ class Loader():
         # which depends on something already there, it's a circular dep
         for elt_name, _ in self.meta_elements.items():
             elt = self.elements[elt_name]
-
-            # XXX FIXME: This is horribly expensive
-            if element.depends(elt) and elt.depends(element):
-                raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                                "Circular dependency detected for element: %s" %
-                                element.filename)
 
         # Cache it now, make sure it's already there before recursing
         self.meta_elements[element_name] = meta_element
