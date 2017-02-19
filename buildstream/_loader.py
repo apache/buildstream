@@ -20,7 +20,6 @@
 
 import os
 import copy
-import collections
 
 from . import LoadError, LoadErrorReason
 from . import _yaml
@@ -400,6 +399,11 @@ class Loader():
         #
         self.resolve_variants()
 
+        #
+        # Now that we've resolve the dependencies, scan them for circular dependencies
+        #
+        self.check_circular_deps(self.target, check_elements={}, validated={})
+
         # Finally, wrap what we have into LoadElements and return the target
         #
         return self.collect_element(self.target)
@@ -596,6 +600,31 @@ class Loader():
     #          Element Collection          #
     ########################################
 
+    #
+    # Detect circular dependencies on LoadElements with
+    # dependencies already resolved.
+    #
+    def check_circular_deps(self, element_name, check_elements, validated):
+        element = self.elements[element_name]
+
+        # Skip already validated branches
+        if validated.get(element_name) is not None:
+            return
+
+        if check_elements.get(element_name) is not None:
+            raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
+                            "Circular dependency detected for element: %s" %
+                            element.filename)
+
+        # Push / Check each dependency / Pop
+        check_elements[element_name] = True
+        for dep in element.deps:
+            self.check_circular_deps(dep.name, check_elements, validated)
+        del check_elements[element_name]
+
+        # Eliminate duplicate paths
+        validated[element_name] = True
+
     # Collect the toplevel elements we have, resolve their deps and return !
     #
     def collect_element(self, element_name):
@@ -636,17 +665,6 @@ class Loader():
                                    _yaml.node_get(data, dict, Symbol.ENVIRONMENT, default_value={}),
                                    _yaml.node_get(data, list, Symbol.ENV_NOCACHE, default_value=[]),
                                    _yaml.node_get(data, dict, Symbol.PUBLIC, default_value={}))
-
-        # Check circular dependencies, if we're adding something
-        # which depends on something already there, it's a circular dep
-        for elt_name, _ in self.meta_elements.items():
-            elt = self.elements[elt_name]
-
-            # XXX FIXME: This is horribly expensive
-            if element.depends(elt) and elt.depends(element):
-                raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                                "Circular dependency detected for element: %s" %
-                                element.filename)
 
         # Cache it now, make sure it's already there before recursing
         self.meta_elements[element_name] = meta_element
