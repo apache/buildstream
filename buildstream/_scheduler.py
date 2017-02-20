@@ -217,8 +217,9 @@ class Queue():
     # Args:
     #    element (Element): The element which completed processing
     #    result (any): The return value of the process() implementation
+    #    returncode (int): The process return code, 0 = success
     #
-    def done(self, element, result):
+    def done(self, element, result, returncode):
         pass
 
     #####################################################
@@ -273,7 +274,7 @@ class Queue():
         self.active_jobs.remove(job)
 
         # Give the result of the job to the Queue implementor
-        self.done(element, job.result)
+        self.done(element, job.result, returncode)
 
         self.scheduler.sched()
 
