@@ -94,7 +94,7 @@ class FetchQueue(Queue):
     def skip(self, element):
         return element._consistency() == Consistency.CACHED
 
-    def done(self, element, result):
+    def done(self, element, result, returncode):
         for source in element._sources():
 
             # Successful fetch, we must be CACHED now
@@ -112,7 +112,7 @@ class TrackQueue(Queue):
     def process(self, element):
         return element._track()
 
-    def done(self, element, result):
+    def done(self, element, result, returncode):
 
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
@@ -142,10 +142,11 @@ class AssembleQueue(Queue):
     def skip(self, element):
         return element._cached()
 
-    def done(self, element, result):
+    def done(self, element, result, returncode):
         # Elements are cached after they are successfully assembled
-        element._set_cached()
-        self.built_elements.append(element)
+        if returncode == 0:
+            element._set_cached()
+            self.built_elements.append(element)
 
 
 # Pipeline()
