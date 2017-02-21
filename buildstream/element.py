@@ -272,7 +272,7 @@ class Element(Plugin):
             commands = self.node_get_member(bstdata, list, 'integration-commands', default_value=[])
             for cmd in commands:
                 self.status("Running integration command", detail=cmd)
-                exitcode, _, _ = sandbox.run(['/bin/sh', '-c', cmd])
+                exitcode, _, _ = sandbox.run(['sh', '-c', '-e', cmd])
                 if exitcode != 0:
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
@@ -714,7 +714,7 @@ class Element(Plugin):
         for override in overrides:
             sandbox.executor.env[override] = os.environ.get(override)
 
-        exitcode, _, _ = sandbox.run(['/bin/sh', '-i'])
+        exitcode, _, _ = sandbox.run(['sh', '-i'])
         if exitcode != 0:
             raise ElementError("Running shell failed with exitcode {}".format(exitcode))
 
