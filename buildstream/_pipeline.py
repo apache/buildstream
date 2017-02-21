@@ -95,6 +95,10 @@ class FetchQueue(Queue):
         return element._consistency() == Consistency.CACHED
 
     def done(self, element, result, returncode):
+
+        if returncode != 0:
+            return
+
         for source in element._sources():
 
             # Successful fetch, we must be CACHED now
@@ -113,6 +117,9 @@ class TrackQueue(Queue):
         return element._track()
 
     def done(self, element, result, returncode):
+
+        if returncode != 0:
+            return
 
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
