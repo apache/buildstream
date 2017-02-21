@@ -345,69 +345,6 @@ class SandboxBwrap():
 
         return process.returncode, out, err
 
-    @staticmethod
-    def get_host_libs_for_bin(bin_path):
-        # Fetches the list of libraries required to run a given binary
-        #
-        # Useful if you want to run a completely minimal sandbox without mounting
-        # the whole of the host's /lib or /lib64 directories.
-        #
-        # Args:
-        #       bin_path (String): Full path to a binary
-        #
-        # Returns:
-        #       List[String] Absolute paths to libraries required for binary
-        #
-
-        process = subprocess.Popen(['ldd', bin_path], stdout=subprocess.PIPE)
-        output, error = process.communicate()
-
-        outlines = output.split(b'\n')
-
-        libs = []
-        for l in outlines:
-            m = re.search(b'(\S+)(\s=>\s(\S+)?)?\s\((\S+)\)', l)
-            if m:
-                g = m.groups()
-                # ld-linux doesn't seem to follow the same convention
-                if "ld-linux" in str(g[0]):
-                    libs.append(g[0])
-                # Points to abs path of lib
-                elif g[2] is not None:
-                    libs.append(g[2])
-
-        return libs
-
-    def minimal_lib_clone(self, prog_list, cpdir):
-        # Make a copy of all the libraries needed for binaries listed in `prog_list`.
-        #
-        # A basic wrapper for `make_lib_copy` to get copies of libraries in bulk.
-        #
-        # Args:
-        #       prog_list (List[String]): List of paths to binaries
-        #       cpdir (String): Path to copy libraries to
-        #
-
-        for prog in prog_list:
-            self.make_lib_copy(prog, cpdir)
-
-    def make_lib_copy(self, bin_path, cpdir):
-        # Make a copy of libraries needed for a binary and place them in `cpdir`
-        #
-        # Args:
-        #       bin_path (String): Path of the binary
-        #       cpdir (String): Path to copy libraries to
-        #
-
-        libs = self.__class__.get_host_libs_for_bin(bin_path)
-
-        # Make root directory
-        os.makedirs(cpdir, exist_ok=True)
-
-        for libpath in libs:
-            os.makedirs(os.path.dirname(libpath), exist_ok=True)
-            shutil.copy(libpath, os.path.join(cpdir, os.path.dirname(libpath)[1:]))
-
     def minimal_dev(self, devlist):
         # Creates a minimal dev directory ready for mounting
         #
