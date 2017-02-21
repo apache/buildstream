@@ -90,7 +90,11 @@ class BuildElement(Element):
                 for cmd in commands:
                     with self.timed_activity("Running %s" % command_name):
                         self.status("Running %s" % command_name, detail=cmd)
-                        exitcode, _, _ = sandbox.run(['sh', '-c', cmd])
+
+                        # Note the -e switch to 'sh' means to exit with an error
+                        # if any untested command fails.
+                        #
+                        exitcode, _, _ = sandbox.run(['sh', '-c', '-e', cmd])
                         if exitcode != 0:
                             raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
