@@ -203,6 +203,34 @@ def _copy_directories(srcdir, destdir, target):
                               'directory expected: %s' % dir)
 
 
+def _ensure_real_directory(root, destpath):
+    # The realpath in the sandbox may refer to a file outside of the
+    # sandbox when any of the direcory branches are a symlink to an
+    # absolute path.
+    #
+    # This should not happen as we rely on relative_symlink_target() below
+    # when staging the actual symlinks which may lead up to this path.
+    #
+    realpath = os.path.realpath(destpath)
+    if not realpath.startswith(os.path.realpath(root)):
+        raise IOError('Destination path resolves to a path outside ' +
+                      'of the staging area\n\n' +
+                      '  Destination path: %s\n' % destpath +
+                      '  Real path: %s' % realpath)
+
+    # Ensure the real destination path exists before trying to get the mode
+    # of the real destination path.
+    #
+    # It is acceptable that chunks create symlinks inside artifacts which
+    # refer to non-existing directories, they will be created on demand here
+    # at staging time.
+    #
+    if not os.path.exists(realpath):
+        os.makedirs(realpath)
+
+    return realpath
+
+
 def _process_list(srcdir, destdir, filelist, actionfunc):
 
     def remove_if_exists(file_or_directory):
@@ -235,15 +263,21 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
         # The destination directory may not have been created separately
         _copy_directories(srcdir, destdir, path)
 
+        # Ensure that broken symlinks to directories have their targets
+        # created before attempting to stage files across broken
+        # symlink boundaries
+        _ensure_real_directory(destdir, os.path.dirname(destpath))
+
         # XXX os.lstat is known to raise UnicodeEncodeError
         file_stat = os.lstat(srcpath)
         mode = file_stat.st_mode
 
         if stat.S_ISDIR(mode):
             # Ensure directory exists in destination, then recurse.
-            if not os.path.lexists(destpath):
-                os.makedirs(destpath)
-            dest_stat = os.stat(os.path.realpath(destpath))
+            if not os.path.exists(destpath):
+                _ensure_real_directory(destdir, destpath)
+
+            dest_stat = os.lstat(os.path.realpath(destpath))
             if not stat.S_ISDIR(dest_stat.st_mode):
                 raise OSError('Destination not a directory. source has %s'
                               ' destination has %s' % (srcpath, destpath))
