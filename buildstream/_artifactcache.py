@@ -25,6 +25,9 @@ from . import _ostree
 
 
 def buildref(project, element, key):
+    # Normalize ostree ref unsupported chars
+    element = element.replace('+', 'X')
+
     # assume project and element names are not allowed to contain slashes
     return '{0}/{1}/{2}'.format(project, element, key)
 
