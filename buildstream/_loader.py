@@ -349,8 +349,8 @@ def extract_depends_from_node(owner, data):
 
 
 def element_name_from_filename(filename):
-    element_basename = os.path.basename(filename)
-    element_name = os.path.splitext(element_basename)[0]
+    element_name = filename.replace(os.sep, '-')
+    element_name = os.path.splitext(element_name)[0]
     return element_name
 
 
