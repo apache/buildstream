@@ -43,10 +43,13 @@ def list_relative_paths(directory, includedirs=False):
        A sorted list of files in *directory*, relative to *directory*
     """
     filelist = []
-    for (dirpath, _, filenames) in os.walk(directory):
+    for (dirpath, dirnames, filenames) in os.walk(directory):
+
         if includedirs:
-            relpath = os.path.relpath(dirpath, directory)
-            filelist.append(relpath)
+            for d in dirnames:
+                fullpath = os.path.join(dirpath, d)
+                relpath = os.path.relpath(fullpath, directory)
+                filelist.append(relpath)
 
         for f in filenames:
             fullpath = os.path.join(dirpath, f)
@@ -180,14 +183,14 @@ def url_directory_name(url):
 
 # Recursively make directories in target area and copy permissions
 def _copy_directories(srcdir, destdir, target):
-    dir = os.path.dirname(target)
-    new_dir = os.path.join(destdir, dir)
+    this_dir = os.path.dirname(target)
+    new_dir = os.path.join(destdir, this_dir)
 
     if not os.path.lexists(new_dir):
-        if dir:
-            _copy_directories(srcdir, destdir, dir)
+        if this_dir:
+            _copy_directories(srcdir, destdir, this_dir)
 
-        old_dir = os.path.join(srcdir, dir)
+        old_dir = os.path.join(srcdir, this_dir)
         if os.path.lexists(old_dir):
             dir_stat = os.lstat(old_dir)
             mode = dir_stat.st_mode
@@ -204,15 +207,26 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
 
     def remove_if_exists(file_or_directory):
         if os.path.lexists(file_or_directory):
-            # XXX We need to collect these to issue a report as a status message
-            print("WARNING: Removing: {}".format(file_or_directory))
+
+            # Try to remove anything that is in the way, but issue
+            # a warning instead if it removes a non empty directory
             try:
                 os.unlink(file_or_directory)
             except OSError as e:
-                if e.errno == errno.EISDIR:
-                    shutil.rmtree(file_or_directory)
-                else:
-                    raise e
+                if e.errno != errno.EISDIR:
+                    raise
+
+                try:
+                    os.rmdir(file_or_directory)
+                except OSError as e:
+                    if e.errno == errno.ENOTEMPTY:
+                        print('WARNING: Ignoring symlink "' + destpath +
+                              '" which purges non-empty directory')
+                        return False
+                    else:
+                        raise
+
+        return True
 
     for path in filelist:
         srcpath = os.path.join(srcdir, path)
@@ -239,20 +253,24 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
             # Should we really nuke directories which symlinks replace ?
             # Should it be an error condition or just a warning ?
             # If a warning, should we drop the symlink instead ?
-            remove_if_exists(destpath)
+            if not remove_if_exists(destpath):
+                continue
             target = os.readlink(srcpath)
+            target = _relative_symlink_target(destdir, destpath, target)
             os.symlink(target, destpath)
 
         elif stat.S_ISREG(mode):
 
             # Process the file.
-            remove_if_exists(destpath)
+            if not remove_if_exists(destpath):
+                continue
             actionfunc(srcpath, destpath)
 
         elif stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
 
             # Block or character device. Put contents of st_dev in a mknod.
-            remove_if_exists(destpath)
+            if not remove_if_exists(destpath):
+                continue
             if os.path.lexists(destpath):
                 os.remove(destpath)
             os.mknod(destpath, file_stat.st_mode, file_stat.st_rdev)
