@@ -55,6 +55,14 @@ class BuildElement(Element):
         for command_name, command_list in self.commands.items():
             dictionary[command_name] = command_list
 
+        # Specifying notparallel for a given element effects the
+        # cache key, while having the side effect of setting max-jobs to 1,
+        # which is normally automatically resolved and does not effect
+        # the cache key.
+        variables = self._get_variables()
+        if self.node_get_member(variables.variables, bool, 'notparallel', default_value=False):
+            dictionary['notparallel'] = True
+
         return dictionary
 
     def assemble(self, sandbox):
