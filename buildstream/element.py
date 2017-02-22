@@ -506,6 +506,13 @@ class Element(Plugin):
 
         return self.__cache_key
 
+    # _get_variables()
+    #
+    # Fetch the internal Variables
+    #
+    def _get_variables(self):
+        return self.__variables
+
     # _track():
     #
     # Calls track() on the Element sources
