@@ -113,6 +113,12 @@ class Variables():
     def resolve(self, node):
         variables = node
 
+        # Special case, if notparallel is specified in the variables for this
+        # element, then override max-jobs to be 1.
+        #
+        if _yaml.node_get(variables, bool, 'notparallel', default_value=False):
+            variables['max-jobs'] = 1
+
         # Resolve the dictionary once, reporting the new dictionary with things
         # substituted in it, and reporting unmatched tokens.
         #
