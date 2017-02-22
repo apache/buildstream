@@ -102,7 +102,7 @@ class BuildElement(Element):
                         # Note the -e switch to 'sh' means to exit with an error
                         # if any untested command fails.
                         #
-                        exitcode, _, _ = sandbox.run(['sh', '-c', '-e', cmd])
+                        exitcode, _, _ = sandbox.run(['sh', '-c', '-e', cmd + '\n'])
                         if exitcode != 0:
                             raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
