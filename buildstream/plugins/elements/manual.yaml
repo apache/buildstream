@@ -1,3 +1,11 @@
+# No variables added for the manual element by default, set
+# this if you plan to use make, and the sources cannot handle
+# parallelization.
+#
+# variables:
+#
+#   notparallel: True
+
 # Manual build element does not provide any default
 # build commands
 config:

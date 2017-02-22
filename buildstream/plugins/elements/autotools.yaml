@@ -31,6 +31,10 @@ variables:
   make: make
   make-install: make DESTDIR="%{install-root}" install
 
+  # Set this if the sources cannot handle parallelization.
+  #
+  # notparallel: True
+
 config:
 
   # Commands for configuring the software

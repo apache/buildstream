@@ -19,6 +19,10 @@ variables:
   ninja: ninja -j ${NINJAJOBS} -C %{build-dir}
   ninja-install: env DESTDIR="%{install-root}" ninja -C %{build-dir} install
 
+  # Set this if the sources cannot handle parallelization.
+  #
+  # notparallel: True
+
 config:
 
   # Commands for configuring the software
@@ -46,7 +50,6 @@ config:
   strip-commands:
   - |
     %{strip-binaries}
-
 
 # Use max-jobs CPUs for building
 environment:

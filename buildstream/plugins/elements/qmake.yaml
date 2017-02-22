@@ -6,6 +6,10 @@ variables:
   make: make
   make-install: make INSTALL_ROOT="%{install-root}" install
 
+  # Set this if the sources cannot handle parallelization.
+  #
+  # notparallel: True
+
 config:
 
   # Commands for configuring the software
@@ -33,3 +37,14 @@ config:
   strip-commands:
   - |
     %{strip-binaries}
+
+# Use max-jobs CPUs for building and enable verbosity
+environment:
+  MAKEFLAGS: -j%{max-jobs}
+  V: 1
+
+# And dont consider MAKEFLAGS or V as something which may
+# effect build output.
+environment-nocache:
+- MAKEFLAGS
+- V
