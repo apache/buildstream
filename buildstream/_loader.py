@@ -20,6 +20,7 @@
 
 import os
 import copy
+from functools import cmp_to_key
 
 from . import LoadError, LoadErrorReason
 from . import _yaml
@@ -195,13 +196,30 @@ class LoadElement():
     # or indirectly. This does NOT follow variants and is only
     # useful after variants are resolved.
     #
-    def depends(self, other):
+    def depends(self, other, visited=None):
+        if visited is None:
+            visited = {}
+
+        if visited.get(self.name) is not None:
+            return False
+
+        # 'self' depends on 'other' if 'other' is
+        # found in any of 'self's dependencies
+        #
         for dep in self.deps:
+
             elt = self.elements[dep.name]
+
+            # On of our dependencies is 'other'
             if elt == other:
                 return True
-            elif elt.depends(other):
+
+            # Check if an indirect dependency depends on 'other'
+            elif elt.depends(other, visited=visited):
                 return True
+
+            visited[dep.name] = True
+
         return False
 
     # Fetch a Variant by name
@@ -402,7 +420,12 @@ class Loader():
         #
         # Now that we've resolve the dependencies, scan them for circular dependencies
         #
-        self.check_circular_deps(self.target, check_elements={}, validated={})
+        self.check_circular_deps(self.target)
+
+        #
+        # Sort direct dependencies of elements by their dependency ordering
+        #
+        self.sort_dependencies(self.target)
 
         # Finally, wrap what we have into LoadElements and return the target
         #
@@ -597,14 +620,75 @@ class Loader():
         return accum_pool
 
     ########################################
+    #            Element Sorting           #
+    ########################################
+    #
+    # Sort dependencies of each element by their dependencies,
+    # so that direct dependencies which depend on other direct
+    # dependencies (directly or indirectly) appear later in the
+    # list.
+    #
+    # This avoids the need for performing multiple topological
+    # sorts throughout the build process.
+    def sort_dependencies(self, element_name, visited=None):
+        if visited is None:
+            visited = {}
+
+        if visited.get(element_name) is not None:
+            return
+
+        element = self.elements[element_name]
+        for dep in element.deps:
+            self.sort_dependencies(dep.name, visited=visited)
+
+        def dependency_cmp(dep_a, dep_b):
+            element_a = self.elements[dep_a.name]
+            element_b = self.elements[dep_b.name]
+
+            # Sort on inter element dependency first
+            if element_a.depends(element_b):
+                return 1
+            elif element_b.depends(element_a):
+                return -1
+
+            # If there are no inter element dependencies, place
+            # runtime only dependencies last
+            if dep_a.dep_type != dep_b.dep_type:
+                if dep_a.dep_type == Symbol.RUNTIME:
+                    return 1
+                elif dep_b.dep_type == Symbol.RUNTIME:
+                    return -1
+
+            # All things being equal, string comparison.
+            if dep_a.name > dep_b.name:
+                return 1
+            elif dep_a.name < dep_b.name:
+                return -1
+
+            # This wont ever happen
+            return 0
+
+        # Now dependency sort, we ensure that if any direct dependency
+        # directly or indirectly depends on another direct dependency,
+        # it is found later in the list.
+        element.deps.sort(key=cmp_to_key(dependency_cmp))
+
+        visited[element_name] = True
+
+    ########################################
     #          Element Collection          #
     ########################################
-
     #
     # Detect circular dependencies on LoadElements with
     # dependencies already resolved.
     #
-    def check_circular_deps(self, element_name, check_elements, validated):
+    def check_circular_deps(self, element_name, check_elements=None, validated=None):
+
+        if check_elements is None:
+            check_elements = {}
+        if validated is None:
+            validated = {}
+
         element = self.elements[element_name]
 
         # Skip already validated branches
@@ -669,9 +753,8 @@ class Loader():
         # Cache it now, make sure it's already there before recursing
         self.meta_elements[element_name] = meta_element
 
-        # Sort dependencies once per element at load time
-        sorted_deps = sorted(element.deps, key=lambda dep: dep.name)
-        for dep in sorted_deps:
+        # Descend
+        for dep in element.deps:
             meta_dep = self.collect_element(dep.name)
             if dep.dep_type != 'runtime':
                 meta_element.build_dependencies.append(meta_dep)
