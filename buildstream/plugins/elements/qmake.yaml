@@ -4,7 +4,7 @@ variables:
 
   qmake: qmake -makefile
   make: make
-  make-install: make INSTALL_ROOT="%{install-root}" install
+  make-install: make -j1 INSTALL_ROOT="%{install-root}" install
 
   # Set this if the sources cannot handle parallelization.
   #

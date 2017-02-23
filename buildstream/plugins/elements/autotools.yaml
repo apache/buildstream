@@ -29,7 +29,7 @@ variables:
                 --infodir=%{infodir}
 
   make: make
-  make-install: make DESTDIR="%{install-root}" install
+  make-install: make -j1 DESTDIR="%{install-root}" install
 
   # Set this if the sources cannot handle parallelization.
   #
