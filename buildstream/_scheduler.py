@@ -27,7 +27,7 @@ import datetime
 from collections import deque
 from ruamel import yaml
 
-from ._message import Message, MessageType
+from ._message import Message, MessageType, unconditional_messages
 from .exceptions import _BstError
 from .plugin import _plugin_lookup
 from . import utils
@@ -440,8 +440,14 @@ class Job():
         self.child_log(plugin, message, context)
 
         # Send to frontend if appropriate
-        if message.message_type != MessageType.LOG:
-            self.queue.put(Envelope('message', message))
+        if (context._silent_messages() and
+            message.message_type not in unconditional_messages):
+            return
+
+        if message.message_type == MessageType.LOG:
+            return
+
+        self.queue.put(Envelope('message', message))
 
     #######################################################
     #                 Parent Process                      #
