@@ -37,6 +37,15 @@ class MessageType():
     FAIL = "failure"       # Failing status complete message
 
 
+# Messages which should be reported regardless of whether
+# they are currently silenced or not
+unconditional_messages = [
+    MessageType.WARN,
+    MessageType.ERROR,
+    MessageType.FAIL
+]
+
+
 # Message object
 #
 class Message():
