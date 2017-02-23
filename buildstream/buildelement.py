@@ -68,13 +68,15 @@ class BuildElement(Element):
     def assemble(self, sandbox):
 
         # Stage deps in the sandbox root
-        for dep in self.dependencies(Scope.BUILD):
-            dep.stage(sandbox)
+        with self.timed_activity("Staging dependencies", silent_nested=True):
+            for dep in self.dependencies(Scope.BUILD):
+                dep.stage(sandbox)
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
-        for dep in self.dependencies(Scope.BUILD):
-            dep.integrate(sandbox)
+        with self.timed_activity("Integrating sandbox", silent_nested=True):
+            for dep in self.dependencies(Scope.BUILD):
+                dep.integrate(sandbox)
 
         # Stage sources in /buildstream/build
         self.stage_sources(sandbox, '/buildstream/build')
