@@ -40,6 +40,7 @@ The default BuildStream configuration is included here for reference:
 import os
 import hashlib
 import pickle
+from collections import deque
 from . import _site
 from . import _yaml
 from . import utils
@@ -93,7 +94,7 @@ class Context():
         # Private variables
         self._cache_key = None
         self._message_handler = None
-        self._message_depth = 0
+        self._message_depth = deque()
 
     def load(self, config=None):
         """Loads the configuration files
@@ -174,12 +175,18 @@ class Context():
     # For status messages, send the depth of timed
     # activities inside a given task through the message
     #
-    def _push_message_depth(self):
-        self._message_depth += 1
+    def _push_message_depth(self, silent_nested):
+        self._message_depth.appendleft(silent_nested)
 
     def _pop_message_depth(self):
-        assert(self._message_depth > 0)
-        self._message_depth -= 1
+        assert(self._message_depth)
+        self._message_depth.popleft()
+
+    def _silent_messages(self):
+        for silent in self._message_depth:
+            if silent:
+                return True
+        return False
 
     # _message():
     #
@@ -193,11 +200,16 @@ class Context():
 
         # Tag message only once
         if message.depth is None:
-            message.depth = self._message_depth
+            message.depth = len(list(self._message_depth))
 
         # Send it off to the frontend
         if self._message_handler is not None:
             self._message_handler(message, context=self)
+            return
+
+        # Dont print the silent messages, they are only
+        # meant for log files
+        if self._silent_messages():
             return
 
         # Dummy default implementation
