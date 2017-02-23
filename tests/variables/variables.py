@@ -38,7 +38,7 @@ def assert_command(datafiles, tmpdir, target, command, expected):
 #  Test proper loading of some default commands from plugins  #
 ###############################################################
 @pytest.mark.parametrize("target,command,expected", [
-    ('autotools.bst', 'install-commands', "make DESTDIR=\"/buildstream/install\" install"),
+    ('autotools.bst', 'install-commands', "make -j1 DESTDIR=\"/buildstream/install\" install"),
     ('cmake.bst', 'configure-commands', "cmake -DCMAKE_INSTALL_PREFIX:PATH=\"/usr\""),
     ('distutils.bst', 'install-commands',
      "python3 setup.py install \\\n" +
@@ -46,7 +46,7 @@ def assert_command(datafiles, tmpdir, target, command, expected):
      "            --root \"/buildstream/install\""),
     ('makemaker.bst', 'configure-commands', "perl Makefile.PL PREFIX=/buildstream/install/usr"),
     ('modulebuild.bst', 'configure-commands', "perl Build.PL --prefix \"/buildstream/install/usr\""),
-    ('qmake.bst', 'install-commands', "make INSTALL_ROOT=\"/buildstream/install\" install"),
+    ('qmake.bst', 'install-commands', "make -j1 INSTALL_ROOT=\"/buildstream/install\" install"),
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'defaults'))
 def test_defaults(datafiles, tmpdir, target, command, expected):
@@ -57,7 +57,7 @@ def test_defaults(datafiles, tmpdir, target, command, expected):
 #  Test overriding of variables to produce different commands  #
 ################################################################
 @pytest.mark.parametrize("target,command,expected", [
-    ('autotools.bst', 'install-commands', "make DESTDIR=\"/custom/install/root\" install"),
+    ('autotools.bst', 'install-commands', "make -j1 DESTDIR=\"/custom/install/root\" install"),
     ('cmake.bst', 'configure-commands', "cmake -DCMAKE_INSTALL_PREFIX:PATH=\"/opt\""),
     ('distutils.bst', 'install-commands',
      "python3 setup.py install \\\n" +
@@ -65,7 +65,7 @@ def test_defaults(datafiles, tmpdir, target, command, expected):
      "            --root \"/custom/install/root\""),
     ('makemaker.bst', 'configure-commands', "perl Makefile.PL PREFIX=/custom/install/root/opt"),
     ('modulebuild.bst', 'configure-commands', "perl Build.PL --prefix \"/custom/install/root/opt\""),
-    ('qmake.bst', 'install-commands', "make INSTALL_ROOT=\"/custom/install/root\" install"),
+    ('qmake.bst', 'install-commands', "make -j1 INSTALL_ROOT=\"/custom/install/root\" install"),
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'overrides'))
 def test_overrides(datafiles, tmpdir, target, command, expected):
