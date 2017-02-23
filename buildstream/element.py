@@ -295,8 +295,10 @@ class Element(Plugin):
         stagedir = basedir \
             if path is None \
             else os.path.join(basedir, path.lstrip(os.sep))
-        for source in self.__sources:
-            source._stage(stagedir)
+
+        with self.timed_activity("Staging sources", silent_nested=True):
+            for source in self.__sources:
+                source._stage(stagedir)
 
         # Ensure deterministic mtime of sources at build time
         utils._set_deterministic_mtime(stagedir)
