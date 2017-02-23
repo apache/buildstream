@@ -28,6 +28,7 @@ from ._yaml import CompositePolicy, CompositeTypeError, CompositeOverrideError
 
 from ._metaelement import MetaElement
 from ._metasource import MetaSource
+from ._profile import Topics, profile_start, profile_end
 
 
 #################################################
@@ -410,22 +411,30 @@ class Loader():
 
         # First pass, recursively load files and populate our table of LoadElements
         #
+        profile_start(Topics.LOAD_PROJECT, self.target_filename)
         self.load_file(self.target_filename)
+        profile_end(Topics.LOAD_PROJECT, self.target_filename)
 
         #
         # Deal with variants
         #
+        profile_start(Topics.VARIANTS, self.target_filename)
         self.resolve_variants()
+        profile_end(Topics.VARIANTS, self.target_filename)
 
         #
         # Now that we've resolve the dependencies, scan them for circular dependencies
         #
+        profile_start(Topics.CIRCULAR_CHECK, self.target_filename)
         self.check_circular_deps(self.target)
+        profile_end(Topics.CIRCULAR_CHECK, self.target_filename)
 
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
+        profile_start(Topics.SORT_DEPENDENCIES, self.target_filename)
         self.sort_dependencies(self.target)
+        profile_end(Topics.SORT_DEPENDENCIES, self.target_filename)
 
         # Finally, wrap what we have into LoadElements and return the target
         #
