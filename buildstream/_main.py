@@ -72,6 +72,10 @@ messaging_enabled = False
               help="Print debugging output")
 @click.option('--error-lines', type=click.INT, default=None,
               help="Maximum number of lines to show from a task log")
+@click.option('--log-file',
+              type=click.File(mode='w', encoding='UTF-8'),
+              help="A file to store the main log (allows storing the main log while in interactive mode)")
+
 def cli(**kwargs):
     """Build and manipulate BuildStream projects
 
@@ -580,6 +584,9 @@ def message_handler(message, context):
 
     click.echo(text)
 
+    # Additionally log to a file
+    if main_options['log_file']:
+        click.echo(text, file=main_options['log_file'], color=False)
 
 # Formats a pretty [00:00:00] duration
 #
