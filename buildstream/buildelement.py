@@ -97,8 +97,11 @@ class BuildElement(Element):
             for prefix in _command_prefixes:
                 command_name = prefix + step
                 commands = self.commands[command_name]
-                for cmd in commands:
-                    with self.timed_activity("Running %s" % command_name):
+                if not commands:
+                    continue
+
+                with self.timed_activity("Running %s" % command_name):
+                    for cmd in commands:
                         self.status("Running %s" % command_name, detail=cmd)
 
                         # Note the -e switch to 'sh' means to exit with an error
