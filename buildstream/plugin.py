@@ -285,11 +285,12 @@ class Plugin():
         self.__message(MessageType.ERROR, brief, detail=detail)
 
     @contextmanager
-    def timed_activity(self, activity_name):
+    def timed_activity(self, activity_name, silent_nested=False):
         """Context manager for performing timed activities in plugins
 
         Args:
-           activity_name: The name of the activity
+           activity_name (str): The name of the activity
+           silent_nested (bool): If specified, nested messages will be silenced
 
         This function lets you perform timed tasks in your plugin,
         the core will take care of timing the duration of your
@@ -308,21 +309,21 @@ class Plugin():
         starttime = datetime.datetime.now()
         try:
             # Push activity depth for status messages
-            self.__context._push_message_depth()
             self.__message(MessageType.START, activity_name)
+            self.__context._push_message_depth(silent_nested)
             yield
 
         except _BstError as e:
             # Note the failure in status messages and reraise, the scheduler
             # expects an error when there is an error.
             elapsed = datetime.datetime.now() - starttime
-            self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
             self.__context._pop_message_depth()
+            self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
             raise e
 
         elapsed = datetime.datetime.now() - starttime
-        self.__message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
         self.__context._pop_message_depth()
+        self.__message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
 
     def call(self, *popenargs, fail=None, **kwargs):
         """A wrapper for subprocess.call()
