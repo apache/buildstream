@@ -20,9 +20,11 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 import os
+import datetime
 from pluginbase import PluginBase
 from operator import itemgetter
 
+from ._message import Message, MessageType
 from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._loader import Loader
@@ -206,6 +208,16 @@ class Pipeline():
                     yield source
             yield element
 
+    # Local message propagator
+    #
+    def message(self, plugin, message_type, message, **kwargs):
+        args = dict(kwargs)
+        self.context._message(
+            Message(plugin._get_unique_id(),
+                    message_type,
+                    message,
+                    **args))
+
     # track()
     #
     # Trackes all the sources of all the elements in the pipeline,
@@ -232,8 +244,16 @@ class Pipeline():
         else:
             plan = self.dependencies(Scope.ALL)
 
+        starttime = datetime.datetime.now()
+        self.message(self.target, MessageType.START, "Starting Track")
+
         if not scheduler.run(plan):
+            elapsed = datetime.datetime.now() - starttime
+            self.message(self.target, MessageType.FAIL, "Track Failed", elapsed=elapsed)
             raise PipelineError()
+
+        elapsed = datetime.datetime.now() - starttime
+        self.message(self.target, MessageType.SUCCESS, "Track Success", elapsed=elapsed)
 
         # Dump the files which changed
         for filename, toplevel in track.changed_files.items():
@@ -279,8 +299,16 @@ class Pipeline():
         cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
         plan = [elt for elt in plan if elt not in cached]
 
+        starttime = datetime.datetime.now()
+        self.message(self.target, MessageType.START, "Starting Fetch")
+
         if not scheduler.run(plan):
+            elapsed = datetime.datetime.now() - starttime
+            self.message(self.target, MessageType.FAIL, "Fetch Failed", elapsed=elapsed)
             raise PipelineError()
+
+        elapsed = datetime.datetime.now() - starttime
+        self.message(self.target, MessageType.SUCCESS, "Fetch Success", elapsed=elapsed)
 
         return (inconsistent, cached, plan)
 
@@ -346,8 +374,16 @@ class Pipeline():
         # We could bail out here on inconsistent elements, but
         # it could be the user wants to get as far as possible
         # even if some elements have failures.
+        starttime = datetime.datetime.now()
+        self.message(self.target, MessageType.START, "Starting Build")
+
         if not scheduler.run(plan):
+            elapsed = datetime.datetime.now() - starttime
+            self.message(self.target, MessageType.FAIL, "Build Failed", elapsed=elapsed)
             raise PipelineError()
+
+        elapsed = datetime.datetime.now() - starttime
+        self.message(self.target, MessageType.SUCCESS, "Build Success", elapsed=elapsed)
 
         updated = build.built_elements
         build.built_elements = []
