@@ -667,17 +667,33 @@ class Element(Plugin):
                               stdout=stdout,
                               stderr=stderr)
 
-            # root is temp directory
+            # By default leave it writable...
             sandbox.executor.root_ro = False
+
+            # root is temp directory
             os.makedirs(os.path.join(directory, 'tmp'), exist_ok=True)
 
             mounts = []
             mounts.append({'dest': '/dev', 'type': 'host-dev'})
             mounts.append({'dest': '/proc', 'type': 'proc'})
+            mounts.append({'dest': '/tmp', 'type': 'tmpfs'})
+
+            # Mount a read-write /buildstream subdir of the same outer location
+            mounts.append({
+                'src': os.path.join(directory, 'buildstream'),
+                'dest': '/buildstream',
+                'writable': True
+            })
+
             sandbox.set_mounts(mounts)
 
             # Be root in the sandbox
             sandbox.executor.set_user_namespace(0, 0)
+
+            # Set the cwd to the build dir, if it exists (so that `bst shell` commands
+            # on broken builds automatically land the user in the build directory)
+            if os.path.isdir(os.path.join(directory, 'buildstream', 'build')):
+                sandbox.set_cwd('/buildstream/build')
 
             yield sandbox
 
