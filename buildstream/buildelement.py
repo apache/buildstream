@@ -78,6 +78,10 @@ class BuildElement(Element):
             for dep in self.dependencies(Scope.BUILD):
                 dep.integrate(sandbox)
 
+        # Now that we've staged stuff, set the rootfs readonly
+        #
+        sandbox.executor.root_ro = True
+
         # Stage sources in /buildstream/build
         self.stage_sources(sandbox, '/buildstream/build')
 
