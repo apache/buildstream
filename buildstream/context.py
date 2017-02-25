@@ -202,22 +202,10 @@ class Context():
         if message.depth is None:
             message.depth = len(list(self._message_depth))
 
-        # Send it off to the frontend
-        if self._message_handler is not None:
-            self._message_handler(message, context=self)
-            return
+        # Send it off to the log handler (can be the frontend,
+        # or it can be the child task which will log and propagate
+        # to the frontend)
+        assert(self._message_handler)
 
-        # Dont print the silent messages, they are only
-        # meant for log files
-        if self._silent_messages():
-            return
-
-        # Dummy default implementation
-        fmt = "{type}: {message}"
-        if message.detail is not None:
-            fmt += "\n\n{detail}\n"
-
-        message = fmt.format(type=message.message_type,
-                             message=message.message,
-                             detail=message.detail)
-        print(message)
+        self._message_handler(message, context=self)
+        return
