@@ -119,13 +119,14 @@ def profile_end(topic, key):
 
 
 def profile_init():
-    if initialized:
-        return
-    setting = os.getenv('BST_PROFILE')
-    if setting:
-        topics = setting.split(':')
-        for topic in topics:
-            active_topics[topic] = True
+    global initialized
+    if not initialized:
+        setting = os.getenv('BST_PROFILE')
+        if setting:
+            topics = setting.split(':')
+            for topic in topics:
+                active_topics[topic] = True
+        initialized = True
 
 
 def profile_enabled(topic):
