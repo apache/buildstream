@@ -632,12 +632,17 @@ class Element(Plugin):
             yield fullpath
             self._set_log_handle(None)
 
-    # Override plugin _set_log_handle(), set it for our sources too
+    # Override plugin _set_log_handle(), set it for our sources and dependencies too
     #
-    def _set_log_handle(self, logfile):
+    # A log handle is set once in the context of a child task which will have only
+    # one log, so it's not harmful to modify the state of dependencies
+    def _set_log_handle(self, logfile, recurse=True):
         super()._set_log_handle(logfile)
         for source in self._sources():
             source._set_log_handle(logfile)
+        if recurse:
+            for dep in self.dependencies(Scope.ALL):
+                dep._set_log_handle(logfile, False)
 
     # _shell():
     #
