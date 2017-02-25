@@ -6,6 +6,10 @@ from buildstream._loader import Loader
 from buildstream._sourcefactory import SourceFactory
 
 
+def message_handler(message, context):
+    print("{}".format(message.message))
+
+
 # Hacked hand fashioned fixture, just a helper function
 # because its tricky to have a pytest fixture take arguments
 #
@@ -19,6 +23,9 @@ class Setup():
 
         self.context = Context('x86_64')
         self.project = Project(directory, 'x86_64')
+
+        # A message handler is required
+        self.context._set_message_handler(message_handler)
 
         self.context.sourcedir = os.path.join(str(tmpdir), 'sources')
         self.context.builddir = os.path.join(str(tmpdir), 'build')
