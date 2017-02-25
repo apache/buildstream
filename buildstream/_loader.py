@@ -163,6 +163,7 @@ class LoadElement():
         # Dependency objects after resolving variants
         self.variant_name = None
         self.deps = []
+        self.dep_cache = None
 
         # Base dependencies
         self.base_deps = extract_depends_from_node(self.name, self.data)
@@ -197,31 +198,28 @@ class LoadElement():
     # or indirectly. This does NOT follow variants and is only
     # useful after variants are resolved.
     #
-    def depends(self, other, visited=None):
-        if visited is None:
-            visited = {}
+    def depends(self, other):
 
-        if visited.get(self.name) is not None:
-            return False
+        self.ensure_depends_cache()
+        return self.dep_cache.get(other.name) is not None
 
-        # 'self' depends on 'other' if 'other' is
-        # found in any of 'self's dependencies
-        #
+    def ensure_depends_cache(self):
+
+        if self.dep_cache:
+            return
+
+        self.dep_cache = {}
         for dep in self.deps:
-
             elt = self.elements[dep.name]
 
-            # On of our dependencies is 'other'
-            if elt == other:
-                return True
+            # Ensure the cache of the element we depend on
+            elt.ensure_depends_cache()
 
-            # Check if an indirect dependency depends on 'other'
-            elif elt.depends(other, visited=visited):
-                return True
+            # We depend on this element
+            self.dep_cache[dep.name] = True
 
-            visited[dep.name] = True
-
-        return False
+            # And we depend on everything this element depends on
+            self.dep_cache.update(elt.dep_cache)
 
     # Fetch a Variant by name
     #
