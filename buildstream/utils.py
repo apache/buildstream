@@ -27,7 +27,7 @@ import collections
 import hashlib
 import pickle
 import calendar
-from collections import OrderedDict
+from collections import OrderedDict, ChainMap
 from . import _yaml
 from . import ProgramNotFoundError
 
@@ -402,6 +402,30 @@ def _node_sanitize(node):
         return [_node_sanitize(elt) for elt in node]
 
     return node
+
+
+def _node_chain_copy(source):
+    copy = collections.ChainMap(source)
+    for key, value in source.items():
+        if isinstance(value, collections.Mapping):
+            copy[key] = _node_chain_copy(value)
+        elif isinstance(value, list):
+            copy[key] = _list_chain_copy(value)
+
+    return copy
+
+
+def _list_chain_copy(source):
+    copy = []
+    for item in source:
+        if isinstance(item, collections.Mapping):
+            copy.append(_node_chain_copy(item))
+        elif isinstance(item, list):
+            copy.append(_list_chain_copy(item))
+        else:
+            copy.append(item)
+
+    return copy
 
 
 # _set_deterministic_mtime()
