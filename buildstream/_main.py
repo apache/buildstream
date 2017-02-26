@@ -257,9 +257,10 @@ def show(target, arch, variant, deps, order, format):
         else:
             scope = Scope.RUN
 
-        dependencies = pipeline.dependencies(scope)
         if order == "alpha":
             dependencies = sorted(pipeline.dependencies(scope))
+        else:
+            dependencies = pipeline.dependencies(scope)
     else:
         dependencies = [pipeline.target]
 
@@ -285,22 +286,25 @@ def show(target, arch, variant, deps, order, format):
                 line = fmt_subst(line, 'state', "waiting", fg='blue')
 
         # Element configuration
-        config = utils._node_sanitize(element._Element__config)
-        line = fmt_subst(
-            line, 'config',
-            yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
+        if "%{config" in format:
+            config = utils._node_sanitize(element._Element__config)
+            line = fmt_subst(
+                line, 'config',
+                yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
 
         # Variables
-        variables = utils._node_sanitize(element._Element__variables.variables)
-        line = fmt_subst(
-            line, 'vars',
-            yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
+        if "%{vars" in format:
+            variables = utils._node_sanitize(element._Element__variables.variables)
+            line = fmt_subst(
+                line, 'vars',
+                yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
         # Environment
-        environment = utils._node_sanitize(element._Element__environment)
-        line = fmt_subst(
-            line, 'env',
-            yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+        if "%{env" in format:
+            environment = utils._node_sanitize(element._Element__environment)
+            line = fmt_subst(
+                line, 'env',
+                yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
         report += line + '\n'
 
