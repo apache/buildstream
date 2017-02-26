@@ -786,22 +786,15 @@ class Element(Plugin):
     def __extract_environment(self, meta):
         project = self.get_project()
         default_env = _yaml.node_get(self.__defaults, dict, 'environment', default_value={})
-        element_env = meta.environment
 
-        # Overlay default_env with element_env
-        default_env = copy.deepcopy(default_env)
-        _yaml.composite(default_env, element_env, typesafe=True)
-        element_env = default_env
-
-        # Overlay base_env with element_env
-        base_env = copy.deepcopy(project._environment)
-        _yaml.composite(base_env, element_env, typesafe=True)
-        element_env = base_env
+        environment = copy.deepcopy(project._environment)
+        _yaml.composite(environment, default_env, typesafe=True)
+        _yaml.composite(environment, meta.environment, typesafe=True)
 
         # Resolve variables in environment value strings
         final_env = {}
-        for key, value in self.node_items(element_env):
-            final_env[key] = self.node_subst_member(element_env, key)
+        for key, value in self.node_items(environment):
+            final_env[key] = self.node_subst_member(environment, key)
 
         return final_env
 
@@ -824,19 +817,12 @@ class Element(Plugin):
     def __extract_variables(self, meta):
         project = self.get_project()
         default_vars = _yaml.node_get(self.__defaults, dict, 'variables', default_value={})
-        element_vars = meta.variables
 
-        # Overlay default_vars with element_vars
-        default_vars = copy.deepcopy(default_vars)
-        _yaml.composite(default_vars, element_vars, typesafe=True)
-        element_vars = default_vars
+        variables = copy.deepcopy(project._variables)
+        _yaml.composite(variables, default_vars, typesafe=True)
+        _yaml.composite(variables, meta.variables, typesafe=True)
 
-        # Overlay base_vars with element_vars
-        base_vars = copy.deepcopy(project._variables)
-        _yaml.composite(base_vars, element_vars, typesafe=True)
-        element_vars = base_vars
-
-        return element_vars
+        return variables
 
     # This will resolve the final configuration to be handed
     # off to element.configure()
