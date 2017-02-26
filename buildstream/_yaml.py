@@ -41,8 +41,8 @@ PROVENANCE_KEY = '__bst_provenance_info'
 #
 class Provenance():
     def __init__(self, filename, node, toplevel, line=0, col=0):
-        self.node = node
         self.filename = filename
+        self.node = node
         self.toplevel = toplevel
         self.line = line
         self.col = col
@@ -56,45 +56,79 @@ class Provenance():
 # loaded YAML tree and track the provenance of all members
 #
 class DictProvenance(Provenance):
-    def __init__(self, filename, node, toplevel):
+    def __init__(self, filename, node, toplevel, line=None, col=None):
 
-        # Special case for loading an empty dict
-        if hasattr(node, 'lc'):
-            line = node.lc.line + 1
-            col = node.lc.col
-        else:
-            line = 1
-            col = 0
+        if line is None or col is None:
+            # Special case for loading an empty dict
+            if hasattr(node, 'lc'):
+                line = node.lc.line + 1
+                col = node.lc.col
+            else:
+                line = 1
+                col = 0
 
         super(DictProvenance, self).__init__(filename, node, toplevel, line=line, col=col)
 
         self.members = {}
 
+    def clone(self):
+        provenance = DictProvenance(self.filename, self.node, self.toplevel,
+                                    line=self.line, col=self.col)
+
+        provenance.members = {
+            member_name: member.clone()
+            for member_name, member in self.members.items()
+        }
+        return provenance
+
 
 # A Provenance for dict members
 #
 class MemberProvenance(Provenance):
-    def __init__(self, filename, parent_dict, member_name, toplevel):
-        node = parent_dict[member_name]
-        line, col = parent_dict.lc.value(member_name)
+    def __init__(self, filename, parent_dict, member_name, toplevel,
+                 node=None, line=None, col=None):
+
+        if parent_dict is not None:
+            node = parent_dict[member_name]
+            line, col = parent_dict.lc.value(member_name)
+            line += 1
+
         super(MemberProvenance, self).__init__(
-            filename, node, toplevel, line=line + 1, col=col)
+            filename, node, toplevel, line=line, col=col)
 
         # Only used if member is a list
-        elements = []
+        self.elements = []
+
+    def clone(self):
+        provenance = MemberProvenance(self.filename, None, None, self.toplevel,
+                                      node=self.node, line=self.line, col=self.col)
+        provenance.elements = [e.clone for e in self.elements]
+        return provenance
 
 
 # A Provenance for list elements
 #
 class ElementProvenance(Provenance):
-    def __init__(self, filename, parent_list, index, toplevel):
-        node = parent_list[index]
-        line, col = parent_list.lc.item(index)
+    def __init__(self, filename, parent_list, index, toplevel,
+                 node=None, line=None, col=None):
+
+        if parent_list is not None:
+            node = parent_list[index]
+            line, col = parent_list.lc.item(index)
+            line += 1
+
         super(ElementProvenance, self).__init__(
-            filename, node, toplevel, line=line + 1, col=col)
+            filename, node, toplevel, line=line, col=col)
 
         # Only used if element is a list
         elements = []
+
+    def clone(self):
+        provenance = ElementProvenance(self.filename, None, None, self.toplevel,
+                                       node=self.node, line=self.line, col=self.col)
+
+        provenance.elements = [e.clone for e in self.elements]
+        return provenance
 
 
 # These exceptions are intended to be caught entirely within
@@ -412,7 +446,7 @@ def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
                 # Give the new dict provenance
                 value_provenance = value.get(PROVENANCE_KEY)
                 if value_provenance:
-                    target_value[PROVENANCE_KEY] = copy.deepcopy(value_provenance)
+                    target_value[PROVENANCE_KEY] = value_provenance.clone()
 
                 # Add a new provenance member element to the containing dict
                 target_provenance.members[key] = source_provenance.members[key]
