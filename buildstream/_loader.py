@@ -402,15 +402,19 @@ class Loader():
     #
     # Loads the project based on the parameters given to the constructor
     #
+    # Args:
+    #    rewritable (bool): Whether the loaded files should be rewritable
+    #                       this is a bit more expensive due to deep copies
+    #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self):
+    def load(self, rewritable=False):
 
         # First pass, recursively load files and populate our table of LoadElements
         #
         profile_start(Topics.LOAD_PROJECT, self.target_filename)
-        self.load_file(self.target_filename)
+        self.load_file(self.target_filename, rewritable)
         profile_end(Topics.LOAD_PROJECT, self.target_filename)
 
         #
@@ -444,7 +448,7 @@ class Loader():
 
     # Recursively load bst files
     #
-    def load_file(self, filename):
+    def load_file(self, filename, rewritable):
 
         # Silently ignore already loaded files
         if filename in self.loaded_files:
@@ -462,18 +466,18 @@ class Loader():
         fullpath = os.path.join(self.basedir, filename)
 
         # Load the element and track it in our elements table
-        data = _yaml.load(fullpath, filename)
+        data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
         element = LoadElement(data, filename, self.basedir, self.arch, self.elements)
 
         self.elements[element_name] = element
 
         # Load all possible dependency files for the new LoadElement
         for dep in element.base_deps:
-            self.load_file(dep.filename)
+            self.load_file(dep.filename, rewritable)
 
         for variant in element.variants:
             for dep in variant.dependencies:
-                self.load_file(dep.filename)
+                self.load_file(dep.filename, rewritable)
 
     ########################################
     #          Resolving Variants          #
