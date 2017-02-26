@@ -36,6 +36,7 @@ The default BuildStream project configuration is included here for reference:
 
 import os
 import multiprocessing  # for cpu_count()
+from collections import Mapping
 from . import _site
 from . import _yaml
 from . import _loader  # For resolve_arch()
@@ -113,7 +114,7 @@ class Project():
 
         # Special variables which have a computed default value must
         # be processed here before compositing any overrides
-        variables = _yaml.node_get(config, dict, 'variables')
+        variables = _yaml.node_get(config, Mapping, 'variables')
         variables['max-jobs'] = multiprocessing.cpu_count()
         variables['bst-arch'] = arch
 
@@ -128,25 +129,25 @@ class Project():
         self.name = _yaml.node_get(config, str, 'name')
 
         # Load the plugin paths
-        plugins = _yaml.node_get(config, dict, 'plugins', default_value={})
+        plugins = _yaml.node_get(config, Mapping, 'plugins', default_value={})
         self._plugin_source_paths = [os.path.join(self.directory, path)
                                      for path in self._extract_plugin_paths(plugins, 'sources')]
         self._plugin_element_paths = [os.path.join(self.directory, path)
                                       for path in self._extract_plugin_paths(plugins, 'elements')]
 
         # Source url aliases
-        self._aliases = _yaml.node_get(config, dict, 'aliases', default_value={})
+        self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
 
         # Load base variables
-        self._variables = _yaml.node_get(config, dict, 'variables')
+        self._variables = _yaml.node_get(config, Mapping, 'variables')
 
         # Load sandbox configuration
-        self._environment = _yaml.node_get(config, dict, 'environment')
+        self._environment = _yaml.node_get(config, Mapping, 'environment')
         self._env_nocache = _yaml.node_get(config, list, 'environment-nocache')
         self._devices = _yaml.node_get(config, list, 'devices')
 
         # Element configurations
-        self._elements = _yaml.node_get(config, dict, 'elements', default_value={})
+        self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
 
     def _extract_plugin_paths(self, node, name):
         if not node:
