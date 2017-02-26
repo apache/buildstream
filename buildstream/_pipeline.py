@@ -167,6 +167,14 @@ class AssembleQueue(Queue):
 #    target_variant (str): The selected variant of 'target', or None for the default
 #    rewritable (bool): Whether the loaded files should be rewritable
 #                       this is a bit more expensive due to deep copies
+#    load_ticker (callable): A function which will be called for each loaded element
+#    resolve_ticker (callable): A function which will be called for each resolved element
+#    cache_ticker (callable): A function which will be called for each element
+#                             while interrogating caches
+#
+# The ticker methods will be called with an element name for each tick, a final
+# tick with None as the argument is passed to signal that processing of this
+# stage has terminated.
 #
 # Raises:
 #    LoadError
@@ -177,7 +185,11 @@ class AssembleQueue(Queue):
 #
 class Pipeline():
 
-    def __init__(self, context, project, target, target_variant, rewritable=False):
+    def __init__(self, context, project, target, target_variant,
+                 rewritable=False,
+                 load_ticker=None,
+                 resolve_ticker=None,
+                 cache_ticker=None):
         self.context = context
         self.project = project
         self.artifacts = ArtifactCache(self.context)
@@ -187,9 +199,13 @@ class Pipeline():
         self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
 
         loader = Loader(self.project.directory, target, target_variant, context.arch)
-        meta_element = loader.load(rewritable)
+        meta_element = loader.load(rewritable, load_ticker)
+        if load_ticker:
+            load_ticker(None)
 
-        self.target = self.resolve(meta_element)
+        self.target = self.resolve(meta_element, ticker=resolve_ticker)
+        if resolve_ticker:
+            resolve_ticker(None)
 
         # Preflight right away, after constructing the tree
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
@@ -198,7 +214,11 @@ class Pipeline():
         # Force interrogate the cache, ensure that elements have loaded
         # their consistency and cached states.
         for element in self.dependencies(Scope.ALL):
+            if cache_ticker:
+                cache_ticker(element.name)
             element._cached(recalculate=True)
+        if cache_ticker:
+            cache_ticker(None)
 
     # Generator function to iterate over elements and optionally
     # also iterate over sources.
@@ -317,10 +337,15 @@ class Pipeline():
     # Internal: Instantiates plugin-provided Element and Source instances
     # from MetaElement and MetaSource objects
     #
-    def resolve(self, meta_element, resolved={}):
+    def resolve(self, meta_element, resolved=None, ticker=None):
+        if resolved is None:
+            resolved = {}
 
         if meta_element in resolved:
             return resolved[meta_element]
+
+        if ticker:
+            ticker(meta_element.name)
 
         element = self.element_factory.create(meta_element.kind,
                                               meta_element.name,
@@ -333,9 +358,9 @@ class Pipeline():
 
         # resolve dependencies
         for dep in meta_element.dependencies:
-            element._add_dependency(self.resolve(dep), Scope.RUN)
+            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.RUN)
         for dep in meta_element.build_dependencies:
-            element._add_dependency(self.resolve(dep), Scope.BUILD)
+            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.BUILD)
 
         # resolve sources
         for meta_source in meta_element.sources:
