@@ -23,8 +23,9 @@ import copy
 from enum import Enum
 
 from ruamel import yaml
-from . import LoadError, LoadErrorReason
+from . import ImplError, LoadError, LoadErrorReason
 from . import utils
+
 
 # We store information in the loaded yaml on a DictProvenance
 # stored in all dictionaries under this key
@@ -51,6 +52,10 @@ class Provenance():
     # Convert a Provenance to a string for error reporting
     def __str__(self):
         return "%s [line %d column %d]" % (self.filename, self.line, self.col)
+
+    # Abstract method
+    def clone(self):
+        raise ImplError("Unimplemented clone() in Provenance")
 
 
 # A Provenance for dictionaries, these are stored in the copy of the
@@ -339,9 +344,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
         raise LoadError(LoadErrorReason.INVALID_DATA,
                         "%s: Dictionary did not contain expected key '%s'" % (str(provenance), key))
 
-    provenance = node_get_provenance(node, key=key, indices=indices)
     path = key
-
     if indices:
         # Implied type check of the element itself
         value = node_get(node, list, key)
@@ -362,6 +365,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
             else:
                 raise ValueError()
         except ValueError:
+            provenance = node_get_provenance(node, key=key, indices=indices)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "%s: Value of '%s' is not of the expected type '%s'" %
                             (str(provenance), path, expected_type.__name__))
