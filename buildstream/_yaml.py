@@ -121,7 +121,7 @@ class ElementProvenance(Provenance):
             filename, node, toplevel, line=line, col=col)
 
         # Only used if element is a list
-        elements = []
+        self.elements = []
 
     def clone(self):
         provenance = ElementProvenance(self.filename, None, None, self.toplevel,
@@ -363,6 +363,17 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
     return value
 
 
+# Gives a node a dummy provenance, in case of compositing dictionaries
+# where the target is an empty {}
+def ensure_provenance(node):
+    provenance = node.get(PROVENANCE_KEY)
+    if not provenance:
+        provenance = DictProvenance('', node, node)
+    node[PROVENANCE_KEY] = provenance
+
+    return provenance
+
+
 # composite_dict():
 #
 # Composites values in target with values from source
@@ -383,9 +394,94 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
 # This is useful for overriding configuration files and element
 # configurations.
 #
-def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
-    source = copy.deepcopy(source)
-    composite_dict_recurse(target, source, policy=policy, typesafe=typesafe)
+def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False, path=None):
+    target_provenance = ensure_provenance(target)
+    source_provenance = ensure_provenance(source)
+
+    for key, source_value in source.items():
+
+        # Handle the provenance keys specially
+        if key == PROVENANCE_KEY:
+            continue
+
+        # Track the full path of keys, only for raising CompositeError
+        if path:
+            thispath = path + '.' + key
+        else:
+            thispath = key
+
+        target_value = target.get(key)
+
+        if isinstance(source_value, collections.Mapping):
+
+            # Handle creating new dicts on target side
+            if target_value is None:
+                target_value = {}
+                target[key] = target_value
+
+                # Give the new dict provenance
+                value_provenance = source_value.get(PROVENANCE_KEY)
+                if value_provenance:
+                    target_value[PROVENANCE_KEY] = value_provenance.clone()
+
+                # Add a new provenance member element to the containing dict
+                target_provenance.members[key] = source_provenance.members[key]
+
+            if not isinstance(target_value, collections.Mapping):
+                raise CompositeTypeError(thispath, type(target_value), type(source_value))
+
+            # Recurse into matching dictionary
+            composite_dict(target_value, source_value, policy=policy, typesafe=typesafe, path=thispath)
+
+        else:
+
+            # Optionally enforce typesafe copy
+            if (typesafe and
+                target_value is not None and
+                not isinstance(source_value, type(target_value))):
+                raise CompositeTypeError(thispath, type(target_value), type(source_value))
+
+            if policy == CompositePolicy.OVERWRITE:
+
+                # Provenance and value is overwritten
+                target_provenance.members[key] = source_provenance.members[key]
+
+                # Ensure target has only copies of mutable source values
+                if (isinstance(target_value, list) and
+                    isinstance(source_value, list)):
+                    target[key] = copy.deepcopy(source_value)
+                else:
+                    target[key] = source_value
+
+            elif policy == CompositePolicy.ARRAY_APPEND:
+
+                if (isinstance(target_value, list) and
+                    isinstance(source_value, list)):
+
+                    # Ensure target has only copies of mutable source values
+                    target[key] += copy.deepcopy(source_value)
+
+                    # Append element provenances from source list to target
+                    target_list_provenance = target_provenance.members[key]
+                    source_list_provenance = source_provenance.members[key]
+                    for item in source_list_provenance.elements:
+                        target_list_provenance.elements.append(item.clone())
+                else:
+                    # Provenance is overwritten
+                    target[key] = source_value
+                    target_provenance.members[key] = source_provenance.members[key].clone()
+
+            elif policy == CompositePolicy.STRICT:
+
+                if target_value is None:
+                    target[key] = source_value
+                    target_provenance.members[key] = source_provenance.members[key]
+                else:
+                    raise CompositeOverrideError(thispath)
+
+            else:
+                # Explicitly unhandled: Indicates a clear programming error
+                raise Exception("Unhandled CompositePolicy in switch case")
 
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
@@ -404,97 +500,3 @@ def composite(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
                          e.expected_type.__name__,
                          e.path,
                          e.actual_type.__name__)) from e
-
-
-# Gives a node a dummy provenance, in case of compositing dictionaries
-# where the target is an empty {}
-def ensure_provenance(node):
-    provenance = node.get(PROVENANCE_KEY)
-    if not provenance:
-        provenance = DictProvenance('', node, node)
-    node[PROVENANCE_KEY] = provenance
-
-    return provenance
-
-
-def composite_dict_recurse(target, source, policy=CompositePolicy.OVERWRITE,
-                           typesafe=False, path=None):
-    target_provenance = ensure_provenance(target)
-    source_provenance = ensure_provenance(source)
-
-    for key, value in source.items():
-
-        # Handle the provenance keys specially
-        if key == PROVENANCE_KEY:
-            continue
-
-        # Track the full path of keys, only for raising CompositeError
-        if path:
-            thispath = path + '.' + key
-        else:
-            thispath = key
-
-        target_value = target.get(key)
-
-        if isinstance(value, collections.Mapping):
-
-            # Handle creating new dicts on target side
-            if target_value is None:
-                target_value = {}
-                target[key] = target_value
-
-                # Give the new dict provenance
-                value_provenance = value.get(PROVENANCE_KEY)
-                if value_provenance:
-                    target_value[PROVENANCE_KEY] = value_provenance.clone()
-
-                # Add a new provenance member element to the containing dict
-                target_provenance.members[key] = source_provenance.members[key]
-
-            if not isinstance(target_value, collections.Mapping):
-                raise CompositeTypeError(thispath, type(target_value), type(value))
-
-            # Recurse into matching dictionary
-            composite_dict_recurse(target_value, value, policy=policy, typesafe=typesafe, path=thispath)
-
-        else:
-
-            # Optionally enforce typesafe copy
-            if (typesafe and
-                target_value is not None and
-                not isinstance(value, type(target_value))):
-                raise CompositeTypeError(thispath, type(target_value), type(value))
-
-            if policy == CompositePolicy.OVERWRITE:
-
-                # Provenance and value is overwritten
-                target_provenance.members[key] = source_provenance.members[key]
-                target[key] = value
-
-            elif policy == CompositePolicy.ARRAY_APPEND:
-
-                if (isinstance(target_value, list) and
-                    isinstance(value, list)):
-                    target[key] += value
-
-                    # Append element provenances from source list to target
-                    target_list_provenance = target_provenance.members[key]
-                    source_list_provenance = source_provenance.members[key]
-                    for item in source_list_provenance.elements:
-                        target_list_provenance.elements.append(item)
-                else:
-                    # Provenance is overwritten
-                    target[key] = value
-                    target_provenance.members[key] = source_provenance.members[key]
-
-            elif policy == CompositePolicy.STRICT:
-
-                if target_value is None:
-                    target[key] = value
-                    target_provenance.members[key] = source_provenance.members[key]
-                else:
-                    raise CompositeOverrideError(thispath)
-
-            else:
-                # Explicitly unhandled: Indicates a clear programming error
-                raise Exception("Unhandled CompositePolicy in switch case")
