@@ -181,12 +181,14 @@ class CompositePolicy(Enum):
 # Args:
 #    filename (str): The YAML file to load
 #    shortname (str): The filename in shorthand for error reporting (or None)
+#    copy_tree (bool): Whether to make a copy, preserving the original toplevels
+#                      for later serialization
 #
 # Returns (dict): A loaded copy of the YAML file with provenance information
 #
 # Raises: LoadError
 #
-def load(filename, shortname=None):
+def load(filename, shortname=None, copy_tree=False):
 
     try:
         with open(filename) as f:
@@ -210,7 +212,7 @@ def load(filename, shortname=None):
     if not shortname:
         shortname = filename
 
-    return node_decorated_copy(shortname, contents)
+    return node_decorated_copy(shortname, contents, copy_tree=copy_tree)
 
 
 # Dumps a previously loaded YAML node to a file
@@ -234,11 +236,15 @@ def dump(node, filename):
 # Args:
 #    filename (str): The filename
 #    toplevel (node): The toplevel dictionary node
+#    copy_tree (bool): Whether to load a copy and preserve the original
 #
 # Returns: A copy of the toplevel decorated with Provinance
 #
-def node_decorated_copy(filename, toplevel):
-    result = copy.deepcopy(toplevel)
+def node_decorated_copy(filename, toplevel, copy_tree=False):
+    if copy_tree:
+        result = copy.deepcopy(toplevel)
+    else:
+        result = toplevel
 
     node_decorate_dict(filename, result, toplevel, toplevel)
 
@@ -250,6 +256,9 @@ def node_decorate_dict(filename, target, source, toplevel):
     target[PROVENANCE_KEY] = provenance
 
     for key, value in source.items():
+        if key == PROVENANCE_KEY:
+            continue
+
         member = MemberProvenance(filename, source, key, toplevel)
         provenance.members[key] = member
 
