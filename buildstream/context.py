@@ -45,6 +45,7 @@ from . import _site
 from . import _yaml
 from . import utils
 from . import LoadError, LoadErrorReason
+from ._profile import Topics, profile_start, profile_end
 
 
 class Context():
@@ -109,6 +110,7 @@ class Context():
         override that configuration with the configuration file indicated
         by *config*, if any was specified.
         """
+        profile_start(Topics.LOAD_CONTEXT, 'load')
 
         # Load default config
         #
@@ -131,6 +133,8 @@ class Context():
         self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
+
+        profile_end(Topics.LOAD_CONTEXT, 'load')
 
         valid_actions = ['continue', 'quit']
         if self.sched_error_action not in valid_actions:
