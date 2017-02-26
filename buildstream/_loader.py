@@ -731,8 +731,7 @@ class Loader():
         if meta_element:
             return meta_element
 
-        data = copy.deepcopy(element.data)
-
+        data = element.data
         meta_sources = []
 
         sources = _yaml.node_get(data, list, Symbol.SOURCES, default_value=[])
