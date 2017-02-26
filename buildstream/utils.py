@@ -405,12 +405,14 @@ def _node_sanitize(node):
 
 
 def _node_chain_copy(source):
-    copy = collections.ChainMap(source)
+    copy = collections.ChainMap({}, source)
     for key, value in source.items():
         if isinstance(value, collections.Mapping):
             copy[key] = _node_chain_copy(value)
         elif isinstance(value, list):
             copy[key] = _list_chain_copy(value)
+        elif isinstance(value, _yaml.Provenance):
+            copy[key] = value.clone()
 
     return copy
 
@@ -422,6 +424,8 @@ def _list_chain_copy(source):
             copy.append(_node_chain_copy(item))
         elif isinstance(item, list):
             copy.append(_list_chain_copy(item))
+        elif isinstance(item, _yaml.Provenance):
+            copy.append(item.clone())
         else:
             copy.append(item)
 
