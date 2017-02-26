@@ -406,16 +406,17 @@ class Loader():
     # Args:
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
+    #    ticker (callable): An optional function for tracking load progress
     #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, rewritable=False):
+    def load(self, rewritable=False, ticker=None):
 
         # First pass, recursively load files and populate our table of LoadElements
         #
         profile_start(Topics.LOAD_PROJECT, self.target_filename)
-        self.load_file(self.target_filename, rewritable)
+        self.load_file(self.target_filename, rewritable, ticker)
         profile_end(Topics.LOAD_PROJECT, self.target_filename)
 
         #
@@ -449,7 +450,7 @@ class Loader():
 
     # Recursively load bst files
     #
-    def load_file(self, filename, rewritable):
+    def load_file(self, filename, rewritable, ticker):
 
         # Silently ignore already loaded files
         if filename in self.loaded_files:
@@ -464,6 +465,10 @@ class Loader():
                             "Tried to load file '%s' but existing file '%s' has the same name" %
                             (filename, element.filename))
 
+        # Call the ticker
+        if ticker:
+            ticker(element_name)
+
         fullpath = os.path.join(self.basedir, filename)
 
         # Load the element and track it in our elements table
@@ -474,11 +479,11 @@ class Loader():
 
         # Load all possible dependency files for the new LoadElement
         for dep in element.base_deps:
-            self.load_file(dep.filename, rewritable)
+            self.load_file(dep.filename, rewritable, ticker)
 
         for variant in element.variants:
             for dep in variant.dependencies:
-                self.load_file(dep.filename, rewritable)
+                self.load_file(dep.filename, rewritable, ticker)
 
     ########################################
     #          Resolving Variants          #
