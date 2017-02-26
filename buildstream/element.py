@@ -778,7 +778,7 @@ class Element(Plugin):
 
             # Set the data class wide
             type(self).__defaults = defaults
-            self.__defaults_set = True
+            type(self).__defaults_set = True
 
     # This will resolve the final environment to be used when
     # creating sandboxes for this element
