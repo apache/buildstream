@@ -24,6 +24,7 @@ from enum import Enum
 
 from ruamel import yaml
 from . import LoadError, LoadErrorReason
+from . import utils
 
 # We store information in the loaded yaml on a DictProvenance
 # stored in all dictionaries under this key
@@ -458,7 +459,7 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
                 # Ensure target has only copies of mutable source values
                 if (isinstance(target_value, list) and
                     isinstance(source_value, list)):
-                    target[key] = copy.deepcopy(source_value)
+                    target[key] = utils._list_chain_copy(source_value)
                 else:
                     target[key] = source_value
 
@@ -468,7 +469,7 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
                     isinstance(source_value, list)):
 
                     # Ensure target has only copies of mutable source values
-                    target[key] += copy.deepcopy(source_value)
+                    target[key] += utils._list_chain_copy(source_value)
 
                     # Append element provenances from source list to target
                     target_list_provenance = target_provenance.members[key]
