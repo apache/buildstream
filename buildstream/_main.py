@@ -168,7 +168,7 @@ def track(target, arch, variant, needed, list):
 
     The project data will be rewritten inline.
     """
-    pipeline = create_pipeline(target, arch, variant)
+    pipeline = create_pipeline(target, arch, variant, rewritable=True)
     try:
         sources = pipeline.track(needed)
         click.echo("")
@@ -614,7 +614,7 @@ def format_duration(elapsed):
 #
 # Create a pipeline
 #
-def create_pipeline(target, arch, variant):
+def create_pipeline(target, arch, variant, rewritable=False):
     global longest_plugin_name
     global longest_plugin_kind
     global messaging_enabled
@@ -657,7 +657,7 @@ def create_pipeline(target, arch, variant):
         sys.exit(1)
 
     try:
-        pipeline = Pipeline(context, project, target, variant)
+        pipeline = Pipeline(context, project, target, variant, rewritable=rewritable)
     except _BstError as e:
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
