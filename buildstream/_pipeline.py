@@ -165,6 +165,8 @@ class AssembleQueue(Queue):
 #    project (Project): The Project object
 #    target (str): A bst filename relative to the project directory
 #    target_variant (str): The selected variant of 'target', or None for the default
+#    rewritable (bool): Whether the loaded files should be rewritable
+#                       this is a bit more expensive due to deep copies
 #
 # Raises:
 #    LoadError
@@ -175,7 +177,7 @@ class AssembleQueue(Queue):
 #
 class Pipeline():
 
-    def __init__(self, context, project, target, target_variant):
+    def __init__(self, context, project, target, target_variant, rewritable=False):
         self.context = context
         self.project = project
         self.artifacts = ArtifactCache(self.context)
@@ -185,7 +187,7 @@ class Pipeline():
         self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
 
         loader = Loader(self.project.directory, target, target_variant, context.arch)
-        meta_element = loader.load()
+        meta_element = loader.load(rewritable)
 
         self.target = self.resolve(meta_element)
 
