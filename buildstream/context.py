@@ -40,7 +40,7 @@ The default BuildStream configuration is included here for reference:
 import os
 import hashlib
 import pickle
-from collections import deque
+from collections import deque, Mapping
 from . import _site
 from . import _yaml
 from . import utils
@@ -123,13 +123,13 @@ class Context():
             setattr(self, dir, os.path.expanduser(_yaml.node_get(defaults, str, dir)))
 
         # Load logging config
-        logging = _yaml.node_get(defaults, dict, 'logging')
+        logging = _yaml.node_get(defaults, Mapping, 'logging')
         self.log_debug = _yaml.node_get(logging, bool, 'debug')
         self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
 
         # Load scheduler config
-        scheduler = _yaml.node_get(defaults, dict, 'scheduler')
+        scheduler = _yaml.node_get(defaults, Mapping, 'scheduler')
         self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
