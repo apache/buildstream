@@ -21,6 +21,7 @@
 import os
 import copy
 from functools import cmp_to_key
+from collections import Mapping
 
 from . import LoadError, LoadErrorReason
 from . import _yaml
@@ -118,10 +119,10 @@ class VariantError(Exception):
 #
 def resolve_arch(data, active_arch):
 
-        arches = _yaml.node_get(data, dict, Symbol.ARCHES, default_value={})
+        arches = _yaml.node_get(data, Mapping, Symbol.ARCHES, default_value={})
         arch = {}
         if arches:
-            arch = _yaml.node_get(arches, dict, active_arch, default_value={})
+            arch = _yaml.node_get(arches, Mapping, active_arch, default_value={})
 
         if arch:
             try:
@@ -173,7 +174,7 @@ class LoadElement():
         variants_node = _yaml.node_get(self.data, list, Symbol.VARIANTS, default_value=[])
         for variant_node in variants_node:
             index = variants_node.index(variant_node)
-            variant_node = _yaml.node_get(self.data, dict, Symbol.VARIANTS, indices=[index])
+            variant_node = _yaml.node_get(self.data, Mapping, Symbol.VARIANTS, indices=[index])
             variant = Variant(self.name, variant_node)
 
             # Process arch conditionals on individual variants
@@ -311,7 +312,7 @@ def extract_depends_from_node(owner, data):
         if isinstance(dep, str):
             dependency = Dependency(owner, element_name_from_filename(dep), filename=dep)
 
-        elif isinstance(dep, dict):
+        elif isinstance(dep, Mapping):
             # Make variant optional, for this we set it to None after
             variant = _yaml.node_get(dep, str, Symbol.VARIANT, default_value="")
             if not variant:
@@ -754,11 +755,11 @@ class Loader():
             meta_sources.append(meta_source)
 
         meta_element = MetaElement(element_name, data.get('kind'), meta_sources,
-                                   _yaml.node_get(data, dict, Symbol.CONFIG, default_value={}),
-                                   _yaml.node_get(data, dict, Symbol.VARIABLES, default_value={}),
-                                   _yaml.node_get(data, dict, Symbol.ENVIRONMENT, default_value={}),
+                                   _yaml.node_get(data, Mapping, Symbol.CONFIG, default_value={}),
+                                   _yaml.node_get(data, Mapping, Symbol.VARIABLES, default_value={}),
+                                   _yaml.node_get(data, Mapping, Symbol.ENVIRONMENT, default_value={}),
                                    _yaml.node_get(data, list, Symbol.ENV_NOCACHE, default_value=[]),
-                                   _yaml.node_get(data, dict, Symbol.PUBLIC, default_value={}))
+                                   _yaml.node_get(data, Mapping, Symbol.PUBLIC, default_value={}))
 
         # Cache it now, make sure it's already there before recursing
         self.meta_elements[element_name] = meta_element
