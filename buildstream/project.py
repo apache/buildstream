@@ -39,6 +39,7 @@ import multiprocessing  # for cpu_count()
 from . import _site
 from . import _yaml
 from . import _loader  # For resolve_arch()
+from ._profile import Topics, profile_start, profile_end
 
 
 # The separator we use for user specified aliases
@@ -71,7 +72,9 @@ class Project():
         self._plugin_source_paths = []   # Paths to custom sources
         self._plugin_element_paths = []  # Paths to custom plugins
 
+        profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load(arch)
+        profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
     def translate_url(self, url):
         """Translates the given url which may be specified with an alias
