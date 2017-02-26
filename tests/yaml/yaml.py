@@ -1,7 +1,8 @@
 import os
 import pytest
+from collections import Mapping
 
-from buildstream import _yaml
+from buildstream import _yaml, utils
 from buildstream import LoadError, LoadErrorReason
 from buildstream._yaml import CompositePolicy
 
@@ -157,8 +158,8 @@ def test_composited_array_append_provenance(datafiles):
     assert_provenance(filename, 22, 2, extra)
     assert_provenance(filename, 22, 8, extra, 'this')
 
-    assert_provenance(overlayfile, 8, 4, extra, 'another')
-    assert_provenance(overlayfile, 8, 4, another)
+    assert_provenance(overlayfile, 9, 4, extra, 'another')
+    assert_provenance(overlayfile, 9, 4, another)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -184,13 +185,43 @@ def test_node_get(datafiles):
     assert(isinstance(children, list))
     assert(len(children) == 8)
 
-    child = _yaml.node_get(base, dict, 'children', indices=[7])
+    child = _yaml.node_get(base, Mapping, 'children', indices=[7])
     assert_provenance(overlayfile, 5, 8, child, 'mood')
 
-    extra = _yaml.node_get(base, dict, 'extra')
-    another = _yaml.node_get(extra, dict, 'another')
+    extra = _yaml.node_get(base, Mapping, 'extra')
+    another = _yaml.node_get(extra, Mapping, 'another')
 
     with pytest.raises(LoadError) as exc:
-        wrong = _yaml.node_get(another, dict, 'five')
+        wrong = _yaml.node_get(another, Mapping, 'five')
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+
+
+# Really this is testing utils._node_chain_copy(), we want to
+# be sure that when using a ChainMap copy, compositing values
+# still preserves the original values in the copied dict.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_composite_preserve_originals(datafiles):
+
+    filename = os.path.join(datafiles.dirname,
+                            datafiles.basename,
+                            'basics.yaml')
+    overlayfile = os.path.join(datafiles.dirname,
+                               datafiles.basename,
+                               'composite.yaml')
+
+    base = _yaml.load(filename)
+    overlay = _yaml.load(overlayfile)
+    base_copy = utils._node_chain_copy(base)
+    _yaml.composite_dict(base_copy, overlay,
+                         policy=CompositePolicy.OVERWRITE, typesafe=True)
+
+    copy_extra = _yaml.node_get(base_copy, Mapping, 'extra')
+    orig_extra = _yaml.node_get(base, Mapping, 'extra')
+
+    # Test that the node copy has the overridden value...
+    assert(_yaml.node_get(copy_extra, str, 'old') == 'override')
+
+    # But the original node is not effected by the override.
+    assert(_yaml.node_get(orig_extra, str, 'old') == 'new')

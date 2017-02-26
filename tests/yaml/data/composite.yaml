@@ -4,6 +4,7 @@ children:
 - name: extra
   mood: funny
 extra:
+  old: override
   another:
     one: one
     two: two
