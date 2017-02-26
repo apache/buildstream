@@ -60,7 +60,7 @@ import os
 import tempfile
 import shutil
 import re
-
+from collections import Mapping
 from configparser import RawConfigParser
 from io import StringIO
 
@@ -225,9 +225,9 @@ class GitSource(Source):
 
         # Parse a list of path/uri tuples for the submodule overrides dictionary
         self.submodule_overrides = {}
-        modules = self.node_get_member(node, dict, 'submodules', {})
+        modules = self.node_get_member(node, Mapping, 'submodules', {})
         for path, _ in self.node_items(modules):
-            submodule = self.node_get_member(modules, dict, path)
+            submodule = self.node_get_member(modules, Mapping, path)
             self.submodule_overrides[path] = self.node_get_member(submodule, str, 'url')
 
         if not (ref or self.tracking):
