@@ -787,7 +787,7 @@ class Element(Plugin):
         project = self.get_project()
         default_env = _yaml.node_get(self.__defaults, dict, 'environment', default_value={})
 
-        environment = copy.deepcopy(project._environment)
+        environment = utils._node_chain_copy(project._environment)
         _yaml.composite(environment, default_env, typesafe=True)
         _yaml.composite(environment, meta.environment, typesafe=True)
 
@@ -818,7 +818,7 @@ class Element(Plugin):
         project = self.get_project()
         default_vars = _yaml.node_get(self.__defaults, dict, 'variables', default_value={})
 
-        variables = copy.deepcopy(project._variables)
+        variables = utils._node_chain_copy(project._variables)
         _yaml.composite(variables, default_vars, typesafe=True)
         _yaml.composite(variables, meta.variables, typesafe=True)
 
@@ -830,11 +830,9 @@ class Element(Plugin):
     def __extract_config(self, meta):
 
         # The default config is already composited with the project overrides
-        default_config = _yaml.node_get(self.__defaults, dict, 'config', default_value={})
-        element_config = meta.config
+        config = _yaml.node_get(self.__defaults, dict, 'config', default_value={})
+        config = utils._node_chain_copy(config)
 
-        default_config = copy.deepcopy(default_config)
-        _yaml.composite(default_config, element_config, typesafe=True)
-        element_config = default_config
+        _yaml.composite(config, meta.config, typesafe=True)
 
-        return element_config
+        return config
