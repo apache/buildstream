@@ -34,6 +34,7 @@ from ._message import MessageType
 from . import _pipeline
 from ._pipeline import Pipeline, PipelineError
 from . import utils
+from ._profile import Topics, profile_start, profile_end
 
 # Some nasty globals
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -245,6 +246,8 @@ def show(target, arch, variant, deps, order, format):
     pipeline = create_pipeline(target, arch, variant)
     report = ''
 
+    profile_start(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
+
     if deps is not None:
         scope = deps
         if scope == "all":
@@ -302,6 +305,7 @@ def show(target, arch, variant, deps, order, format):
         report += line + '\n'
 
     click.echo(report.rstrip('\n'))
+    profile_end(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
 
 
 ##################################################################
@@ -615,6 +619,8 @@ def create_pipeline(target, arch, variant):
     global longest_plugin_kind
     global messaging_enabled
 
+    profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
+
     directory = main_options['directory']
     config = main_options['config']
 
@@ -665,5 +671,7 @@ def create_pipeline(target, arch, variant):
 
     # Pipeline is loaded, lets start displaying pipeline messages from tasks
     messaging_enabled = True
+
+    profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
 
     return pipeline
