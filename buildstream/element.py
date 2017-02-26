@@ -22,6 +22,7 @@ import os
 import sys
 import copy
 import inspect
+from collections import Mapping
 from contextlib import contextmanager
 from enum import Enum
 import tempfile
@@ -391,6 +392,9 @@ class Element(Plugin):
     #
     # If the element has no sources, this returns Consistency.CACHED
     def _consistency(self):
+
+        # The source objects already cache the consistency state, it
+        # should not be expensive to iterate over the sources to get at it
         consistency = Consistency.CACHED
         for source in self.__sources:
             source_consistency = source._get_consistency()
@@ -407,10 +411,12 @@ class Element(Plugin):
     #            the artifact cache
     #
     def _cached(self, recalculate=False):
-        project = self.get_project()
-        key = self._get_cache_key()
-        if (self.__cached is None or recalculate) and project is not None and key is not None:
-            self.__cached = self.__artifacts.contains(project.name, self.name, key)
+
+        if recalculate:
+            project = self.get_project()
+            key = self._get_cache_key()
+            if (self.__cached is None or recalculate) and project is not None and key is not None:
+                self.__cached = self.__artifacts.contains(project.name, self.name, key)
 
         return False if self.__cached is None else self.__cached
 
@@ -466,6 +472,11 @@ class Element(Plugin):
     #
     def _get_cache_key(self):
 
+        # It is not really necessary to check if the Source object's
+        # local mirror has the ref cached locally or not, it's only important
+        # to know if the source has a ref specified or not, in order to
+        # produce a cache key.
+        #
         if self._consistency() == Consistency.INCONSISTENT:
             return None
 
@@ -785,7 +796,7 @@ class Element(Plugin):
     #
     def __extract_environment(self, meta):
         project = self.get_project()
-        default_env = _yaml.node_get(self.__defaults, dict, 'environment', default_value={})
+        default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
         environment = utils._node_chain_copy(project._environment)
         _yaml.composite(environment, default_env, typesafe=True)
@@ -816,7 +827,7 @@ class Element(Plugin):
     #
     def __extract_variables(self, meta):
         project = self.get_project()
-        default_vars = _yaml.node_get(self.__defaults, dict, 'variables', default_value={})
+        default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
 
         variables = utils._node_chain_copy(project._variables)
         _yaml.composite(variables, default_vars, typesafe=True)
@@ -830,7 +841,7 @@ class Element(Plugin):
     def __extract_config(self, meta):
 
         # The default config is already composited with the project overrides
-        config = _yaml.node_get(self.__defaults, dict, 'config', default_value={})
+        config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
         config = utils._node_chain_copy(config)
 
         _yaml.composite(config, meta.config, typesafe=True)
