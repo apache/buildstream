@@ -628,6 +628,38 @@ def create_pipeline(target, arch, variant, rewritable=False):
     directory = main_options['directory']
     config = main_options['config']
 
+    #
+    # Some local tickers and state to show the user what's going on
+    # while loading
+    #
+    file_count = 0
+    resolve_count = 0
+    cache_count = 0
+
+    def load_ticker(name):
+        nonlocal file_count
+        if name:
+            file_count += 1
+            click.echo("Loading:   {:0>3}\r".format(file_count), nl=False, err=True)
+        else:
+            click.echo('', err=True)
+
+    def resolve_ticker(name):
+        nonlocal resolve_count
+        if name:
+            resolve_count += 1
+            click.echo("Resolving: {:0>3}/{:0>3}\r".format(file_count, resolve_count), nl=False, err=True)
+        else:
+            click.echo('', err=True)
+
+    def cache_ticker(name):
+        nonlocal cache_count
+        if name:
+            cache_count += 1
+            click.echo("Checking:  {:0>3}/{:0>3}\r".format(file_count, cache_count), nl=False, err=True)
+        else:
+            click.echo('', err=True)
+
     try:
         context = Context(arch)
         context.load(config)
@@ -661,7 +693,11 @@ def create_pipeline(target, arch, variant, rewritable=False):
         sys.exit(1)
 
     try:
-        pipeline = Pipeline(context, project, target, variant, rewritable=rewritable)
+        pipeline = Pipeline(context, project, target, variant,
+                            rewritable=rewritable,
+                            load_ticker=load_ticker,
+                            resolve_ticker=resolve_ticker,
+                            cache_ticker=cache_ticker)
     except _BstError as e:
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
