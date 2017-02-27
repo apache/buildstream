@@ -265,7 +265,7 @@ def show(target, arch, variant, deps, order, format):
         dependencies = [pipeline.target]
 
     for element in dependencies:
-        line = fmt_subst(format, 'name', element.name, fg='blue', bold=True)
+        line = fmt_subst(format, 'name', element._get_display_name(), fg='blue', bold=True)
         cache_key = element._get_cache_key()
         if cache_key is None:
             cache_key = ''
