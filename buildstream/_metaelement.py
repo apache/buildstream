@@ -28,6 +28,7 @@ class MetaElement():
     # Args:
     #    name: The resolved element name
     #    kind: The element kind
+    #    provenance: The provenance of the element
     #    sources: An array of MetaSource objects
     #    config: The configuration data for the element
     #    variables: The variables declared or overridden on this element
@@ -35,9 +36,10 @@ class MetaElement():
     #    env_nocache: List of environment vars which should not be considered in cache keys
     #    public: Public domain data dictionary
     #
-    def __init__(self, name, kind, sources, config, variables, environment, env_nocache, public):
+    def __init__(self, name, kind, provenance, sources, config, variables, environment, env_nocache, public):
         self.name = name
         self.kind = kind
+        self.provenance = provenance
         self.sources = sources
         self.config = config
         self.variables = variables

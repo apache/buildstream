@@ -738,6 +738,7 @@ class Loader():
             return meta_element
 
         data = element.data
+        elt_provenance = _yaml.node_get_provenance(data)
         meta_sources = []
 
         sources = _yaml.node_get(data, list, Symbol.SOURCES, default_value=[])
@@ -759,7 +760,7 @@ class Loader():
                                      provenance.filename)
             meta_sources.append(meta_source)
 
-        meta_element = MetaElement(element_name, data.get('kind'), meta_sources,
+        meta_element = MetaElement(element_name, data.get('kind'), elt_provenance, meta_sources,
                                    _yaml.node_get(data, Mapping, Symbol.CONFIG, default_value={}),
                                    _yaml.node_get(data, Mapping, Symbol.VARIABLES, default_value={}),
                                    _yaml.node_get(data, Mapping, Symbol.ENVIRONMENT, default_value={}),
