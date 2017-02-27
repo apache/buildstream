@@ -68,8 +68,8 @@ class Element(Plugin):
     __defaults_set = False   # Flag, in case there are no defaults at all
 
     def __init__(self, display_name, context, project, artifacts, meta):
-        provenance = _yaml.node_get_provenance(meta.config)
-        super().__init__(display_name, context, project, provenance, "element")
+
+        super().__init__(display_name, context, project, meta.provenance, "element")
 
         self.name = meta.name
         """The element name"""
