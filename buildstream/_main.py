@@ -196,7 +196,7 @@ def track(target, arch, variant, needed, list):
 @click.option('--order', default="stage",
               type=click.Choice(['stage', 'alpha']),
               help='Staging or alphabetic ordering of dependencies')
-@click.option('--format', '-f', metavar='FORMAT', default="%{name: >20}: %{key: <64} (%{state})",
+@click.option('--format', '-f', metavar='FORMAT', default="%{state: >12} %{key} %{name}",
               type=click.STRING,
               help='Format string for each element')
 @click.option('--arch', '-a', default=host_machine,
@@ -230,7 +230,7 @@ def show(target, arch, variant, deps, order, format):
 
     \b
         build-stream show target.bst --format \\
-            'Name: %{name: ^20} Key: %{key: ^64} State: %{state}'
+            'Name: %{name: ^20} Key: %{key: ^8} State: %{state}'
 
     If you want to use a newline in a format string in bash, use the '$' modifier:
 
@@ -240,6 +240,7 @@ def show(target, arch, variant, deps, order, format):
     """
     pipeline = create_pipeline(target, arch, variant)
     report = ''
+    p = Profile()
 
     profile_start(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
 
@@ -260,44 +261,42 @@ def show(target, arch, variant, deps, order, format):
         dependencies = [pipeline.target]
 
     for element in dependencies:
-        line = fmt_subst(format, 'name', element._get_display_name(), fg='blue', bold=True)
-        cache_key = element._get_cache_key()
-        if cache_key is None:
-            cache_key = ''
+        line = p.fmt_subst(format, 'name', element._get_display_name(), fg='blue', bold=True)
+        cache_key = element._get_display_key()
 
         consistency = element._consistency()
         if consistency == Consistency.INCONSISTENT:
-            line = fmt_subst(line, 'key', "")
-            line = fmt_subst(line, 'state', "no reference", fg='red')
+            line = p.fmt_subst(line, 'key', "")
+            line = p.fmt_subst(line, 'state', "no reference", fg='red')
         else:
-            line = fmt_subst(line, 'key', cache_key, fg='yellow')
+            line = p.fmt_subst(line, 'key', cache_key, fg='yellow')
             if element._cached():
-                line = fmt_subst(line, 'state', "cached", fg='magenta')
+                line = p.fmt_subst(line, 'state', "cached", fg='magenta')
             elif consistency == Consistency.RESOLVED:
-                line = fmt_subst(line, 'state', "fetch needed", fg='red')
+                line = p.fmt_subst(line, 'state', "fetch needed", fg='red')
             elif element._buildable():
-                line = fmt_subst(line, 'state', "buildable", fg='green')
+                line = p.fmt_subst(line, 'state', "buildable", fg='green')
             else:
-                line = fmt_subst(line, 'state', "waiting", fg='blue')
+                line = p.fmt_subst(line, 'state', "waiting", fg='blue')
 
         # Element configuration
         if "%{config" in format:
             config = utils._node_sanitize(element._Element__config)
-            line = fmt_subst(
+            line = p.fmt_subst(
                 line, 'config',
                 yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
 
         # Variables
         if "%{vars" in format:
             variables = utils._node_sanitize(element._Element__variables.variables)
-            line = fmt_subst(
+            line = p.fmt_subst(
                 line, 'vars',
                 yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
         # Environment
         if "%{env" in format:
             environment = utils._node_sanitize(element._Element__environment)
-            line = fmt_subst(
+            line = p.fmt_subst(
                 line, 'env',
                 yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
@@ -388,11 +387,11 @@ def message_handler(message, context):
 
     text = logger.render(message)
 
-    click.echo(text)
+    click.echo(text, nl=False)
 
     # Additionally log to a file
     if main_options['log_file']:
-        click.echo(text, file=main_options['log_file'], color=False)
+        click.echo(text, file=main_options['log_file'], color=False, nl=False)
 
 
 #
@@ -462,6 +461,23 @@ def create_pipeline(target, arch, variant, rewritable=False):
     if main_options.get('builders') is not None:
         context.sched_builders = main_options['builders']
 
+    # Create the logger right before setting the message handler
+    logger = LogLine(
+        # Content
+        Profile(fg='yellow'),
+        # Formatting
+        Profile(fg='cyan', dim=True),
+        # Errors
+        Profile(fg='red', dim=True),
+        # Details (log lines and other detailed messages)
+        Profile(dim=True),
+        # Indentation for detailed messages
+        indent=4,
+        # Number of last lines in an element's log to print (when encountering errors)
+        log_lines=context.log_error_lines,
+        # Whether to print additional debugging information
+        debug=context.log_debug)
+
     # Propagate pipeline feedback to the user
     context._set_message_handler(message_handler)
 
@@ -481,25 +497,8 @@ def create_pipeline(target, arch, variant, rewritable=False):
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
 
-    logger = LogLine(
-        # Content
-        Profile(fg='yellow'),
-        # Formatting
-        Profile(fg='cyan', dim=True),
-        # Errors
-        Profile(fg='red', dim=True),
-        # Details (log lines and other detailed messages)
-        Profile(dim=True),
-        # Indentation for detailed messages
-        indent=4,
-        # Number of last lines in an element's log to print (when encountering errors)
-        log_lines=context.log_error_lines,
-        # Whether to print additional debugging information
-        debug=context.log_debug)
-
-    logger.size_request(pipeline)
-
     # Pipeline is loaded, lets start displaying pipeline messages from tasks
+    logger.size_request(pipeline)
     messaging_enabled = True
 
     profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
