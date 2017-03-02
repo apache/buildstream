@@ -20,21 +20,18 @@
 
 import os
 import sys
-import re
 import click
 import pkg_resources  # From setuptools
-import subprocess
 import copy
 from ruamel import yaml
 
 from . import Context, Project, Scope, Consistency
 from .exceptions import _BstError
-from .plugin import _plugin_lookup
 from ._message import MessageType
-from . import _pipeline
 from ._pipeline import Pipeline, PipelineError
 from . import utils
 from ._profile import Topics, profile_start, profile_end
+from ._widget import Profile, LogLine
 
 # Some nasty globals
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -43,10 +40,8 @@ _, _, _, _, host_machine = os.uname()
 main_options = {}
 main_options_set = {}
 main_context = None
-
-longest_plugin_name = 0
-longest_plugin_kind = 0
 messaging_enabled = False
+logger = None
 
 
 ##################################################################
@@ -376,83 +371,6 @@ def shell(target, arch, variant, builddir, scope):
 #                        Helper Functions                        #
 ##################################################################
 
-
-# Basic profiles
-class Profile():
-    def __init__(self, **kwargs):
-        self.kwargs = dict(kwargs)
-
-    def fmt(self, text, **kwargs):
-        kwargs = dict(kwargs)
-        fmtargs = copy.copy(self.kwargs)
-        fmtargs.update(kwargs)
-        return click.style(text, **fmtargs)
-
-    def fmt_subst(self, text, varname, value, **kwargs):
-
-        def subst_callback(match):
-            # Extract and format the "{(varname)...}" portion of the match
-            inner_token = match.group(1)
-            formatted = inner_token.format(**{varname: value})
-
-            # Colorize after the pythonic format formatting, which may have padding
-            return self.fmt(formatted, **kwargs)
-
-        # Lazy regex, after our word, match anything that does not have '%'
-        return re.sub(r"%(\{(" + varname + r")[^%]*\})", subst_callback, text)
-
-
-def fmt_subst(text, varname, value, **kwargs):
-    return Style.NONE.fmt_subst(text, varname, value, **kwargs)
-
-
-# Palette of text styles
-#
-class Style():
-    NONE = Profile()
-
-    DEBUG_FG = Profile(fg='yellow')
-    DEBUG_BG = Profile(fg='cyan', dim=True)
-    TC_FG = Profile(fg='yellow')
-    TC_BG = Profile(fg='cyan', dim=True)
-    NAME_FG = Profile(fg='yellow')
-    NAME_BG = Profile(fg='cyan', dim=True)
-    TASK_FG = Profile(fg='yellow')
-    TASK_BG = Profile(fg='cyan', dim=True)
-    KIND_FG = Profile(fg='yellow')
-    KIND_BG = Profile(fg='cyan', dim=True)
-    DEPTH = Profile(fg='cyan', dim=True)
-
-    ACTION = Profile(bold=True, dim=True)
-    LOG = Profile(fg='yellow', dim=True)
-    LOG_ERROR = Profile(fg='red', dim=True)
-    DETAIL = Profile(dim=True)
-    ERR_HEAD = Profile(fg='red', bold=True, dim=True)
-    ERR_BODY = Profile(dim=True)
-
-
-action_colors = {}
-action_colors[MessageType.DEBUG] = "cyan"
-action_colors[MessageType.STATUS] = "cyan"
-action_colors[MessageType.INFO] = "magenta"
-action_colors[MessageType.WARN] = "yellow"
-action_colors[MessageType.ERROR] = "red"
-action_colors[MessageType.START] = "blue"
-action_colors[MessageType.SUCCESS] = "green"
-action_colors[MessageType.FAIL] = "red"
-
-
-# This would be better as native python code, rather than requiring
-# tail specifically.
-def read_last_lines(logfile, n_lines):
-    tail_command = utils.get_host_tool('tail')
-
-    # Lets just expect this to always pass for now...
-    output = subprocess.check_output([tail_command, '-n', str(n_lines), logfile])
-    output = output.decode('UTF-8')
-    return output.rstrip()
-
-
 #
 # Handle messages from the pipeline
 #
@@ -463,131 +381,12 @@ def message_handler(message, context):
     if not messaging_enabled:
         return
 
-    # The detail indentation
-    INDENT = "    "
-    EMPTYTIME = "[--:--:--]"
-
-    plugin = None
-    if message.unique_id is not None:
-        plugin = _plugin_lookup(message.unique_id)
-        name = plugin._get_display_name()
-    else:
-        name = ''
-
     # Drop status messages from the UI if not verbose, we'll still see
     # info messages and status messages will still go to the log files.
     if not context.log_verbose and message.message_type == MessageType.STATUS:
         return
 
-    # Debug output
-    enable_debug = main_options['debug']
-    if enable_debug:
-        text = "%{debugopen}%{tagpid}%{pid: <5} %{tagid}%{id:0>3}%{debugclose}"
-    else:
-        text = ''
-
-    # Time code
-    text += "%{timespec: <10}"
-
-    # Action name (like track, fetch, build, etc)
-    if message.action_name:
-        text += "%{openaction}%{actionname: ^5}%{closeaction}"
-    else:
-        text += "       "
-
-    # The plugin display name, allow for 2 indentations (4 chars) in 'taskdepth'
-    kindchars = max(longest_plugin_kind, 8)
-    namechars = max(longest_plugin_name, 8) + 4
-    namechars = namechars - (message.depth * 2)
-    text += "%{openname} %{kindname: >" + str(kindchars) + "}" + \
-            "%{kindsep}%{taskdepth}%{name: <" + str(namechars) + "}%{closename}"
-
-    # The message type
-    text += " %{type: <7}"
-
-    if message.logfile and message.scheduler:
-        text += " %{logfile}"
-    else:
-        text += " %{message}"
-
-    if message.detail is not None:
-        text += "\n\n%{detail}\n"
-
-    if message.sandbox is not None:
-        text += "\n\n%{sandbox}\n"
-
-    # Are we going to print some log file ?
-    if message.scheduler and message.message_type == MessageType.FAIL:
-        text = text.rstrip('\n')
-        text += "\n\n%{logcontent}\n"
-
-    # Format string...
-    text = fmt_subst(text, 'timespec', format_duration(message.elapsed))
-
-    # Handle scheduler messages differently
-    if message.scheduler:
-        text = fmt_subst(
-            text, 'message',
-            Style.TASK_BG.fmt('[') + Style.TASK_FG.fmt(message.message) + Style.TASK_BG.fmt(']'))
-    else:
-        text = fmt_subst(text, 'message', message.message)
-
-    if message.action_name:
-        text = Style.TASK_BG.fmt_subst(text, 'openaction', '[')
-        text = Style.TASK_FG.fmt_subst(text, 'actionname', message.action_name)
-        text = Style.TASK_BG.fmt_subst(text, 'closeaction', ']')
-
-    kindname = ''
-    if plugin is not None:
-        kindname = plugin.get_kind()
-    text = Style.KIND_BG.fmt_subst(text, 'kindsep', ':')
-    text = Style.TASK_FG.fmt_subst(text, 'kindname', kindname)
-
-    if enable_debug:
-        unique_id = 0 if message.unique_id is None else message.unique_id
-        text = Style.DEBUG_BG.fmt_subst(text, 'debugopen', '[')
-        text = Style.DEBUG_BG.fmt_subst(text, 'tagpid', 'pid:')
-        text = Style.DEBUG_FG.fmt_subst(text, 'pid', message.pid)
-        text = Style.DEBUG_BG.fmt_subst(text, 'tagid', 'id:')
-        text = Style.DEBUG_FG.fmt_subst(text, 'id', unique_id)
-        text = Style.DEBUG_BG.fmt_subst(text, 'debugclose', ']')
-
-    text = Style.ACTION.fmt_subst(
-        text, 'type', message.message_type.upper(),
-        fg=action_colors[message.message_type])
-
-    text = Style.NAME_BG.fmt_subst(text, 'openname', '[')
-    text = Style.DEPTH.fmt_subst(text, 'taskdepth', '> ' * message.depth)
-    text = Style.NAME_FG.fmt_subst(text, 'name', name)
-    text = Style.NAME_BG.fmt_subst(text, 'closename', ']')
-
-    if message.detail is not None:
-        detail = message.detail.rstrip('\n')
-        detail = INDENT + INDENT.join((detail.splitlines(True)))
-        if message.message_type == MessageType.FAIL:
-            text = Style.ERR_HEAD.fmt_subst(text, 'detail', detail)
-        else:
-            text = Style.DETAIL.fmt_subst(text, 'detail', detail)
-
-    if message.sandbox is not None:
-        sandbox = INDENT + 'Sandbox directory: ' + message.sandbox
-
-        if message.message_type == MessageType.FAIL:
-            text = Style.ERR_HEAD.fmt_subst(text, 'sandbox', sandbox)
-        else:
-            text = Style.DETAIL.fmt_subst(text, 'sandbox', sandbox)
-
-    # Log content needs to be formatted last, as it may introduce symbols
-    # which match our regex
-    if message.scheduler:
-        if message.message_type == MessageType.FAIL:
-            text = Style.LOG_ERROR.fmt_subst(text, 'logfile', message.logfile)
-            log_content = read_last_lines(message.logfile, context.log_error_lines)
-            text = Style.ERR_BODY.fmt_subst(
-                text, 'logcontent',
-                INDENT + INDENT.join(log_content.splitlines(True)))
-        else:
-            text = Style.LOG.fmt_subst(text, 'logfile', message.logfile)
+    text = logger.render(message)
 
     click.echo(text)
 
@@ -596,32 +395,12 @@ def message_handler(message, context):
         click.echo(text, file=main_options['log_file'], color=False)
 
 
-# Formats a pretty [00:00:00] duration
-#
-def format_duration(elapsed):
-
-    if elapsed is None:
-        fields = [Style.TC_BG.fmt('--') for i in range(3)]
-    else:
-        hours, remainder = divmod(int(elapsed.total_seconds()), 60 * 60)
-        minutes, seconds = divmod(remainder, 60)
-        fields = [
-            Style.TC_FG.fmt("{0:02d}".format(field))
-            for field in [hours, minutes, seconds]
-        ]
-
-    return Style.TC_BG.fmt('[') + \
-        Style.TC_BG.fmt(':').join(fields) + \
-        Style.TC_BG.fmt(']')
-
-
 #
 # Create a pipeline
 #
 def create_pipeline(target, arch, variant, rewritable=False):
-    global longest_plugin_name
-    global longest_plugin_kind
     global messaging_enabled
+    global logger
 
     profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
 
@@ -702,12 +481,23 @@ def create_pipeline(target, arch, variant, rewritable=False):
         click.echo("Error loading pipeline: %s" % str(e))
         sys.exit(1)
 
-    # Get the longest element name for logging purposes
-    longest_plugin_name = 0
-    longest_plugin_kind = 0
-    for plugin in pipeline.dependencies(Scope.ALL, include_sources=True):
-        longest_plugin_name = max(len(plugin._get_display_name()), longest_plugin_name)
-        longest_plugin_kind = max(len(plugin.get_kind()), longest_plugin_kind)
+    logger = LogLine(
+        # Content
+        Profile(fg='yellow'),
+        # Formatting
+        Profile(fg='cyan', dim=True),
+        # Errors
+        Profile(fg='red', dim=True),
+        # Details (log lines and other detailed messages)
+        Profile(dim=True),
+        # Indentation for detailed messages
+        indent=4,
+        # Number of last lines in an element's log to print (when encountering errors)
+        log_lines=context.log_error_lines,
+        # Whether to print additional debugging information
+        debug=context.log_debug)
+
+    logger.size_request(pipeline)
 
     # Pipeline is loaded, lets start displaying pipeline messages from tasks
     messaging_enabled = True
