@@ -77,6 +77,9 @@ class Context():
         self.ccachedir = None
         """The directory for holding ccache state"""
 
+        self.log_key_length = 0
+        """The abbreviated cache key length to display in the UI"""
+
         self.log_debug = False
         """Whether debug mode is enabled"""
 
@@ -124,6 +127,7 @@ class Context():
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')
+        self.log_key_length = _yaml.node_get(logging, int, 'key-length')
         self.log_debug = _yaml.node_get(logging, bool, 'debug')
         self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')

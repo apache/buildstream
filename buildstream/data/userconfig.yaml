@@ -45,6 +45,9 @@ scheduler:
 #
 logging:
 
+  # The abbreviated cache key length to display in the UI
+  key-length: 8
+
   # Whether to show extra detailed messages
   verbose: True
 
