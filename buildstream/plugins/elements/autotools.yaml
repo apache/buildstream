@@ -2,7 +2,7 @@
 
 variables:
 
-  autogen: >-
+  autogen: |
     export NOCONFIGURE=1;
     if [ -e autogen ]; then ./autogen;
     elif [ -e autogen.sh ]; then ./autogen.sh;
