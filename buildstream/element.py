@@ -519,6 +519,24 @@ class Element(Plugin):
 
         return self.__cache_key
 
+    # _get_display_key():
+    #
+    # Returns an abbreviated cache key for display purposes
+    #
+    # Returns:
+    #    (str): An abbreviated hex digest cache key for this Element, or zeros
+    #
+    # Zeros are returned if information for the cache key is missing.
+    #
+    def _get_display_key(self):
+        context = self.get_context()
+        cache_key = self._get_cache_key()
+        if cache_key:
+            length = min(len(cache_key), context.log_key_length)
+            return cache_key[0:length]
+
+        return "{:0<" + str(context.log_key_length) + "}".format('')
+
     # _get_variables()
     #
     # Fetch the internal Variables
@@ -579,8 +597,9 @@ class Element(Plugin):
                 # an error message, or we have good output to collect.
                 project = self.get_project()
                 key = self._get_cache_key()
+                display_key = self._get_display_key()
 
-                with self.timed_activity("Creating artifact {}/{}/{}".format(project.name, self.name, key)):
+                with self.timed_activity("Caching {}".format(display_key)):
                     self.__artifacts.commit(project.name,
                                             self.name,
                                             key,
@@ -613,14 +632,9 @@ class Element(Plugin):
     def _logfile(self, action_name, pid=None):
         project = self.get_project()
         context = self.get_context()
-        key = self._get_cache_key()
+        key = self._get_display_key()
         if pid is None:
             pid = os.getpid()
-
-        # Just put 64 zeros if there is no key yet, this
-        # happens when fetching sources only, never when building
-        if not key:
-            key = "{:0<64}".format('')
 
         action = action_name.lower()
         logfile = "{key}-{action}.{pid}.log".format(
