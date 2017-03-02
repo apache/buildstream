@@ -58,6 +58,33 @@ class Profile():
         fmtargs.update(kwargs)
         return click.style(text, **fmtargs)
 
+    # fmt_subst()
+    #
+    # Substitute a variable of the %{varname} form, formatting
+    # only the substituted text with the given click.style() configurations
+    #
+    # Args:
+    #    text (str): The text to format, with possible variables
+    #    varname (str): The variable name to substitute
+    #    value (str): The value to substitute the variable with
+    #
+    # Kwargs:
+    #    Keyword arguments to apply on top of the base click.style()
+    #    arguments
+    #
+    def fmt_subst(self, text, varname, value, **kwargs):
+
+        def subst_callback(match):
+            # Extract and format the "{(varname)...}" portion of the match
+            inner_token = match.group(1)
+            formatted = inner_token.format(**{varname: value})
+
+            # Colorize after the pythonic format formatting, which may have padding
+            return self.fmt(formatted, **kwargs)
+
+        # Lazy regex, after our word, match anything that does not have '%'
+        return re.sub(r"%(\{(" + varname + r")[^%]*\})", subst_callback, text)
+
 
 # Widget()
 #
@@ -209,12 +236,18 @@ class ElementName(Widget):
     def __init__(self, content_profile, format_profile):
         super(ElementName, self).__init__(content_profile, format_profile)
 
-        self.fmt_string = None
+        # Pre initialization format string, before we know the length of
+        # element names in the pipeline
+        self.fmt_string = '{: <30}'
 
     def size_request(self, pipeline):
         longest_name = 0
         for plugin in pipeline.dependencies(Scope.ALL, include_sources=True):
             longest_name = max(len(plugin._get_display_name()), longest_name)
+
+        # Put a cap at a specific width, usually some elements cause the line
+        # to be too long, just live with the unaligned columns in that case
+        longest_name = min(longest_name, 40)
 
         self.fmt_string = '{: <' + str(longest_name) + '}'
 
@@ -303,6 +336,8 @@ class LogLine(Widget):
             text += widget.render(message)
         text += '\n'
 
+        extra_nl = False
+
         # Now add some custom things
         if message.detail is not None:
 
@@ -315,6 +350,7 @@ class LogLine(Widget):
             else:
                 text += self.detail_profile.fmt(detail)
             text += '\n'
+            extra_nl = True
 
         if message.sandbox is not None:
             sandbox = self.indent + 'Sandbox directory: ' + message.sandbox
@@ -325,6 +361,7 @@ class LogLine(Widget):
             else:
                 text += self.detail_profile.fmt(sandbox)
             text += '\n'
+            extra_nl = True
 
         if message.scheduler and message.message_type == MessageType.FAIL:
             log_content = read_last_lines(message.logfile)
@@ -332,6 +369,10 @@ class LogLine(Widget):
 
             text += '\n'
             text += self.detail_profile.fmt(log_content)
+            text += '\n'
+            extra_nl = True
+
+        if extra_nl:
             text += '\n'
 
         return text
