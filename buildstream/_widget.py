@@ -21,6 +21,7 @@
 import click
 import re
 import subprocess
+import copy
 
 from . import utils
 from .plugin import _plugin_lookup
