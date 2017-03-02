@@ -27,7 +27,7 @@ from . import utils
 from .plugin import _plugin_lookup
 from ._message import MessageType
 from . import ImplError
-from . import Scope
+from . import Element, Scope
 
 
 # Profile()
@@ -106,19 +106,14 @@ class Widget():
 
     # size_request()
     #
-    # Gets the requested minimum and natural width for
-    # this Widget when given the passed pipeline. The pipeline
-    # can be iterated over to see what size each of the
-    # dependency elements might take to render for this Widget.
+    # Gives the widget a chance to preflight the pipeline
+    # and figure out what size it might need for alignment purposes
     #
     # Args:
     #    pipeline (Pipeline): The pipeline to process
     #
-    # Returns:
-    #    (int) The width for rendering this widget
-    #
     def size_request(self, pipeline):
-        raise ImplError("{} does not implement size_request()".format(type(self).__name__))
+        pass
 
     # render()
     #
@@ -137,19 +132,12 @@ class Widget():
 # Used to add spacing between columns
 class Space(Widget):
 
-    def size_request(self, pipeline):
-        return 1
-
     def render(self, message):
         return ' '
 
 
 # A widget for rendering the debugging column
 class Debug(Widget):
-
-    def size_request(self, pipeline):
-        # [ + 'pid:' + 5 + ' id:' + 3 + ]
-        return 18
 
     def render(self, message):
         unique_id = 0 if message.unique_id is None else message.unique_id
@@ -165,10 +153,6 @@ class Debug(Widget):
 
 # A widget for rendering the time codes
 class TimeCode(Widget):
-
-    def size_request(self, pipeline):
-        # The time code [--:--:--] is 10 characters
-        return 10
 
     def render(self, message):
         if message.elapsed is None:
@@ -191,10 +175,6 @@ class TimeCode(Widget):
 
 # A widget for rendering the action name
 class ActionName(Widget):
-
-    def size_request(self, pipeline):
-        # The action names are up to 5 characters, plus brackets
-        return 7
 
     def render(self, message):
         action_name = message.action_name
@@ -219,10 +199,6 @@ class TypeName(Widget):
         MessageType.FAIL: "red",
     }
 
-    def size_request(self, pipeline):
-        # Longest message type string is 7 characters
-        return 7
-
     def render(self, message):
         return self.content_profile.fmt("{: <7}"
                                         .format(message.message_type.upper()),
@@ -238,7 +214,7 @@ class ElementName(Widget):
 
         # Pre initialization format string, before we know the length of
         # element names in the pipeline
-        self.fmt_string = '{: <30}'
+        self.fmt_string = '{: <35}'
 
     def size_request(self, pipeline):
         longest_name = 0
@@ -247,11 +223,8 @@ class ElementName(Widget):
 
         # Put a cap at a specific width, usually some elements cause the line
         # to be too long, just live with the unaligned columns in that case
-        longest_name = min(longest_name, 40)
-
+        longest_name = min(longest_name, 35)
         self.fmt_string = '{: <' + str(longest_name) + '}'
-
-        return longest_name + 2
 
     def render(self, message):
         if message.unique_id is not None:
@@ -269,31 +242,70 @@ class ElementName(Widget):
 # A widget for displaying the primary message text
 class MessageText(Widget):
 
-    def __init__(self, content_profile, format_profile, errlog_profile):
-        super(MessageText, self).__init__(content_profile, format_profile)
+    def render(self, message):
 
-        self.errlog_profile = errlog_profile
+        return message.message
+
+
+# A widget for formatting the element cache key
+class CacheKey(Widget):
+
+    def __init__(self, content_profile, format_profile, err_profile):
+        super(CacheKey, self).__init__(content_profile, format_profile)
+
+        self.err_profile = err_profile
 
     def size_request(self, pipeline):
-        # We dont have any idea about the message length
-        return 0
+        self.key_length = pipeline.context.log_key_length
+
+    def render(self, message):
+
+        key = ' ' * self.key_length
+        if message.unique_id is not None:
+            plugin = _plugin_lookup(message.unique_id)
+            if isinstance(plugin, Element):
+                key = plugin._get_display_key()
+
+        if message.message_type == MessageType.FAIL:
+            text = self.err_profile.fmt(key)
+        else:
+            text = self.content_profile.fmt(key)
+
+        return self.format_profile.fmt('[') + text + self.format_profile.fmt(']')
+
+
+# A widget for formatting the log file
+class LogFile(Widget):
+
+    def __init__(self, content_profile, format_profile, err_profile):
+        super(LogFile, self).__init__(content_profile, format_profile)
+
+        self.err_profile = err_profile
+        self.logdir = ''
+
+    def size_request(self, pipeline):
+
+        # Hold on to the logging directory so we can abbreviate
+        self.logdir = pipeline.context.logdir
 
     def render(self, message):
 
         if message.logfile and message.scheduler:
+            logfile = message.logfile
+            if logfile.startswith(self.logdir):
+                logfile = logfile[len(self.logdir) + 1:]
+
             if message.message_type == MessageType.FAIL:
-                text = self.errlog_profile.fmt(message.logfile)
+                text = self.err_profile.fmt(logfile)
             else:
-                text = self.content_profile.fmt(message.logfile, dim=True)
+                text = self.content_profile.fmt(logfile, dim=True)
         else:
-            # No formatting, default white
-            text = message.message
+            text = ''
 
         return text
 
 
 # A widget for formatting a log line
-#
 class LogLine(Widget):
 
     def __init__(self, content_profile, format_profile, err_profile, detail_profile,
@@ -308,25 +320,32 @@ class LogLine(Widget):
         self.indent = ' ' * indent
         self.log_lines = log_lines
 
+        self.space_widget = Space(content_profile, format_profile)
+        self.message_widget = MessageText(content_profile, format_profile)
+        self.logfile_widget = LogFile(content_profile, format_profile, err_profile)
+
         if debug:
-            self.columns.append(Debug(content_profile, format_profile))
+            self.columns.extend([
+                Debug(content_profile, format_profile),
+                ActionName(content_profile, format_profile)
+            ])
 
         self.columns.extend([
             TimeCode(content_profile, format_profile),
-            ActionName(content_profile, format_profile),
+            CacheKey(content_profile, format_profile, err_profile),
             ElementName(content_profile, format_profile),
-            Space(content_profile, format_profile),
+            self.space_widget,
             TypeName(content_profile, format_profile),
-            Space(content_profile, format_profile),
-            MessageText(content_profile, format_profile, err_profile)
+            self.space_widget
         ])
 
     def size_request(self, pipeline):
-        size = 0
         for widget in self.columns:
-            size += widget.size_request(pipeline)
+            widget.size_request(pipeline)
 
-        return size
+        self.space_widget.size_request(pipeline)
+        self.message_widget.size_request(pipeline)
+        self.logfile_widget.size_request(pipeline)
 
     def render(self, message):
 
@@ -334,6 +353,13 @@ class LogLine(Widget):
         text = ''
         for widget in self.columns:
             text += widget.render(message)
+
+        # Show the action only in the main start/success/fail messages
+        if message.scheduler:
+            text += self.logfile_widget.render(message)
+        else:
+            text += self.message_widget.render(message)
+
         text += '\n'
 
         extra_nl = False
