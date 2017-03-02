@@ -93,28 +93,25 @@ class GitMirror():
         # of bytes.
         if not os.path.exists(self.mirror):
 
-            with self.source.timed_activity("Mirroring {}".format(self.url)):
+            # Do the initial clone in a tmpdir just because we want an atomic move
+            # after a long standing clone which could fail overtime, for now do
+            # this directly in our git directory, eliminating the chances that the
+            # system configured tmpdir is not on the same partition.
+            #
+            tmpdir = tempfile.mkdtemp(dir=self.source.get_mirror_directory())
+            self.source.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir],
+                             fail="Failed to clone git repository {}".format(self.url))
 
-                # Do the initial clone in a tmpdir just because we want an atomic move
-                # after a long standing clone which could fail overtime, for now do
-                # this directly in our git directory, eliminating the chances that the
-                # system configured tmpdir is not on the same partition.
-                #
-                tmpdir = tempfile.mkdtemp(dir=self.source.get_mirror_directory())
-                self.source.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir],
-                                 fail="Failed to clone git repository {}".format(self.url))
-
-                try:
-                    shutil.move(tmpdir, self.mirror)
-                except (shutil.Error, OSError) as e:
-                    raise SourceError("%s: Failed to move cloned git repository %s from '%s' to '%s'" %
-                                      (str(self.source), self.url, tmpdir, self.mirror)) from e
+            try:
+                shutil.move(tmpdir, self.mirror)
+            except (shutil.Error, OSError) as e:
+                raise SourceError("%s: Failed to move cloned git repository %s from '%s' to '%s'" %
+                                  (str(self.source), self.url, tmpdir, self.mirror)) from e
 
     def fetch(self):
-        with self.source.timed_activity("Fetching {}".format(self.url)):
-            self.source.call([self.source.host_git, 'fetch', 'origin'],
-                             fail="Failed to fetch from remote git repository: {}".format(self.url),
-                             cwd=self.mirror)
+        self.source.call([self.source.host_git, 'fetch', 'origin'],
+                         fail="Failed to fetch from remote git repository: {}".format(self.url),
+                         cwd=self.mirror)
 
     def has_ref(self):
         if not self.ref:
@@ -143,16 +140,15 @@ class GitMirror():
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
-        with self.source.timed_activity("Staging {}".format(self.url)):
-            # We need to pass '--no-hardlinks' because there's nothing to
-            # stop the build from overwriting the files in the .git directory
-            # inside the sandbox.
-            self.source.call([self.source.host_git, 'clone', '--no-hardlinks', self.mirror, fullpath],
-                             fail="Failed to checkout git mirror {} in directory: {}".format(self.mirror, fullpath))
+        # We need to pass '--no-hardlinks' because there's nothing to
+        # stop the build from overwriting the files in the .git directory
+        # inside the sandbox.
+        self.source.call([self.source.host_git, 'clone', '--no-hardlinks', self.mirror, fullpath],
+                         fail="Failed to checkout git mirror {} in directory: {}".format(self.mirror, fullpath))
 
-            self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
-                             fail="Failed to checkout git ref {}".format(self.ref),
-                             cwd=fullpath)
+        self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
+                         fail="Failed to checkout git ref {}".format(self.ref),
+                         cwd=fullpath)
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
@@ -262,34 +258,43 @@ class GitSource(Source):
         if not self.tracking:
             return None
 
-        self.mirror.ensure()
-        self.mirror.fetch()
-
-        # Update self.mirror.ref and node.ref from the self.tracking branch
-        return self.mirror.latest_commit(self.tracking)
-
-    def fetch(self):
-        # Here we are only interested in ensuring that our mirror contains
-        # the self.mirror.ref commit.
-        self.mirror.ensure()
-        if not self.mirror.has_ref():
+        with self.timed_activity("Tracking {} from {}"
+                                 .format(self.tracking, self.mirror.url),
+                                 silent_nested=True):
+            self.mirror.ensure()
             self.mirror.fetch()
 
-        self.mirror.assert_ref()
+            # Update self.mirror.ref and node.ref from the self.tracking branch
+            ret = self.mirror.latest_commit(self.tracking)
 
-        # Here after performing any fetches, we need to also ensure that
-        # we've cached the desired refs in our mirrors of submodules.
-        #
-        self.refresh_submodules()
-        self.fetch_submodules()
+        return ret
+
+    def fetch(self):
+
+        with self.timed_activity("Fetching {}".format(self.mirror.url), silent_nested=True):
+
+            # Here we are only interested in ensuring that our mirror contains
+            # the self.mirror.ref commit.
+            self.mirror.ensure()
+            if not self.mirror.has_ref():
+                self.mirror.fetch()
+
+            self.mirror.assert_ref()
+
+            # Here after performing any fetches, we need to also ensure that
+            # we've cached the desired refs in our mirrors of submodules.
+            #
+            self.refresh_submodules()
+            self.fetch_submodules()
 
     def stage(self, directory):
 
         # Stage the main repo in the specified directory
         #
-        self.mirror.stage(directory)
-        for mirror in self.submodules:
-            mirror.stage(directory)
+        with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
+            self.mirror.stage(directory)
+            for mirror in self.submodules:
+                mirror.stage(directory)
 
     ###########################################################
     #                     Local Functions                     #
