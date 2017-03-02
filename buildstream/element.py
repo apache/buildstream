@@ -599,7 +599,7 @@ class Element(Plugin):
                 key = self._get_cache_key()
                 display_key = self._get_display_key()
 
-                with self.timed_activity("Caching {}".format(display_key)):
+                with self.timed_activity("Caching Artifact"):
                     self.__artifacts.commit(project.name,
                                             self.name,
                                             key,
