@@ -26,6 +26,7 @@ from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
 from . import _yaml
+from . import utils
 from . import PluginError, ImplError
 from .exceptions import _BstError
 from ._message import Message, MessageType
@@ -319,7 +320,7 @@ class Plugin():
             elapsed = datetime.datetime.now() - starttime
             self.__context._pop_message_depth()
             self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
-            raise e
+            raise
 
         elapsed = datetime.datetime.now() - starttime
         self.__context._pop_message_depth()
@@ -360,15 +361,24 @@ class Plugin():
         with self._output_file() as output_file:
             kwargs['stdout'] = output_file
             kwargs['stderr'] = output_file
+            kwargs['start_new_session'] = True
 
             self.__note_command(output_file, *popenargs, **kwargs)
-            exit_code = subprocess.call(*popenargs, **kwargs)
+
+            # Kill the process upon termination
+            def kill_process():
+                if process:
+                    process.kill()
+
+            with utils._terminator(kill_process):
+                process = subprocess.Popen(*popenargs, **kwargs)
+                process.communicate()
+                exit_code = process.poll()
+
             if fail and exit_code:
                 raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
-            return exit_code
 
-        # Should not reach here
-        raise Exception()
+        return exit_code
 
     def check_output(self, *popenargs, fail=None, **kwargs):
         """A wrapper for subprocess.check_output()
@@ -420,25 +430,29 @@ class Plugin():
 
         with self._output_file() as output_file:
             kwargs['stderr'] = output_file
-            exit_code = 0
-            output = None
+            kwargs['stdout'] = subprocess.PIPE
+            kwargs['start_new_session'] = True
 
             self.__note_command(output_file, *popenargs, **kwargs)
-            try:
-                output = subprocess.check_output(*popenargs, **kwargs)
-            except CalledProcessError as e:
-                if fail:
-                    raise PluginError("{plugin}: {message}".format(plugin=self, message=fail)) from e
-                exit_code = e.returncode
+
+            # Kill the process upon termination
+            def kill_process():
+                if process:
+                    process.kill()
+
+            with utils._terminator(kill_process):
+                process = subprocess.Popen(*popenargs, **kwargs)
+                output, _ = process.communicate()
+                exit_code = process.poll()
+
+            if fail and exit_code:
+                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
 
             # Program output is returned as bytes, we want utf8 strings
             if output is not None:
                 output = output.decode('UTF-8')
 
-            return (exit_code, output)
-
-        # Should not reach here
-        raise Exception()
+        return (exit_code, output)
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -535,7 +549,7 @@ def _plugin_lookup(unique_id):
         plugin = __PLUGINS_TABLE[unique_id]
     except (AttributeError, KeyError) as e:
         print("Could not find plugin with ID {}".format(unique_id))
-        raise e
+        raise
 
     return plugin
 
