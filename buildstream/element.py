@@ -579,7 +579,12 @@ class Element(Plugin):
             os.makedirs(context.builddir, exist_ok=True)
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
 
-            with self.__sandbox(None, rootdir, output_file, output_file) as sandbox:
+            # Cleanup the build directory on explicit SIGTERM
+            def cleanup_rootdir():
+                shutil.rmtree(rootdir)
+
+            with utils._terminator(cleanup_rootdir), \
+                self.__sandbox(None, rootdir, output_file, output_file) as sandbox:  # nopep8
 
                 # Call the abstract plugin method
                 try:
@@ -653,8 +658,16 @@ class Element(Plugin):
     def _logging_enabled(self, action_name):
         fullpath = self._logfile(action_name)
         with open(fullpath, 'a') as logfile:
+
+            # Write one last line to the log and flush it to disk
+            def flush_log():
+                logfile.write('\n\nAction {} for element {} forcefully terminated\n'
+                              .format(action_name, self._get_display_name()))
+                logfile.flush()
+
             self._set_log_handle(logfile)
-            yield fullpath
+            with utils._terminator(flush_log):
+                yield fullpath
             self._set_log_handle(None)
 
     # Override plugin _set_log_handle(), set it for our sources and dependencies too
@@ -736,8 +749,9 @@ class Element(Plugin):
             with self.__sandbox(scope, rootdir, stdout, stderr) as sandbox:
 
                 # Stage deps in the sandbox root
-                for dep in self.dependencies(scope):
-                    dep.stage(sandbox)
+                with self.timed_activity("Staging dependencies", silent_nested=True):
+                    for dep in self.dependencies(scope):
+                        dep.stage(sandbox)
 
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready
