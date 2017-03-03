@@ -27,21 +27,16 @@ from ruamel import yaml
 
 from . import Context, Project, Scope, Consistency
 from .exceptions import _BstError
-from ._message import MessageType
+from ._message import MessageType, unconditional_messages
 from ._pipeline import Pipeline, PipelineError
+from ._scheduler import Scheduler
 from . import utils
 from ._profile import Topics, profile_start, profile_end
 from ._widget import Profile, LogLine
 
-# Some nasty globals
+# Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version
 _, _, _, _, host_machine = os.uname()
-
-main_options = {}
-main_options_set = {}
-main_context = None
-messaging_enabled = False
-logger = None
 
 
 ##################################################################
@@ -71,21 +66,16 @@ logger = None
 @click.option('--log-file',
               type=click.File(mode='w', encoding='UTF-8'),
               help="A file to store the main log (allows storing the main log while in interactive mode)")
-def cli(**kwargs):
+@click.pass_context
+def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
 
     Most of the main options override options in the
     user preferences configuration file.
     """
-    # Record main options for usage in create_pipeline()
-    for key, value in dict(kwargs).items():
-        main_options[key] = value
 
-    # Early enable messaging in debug mode
-    global messaging_enabled
-    if main_options['debug']:
-        print("DEBUG: Early enablement of messages")
-        messaging_enabled = True
+    # Create the App, giving it the main arguments
+    context.obj = App(dict(kwargs))
 
 
 ##################################################################
@@ -99,20 +89,17 @@ def cli(**kwargs):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def build(target, arch, variant, all):
+@click.pass_obj
+def build(app, target, arch, variant, all):
     """Build elements in a pipeline"""
-    pipeline = create_pipeline(target, arch, variant)
+
+    app.initialize(target, arch, variant)
     try:
-        changed = pipeline.build(all)
+        app.pipeline.build(app.scheduler, all)
         click.echo("")
     except PipelineError:
         click.echo("")
-        click.echo("Error building this pipeline")
-        sys.exit(1)
-
-    click.echo(("Successfully built {changed} elements in pipeline " +
-                "with target '{target}' in directory: {directory}").format(
-                    changed=len(changed), target=target, directory=main_options['directory']))
+        sys.exit(-1)
 
 
 ##################################################################
@@ -126,19 +113,17 @@ def build(target, arch, variant, all):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def fetch(target, arch, variant, needed):
+@click.pass_obj
+def fetch(app, target, arch, variant, needed):
     """Fetch sources in a pipeline"""
-    pipeline = create_pipeline(target, arch, variant)
+
+    app.initialize(target, arch, variant)
     try:
-        inconsistent, cached, plan = pipeline.fetch(needed)
+        app.pipeline.fetch(app.scheduler, needed)
         click.echo("")
     except PipelineError:
         click.echo("")
-        click.echo("Error fetching sources for this pipeline")
-        sys.exit(1)
-
-    click.echo("Fetched sources for {} elements, {} inconsistent elements, {} cached elements"
-               .format(len(plan), len(inconsistent), len(cached)))
+        sys.exit(-1)
 
 
 ##################################################################
@@ -147,14 +132,13 @@ def fetch(target, arch, variant, needed):
 @cli.command(short_help="Track new source references")
 @click.option('--needed', default=False, is_flag=True,
               help="Track only sources required to build missing artifacts")
-@click.option('--list', '-l', default=False, is_flag=True,
-              help='List the sources which were tracked')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def track(target, arch, variant, needed, list):
+@click.pass_obj
+def track(app, target, arch, variant, needed, list):
     """Track new source references
 
     Updates the project with new source references from
@@ -163,27 +147,13 @@ def track(target, arch, variant, needed, list):
 
     The project data will be rewritten inline.
     """
-    pipeline = create_pipeline(target, arch, variant, rewritable=True)
+    app.initialize(target, arch, variant, rewritable=True)
     try:
-        sources = pipeline.track(needed)
+        app.pipeline.track(app.scheduler, needed)
         click.echo("")
     except PipelineError:
         click.echo("")
-        click.echo("Error tracking sources in pipeline")
-        sys.exit(1)
-
-    if list:
-        # --list output
-        for source in sources:
-            click.echo("{}".format(source))
-
-    elif len(sources) > 0:
-        click.echo(("Successfully updated {n_sources} source references in pipeline " +
-                    "with target '{target}' in directory: {directory}").format(
-                        n_sources=len(sources), target=target, directory=main_options['directory']))
-    else:
-        click.echo(("Pipeline with target '{target}' already up to date in directory: {directory}").format(
-            target=target, directory=main_options['directory']))
+        sys.exit(-1)
 
 
 ##################################################################
@@ -204,7 +174,8 @@ def track(target, arch, variant, needed, list):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def show(target, arch, variant, deps, order, format):
+@click.pass_obj
+def show(app, target, arch, variant, deps, order, format):
     """Show elements in the pipeline
 
     By default this will only show the specified element, use
@@ -238,11 +209,9 @@ def show(target, arch, variant, deps, order, format):
         build-stream show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    pipeline = create_pipeline(target, arch, variant)
+    app.initialize(target, arch, variant)
     report = ''
     p = Profile()
-
-    profile_start(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
 
     if deps is not None:
         scope = deps
@@ -254,11 +223,13 @@ def show(target, arch, variant, deps, order, format):
             scope = Scope.RUN
 
         if order == "alpha":
-            dependencies = sorted(pipeline.dependencies(scope))
+            dependencies = sorted(app.pipeline.dependencies(scope))
         else:
-            dependencies = pipeline.dependencies(scope)
+            dependencies = app.pipeline.dependencies(scope)
     else:
-        dependencies = [pipeline.target]
+        dependencies = [app.pipeline.target]
+
+    profile_start(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
 
     for element in dependencies:
         line = p.fmt_subst(format, 'name', element._get_display_name(), fg='blue', bold=True)
@@ -321,7 +292,8 @@ def show(target, arch, variant, deps, order, format):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
-def shell(target, arch, variant, builddir, scope):
+@click.pass_obj
+def shell(app, target, arch, variant, builddir, scope):
     """Shell into an element's sandbox environment
 
     This can be used either to debug building or to launch
@@ -340,12 +312,12 @@ def shell(target, arch, variant, builddir, scope):
     elif scope == "build":
         scope = Scope.BUILD
 
-    pipeline = create_pipeline(target, arch, variant)
+    app.initialize(target, arch, variant)
 
     # Assert we have everything we need built.
     missing_deps = []
     if scope is not None:
-        for dep in pipeline.dependencies(scope):
+        for dep in app.pipeline.dependencies(scope):
             if not dep._cached():
                 missing_deps.append(dep)
 
@@ -356,151 +328,191 @@ def shell(target, arch, variant, builddir, scope):
             click.echo("   {}".format(dep._get_display_name()))
         click.echo("")
         click.echo("Try building them first")
-        sys.exit(1)
+        sys.exit(-1)
 
     try:
-        pipeline.target._shell(scope, builddir)
+        app.pipeline.target._shell(scope, builddir)
     except _BstError as e:
         click.echo("")
         click.echo("Errors shelling into this pipeline: %s" % str(e))
-        sys.exit(1)
+        sys.exit(-1)
 
 
 ##################################################################
 #                        Helper Functions                        #
 ##################################################################
 
-#
-# Handle messages from the pipeline
-#
-def message_handler(message, context):
+class App():
 
-    # Drop messages by default in the beginning while
-    # loading the pipeline, unless debug is specified.
-    if not messaging_enabled:
-        return
+    def __init__(self, main_options):
+        self.main_options = main_options
+        self.messaging_enabled = False
+        self.logger = None
 
-    # Drop status messages from the UI if not verbose, we'll still see
-    # info messages and status messages will still go to the log files.
-    if not context.log_verbose and message.message_type == MessageType.STATUS:
-        return
+        # Main asset handles
+        self.context = None
+        self.project = None
+        self.scheduler = None
+        self.pipe = None
 
-    text = logger.render(message)
+        # For the initialization time tickers
+        self.file_count = 0
+        self.resolve_count = 0
+        self.cache_count = 0
 
-    click.echo(text, nl=False)
-
-    # Additionally log to a file
-    if main_options['log_file']:
-        click.echo(text, file=main_options['log_file'], color=False, nl=False)
-
-
-#
-# Create a pipeline
-#
-def create_pipeline(target, arch, variant, rewritable=False):
-    global messaging_enabled
-    global logger
-
-    profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
-
-    directory = main_options['directory']
-    config = main_options['config']
+        # Early enable messaging in debug mode
+        if self.main_options['debug']:
+            click.echo("DEBUG: Early enablement of messages")
+            self.messaging_enabled = True
 
     #
-    # Some local tickers and state to show the user what's going on
-    # while loading
+    # Initialize the main pipeline
     #
-    file_count = 0
-    resolve_count = 0
-    cache_count = 0
+    def initialize(self, target, arch, variant, rewritable=False):
 
-    def load_ticker(name):
-        nonlocal file_count
+        profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
+
+        directory = self.main_options['directory']
+        config = self.main_options['config']
+
+        try:
+            self.context = Context(arch)
+            self.context.load(config)
+        except _BstError as e:
+            click.echo("Error loading user configuration: %s" % str(e))
+            sys.exit(1)
+
+        # Create the application's scheduler
+        self.scheduler = Scheduler(self.context,
+                                   interrupt_callback=self.interrupt_handler)
+
+        # Override things in the context from our command line options,
+        # the command line when used, trumps the config files.
+        #
+        override_map = {
+            'debug': 'log_debug',
+            'verbose': 'log_verbose',
+            'error_lines': 'log_error_lines',
+            'on_error': 'sched_error_action',
+            'fetchers': 'sched_fetchers',
+            'builders': 'sched_builders'
+        }
+        for cli_option, context_attr in override_map.items():
+            option_value = self.main_options.get(cli_option)
+            if option_value is not None:
+                setattr(self.context, context_attr, option_value)
+
+        # Create the logger right before setting the message handler
+        self.logger = LogLine(
+            # Content
+            Profile(fg='yellow'),
+            # Formatting
+            Profile(fg='cyan', dim=True),
+            # Errors
+            Profile(fg='red', dim=True),
+            # Details (log lines and other detailed messages)
+            Profile(dim=True),
+            # Indentation for detailed messages
+            indent=4,
+            # Number of last lines in an element's log to print (when encountering errors)
+            log_lines=self.context.log_error_lines,
+            # Whether to print additional debugging information
+            debug=self.context.log_debug)
+
+        # Propagate pipeline feedback to the user
+        self.context._set_message_handler(self.message_handler)
+
+        try:
+            self.project = Project(directory, arch)
+        except _BstError as e:
+            click.echo("Error loading project: %s" % str(e))
+            sys.exit(1)
+
+        try:
+            self.pipeline = Pipeline(self.context, self.project, target, variant,
+                                     rewritable=rewritable,
+                                     load_ticker=self.load_ticker,
+                                     resolve_ticker=self.resolve_ticker,
+                                     cache_ticker=self.cache_ticker)
+        except _BstError as e:
+            click.echo("Error loading pipeline: %s" % str(e))
+            sys.exit(1)
+
+        # Pipeline is loaded, lets start displaying pipeline messages from tasks
+        self.logger.size_request(self.pipeline)
+        self.messaging_enabled = True
+
+        profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
+
+    #
+    # Handle ^C SIGINT interruptions in the scheduling main loop
+    #
+    def interrupt_handler(self):
+        # Here we can give the user some choices, like whether they would
+        # like to continue, abort immediately, or only complete processing of
+        # the currently ongoing tasks. We can also print something more
+        # intelligent, like how many tasks remain to complete overall.
+        click.echo("", err=True)
+        try:
+            quit_now = click.prompt("Do you really want to terminate all jobs ?",
+                                    type=bool, default=False, err=True)
+        except click.Abort:
+            # Ensure a newline after automatically printed '^C'
+            click.echo("", err=True)
+            quit_now = True
+
+        if quit_now:
+            click.echo("\nTerminating all jobs at user request\n", err=True)
+            self.scheduler.terminate_jobs()
+
+    #
+    # Handle messages from the pipeline
+    #
+    def message_handler(self, message, context):
+
+        # Drop messages by default in the beginning while
+        # loading the pipeline, unless debug is specified.
+        if not self.messaging_enabled:
+            return
+
+        # Drop status messages from the UI if not verbose, we'll still see
+        # info messages and status messages will still go to the log files.
+        if not context.log_verbose and message.message_type == MessageType.STATUS:
+            return
+
+        # Send to frontend if appropriate
+        if (self.context._silent_messages() and
+            message.message_type not in unconditional_messages):
+            return
+
+        text = self.logger.render(message)
+
+        click.echo(text, nl=False)
+
+        # Additionally log to a file
+        if self.main_options['log_file']:
+            click.echo(text, file=main_options['log_file'], color=False, nl=False)
+
+    #
+    # Tickers at initialization time
+    #
+    def load_ticker(self, name):
         if name:
-            file_count += 1
-            click.echo("Loading:   {:0>3}\r".format(file_count), nl=False, err=True)
+            self.file_count += 1
+            click.echo("Loading:   {:0>3}\r".format(self.file_count), nl=False, err=True)
         else:
             click.echo('', err=True)
 
-    def resolve_ticker(name):
-        nonlocal resolve_count
+    def resolve_ticker(self, name):
         if name:
-            resolve_count += 1
-            click.echo("Resolving: {:0>3}/{:0>3}\r".format(file_count, resolve_count), nl=False, err=True)
+            self.resolve_count += 1
+            click.echo("Resolving: {:0>3}/{:0>3}\r".format(self.file_count, self.resolve_count), nl=False, err=True)
         else:
             click.echo('', err=True)
 
-    def cache_ticker(name):
-        nonlocal cache_count
+    def cache_ticker(self, name):
         if name:
-            cache_count += 1
-            click.echo("Checking:  {:0>3}/{:0>3}\r".format(file_count, cache_count), nl=False, err=True)
+            self.cache_count += 1
+            click.echo("Checking:  {:0>3}/{:0>3}\r".format(self.file_count, self.cache_count), nl=False, err=True)
         else:
             click.echo('', err=True)
-
-    try:
-        context = Context(arch)
-        context.load(config)
-    except _BstError as e:
-        click.echo("Error loading user configuration: %s" % str(e))
-        sys.exit(1)
-
-    # Override things in the context from our command line options,
-    # the command line when used, trumps the config files.
-    #
-    if main_options.get('debug') is not None:
-        context.log_debug = main_options['debug']
-    if main_options.get('verbose') is not None:
-        context.log_verbose = main_options['verbose']
-    if main_options.get('on_error') is not None:
-        context.sched_error_action = main_options['on_error']
-    if main_options.get('error_lines') is not None:
-        context.log_error_lines = main_options['error_lines']
-    if main_options.get('fetchers') is not None:
-        context.sched_fetchers = main_options['fetchers']
-    if main_options.get('builders') is not None:
-        context.sched_builders = main_options['builders']
-
-    # Create the logger right before setting the message handler
-    logger = LogLine(
-        # Content
-        Profile(fg='yellow'),
-        # Formatting
-        Profile(fg='cyan', dim=True),
-        # Errors
-        Profile(fg='red', dim=True),
-        # Details (log lines and other detailed messages)
-        Profile(dim=True),
-        # Indentation for detailed messages
-        indent=4,
-        # Number of last lines in an element's log to print (when encountering errors)
-        log_lines=context.log_error_lines,
-        # Whether to print additional debugging information
-        debug=context.log_debug)
-
-    # Propagate pipeline feedback to the user
-    context._set_message_handler(message_handler)
-
-    try:
-        project = Project(directory, arch)
-    except _BstError as e:
-        click.echo("Error loading project: %s" % str(e))
-        sys.exit(1)
-
-    try:
-        pipeline = Pipeline(context, project, target, variant,
-                            rewritable=rewritable,
-                            load_ticker=load_ticker,
-                            resolve_ticker=resolve_ticker,
-                            cache_ticker=cache_ticker)
-    except _BstError as e:
-        click.echo("Error loading pipeline: %s" % str(e))
-        sys.exit(1)
-
-    # Pipeline is loaded, lets start displaying pipeline messages from tasks
-    logger.size_request(pipeline)
-    messaging_enabled = True
-
-    profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
-
-    return pipeline
