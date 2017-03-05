@@ -23,6 +23,7 @@ import os
 import sys
 import asyncio
 import multiprocessing
+import signal
 import datetime
 from collections import deque
 from ruamel import yaml
@@ -41,6 +42,13 @@ class Process(multiprocessing.Process):
         self._sentinel = self._popen.sentinel
 
 
+# A decent return code for Scheduler.run()
+class SchedStatus():
+    SUCCESS = 0
+    ERROR = -1
+    TERMINATED = 1
+
+
 # Scheduler()
 #
 # The scheduler operates on a list queues, each of which is meant to accomplish
@@ -56,18 +64,18 @@ class Process(multiprocessing.Process):
 #
 # Args:
 #    context: The Context in the parent scheduling process
-#    queues: A list of Queues, implemented by the caller
+#    interrupt_callback: An optional callback to call when ^C is
+#                        pressed.
 #
 class Scheduler():
 
-    def __init__(self, context, queues):
+    def __init__(self, context, interrupt_callback=None):
         self.loop = asyncio.get_event_loop()
-        self.queues = queues
+        self.loop.add_signal_handler(signal.SIGINT, self.interrupt)
+        self.interrupt_callback = interrupt_callback
         self.context = context
-
-        # Attach the queues
-        for queue in queues:
-            queue.attach(self)
+        self.queues = None
+        self.terminated = False
 
     # run()
     #
@@ -76,22 +84,45 @@ class Scheduler():
     #    queues (list): A list of Queue objects
     #
     # Returns:
-    #    (bool): Whether processing was successful
+    #    (SchedStatus): How the scheduling terminated
     #
     # Elements in the 'plan' will be processed by each
     # queue in order. Processing will complete when all
     # elements have been processed by each queue or when
     # an error arises
     #
-    def run(self, plan):
+    def run(self, queues):
 
-        # Append directly into first queue
-        self.queues[0].enqueue(list(plan))
+        # Attach the queues
+        self.queues = queues
+        for queue in queues:
+            queue.attach(self)
+
+        # Run the queues
         self.sched()
         self.loop.run_forever()
         self.loop.close()
 
-        return not self.failed_elements()
+        failed = self.failed_elements()
+        self.queues = None
+
+        if failed:
+            return SchedStatus.ERROR
+        elif self.terminated:
+            return SchedStatus.TERMINATED
+        else:
+            return SchedStatus.SUCCESS
+
+    # terminate_jobs()
+    #
+    # Forcefully terminates all ongoing jobs.
+    #
+    def terminate_jobs(self):
+        for queue in self.queues:
+            for job in queue.active_jobs:
+                job.terminate()
+        self.loop.stop()
+        self.terminated = True
 
     def failed_elements(self):
         failed = False
@@ -133,6 +164,19 @@ class Scheduler():
 
         if ticking == 0:
             self.loop.stop()
+
+    def interrupt(self):
+        # Leave this to the frontend to decide, if no
+        # interrrupt callback was specified, then just terminate.
+        if self.interrupt_callback:
+
+            # Stop handling SIGINT while the callback is running
+            self.loop.remove_signal_handler(signal.SIGINT)
+            self.interrupt_callback()
+            self.loop.add_signal_handler(signal.SIGINT, self.interrupt)
+        else:
+            # Default without a frontend is just terminate
+            self.terminate_jobs()
 
 
 # Queue()
@@ -270,7 +314,9 @@ class Queue():
         else:
             self.failed_elements.append(element)
 
-        job.parent_process_queue()
+        # Shutdown the job
+        job.shutdown()
+
         self.active_jobs.remove(job)
 
         # Give the result of the job to the Queue implementor
@@ -301,16 +347,17 @@ class Job():
         self.queue = multiprocessing.Queue()  # A message passing queue
         self.process = None                   # The Process object
         self.watcher = None                   # Child process watcher
-        self.parent_action = action_name      # The action name for the Queue
+        self.action_name = action_name        # The action name for the Queue
         self.action = None                    # The action callable function
         self.complete = None                  # The complete callable function
         self.element = None                   # The element we're processing
+        self.listening = False                # Whether the parent is currently listening
 
         # Only relevant in parent process after spawning
         self.pid = None                       # The child's pid in the parent
         self.result = None                    # Return value of child action in the parent
 
-        self.parent_listen()
+        self.parent_start_listening()
 
     # spawn()
     #
@@ -326,17 +373,51 @@ class Job():
         self.complete = complete
         self.element = element
 
+        # Block SIGINT in parent while spawning the process, child will inherit this
+        signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
+
         # Spawn the process
         self.process = Process(target=self.child_action,
-                               args=[element, self.queue, self.parent_action])
+                               args=[element, self.queue, self.action_name])
         self.process.start()
+
+        # Unblock SIGINT in parent
+        signal.pthread_sigmask(signal.SIG_UNBLOCK, [signal.SIGINT])
+
         self.pid = self.process.pid
 
         # Wait for it to complete
         self.watcher = asyncio.get_child_watcher()
         self.watcher.add_child_handler(self.pid, self.child_complete, element)
 
-    # Local message wrapper
+    # shutdown()
+    #
+    # Should be called after the job completes
+    #
+    def shutdown(self):
+        # Make sure we've read everything we need and then stop listening
+        self.parent_process_queue()
+        self.parent_stop_listening()
+
+    # terminate()
+    #
+    # Forcefully terminates an ongoing job.
+    #
+    def terminate(self):
+
+        # Kill children of the process
+        pid = self.process.pid
+
+        self.message(self.element, MessageType.WARN,
+                     "{} terminating".format(self.action_name))
+
+        # Make sure there is no garbage on the queue
+        self.parent_stop_listening()
+
+        # Terminate the process using multiprocessing API pathway
+        self.process.terminate()
+
+    # This can be used equally in the parent and child processes
     def message(self, plugin, message_type, message, **kwargs):
         args = dict(kwargs)
         args['scheduler'] = True
@@ -434,7 +515,7 @@ class Job():
         plugin = _plugin_lookup(message.unique_id)
 
         # Tag them on the way out the door...
-        message.action_name = self.parent_action
+        message.action_name = self.action_name
 
         # Log first
         self.child_log(plugin, message, context)
@@ -453,6 +534,9 @@ class Job():
     #                 Parent Process                      #
     #######################################################
     def parent_process_envelope(self, envelope):
+        if not self.listening:
+            return
+
         if envelope.message_type == 'message':
             # Propagate received messages from children
             # back through the context.
@@ -471,7 +555,7 @@ class Job():
     def parent_recv(self, *args):
         self.parent_process_queue()
 
-    def parent_listen(self):
+    def parent_start_listening(self):
         # Warning: Platform specific code up ahead
         #
         #   The multiprocessing.Queue object does not tell us how
@@ -483,5 +567,12 @@ class Job():
         #
         #      http://bugs.python.org/issue3831
         #
-        self.scheduler.loop.add_reader(
-            self.queue._reader.fileno(), self.parent_recv)
+        if not self.listening:
+            self.scheduler.loop.add_reader(
+                self.queue._reader.fileno(), self.parent_recv)
+            self.listening = True
+
+    def parent_stop_listening(self):
+        if self.listening:
+            self.scheduler.loop.remove_reader(self.queue._reader.fileno())
+            self.listening = False
