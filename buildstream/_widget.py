@@ -354,8 +354,8 @@ class LogLine(Widget):
         for widget in self.columns:
             text += widget.render(message)
 
-        # Show the action only in the main start/success/fail messages
-        if message.scheduler:
+        # Show the log file only in the main start/success/fail messages
+        if message.logfile and message.scheduler:
             text += self.logfile_widget.render(message)
         else:
             text += self.message_widget.render(message)
