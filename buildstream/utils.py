@@ -27,7 +27,9 @@ import collections
 import hashlib
 import pickle
 import calendar
-from collections import OrderedDict, ChainMap
+import signal
+from contextlib import contextmanager
+from collections import OrderedDict, ChainMap, deque
 from . import _yaml
 from . import ProgramNotFoundError
 
@@ -464,3 +466,47 @@ def _set_deterministic_mtime(directory):
                 os.utime(pathname, (magic_timestamp, magic_timestamp))
 
         os.utime(dirname, (magic_timestamp, magic_timestamp))
+
+
+# Global per process state for handling of sigterm, note that
+# it is expected that this only ever be used by processes the
+# scheduler forks off, not the main process
+_terminator_stack = None
+
+
+# The per-process SIGTERM handler
+def _terminator_handler(signal, frame):
+    while _terminator_stack:
+        terminator = _terminator_stack.pop()
+        terminator()
+    exit(-1)
+
+
+# _terminator()
+#
+# A context manager for interruptable tasks, this guarantees
+# that while the code block is running, the supplied function
+# will be called upon process termination.
+#
+# Args:
+#    terminate_func (callable): A function to call when aborting
+#                               the nested code block.
+#
+@contextmanager
+def _terminator(terminate_func):
+    global _terminator_stack
+
+    if _terminator_stack is None:
+        _terminator_stack = deque()
+
+    outermost = False if _terminator_stack else True
+
+    _terminator_stack.append(terminate_func)
+    if outermost:
+        original_handler = signal.signal(signal.SIGTERM, _terminator_handler)
+
+    yield
+
+    if outermost:
+        signal.signal(signal.SIGTERM, original_handler)
+    _terminator_stack.pop()
