@@ -78,6 +78,7 @@ setup(name='buildstream',
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml']},
       install_requires=[
+          'psutil',
           'ruamel.yaml',
           'pluginbase',
           'Click'

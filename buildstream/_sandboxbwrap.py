@@ -29,6 +29,7 @@ import subprocess
 import shutil
 import re
 import tempfile
+import psutil
 
 from . import utils
 
@@ -111,6 +112,10 @@ class SandboxBwrap():
 
         # Grab the full path of the bwrap binary
         bwrap_command = [utils.get_host_tool('bwrap')]
+
+        # Create a new pid namespace, this also ensures that any subprocesses
+        # are cleaned up when the bwrap process exits.
+        bwrap_command += ['--unshare-pid']
 
         # Add in the root filesystem stuff first
         # rootfs is mounted as RW initially so that further mounts can be
@@ -321,27 +326,39 @@ class SandboxBwrap():
         # It then returns a tuple of (exit code, stdout output, stderr output).
         # If stdout was not equal to subprocess.PIPE, stdout will be None. Same for
         # stderr.
-        #
 
-        process = subprocess.Popen(
-            argv,
-            # The default is to share file descriptors from the parent process
-            # to the subprocess, which is rarely good for sandboxing.
-            close_fds=True,
-            cwd=cwd,
-            env=env,
-            stdout=stdout,
-            stderr=stderr,
-        )
+        def terminate_bwrap():
+            # bubblewrap is a setuid root executable which we have no permission
+            # to kill. When bubblewrap is invoked with --unshare-pid this results
+            # in two things we rely on:
+            #
+            #   A.) it will have a direct child bwrap process which we do have
+            #       permission to terminate
+            #
+            #   B.) By virtue of creating a pid namespace, all child processes
+            #       will be aborted when the parent owning the namespace dies
+            #
+            # Here, we simply go ahead and kill (SIGKILL) the direct child
+            # of bwrap.
+            if process:
+                parent = psutil.Process(process.pid)
+                for child in parent.children(recursive=False):
+                    child.kill()
 
-        # The 'out' variable will be None unless subprocess.PIPE was passed as
-        # 'stdout' to subprocess.Popen(). Same for 'err' and 'stderr'. If
-        # subprocess.PIPE wasn't passed for either it'd be safe to use .wait()
-        # instead of .communicate(), but if they were then we must use
-        # .communicate() to avoid blocking the subprocess if one of the pipes
-        # becomes full. It's safe to use .communicate() in all cases.
-
-        out, err = process.communicate()
+        with utils._terminator(terminate_bwrap):
+            process = subprocess.Popen(
+                argv,
+                # The default is to share file descriptors from the parent process
+                # to the subprocess, which is rarely good for sandboxing.
+                close_fds=True,
+                cwd=cwd,
+                env=env,
+                stdout=stdout,
+                stderr=stderr,
+                # We want a separate session, so that only we handle SIGTERM
+                start_new_session=True
+            )
+            out, err = process.communicate()
 
         return process.returncode, out, err
 
