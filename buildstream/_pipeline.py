@@ -29,7 +29,7 @@ from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
-from ._scheduler import Scheduler, Queue
+from ._scheduler import Queue, SchedStatus
 from .plugin import _plugin_lookup
 from . import Element
 from . import SourceError, ElementError, Consistency
@@ -84,6 +84,9 @@ class Planner():
 #
 class FetchQueue(Queue):
 
+    def init(self):
+        self.fetched_elements = []
+
     def process(self, element):
 
         # For remote artifact cache support
@@ -101,6 +104,7 @@ class FetchQueue(Queue):
         if returncode != 0:
             return
 
+        self.fetched_elements.append(element)
         for source in element._sources():
 
             # Successful fetch, we must be CACHED now
@@ -246,72 +250,68 @@ class Pipeline():
     # i.e. all of the elements which the target somehow depends on.
     #
     # Args:
+    #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    needed (bool): If specified, track only sources that are
     #                   needed to build the artifacts of the pipeline
     #                   target. This does nothing when the pipeline
     #                   artifacts are already built.
     #
-    # Returns:
-    #    (list): The Source objects which have changed due to the track
-    #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
     #
-    def track(self, needed):
-        track = TrackQueue("Track", self.context.sched_fetchers)
-        scheduler = Scheduler(self.context, [track])
+    def track(self, scheduler, needed):
 
         if needed:
-            plan = Planner().plan(self.target)
+            plan = list(Planner().plan(self.target))
         else:
-            plan = self.dependencies(Scope.ALL)
+            plan = list(self.dependencies(Scope.ALL))
 
+        track = TrackQueue("Track", self.context.sched_fetchers)
+        track.enqueue(plan)
+
+        self.message(self.target, MessageType.START, "Starting track")
         starttime = datetime.datetime.now()
-        self.message(self.target, MessageType.START, "Starting Track")
-
-        if not scheduler.run(plan):
-            elapsed = datetime.datetime.now() - starttime
-            self.message(self.target, MessageType.FAIL, "Track Failed", elapsed=elapsed)
-            raise PipelineError()
-
+        status = scheduler.run([track])
         elapsed = datetime.datetime.now() - starttime
-        self.message(self.target, MessageType.SUCCESS, "Track Success", elapsed=elapsed)
+        changed = len(track.changed_files.items())
 
-        # Dump the files which changed
-        for filename, toplevel in track.changed_files.items():
-            fullname = os.path.join(self.project.directory, filename)
-            _yaml.dump(toplevel, fullname)
+        def rewrite_changed_sources():
+            for filename, toplevel in track.changed_files.items():
+                fullname = os.path.join(self.project.directory, filename)
+                _yaml.dump(toplevel, fullname)
 
-        # Allow destruction of any result objects we've processed
-        changed = track.changed_sources
-        track.changed_sources = []
-        track.changed_files = {}
-
-        return changed
+        if status == SchedStatus.ERROR:
+            self.message(self.target, MessageType.FAIL, "Track failed", elapsed=elapsed)
+            raise PipelineError()
+        elif status == SchedStatus.TERMINATED:
+            rewrite_changed_sources()
+            self.message(self.target, MessageType.WARN,
+                         "Terminated after tracking {} sources".format(changed),
+                         elapsed=elapsed)
+            raise PipelineError()
+        else:
+            rewrite_changed_sources()
+            self.message(self.target, MessageType.SUCCESS,
+                         "Tracked {} sources".format(changed),
+                         elapsed=elapsed)
 
     # fetch()
     #
     # Fetches sources on the pipeline.
     #
     # Args:
+    #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    needed (bool): If specified, track only sources that are
     #                   needed to build the artifacts of the pipeline
     #                   target. This does nothing when the pipeline
     #                   artifacts are already built.
     #
-    # Returns:
-    #    (list): Inconsistent elements, which have no refs
-    #    (list): Already cached elements, which were not fetched
-    #    (list): Fetched elements
-    #
-    def fetch(self, needed):
-        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
-        scheduler = Scheduler(self.context, [fetch])
+    def fetch(self, scheduler, needed):
 
         if needed:
-            plan = Planner().plan(self.target)
+            plan = list(Planner().plan(self.target))
         else:
-            plan = self.dependencies(Scope.ALL)
+            plan = list(self.dependencies(Scope.ALL))
 
         # Filter out elements with inconsistent sources, they can't be fetched.
         inconsistent = [elt for elt in plan if elt._consistency() == Consistency.INCONSISTENT]
@@ -321,18 +321,27 @@ class Pipeline():
         cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
         plan = [elt for elt in plan if elt not in cached]
 
+        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
+        fetch.enqueue(plan)
+
+        self.message(self.target, MessageType.START, "Fetching {} elements".format(len(plan)))
         starttime = datetime.datetime.now()
-        self.message(self.target, MessageType.START, "Starting Fetch")
-
-        if not scheduler.run(plan):
-            elapsed = datetime.datetime.now() - starttime
-            self.message(self.target, MessageType.FAIL, "Fetch Failed", elapsed=elapsed)
-            raise PipelineError()
-
+        status = scheduler.run([fetch])
         elapsed = datetime.datetime.now() - starttime
-        self.message(self.target, MessageType.SUCCESS, "Fetch Success", elapsed=elapsed)
+        fetched = len(fetch.fetched_elements)
 
-        return (inconsistent, cached, plan)
+        if status == SchedStatus.ERROR:
+            self.message(self.target, MessageType.FAIL, "Fetch failed", elapsed=elapsed)
+            raise PipelineError()
+        elif status == SchedStatus.TERMINATED:
+            self.message(self.target, MessageType.WARN,
+                         "Terminated after fetching {} elements".format(fetched),
+                         elapsed=elapsed)
+            raise PipelineError()
+        else:
+            self.message(self.target, MessageType.SUCCESS,
+                         "Fetched {} elements".format(fetched),
+                         elapsed=elapsed)
 
     # Internal: Instantiates plugin-provided Element and Source instances
     # from MetaElement and MetaSource objects
@@ -381,17 +390,11 @@ class Pipeline():
     # Builds (assembles) elements in the pipeline.
     #
     # Args:
+    #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    build_all (bool): Whether to build all elements, or only those
     #                      which are required to build the target.
     #
-    # Returns:
-    #    (list): A list of all Elements in the pipeline which were updated
-    #            by this build session.
-    #
-    def build(self, build_all):
-        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
-        build = AssembleQueue("Build", self.context.sched_builders)
-        scheduler = Scheduler(self.context, [fetch, build])
+    def build(self, scheduler, build_all):
 
         if build_all:
             plan = self.dependencies(Scope.ALL)
@@ -401,18 +404,27 @@ class Pipeline():
         # We could bail out here on inconsistent elements, but
         # it could be the user wants to get as far as possible
         # even if some elements have failures.
+        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
+        build = AssembleQueue("Build", self.context.sched_builders)
+        fetch.enqueue(plan)
+
+        self.message(self.target, MessageType.START, "Starting build")
         starttime = datetime.datetime.now()
-        self.message(self.target, MessageType.START, "Starting Build")
-
-        if not scheduler.run(plan):
-            elapsed = datetime.datetime.now() - starttime
-            self.message(self.target, MessageType.FAIL, "Build Failed", elapsed=elapsed)
-            raise PipelineError()
-
+        status = scheduler.run([fetch, build])
         elapsed = datetime.datetime.now() - starttime
-        self.message(self.target, MessageType.SUCCESS, "Build Success", elapsed=elapsed)
+        fetched = len(fetch.fetched_elements)
+        built = len(build.built_elements)
 
-        updated = build.built_elements
-        build.built_elements = []
-
-        return updated
+        if status == SchedStatus.ERROR:
+            self.message(self.target, MessageType.FAIL, "Build failed", elapsed=elapsed)
+            raise PipelineError()
+        elif status == SchedStatus.TERMINATED:
+            self.message(self.target, MessageType.WARN,
+                         "Terminated after fetching {} elements and building {} elements"
+                         .format(fetched, built),
+                         elapsed=elapsed)
+            raise PipelineError()
+        else:
+            self.message(self.target, MessageType.SUCCESS,
+                         "Fetched {} elements and built {} elements".format(fetched, built),
+                         elapsed=elapsed)
