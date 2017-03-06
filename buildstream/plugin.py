@@ -21,6 +21,7 @@
 import os
 import datetime
 import subprocess
+import signal
 from subprocess import CalledProcessError
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
@@ -365,12 +366,22 @@ class Plugin():
 
             self.__note_command(output_file, *popenargs, **kwargs)
 
-            # Kill the process upon termination
-            def kill_process():
+            # Handle termination, suspend and resume
+            def kill_proc():
                 if process:
                     process.kill()
 
-            with utils._terminator(kill_process):
+            def suspend_proc():
+                if process:
+                    group_id = os.getpgid(process.pid)
+                    os.killpg(group_id, signal.SIGSTOP)
+
+            def resume_proc():
+                if process:
+                    group_id = os.getpgid(process.pid)
+                    os.killpg(group_id, signal.SIGCONT)
+
+            with utils._suspendable(suspend_proc, resume_proc), utils._terminator(kill_proc):
                 process = subprocess.Popen(*popenargs, **kwargs)
                 process.communicate()
                 exit_code = process.poll()
@@ -435,12 +446,22 @@ class Plugin():
 
             self.__note_command(output_file, *popenargs, **kwargs)
 
-            # Kill the process upon termination
-            def kill_process():
+            # Handle termination, suspend and resume
+            def kill_proc():
                 if process:
                     process.kill()
 
-            with utils._terminator(kill_process):
+            def suspend_proc():
+                if process:
+                    group_id = os.getpgid(process.pid)
+                    os.killpg(group_id, signal.SIGSTOP)
+
+            def resume_proc():
+                if process:
+                    group_id = os.getpgid(process.pid)
+                    os.killpg(group_id, signal.SIGCONT)
+
+            with utils._suspendable(suspend_proc, resume_proc), utils._terminator(kill_proc):
                 process = subprocess.Popen(*popenargs, **kwargs)
                 output, _ = process.communicate()
                 exit_code = process.poll()
