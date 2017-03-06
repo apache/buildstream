@@ -71,7 +71,8 @@ class Scheduler():
 
     def __init__(self, context, interrupt_callback=None):
         self.loop = asyncio.get_event_loop()
-        self.loop.add_signal_handler(signal.SIGINT, self.interrupt)
+        self.loop.add_signal_handler(signal.SIGINT, self.interrupt_event)
+        self.loop.add_signal_handler(signal.SIGTERM, self.terminate_event)
         self.interrupt_callback = interrupt_callback
         self.context = context
         self.queues = None
@@ -183,7 +184,7 @@ class Scheduler():
         if ticking == 0:
             self.loop.stop()
 
-    def interrupt(self):
+    def interrupt_event(self):
         # Leave this to the frontend to decide, if no
         # interrrupt callback was specified, then just terminate.
         if self.interrupt_callback:
@@ -191,10 +192,14 @@ class Scheduler():
             # Stop handling SIGINT while the callback is running
             self.loop.remove_signal_handler(signal.SIGINT)
             self.interrupt_callback()
-            self.loop.add_signal_handler(signal.SIGINT, self.interrupt)
+            self.loop.add_signal_handler(signal.SIGINT, self.interrupt_event)
         else:
             # Default without a frontend is just terminate
             self.terminate_jobs()
+
+    def terminate_event(self):
+        # Terminate gracefully if we receive SIGTERM
+        self.terminate_jobs()
 
 
 # Queue()
