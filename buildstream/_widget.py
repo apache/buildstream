@@ -390,7 +390,7 @@ class LogLine(Widget):
             extra_nl = True
 
         if message.scheduler and message.message_type == MessageType.FAIL:
-            log_content = read_last_lines(message.logfile)
+            log_content = self.read_last_lines(message.logfile)
             log_content = self.indent + self.indent.join(log_content.splitlines(True))
 
             text += '\n'
@@ -403,7 +403,7 @@ class LogLine(Widget):
 
         return text
 
-    def read_last_lines(logfile):
+    def read_last_lines(self, logfile):
         tail_command = utils.get_host_tool('tail')
 
         # Lets just expect this to always pass for now...
