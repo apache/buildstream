@@ -525,10 +525,8 @@ def _suspendable(suspend_callback, resume_callback):
     def _stop_handler(sig, frame):
         suspend_callback()
 
-        # Propagate to default
-        signal.signal(signal.SIGTSTP, original_stop)
-        os.kill(os.getpid(), signal.SIGTSTP)
-        signal.signal(signal.SIGTSTP, _stop_handler)
+        # Use SIGSTOP directly now, dont introduce more SIGTSTP
+        os.kill(os.getpid(), signal.SIGSTOP)
 
     def _cont_handler(sig, frame):
         resume_callback()
