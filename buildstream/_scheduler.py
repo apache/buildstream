@@ -124,6 +124,24 @@ class Scheduler():
         self.loop.stop()
         self.terminated = True
 
+    # suspend_jobs()
+    #
+    # Suspend all ongoing jobs.
+    #
+    def suspend_jobs(self):
+        for queue in self.queues:
+            for job in queue.active_jobs:
+                job.suspend()
+
+    # resume_jobs()
+    #
+    # Resume suspended jobs.
+    #
+    def resume_jobs(self):
+        for queue in self.queues:
+            for job in queue.active_jobs:
+                job.resume()
+
     def failed_elements(self):
         failed = False
         for queue in self.queues:
@@ -352,6 +370,7 @@ class Job():
         self.complete = None                  # The complete callable function
         self.element = None                   # The element we're processing
         self.listening = False                # Whether the parent is currently listening
+        self.suspended = False                # Whether this job is currently suspended
 
         # Only relevant in parent process after spawning
         self.pid = None                       # The child's pid in the parent
@@ -405,8 +424,8 @@ class Job():
     #
     def terminate(self):
 
-        # Kill children of the process
-        pid = self.process.pid
+        # First resume the job if it's suspended
+        self.resume(silent=True)
 
         self.message(self.element, MessageType.WARN,
                      "{} terminating".format(self.action_name))
@@ -416,6 +435,33 @@ class Job():
 
         # Terminate the process using multiprocessing API pathway
         self.process.terminate()
+
+    # suspend()
+    #
+    # Suspend this job.
+    #
+    def suspend(self):
+        if not self.suspended:
+            self.message(self.element, MessageType.STATUS,
+                         "{} suspending".format(self.action_name))
+
+            # Use SIGTSTP so that child processes may handle and propagate
+            # it to processes they spawn that become session leaders
+            os.kill(self.process.pid, signal.SIGTSTP)
+            self.suspended = True
+
+    # resume()
+    #
+    # Resume this suspended job.
+    #
+    def resume(self, silent=False):
+        if self.suspended:
+            if not silent:
+                self.message(self.element, MessageType.STATUS,
+                             "{} resuming".format(self.action_name))
+
+            os.kill(self.process.pid, signal.SIGCONT)
+            self.suspended = False
 
     # This can be used equally in the parent and child processes
     def message(self, plugin, message_type, message, **kwargs):
