@@ -30,6 +30,7 @@ import shutil
 import re
 import tempfile
 import psutil
+import signal
 
 from . import utils
 
@@ -327,25 +328,55 @@ class SandboxBwrap():
         # If stdout was not equal to subprocess.PIPE, stdout will be None. Same for
         # stderr.
 
-        def terminate_bwrap():
-            # bubblewrap is a setuid root executable which we have no permission
-            # to kill. When bubblewrap is invoked with --unshare-pid this results
-            # in two things we rely on:
-            #
-            #   A.) it will have a direct child bwrap process which we do have
-            #       permission to terminate
-            #
-            #   B.) By virtue of creating a pid namespace, all child processes
-            #       will be aborted when the parent owning the namespace dies
-            #
-            # Here, we simply go ahead and kill (SIGKILL) the direct child
-            # of bwrap.
-            if process:
-                parent = psutil.Process(process.pid)
-                for child in parent.children(recursive=False):
-                    child.kill()
+        # Fetch the process actually launched inside the bwrap sandbox, or the
+        # intermediat control bwrap processes.
+        #
+        # NOTE:
+        #   The main bwrap process itself is setuid root and as such we cannot
+        #   send it any signals. Since we launch bwrap with --unshare-pid, it's
+        #   direct child is another bwrap process which retains ownership of the
+        #   pid namespace. This is the right process to kill when terminating.
+        #
+        #   The grandchild is the binary which we asked bwrap to launch on our
+        #   behalf, whatever this binary is, it is the right process to use
+        #   for suspending and resuming. In the case that this is a shell, the
+        #   shell will be group leader and all build scripts will stop/resume
+        #   with that shell.
+        #
+        def get_user_proc(bwrap_pid, grand_child=False):
+            bwrap_proc = psutil.Process(bwrap_pid)
+            bwrap_children = bwrap_proc.children()
+            if bwrap_children:
+                if grand_child:
+                    bwrap_grand_children = bwrap_children[0].children()
+                    if bwrap_grand_children:
+                        return bwrap_grand_children[0]
+                else:
+                    return bwrap_children[0]
+            return None
 
-        with utils._terminator(terminate_bwrap):
+        def terminate_bwrap():
+            if process:
+                user_proc = get_user_proc(process.pid)
+                if user_proc:
+                    user_proc.kill()
+
+        def suspend_bwrap():
+            if process:
+                user_proc = get_user_proc(process.pid, grand_child=True)
+                if user_proc:
+                    group_id = os.getpgid(user_proc.pid)
+                    os.killpg(group_id, signal.SIGSTOP)
+
+        def resume_bwrap():
+            if process:
+                user_proc = get_user_proc(process.pid, grand_child=True)
+                if user_proc:
+                    group_id = os.getpgid(user_proc.pid)
+                    os.killpg(group_id, signal.SIGCONT)
+
+        with utils._suspendable(suspend_bwrap, resume_bwrap), \
+            utils._terminator(terminate_bwrap):
             process = subprocess.Popen(
                 argv,
                 # The default is to share file descriptors from the parent process
@@ -355,7 +386,7 @@ class SandboxBwrap():
                 env=env,
                 stdout=stdout,
                 stderr=stderr,
-                # We want a separate session, so that only we handle SIGTERM
+                # We want a separate session, so that we are alone handling SIGTERM
                 start_new_session=True
             )
             out, err = process.communicate()
