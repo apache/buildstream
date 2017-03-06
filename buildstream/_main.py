@@ -453,6 +453,9 @@ class App():
         # the currently ongoing tasks. We can also print something more
         # intelligent, like how many tasks remain to complete overall.
         click.echo("", err=True)
+
+        self.scheduler.suspend_jobs()
+
         try:
             quit_now = click.prompt("Do you really want to terminate all jobs ?",
                                     type=bool, default=False, err=True)
@@ -464,6 +467,8 @@ class App():
         if quit_now:
             click.echo("\nTerminating all jobs at user request\n", err=True)
             self.scheduler.terminate_jobs()
+        else:
+            self.scheduler.resume_jobs()
 
     #
     # Handle messages from the pipeline
