@@ -73,10 +73,13 @@ class Scheduler():
         self.loop = asyncio.get_event_loop()
         self.loop.add_signal_handler(signal.SIGINT, self.interrupt_event)
         self.loop.add_signal_handler(signal.SIGTERM, self.terminate_event)
+        self.loop.add_signal_handler(signal.SIGTSTP, self.suspend_event)
         self.interrupt_callback = interrupt_callback
         self.context = context
         self.queues = None
         self.terminated = False
+        self.suspended = False
+        self.internal_stops = 0
 
     # run()
     #
@@ -130,18 +133,22 @@ class Scheduler():
     # Suspend all ongoing jobs.
     #
     def suspend_jobs(self):
-        for queue in self.queues:
-            for job in queue.active_jobs:
-                job.suspend()
+        if not self.suspended:
+            for queue in self.queues:
+                for job in queue.active_jobs:
+                    job.suspend()
+            self.suspended = True
 
     # resume_jobs()
     #
     # Resume suspended jobs.
     #
     def resume_jobs(self):
-        for queue in self.queues:
-            for job in queue.active_jobs:
-                job.resume()
+        if self.suspended:
+            for queue in self.queues:
+                for job in queue.active_jobs:
+                    job.resume()
+            self.suspended = False
 
     def failed_elements(self):
         failed = False
@@ -189,9 +196,16 @@ class Scheduler():
         # interrrupt callback was specified, then just terminate.
         if self.interrupt_callback:
 
-            # Stop handling SIGINT while the callback is running
+            # While we relinquish control to the callback, our event loop
+            # is blocked and we dont want to handle any signals through that.
             self.loop.remove_signal_handler(signal.SIGINT)
+            self.loop.remove_signal_handler(signal.SIGTSTP)
+            self.loop.remove_signal_handler(signal.SIGTERM)
+
             self.interrupt_callback()
+
+            self.loop.add_signal_handler(signal.SIGTERM, self.terminate_event)
+            self.loop.add_signal_handler(signal.SIGTSTP, self.suspend_event)
             self.loop.add_signal_handler(signal.SIGINT, self.interrupt_event)
         else:
             # Default without a frontend is just terminate
@@ -200,6 +214,19 @@ class Scheduler():
     def terminate_event(self):
         # Terminate gracefully if we receive SIGTERM
         self.terminate_jobs()
+
+    def suspend_event(self):
+
+        # Ignore the feedback signals from Job.suspend()
+        if self.internal_stops:
+            self.internal_stops -= 1
+            return
+
+        # No need to care if jobs were suspended or not, we _only_ handle this
+        # while we know jobs are not suspended.
+        self.suspend_jobs()
+        os.kill(os.getpid(), signal.SIGSTOP)
+        self.resume_jobs()
 
 
 # Queue()
@@ -397,15 +424,21 @@ class Job():
         self.complete = complete
         self.element = element
 
-        # Block SIGINT in parent while spawning the process, child will inherit this
-        signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
-
         # Spawn the process
         self.process = Process(target=self.child_action,
                                args=[element, self.queue, self.action_name])
+
+        # Here we want the following
+        #
+        #  A.) Child should inherit blocked SIGINT state, it's never handled there
+        #  B.) Child should not inherit SIGTSTP handled state
+        #
+        signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
+        self.scheduler.loop.remove_signal_handler(signal.SIGTSTP)
+
         self.process.start()
 
-        # Unblock SIGINT in parent
+        self.scheduler.loop.add_signal_handler(signal.SIGTSTP, self.scheduler.suspend_event)
         signal.pthread_sigmask(signal.SIG_UNBLOCK, [signal.SIGINT])
 
         self.pid = self.process.pid
@@ -453,6 +486,12 @@ class Job():
             # Use SIGTSTP so that child processes may handle and propagate
             # it to processes they spawn that become session leaders
             os.kill(self.process.pid, signal.SIGTSTP)
+
+            # For some reason we receive exactly one suspend event for every
+            # SIGTSTP we send to the child fork(), even though the child forks
+            # are setsid(). We keep a count of these so we can ignore them
+            # in our event loop suspend_event()
+            self.scheduler.internal_stops += 1
             self.suspended = True
 
     # resume()
@@ -482,6 +521,10 @@ class Job():
     #                  Child Process                      #
     #######################################################
     def child_action(self, element, queue, action_name):
+
+        # This avoids some SIGTSTP signals from grandchildren
+        # getting propagated up to the master process
+        os.setsid()
 
         # Assign the queue we passed across the process boundaries
         #
