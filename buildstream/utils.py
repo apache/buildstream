@@ -510,3 +510,33 @@ def _terminator(terminate_func):
     if outermost:
         signal.signal(signal.SIGTERM, original_handler)
     _terminator_stack.pop()
+
+
+# A context manager for a code block which spawns a processes
+# that becomes it's own session leader.
+#
+# In these cases, SIGSTP and SIGCONT need to be propagated to
+# the child tasks, this is not expected to be used recursively,
+# as the codeblock is expected to just spawn a processes.
+#
+@contextmanager
+def _suspendable(suspend_callback, resume_callback):
+
+    def _stop_handler(sig, frame):
+        suspend_callback()
+
+        # Propagate to default
+        signal.signal(signal.SIGTSTP, original_stop)
+        os.kill(os.getpid(), signal.SIGTSTP)
+        signal.signal(signal.SIGTSTP, _stop_handler)
+
+    def _cont_handler(sig, frame):
+        resume_callback()
+
+    original_cont = signal.signal(signal.SIGCONT, _cont_handler)
+    original_stop = signal.signal(signal.SIGTSTP, _stop_handler)
+
+    yield
+
+    signal.signal(signal.SIGTSTP, original_stop)
+    signal.signal(signal.SIGCONT, original_cont)
