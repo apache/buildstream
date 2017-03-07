@@ -26,14 +26,14 @@ import copy
 from ruamel import yaml
 from blessings import Terminal
 
-from . import Context, Project, Scope, Consistency
-from .exceptions import _BstError
-from ._message import MessageType, unconditional_messages
-from ._pipeline import Pipeline, PipelineError
-from ._scheduler import Scheduler
-from . import utils
-from ._profile import Topics, profile_start, profile_end
-from ._widget import Profile, LogLine, Status
+from .. import Context, Project, Scope, Consistency
+from ..exceptions import _BstError
+from .._message import MessageType, unconditional_messages
+from .._pipeline import Pipeline, PipelineError
+from .._scheduler import Scheduler
+from .. import utils
+from .._profile import Topics, profile_start, profile_end
+from .widget import Profile, LogLine, Status
 
 # Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version

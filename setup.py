@@ -86,8 +86,8 @@ setup(name='buildstream',
       ],
       entry_points='''
       [console_scripts]
-      build-stream=buildstream._main:cli
-      bst=buildstream._main:cli
+      build-stream=buildstream._frontend:cli
+      bst=buildstream._frontend:cli
       ''',
       setup_requires=['pytest-runner'],
       tests_require=['pep8',
