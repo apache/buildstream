@@ -24,6 +24,7 @@ import click
 import pkg_resources  # From setuptools
 import copy
 from ruamel import yaml
+from blessings import Terminal
 
 from . import Context, Project, Scope, Consistency
 from .exceptions import _BstError
@@ -32,7 +33,7 @@ from ._pipeline import Pipeline, PipelineError
 from ._scheduler import Scheduler
 from . import utils
 from ._profile import Topics, profile_start, profile_end
-from ._widget import Profile, LogLine
+from ._widget import Profile, LogLine, Status
 
 # Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -57,6 +58,8 @@ _, _, _, _, host_machine = os.uname()
               help="Maximum simultaneous download tasks")
 @click.option('--builders', type=click.INT, default=None,
               help="Maximum simultaneous build tasks")
+@click.option('--no-interactive', is_flag=True, default=False,
+              help="Force non interactive mode, otherwise this is automatically decided")
 @click.option('--verbose/--no-verbose', default=None,
               help="Be extra verbose")
 @click.option('--debug/--no-debug', default=None,
@@ -339,7 +342,7 @@ def shell(app, target, arch, variant, builddir, scope):
 
 
 ##################################################################
-#                        Helper Functions                        #
+#                    Main Application State                      #
 ##################################################################
 
 class App():
@@ -348,17 +351,25 @@ class App():
         self.main_options = main_options
         self.messaging_enabled = False
         self.logger = None
+        self.status = None
 
         # Main asset handles
         self.context = None
         self.project = None
         self.scheduler = None
-        self.pipe = None
+        self.pipeline = None
 
         # For the initialization time tickers
         self.file_count = 0
         self.resolve_count = 0
         self.cache_count = 0
+
+        # Figure out interactive mode
+        if self.main_options['no_interactive']:
+            self.interactive = False
+        else:
+            term = Terminal()
+            self.interactive = term.does_styling
 
         # Early enable messaging in debug mode
         if self.main_options['debug']:
@@ -382,9 +393,18 @@ class App():
             click.echo("Error loading user configuration: %s" % str(e))
             sys.exit(1)
 
+        # Only handle ^C interactively in interactive mode
+        if self.interactive:
+            interrupt = self.interrupt_handler
+        else:
+            interrupt = None
+
         # Create the application's scheduler
         self.scheduler = Scheduler(self.context,
-                                   interrupt_callback=self.interrupt_handler)
+                                   interrupt_callback=interrupt,
+                                   ticker_callback=self.tick,
+                                   job_start_callback=self.job_started,
+                                   job_complete_callback=self.job_completed)
 
         # Override things in the context from our command line options,
         # the command line when used, trumps the config files.
@@ -419,6 +439,9 @@ class App():
             # Whether to print additional debugging information
             debug=self.context.log_debug)
 
+        # Create our status printer, only available in interactive
+        self.status = Status(Profile(fg='yellow'), Profile(fg='cyan', dim=True))
+
         # Propagate pipeline feedback to the user
         self.context._set_message_handler(self.message_handler)
 
@@ -452,8 +475,7 @@ class App():
         # like to continue, abort immediately, or only complete processing of
         # the currently ongoing tasks. We can also print something more
         # intelligent, like how many tasks remain to complete overall.
-        click.echo("", err=True)
-
+        self.status.clear()
         self.scheduler.suspend_jobs()
 
         try:
@@ -467,8 +489,21 @@ class App():
         if quit_now:
             click.echo("\nTerminating all jobs at user request\n", err=True)
             self.scheduler.terminate_jobs()
+
         else:
             self.scheduler.resume_jobs()
+            self.status.render()
+
+    def job_started(self, element, action_name):
+        self.status.add_job(element, action_name)
+        self.status.render()
+
+    def job_completed(self, element, action_name, success):
+        self.status.remove_job(element, action_name)
+        self.status.render()
+
+    def tick(self):
+        self.status.render()
 
     #
     # Handle messages from the pipeline
@@ -490,9 +525,13 @@ class App():
             message.message_type not in unconditional_messages):
             return
 
+        self.status.clear()
         text = self.logger.render(message)
-
         click.echo(text, nl=False)
+
+        # Avoid the status messages when we're suspended
+        if self.scheduler and not self.scheduler.suspended:
+            self.status.render()
 
         # Additionally log to a file
         if self.main_options['log_file']:
