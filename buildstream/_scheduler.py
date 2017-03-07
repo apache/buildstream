@@ -64,17 +64,23 @@ class SchedStatus():
 #
 # Args:
 #    context: The Context in the parent scheduling process
-#    interrupt_callback: An optional callback to call when ^C is
-#                        pressed.
+#    interrupt_callback: A callback to handle ^C
+#    ticker_callback: A callback call once per second
+#    job_start_callback: A callback call when each job starts
+#    job_complete_callback: A callback call when each job completes
 #
 class Scheduler():
 
-    def __init__(self, context, interrupt_callback=None):
-        self.loop = asyncio.get_event_loop()
-        self.loop.add_signal_handler(signal.SIGINT, self.interrupt_event)
-        self.loop.add_signal_handler(signal.SIGTERM, self.terminate_event)
-        self.loop.add_signal_handler(signal.SIGTSTP, self.suspend_event)
+    def __init__(self, context,
+                 interrupt_callback=None,
+                 ticker_callback=None,
+                 job_start_callback=None,
+                 job_complete_callback=None):
+        self.loop = None
         self.interrupt_callback = interrupt_callback
+        self.ticker_callback = ticker_callback
+        self.job_start_callback = job_start_callback
+        self.job_complete_callback = job_complete_callback
         self.context = context
         self.queues = None
         self.terminated = False
@@ -102,13 +108,26 @@ class Scheduler():
         for queue in queues:
             queue.attach(self)
 
+        self.loop = asyncio.get_event_loop()
+
+        # Add timeouts
+        if self.ticker_callback:
+            self.loop.call_later(1, self.tick)
+
+        # Handle unix signals while running
+        self.connect_signals()
+
         # Run the queues
         self.sched()
         self.loop.run_forever()
         self.loop.close()
 
+        # Stop handling unix signals
+        self.disconnect_signals()
+
         failed = self.failed_elements()
         self.queues = None
+        self.loop = None
 
         if failed:
             return SchedStatus.ERROR
@@ -134,10 +153,10 @@ class Scheduler():
     #
     def suspend_jobs(self):
         if not self.suspended:
+            self.suspended = True
             for queue in self.queues:
                 for job in queue.active_jobs:
                     job.suspend()
-            self.suspended = True
 
     # resume_jobs()
     #
@@ -149,6 +168,53 @@ class Scheduler():
                 for job in queue.active_jobs:
                     job.resume()
             self.suspended = False
+
+    #######################################################
+    #                   Main Loop Events                  #
+    #######################################################
+    def interrupt_event(self):
+        # Leave this to the frontend to decide, if no
+        # interrrupt callback was specified, then just terminate.
+        #
+        if self.interrupt_callback:
+            # Interactive frontend interrupt handler takes
+            # control, we dont handle signals during that time.
+            self.disconnect_signals()
+            self.interrupt_callback()
+            self.connect_signals()
+        else:
+            # Default without a frontend is just terminate
+            self.terminate_jobs()
+
+    def terminate_event(self):
+        # Terminate gracefully if we receive SIGTERM
+        self.terminate_jobs()
+
+    def suspend_event(self):
+
+        # Ignore the feedback signals from Job.suspend()
+        if self.internal_stops:
+            self.internal_stops -= 1
+            return
+
+        # No need to care if jobs were suspended or not, we _only_ handle this
+        # while we know jobs are not suspended.
+        self.suspend_jobs()
+        os.kill(os.getpid(), signal.SIGSTOP)
+        self.resume_jobs()
+
+    #######################################################
+    #                    Internal methods                 #
+    #######################################################
+    def connect_signals(self):
+        self.loop.add_signal_handler(signal.SIGINT, self.interrupt_event)
+        self.loop.add_signal_handler(signal.SIGTERM, self.terminate_event)
+        self.loop.add_signal_handler(signal.SIGTSTP, self.suspend_event)
+
+    def disconnect_signals(self):
+        self.loop.remove_signal_handler(signal.SIGINT)
+        self.loop.remove_signal_handler(signal.SIGTSTP)
+        self.loop.remove_signal_handler(signal.SIGTERM)
 
     def failed_elements(self):
         failed = False
@@ -191,42 +257,20 @@ class Scheduler():
         if ticking == 0:
             self.loop.stop()
 
-    def interrupt_event(self):
-        # Leave this to the frontend to decide, if no
-        # interrrupt callback was specified, then just terminate.
-        if self.interrupt_callback:
+    # Called by the Queue when starting a Job
+    def job_starting(self, job):
+        if self.job_start_callback:
+            self.job_start_callback(job.element, job.action_name)
 
-            # While we relinquish control to the callback, our event loop
-            # is blocked and we dont want to handle any signals through that.
-            self.loop.remove_signal_handler(signal.SIGINT)
-            self.loop.remove_signal_handler(signal.SIGTSTP)
-            self.loop.remove_signal_handler(signal.SIGTERM)
+    # Called by the Queue when a Job completed
+    def job_completed(self, job, success):
+        if self.job_complete_callback:
+            self.job_complete_callback(job.element, job.action_name, success)
 
-            self.interrupt_callback()
-
-            self.loop.add_signal_handler(signal.SIGTERM, self.terminate_event)
-            self.loop.add_signal_handler(signal.SIGTSTP, self.suspend_event)
-            self.loop.add_signal_handler(signal.SIGINT, self.interrupt_event)
-        else:
-            # Default without a frontend is just terminate
-            self.terminate_jobs()
-
-    def terminate_event(self):
-        # Terminate gracefully if we receive SIGTERM
-        self.terminate_jobs()
-
-    def suspend_event(self):
-
-        # Ignore the feedback signals from Job.suspend()
-        if self.internal_stops:
-            self.internal_stops -= 1
-            return
-
-        # No need to care if jobs were suspended or not, we _only_ handle this
-        # while we know jobs are not suspended.
-        self.suspend_jobs()
-        os.kill(os.getpid(), signal.SIGSTOP)
-        self.resume_jobs()
+    # Regular timeout for driving status in the UI
+    def tick(self):
+        self.ticker_callback()
+        self.loop.call_later(1, self.tick)
 
 
 # Queue()
@@ -350,8 +394,10 @@ class Queue():
                 unready.append(element)
                 continue
 
-            job = Job(self.scheduler, self.action_name)
-            job.spawn(self.action_name, self.process, self.job_done, element)
+            job = Job(self.scheduler, element, self.action_name)
+            self.scheduler.job_starting(job)
+
+            job.spawn(self.process, self.job_done)
             self.active_jobs.append(job)
 
         # These were not ready but were in the beginning, give em
@@ -372,6 +418,9 @@ class Queue():
         # Give the result of the job to the Queue implementor
         self.done(element, job.result, returncode)
 
+        # Notify frontend
+        self.scheduler.job_completed(job, returncode == 0)
+
         self.scheduler.sched()
 
 
@@ -386,11 +435,12 @@ class Envelope():
 #
 # Args:
 #    scheduler (Scheduler): The scheduler
+#    element (Element): The element to operate on
 #    action_name (str): The queue action name
 #
 class Job():
 
-    def __init__(self, scheduler, action_name):
+    def __init__(self, scheduler, element, action_name):
 
         # Shared with child process
         self.scheduler = scheduler            # The scheduler
@@ -400,7 +450,7 @@ class Job():
         self.action_name = action_name        # The action name for the Queue
         self.action = None                    # The action callable function
         self.complete = None                  # The complete callable function
-        self.element = None                   # The element we're processing
+        self.element = element                # The element we're processing
         self.listening = False                # Whether the parent is currently listening
         self.suspended = False                # Whether this job is currently suspended
 
@@ -413,20 +463,16 @@ class Job():
     # spawn()
     #
     # Args:
-    #    action_name (str): A name to appear in the status messages
     #    action (callable): The action function
     #    complete (callable): The function to call when complete
-    #    element (Element): The element to operate on
     #
-    def spawn(self, action_name, action, complete, element):
-        self.action_name = action_name
+    def spawn(self, action, complete):
         self.action = action
         self.complete = complete
-        self.element = element
 
         # Spawn the process
         self.process = Process(target=self.child_action,
-                               args=[element, self.queue, self.action_name])
+                               args=[self.element, self.queue, self.action_name])
 
         # Here we want the following
         #
@@ -445,7 +491,7 @@ class Job():
 
         # Wait for it to complete
         self.watcher = asyncio.get_child_watcher()
-        self.watcher.add_child_handler(self.pid, self.child_complete, element)
+        self.watcher.add_child_handler(self.pid, self.child_complete, self.element)
 
     # shutdown()
     #
