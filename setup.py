@@ -81,7 +81,8 @@ setup(name='buildstream',
           'psutil',
           'ruamel.yaml',
           'pluginbase',
-          'Click'
+          'Click',
+          'blessings'
       ],
       entry_points='''
       [console_scripts]
