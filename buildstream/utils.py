@@ -512,10 +512,10 @@ def _terminator(terminate_func):
     _terminator_stack.pop()
 
 
-# A context manager for a code block which spawns a processes
+# A context manager for a code block which spawns a process
 # that becomes it's own session leader.
 #
-# In these cases, SIGSTP and SIGCONT need to be propagated to
+# In these cases, SIGSTOP and SIGCONT need to be propagated to
 # the child tasks, this is not expected to be used recursively,
 # as the codeblock is expected to just spawn a processes.
 #
