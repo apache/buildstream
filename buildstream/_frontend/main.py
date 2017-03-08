@@ -369,7 +369,7 @@ class App():
             self.interactive = False
         else:
             term = Terminal()
-            self.interactive = term.does_styling
+            self.interactive = term.is_a_tty
 
         # Early enable messaging in debug mode
         if self.main_options['debug']:
