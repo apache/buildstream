@@ -100,6 +100,7 @@ def build(app, target, arch, variant, all):
     """Build elements in a pipeline"""
 
     app.initialize(target, arch, variant)
+    app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all)
         click.echo("")
@@ -124,6 +125,7 @@ def fetch(app, target, arch, variant, needed):
     """Fetch sources in a pipeline"""
 
     app.initialize(target, arch, variant)
+    app.print_heading()
     try:
         app.pipeline.fetch(app.scheduler, needed)
         click.echo("")
@@ -154,6 +156,7 @@ def track(app, target, arch, variant, needed, list):
     The project data will be rewritten inline.
     """
     app.initialize(target, arch, variant, rewritable=True)
+    app.print_heading()
     try:
         app.pipeline.track(app.scheduler, needed)
         click.echo("")
@@ -355,6 +358,9 @@ class App():
         self.messaging_enabled = False
         self.logger = None
         self.status = None
+        self.target = None
+        self.arch = None
+        self.variant = None
 
         # Main asset handles
         self.context = None
@@ -367,12 +373,20 @@ class App():
         self.resolve_count = 0
         self.cache_count = 0
 
+        # UI Colors Profiles
+        self.content_profile = Profile(fg='yellow')
+        self.format_profile = Profile(fg='cyan', dim=True)
+        self.error_profile = Profile(fg='red', dim=True)
+        self.detail_profile = Profile(dim=True)
+
+        # Check if we are connected to a tty
+        self.is_a_tty = Terminal().is_a_tty
+
         # Figure out interactive mode
         if self.main_options['no_interactive']:
             self.interactive = False
         else:
-            term = Terminal()
-            self.interactive = term.is_a_tty
+            self.interactive = self.is_a_tty
 
         # Early enable messaging in debug mode
         if self.main_options['debug']:
@@ -383,6 +397,9 @@ class App():
     # Initialize the main pipeline
     #
     def initialize(self, target, arch, variant, rewritable=False):
+        self.target = target
+        self.arch = arch
+        self.variant = variant
 
         profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
 
@@ -427,14 +444,10 @@ class App():
 
         # Create the logger right before setting the message handler
         self.logger = LogLine(
-            # Content
-            Profile(fg='yellow'),
-            # Formatting
-            Profile(fg='cyan', dim=True),
-            # Errors
-            Profile(fg='red', dim=True),
-            # Details (log lines and other detailed messages)
-            Profile(dim=True),
+            self.content_profile,
+            self.format_profile,
+            self.error_profile,
+            self.detail_profile,
             # Indentation for detailed messages
             indent=4,
             # Number of last lines in an element's log to print (when encountering errors)
@@ -443,7 +456,7 @@ class App():
             debug=self.context.log_debug)
 
         # Create our status printer, only available in interactive
-        self.status = Status(Profile(fg='yellow'), Profile(fg='cyan', dim=True))
+        self.status = Status(self.content_profile, self.format_profile)
 
         # Propagate pipeline feedback to the user
         self.context._set_message_handler(self.message_handler)
@@ -509,6 +522,15 @@ class App():
         self.status.render()
 
     #
+    # Prints the application startup heading, used for commands which
+    # will process a pipeline.
+    #
+    def print_heading(self):
+        self.logger.print_heading(self.context, self.project,
+                                  self.target, self.arch, self.variant,
+                                  self.main_options['log_file'])
+
+    #
     # Handle messages from the pipeline
     #
     def message_handler(self, message, context):
@@ -538,7 +560,7 @@ class App():
 
         # Additionally log to a file
         if self.main_options['log_file']:
-            click.echo(text, file=main_options['log_file'], color=False, nl=False)
+            click.echo(text, file=self.main_options['log_file'], color=False, nl=False)
 
     #
     # Tickers at initialization time
