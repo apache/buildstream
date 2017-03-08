@@ -19,6 +19,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import click
 import subprocess
+import datetime
+import pkg_resources
+from collections import OrderedDict
 
 from .. import utils
 from ..plugin import _plugin_lookup
@@ -354,3 +357,61 @@ class LogLine(Widget):
         output = subprocess.check_output([tail_command, '-n', str(self.log_lines), logfile])
         output = output.decode('UTF-8')
         return output.rstrip()
+
+    #
+    # A message to be printed at program startup, indicating
+    # some things about user configuration and BuildStream version
+    # and so on.
+    #
+    # Args:
+    #    log_file (file): An optional file handle for additional logging
+    #
+    def print_heading(self, context, project, target, arch, variant, log_file):
+        starttime = datetime.datetime.now()
+        bst = pkg_resources.require("buildstream")[0]
+        text = ''
+
+        # Main invocation context
+        text += '\n'
+        text += self.content_profile.fmt("BuildStream Version {}\n".format(bst.version), bold=True)
+        values = OrderedDict()
+        values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
+        values["Project"] = "{} ({})".format(project.name, project.directory)
+        values["Target"] = target
+        values["Machine Architecture"] = arch
+        values["Variant"] = variant
+        text += self.format_values(values)
+
+        # Main invocation context
+        text += '\n'
+        text += self.content_profile.fmt("User Configuration\n", bold=True)
+        values = OrderedDict()
+        values["Configuration File"] = \
+            "Default Configuration" if not context.config_origin else context.config_origin
+        values["Log Files"] = context.logdir
+        values["Source Mirrors"] = context.sourcedir
+        values["Build Area"] = context.builddir
+        values["Artifact Cache"] = context.artifactdir
+        values["Maximum Fetch Tasks"] = context.sched_fetchers
+        values["Maximum Build Tasks"] = context.sched_builders
+        text += self.format_values(values)
+
+        # Separator line before following output
+        text += self.format_profile.fmt("~" * 79 + '\n')
+
+        click.echo(text, nl=False)
+        if log_file:
+            click.echo(text, file=log_file, color=False, nl=False)
+
+    def format_values(self, values):
+        text = ''
+        max_key_len = 0
+        for key, value in values.items():
+            max_key_len = max(len(key), max_key_len)
+
+        for key, value in values.items():
+            text += self.format_profile.fmt("  {}: {}".format(key, ' ' * (max_key_len - len(key))))
+            text += self.content_profile.fmt(str(value))
+            text += '\n'
+
+        return text
