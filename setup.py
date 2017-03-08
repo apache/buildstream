@@ -71,13 +71,14 @@ except AttributeError:
     exit_ostree("OSTree too old")
 
 
-setup(name='buildstream',
+setup(name='BuildStream',
       version='0.1',
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml']},
       install_requires=[
+          'setuptools',
           'psutil',
           'ruamel.yaml',
           'pluginbase',
