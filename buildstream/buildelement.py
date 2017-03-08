@@ -24,7 +24,7 @@ implementing the most common case of element.
 
 import os
 from . import Element, Scope, ElementError
-
+from . import SandboxFlags
 
 _command_steps = ['bootstrap-commands',
                   'configure-commands',
@@ -78,23 +78,20 @@ class BuildElement(Element):
             for dep in self.dependencies(Scope.BUILD):
                 dep.integrate(sandbox)
 
-        # Now that we've staged stuff, set the rootfs readonly
-        #
-        sandbox.executor.root_ro = True
-
         # Stage sources in /buildstream/build
         self.stage_sources(sandbox, '/buildstream/build')
 
         # Ensure builddir and installdir
-        os.makedirs(os.path.join(sandbox.executor.fs_root,
+        directory = sandbox.get_directory()
+        os.makedirs(os.path.join(directory,
                                  'buildstream',
                                  'build'), exist_ok=True)
-        os.makedirs(os.path.join(sandbox.executor.fs_root,
+        os.makedirs(os.path.join(directory,
                                  'buildstream',
                                  'install'), exist_ok=True)
 
-        # And set the sandbox work directory too
-        sandbox.set_cwd('/buildstream/build')
+        # Fetch the environment for this element
+        environment = self.get_environment()
 
         # Run commands
         for step in _command_steps:
@@ -111,7 +108,10 @@ class BuildElement(Element):
                         # Note the -e switch to 'sh' means to exit with an error
                         # if any untested command fails.
                         #
-                        exitcode, _, _ = sandbox.run(['sh', '-c', '-e', cmd + '\n'])
+                        exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+                                               SandboxFlags.ROOT_READ_ONLY,
+                                               cwd='/buildstream/build',
+                                               env=environment)
                         if exitcode != 0:
                             raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
