@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2017 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -17,104 +17,102 @@
 #
 #  Authors:
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
+#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+"""Sandbox abstraction layer.
 
-""" Sandbox abstraction layer. Allows interfacing of multiple sandbox
-backends without having to know implementation details. Currently supports
-bubblewrap only
+:class:`.Element` plugins which want to interface with the sandbox
+need only understand this interface, while it may be given a different
+sandbox implementation, any sandbox implementation it is given will
+conform to this interface.
 """
-
-from enum import Enum
-from ._sandboxbwrap import SandboxBwrap
-
-Executors = Enum(value='Executors', names=['bwrap'])
-"""List of the supported internal sandbox executor interfaces"""
+from . import ImplError
 
 
-class Sandbox:
+class SandboxFlags():
+    ROOT_READ_ONLY = 0x01
+    """The root filesystem is read only.
 
-    def __init__(self, executor=Executors.bwrap, **kwargs):
-        """ Interface creation for sandboxing
+    This is normally true except when running integration commands
+    on staged dependencies, where we have to update caches and run
+    things such as ldconfig.
+    """
+
+    NETWORK_ENABLED = 0x02
+    """Whether to expose host network.
+
+    This should not be set when running builds, but can
+    be allowed for running a shell in a sandbox.
+    """
+
+
+class Sandbox():
+    """Sandbox()
+
+    Sandbox programming interface for :class:`.Element` plugins.
+    """
+    def __init__(self, context, project, directory, stdout=None, stderr=None):
+        self.__context = context
+        self.__project = project
+        self.__directory = directory
+        self.__stdout = stdout
+        self.__stderr = stderr
+
+    def run(self, command, flags, cwd=None, env=None):
+        """Run a command in the sandbox.
 
         Args:
-            executor (Executors): Set the executor to use internally
-                This defaults to the bubblewrap implementation
-        """
-
-        self.exitcode = None
-        """Cached copy of the exitcode from the last command ran"""
-
-        self.out = None
-        """Cached copy of stdout from the last command ran"""
-
-        self.err = None
-        """Cached copy of stderr from the last command ran"""
-
-        self.executorType = executor
-        """Enum string representation of the executor used internally"""
-
-        self.executor = None
-        """Object reference to actual executor being used"""
-
-        # Set the executor based on the type provided
-        if executor is Executors.bwrap:
-            self.executor = SandboxBwrap(**kwargs)
-
-    def get_executor(self):
-        """Exposes the internal executor object the sandbox abstraction is using
+            command (list): The command to run in the sandboxed environment, as a list
+                            of strings starting with the binary to run.
+            flags (:class:`.SandboxFlags`): The flags for running this command.
+            cwd (str): The sandbox relative working directory in which to run the command.
+            env (dict): A dictionary of string key, value pairs to set as environment
+                        variables inside the sandbox environment.
 
         Returns:
-            Sandbox executor object - e.g. _sandboxbwrap
-        """
-        return self.executor
-
-    def set_mounts(self, mnt_list=[], global_write=False, append=False):
-        """Interface for setting binds/mounts in the sandbox. `mnt_list` is
-        a list of mount dicts.
-
-        Args:
-            mnt_list (list): List of dicts describing mounts.
-            global_write (boolean): Set all mounts given as writable (overrides setting in dict)
-            append (boolean): If set, multiple calls to `set_mounts` extends the list of mounts.
-                Else they are overridden.
-
-        The mount dict is in the format {'src','dest','type','writable'}.
-            - src : Path of the mount on the HOST
-            - dest : Path we wish to mount to on the TARGET
-            - type : (optional) Some mounts are special such as dev, proc and tmp, and need
-                to be tagged accordingly
-            - writable : (optional) Boolean value to make mount writable instead of read-only
-
-        Note: not all sandbox implementations support the full feature set. e.g. chroot
-            does not allow read-only mounts, or special mounts such as dev or proc, instead
-            they are treated as normal directories.
-        """
-
-        self.executor.set_mounts(mnt_list=mnt_list, global_write=global_write,
-                                 append=append)
-
-    def set_cwd(self, cwd):
-        """Set the CWD for the sandbox
-
-        Args:
-            cwd (string): Path to desired working directory when the sandbox is entered
-        """
-
-        self.executor.set_cwd(cwd)
-
-    def run(self, command):
-        """Runs a command inside the sandbox environment
-
-        Args:
-            command (List[str]): The command to run in the sandboxed environment
+            (int): The program exit code.
 
         Raises:
-            :class'`.ProgramNotfound` If the binary for an implementation can not be found
+            (:class:`.ProgramNotfound`): If a host tool which the given sandbox
+                                         implementation requires is not found.
+        """
+        raise ImplError("Sandbox of type '{}' does not implement run()"
+                        .format(type(self).__name__))
+
+    def get_directory(self):
+        """Fetches the directory of this sandbox
 
         Returns:
-            exitcode, stdout, stderr
+           (str): The sandbox root directory
         """
+        return self.__directory
 
-        # Run command in sandbox and save outputs
-        self.exitcode, self.out, self.err = self.executor.run(command)
+    ################################################
+    #               Private methods                #
+    ################################################
+    # _get_context()
+    #
+    # Fetches the context BuildStream was launched with.
+    #
+    # Returns:
+    #    (Context): The context of this BuildStream invocation
+    def _get_context(self):
+        return self.__context
 
-        return self.exitcode, self.out, self.err
+    # _get_project()
+    #
+    # Fetches the Project this sandbox was created to build for.
+    #
+    # Returns:
+    #    (Project): The project this sandbox was created for.
+    def _get_project(self):
+        return self.__project
+
+    # _get_output()
+    #
+    # Fetches the stdout & stderr
+    #
+    # Returns:
+    #    (file): The stdout, or None to inherit
+    #    (file): The stderr, or None to inherit
+    def _get_output(self):
+        return (self.__stdout, self.__stderr)
