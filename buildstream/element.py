@@ -32,7 +32,8 @@ from . import _yaml
 from ._variables import Variables
 from .exceptions import _BstError
 from . import LoadError, LoadErrorReason, ElementError
-from . import Sandbox
+from ._sandboxbwrap import SandboxBwrap
+from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
 from . import utils
 
@@ -249,8 +250,7 @@ class Element(Plugin):
 
             # Hard link it into the staging area
             #
-            # XXX For now assuming that it's a read-only location
-            basedir = sandbox.executor.fs_root
+            basedir = sandbox.get_directory()
             stagedir = basedir \
                 if path is None \
                 else os.path.join(basedir, path.lstrip(os.sep))
@@ -269,11 +269,13 @@ class Element(Plugin):
         required for running the installed software (such as the ld.so.cache).
         """
         bstdata = self.get_public_data('bst')
+        environment = self.get_environment()
+
         if bstdata is not None:
             commands = self.node_get_member(bstdata, list, 'integration-commands', default_value=[])
             for cmd in commands:
                 self.status("Running integration command", detail=cmd)
-                exitcode, _, _ = sandbox.run(['sh', '-c', '-e', cmd])
+                exitcode = sandbox.run(['sh', '-c', '-e', cmd], 0, env=environment)
                 if exitcode != 0:
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
@@ -292,7 +294,7 @@ class Element(Plugin):
           # in the sandbox
           self.stage_sources(sandbox, '/build')
         """
-        basedir = sandbox.executor.fs_root
+        basedir = sandbox.get_directory()
         stagedir = basedir \
             if path is None \
             else os.path.join(basedir, path.lstrip(os.sep))
@@ -314,6 +316,15 @@ class Element(Plugin):
            (dict): The public data dictionary for the given domain
         """
         return self.__public.get(domain)
+
+    def get_environment(self):
+        """Fetch the environment suitable for running in the sandbox
+
+        Returns:
+           (dict): A dictionary of string key/values suitable for passing
+           to :func:`Sandbox.run() <buildstream.sandbox.Sandbox.run>`
+        """
+        return utils._node_sanitize(self.__environment)
 
     #############################################################
     #                  Abstract Element Methods                 #
@@ -693,60 +704,33 @@ class Element(Plugin):
     #
     # If directory is not specified, one will be staged using scope
     def _shell(self, scope=None, directory=None):
-        with self.__sandbox(scope, directory, sys.stdout, sys.stderr) as sandbox:
+        with self.__sandbox(scope, directory) as sandbox:
             self.__run_shell(sandbox)
 
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
     @contextmanager
-    def __sandbox(self, scope, directory, stdout, stderr):
-        environment = utils._node_sanitize(self.__environment)
+    def __sandbox(self, scope, directory, stdout=None, stderr=None):
+        context = self.get_context()
+        project = self.get_project()
+
         if directory is not None and os.path.exists(directory):
 
-            # sandbox.executor.debug = True
-            sandbox = Sandbox(fs_root=directory,
-                              env=environment,
-                              stdout=stdout,
-                              stderr=stderr)
-
-            # By default leave it writable...
-            sandbox.executor.root_ro = False
-
-            # root is temp directory
-            os.makedirs(os.path.join(directory, 'tmp'), exist_ok=True)
-
-            mounts = []
-            mounts.append({'dest': '/dev', 'type': 'host-dev'})
-            mounts.append({'dest': '/proc', 'type': 'proc'})
-            mounts.append({'dest': '/tmp', 'type': 'tmpfs'})
-
-            # Mount a read-write /buildstream subdir of the same outer location
-            mounts.append({
-                'src': os.path.join(directory, 'buildstream'),
-                'dest': '/buildstream',
-                'writable': True
-            })
-
-            sandbox.set_mounts(mounts)
-
-            # Be root in the sandbox
-            sandbox.executor.set_user_namespace(0, 0)
-
-            # Set the cwd to the build dir, if it exists (so that `bst shell` commands
-            # on broken builds automatically land the user in the build directory)
-            if os.path.isdir(os.path.join(directory, 'buildstream', 'build')):
-                sandbox.set_cwd('/buildstream/build')
+            # We'll want a factory function and some decision making about
+            # which sandbox implementation to use, when we have more than
+            # one sandbox implementation.
+            #
+            sandbox = SandboxBwrap(context, project, directory, stdout=stdout, stderr=stderr)
 
             yield sandbox
 
         else:
-            context = self.get_context()
             os.makedirs(context.builddir, exist_ok=True)
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
 
             # Recursive contextmanager...
-            with self.__sandbox(scope, rootdir, stdout, stderr) as sandbox:
+            with self.__sandbox(scope, rootdir, stdout=stdout, stderr=stderr) as sandbox:
 
                 # Stage deps in the sandbox root
                 with self.timed_activity("Staging dependencies", silent_nested=True):
@@ -762,9 +746,6 @@ class Element(Plugin):
                     # Stage sources in /buildstream/build
                     self.stage_sources(sandbox, '/buildstream/build')
 
-                    # And set the sandbox work directory too
-                    sandbox.set_cwd('/buildstream/build')
-
                 yield sandbox
 
             # Cleanup the build dir
@@ -772,18 +753,26 @@ class Element(Plugin):
 
     def __run_shell(self, sandbox):
 
-        # More permissive sandbox for running a shell
-        sandbox.executor.set_network_enable(True)
+        # Set the cwd to the build dir, if it exists (so that `bst shell` commands
+        # on broken builds automatically land the user in the build directory)
+        directory = sandbox.get_directory()
+        cwd = None
+        if os.path.isdir(os.path.join(directory, 'buildstream', 'build')):
+            cwd = '/buildstream/build'
 
-        # Composite the element environment on top of the host
-        # environment and use that for the shell environment.
+        # Override the element environment with some of
+        # the host environment and use that for the shell environment.
         #
         # XXX Hard code should be removed
+        environment = self.get_environment()
         overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
         for override in overrides:
-            sandbox.executor.env[override] = os.environ.get(override)
+            environment[override] = os.environ.get(override)
 
-        exitcode, _, _ = sandbox.run(['sh', '-i'])
+        # Run shells with network enabled and readonly root.
+        exitcode = sandbox.run(['sh', '-i'],
+                               SandboxFlags.NETWORK_ENABLED & SandboxFlags.ROOT_READ_ONLY,
+                               cwd=cwd, env=environment)
         if exitcode != 0:
             raise ElementError("Running shell failed with exitcode {}".format(exitcode))
 
