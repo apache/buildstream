@@ -56,6 +56,9 @@ class Context():
     """
     def __init__(self, arch):
 
+        self.config_origin = None
+        """Filename indicating which configuration file was used, or None for the defaults"""
+
         self.arch = arch
         """The target architecture to build for"""
 
@@ -119,6 +122,7 @@ class Context():
         #
         defaults = _yaml.load(_site.default_user_config)
         if config:
+            self.config_origin = os.path.abspath(config)
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config, typesafe=True)
 
