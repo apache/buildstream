@@ -17,23 +17,26 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-
 import os
 import sys
 import click
 import pkg_resources  # From setuptools
-import copy
 from ruamel import yaml
 from blessings import Terminal
 
+# Import buildstream public symbols
 from .. import Context, Project, Scope, Consistency
+
+# Import various buildstream internals
 from ..exceptions import _BstError
 from .._message import MessageType, unconditional_messages
 from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
 from .. import utils
 from .._profile import Topics, profile_start, profile_end
-from .widget import Profile, LogLine, Status
+
+# Import frontend assets
+from . import Profile, LogLine, Status
 
 # Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version

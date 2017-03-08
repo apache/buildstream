@@ -18,5 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-# Main program entry point
+from .profile import Profile
+from .status import Status
+from .widget import LogLine
 from .main import cli
