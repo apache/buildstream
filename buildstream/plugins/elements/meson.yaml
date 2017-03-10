@@ -4,6 +4,7 @@ variables:
 
   build-dir: _builddir
   meson: |
+
     meson %{build-dir} --prefix=%{prefix} \
                        --bindir=%{bindir} \
                        --sbindir=%{sbindir} \
@@ -16,8 +17,12 @@ variables:
                        --sharedstatedir=%{sharedstatedir} \
                        --mandir=%{mandir} \
                        --infodir=%{infodir}
-  ninja: ninja -j ${NINJAJOBS} -C %{build-dir}
-  ninja-install: env DESTDIR="%{install-root}" ninja -C %{build-dir} install
+
+  ninja: |
+    ninja -j ${NINJAJOBS} -C %{build-dir}
+
+  ninja-install: |
+    env DESTDIR="%{install-root}" ninja -C %{build-dir} install
 
   # Set this if the sources cannot handle parallelization.
   #
@@ -53,7 +58,8 @@ config:
 
 # Use max-jobs CPUs for building
 environment:
-  NINJAJOBS: %{max-jobs}
+  NINJAJOBS: |
+    %{max-jobs}
 
 # And dont consider NINJAJOBS as something which may
 # effect build output.
