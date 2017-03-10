@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'BuildStream'
-copyright = '2016, Codethink Limited'
+copyright = '2017, Codethink Limited'
 author = 'Tristan Van Berkom'
 
 # The version info for the project you're documenting, acts as replacement for
