@@ -24,31 +24,15 @@ elements for doing more elaborate things such as deploying software in special w
 
 Using BuildStream
 -----------------
-Here are some resources to help you get off the ground when creating your very first
-BuildStream project.
+Here are some resources to help you get off the ground when creating your very
+first BuildStream project.
 
 * :ref:`format`
 
 
-
-Core Framework
---------------
-
-* :mod:`Plugin <buildstream.plugin>` - Base Class for all plugins
-* :mod:`Source <buildstream.source>` - Base Source Class
-* :mod:`Element <buildstream.element>` - Base Element Class
-* :mod:`BuildElement <buildstream.buildelement>` - Build Element Class
-* :mod:`Context <buildstream.context>` - Invocation Context
-* :mod:`Project <buildstream.project>` - Loaded Project
-* :mod:`Sandbox <buildstream.sandbox>` - Sandbox Abstraction Class
-* :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
-
-
-Plugins
--------
-
 Elements
 ~~~~~~~~
+The following element types are provided with BuildStream:
 
 * :mod:`stack` - Symbolic Element for dependency grouping
 * :mod:`import` - Import sources directly
@@ -63,10 +47,27 @@ Elements
 
 Sources
 ~~~~~~~
+The following source types are provided with BuildStream:
 
 * :mod:`local` - A Source implementation local files and directories
 * :mod:`git` - A Source implementation for git
 * :mod:`ostree` - A Source implementation for ostree
+
+
+Core Framework
+--------------
+The core public APIs are of interest to anyone who wishes to
+implement custom :mod:`Element <buildstream.element>` or
+:mod:`Source <buildstream.source>` plugins.
+
+* :mod:`Plugin <buildstream.plugin>` - Base Class for all plugins
+* :mod:`Source <buildstream.source>` - Base Source Class
+* :mod:`Element <buildstream.element>` - Base Element Class
+* :mod:`BuildElement <buildstream.buildelement>` - Build Element Class
+* :mod:`Context <buildstream.context>` - Invocation Context
+* :mod:`Project <buildstream.project>` - Loaded Project
+* :mod:`Sandbox <buildstream.sandbox>` - Build Sandbox
+* :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
 
 
 Indices and tables
