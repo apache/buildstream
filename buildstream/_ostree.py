@@ -23,6 +23,7 @@
 # Code based on Jürg's artifact cache and Andrew's ostree plugin
 #
 import os
+from .exceptions import _BstError
 
 import gi
 gi.require_version('OSTree', '1.0')
@@ -31,7 +32,7 @@ from gi.repository.GLib import Variant, VariantDict  # nopep8
 
 
 # For users of this file, they must expect (except) it.
-class OSTreeError(Exception):
+class OSTreeError(_BstError):
     pass
 
 
