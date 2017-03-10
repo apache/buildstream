@@ -1,25 +1,35 @@
+# Install some requirements for BuildStream
 before_script:
-  - echo "deb http://ftp.uk.debian.org/debian/ testing main" >> /etc/apt/sources.list
-  - apt-get update --fix-missing -qq
-  - apt-get install -y -qq bubblewrap
-  - apt-get install -y -qq python3.5
-  - apt-get install -y -qq python3-pip
-  - apt-get install --force-yes -qq ostree gir1.2-ostree-1.0 python3-dev python3-gi
+- echo "deb http://ftp.uk.debian.org/debian/ testing main" >> /etc/apt/sources.list
+- apt-get update --fix-missing -qq
+- apt-get install -y -qq bubblewrap
+- apt-get install -y -qq python3.5
+- apt-get install -y -qq python3-pip
+- apt-get install --force-yes -qq ostree gir1.2-ostree-1.0 python3-dev python3-gi
 
-  # Debian version is behind/not compatible with latest sphinx
-  - apt-get remove python-requests
-  - pip3 install --upgrade pip
-  - pip3 install --upgrade requests
+# Debian version is behind/not compatible with latest sphinx
+- apt-get remove python-requests
+- pip3 install --upgrade pip
+- pip3 install --upgrade requests
 
 
+# Run premerge commits
+#
 tests:
-    script:
-        - python3 setup.py test
+  script:
+  - python3 setup.py test
 
 
-
-doc-build:
-    script:
-        - pip3 install sphinx
-        - cd doc
-        - make
+# Automatically build documentation, only for merges which land
+# on master branch.
+pages:
+  script:
+  - pip3 install sphinx
+  - pip3 install --user -e .
+  - make -C doc
+  - mv doc/build/html public
+  artifacts:
+    paths:
+    - public/
+  only:
+  - master
