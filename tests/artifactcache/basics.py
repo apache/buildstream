@@ -2,38 +2,40 @@ import os
 import pytest
 import tempfile
 
-from buildstream import Context
-from buildstream._artifactcache import ArtifactCache
+from buildstream import Context, Project
+from buildstream._artifactcache import ArtifactCache, ArtifactError
+from buildstream._pipeline import Pipeline
+
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    'basics',
+)
 
 
 @pytest.fixture()
-def context(tmpdir):
+def pipeline(tmpdir):
     context = Context('x86_64')
-    context.load()
+    project = Project(DATA_DIR, 'x86_64')
 
     context.deploydir = os.path.join(str(tmpdir), 'deploy')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
 
-    return context
+    return Pipeline(context, project, "simple.bst", None)
 
 
-@pytest.fixture()
-def artifactcache(context):
-    return ArtifactCache(context)
+def test_empty_contains(pipeline):
+    assert(not pipeline.artifacts.contains(pipeline.target))
 
 
-def test_empty_contains(context, artifactcache):
-    assert(not artifactcache.contains('foo', 'bar', 'a1b2c3'))
+# Test that we get an ArtifactError when trying to extract a nonexistent artifact
+def test_empty_extract(pipeline):
+    with pytest.raises(ArtifactError) as exc:
+        pipeline.artifacts.extract(pipeline.target)
 
 
-@pytest.mark.xfail()
-def test_empty_extract(context, artifactcache):
-    artifactcache.extract('foo', 'bar', 'a1b2c3')
-
-
-def test_commit_extract(context, artifactcache):
-    os.makedirs(context.deploydir, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=context.deploydir) as deploydir:
+def test_commit_extract(pipeline):
+    os.makedirs(pipeline.context.deploydir, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=pipeline.context.deploydir) as deploydir:
         # create file as mock build output
         bindir = os.path.join(deploydir, 'bin')
         os.mkdir(bindir)
@@ -41,12 +43,12 @@ def test_commit_extract(context, artifactcache):
             f.write('hello, world')
 
         # commit build output to artifact cache
-        artifactcache.commit('foo', 'bar', 'a1b2c3', deploydir)
+        pipeline.artifacts.commit(pipeline.target, deploydir)
 
-    assert(artifactcache.contains('foo', 'bar', 'a1b2c3'))
+    assert(pipeline.artifacts.contains(pipeline.target))
 
     # extract artifact and verify the content
-    extractdir = artifactcache.extract('foo', 'bar', 'a1b2c3')
+    extractdir = pipeline.artifacts.extract(pipeline.target)
     with open(os.path.join(extractdir, 'bin', 'baz'), 'r') as f:
         content = f.read()
         assert(content == 'hello, world')
