@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2017 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -21,15 +21,25 @@
 import os
 import tempfile
 
+from . import Element
 from . import _ostree
+from .exceptions import _BstError
 
 
-def buildref(project, element, key):
+# For users of this file, they must expect (except) it.
+class ArtifactError(_BstError):
+    pass
+
+
+def buildref(element):
+    project = element.get_project()
+    key = element._get_cache_key()
+
     # Normalize ostree ref unsupported chars
-    element = element.replace('+', 'X')
+    element_name = element.name.replace('+', 'X')
 
     # assume project and element names are not allowed to contain slashes
-    return '{0}/{1}/{2}'.format(project, element, key)
+    return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
 
 # An ArtifactCache manages artifacts in an OSTree repository
@@ -49,34 +59,36 @@ class ArtifactCache():
 
     # contains():
     #
-    # Check whether the specified artifact is already available in the
-    # local artifact cache.
+    # Check whether the artifact for the specified Element is already available
+    # in the local artifact cache.
     #
     # Args:
-    #     project (str): The name of the project
-    #     element (str): The name of the element
-    #     key (str):     The cache key
+    #     element (Element): The Element to check
     #
     # Returns: True if the artifact is in the cache, False otherwise
     #
-    def contains(self, project, element, key):
-        ref = buildref(project, element, key)
+    def contains(self, element):
+        ref = buildref(element)
         return _ostree.exists(self.repo, ref)
 
     # extract():
     #
-    # Extract cached artifact if it hasn't already been extracted.
+    # Extract cached artifact for the specified Element if it hasn't
+    # already been extracted.
+    #
     # Assumes artifact has previously been fetched or committed.
     #
     # Args:
-    #     project (str): The name of the project
-    #     element (str): The name of the element
-    #     key (str):     The cache key
+    #     element (Element): The Element to extract
+    #
+    # Raises:
+    #     ArtifactError: In cases there was an OSError, or if the artifact
+    #                    did not exist.
     #
     # Returns: path to extracted artifact
     #
-    def extract(self, project, element, key):
-        ref = buildref(project, element, key)
+    def extract(self, element):
+        ref = buildref(element)
 
         dest = os.path.join(self.extractdir, ref)
         if os.path.isdir(dest):
@@ -85,6 +97,8 @@ class ArtifactCache():
 
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, ref)
+        if not rev:
+            raise ArtifactError("Artifact missing for {}".format(ref))
 
         os.makedirs(self.extractdir, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix='tmp', dir=self.extractdir) as tmpdir:
@@ -98,7 +112,9 @@ class ArtifactCache():
                 os.rename(checkoutdir, dest)
             except OSError as e:
                 if e.errno != os.errno.ENOTEMPTY:
-                    raise
+                    raise ArtifactError("Failed to extract artifact for ref '{}': {}"
+                                        .format(ref, e)) from e
+
                 # If rename fails with ENOTEMPTY, another process beat
                 # us to it. This is no issue.
 
@@ -109,12 +125,10 @@ class ArtifactCache():
     # Commit built artifact to cache.
     #
     # Args:
-    #     project (str): The name of the project
-    #     element (str): The name of the element
-    #     key (str):     The cache key
-    #     dir (str):     The source directory
+    #     element (Element): The Element commit an artifact for
+    #     content (str): The element's content directory
     #
-    def commit(self, project, element, key, dir):
-        ref = buildref(project, element, key)
+    def commit(self, element, content):
+        ref = buildref(element)
 
-        _ostree.commit(self.repo, dir, ref)
+        _ostree.commit(self.repo, content, ref)
