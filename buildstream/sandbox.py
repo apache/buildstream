@@ -72,8 +72,8 @@ class Sandbox():
             (int): The program exit code.
 
         Raises:
-            (:class:`.ProgramNotfound`): If a host tool which the given sandbox
-                                         implementation requires is not found.
+            (:class:`.ProgramNotFoundError`): If a host tool which the given sandbox
+                                              implementation requires is not found.
         """
         raise ImplError("Sandbox of type '{}' does not implement run()"
                         .format(type(self).__name__))
