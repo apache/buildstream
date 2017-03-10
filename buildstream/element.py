@@ -238,15 +238,13 @@ class Element(Plugin):
           for dep in self.dependencies(Scope.BUILD):
               dep.stage(sandbox)
         """
-        project = self.get_project()
-        key = self._get_cache_key()
 
         # Time to use the artifact, check once more that it's there
         self._assert_cached()
 
-        with self.timed_activity("Staging {}/{}/{}".format(project.name, self.name, key)):
+        with self.timed_activity("Staging {}/{}".format(self.name, self._get_display_key())):
             # Get the extracted artifact
-            artifact = self.__artifacts.extract(project.name, self.name, key)
+            artifact = self.__artifacts.extract(self)
 
             # Hard link it into the staging area
             #
@@ -424,10 +422,8 @@ class Element(Plugin):
     def _cached(self, recalculate=False):
 
         if recalculate:
-            project = self.get_project()
-            key = self._get_cache_key()
-            if (self.__cached is None or recalculate) and project is not None and key is not None:
-                self.__cached = self.__artifacts.contains(project.name, self.name, key)
+            if (self.__cached is None or recalculate):
+                self.__cached = self.__artifacts.contains(self)
 
         return False if self.__cached is None else self.__cached
 
@@ -611,15 +607,8 @@ class Element(Plugin):
 
                 # At this point, we expect an exception was raised leading to
                 # an error message, or we have good output to collect.
-                project = self.get_project()
-                key = self._get_cache_key()
-                display_key = self._get_display_key()
-
                 with self.timed_activity("Caching Artifact"):
-                    self.__artifacts.commit(project.name,
-                                            self.name,
-                                            key,
-                                            collectdir)
+                    self.__artifacts.commit(self, collectdir)
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
