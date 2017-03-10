@@ -102,8 +102,6 @@ environment:
 # List of environment variables which should not be taken into
 # account when calculating a cache key for a given element.
 #
-# E.g.
-#
 environment-nocache: []
 
 
