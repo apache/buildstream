@@ -29,6 +29,7 @@ import tempfile
 import shutil
 
 from . import _yaml
+from ._yaml import CompositePolicy
 from ._variables import Variables
 from .exceptions import _BstError
 from . import LoadError, LoadErrorReason, ElementError
@@ -98,7 +99,7 @@ class Element(Plugin):
         self.__env_nocache = nocache
 
         # Grab public domain data declared for this instance
-        self.__public = copy.deepcopy(meta.public)
+        self.__public = self.__extract_public(meta)
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -765,6 +766,23 @@ class Element(Plugin):
         if exitcode != 0:
             raise ElementError("Running shell failed with exitcode {}".format(exitcode))
 
+    def __compose_default_splits(self, defaults):
+        project = self.get_project()
+        project_splits = utils._node_chain_copy(project._splits)
+
+        element_public = _yaml.node_get(defaults, Mapping, 'public', default_value={})
+        element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
+        element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
+
+        # Extend project wide split rules with any split rules defined by the element
+        _yaml.composite(project_splits, element_splits,
+                        policy=CompositePolicy.ARRAY_APPEND,
+                        typesafe=True)
+
+        element_bst['split-rules'] = project_splits
+        element_public['bst'] = element_bst
+        defaults['public'] = element_public
+
     def __init_defaults(self):
 
         # Defaults are loaded once per class and then reused
@@ -784,6 +802,9 @@ class Element(Plugin):
             except LoadError as e:
                 if e.reason != LoadErrorReason.MISSING_FILE:
                     raise e
+
+            # Special case; compose any element-wide split-rules declarations
+            self.__compose_default_splits(defaults)
 
             # Override the element's defaults with element specific
             # overrides from the project.conf
@@ -853,3 +874,35 @@ class Element(Plugin):
         _yaml.composite(config, meta.config, typesafe=True)
 
         return config
+
+    # This makes a special exception for the split rules, which
+    # elements may extend but whos defaults are defined in the project.
+    #
+    def __extract_public(self, meta):
+        base_public = _yaml.node_get(self.__defaults, Mapping, 'public', default_value={})
+        base_public = utils._node_chain_copy(base_public)
+
+        base_bst = _yaml.node_get(base_public, Mapping, 'bst', default_value={})
+        base_splits = _yaml.node_get(base_bst, Mapping, 'split-rules', default_value={})
+
+        element_public = utils._node_chain_copy(meta.public)
+        element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
+        element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
+
+        # Allow elements to extend the default splits defined in their project or
+        # element specific defaults
+        _yaml.composite(base_splits, element_splits,
+                        policy=CompositePolicy.ARRAY_APPEND,
+                        typesafe=True)
+
+        element_bst['split-rules'] = base_splits
+        element_public['bst'] = element_bst
+
+        # Also, resolve any variables in the public split rules directly
+        for domain, splits in self.node_items(base_splits):
+            base_splits[domain] = [
+                self.__variables.subst(split.strip())
+                for split in splits
+            ]
+
+        return element_public
