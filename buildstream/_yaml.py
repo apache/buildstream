@@ -108,7 +108,7 @@ class MemberProvenance(Provenance):
     def clone(self):
         provenance = MemberProvenance(self.filename, None, None, self.toplevel,
                                       node=self.node, line=self.line, col=self.col)
-        provenance.elements = [e.clone for e in self.elements]
+        provenance.elements = [e.clone() for e in self.elements]
         return provenance
 
 
