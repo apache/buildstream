@@ -203,6 +203,7 @@ def show(app, target, arch, variant, deps, order, format):
         %{config} The element configuration
         %{vars}   Variable configuration
         %{env}    Environment settings
+        %{public} Public domain data
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
@@ -278,6 +279,13 @@ def show(app, target, arch, variant, deps, order, format):
             environment = utils._node_sanitize(element._Element__environment)
             line = p.fmt_subst(
                 line, 'env',
+                yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+
+        # Public
+        if "%{public" in format:
+            environment = utils._node_sanitize(element._Element__public)
+            line = p.fmt_subst(
+                line, 'public',
                 yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
         report += line + '\n'
