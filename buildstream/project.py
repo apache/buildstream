@@ -146,6 +146,9 @@ class Project():
         self._env_nocache = _yaml.node_get(config, list, 'environment-nocache')
         self._devices = _yaml.node_get(config, list, 'devices')
 
+        # Load project split rules
+        self._splits = _yaml.node_get(config, Mapping, 'split-rules')
+
         # Element configurations
         self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
 

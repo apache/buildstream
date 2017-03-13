@@ -54,16 +54,18 @@ variables:
   exec_prefix: "%{prefix}"
   bindir: "%{exec_prefix}/bin"
   sbindir: "%{exec_prefix}/sbin"
-  libexecdir: "%{exec_prefix}/libexecdir"
+  libexecdir: "%{exec_prefix}/libexec"
   datadir: "%{prefix}/share"
   sysconfdir: "/etc"
   sharedstatedir: "%{prefix}/com"
   localstatedir: "/var"
   lib: "lib"
   libdir: "%{prefix}/%{lib}"
+  debugdir: "%{libdir}/debug"
   includedir: "%{prefix}/include"
-  infodir: "%{prefix}/info"
-  mandir: "%{prefix}/man"
+  docdir: "%{datadir}/doc"
+  infodir: "%{datadir}/info"
+  mandir: "%{datadir}/man"
 
   # Indicates the build installation directory in the sandbox
   install-root: /buildstream/install
@@ -73,13 +75,14 @@ variables:
   strip-binaries: |
 
     find "%{install-root}" -type f \
-      '(' -perm -111 -o -name '*.so*' -o -name '*.cmxs' -o -name '*.node' ')' \
+      '(' -perm -111 -o -name '*.so*' \
+          -o -name '*.cmxs' -o -name '*.node' ')' \
       -exec sh -ec \
       'read -n4 hdr <"$1" # check for elf header
        if [ "$hdr" != "$(printf \\x7fELF)" ]; then
            exit 0
        fi
-       debugfile="%{install-root}%{libdir}/debug/$(basename "$1")"
+       debugfile="%{install-root}%{debugdir}/$(basename "$1")"
        mkdir -p "$(dirname "$debugfile")"
        objcopy --only-keep-debug "$1" "$debugfile"
        chmod 644 "$debugfile"
@@ -114,6 +117,80 @@ devices:
 - /dev/zero
 
 
+# Defaults for the 'split-rules' public data found on elements
+# in the 'bst' domain.
+#
+# These define patterns for categorizing the output of build
+# elements so that selective composition can be performed by
+# plugins later on.
+#
+# Elements may extend these rules by adding entries to the
+# various split domains either in a plugin definition or
+# in a project element declaration.
+#
+# Note that the split rules reported by
+# Element.get_public_data('bst') will have any variables for
+# the given element already expanded.
+#
+split-rules:
+
+  # The runtime domain includes whatever is needed for the
+  # built element to run, this includes stripped executables
+  # and shared libraries by default.
+  runtime:
+  - |
+    %{bindir}/.*
+  - |
+    %{sbindir}/.*
+  - |
+    %{libexecdir}/.*
+  - |
+    %{libdir}/lib[^/]*\.so(\.\d+)*
+
+  # The devel domain includes additional things which
+  # you may need for development.
+  #
+  # By default this includes header files, static libraries
+  # and other metadata such as pkgconfig files, m4 macros and
+  # libtool archives.
+  devel:
+  - |
+    %{includedir}/.*
+  - |
+    %{libdir}/lib.*\.a
+  - |
+    %{libdir}/lib.*\.la
+  - |
+    %{libdir}/pkgconfig/.*\.pc
+  - |
+    %{datadir}/pkgconfig/.*\.pc
+  - |
+    %{datadir}/aclocal/.*\.m4
+
+  # The debug domain includes debugging information stripped
+  # away from libraries and executables
+  debug:
+  - |
+    %{debugdir}/.*
+
+  # The doc domain includes documentation
+  doc:
+  - |
+    %{docdir}/.*
+  - |
+    %{infodir}/.*
+  - |
+    %{mandir}/.*
+
+  # The locale domain includes translations etc
+  locale:
+  - |
+    %{datadir}/locale/.*
+  - |
+    %{datadir}/i18n/.*
+  - |
+    %{datadir}/zoneinfo/.*
+
 # Element Overrides
 #
 # Base attributes declared by element default yaml files
@@ -127,7 +204,7 @@ devices:
 #   autotools:
 #
 #     variables:
-#       bindir: %{prefix}/bin
+#       bindir: "%{prefix}/bin"
 #
 #     config:
 #       configure-commands: ...
