@@ -109,49 +109,54 @@ class Element(Plugin):
     def __lt__(self, other):
         return self.name < other.name
 
-    def dependencies(self, scope, visiting=None):
-        """dependencies(scope)
+    def dependencies(self, scope, recurse=True, visited=None):
+        """dependencies(scope, recurse=True)
 
-        A generator function which lists the dependencies of the given element
-        deterministically, starting with the basemost elements in the given scope.
+        A generator function which yields the dependencies of the given element.
+
+        If `recurse` is specified (the default), the full dependencies will be listed
+        in deterministic staging order, starting with the basemost elements in the
+        given `scope`. Otherwise, if `recurse` is not specified then only the direct
+        dependencies in the given `scope` will be traversed, and the element itself
+        will be omitted.
 
         Args:
            scope (:class:`.Scope`): The scope to iterate in
+           recurse (bool): Whether to recurse
 
-        Returns:
-           (list): The dependencies in *scope*, in deterministic staging order
+        Yields:
+           (:class:`.Element`): The dependencies in *scope*, in deterministic staging order
         """
+        did_recurse = False
+        if visited is None:
+            visited = []
+        else:
+            did_recurse = True
 
-        # A little reentrancy protection, this loop could be
-        # optimized but not bothering at this point.
-        #
-        if visiting is None:
-            visiting = []
-        if self.name in visiting:
+        if self.name in visited:
             return
-        visiting.append(self.name)
+        visited.append(self.name)
 
-        if scope == Scope.ALL:
-            for dep in self.__build_dependencies:
-                for elt in dep.dependencies(Scope.ALL, visiting=visiting):
-                    yield elt
-            for dep in self.__runtime_dependencies:
-                if dep not in self.__build_dependencies:
-                    for elt in dep.dependencies(Scope.ALL, visiting=visiting):
+        if recurse or not did_recurse:
+            if scope == Scope.ALL:
+                for dep in self.__build_dependencies:
+                    for elt in dep.dependencies(Scope.ALL, recurse=recurse, visited=visited):
+                        yield elt
+                for dep in self.__runtime_dependencies:
+                    if dep not in self.__build_dependencies:
+                        for elt in dep.dependencies(Scope.ALL, recurse=recurse, visited=visited):
+                            yield elt
+            elif scope == Scope.BUILD:
+                for dep in self.__build_dependencies:
+                    for elt in dep.dependencies(Scope.RUN, recurse=recurse, visited=visited):
+                        yield elt
+            elif scope == Scope.RUN:
+                for dep in self.__runtime_dependencies:
+                    for elt in dep.dependencies(Scope.RUN, recurse=recurse, visited=visited):
                         yield elt
 
-        elif scope == Scope.BUILD:
-            for dep in self.__build_dependencies:
-                for elt in dep.dependencies(Scope.RUN, visiting=visiting):
-                    yield elt
-
-        elif scope == Scope.RUN:
-            for dep in self.__runtime_dependencies:
-                for elt in dep.dependencies(Scope.RUN, visiting=visiting):
-                    yield elt
-
         # Yeild self only at the end, after anything needed has been traversed
-        if (scope == Scope.ALL or scope == Scope.RUN):
+        if (recurse or did_recurse) and (scope == Scope.ALL or scope == Scope.RUN):
             yield self
 
     def node_subst_member(self, node, member_name, default_value=None):
