@@ -93,7 +93,7 @@ class FetchQueue(Queue):
         # cachekey = element._get_cache_key()
         # if self.artifacts.fetch(self.project.name, element.name, cachekey):
         #     return
-        for source in element._sources():
+        for source in element.sources():
             source._fetch()
 
     def skip(self, element):
@@ -105,7 +105,7 @@ class FetchQueue(Queue):
             return
 
         self.fetched_elements.append(element)
-        for source in element._sources():
+        for source in element.sources():
 
             # Successful fetch, we must be CACHED now
             source._bump_consistency(Consistency.CACHED)
@@ -230,7 +230,7 @@ class Pipeline():
     def dependencies(self, scope, include_sources=False):
         for element in self.target.dependencies(scope):
             if include_sources:
-                for source in element._sources():
+                for source in element.sources():
                     yield source
             yield element
 

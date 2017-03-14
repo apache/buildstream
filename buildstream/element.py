@@ -109,6 +109,15 @@ class Element(Plugin):
     def __lt__(self, other):
         return self.name < other.name
 
+    def sources(self):
+        """A generator function to enumerate the element sources
+
+        Yields:
+           (:class:`.Source`): The sources of this element
+        """
+        for source in self.__sources:
+            yield source
+
     def dependencies(self, scope, recurse=True, visited=None):
         """dependencies(scope, recurse=True)
 
@@ -125,7 +134,7 @@ class Element(Plugin):
            recurse (bool): Whether to recurse
 
         Yields:
-           (:class:`.Element`): The dependencies in *scope*, in deterministic staging order
+           (:class:`.Element`): The dependencies in `scope`, in deterministic staging order
         """
         did_recurse = False
         if visited is None:
@@ -361,14 +370,6 @@ class Element(Plugin):
     #
     def _add_source(self, source):
         self.__sources.append(source)
-
-    # _sources():
-    #
-    # Generator function for the element sources
-    #
-    def _sources(self):
-        for source in self.__sources:
-            yield source
 
     # _add_dependency()
     #
@@ -682,7 +683,7 @@ class Element(Plugin):
     # one log, so it's not harmful to modify the state of dependencies
     def _set_log_handle(self, logfile, recurse=True):
         super()._set_log_handle(logfile)
-        for source in self._sources():
+        for source in self.sources():
             source._set_log_handle(logfile)
         if recurse:
             for dep in self.dependencies(Scope.ALL):
