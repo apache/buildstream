@@ -56,9 +56,7 @@ class ImportElement(BuildElement):
         # Stage sources into the input directory
         self.stage_sources(sandbox, 'input')
 
-        # XXX I think we'll have to make the sandbox directory public :-/
-        rootdir = sandbox.executor.fs_root
-
+        rootdir = sandbox.get_directory()
         inputdir = os.path.join(rootdir, 'input')
         outputdir = os.path.join(rootdir, 'output')
 
