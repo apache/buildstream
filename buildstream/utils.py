@@ -34,31 +34,51 @@ from . import _yaml
 from . import ProgramNotFoundError
 
 
-def list_relative_paths(directory, includedirs=False):
-    """List relative filenames recursively
+def list_relative_paths(directory):
+    """A generator for walking directory relative paths
+
+    This generator is useful for checking the full manifest of
+    a directory.
+
+    Note that only empty directories will be yielded.
+
+    Symbolic links will not be followed, but will be included
+    in the manifest.
 
     Args:
        directory (str): The directory to list files in
-       includedirs (bool): Whether to include directories in the returned list
 
-    Returns:
-       A sorted list of files in *directory*, relative to *directory*
+    Yields:
+       Relative filenames in `directory`
     """
-    filelist = []
     for (dirpath, dirnames, filenames) in os.walk(directory):
-
-        if includedirs:
-            for d in dirnames:
-                fullpath = os.path.join(dirpath, d)
+        # os.walk does not decend into symlink directories, which
+        # makes sense because otherwise we might have redundant
+        # directories, or end up descending into directories outside
+        # of the walk() directory.
+        #
+        # But symlinks to directories are still identified as
+        # subdirectories in the walked `dirpath`, so we extract
+        # these symlinks from `dirnames`
+        #
+        for d in dirnames:
+            fullpath = os.path.join(dirpath, d)
+            if os.path.islink(fullpath):
                 relpath = os.path.relpath(fullpath, directory)
-                filelist.append(relpath)
+                yield relpath
 
+        # We've decended into an empty directory, in this case we
+        # want to include the directory itself, but not in any other
+        # case.
+        if not filenames:
+            relpath = os.path.relpath(dirpath, directory)
+            yield relpath
+
+        # List the filenames in the walked directory
         for f in filenames:
             fullpath = os.path.join(dirpath, f)
             relpath = os.path.relpath(fullpath, directory)
-            filelist.append(relpath)
-
-    return sorted(filelist)
+            yield relpath
 
 
 def safe_copy(src, dest):
@@ -80,6 +100,27 @@ def safe_copy(src, dest):
             raise e
 
     shutil.copy2(src, dest)
+
+
+def safe_move(src, dest):
+    """Move a file while preserving attributes
+
+    Args:
+       src (str): The source filename
+       dest (str): The destination filename
+
+    This is almost the same as shutil.move(), except that
+    we unlink *dest* before overwriting it if it exists, just
+    incase *dest* is a hardlink to a different file.
+    """
+    # First unlink the target if it exists
+    try:
+        os.unlink(dest)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise e
+
+    shutil.move(src, dest)
 
 
 def safe_link(src, dest):
@@ -107,31 +148,101 @@ def safe_link(src, dest):
             raise e
 
 
-def copy_files(src, dest, files=None):
+def safe_remove(path):
+    """Removes a file or directory
+
+    This will remove a file if it exists, and will
+    remove a directory if the directory is not empty.
+
+    Args:
+       path (str): The path to remove
+
+    Returns:
+       True if `path` was removed or did not exist, False
+       if `path` was a non empty directory.
+
+    Raises:
+        OSError: If any other system error occured
+    """
+    if os.path.lexists(path):
+
+        # Try to remove anything that is in the way, but issue
+        # a warning instead if it removes a non empty directory
+        try:
+            os.unlink(path)
+        except OSError as e:
+            if e.errno != errno.EISDIR:
+                raise
+
+            try:
+                os.rmdir(path)
+            except OSError as e:
+                if e.errno == errno.ENOTEMPTY:
+                    return False
+                else:
+                    raise
+
+    return True
+
+
+def copy_files(src, dest, files=None, ignore_missing=False):
     """Copy files from source to destination.
 
     Args:
        src (str): The source file or directory
        dest (str): The destination directory
        files (list): List of source files to copy
+       ignore_missing (bool): Dont raise any error if a source file is missing
+
+    Returns:
+       (list): Overwritten files
+       (list): Ignored overwritten files
 
     If *files* is not specified, then all files in *src*
     will be copied to *dest*
     """
-    if not files:
-        files = list_relative_paths(src, includedirs=True)
+    if files is None:
+        files = list_relative_paths(src)
 
     # Use shutil.copy2() which uses copystat() to preserve attributes
-    _process_list(src, dest, files, safe_copy)
+    return _process_list(src, dest, files, safe_copy, ignore_missing=ignore_missing)
 
 
-def link_files(src, dest, files=None):
+def move_files(src, dest, files=None, ignore_missing=False):
+    """Move files from source to destination.
+
+    Args:
+       src (str): The source file or directory
+       dest (str): The destination directory
+       files (list): List of source files to move
+       ignore_missing (bool): Dont raise any error if a source file is missing
+
+    Returns:
+       (list): Overwritten files
+       (list): Ignored overwritten files
+
+    If *files* is not specified, then all files in *src*
+    will be moved to *dest*
+    """
+    if files is None:
+        files = list_relative_paths(src)
+
+    # Use shutil.move() which uses copystat() to preserve attributes
+    return _process_list(src, dest, files, safe_move, ignore_missing=ignore_missing)
+
+
+def link_files(src, dest, files=None, ignore_missing=False):
     """Hardlink files from source to destination.
 
     Args:
        src (str): The source file or directory
        dest (str): The destination directory
        files (list): List of source files to copy
+       ignore_missing (bool): Dont raise any error if a source file is missing
+
+    Returns:
+       (list): Overwritten files
+       (list): Ignored overwritten files
 
     If *files* is not specified, then all files in *src*
     will be linked to *dest*.
@@ -139,10 +250,10 @@ def link_files(src, dest, files=None):
     If the hardlink cannot be created due to crossing filesystems,
     then the file will be copied instead.
     """
-    if not files:
-        files = list_relative_paths(src, includedirs=True)
+    if files is None:
+        files = list_relative_paths(src)
 
-    _process_list(src, dest, files, safe_link)
+    return _process_list(src, dest, files, safe_link, ignore_missing=ignore_missing)
 
 
 def get_host_tool(name):
@@ -233,34 +344,40 @@ def _ensure_real_directory(root, destpath):
     return realpath
 
 
-def _process_list(srcdir, destdir, filelist, actionfunc):
+# _process_list()
+#
+# Internal helper for copying/moving/linking file lists
+#
+# This will handle directories, symlinks and special files
+# internally, the `actionfunc` will only be called for regular files.
+#
+# Args:
+#    srcdir: The source base directory
+#    destdir: The destination base directory
+#    filelist: List of relative file paths
+#    actionfunc: The function to call for regular files
+#    ignore_missing: Dont raise any error if a source file is missing
+#
+# Returns:
+#    (list): Overwritten files
+#    (list): Ignored overwritten files
+#
+def _process_list(srcdir, destdir, filelist, actionfunc, ignore_missing=False):
 
-    def remove_if_exists(file_or_directory):
-        if os.path.lexists(file_or_directory):
-
-            # Try to remove anything that is in the way, but issue
-            # a warning instead if it removes a non empty directory
-            try:
-                os.unlink(file_or_directory)
-            except OSError as e:
-                if e.errno != errno.EISDIR:
-                    raise
-
-                try:
-                    os.rmdir(file_or_directory)
-                except OSError as e:
-                    if e.errno == errno.ENOTEMPTY:
-                        print('WARNING: Ignoring symlink "' + destpath +
-                              '" which purges non-empty directory')
-                        return False
-                    else:
-                        raise
-
-        return True
-
-    for path in filelist:
+    # Note we consume the filelist (which is a generator and not a list)
+    # by sorting it, this is necessary to ensure that we processes symbolic
+    # links which lead to directories before processing files inside those
+    # directories.
+    #
+    overwrites = []
+    ignored = []
+    for path in sorted(filelist):
         srcpath = os.path.join(srcdir, path)
         destpath = os.path.join(destdir, path)
+
+        # Collect overlaps
+        if os.path.lexists(destpath) and not os.path.isdir(destpath):
+            overwrites.append(path)
 
         # The destination directory may not have been created separately
         _copy_directories(srcdir, destdir, path)
@@ -270,12 +387,18 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
         # symlink boundaries
         _ensure_real_directory(destdir, os.path.dirname(destpath))
 
-        # XXX os.lstat is known to raise UnicodeEncodeError
-        file_stat = os.lstat(srcpath)
-        mode = file_stat.st_mode
+        try:
+            file_stat = os.lstat(srcpath)
+            mode = file_stat.st_mode
+        except FileNotFoundError:
+            # Skip this missing file
+            if ignore_missing:
+                continue
+            else:
+                raise
 
         if stat.S_ISDIR(mode):
-            # Ensure directory exists in destination, then recurse.
+            # Ensure directory exists in destination
             if not os.path.exists(destpath):
                 _ensure_real_directory(destdir, destpath)
 
@@ -286,27 +409,28 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
             shutil.copystat(srcpath, destpath)
 
         elif stat.S_ISLNK(mode):
-            # Should we really nuke directories which symlinks replace ?
-            # Should it be an error condition or just a warning ?
-            # If a warning, should we drop the symlink instead ?
-            if not remove_if_exists(destpath):
+            if not safe_remove(destpath):
+                ignored.append(path)
                 continue
+
             target = os.readlink(srcpath)
             target = _relative_symlink_target(destdir, destpath, target)
             os.symlink(target, destpath)
 
         elif stat.S_ISREG(mode):
-
             # Process the file.
-            if not remove_if_exists(destpath):
+            if not safe_remove(destpath):
+                ignored.append(path)
                 continue
+
             actionfunc(srcpath, destpath)
 
         elif stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
-
             # Block or character device. Put contents of st_dev in a mknod.
-            if not remove_if_exists(destpath):
+            if not safe_remove(destpath):
+                ignored.append(path)
                 continue
+
             if os.path.lexists(destpath):
                 os.remove(destpath)
             os.mknod(destpath, file_stat.st_mode, file_stat.st_rdev)
@@ -315,6 +439,8 @@ def _process_list(srcdir, destdir, filelist, actionfunc):
         else:
             # Unsupported type.
             raise OSError('Cannot extract %s into staging-area. Unsupported type.' % srcpath)
+
+    return (overwrites, ignored)
 
 
 # _relative_symlink_target()
