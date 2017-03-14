@@ -20,6 +20,7 @@
 
 import os
 import sys
+import re
 import copy
 import inspect
 from collections import Mapping
@@ -100,6 +101,9 @@ class Element(Plugin):
 
         # Grab public domain data declared for this instance
         self.__public = self.__extract_public(meta)
+
+        # Compile splitters
+        self.__init_splits()
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -235,15 +239,19 @@ class Element(Plugin):
         value = self.node_get_list_element(node, str, member_name, indices)
         return self.__variables.subst(value)
 
-    def stage(self, sandbox, path=None):
+    def stage(self, sandbox, path=None, splits=None, orphans=True):
         """Stage this element's output in the sandbox
 
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
            path (str): An optional sandbox relative path
+           splits (list): An optional list of domains to stage files from
+           orphans (bool): Whether to include files not spoken for by split domains
 
         Raises:
            (:class:`.ElementError`): If the element output does not exist
+
+        Note: When `splits` is not specified then all domains are included
 
         **Example:**
 
@@ -267,7 +275,19 @@ class Element(Plugin):
             stagedir = basedir \
                 if path is None \
                 else os.path.join(basedir, path.lstrip(os.sep))
-            utils.link_files(artifact, stagedir)
+
+            files = self.__compute_splits(splits, orphans)
+            overwrites, ignored = utils.link_files(artifact, stagedir, files=files)
+
+            if overwrites:
+                detail = "Staged files overwrite existing files in staging area:\n\n"
+                detail += "  " + "  ".join(["/" + o + "\n" for o in overwrites])
+                self.warn("File overlaps", detail=detail)
+
+            if ignored:
+                detail = "Not staging files which would replace non-empty directories:\n\n"
+                detail += "  " + "  ".join(["/" + o + "\n" for o in ignored])
+                self.warn("Ignored files", detail=detail)
 
     def integrate(self, sandbox):
         """Integrate currently staged filesystem against this artifact.
@@ -439,16 +459,8 @@ class Element(Plugin):
     # Raises an error if the artifact is not cached.
     def _assert_cached(self):
         if not self._cached():
-            project = self.get_project()
-            key = self._get_cache_key()
-            if not key:
-                key = '0' * 64
-
-            raise ElementError("{element}: Missing artifact {project}/{name}/{key}"
-                               .format(element=self,
-                                       project=project.name,
-                                       name=self.name,
-                                       key=key))
+            raise ElementError("{}: Missing artifact {}"
+                               .format(self, self._get_display_key()))
 
     # _set_cached():
     #
@@ -912,3 +924,48 @@ class Element(Plugin):
             ]
 
         return element_public
+
+    def __init_splits(self):
+        bstdata = self.get_public_data('bst')
+        splits = bstdata.get('split-rules')
+        self.__splits = {
+            domain: re.compile('^(?:' + '|'.join(rules) + ')$')
+            for domain, rules in self.node_items(splits)
+        }
+
+    def __compute_splits(self, splits, orphans):
+        basedir = self.__artifacts.extract(self)
+
+        # No splitting requested, just report complete artifact
+        if orphans and not splits:
+            for filename in utils.list_relative_paths(basedir):
+                yield filename
+            return
+
+        element_domains = list(self.__splits.keys())
+        include_domains = element_domains
+        if splits:
+            include_domains = [
+                domain for domain in splits if domain in element_domains
+            ]
+
+        element_files = [
+            os.path.join(os.sep, filename)
+            for filename in utils.list_relative_paths(basedir)
+        ]
+
+        for filename in element_files:
+            include_file = False
+            claimed_file = False
+
+            for domain in element_domains:
+                if self.__splits[domain].match(filename):
+                    claimed_file = True
+                    if domain in include_domains:
+                        include_file = True
+
+            if orphans and not claimed_file:
+                include_file = True
+
+            if include_file:
+                yield filename.lstrip(os.sep)
