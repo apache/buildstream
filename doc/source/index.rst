@@ -36,6 +36,7 @@ The following element types are provided with BuildStream:
 
 * :mod:`stack` - Symbolic Element for dependency grouping
 * :mod:`import` - Import sources directly
+* :mod:`compose` - Compose the output of multiple elements
 * :mod:`manual` - Manual Build Element
 * :mod:`autotools` - Autotools Build Element
 * :mod:`cmake` - CMake Build Element
