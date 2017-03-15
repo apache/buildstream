@@ -69,8 +69,7 @@ class BuildElement(Element):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            for dep in self.dependencies(Scope.BUILD):
-                dep.stage(sandbox)
+            self.stage_dependencies(sandbox, Scope.BUILD)
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready

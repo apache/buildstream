@@ -93,8 +93,7 @@ class ComposeElement(Element):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            for dep in self.dependencies(Scope.BUILD):
-                dep.stage(sandbox)
+            self.stage_dependencies(sandbox, Scope.BUILD)
 
         # Make a snapshot of all the files.
         basedir = sandbox.get_directory()
@@ -105,7 +104,6 @@ class ComposeElement(Element):
         # once they are all staged and ready
         if self.integration:
             with self.timed_activity("Integrating sandbox", silent_nested=True):
-
                 for dep in self.dependencies(Scope.BUILD):
                     dep.integrate(sandbox)
 
@@ -134,10 +132,10 @@ class ComposeElement(Element):
         # now collect the rest of the manifest.
         #
         with self.timed_activity("Creating composition", silent_nested=True):
-            for elt in self.dependencies(Scope.BUILD):
-                elt.stage(sandbox, path=stagedir,
-                          splits=self.include,
-                          orphans=self.include_orphans)
+            self.stage_dependencies(sandbox, Scope.BUILD,
+                                    path=stagedir,
+                                    splits=self.include,
+                                    orphans=self.include_orphans)
 
             self.status("Moving {} integration files".format(len(integration_files)))
             utils.move_files(basedir, installdir, integration_files)

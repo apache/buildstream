@@ -251,6 +251,10 @@ class Element(Plugin):
         Raises:
            (:class:`.ElementError`): If the element output does not exist
 
+        Returns:
+           (list): Overwritten files
+           (list): Ignored overwritten files
+
         Note: When `splits` is not specified then all domains are included
 
         **Example:**
@@ -279,15 +283,44 @@ class Element(Plugin):
             files = self.__compute_splits(splits, orphans)
             overwrites, ignored = utils.link_files(artifact, stagedir, files=files)
 
-            if overwrites:
-                detail = "Staged files overwrite existing files in staging area:\n\n"
-                detail += "  " + "  ".join(["/" + o + "\n" for o in overwrites])
-                self.warn("File overlaps", detail=detail)
+        return overwrites, ignored
 
-            if ignored:
-                detail = "Not staging files which would replace non-empty directories:\n\n"
-                detail += "  " + "  ".join(["/" + o + "\n" for o in ignored])
-                self.warn("Ignored files", detail=detail)
+    def stage_dependencies(self, sandbox, scope, path=None, splits=None, orphans=True):
+        """Stage element dependencies in scope
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+           scope (:class:`.Scope`): The scope to stage dependencies in
+           path (str): An optional sandbox relative path
+           splits (list): An optional list of domains to stage files from
+           orphans (bool): Whether to include files not spoken for by split domains
+
+        Raises:
+           (:class:`.ElementError`): If the element output does not exist
+        """
+        overwrites = {}
+        ignored = {}
+
+        for dep in self.dependencies(scope):
+            o, i = dep.stage(sandbox, path=path, splits=splits, orphans=orphans)
+            if o:
+                overwrites[dep._get_display_name()] = o
+            if i:
+                ignored[dep._get_display_name()] = i
+
+        if overwrites:
+            detail = "Staged files overwrite existing files in staging area:\n"
+            for key, value in overwrites.items():
+                detail += "\nFrom {}:\n".format(key)
+                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
+            self.warn("Overlapping files", detail=detail)
+
+        if ignored:
+            detail = "Not staging files which would replace non-empty directories:\n"
+            for key, value in ignored.items():
+                detail += "\nFrom {}:\n".format(key)
+                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
+            self.warn("Ignored files", detail=detail)
 
     def integrate(self, sandbox):
         """Integrate currently staged filesystem against this artifact.
@@ -742,8 +775,7 @@ class Element(Plugin):
 
                 # Stage deps in the sandbox root
                 with self.timed_activity("Staging dependencies", silent_nested=True):
-                    for dep in self.dependencies(scope):
-                        dep.stage(sandbox)
+                    self.stage_dependencies(sandbox, scope)
 
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready
