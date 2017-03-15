@@ -20,7 +20,7 @@
 
 """Compose element
 
-This element creates a selective composition of it's dependencies.
+This element creates a selective composition of its dependencies.
 
 This is normally used at near the end of a pipeline to prepare
 something for later deployment.
