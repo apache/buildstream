@@ -40,6 +40,7 @@ class MessageType():
 # Messages which should be reported regardless of whether
 # they are currently silenced or not
 unconditional_messages = [
+    MessageType.INFO,
     MessageType.WARN,
     MessageType.ERROR,
     MessageType.FAIL
