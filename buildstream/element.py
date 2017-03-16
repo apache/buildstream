@@ -249,13 +249,19 @@ class Element(Plugin):
            orphans (bool): Whether to include files not spoken for by split domains
 
         Raises:
-           (:class:`.ElementError`): If the element output does not exist
+           (:class:`.ElementError`): If the element has not yet produced an artifact.
 
         Returns:
-           (list): Overwritten files
-           (list): Ignored overwritten files
+           This returns two lists, the first list contains any files which
+           were overwritten in `dest` and the second list contains any
+           files which were not staged as they would replace a non empty
+           directory in `dest`
 
-        Note: When `splits` is not specified then all domains are included
+        Note::
+
+           Directories in `dest` are replaced with files from `src`,
+           unless the existing directory in `dest` is not empty in which
+           case the path will be reported in the return value.
 
         **Example:**
 
@@ -288,6 +294,11 @@ class Element(Plugin):
     def stage_dependencies(self, sandbox, scope, path=None, splits=None, orphans=True):
         """Stage element dependencies in scope
 
+        This is primarily a convenience wrapper around
+        :func:`Element.stage() <buildstream.element.Element.stage>` which takes
+        care of staging all the dependencies in `scope` and issueing the appropriate
+        warnings.
+
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
            scope (:class:`.Scope`): The scope to stage dependencies in
@@ -296,7 +307,8 @@ class Element(Plugin):
            orphans (bool): Whether to include files not spoken for by split domains
 
         Raises:
-           (:class:`.ElementError`): If the element output does not exist
+           (:class:`.ElementError`): If any of the dependencies in `scope` have not
+                                     yet produced artifacts.
         """
         overwrites = {}
         ignored = {}
