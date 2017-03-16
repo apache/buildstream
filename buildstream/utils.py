@@ -191,15 +191,20 @@ def copy_files(src, dest, files=None, ignore_missing=False):
     Args:
        src (str): The source file or directory
        dest (str): The destination directory
-       files (list): List of source files to copy
+       files (list): Optional list of files in `src` to copy
        ignore_missing (bool): Dont raise any error if a source file is missing
 
     Returns:
-       (list): Overwritten files
-       (list): Ignored overwritten files
+       This returns two lists, the first list contains any files which
+       were overwritten in `dest` and the second list contains any
+       files which were not copied as they would replace a non empty
+       directory in `dest`
 
-    If *files* is not specified, then all files in *src*
-    will be copied to *dest*
+    Note::
+
+      Directories in `dest` are replaced with files from `src`,
+      unless the existing directory in `dest` is not empty in which
+      case the path will be reported in the return value.
     """
     if files is None:
         files = list_relative_paths(src)
@@ -214,15 +219,20 @@ def move_files(src, dest, files=None, ignore_missing=False):
     Args:
        src (str): The source file or directory
        dest (str): The destination directory
-       files (list): List of source files to move
+       files (list): Optional list of files in `src` to move
        ignore_missing (bool): Dont raise any error if a source file is missing
 
     Returns:
-       (list): Overwritten files
-       (list): Ignored overwritten files
+       This returns two lists, the first list contains any files which
+       were overwritten in `dest` and the second list contains any
+       files which were not moved as they would replace a non empty
+       directory in `dest`
 
-    If *files* is not specified, then all files in *src*
-    will be moved to *dest*
+    Note::
+
+      Directories in `dest` are replaced with files from `src`,
+      unless the existing directory in `dest` is not empty in which
+      case the path will be reported in the return value.
     """
     if files is None:
         files = list_relative_paths(src)
@@ -237,18 +247,25 @@ def link_files(src, dest, files=None, ignore_missing=False):
     Args:
        src (str): The source file or directory
        dest (str): The destination directory
-       files (list): List of source files to copy
+       files (list): Optional list of files in `src` to link
        ignore_missing (bool): Dont raise any error if a source file is missing
 
     Returns:
-       (list): Overwritten files
-       (list): Ignored overwritten files
+       This returns two lists, the first list contains any files which
+       were overwritten in `dest` and the second list contains any
+       files which were not moved as they would replace a non empty
+       directory in `dest`
 
-    If *files* is not specified, then all files in *src*
-    will be linked to *dest*.
+    Note::
 
-    If the hardlink cannot be created due to crossing filesystems,
-    then the file will be copied instead.
+      Directories in `dest` are replaced with files from `src`,
+      unless the existing directory in `dest` is not empty in which
+      case the path will be reported in the return value.
+
+    Note::
+
+      If a hardlink cannot be created due to crossing filesystems,
+      then the file will be copied instead.
     """
     if files is None:
         files = list_relative_paths(src)
@@ -639,7 +656,7 @@ def _terminator(terminate_func):
 
 
 # A context manager for a code block which spawns a process
-# that becomes it's own session leader.
+# that becomes its own session leader.
 #
 # In these cases, SIGSTOP and SIGCONT need to be propagated to
 # the child tasks, this is not expected to be used recursively,
