@@ -23,7 +23,7 @@ elements for doing more elaborate things such as deploying software in special w
 
 
 Using BuildStream
------------------
+=================
 Here are some resources to help you get off the ground when creating your very
 first BuildStream project.
 
@@ -31,12 +31,19 @@ first BuildStream project.
 
 
 Elements
-~~~~~~~~
-The following element types are provided with BuildStream:
+--------
+
+
+General Elements
+~~~~~~~~~~~~~~~~
 
 * :mod:`stack` - Symbolic Element for dependency grouping
 * :mod:`import` - Import sources directly
 * :mod:`compose` - Compose the output of multiple elements
+
+Build Elements
+~~~~~~~~~~~~~~
+
 * :mod:`manual` - Manual Build Element
 * :mod:`autotools` - Autotools Build Element
 * :mod:`cmake` - CMake Build Element
@@ -46,8 +53,9 @@ The following element types are provided with BuildStream:
 * :mod:`modulebuild` - Perl Module::Build Build Element
 * :mod:`meson` - Meson Build Element
 
+
 Sources
-~~~~~~~
+--------
 The following source types are provided with BuildStream:
 
 * :mod:`local` - A Source implementation local files and directories
