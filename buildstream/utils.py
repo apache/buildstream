@@ -622,7 +622,10 @@ def _terminator_handler(signal, frame):
     while _terminator_stack:
         terminator = _terminator_stack.pop()
         terminator()
-    exit(-1)
+
+    # Use special exit here, terminate immediately, recommended
+    # for precisely this situation where child forks are teminated.
+    os._exit(-1)
 
 
 # _terminator()
