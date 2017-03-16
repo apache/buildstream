@@ -34,7 +34,6 @@ The default configuration and possible options are as such:
 """
 
 import os
-import re
 from buildstream import utils
 from buildstream import Element, ElementError, Scope
 
