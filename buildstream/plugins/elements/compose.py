@@ -59,7 +59,7 @@ class ComposeElement(Element):
         # be ignored by this element type anyway
         sources = list(self.sources())
         if sources:
-            raise ElementError("Compose elements may not have sources")
+            raise ElementError("{}: Compose elements may not have sources".format(self))
 
     def get_unique_key(self):
         # The output of this element will be effected depending
