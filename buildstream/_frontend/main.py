@@ -396,6 +396,8 @@ class App():
         else:
             self.interactive = self.is_a_tty
 
+        self.terminating = False
+
         # Early enable messaging in debug mode
         if self.main_options['debug']:
             click.echo("DEBUG: Early enablement of messages")
@@ -421,15 +423,9 @@ class App():
             click.echo("Error loading user configuration: %s" % str(e))
             sys.exit(1)
 
-        # Only handle ^C interactively in interactive mode
-        if self.interactive:
-            interrupt = self.interrupt_handler
-        else:
-            interrupt = None
-
         # Create the application's scheduler
         self.scheduler = Scheduler(self.context,
-                                   interrupt_callback=interrupt,
+                                   interrupt_callback=self.interrupt_handler,
                                    ticker_callback=self.tick,
                                    job_start_callback=self.job_started,
                                    job_complete_callback=self.job_completed)
@@ -495,6 +491,13 @@ class App():
     # Handle ^C SIGINT interruptions in the scheduling main loop
     #
     def interrupt_handler(self):
+
+        # Only handle ^C interactively in interactive mode
+        if not self.interactive:
+            self.terminating = True
+            self.scheduler.terminate_jobs()
+            sys.exit(-1)
+
         # Here we can give the user some choices, like whether they would
         # like to continue, abort immediately, or only complete processing of
         # the currently ongoing tasks. We can also print something more
@@ -542,6 +545,11 @@ class App():
     # Handle messages from the pipeline
     #
     def message_handler(self, message, context):
+
+        # Dont try to print messages while terminating
+        # in non-interactive mode
+        if self.terminating and not self.interactive:
+            return
 
         # Drop messages by default in the beginning while
         # loading the pipeline, unless debug is specified.
