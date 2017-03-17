@@ -88,11 +88,6 @@ class FetchQueue(Queue):
         self.fetched_elements = []
 
     def process(self, element):
-
-        # For remote artifact cache support
-        # cachekey = element._get_cache_key()
-        # if self.artifacts.fetch(self.project.name, element.name, cachekey):
-        #     return
         for source in element.sources():
             source._fetch()
 
