@@ -177,6 +177,22 @@ class Element(Plugin):
         if (recurse or did_recurse) and (scope == Scope.ALL or scope == Scope.RUN):
             yield self
 
+    def search(self, scope, name):
+        """Search for a dependency by name
+
+        Args:
+           scope (:class:`.Scope`): The scope to search
+           name (str): The dependency to search for
+
+        Returns:
+           (:class:`.Element`): The dependency element, or None if not found.
+        """
+        for dep in self.dependencies(scope):
+            if dep.name == name:
+                return dep
+
+        return None
+
     def node_subst_member(self, node, member_name, default_value=None):
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
