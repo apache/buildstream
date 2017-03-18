@@ -3,24 +3,24 @@
 #
 #    Work Directories
 #
+#
+# Note that BuildStream forces the XDG Base Directory names
+# into the environment if they are not already set, and allows
+# expansion of '~' and environment variables when specifying
+# paths.
+#
 
 # Location to store sources
-sourcedir: ~/buildstream/sources
+sourcedir: ${XDG_CACHE_HOME}/buildstream/sources
 
 # Location to perform builds
-builddir: ~/buildstream/build
-
-# Location to create deployments
-deploydir: ~/buildstream/deploy
+builddir: ${XDG_CACHE_HOME}/buildstream/build
 
 # Location to store local binary artifacts
-artifactdir: ~/buildstream/artifacts
+artifactdir: ${XDG_CACHE_HOME}/buildstream/artifacts
 
 # Location to store build logs
-logdir: ~/buildstream/logs
-
-# Location of the ccache directory
-ccachedir: ~/buildstream/ccache
+logdir: ${XDG_CACHE_HOME}/buildstream/logs
 
 #
 #    Scheduler

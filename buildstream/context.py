@@ -30,7 +30,9 @@ verbosity levels and basically anything pertaining to the context
 in which BuildStream was invoked.
 
 Users can provide a configuration file to override parameters in
-the default configuration.
+the default configuration. Unless a configuration file is specified
+on the command line when invoking ``bst``, an attempt is made to
+load user specific configuration from ``$XDG_CONFIG_HOME/buildstream.conf``.
 
 The default BuildStream configuration is included here for reference:
   .. literalinclude:: ../../buildstream/data/userconfig.yaml
@@ -40,12 +42,22 @@ The default BuildStream configuration is included here for reference:
 import os
 import hashlib
 import pickle
+from xdg import XDG_CONFIG_HOME, XDG_CACHE_HOME, XDG_DATA_HOME
 from collections import deque, Mapping
 from . import _site
 from . import _yaml
 from . import utils
 from . import LoadError, LoadErrorReason
 from ._profile import Topics, profile_start, profile_end
+
+
+# Force the resolved XDG variables into the environment,
+# this is so that they can be used directly to specify
+# preferred locations of things from user configuration
+# files.
+os.environ['XDG_CONFIG_HOME'] = XDG_CONFIG_HOME
+os.environ['XDG_CACHE_HOME'] = XDG_CACHE_HOME
+os.environ['XDG_DATA_HOME'] = XDG_DATA_HOME
 
 
 class Context():
@@ -68,17 +80,11 @@ class Context():
         self.builddir = None
         """The directory where build sandboxes will be created"""
 
-        self.deploydir = None
-        """The directory where deployment elements will place output"""
-
         self.artifactdir = None
         """The local binary artifact cache directory"""
 
         self.logdir = None
         """The directory to store build logs"""
-
-        self.ccachedir = None
-        """The directory for holding ccache state"""
 
         self.log_key_length = 0
         """The abbreviated cache key length to display in the UI"""
@@ -118,6 +124,14 @@ class Context():
         """
         profile_start(Topics.LOAD_CONTEXT, 'load')
 
+        # If a specific config file is not specified, default to trying
+        # a $XDG_CONFIG_HOME/buildstream.conf file
+        #
+        if not config:
+            default_config = os.path.join(XDG_CONFIG_HOME, 'buildstream.conf')
+            if os.path.exists(default_config):
+                config = default_config
+
         # Load default config
         #
         defaults = _yaml.load(_site.default_user_config)
@@ -126,8 +140,14 @@ class Context():
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config, typesafe=True)
 
-        for dir in ['sourcedir', 'builddir', 'deploydir', 'artifactdir', 'logdir', 'ccachedir']:
-            setattr(self, dir, os.path.expanduser(_yaml.node_get(defaults, str, dir)))
+        for dir in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
+            # Allow the ~ tilde expansion and any environment variables in
+            # path specification in the config files.
+            #
+            path = _yaml.node_get(defaults, str, dir)
+            path = os.path.expanduser(path)
+            path = os.path.expandvars(path)
+            setattr(self, dir, path)
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')
