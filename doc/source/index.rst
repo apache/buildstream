@@ -40,6 +40,7 @@ General Elements
 * :mod:`stack` - Symbolic Element for dependency grouping
 * :mod:`import` - Import sources directly
 * :mod:`compose` - Compose the output of multiple elements
+* :mod:`script` - Run scripts to create output
 
 Build Elements
 ~~~~~~~~~~~~~~

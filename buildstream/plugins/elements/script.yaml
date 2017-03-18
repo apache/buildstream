@@ -1,0 +1,32 @@
+
+# Script element configuration
+config:
+
+  # A dependency of this element to use as the root filesystem
+  # for scripting, expressed as a project relative element bst
+  # filename.
+  #
+  # This will define what tools are available to use in
+  # the commands. At minimum, a shell should exist in
+  # the base dependencies in order to run any commands.
+  #
+  #   base: foo.bst
+
+  # A dependency of this element to manipulate as input,
+  # expressed as a project relative element bst filename
+  #
+  #   input: bar.bst
+
+  # Defines where to stage the 'input' dependencies, the
+  # working directory for running commands will also be
+  # set to this directory.
+  #
+  # build:   Stage the input in %{build-root}
+  #
+  # install: Stage the input directly at %{install-root}
+  #
+  stage-mode: build
+
+  # List of commands to run in the sandbox
+  #
+  commands: []
