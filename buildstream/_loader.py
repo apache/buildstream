@@ -152,7 +152,7 @@ class LoadElement():
         self.filename = filename
         self.data = data
         self.arch = arch
-        self.name = element_name_from_filename(filename)
+        self.name = filename
         self.elements = elements
 
         # These are shared with the owning Loader object
@@ -310,7 +310,7 @@ def extract_depends_from_node(owner, data):
     for dep in depends:
 
         if isinstance(dep, str):
-            dependency = Dependency(owner, element_name_from_filename(dep), filename=dep)
+            dependency = Dependency(owner, dep, filename=dep)
 
         elif isinstance(dep, Mapping):
             # Make variant optional, for this we set it to None after
@@ -329,8 +329,7 @@ def extract_depends_from_node(owner, data):
                                 (str(provenance), dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
-            name = element_name_from_filename(filename)
-            dependency = Dependency(owner, name, variant_name=variant, filename=filename, dep_type=dep_type)
+            dependency = Dependency(owner, filename, variant_name=variant, filename=filename, dep_type=dep_type)
 
         else:
             index = depends.index(dep)
@@ -346,12 +345,6 @@ def extract_depends_from_node(owner, data):
     del data[Symbol.DEPENDS]
 
     return output_deps
-
-
-def element_name_from_filename(filename):
-    element_name = filename.replace(os.sep, '-')
-    element_name = os.path.splitext(element_name)[0]
-    return element_name
 
 
 #################################################
@@ -383,7 +376,7 @@ class Loader():
 
         # Target bst filename
         self.target_filename = filename
-        self.target = element_name_from_filename(filename)
+        self.target = filename
 
         # Optional variant
         self.target_variant = variant
@@ -458,16 +451,15 @@ class Loader():
         self.loaded_files[filename] = True
 
         # Raise error if two files claim the same name
-        element_name = element_name_from_filename(filename)
-        if element_name in self.elements:
-            element = self.elements[element_name]
+        if filename in self.elements:
+            element = self.elements[filename]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Tried to load file '%s' but existing file '%s' has the same name" %
                             (filename, element.filename))
 
         # Call the ticker
         if ticker:
-            ticker(element_name)
+            ticker(filename)
 
         fullpath = os.path.join(self.basedir, filename)
 
@@ -475,7 +467,7 @@ class Loader():
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
         element = LoadElement(data, filename, self.basedir, self.arch, self.elements)
 
-        self.elements[element_name] = element
+        self.elements[filename] = element
 
         # Load all possible dependency files for the new LoadElement
         for dep in element.base_deps:
@@ -754,7 +746,10 @@ class Loader():
             else:
                 directory = None
 
-            meta_source = MetaSource(kind, source, directory,
+            index = sources.index(source)
+            source_name = "{}-{}".format(element_name, index)
+
+            meta_source = MetaSource(source_name, kind, source, directory,
                                      provenance.node,
                                      provenance.toplevel,
                                      provenance.filename)

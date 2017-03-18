@@ -162,7 +162,7 @@ def test_variant_simple_dependency_default(datafiles):
     assert(element.kind == 'pony')
 
     # Test that the default is a pink pony
-    assert_dependency(element, 0, 'elements-simply-pink', 'color', 'pink')
+    assert_dependency(element, 0, 'elements/simply-pink.bst', 'color', 'pink')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -177,7 +177,7 @@ def test_variant_simple_dependency_pink_pony(datafiles):
     assert(element.kind == 'pony')
 
     # Test that the explicit pink dependency is correct
-    assert_dependency(element, 0, 'elements-simply-pink', 'color', 'pink')
+    assert_dependency(element, 0, 'elements/simply-pink.bst', 'color', 'pink')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -192,7 +192,7 @@ def test_variant_simple_dependency_blue_pony(datafiles):
     assert(element.kind == 'pony')
 
     # Test that the explicit blue dependency is correct
-    assert_dependency(element, 0, 'elements-simply-blue', 'color', 'blue')
+    assert_dependency(element, 0, 'elements/simply-blue.bst', 'color', 'blue')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -208,10 +208,10 @@ def test_variant_indirect_dependency_default(datafiles):
 
     # Test that the default is a blue pony-color by default
     simple = assert_dependency(
-        element, 0, 'elements-simple-dependency-variants', 'pony-color', 'blue')
+        element, 0, 'elements/simple-dependency-variants.bst', 'pony-color', 'blue')
 
     # Test that the element we depend on now depends on the blue color
-    assert_dependency(simple, 0, 'elements-simply-blue', 'color', 'blue')
+    assert_dependency(simple, 0, 'elements/simply-blue.bst', 'color', 'blue')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -227,10 +227,10 @@ def test_variant_indirect_dependency_blue_pony(datafiles):
 
     # Test for a blue pony-color
     simple = assert_dependency(
-        element, 0, 'elements-simple-dependency-variants', 'pony-color', 'blue')
+        element, 0, 'elements/simple-dependency-variants.bst', 'pony-color', 'blue')
 
     # Test that the element we depend on now depends on the blue color
-    assert_dependency(simple, 0, 'elements-simply-blue', 'color', 'blue')
+    assert_dependency(simple, 0, 'elements/simply-blue.bst', 'color', 'blue')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -246,10 +246,10 @@ def test_variant_indirect_dependency_pink_pony(datafiles):
 
     # Test for a blue pony-color
     simple = assert_dependency(
-        element, 0, 'elements-simple-dependency-variants', 'pony-color', 'pink')
+        element, 0, 'elements/simple-dependency-variants.bst', 'pony-color', 'pink')
 
     # Test that the element we depend on now depends on the blue color
-    assert_dependency(simple, 0, 'elements-simply-pink', 'color', 'pink')
+    assert_dependency(simple, 0, 'elements/simply-pink.bst', 'color', 'pink')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -263,8 +263,8 @@ def test_engine_resolve_agreement(datafiles):
     assert(element.kind == 'tricky')
 
     # Test the first dependency
-    first = assert_dependency(element, 0, 'elements-tricky-first', 'choice', 'second')
-    second = assert_dependency(element, 1, 'elements-tricky-second', 'choice', 'second')
+    first = assert_dependency(element, 0, 'elements/tricky-first.bst', 'choice', 'second')
+    second = assert_dependency(element, 1, 'elements/tricky-second.bst', 'choice', 'second')
 
 
 @pytest.mark.datafiles(DATA_DIR)

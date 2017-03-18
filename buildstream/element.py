@@ -70,12 +70,17 @@ class Element(Plugin):
     __defaults = {}          # The defaults from the yaml file and project
     __defaults_set = False   # Flag, in case there are no defaults at all
 
-    def __init__(self, display_name, context, project, artifacts, meta):
+    def __init__(self, context, project, artifacts, meta):
 
-        super().__init__(display_name, context, project, meta.provenance, "element")
+        super().__init__(meta.name, context, project, meta.provenance, "element")
 
-        self.name = meta.name
-        """The element name"""
+        self.normal_name = os.path.splitext(self.name.replace(os.sep, '-'))[0]
+        """A normalized element name
+
+        This is the original element without path separators or
+        the extension, it's used mainly for composing log file names
+        and creating directory names and such.
+        """
 
         self.__runtime_dependencies = []  # Direct runtime dependency Elements
         self.__build_dependencies = []    # Direct build dependency Elements
@@ -316,9 +321,9 @@ class Element(Plugin):
         for dep in self.dependencies(scope):
             o, i = dep.stage(sandbox, path=path, splits=splits, orphans=orphans)
             if o:
-                overwrites[dep._get_display_name()] = o
+                overwrites[dep.name] = o
             if i:
-                ignored[dep._get_display_name()] = i
+                ignored[dep.name] = i
 
         if overwrites:
             detail = "Staged files overwrite existing files in staging area:\n"
@@ -648,7 +653,7 @@ class Element(Plugin):
 
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
-            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
+            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
             # Cleanup the build directory on explicit SIGTERM
             def cleanup_rootdir():
@@ -709,7 +714,7 @@ class Element(Plugin):
         logfile = "{key}-{action}.{pid}.log".format(
             key=key, action=action, pid=pid)
 
-        directory = os.path.join(context.logdir, project.name, self.name)
+        directory = os.path.join(context.logdir, project.name, self.normal_name)
 
         os.makedirs(directory, exist_ok=True)
         return os.path.join(directory, logfile)
@@ -726,7 +731,7 @@ class Element(Plugin):
             # Write one last line to the log and flush it to disk
             def flush_log():
                 logfile.write('\n\nAction {} for element {} forcefully terminated\n'
-                              .format(action_name, self._get_display_name()))
+                              .format(action_name, self.name))
                 logfile.flush()
 
             self._set_log_handle(logfile)
@@ -780,7 +785,7 @@ class Element(Plugin):
 
         else:
             os.makedirs(context.builddir, exist_ok=True)
-            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
+            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
             # Recursive contextmanager...
             with self.__sandbox(scope, rootdir, stdout=stdout, stderr=stderr) as sandbox:

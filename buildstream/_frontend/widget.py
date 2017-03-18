@@ -166,7 +166,7 @@ class ElementName(Widget):
     def size_request(self, pipeline):
         longest_name = 0
         for plugin in pipeline.dependencies(Scope.ALL, include_sources=True):
-            longest_name = max(len(plugin._get_display_name()), longest_name)
+            longest_name = max(len(plugin.name), longest_name)
 
         # Put a cap at a specific width, usually some elements cause the line
         # to be too long, just live with the unaligned columns in that case
@@ -176,7 +176,7 @@ class ElementName(Widget):
     def render(self, message):
         if message.unique_id is not None:
             plugin = _plugin_lookup(message.unique_id)
-            name = plugin._get_display_name()
+            name = plugin.name
         else:
             name = ''
 

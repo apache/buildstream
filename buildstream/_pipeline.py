@@ -352,7 +352,6 @@ class Pipeline():
             ticker(meta_element.name)
 
         element = self.element_factory.create(meta_element.kind,
-                                              meta_element.provenance.filename,
                                               self.context,
                                               self.project,
                                               self.artifacts,
@@ -368,11 +367,8 @@ class Pipeline():
 
         # resolve sources
         for meta_source in meta_element.sources:
-            index = meta_element.sources.index(meta_source)
-            display_name = "{}-{}".format(meta_element.provenance.filename, index)
             element._add_source(
                 self.source_factory.create(meta_source.kind,
-                                           display_name,
                                            self.context,
                                            self.project,
                                            meta_source)

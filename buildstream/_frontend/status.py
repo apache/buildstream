@@ -238,7 +238,7 @@ class StatusJob():
         # Calculate the size needed to display
         self.size = 10  # Size of time code
         self.size += len(action_name)
-        self.size += len(element._get_display_name())
+        self.size += len(element.name)
         self.size += 3  # '[' + ':' + ']'
 
     # render()
@@ -253,11 +253,11 @@ class StatusJob():
         text = self.time_code.render_time(elapsed)
 
         # Add padding after the display name, before terminating ']'
-        display_name = self.element._get_display_name() + (' ' * padding)
+        name = self.element.name + (' ' * padding)
         text += self.format_profile.fmt('[') + \
             self.content_profile.fmt(self.action_name) + \
             self.format_profile.fmt(':') + \
-            self.content_profile.fmt(display_name) + \
+            self.content_profile.fmt(name) + \
             self.format_profile.fmt(']')
 
         return text

@@ -41,13 +41,23 @@ class Plugin():
     Some common features to both Sources and Elements are found
     in this class.
     """
-    def __init__(self, display_name, context, project, provenance, type_tag):
+    def __init__(self, name, context, project, provenance, type_tag):
+
+        self.name = name
+        """The plugin name
+
+        For elements, this is the project relative bst filename,
+        for sources this is the owning element's name with a suffix
+        indicating it's index on the owning element.
+
+        For sources this is for display purposes only.
+        """
+
         self.__context = context        # The Context object
         self.__project = project        # The Project object
         self.__provenance = provenance  # The Provenance information
         self.__type_tag = type_tag      # The type of plugin (element or source)
         self.__unique_id = _plugin_register(self)  # Unique ID
-        self.__display_name = display_name         # Plugin display name
         self.__log = None               # The log handle when running a task
 
         self.debug("Created: {}".format(self))
@@ -93,7 +103,7 @@ class Plugin():
         """Iterate over a dictionary loaded from YAML
 
         Args:
-           dict: The YAML loaded dictionary object
+            node (dict): The YAML loaded dictionary object
 
         Returns:
            list: List of key/value tuples to iterate over
@@ -108,6 +118,22 @@ class Plugin():
             if key == _yaml.PROVENANCE_KEY:
                 continue
             yield (key, value)
+
+    def node_provenance(self, node, member_name=None):
+        """Gets the provenance for `node` and `member_name`
+
+        This reports a string with file, line and column information suitable
+        for reporting an error or warning.
+
+        Args:
+            node (dict): The YAML loaded dictionary object
+            member_name (str): The name of the member to check, or None for the node itself
+
+        Returns:
+            (str): A string describing the provenance of the node and member
+        """
+        provenance = _yaml.node_get_provenance(node, key=member_name)
+        return str(provenance)
 
     def node_get_member(self, node, expected_type, member_name, default_value=None):
         """Fetch the value of a node member, raising an error if the value is
@@ -478,14 +504,6 @@ class Plugin():
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
-
-    # _get_display_name():
-    #
-    # Fetch the plugin's display name, to be used in message titles
-    # and such.
-    #
-    def _get_display_name(self):
-        return self.__display_name
 
     # _get_unique_id():
     #

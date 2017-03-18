@@ -242,7 +242,7 @@ def show(app, target, arch, variant, deps, order, format):
     profile_start(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
 
     for element in dependencies:
-        line = p.fmt_subst(format, 'name', element._get_display_name(), fg='blue', bold=True)
+        line = p.fmt_subst(format, 'name', element.name, fg='blue', bold=True)
         cache_key = element._get_display_key()
 
         consistency = element._consistency()
@@ -342,7 +342,7 @@ def shell(app, target, arch, variant, builddir, scope):
         click.echo("")
         click.echo("Missing elements for staging an environment for a shell:")
         for dep in missing_deps:
-            click.echo("   {}".format(dep._get_display_name()))
+            click.echo("   {}".format(dep.name))
         click.echo("")
         click.echo("Try building them first")
         sys.exit(-1)

@@ -54,13 +54,13 @@ def test_iterate_scope_all(datafiles, tmpdir):
     element_list = list(element_list)
     assert(len(element_list) == 7)
 
-    assert(element_list[0].name == "build-build")
-    assert(element_list[1].name == "run-build")
-    assert(element_list[2].name == "build")
-    assert(element_list[3].name == "dep-one")
-    assert(element_list[4].name == "run")
-    assert(element_list[5].name == "dep-two")
-    assert(element_list[6].name == "target")
+    assert(element_list[0].name == "build-build.bst")
+    assert(element_list[1].name == "run-build.bst")
+    assert(element_list[2].name == "build.bst")
+    assert(element_list[3].name == "dep-one.bst")
+    assert(element_list[4].name == "run.bst")
+    assert(element_list[5].name == "dep-two.bst")
+    assert(element_list[6].name == "target.bst")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
@@ -80,10 +80,10 @@ def test_iterate_scope_run(datafiles, tmpdir):
     element_list = list(element_list)
     assert(len(element_list) == 4)
 
-    assert(element_list[0].name == "dep-one")
-    assert(element_list[1].name == "run")
-    assert(element_list[2].name == "dep-two")
-    assert(element_list[3].name == "target")
+    assert(element_list[0].name == "dep-one.bst")
+    assert(element_list[1].name == "run.bst")
+    assert(element_list[2].name == "dep-two.bst")
+    assert(element_list[3].name == "target.bst")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
@@ -104,9 +104,9 @@ def test_iterate_scope_build(datafiles, tmpdir):
 
     assert(len(element_list) == 3)
 
-    assert(element_list[0].name == "dep-one")
-    assert(element_list[1].name == "run")
-    assert(element_list[2].name == "dep-two")
+    assert(element_list[0].name == "dep-one.bst")
+    assert(element_list[1].name == "run.bst")
+    assert(element_list[2].name == "dep-two.bst")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
@@ -133,5 +133,5 @@ def test_iterate_scope_build_of_child(datafiles, tmpdir):
 
     assert(len(element_list) == 2)
 
-    assert(element_list[0].name == "run-build")
-    assert(element_list[1].name == "build")
+    assert(element_list[0].name == "run-build.bst")
+    assert(element_list[1].name == "build.bst")

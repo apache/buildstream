@@ -36,7 +36,7 @@ def buildref(element):
     key = element._get_cache_key()
 
     # Normalize ostree ref unsupported chars
-    element_name = element.name.replace('+', 'X')
+    element_name = element.normal_name.replace('+', 'X')
 
     # assume project and element names are not allowed to contain slashes
     return '{0}/{1}/{2}'.format(project.name, element_name, key)

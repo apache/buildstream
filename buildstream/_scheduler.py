@@ -592,7 +592,7 @@ class Job():
             elt_env = utils._node_sanitize(element._Element__environment)
             env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
             self.message(element, MessageType.LOG,
-                         "Build environment for element {}".format(element._get_display_name()),
+                         "Build environment for element {}".format(element.name),
                          detail=env_dump, logfile=filename)
 
             try:
@@ -627,7 +627,7 @@ class Job():
             INDENT = "    "
             EMPTYTIME = "--:--:--"
 
-            name = '[' + plugin._get_display_name() + ']'
+            name = '[' + plugin.name + ']'
 
             fmt = "[{timecode: <8}] {type: <7} {name: <15}: {message}"
             detail = ''

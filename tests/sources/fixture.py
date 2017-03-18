@@ -43,7 +43,6 @@ class Setup():
         base = PluginBase(package='buildstream.plugins')
         self.factory = SourceFactory(base)
         self.source = self.factory.create(self.meta_source.kind,
-                                          "test",
                                           self.context,
                                           self.project,
                                           self.meta_source)
