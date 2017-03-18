@@ -67,6 +67,10 @@ variables:
   infodir: "%{datadir}/info"
   mandir: "%{datadir}/man"
 
+  # Indicates the default build directory where input is
+  # normally staged
+  build-root: /buildstream/build
+
   # Indicates the build installation directory in the sandbox
   install-root: /buildstream/install
 
