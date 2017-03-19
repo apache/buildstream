@@ -1,5 +1,6 @@
 import os
 import pytest
+from xdg import XDG_CACHE_HOME
 
 from buildstream import Context
 from buildstream import LoadError, LoadErrorReason
@@ -35,11 +36,10 @@ def test_context_load(context_fixture):
     assert(isinstance(context, Context))
 
     context.load()
-    assert(context.sourcedir == os.path.expanduser('~/buildstream/sources'))
-    assert(context.builddir == os.path.expanduser('~/buildstream/build'))
-    assert(context.deploydir == os.path.expanduser('~/buildstream/deploy'))
-    assert(context.artifactdir == os.path.expanduser('~/buildstream/artifacts'))
-    assert(context.ccachedir == os.path.expanduser('~/buildstream/ccache'))
+    assert(context.sourcedir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'sources'))
+    assert(context.builddir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'build'))
+    assert(context.artifactdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'artifacts'))
+    assert(context.logdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'logs'))
 
 
 # Test that values in a user specified config file
@@ -55,10 +55,9 @@ def test_context_load_user_config(context_fixture, datafiles):
     context.load(conf_file)
 
     assert(context.sourcedir == os.path.expanduser('~/pony'))
-    assert(context.builddir == os.path.expanduser('~/buildstream/build'))
-    assert(context.deploydir == os.path.expanduser('~/buildstream/deploy'))
-    assert(context.artifactdir == os.path.expanduser('~/buildstream/artifacts'))
-    assert(context.ccachedir == os.path.expanduser('~/buildstream/ccache'))
+    assert(context.builddir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'build'))
+    assert(context.artifactdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'artifacts'))
+    assert(context.logdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'logs'))
 
 
 #######################################

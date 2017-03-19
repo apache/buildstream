@@ -16,9 +16,8 @@ DATA_DIR = os.path.join(
 def pipeline(tmpdir):
     context = Context('x86_64')
     project = Project(DATA_DIR, 'x86_64')
-
-    context.deploydir = os.path.join(str(tmpdir), 'deploy')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
+    context.builddir = os.path.join(str(tmpdir), 'build')
 
     return Pipeline(context, project, "simple.bst", None)
 
@@ -34,16 +33,16 @@ def test_empty_extract(pipeline):
 
 
 def test_commit_extract(pipeline):
-    os.makedirs(pipeline.context.deploydir, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=pipeline.context.deploydir) as deploydir:
+    os.makedirs(pipeline.context.builddir, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=pipeline.context.builddir) as builddir:
         # create file as mock build output
-        bindir = os.path.join(deploydir, 'bin')
+        bindir = os.path.join(builddir, 'bin')
         os.mkdir(bindir)
         with open(os.path.join(bindir, 'baz'), 'w') as f:
             f.write('hello, world')
 
         # commit build output to artifact cache
-        pipeline.artifacts.commit(pipeline.target, deploydir)
+        pipeline.artifacts.commit(pipeline.target, builddir)
 
     assert(pipeline.artifacts.contains(pipeline.target))
 
