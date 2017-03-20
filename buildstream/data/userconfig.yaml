@@ -33,12 +33,14 @@ scheduler:
   # Maximum number of simultaneous build tasks.
   builders: 4
 
-  # What to do when an element fails at some stage, options:
+  # What to do when an element fails, if not running in
+  # interactive mode:
   #
-  #  continue - Continue operating on other non-failing elements
-  #  quit     - Exit after all currently working jobs complete
+  #  continue  - Continue queueing jobs as much as possible
+  #  quit      - Exit after all ongoing jobs complete
+  #  terminate - Terminate any ongoing jobs and exit
   #
-  on-error: continue
+  on-error: quit
 
 #
 #    Logging
