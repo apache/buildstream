@@ -21,6 +21,7 @@ import os
 import sys
 import click
 import pkg_resources  # From setuptools
+from contextlib import contextmanager
 from ruamel import yaml
 from blessings import Terminal
 
@@ -505,40 +506,35 @@ class App():
         # like to continue, abort immediately, or only complete processing of
         # the currently ongoing tasks. We can also print something more
         # intelligent, like how many tasks remain to complete overall.
-        self.status.clear()
-        self.scheduler.suspend_jobs()
+        with self.interrupted():
+            click.echo("\nUser interrupted with ^C\n" +
+                       "\n"
+                       "Choose one of the following options:\n" +
+                       "  continue  - Continue queueing jobs as much as possible\n" +
+                       "  quit      - Exit after all ongoing jobs complete\n" +
+                       "  terminate - Terminate any ongoing jobs and exit\n" +
+                       "\n" +
+                       "Pressing ^C again will terminate jobs and exit\n",
+                       err=True)
 
-        click.echo("\nUser interrupted with ^C\n" +
-                   "\n"
-                   "Choose one of the following options:\n" +
-                   "  continue  - Continue queueing jobs as much as possible\n" +
-                   "  quit      - Exit after all ongoing jobs complete\n" +
-                   "  terminate - Terminate any ongoing jobs and exit\n" +
-                   "\n" +
-                   "Pressing ^C again will terminate jobs and exit\n",
-                   err=True)
+            try:
+                choice = click.prompt("Choice:",
+                                      type=click.Choice(['continue', 'quit', 'terminate']),
+                                      default='continue', err=True)
+            except click.Abort:
+                # Ensure a newline after automatically printed '^C'
+                click.echo("", err=True)
+                choice = 'terminate'
 
-        try:
-            choice = click.prompt("Choice:",
-                                  type=click.Choice(['continue', 'quit', 'terminate']),
-                                  default='continue', err=True)
-        except click.Abort:
-            # Ensure a newline after automatically printed '^C'
-            click.echo("", err=True)
-            choice = 'terminate'
-
-        if choice == 'terminate':
-            click.echo("\nTerminating all jobs at user request\n", err=True)
-            self.scheduler.terminate_jobs()
-        else:
-            if choice == 'quit':
-                click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
-                self.scheduler.stop_queueing()
-            elif choice == 'continue':
-                click.echo("\nContinuing\n", err=True)
-
-            self.scheduler.resume_jobs()
-            self.status.render()
+            if choice == 'terminate':
+                click.echo("\nTerminating all jobs at user request\n", err=True)
+                self.scheduler.terminate_jobs()
+            else:
+                if choice == 'quit':
+                    click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
+                    self.scheduler.stop_queueing()
+                elif choice == 'continue':
+                    click.echo("\nContinuing\n", err=True)
 
     def job_started(self, element, action_name):
         self.status.add_job(element, action_name)
@@ -566,44 +562,46 @@ class App():
             return
 
         # Interactive mode for element failures
-        self.status.clear()
+        with self.interrupted():
 
-        self.scheduler.disconnect_signals()
-        self.scheduler.suspend_jobs()
+            choice = ''
 
-        click.echo("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
-                   "\n"
-                   "Choose one of the following options:\n" +
-                   "  continue  - Continue queueing jobs as much as possible\n" +
-                   "  quit      - Exit after all ongoing jobs complete\n" +
-                   "  terminate - Terminate any ongoing jobs and exit\n" +
-                   "\n" +
-                   "Pressing ^C again will terminate jobs and exit\n",
-                   err=True)
+            while choice not in ['continue', 'quit', 'terminate']:
+                click.echo("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
+                           "\n"
+                           "Choose one of the following options:\n" +
+                           "  continue  - Continue queueing jobs as much as possible\n" +
+                           "  quit      - Exit after all ongoing jobs complete\n" +
+                           "  terminate - Terminate any ongoing jobs and exit\n" +
+                           "  debug     - Drop into a shell in the failed build sandbox\n" +
+                           "\n" +
+                           "Pressing ^C again will terminate jobs and exit\n",
+                           err=True)
 
-        try:
-            choice = click.prompt("Choice:",
-                                  type=click.Choice(['continue', 'quit', 'terminate']),
-                                  default='continue', err=True)
-        except click.Abort:
-            # Ensure a newline after automatically printed '^C'
-            click.echo("", err=True)
-            choice = 'terminate'
+                try:
+                    choice = click.prompt("Choice:",
+                                          type=click.Choice(['continue', 'quit', 'terminate', 'debug']),
+                                          default='continue', err=True)
+                except click.Abort:
+                    # Ensure a newline after automatically printed '^C'
+                    click.echo("", err=True)
+                    choice = 'terminate'
 
-        if choice == 'terminate':
-            click.echo("\nTerminating all jobs\n", err=True)
-            self.scheduler.terminate_jobs()
-        else:
-            if choice == 'quit':
-                click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
-                self.scheduler.stop_queueing()
-            elif choice == 'continue':
-                click.echo("\nContinuing with other non failing elements\n", err=True)
+                # Handle choices which you can come back from
+                #
+                if choice == 'debug':
+                    click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
+                    element._shell(Scope.BUILD, failure.sandbox)
 
-            self.scheduler.resume_jobs()
-            self.status.render()
-
-        self.scheduler.connect_signals()
+            if choice == 'terminate':
+                click.echo("\nTerminating all jobs\n", err=True)
+                self.scheduler.terminate_jobs()
+            else:
+                if choice == 'quit':
+                    click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
+                    self.scheduler.stop_queueing()
+                elif choice == 'continue':
+                    click.echo("\nContinuing with other non failing elements\n", err=True)
 
     def tick(self):
         self.status.render()
@@ -681,3 +679,18 @@ class App():
             click.echo("Checking:  {:0>3}/{:0>3}\r".format(self.file_count, self.cache_count), nl=False, err=True)
         else:
             click.echo('', err=True)
+
+    @contextmanager
+    def interrupted(self):
+        self.scheduler.disconnect_signals()
+
+        self.status.clear()
+        self.scheduler.suspend_jobs()
+
+        yield
+
+        if not self.scheduler.terminated:
+            self.scheduler.resume_jobs()
+
+        self.status.render()
+        self.scheduler.connect_signals()
