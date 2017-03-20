@@ -381,6 +381,9 @@ class App():
         self.resolve_count = 0
         self.cache_count = 0
 
+        # Failure messages, hashed by unique plugin id
+        self.fail_messages = {}
+
         # UI Colors Profiles
         self.content_profile = Profile(fg='yellow')
         self.format_profile = Profile(fg='cyan', dim=True)
@@ -545,6 +548,63 @@ class App():
         self.status.remove_job(element, action_name)
         self.status.render()
 
+        if not success:
+            # Get the last failure message for additional context
+            failure = self.fail_messages.get(element._get_unique_id())
+            self.handle_failure(element, failure)
+
+    def handle_failure(self, element, failure):
+
+        # Handle non interactive mode setting of what to do when a job fails.
+        if not self.interactive:
+            if self.context.sched_error_action == 'terminate':
+                self.scheduler.terminate_jobs()
+            elif self.context.sched_error_action == 'quit':
+                self.scheduler.stop_queueing()
+            elif self.context.sched_error_action == 'continue':
+                pass
+            return
+
+        # Interactive mode for element failures
+        self.status.clear()
+
+        self.scheduler.disconnect_signals()
+        self.scheduler.suspend_jobs()
+
+        click.echo("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
+                   "\n"
+                   "Choose one of the following options:\n" +
+                   "  continue  - Continue queueing jobs as much as possible\n" +
+                   "  quit      - Exit after all ongoing jobs complete\n" +
+                   "  terminate - Terminate any ongoing jobs and exit\n" +
+                   "\n" +
+                   "Pressing ^C again will terminate jobs and exit\n",
+                   err=True)
+
+        try:
+            choice = click.prompt("Choice:",
+                                  type=click.Choice(['continue', 'quit', 'terminate']),
+                                  default='continue', err=True)
+        except click.Abort:
+            # Ensure a newline after automatically printed '^C'
+            click.echo("", err=True)
+            choice = 'terminate'
+
+        if choice == 'terminate':
+            click.echo("\nTerminating all jobs\n", err=True)
+            self.scheduler.terminate_jobs()
+        else:
+            if choice == 'quit':
+                click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
+                self.scheduler.stop_queueing()
+            elif choice == 'continue':
+                click.echo("\nContinuing with other non failing elements\n", err=True)
+
+            self.scheduler.resume_jobs()
+            self.status.render()
+
+        self.scheduler.connect_signals()
+
     def tick(self):
         self.status.render()
 
@@ -576,6 +636,10 @@ class App():
         # info messages and status messages will still go to the log files.
         if not context.log_verbose and message.message_type == MessageType.STATUS:
             return
+
+        # Hold on to the failure messages
+        if message.message_type == MessageType.FAIL and message.unique_id is not None:
+            self.fail_messages[message.unique_id] = message
 
         # Send to frontend if appropriate
         if (self.context._silent_messages() and
