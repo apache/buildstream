@@ -83,9 +83,12 @@ class Scheduler():
         self.job_complete_callback = job_complete_callback
         self.context = context
         self.queues = None
-        self.terminated = False
-        self.suspended = False
-        self.internal_stops = 0
+
+        # Some local state
+        self.queue_jobs = True      # Whether we should continue to queue jobs
+        self.terminated = False     # Hold on to whether we were terminated
+        self.suspended = False      # Whether tasks are currently suspended
+        self.internal_stops = 0     # Amount of SIGSTP signals we've introduced (handle feedback)
 
     # run()
     #
@@ -169,6 +172,14 @@ class Scheduler():
                     job.resume()
             self.suspended = False
 
+    # stop_queueing()
+    #
+    # Stop queueing additional jobs, causes Scheduler.run()
+    # to return once all currently processing jobs are finished.
+    #
+    def stop_queueing(self):
+        self.queue_jobs = False
+
     #######################################################
     #                   Main Loop Events                  #
     #######################################################
@@ -226,14 +237,7 @@ class Scheduler():
 
     def sched(self):
 
-        queue_jobs = True
-
-        # Stop queuing jobs when there is an error
-        if self.failed_elements():
-            if self.context.sched_error_action == 'quit':
-                queue_jobs = False
-
-        if queue_jobs:
+        if self.queue_jobs:
 
             # Pull elements forward through queues
             elements = []
