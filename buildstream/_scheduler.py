@@ -186,13 +186,8 @@ class Scheduler():
     def interrupt_event(self):
         # Leave this to the frontend to decide, if no
         # interrrupt callback was specified, then just terminate.
-        #
         if self.interrupt_callback:
-            # Interactive frontend interrupt handler takes
-            # control, we dont handle signals during that time.
-            self.disconnect_signals()
             self.interrupt_callback()
-            self.connect_signals()
         else:
             # Default without a frontend is just terminate
             self.terminate_jobs()
