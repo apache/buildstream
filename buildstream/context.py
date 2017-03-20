@@ -104,6 +104,9 @@ class Context():
         self.sched_builders = 4
         """Maximum number of build tasks"""
 
+        self.sched_error_action = 'continue'
+        """What to do when a build fails in non interactive mode"""
+
         # Private variables
         self._cache_key = None
         self._message_handler = None
