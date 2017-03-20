@@ -55,7 +55,7 @@ _, _, _, _, host_machine = os.uname()
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="Project directory (default: current directory)")
 @click.option('--on-error', default=None,
-              type=click.Choice(['continue', 'quit']),
+              type=click.Choice(['continue', 'quit', 'terminate']),
               help="What to do when an error is encountered")
 @click.option('--fetchers', type=click.INT, default=None,
               help="Maximum simultaneous download tasks")
@@ -505,19 +505,35 @@ class App():
         self.status.clear()
         self.scheduler.suspend_jobs()
 
+        click.echo("\nUser interrupted with ^C\n" +
+                   "\n"
+                   "Choose one of the following options:\n" +
+                   "  continue  - Continue queueing jobs as much as possible\n" +
+                   "  quit      - Exit after all ongoing jobs complete\n" +
+                   "  terminate - Terminate any ongoing jobs and exit\n" +
+                   "\n" +
+                   "Pressing ^C again will terminate jobs and exit\n",
+                   err=True)
+
         try:
-            quit_now = click.prompt("Do you really want to terminate all jobs ?",
-                                    type=bool, default=False, err=True)
+            choice = click.prompt("Choice:",
+                                  type=click.Choice(['continue', 'quit', 'terminate']),
+                                  default='continue', err=True)
         except click.Abort:
             # Ensure a newline after automatically printed '^C'
             click.echo("", err=True)
-            quit_now = True
+            choice = 'terminate'
 
-        if quit_now:
+        if choice == 'terminate':
             click.echo("\nTerminating all jobs at user request\n", err=True)
             self.scheduler.terminate_jobs()
-
         else:
+            if choice == 'quit':
+                click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
+                self.scheduler.stop_queueing()
+            elif choice == 'continue':
+                click.echo("\nContinuing\n", err=True)
+
             self.scheduler.resume_jobs()
             self.status.render()
 
