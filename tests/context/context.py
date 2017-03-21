@@ -1,6 +1,5 @@
 import os
 import pytest
-from xdg import XDG_CACHE_HOME
 
 from buildstream import Context
 from buildstream import LoadError, LoadErrorReason
@@ -14,7 +13,13 @@ DATA_DIR = os.path.join(
 # Simple fixture to create a Context object.
 @pytest.fixture()
 def context_fixture():
+    if os.environ.get('XDG_CACHE_HOME'):
+        cache_home = os.environ['XDG_CACHE_HOME']
+    else:
+        cache_home = os.path.expanduser('~/.cache')
+
     return {
+        'xdg-cache': cache_home,
         'context': Context('x86_64')
     }
 
@@ -33,13 +38,14 @@ def test_context_create(context_fixture):
 #######################################
 def test_context_load(context_fixture):
     context = context_fixture['context']
+    cache_home = context_fixture['xdg-cache']
     assert(isinstance(context, Context))
 
     context.load()
-    assert(context.sourcedir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'sources'))
-    assert(context.builddir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'build'))
-    assert(context.artifactdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'artifacts'))
-    assert(context.logdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'logs'))
+    assert(context.sourcedir == os.path.join(cache_home, 'buildstream', 'sources'))
+    assert(context.builddir == os.path.join(cache_home, 'buildstream', 'build'))
+    assert(context.artifactdir == os.path.join(cache_home, 'buildstream', 'artifacts'))
+    assert(context.logdir == os.path.join(cache_home, 'buildstream', 'logs'))
 
 
 # Test that values in a user specified config file
@@ -47,6 +53,7 @@ def test_context_load(context_fixture):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_user_config(context_fixture, datafiles):
     context = context_fixture['context']
+    cache_home = context_fixture['xdg-cache']
     assert(isinstance(context, Context))
 
     conf_file = os.path.join(datafiles.dirname,
@@ -55,9 +62,9 @@ def test_context_load_user_config(context_fixture, datafiles):
     context.load(conf_file)
 
     assert(context.sourcedir == os.path.expanduser('~/pony'))
-    assert(context.builddir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'build'))
-    assert(context.artifactdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'artifacts'))
-    assert(context.logdir == os.path.join(XDG_CACHE_HOME, 'buildstream', 'logs'))
+    assert(context.builddir == os.path.join(cache_home, 'buildstream', 'build'))
+    assert(context.artifactdir == os.path.join(cache_home, 'buildstream', 'artifacts'))
+    assert(context.logdir == os.path.join(cache_home, 'buildstream', 'logs'))
 
 
 #######################################
