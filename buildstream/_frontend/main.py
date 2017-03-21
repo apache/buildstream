@@ -691,6 +691,6 @@ class App():
 
         if not self.scheduler.terminated:
             self.scheduler.resume_jobs()
+            self.status.render()
 
-        self.status.render()
         self.scheduler.connect_signals()
