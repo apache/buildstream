@@ -79,7 +79,6 @@ setup(name='BuildStream',
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml']},
       install_requires=[
           'setuptools',
-          'xdg',
           'psutil',
           'ruamel.yaml',
           'pluginbase',
