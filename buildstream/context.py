@@ -42,22 +42,12 @@ The default BuildStream configuration is included here for reference:
 import os
 import hashlib
 import pickle
-from xdg import XDG_CONFIG_HOME, XDG_CACHE_HOME, XDG_DATA_HOME
 from collections import deque, Mapping
 from . import _site
 from . import _yaml
 from . import utils
 from . import LoadError, LoadErrorReason
 from ._profile import Topics, profile_start, profile_end
-
-
-# Force the resolved XDG variables into the environment,
-# this is so that they can be used directly to specify
-# preferred locations of things from user configuration
-# files.
-os.environ['XDG_CONFIG_HOME'] = XDG_CONFIG_HOME
-os.environ['XDG_CACHE_HOME'] = XDG_CACHE_HOME
-os.environ['XDG_DATA_HOME'] = XDG_DATA_HOME
 
 
 class Context():
@@ -107,6 +97,9 @@ class Context():
         self.sched_error_action = 'continue'
         """What to do when a build fails in non interactive mode"""
 
+        # Make sure the XDG vars are set in the environment before loading anything
+        self._init_xdg()
+
         # Private variables
         self._cache_key = None
         self._message_handler = None
@@ -131,7 +124,8 @@ class Context():
         # a $XDG_CONFIG_HOME/buildstream.conf file
         #
         if not config:
-            default_config = os.path.join(XDG_CONFIG_HOME, 'buildstream.conf')
+            default_config = os.path.join(os.environ['XDG_CONFIG_HOME'],
+                                          'buildstream.conf')
             if os.path.exists(default_config):
                 config = default_config
 
@@ -244,3 +238,15 @@ class Context():
 
         self._message_handler(message, context=self)
         return
+
+    # Force the resolved XDG variables into the environment,
+    # this is so that they can be used directly to specify
+    # preferred locations of things from user configuration
+    # files.
+    def _init_xdg(self):
+        if not os.environ.get('XDG_CACHE_HOME'):
+            os.environ['XDG_CACHE_HOME'] = os.path.expanduser('~/.cache')
+        if not os.environ.get('XDG_CONFIG_HOME'):
+            os.environ['XDG_CONFIG_HOME'] = os.path.expanduser('~/.config')
+        if not os.environ.get('XDG_DATA_HOME'):
+            os.environ['XDG_DATA_HOME'] = os.path.expanduser('~/.local/share')
