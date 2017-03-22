@@ -65,6 +65,9 @@ class Project():
         self.directory = os.path.abspath(directory)
         """str: The project directory"""
 
+        self.element_path = None
+        """str: Absolute path to where elements are loaded from within the project"""
+
         self._variables = {}    # The default variables overridden with project wide overrides
         self._environment = {}  # The base sandbox environment
         self._devices = []      # List of device descriptions required for the sandbox
@@ -134,6 +137,10 @@ class Project():
                                      for path in self._extract_plugin_paths(plugins, 'sources')]
         self._plugin_element_paths = [os.path.join(self.directory, path)
                                       for path in self._extract_plugin_paths(plugins, 'elements')]
+
+        # Resolve element base path
+        elt_path = _yaml.node_get(config, str, 'element-path')
+        self.element_path = os.path.join(self.directory, elt_path)
 
         # Source url aliases
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})

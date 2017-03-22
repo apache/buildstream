@@ -4,6 +4,10 @@
 #
 # name: myproject
 
+# Base project relative element path, elements will be loaded
+# from this base.
+
+element-path: .
 
 # Alias configuration
 #
