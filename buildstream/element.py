@@ -584,8 +584,10 @@ class Element(Plugin):
             ]
 
             context = self.get_context()
+            project = self.get_project()
             self.__cache_key = utils._generate_key({
                 'context': context._get_cache_key(),
+                'project': project._get_cache_key(),
                 'element': self.get_unique_key(),
                 'environment': cache_env,
                 'sources': [s.get_unique_key() for s in self.__sources],
