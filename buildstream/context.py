@@ -193,11 +193,11 @@ class Context():
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
-            self.__cache_key = utils._generate_key({
+            self._cache_key = utils._generate_key({
                 'arch': self.arch
             })
 
-        return self.__cache_key
+        return self._cache_key
 
     # _push_message_depth() / _pop_message_depth()
     #
