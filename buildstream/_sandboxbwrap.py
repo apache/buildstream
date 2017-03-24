@@ -70,14 +70,19 @@ class SandboxBwrap(Sandbox):
         if cwd is not None:
             bwrap_command += ['--chdir', cwd]
 
-        # Setup the mounts we want to use
+        # Give it a proc and tmpfs
         bwrap_command += [
-            # Give it a proc and tmpfs
             '--proc', '/proc',
-            '--tmpfs', '/tmp',
-            # XXX Entire host dev, instead use the devices list from the Project !
-            '--dev', '/dev',
-            # Read/Write /buildstream directory
+            '--tmpfs', '/tmp'
+        ]
+
+        # Bind host devices selectively according to project configuration
+        project = self._get_project()
+        for device in project._devices:
+            bwrap_command += ['--dev-bind', device, device]
+
+        # Read/Write /buildstream directory
+        bwrap_command += [
             '--bind', os.path.join(directory, 'buildstream'), '/buildstream'
         ]
 
