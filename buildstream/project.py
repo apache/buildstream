@@ -37,6 +37,7 @@ The default BuildStream project configuration is included here for reference:
 import os
 import multiprocessing  # for cpu_count()
 from collections import Mapping
+from . import utils
 from . import _site
 from . import _yaml
 from . import _loader  # For resolve_arch()
@@ -75,6 +76,7 @@ class Project():
         self._aliases = {}      # Aliases dictionary
         self._plugin_source_paths = []   # Paths to custom sources
         self._plugin_element_paths = []  # Paths to custom plugins
+        self._cache_key = None
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load(arch)
@@ -166,3 +168,22 @@ class Project():
         for i in range(len(path_list)):
             path = _yaml.node_get(node, str, name, indices=[i])
             yield path
+
+    # _get_cache_key():
+    #
+    # Returns the cache key, calculating it if necessary
+    #
+    # Returns:
+    #    (str): A hex digest cache key for the Context
+    #
+    def _get_cache_key(self):
+        if self._cache_key is None:
+
+            # Anything that alters the build goes into the unique key
+            self._cache_key = utils._generate_key({
+                # The project can configure what devices are available
+                # in the sandbox, this may possibly effect build output.
+                'devices': sorted(self._devices)
+            })
+
+        return self._cache_key
