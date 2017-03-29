@@ -613,7 +613,7 @@ class Element(Plugin):
             length = min(len(cache_key), context.log_key_length)
             return cache_key[0:length]
 
-        return "{:0<" + str(context.log_key_length) + "}".format('')
+        return ("{:0<" + str(context.log_key_length) + "}").format('')
 
     # _get_variables()
     #
