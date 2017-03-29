@@ -264,7 +264,7 @@ class Pipeline():
 
         def rewrite_changed_sources():
             for filename, toplevel in track.changed_files.items():
-                fullname = os.path.join(self.project.directory, filename)
+                fullname = os.path.join(self.project.element_path, filename)
                 _yaml.dump(toplevel, fullname)
 
         if status == SchedStatus.ERROR:
