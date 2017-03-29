@@ -246,23 +246,15 @@ class Pipeline():
     #
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
-    #    needed (bool): If specified, track only sources that are
-    #                   needed to build the artifacts of the pipeline
-    #                   target. This does nothing when the pipeline
-    #                   artifacts are already built.
+    #    dependencies (list): List of elements to track
     #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
     #
-    def track(self, scheduler, needed):
-
-        if needed:
-            plan = list(Planner().plan(self.target))
-        else:
-            plan = list(self.dependencies(Scope.ALL))
+    def track(self, scheduler, dependencies):
 
         track = TrackQueue("Track", self.context.sched_fetchers)
-        track.enqueue(plan)
+        track.enqueue(dependencies)
 
         self.message(self.target, MessageType.START, "Starting track")
         starttime = datetime.datetime.now()
