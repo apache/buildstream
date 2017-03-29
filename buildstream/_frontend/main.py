@@ -139,15 +139,16 @@ def fetch(app, target, arch, variant, needed):
 #                          Track Command                         #
 ##################################################################
 @cli.command(short_help="Track new source references")
-@click.option('--needed', default=False, is_flag=True,
-              help="Track only sources required to build missing artifacts")
+@click.option('--deps', '-d', default=None,
+              type=click.Choice(['all', 'build', 'run']),
+              help='Optionally specify a dependency scope to track')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def track(app, target, arch, variant, needed, list):
+def track(app, target, arch, variant, deps):
     """Track new source references
 
     Updates the project with new source references from
@@ -157,9 +158,23 @@ def track(app, target, arch, variant, needed, list):
     The project data will be rewritten inline.
     """
     app.initialize(target, arch, variant, rewritable=True)
+
+    if deps is not None:
+        scope = deps
+        if scope == "all":
+            scope = Scope.ALL
+        elif scope == "build":
+            scope = Scope.BUILD
+        else:
+            scope = Scope.RUN
+
+        dependencies = app.pipeline.dependencies(scope)
+    else:
+        dependencies = [app.pipeline.target]
+
     app.print_heading()
     try:
-        app.pipeline.track(app.scheduler, needed)
+        app.pipeline.track(app.scheduler, dependencies)
         click.echo("")
     except PipelineError:
         click.echo("")
