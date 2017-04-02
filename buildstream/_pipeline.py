@@ -41,7 +41,15 @@ from . import _yaml, utils
 # Internal exception raised when a pipeline fails
 #
 class PipelineError(_BstError):
-    pass
+
+    def __init__(self, message=None):
+
+        # The "Unclassified Error" should never appear to a user,
+        # this only allows us to treat this internal error as
+        # a _BstError from the frontend.
+        if not message:
+            message = "Unclassified Error"
+        super(PipelineError, self).__init__(message)
 
 
 class Planner():
