@@ -372,6 +372,32 @@ def shell(app, target, arch, variant, builddir, scope):
 
 
 ##################################################################
+#                        Checkout Command                        #
+##################################################################
+@cli.command(short_help="Checkout a built artifact")
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Overwrite files existing in checkout directory")
+@click.option('--arch', '-a', default=host_machine,
+              help="The target architecture (default: %s)" % host_machine)
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.argument('target')
+@click.argument('directory')
+@click.pass_obj
+def checkout(app, target, arch, variant, directory, force):
+    """Checkout a built artifact to the specified directory
+    """
+    app.initialize(target, arch, variant)
+    try:
+        app.pipeline.checkout(directory, force)
+        click.echo("")
+    except _BstError as e:
+        click.echo("")
+        click.echo("ERROR: {}".format(e))
+        sys.exit(-1)
+
+
+##################################################################
 #                    Main Application State                      #
 ##################################################################
 
