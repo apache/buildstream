@@ -24,6 +24,7 @@ import datetime
 from pluginbase import PluginBase
 from operator import itemgetter
 
+from .exceptions import _BstError
 from ._message import Message, MessageType
 from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
@@ -34,12 +35,12 @@ from .plugin import _plugin_lookup
 from . import Element
 from . import SourceError, ElementError, Consistency
 from . import Scope
-from . import _yaml
+from . import _yaml, utils
 
 
 # Internal exception raised when a pipeline fails
 #
-class PipelineError(Exception):
+class PipelineError(_BstError):
     pass
 
 
@@ -411,3 +412,29 @@ class Pipeline():
             self.message(self.target, MessageType.SUCCESS,
                          "Fetched {} elements and built {} elements".format(fetched, built),
                          elapsed=elapsed)
+
+    # checkout()
+    #
+    # Checkout the pipeline target artifact to the specified directory
+    #
+    # Args:
+    #    directory (str): The directory to checkout the artifact to
+    #    force (bool): Force overwrite files which exist in `directory`
+    #
+    def checkout(self, directory, force):
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except e:
+            raise PipelineError("Failed to create checkout directory: {}".format(e)) from e
+
+        extract = self.artifacts.extract(self.target)
+        if not force:
+            extract_files = list(utils.list_relative_paths(extract))
+            checkout_files = list(utils.list_relative_paths(directory))
+            overwrites = [f for f in checkout_files if f in extract_files]
+            if overwrites:
+                raise PipelineError("Files already exist in {}\n\n{}"
+                                    .format(directory, "  " + "  \n".join(overwrites)))
+
+        utils.link_files(extract, directory)
