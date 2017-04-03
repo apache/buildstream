@@ -96,7 +96,10 @@ class ComposeElement(Element):
 
         # Make a snapshot of all the files.
         basedir = sandbox.get_directory()
-        snapshot = list(utils.list_relative_paths(basedir))
+        snapshot = {
+            f: getmtime(os.path.join(basedir, f))
+            for f in utils.list_relative_paths(basedir)
+        }
         manifest = []
 
         # Run any integration commands provided by the dependencies
@@ -108,9 +111,10 @@ class ComposeElement(Element):
 
                 integration_files = [
                     path for path in utils.list_relative_paths(basedir)
-                    if path not in snapshot
+                    if (snapshot.get(path) is None or
+                        snapshot[path] != getmtime(os.path.join(basedir, path)))
                 ]
-                self.info("Integration produced {} new files".format(len(integration_files)))
+                self.info("Integration effected {} files".format(len(integration_files)))
 
         manifest += integration_files
 
@@ -163,6 +167,13 @@ class ComposeElement(Element):
         for domain, rules in self.node_items(splits):
             if not self.include or domain in self.include:
                 yield (domain, rules)
+
+
+# Like os.path.getmtime(), but doesnt explode on symlinks
+#
+def getmtime(path):
+    stat = os.lstat(path)
+    return stat.st_mtime
 
 
 # Plugin entry point
