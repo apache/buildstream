@@ -93,6 +93,11 @@ class LocalSource(Source):
 
 # Get the sha256 sum for the content of a file
 def sha256sum(filename):
+
+    # If it's a directory, just return 0 string
+    if os.path.isdir(filename):
+        return "0"
+
     h = hashlib.sha256()
     with open(filename, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
