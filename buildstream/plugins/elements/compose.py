@@ -131,13 +131,26 @@ class ComposeElement(Element):
         # now collect the rest of the manifest.
         #
         with self.timed_activity("Creating composition", silent_nested=True):
+            if not self.include:
+                domains_str = "all domains"
+            else:
+                domains_str = "domains " + ", ".join(self.include)
+
+            if self.include_orphans:
+                orphans_str = "orphaned files"
+            else:
+                orphans_str = "no orphaned files"
+
+            self.status("Including {} and {}".format(domains_str, orphans_str))
+
             self.stage_dependencies(sandbox, Scope.BUILD,
                                     path=stagedir,
                                     splits=self.include,
                                     orphans=self.include_orphans)
 
-            self.status("Moving {} integration files".format(len(integration_files)))
-            utils.move_files(basedir, installdir, integration_files)
+            if self.integration:
+                self.status("Moving {} integration files".format(len(integration_files)))
+                utils.move_files(basedir, installdir, integration_files)
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
