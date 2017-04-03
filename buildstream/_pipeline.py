@@ -440,7 +440,10 @@ class Pipeline():
         if not force:
             extract_files = list(utils.list_relative_paths(extract))
             checkout_files = list(utils.list_relative_paths(directory))
-            overwrites = [f for f in checkout_files if f in extract_files]
+            overwrites = [
+                f for f in checkout_files
+                if f in extract_files and f != '.'
+            ]
             if overwrites:
                 raise PipelineError("Files already exist in {}\n\n{}"
                                     .format(directory, "  " + "  \n".join(overwrites)))
