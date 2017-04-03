@@ -126,7 +126,7 @@ class ScriptElement(Element):
         input_dir = os.path.join(os.sep, 'buildstream', self.stage_mode)
         with self.timed_activity("Staging {} as input at {}"
                                  .format(self.input_dep, input_dir), silent_nested=True):
-            self.input_elt.stage_dependencies(sandbox, Scope.BUILD, path=input_dir)
+            self.input_elt.stage_dependencies(sandbox, Scope.RUN, path=input_dir)
 
         # Run the scripts
         with self.timed_activity("Running script commands"):
