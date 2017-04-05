@@ -63,8 +63,9 @@ def ensure(path, compress):
 #    repo (OSTree.Repo): The repo
 #    path (str): The checkout path
 #    commit (str): The commit checksum to checkout
+#    user (boot): Whether to checkout in user mode
 #
-def checkout(repo, path, commit):
+def checkout(repo, path, commit, user=False):
 
     # Check out a full copy of an OSTree at a given ref to some directory.
     #
@@ -78,14 +79,21 @@ def checkout(repo, path, commit):
     #   ostree --repo=repo checkout --user-mode runtime/org.freedesktop.Sdk/x86_64/1.4 foo
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
-    # ignore uid/gid to allow checkout as non-root
     options = OSTree.RepoCheckoutAtOptions()
-    options.mode = OSTree.RepoCheckoutMode.USER
 
-    # XXX How come this works if we give the CWD as the
-    # file descriptor of the directory os.path.dirname(path) ?
+    # For repos which contain root owned files, we need
+    # to checkout with OSTree.RepoCheckoutMode.USER
     #
-    # from fcntl.h
+    # This will reassign uid/gid and also munge the
+    # permission bits a bit.
+    if user:
+        options.mode = OSTree.RepoCheckoutMode.USER
+
+    # Using AT_FDCWD value from fcntl.h
+    #
+    # This will be ignored if the passed path is an absolute path,
+    # if path is a relative path then it will be appended to the
+    # current working directory.
     AT_FDCWD = -100
     try:
         repo.checkout_at(options, AT_FDCWD, path, commit)
@@ -106,10 +114,17 @@ def checkout(repo, path, commit):
 #
 def commit(repo, dir, ref):
 
-    # We commit everything with uid/gid 0
     def commit_filter(repo, path, file_info):
-        file_info.set_attribute_uint32('unix::uid', 0)
-        file_info.set_attribute_uint32('unix::gid', 0)
+
+        # If we wanted to commit as uid/gid root, then
+        # we would set the following in this filter:
+        #
+        #   file_info.set_attribute_uint32('unix::uid', 0)
+        #   file_info.set_attribute_uint32('unix::gid', 0)
+        #
+        # We don't do this because ostree user mode checkouts
+        # not only munge the ownership bits but _also_ the permission
+        # bits.
         return OSTree.RepoCommitFilterResult.ALLOW
 
     commit_modifier = OSTree.RepoCommitModifier.new(
