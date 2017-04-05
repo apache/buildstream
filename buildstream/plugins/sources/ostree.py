@@ -133,7 +133,7 @@ class OSTreeSource(Source):
             with self.timed_activity("Staging ref: {} from origin: {}"
                                      .format(self.ref, self.url)):
                 try:
-                    _ostree.checkout(self.repo, checkoutdir, self.ref)
+                    _ostree.checkout(self.repo, checkoutdir, self.ref, user=True)
                 except OSTreeError as e:
                     raise SourceError("{}: Failed to checkout ref '{}' from origin: {}\n\n{}"
                                       .format(self, self.ref, self.url, e)) from e
