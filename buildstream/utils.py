@@ -29,9 +29,9 @@ import pickle
 import calendar
 import signal
 from contextlib import contextmanager
-from collections import OrderedDict, ChainMap, deque
-from . import _yaml
+from collections import deque
 from . import ProgramNotFoundError
+from . import _yaml
 
 
 def list_relative_paths(directory):
@@ -518,63 +518,9 @@ def _relative_symlink_target(root, symlink, target):
 #    (str): An sha256 hex digest of the given value
 #
 def _generate_key(value):
-    ordered = _node_sanitize(value)
+    ordered = _yaml.node_sanitize(value)
     string = pickle.dumps(ordered)
     return hashlib.sha256(string).hexdigest()
-
-
-# _node_sanitize()
-#
-# Returnes an alphabetically ordered recursive copy
-# of the source node with internal provenance information stripped.
-#
-# Only dicts are ordered, list elements are left in order.
-#
-def _node_sanitize(node):
-
-    if isinstance(node, collections.Mapping):
-
-        result = OrderedDict()
-
-        for key in sorted(node):
-            if key == _yaml.PROVENANCE_KEY:
-                continue
-            result[key] = _node_sanitize(node[key])
-
-        return result
-
-    elif isinstance(node, list):
-        return [_node_sanitize(elt) for elt in node]
-
-    return node
-
-
-def _node_chain_copy(source):
-    copy = collections.ChainMap({}, source)
-    for key, value in source.items():
-        if isinstance(value, collections.Mapping):
-            copy[key] = _node_chain_copy(value)
-        elif isinstance(value, list):
-            copy[key] = _list_chain_copy(value)
-        elif isinstance(value, _yaml.Provenance):
-            copy[key] = value.clone()
-
-    return copy
-
-
-def _list_chain_copy(source):
-    copy = []
-    for item in source:
-        if isinstance(item, collections.Mapping):
-            copy.append(_node_chain_copy(item))
-        elif isinstance(item, list):
-            copy.append(_list_chain_copy(item))
-        elif isinstance(item, _yaml.Provenance):
-            copy.append(item.clone())
-        else:
-            copy.append(item)
-
-    return copy
 
 
 # _set_deterministic_mtime()

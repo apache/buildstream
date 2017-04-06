@@ -2,7 +2,7 @@ import os
 import pytest
 from collections import Mapping
 
-from buildstream import _yaml, utils
+from buildstream import _yaml
 from buildstream import LoadError, LoadErrorReason
 from buildstream._yaml import CompositePolicy
 
@@ -197,7 +197,7 @@ def test_node_get(datafiles):
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
 
-# Really this is testing utils._node_chain_copy(), we want to
+# Really this is testing _yaml.node_chain_copy(), we want to
 # be sure that when using a ChainMap copy, compositing values
 # still preserves the original values in the copied dict.
 #
@@ -213,7 +213,7 @@ def test_composite_preserve_originals(datafiles):
 
     base = _yaml.load(filename)
     overlay = _yaml.load(overlayfile)
-    base_copy = utils._node_chain_copy(base)
+    base_copy = _yaml.node_chain_copy(base)
     _yaml.composite_dict(base_copy, overlay,
                          policy=CompositePolicy.OVERWRITE, typesafe=True)
 

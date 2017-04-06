@@ -31,7 +31,7 @@ from ruamel import yaml
 from ._message import Message, MessageType, unconditional_messages
 from .exceptions import _BstError
 from .plugin import _plugin_lookup
-from . import utils
+from . import utils, _yaml
 
 
 # Process class that doesn't call waitpid on its own.
@@ -588,7 +588,7 @@ class Job():
             # Print the element's environment at the beginning of any element's log file.
             #
             # This should probably be omitted for non-build tasks but it's harmless here
-            elt_env = utils._node_sanitize(element._Element__environment)
+            elt_env = _yaml.node_sanitize(element._Element__environment)
             env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
             self.message(element, MessageType.LOG,
                          "Build environment for element {}".format(element.name),

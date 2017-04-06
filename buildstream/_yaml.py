@@ -24,7 +24,6 @@ from enum import Enum
 
 from ruamel import yaml
 from . import ImplError, LoadError, LoadErrorReason
-from . import utils
 
 
 # We store information in the loaded yaml on a DictProvenance
@@ -463,7 +462,7 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
                 # Ensure target has only copies of mutable source values
                 if (isinstance(target_value, list) and
                     isinstance(source_value, list)):
-                    target[key] = utils._list_chain_copy(source_value)
+                    target[key] = list_chain_copy(source_value)
                 else:
                     target[key] = source_value
 
@@ -473,7 +472,7 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
                     isinstance(source_value, list)):
 
                     # Ensure target has only copies of mutable source values
-                    target[key] += utils._list_chain_copy(source_value)
+                    target[key] += list_chain_copy(source_value)
 
                     # Append element provenances from source list to target
                     target_list_provenance = target_provenance.members[key]
@@ -514,3 +513,57 @@ def composite(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
                          e.expected_type.__name__,
                          e.path,
                          e.actual_type.__name__)) from e
+
+
+# node_sanitize()
+#
+# Returnes an alphabetically ordered recursive copy
+# of the source node with internal provenance information stripped.
+#
+# Only dicts are ordered, list elements are left in order.
+#
+def node_sanitize(node):
+
+    if isinstance(node, collections.Mapping):
+
+        result = collections.OrderedDict()
+
+        for key in sorted(node):
+            if key == PROVENANCE_KEY:
+                continue
+            result[key] = node_sanitize(node[key])
+
+        return result
+
+    elif isinstance(node, list):
+        return [node_sanitize(elt) for elt in node]
+
+    return node
+
+
+def node_chain_copy(source):
+    copy = collections.ChainMap({}, source)
+    for key, value in source.items():
+        if isinstance(value, collections.Mapping):
+            copy[key] = node_chain_copy(value)
+        elif isinstance(value, list):
+            copy[key] = list_chain_copy(value)
+        elif isinstance(value, Provenance):
+            copy[key] = value.clone()
+
+    return copy
+
+
+def list_chain_copy(source):
+    copy = []
+    for item in source:
+        if isinstance(item, collections.Mapping):
+            copy.append(node_chain_copy(item))
+        elif isinstance(item, list):
+            copy.append(list_chain_copy(item))
+        elif isinstance(item, Provenance):
+            copy.append(item.clone())
+        else:
+            copy.append(item)
+
+    return copy

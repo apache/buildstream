@@ -33,7 +33,7 @@ from ..exceptions import _BstError
 from .._message import MessageType, unconditional_messages
 from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
-from .. import utils
+from .. import utils, _yaml
 from .._profile import Topics, profile_start, profile_end
 
 # Import frontend assets
@@ -278,28 +278,28 @@ def show(app, target, arch, variant, deps, order, format):
 
         # Element configuration
         if "%{config" in format:
-            config = utils._node_sanitize(element._Element__config)
+            config = _yaml.node_sanitize(element._Element__config)
             line = p.fmt_subst(
                 line, 'config',
                 yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
 
         # Variables
         if "%{vars" in format:
-            variables = utils._node_sanitize(element._Element__variables.variables)
+            variables = _yaml.node_sanitize(element._Element__variables.variables)
             line = p.fmt_subst(
                 line, 'vars',
                 yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
         # Environment
         if "%{env" in format:
-            environment = utils._node_sanitize(element._Element__environment)
+            environment = _yaml.node_sanitize(element._Element__environment)
             line = p.fmt_subst(
                 line, 'env',
                 yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
         # Public
         if "%{public" in format:
-            environment = utils._node_sanitize(element._Element__public)
+            environment = _yaml.node_sanitize(element._Element__public)
             line = p.fmt_subst(
                 line, 'public',
                 yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))

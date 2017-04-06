@@ -423,7 +423,7 @@ class Element(Plugin):
            (dict): A dictionary of string key/values suitable for passing
            to :func:`Sandbox.run() <buildstream.sandbox.Sandbox.run>`
         """
-        return utils._node_sanitize(self.__environment)
+        return _yaml.node_sanitize(self.__environment)
 
     #############################################################
     #                  Abstract Element Methods                 #
@@ -853,7 +853,7 @@ class Element(Plugin):
 
     def __compose_default_splits(self, defaults):
         project = self.get_project()
-        project_splits = utils._node_chain_copy(project._splits)
+        project_splits = _yaml.node_chain_copy(project._splits)
 
         element_public = _yaml.node_get(defaults, Mapping, 'public', default_value={})
         element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
@@ -910,7 +910,7 @@ class Element(Plugin):
         project = self.get_project()
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
-        environment = utils._node_chain_copy(project._environment)
+        environment = _yaml.node_chain_copy(project._environment)
         _yaml.composite(environment, default_env, typesafe=True)
         _yaml.composite(environment, meta.environment, typesafe=True)
 
@@ -941,7 +941,7 @@ class Element(Plugin):
         project = self.get_project()
         default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
 
-        variables = utils._node_chain_copy(project._variables)
+        variables = _yaml.node_chain_copy(project._variables)
         _yaml.composite(variables, default_vars, typesafe=True)
         _yaml.composite(variables, meta.variables, typesafe=True)
 
@@ -954,7 +954,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
-        config = utils._node_chain_copy(config)
+        config = _yaml.node_chain_copy(config)
 
         _yaml.composite(config, meta.config, typesafe=True)
 
@@ -965,12 +965,12 @@ class Element(Plugin):
     #
     def __extract_public(self, meta):
         base_public = _yaml.node_get(self.__defaults, Mapping, 'public', default_value={})
-        base_public = utils._node_chain_copy(base_public)
+        base_public = _yaml.node_chain_copy(base_public)
 
         base_bst = _yaml.node_get(base_public, Mapping, 'bst', default_value={})
         base_splits = _yaml.node_get(base_bst, Mapping, 'split-rules', default_value={})
 
-        element_public = utils._node_chain_copy(meta.public)
+        element_public = _yaml.node_chain_copy(meta.public)
         element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 
