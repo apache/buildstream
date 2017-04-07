@@ -27,9 +27,6 @@ import collections
 import hashlib
 import pickle
 import calendar
-import signal
-from contextlib import contextmanager
-from collections import deque
 from . import ProgramNotFoundError
 from . import _yaml
 
@@ -555,78 +552,3 @@ def _set_deterministic_mtime(directory):
                 os.utime(pathname, (magic_timestamp, magic_timestamp))
 
         os.utime(dirname, (magic_timestamp, magic_timestamp))
-
-
-# Global per process state for handling of sigterm, note that
-# it is expected that this only ever be used by processes the
-# scheduler forks off, not the main process
-_terminator_stack = None
-
-
-# The per-process SIGTERM handler
-def _terminator_handler(signal, frame):
-    while _terminator_stack:
-        terminator = _terminator_stack.pop()
-        terminator()
-
-    # Use special exit here, terminate immediately, recommended
-    # for precisely this situation where child forks are teminated.
-    os._exit(-1)
-
-
-# _terminator()
-#
-# A context manager for interruptable tasks, this guarantees
-# that while the code block is running, the supplied function
-# will be called upon process termination.
-#
-# Args:
-#    terminate_func (callable): A function to call when aborting
-#                               the nested code block.
-#
-@contextmanager
-def _terminator(terminate_func):
-    global _terminator_stack
-
-    if _terminator_stack is None:
-        _terminator_stack = deque()
-
-    outermost = False if _terminator_stack else True
-
-    _terminator_stack.append(terminate_func)
-    if outermost:
-        original_handler = signal.signal(signal.SIGTERM, _terminator_handler)
-
-    yield
-
-    if outermost:
-        signal.signal(signal.SIGTERM, original_handler)
-    _terminator_stack.pop()
-
-
-# A context manager for a code block which spawns a process
-# that becomes its own session leader.
-#
-# In these cases, SIGSTOP and SIGCONT need to be propagated to
-# the child tasks, this is not expected to be used recursively,
-# as the codeblock is expected to just spawn a processes.
-#
-@contextmanager
-def _suspendable(suspend_callback, resume_callback):
-
-    def _stop_handler(sig, frame):
-        suspend_callback()
-
-        # Use SIGSTOP directly now, dont introduce more SIGTSTP
-        os.kill(os.getpid(), signal.SIGSTOP)
-
-    def _cont_handler(sig, frame):
-        resume_callback()
-
-    original_cont = signal.signal(signal.SIGCONT, _cont_handler)
-    original_stop = signal.signal(signal.SIGTSTP, _stop_handler)
-
-    yield
-
-    signal.signal(signal.SIGTSTP, original_stop)
-    signal.signal(signal.SIGCONT, original_cont)
