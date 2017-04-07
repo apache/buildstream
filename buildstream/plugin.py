@@ -26,7 +26,7 @@ from subprocess import CalledProcessError
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
-from . import _yaml
+from . import _yaml, _signals
 from . import utils
 from . import PluginError, ImplError
 from .exceptions import _BstError
@@ -407,7 +407,7 @@ class Plugin():
                     group_id = os.getpgid(process.pid)
                     os.killpg(group_id, signal.SIGCONT)
 
-            with utils._suspendable(suspend_proc, resume_proc), utils._terminator(kill_proc):
+            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
                 process = subprocess.Popen(*popenargs, **kwargs)
                 process.communicate()
                 exit_code = process.poll()
@@ -487,7 +487,7 @@ class Plugin():
                     group_id = os.getpgid(process.pid)
                     os.killpg(group_id, signal.SIGCONT)
 
-            with utils._suspendable(suspend_proc, resume_proc), utils._terminator(kill_proc):
+            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
                 process = subprocess.Popen(*popenargs, **kwargs)
                 output, _ = process.communicate()
                 exit_code = process.poll()

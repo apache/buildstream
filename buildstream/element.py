@@ -38,6 +38,7 @@ from ._sandboxbwrap import SandboxBwrap
 from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
 from . import utils
+from . import _signals
 
 
 class Scope(Enum):
@@ -677,7 +678,7 @@ class Element(Plugin):
             def cleanup_rootdir():
                 shutil.rmtree(rootdir)
 
-            with utils._terminator(cleanup_rootdir), \
+            with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(None, rootdir, output_file, output_file) as sandbox:  # nopep8
 
                 # Call the abstract plugin method
@@ -753,7 +754,7 @@ class Element(Plugin):
                 logfile.flush()
 
             self._set_log_handle(logfile)
-            with utils._terminator(flush_log):
+            with _signals.terminator(flush_log):
                 yield fullpath
             self._set_log_handle(None)
 

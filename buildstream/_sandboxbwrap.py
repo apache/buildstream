@@ -27,7 +27,7 @@ import tempfile
 import psutil
 import signal
 
-from . import utils
+from . import utils, _signals
 from . import Sandbox, SandboxFlags
 
 
@@ -154,8 +154,8 @@ class SandboxBwrap(Sandbox):
                     group_id = os.getpgid(user_proc.pid)
                     os.killpg(group_id, signal.SIGCONT)
 
-        with utils._suspendable(suspend_bwrap, resume_bwrap), \
-            utils._terminator(terminate_bwrap):
+        with _signals.suspendable(suspend_bwrap, resume_bwrap), \
+            _signals.terminator(terminate_bwrap):
 
             process = subprocess.Popen(
                 argv,
