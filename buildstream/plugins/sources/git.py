@@ -289,6 +289,13 @@ class GitSource(Source):
 
     def stage(self, directory):
 
+        # Need to refresh submodule list here again, because
+        # it's possible that we did not load in the main process
+        # with submodules present (source needed fetching) and
+        # we may not know about the submodule yet come time to build.
+        #
+        self.refresh_submodules()
+
         # Stage the main repo in the specified directory
         #
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
