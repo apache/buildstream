@@ -160,6 +160,22 @@ class Status():
         # Track what we printed last, for the next clear
         self.last_lines = self.alloc_lines + 1
 
+    # pause()
+    #
+    # Pauses the timers, in case jobs are suspended
+    #
+    def pause(self):
+        for job in self.jobs:
+            job.pause()
+
+    # resume()
+    #
+    # Resumes the timers, in case jobs were suspended
+    #
+    def resume(self):
+        for job in self.jobs:
+            job.resume()
+
     ###########################################
     #         Status area internals           #
     ###########################################
@@ -229,6 +245,7 @@ class StatusJob():
     def __init__(self, element, action_name, content_profile, format_profile):
         # Record start time at initialization
         self.starttime = datetime.datetime.now()
+        self.pausetime = None
         self.element = element
         self.action_name = action_name
         self.content_profile = content_profile
@@ -261,3 +278,19 @@ class StatusJob():
             self.format_profile.fmt(']')
 
         return text
+
+    # pause()
+    #
+    # Pauses the timer, in case jobs are suspended
+    #
+    def pause(self):
+        self.pausetime = datetime.datetime.now()
+
+    # resume()
+    #
+    # Resumes the timer, in case jobs were suspended
+    #
+    def resume(self):
+        sleep_time = datetime.datetime.now() - self.pausetime
+        self.starttime += sleep_time
+        self.pausetime = None
