@@ -726,12 +726,14 @@ class App():
         self.scheduler.disconnect_signals()
 
         self.status.clear()
+        self.status.pause()
         self.scheduler.suspend_jobs()
 
         yield
 
         if not self.scheduler.terminated:
             self.scheduler.resume_jobs()
+            self.status.resume()
             self.status.render()
 
         self.scheduler.connect_signals()
