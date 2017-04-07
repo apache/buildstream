@@ -335,23 +335,36 @@ class Plugin():
               self.call(... command which takes time ...)
         """
         starttime = datetime.datetime.now()
-        try:
-            # Push activity depth for status messages
-            self.__message(MessageType.START, activity_name)
-            self.__context._push_message_depth(silent_nested)
-            yield
+        stopped_time = None
 
-        except _BstError as e:
-            # Note the failure in status messages and reraise, the scheduler
-            # expects an error when there is an error.
+        def stop_time():
+            nonlocal stopped_time
+            stopped_time = datetime.datetime.now()
+
+        def resume_time():
+            nonlocal stopped_time
+            nonlocal starttime
+            sleep_time = datetime.datetime.now() - stopped_time
+            starttime += sleep_time
+
+        with _signals.suspendable(stop_time, resume_time):
+            try:
+                # Push activity depth for status messages
+                self.__message(MessageType.START, activity_name)
+                self.__context._push_message_depth(silent_nested)
+                yield
+
+            except _BstError as e:
+                # Note the failure in status messages and reraise, the scheduler
+                # expects an error when there is an error.
+                elapsed = datetime.datetime.now() - starttime
+                self.__context._pop_message_depth()
+                self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
+                raise
+
             elapsed = datetime.datetime.now() - starttime
             self.__context._pop_message_depth()
-            self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
-            raise
-
-        elapsed = datetime.datetime.now() - starttime
-        self.__context._pop_message_depth()
-        self.__message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
+            self.__message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
 
     def call(self, *popenargs, fail=None, **kwargs):
         """A wrapper for subprocess.call()
