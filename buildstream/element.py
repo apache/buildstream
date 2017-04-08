@@ -749,9 +749,17 @@ class Element(Plugin):
 
             # Write one last line to the log and flush it to disk
             def flush_log():
-                logfile.write('\n\nAction {} for element {} forcefully terminated\n'
-                              .format(action_name, self.name))
-                logfile.flush()
+
+                # If the process currently had something happening in the I/O stack
+                # then trying to reenter the I/O stack will fire a runtime error.
+                #
+                # So just try to flush as well as we can at SIGTERM time
+                try:
+                    logfile.write('\n\nAction {} for element {} forcefully terminated\n'
+                                  .format(action_name, self.name))
+                    logfile.flush()
+                except RuntimeError:
+                    os.fsync(logfile.fileno())
 
             self._set_log_handle(logfile)
             with _signals.terminator(flush_log):
