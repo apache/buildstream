@@ -28,6 +28,7 @@ Here are some resources to help you get off the ground when creating your very
 first BuildStream project.
 
 * :ref:`format`
+* :ref:`docker`
 
 
 Elements
