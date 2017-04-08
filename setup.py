@@ -22,8 +22,8 @@ import os
 import shutil
 import sys
 
-if sys.version_info[0] != 3 or sys.version_info[1] < 5:
-    print("BuildStream requires Python >= 3.5")
+if sys.version_info[0] != 3 or sys.version_info[1] < 4:
+    print("BuildStream requires Python >= 3.4")
     sys.exit(1)
 
 bwrap_path = shutil.which('bwrap')
