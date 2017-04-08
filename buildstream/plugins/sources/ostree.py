@@ -125,9 +125,7 @@ class OSTreeSource(Source):
         self.ensure()
 
         # Checkout self.ref into the specified directory
-        os.makedirs(self.get_mirror_directory(), exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix='tmp', dir=self.get_mirror_directory()) as tmpdir:
-
+        with self.tempdir() as tmpdir:
             checkoutdir = os.path.join(tmpdir, 'checkout')
 
             with self.timed_activity("Staging ref: {} from origin: {}"
