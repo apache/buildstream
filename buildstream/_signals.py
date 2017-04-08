@@ -30,12 +30,6 @@ terminator_stack = deque()
 suspendable_stack = deque()
 
 
-class Suspender():
-    def __init__(self, suspend_callback, resume_callback):
-        self.suspend = suspend_callback
-        self.resume = resume_callback
-
-
 # Per process SIGTERM handler
 def terminator_handler(signal, frame):
     while terminator_stack:
@@ -45,25 +39,6 @@ def terminator_handler(signal, frame):
     # Use special exit here, terminate immediately, recommended
     # for precisely this situation where child forks are teminated.
     os._exit(-1)
-
-
-# Per process SIGTSTP handler
-def suspend_handler(sig, frame):
-
-    # Suspend callbacks from innermost frame first
-    for suspender in reversed(suspendable_stack):
-        suspender.suspend()
-
-    # Use SIGSTOP directly now, dont introduce more SIGTSTP
-    os.kill(os.getpid(), signal.SIGSTOP)
-
-
-# Per process SIGCONT handler
-def resume_handler(sig, frame):
-
-    # Resume callbacks from outermost frame inwards
-    for suspender in suspendable_stack:
-        suspender.resume()
 
 
 # terminator()
@@ -93,14 +68,43 @@ def terminator(terminate_func):
     terminator_stack.pop()
 
 
+# Just a simple object for holding on to two callbacks
+class Suspender():
+    def __init__(self, suspend_callback, resume_callback):
+        self.suspend = suspend_callback
+        self.resume = resume_callback
+
+
+# Per process SIGTSTP handler
+def suspend_handler(sig, frame):
+
+    # Suspend callbacks from innermost frame first
+    for suspender in reversed(suspendable_stack):
+        suspender.suspend()
+
+    # Use SIGSTOP directly now on self, dont introduce more SIGTSTP
+    #
+    # Here the process sleeps until SIGCONT, which we simply
+    # dont handle. We know we'll pickup execution right here
+    # when we wake up.
+    os.kill(os.getpid(), signal.SIGSTOP)
+
+    # Resume callbacks from outermost frame inwards
+    for suspender in suspendable_stack:
+        suspender.resume()
+
+
 # suspendable()
 #
-# A context manager for a code block which spawns a process
-# that becomes its own session leader.
+# A context manager for handling process suspending and resumeing
 #
-# In these cases, SIGSTOP and SIGCONT need to be propagated to
-# the child tasks, this is not expected to be used recursively,
-# as the codeblock is expected to just spawn a processes.
+# This must be used in code blocks which spawn processes that become
+# their own session leader. In these cases, SIGSTOP and SIGCONT need
+# to be propagated to the child process group.
+#
+# This context manager can also be used recursively, so multiple
+# things can happen at suspend/resume time (such as tracking timers
+# and ensuring durations do not count suspended time).
 #
 @contextmanager
 def suspendable(suspend_callback, resume_callback):
@@ -111,13 +115,11 @@ def suspendable(suspend_callback, resume_callback):
     suspendable_stack.append(suspender)
 
     if outermost:
-        original_cont = signal.signal(signal.SIGCONT, resume_handler)
         original_stop = signal.signal(signal.SIGTSTP, suspend_handler)
 
     yield
 
     if outermost:
         signal.signal(signal.SIGTSTP, original_stop)
-        signal.signal(signal.SIGCONT, original_cont)
 
     suspendable_stack.pop()
