@@ -98,15 +98,15 @@ class GitMirror():
             # this directly in our git directory, eliminating the chances that the
             # system configured tmpdir is not on the same partition.
             #
-            tmpdir = tempfile.mkdtemp(dir=self.source.get_mirror_directory())
-            self.source.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir],
-                             fail="Failed to clone git repository {}".format(self.url))
+            with self.source.tempdir() as tmpdir:
+                self.source.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir],
+                                 fail="Failed to clone git repository {}".format(self.url))
 
-            try:
-                shutil.move(tmpdir, self.mirror)
-            except (shutil.Error, OSError) as e:
-                raise SourceError("%s: Failed to move cloned git repository %s from '%s' to '%s'" %
-                                  (str(self.source), self.url, tmpdir, self.mirror)) from e
+                try:
+                    shutil.move(tmpdir, self.mirror)
+                except (shutil.Error, OSError) as e:
+                    raise SourceError("%s: Failed to move cloned git repository %s from '%s' to '%s'" %
+                                      (str(self.source), self.url, tmpdir, self.mirror)) from e
 
     def fetch(self):
         self.source.call([self.source.host_git, 'fetch', 'origin'],
