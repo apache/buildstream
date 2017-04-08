@@ -585,7 +585,10 @@ class App():
         self.status.remove_job(element, action_name)
         self.status.render()
 
-        if not success:
+        # Dont attempt to handle a failure if the user has already opted to
+        # terminate
+        if not success and not self.scheduler.terminated:
+
             # Get the last failure message for additional context
             failure = self.fail_messages.get(element._get_unique_id())
             self.handle_failure(element, failure)
@@ -605,23 +608,26 @@ class App():
         # Interactive mode for element failures
         with self.interrupted():
 
-            choice = ''
+            summary = ("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
+                       "\n" +
+                       "Choose one of the following options:\n" +
+                       "  continue  - Continue queueing jobs as much as possible\n" +
+                       "  quit      - Exit after all ongoing jobs complete\n" +
+                       "  terminate - Terminate any ongoing jobs and exit\n")
+            if failure.sandbox:
+                summary += "  shell     - Drop into a shell in the failed build sandbox\n"
+            summary += "\nPressing ^C will terminate jobs and exit\n"
 
+            choices = ['continue', 'quit', 'terminate']
+            if failure.sandbox:
+                choices += ['shell']
+
+            choice = ''
             while choice not in ['continue', 'quit', 'terminate']:
-                click.echo("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
-                           "\n"
-                           "Choose one of the following options:\n" +
-                           "  continue  - Continue queueing jobs as much as possible\n" +
-                           "  quit      - Exit after all ongoing jobs complete\n" +
-                           "  terminate - Terminate any ongoing jobs and exit\n" +
-                           "  debug     - Drop into a shell in the failed build sandbox\n" +
-                           "\n" +
-                           "Pressing ^C again will terminate jobs and exit\n",
-                           err=True)
+                click.echo(summary, err=True)
 
                 try:
-                    choice = click.prompt("Choice:",
-                                          type=click.Choice(['continue', 'quit', 'terminate', 'debug']),
+                    choice = click.prompt("Choice:", type=click.Choice(choices),
                                           default='continue', err=True)
                 except click.Abort:
                     # Ensure a newline after automatically printed '^C'
@@ -630,7 +636,7 @@ class App():
 
                 # Handle choices which you can come back from
                 #
-                if choice == 'debug':
+                if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     element._shell(Scope.BUILD, failure.sandbox)
 
