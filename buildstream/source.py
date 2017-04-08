@@ -19,8 +19,11 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import tempfile
+import shutil
+from contextlib import contextmanager
 
-from . import _yaml
+from . import _yaml, _signals
 from . import ImplError
 from . import Plugin
 
@@ -80,6 +83,29 @@ class Source(Plugin):
         directory = os.path.join(context.sourcedir, self.get_kind())
         os.makedirs(directory, exist_ok=True)
         return directory
+
+    @contextmanager
+    def tempdir(self):
+        """Context manager for working in a temporary directory
+
+        Yields:
+           (str): A path to a temporary directory
+
+        This should be used by source plugins directly instead of the
+        tempfile module, as it will take care of cleaning up the temporary
+        directory in the case of forced termination.
+        """
+        mirrordir = self.get_mirror_directory()
+        tempdir = tempfile.mkdtemp(dir=mirrordir)
+
+        def cleanup_tempdir():
+            if os.path.isdir(tempdir):
+                shutil.rmtree(tempdir)
+
+        with _signals.terminator(cleanup_tempdir):
+            yield tempdir
+
+        cleanup_tempdir()
 
     def get_consistency(self):
         """Report whether the source has a resolved reference
