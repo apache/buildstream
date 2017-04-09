@@ -857,8 +857,6 @@ class Element(Plugin):
         exitcode = sandbox.run(['sh', '-i'],
                                SandboxFlags.NETWORK_ENABLED & SandboxFlags.ROOT_READ_ONLY,
                                cwd=cwd, env=environment)
-        if exitcode != 0:
-            raise ElementError("Running shell failed with exitcode {}".format(exitcode))
 
     def __compose_default_splits(self, defaults):
         project = self.get_project()
