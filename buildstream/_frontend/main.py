@@ -709,21 +709,44 @@ class App():
     def load_ticker(self, name):
         if name:
             self.file_count += 1
-            click.echo("Loading:   {:0>3}\r".format(self.file_count), nl=False, err=True)
+
+            if self.is_a_tty:
+                click.echo("Loading:   {:0>3}\r"
+                           .format(self.file_count), nl=False, err=True)
+            elif self.file_count == 1:
+                click.echo("Loading.", nl=False, err=True)
+            else:
+                click.echo(".", nl=False, err=True)
         else:
             click.echo('', err=True)
 
     def resolve_ticker(self, name):
         if name:
             self.resolve_count += 1
-            click.echo("Resolving: {:0>3}/{:0>3}\r".format(self.file_count, self.resolve_count), nl=False, err=True)
+
+            if self.is_a_tty:
+                click.echo("Resolving: {:0>3}/{:0>3}\r"
+                           .format(self.file_count, self.resolve_count), nl=False, err=True)
+            elif self.resolve_count == 1:
+                click.echo("Resolving {} elements."
+                           .format(self.file_count), nl=False, err=True)
+            else:
+                click.echo(".", nl=False, err=True)
         else:
             click.echo('', err=True)
 
     def cache_ticker(self, name):
         if name:
             self.cache_count += 1
-            click.echo("Checking:  {:0>3}/{:0>3}\r".format(self.file_count, self.cache_count), nl=False, err=True)
+
+            if self.is_a_tty:
+                click.echo("Checking:  {:0>3}/{:0>3}\r"
+                           .format(self.file_count, self.cache_count), nl=False, err=True)
+            elif self.cache_count == 1:
+                click.echo("Checking {} elements."
+                           .format(self.file_count, self.cache_count), nl=False, err=True)
+            else:
+                click.echo(".", nl=False, err=True)
         else:
             click.echo('', err=True)
 
