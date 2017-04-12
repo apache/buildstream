@@ -1,0 +1,75 @@
+.TH "BST" "1" "12-Apr-2017" "" "bst Manual"
+.SH NAME
+bst \- Build and manipulate BuildStream projects...
+.SH SYNOPSIS
+.B bst
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Build and manipulate BuildStream projects
+
+Most of the main options override options in the
+user preferences configuration file.
+.SH OPTIONS
+.TP
+\fB\-\-version\fP
+Show the version and exit.
+.TP
+\fB\-c,\fP \-\-config PATH
+Configuration file to use
+.TP
+\fB\-C,\fP \-\-directory DIRECTORY
+Project directory (default: current directory)
+.TP
+\fB\-\-on\-error\fP [continue|quit|terminate]
+What to do when an error is encountered
+.TP
+\fB\-\-fetchers\fP INTEGER
+Maximum simultaneous download tasks
+.TP
+\fB\-\-builders\fP INTEGER
+Maximum simultaneous build tasks
+.TP
+\fB\-\-no\-interactive\fP
+Force non interactive mode, otherwise this is automatically decided
+.TP
+\fB\-\-verbose\fP / \-\-no\-verbose
+Be extra verbose
+.TP
+\fB\-\-debug\fP / \-\-no\-debug
+Print debugging output
+.TP
+\fB\-\-error\-lines\fP INTEGER
+Maximum number of lines to show from a task log
+.TP
+\fB\-\-log\-file\fP FILENAME
+A file to store the main log (allows storing the main log while in interactive mode)
+.SH COMMANDS
+.PP
+\fBtrack\fP
+  Track new source references
+  See \fBbst-track(1)\fP for full documentation on the \fBtrack\fP command.
+
+.PP
+\fBbuild\fP
+  Build elements in a pipeline
+  See \fBbst-build(1)\fP for full documentation on the \fBbuild\fP command.
+
+.PP
+\fBfetch\fP
+  Fetch sources in a pipeline
+  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
+
+.PP
+\fBcheckout\fP
+  Checkout a built artifact
+  See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
+
+.PP
+\fBshow\fP
+  Show elements in the pipeline
+  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
+
+.PP
+\fBshell\fP
+  Shell into an element's sandbox environment
+  See \fBbst-shell(1)\fP for full documentation on the \fBshell\fP command.

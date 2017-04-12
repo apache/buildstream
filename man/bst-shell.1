@@ -1,0 +1,28 @@
+.TH "BST SHELL" "1" "12-Apr-2017" "" "bst shell Manual"
+.SH NAME
+bst\-shell \- Shell into an element's sandbox environment
+.SH SYNOPSIS
+.B bst shell
+[OPTIONS] TARGET
+.SH DESCRIPTION
+Shell into an element's sandbox environment
+
+This can be used either to debug building or to launch
+test and debug successful build results.
+
+Use the --builddir option with an existing build directory
+or use the --scope option instead to create a new staging
+area automatically.
+.SH OPTIONS
+.TP
+\fB\-b,\fP \-\-builddir DIRECTORY
+Existing build directory
+.TP
+\fB\-s,\fP \-\-scope [build|run]
+Specify element scope to stage
+.TP
+\fB\-a,\fP \-\-arch TEXT
+The target architecture (default: x86_64)
+.TP
+\fB\-\-variant\fP TEXT
+A variant of the specified target

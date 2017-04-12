@@ -1,0 +1,56 @@
+.TH "BST SHOW" "1" "12-Apr-2017" "" "bst show Manual"
+.SH NAME
+bst\-show \- Show elements in the pipeline
+.SH SYNOPSIS
+.B bst show
+[OPTIONS] TARGET
+.SH DESCRIPTION
+Show elements in the pipeline
+
+By default this will only show the specified element, use
+the --deps option to show an entire pipeline.
+
+
+FORMAT
+~~~~~~
+The --format option controls what should be printed for each element,
+the following symbols can be used in the format string:
+
+
+    %{name}   The element name
+    %{key}    The cache key (if all sources are consistent)
+    %{state}  cached, buildable, waiting or inconsistent
+    %{config} The element configuration
+    %{vars}   Variable configuration
+    %{env}    Environment settings
+    %{public} Public domain data
+
+The value of the %{symbol} without the leading '%' character is understood
+as a pythonic formatting string, so python formatting features apply,
+examle:
+
+
+    build-stream show target.bst --format \
+        'Name: %{name: ^20} Key: %{key: ^8} State: %{state}'
+
+If you want to use a newline in a format string in bash, use the '$' modifier:
+
+
+    build-stream show target.bst --format \
+        $'---------- %{name} ----------\n%{vars}'
+.SH OPTIONS
+.TP
+\fB\-d,\fP \-\-deps [all|build|run]
+Optionally specify a dependency scope to show
+.TP
+\fB\-\-order\fP [stage|alpha]
+Staging or alphabetic ordering of dependencies
+.TP
+\fB\-f,\fP \-\-format FORMAT
+Format string for each element
+.TP
+\fB\-a,\fP \-\-arch TEXT
+The target architecture (default: x86_64)
+.TP
+\fB\-\-variant\fP TEXT
+A variant of the specified target

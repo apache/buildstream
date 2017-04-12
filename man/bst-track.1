@@ -1,0 +1,24 @@
+.TH "BST TRACK" "1" "12-Apr-2017" "" "bst track Manual"
+.SH NAME
+bst\-track \- Track new source references
+.SH SYNOPSIS
+.B bst track
+[OPTIONS] TARGET
+.SH DESCRIPTION
+Track new source references
+
+Updates the project with new source references from
+any sources which are configured to track a remote
+branch or tag.
+
+The project data will be rewritten inline.
+.SH OPTIONS
+.TP
+\fB\-d,\fP \-\-deps [all|build|run]
+Optionally specify a dependency scope to track
+.TP
+\fB\-a,\fP \-\-arch TEXT
+The target architecture (default: x86_64)
+.TP
+\fB\-\-variant\fP TEXT
+A variant of the specified target

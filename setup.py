@@ -71,12 +71,34 @@ except AttributeError:
     exit_ostree("OSTree too old")
 
 
+###########################################
+# List the pre-built man pages to install #
+###########################################
+#
+# Man pages are automatically generated however it was too difficult
+# to integrate with setuptools as a step of the build (FIXME !).
+#
+# To update the man pages in tree before a release, you need to
+# ensure you have the 'click_man' package installed, and run:
+#
+# python3 setup.py --command-packages=click_man.commands man_pages
+#
+# Then commit the result.
+#
+def list_man_pages():
+    bst_dir = os.path.dirname(os.path.abspath(__file__))
+    man_dir = os.path.join(bst_dir, 'man')
+    man_pages = os.listdir(man_dir)
+    return [os.path.join('man', page) for page in man_pages]
+
+
 setup(name='BuildStream',
       version='0.1',
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml']},
+      data_files=[('man/man1', list_man_pages())],
       install_requires=[
           'setuptools',
           'psutil',

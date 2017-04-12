@@ -1,0 +1,19 @@
+.TH "BST CHECKOUT" "1" "12-Apr-2017" "" "bst checkout Manual"
+.SH NAME
+bst\-checkout \- Checkout a built artifact
+.SH SYNOPSIS
+.B bst checkout
+[OPTIONS] TARGET DIRECTORY
+.SH DESCRIPTION
+Checkout a built artifact to the specified directory
+    
+.SH OPTIONS
+.TP
+\fB\-f,\fP \-\-force
+Overwrite files existing in checkout directory
+.TP
+\fB\-a,\fP \-\-arch TEXT
+The target architecture (default: x86_64)
+.TP
+\fB\-\-variant\fP TEXT
+A variant of the specified target
