@@ -24,6 +24,10 @@ class Setup():
         self.context = Context('x86_64')
         self.project = Project(directory, 'x86_64')
 
+        # Allow repo aliases to access files in the directories using tmpdir and datafiles
+        self.project._aliases['tmpdir'] = "file:///" + str(tmpdir)
+        self.project._aliases['datafiles'] = "file:///" + str(datafiles)
+
         # A message handler is required
         self.context._set_message_handler(message_handler)
 
