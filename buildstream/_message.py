@@ -30,6 +30,7 @@ class MessageType():
     WARN = "warning"       # Warning messages
     ERROR = "error"        # Error messages
     LOG = "log"            # Messages for log files _only_, never in the frontend
+    BUG = "bug"            # An unhandled exception was raised in a plugin
 
     # Timed Messages: SUCCESS and FAIL have duration timestamps
     START = "start"        # Status start message
@@ -43,7 +44,8 @@ unconditional_messages = [
     MessageType.INFO,
     MessageType.WARN,
     MessageType.ERROR,
-    MessageType.FAIL
+    MessageType.FAIL,
+    MessageType.BUG
 ]
 
 
