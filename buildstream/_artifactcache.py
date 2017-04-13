@@ -111,12 +111,14 @@ class ArtifactCache():
             try:
                 os.rename(checkoutdir, dest)
             except OSError as e:
-                if e.errno != os.errno.ENOTEMPTY:
+                # With rename, it's possible to get either ENOTEMPTY or EEXIST
+                # in the case that the destination path is a not empty directory.
+                #
+                # If rename fails with these errors, another process beat
+                # us to it so just ignore.
+                if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
                     raise ArtifactError("Failed to extract artifact for ref '{}': {}"
                                         .format(ref, e)) from e
-
-                # If rename fails with ENOTEMPTY, another process beat
-                # us to it. This is no issue.
 
         return dest
 
