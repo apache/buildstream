@@ -26,9 +26,9 @@
    # Specify the tar source kind
    kind: tar
 
-   # Specify the tar url. Using an alias defined in your project configuration
-   # is encouraged. 'bst track' will update the sha256sum in 'ref' to the
-   # downloaded file's sha256sum.
+   # Specify the tar url. Using an alias defined in your project
+   # configuration is encouraged. 'bst track' will update the
+   # sha256sum in 'ref' to the downloaded file's sha256sum.
    url: upstream:foo.tar
 
    # Specify the ref. It's a sha256sum of the file you download.
