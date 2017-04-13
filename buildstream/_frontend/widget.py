@@ -144,6 +144,7 @@ class TypeName(Widget):
         MessageType.START: "blue",
         MessageType.SUCCESS: "green",
         MessageType.FAIL: "red",
+        MessageType.BUG: "red",
     }
 
     def render(self, message):
@@ -213,7 +214,7 @@ class CacheKey(Widget):
             if isinstance(plugin, Element):
                 key = plugin._get_display_key()
 
-        if message.message_type == MessageType.FAIL:
+        if message.message_type in [MessageType.FAIL, MessageType.BUG]:
             text = self.err_profile.fmt(key)
         else:
             text = self.content_profile.fmt(key)
@@ -242,7 +243,7 @@ class LogFile(Widget):
             if logfile.startswith(self.logdir):
                 logfile = logfile[len(self.logdir) + 1:]
 
-            if message.message_type == MessageType.FAIL:
+            if message.message_type in [MessageType.FAIL, MessageType.BUG]:
                 text = self.err_profile.fmt(logfile)
             else:
                 text = self.content_profile.fmt(logfile, dim=True)
@@ -318,7 +319,7 @@ class LogLine(Widget):
             detail = self.indent + self.indent.join((detail.splitlines(True)))
 
             text += '\n'
-            if message.message_type == MessageType.FAIL:
+            if message.message_type in [MessageType.FAIL, MessageType.BUG]:
                 text += self.err_profile.fmt(detail, bold=True)
             else:
                 text += self.detail_profile.fmt(detail)

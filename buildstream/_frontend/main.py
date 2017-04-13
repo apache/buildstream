@@ -683,7 +683,7 @@ class App():
             return
 
         # Hold on to the failure messages
-        if message.message_type == MessageType.FAIL and message.unique_id is not None:
+        if message.message_type in [MessageType.FAIL, MessageType.BUG] and message.unique_id is not None:
             self.fail_messages[message.unique_id] = message
 
         # Send to frontend if appropriate
