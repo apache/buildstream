@@ -59,7 +59,8 @@ Sources
 --------
 The following source types are provided with BuildStream:
 
-* :mod:`local` - A Source implementation local files and directories
+* :mod:`local` - A Source implementation for local files and directories
+* :mod:`tar` - A Source implementation for tarballs
 * :mod:`git` - A Source implementation for git
 * :mod:`ostree` - A Source implementation for ostree
 
