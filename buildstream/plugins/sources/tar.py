@@ -52,7 +52,6 @@ class TarSource(Source):
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.tracking = self.node_get_member(node, str, 'track', '') or None
         self.url = self.get_project().translate_url(self.original_url)
 
     def preflight(self):
@@ -107,10 +106,8 @@ class TarSource(Source):
         try:
             with tarfile.open(self._get_mirror_file()) as tar:
                 tar.extractall(directory)
-        except tarfile.TarError as e:
-            raise SourceError("TarError while staging source") from e
-        except OSError as e:
-            raise SourceError("OSError while staging source") from e
+        except (tarfile.TarError, OSError) as e:
+            raise SourceError("{}: Error staging source: {}".format(self, e)) from e
 
     def _ensure_mirror(self):
         # Downloads from the url and caches it according to its sha256sum.
@@ -136,10 +133,9 @@ class TarSource(Source):
                 os.rename(local_file, self._get_mirror_file(sha256))
 
                 return sha256
-        except urllib.error.URLError as e:
-            raise SourceError("URLError while mirroring source") from e
-        except OSError as e:
-            raise SourceError("OSError while mirroring source") from e
+        except (urllib.error.URLError, OSError) as e:
+            raise SourceError("{}: Error mirroring {}: {}"
+                              .format(self, self.url, e)) from e
 
     def _get_mirror_dir(self):
         return os.path.join(self.get_mirror_directory(),
