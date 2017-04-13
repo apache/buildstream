@@ -98,7 +98,7 @@ setup(name='BuildStream',
       license='LGPL',
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml']},
-      data_files=[('man/man1', list_man_pages())],
+      data_files=[('share/man/man1', list_man_pages())],
       install_requires=[
           'setuptools',
           'psutil',
