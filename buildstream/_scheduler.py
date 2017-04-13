@@ -25,6 +25,7 @@ import asyncio
 import multiprocessing
 import signal
 import datetime
+import traceback
 from collections import deque
 from ruamel import yaml
 
@@ -605,6 +606,18 @@ class Job():
                 self.message(element, MessageType.FAIL, self.action_name,
                              elapsed=elapsed, detail=str(e),
                              logfile=filename, sandbox=e.sandbox)
+                self.child_shutdown(1)
+
+            except Exception as e:
+                # If an unhandled (not normalized to _BstError) occurs, that's a bug,
+                # send the traceback and formatted exception back to the frontend
+                # and print it to the log file.
+                #
+                elapsed = datetime.datetime.now() - starttime
+                detail = "An unhandled exception occured:\n\n{}".format(traceback.format_exc())
+                self.message(element, MessageType.BUG, self.action_name,
+                             elapsed=elapsed, detail=detail,
+                             logfile=filename)
                 self.child_shutdown(1)
 
             elapsed = datetime.datetime.now() - starttime
