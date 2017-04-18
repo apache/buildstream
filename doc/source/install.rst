@@ -77,6 +77,16 @@ This will install buildstream and it's pure python dependencies directly into
 your user's homedir in ``~/.local``
 
 
+Adjust PATH
+~~~~~~~~~~~
+Since BuildStream is now installed under your local user's install directories,
+you need to ensure that ``PATH`` is adjusted.
+
+A regular way to do this is to add the following line to the end of your ``~/.bashrc``::
+
+  export PATH=${PATH}:~/.local/bin
+
+
 Upgrading with pip
 ~~~~~~~~~~~~~~~~~~
 To upgrade a previously install BuildStream, you will need to pull the latest
