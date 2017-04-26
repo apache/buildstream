@@ -16,9 +16,14 @@ Installing base system requirements
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
+* ruamel.yaml python library
 * PyGObject introspection bindings
 * OSTree >= v2016.8
 * OStree introspection data
+
+Note that ``ruamel.yaml`` is a pure python library which is normally
+obtainable via pip, however there seems to be some problems with installing
+this package so we recommend installing it with your package manager first.
 
 For the purpose of installing BuildStream while there are no distro packages,
 you will additionally need:
@@ -50,7 +55,7 @@ At this point you should be able to get the system requirements with::
   sudo apt-get install \
       python3 python3-dev python3-pip git \
       python3-gi gir1.2-ostree-1.0 ostree \
-      bubblewrap
+      bubblewrap ruamel.yaml
 
 
 Debian Stretch or Sid
@@ -61,7 +66,7 @@ to get the base system requirements installed::
   sudo apt-get install \
       python3 python3-dev python3-pip git \
       python3-gi gir1.2-ostree-1.0 ostree \
-      bubblewrap
+      bubblewrap ruamel.yaml
 
 
 User installation with pip
@@ -69,7 +74,7 @@ User installation with pip
 Once you have the base system dependencies, you can clone the buildstream
 git repository and install it as a regular user::
 
-  git clone git@gitlab.com:BuildStream/buildstream.git
+  git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
   pip3 install --user .
 
@@ -117,7 +122,7 @@ environment that is completely encapsulated and does not interfere with
 your system or home directory::
 
   # Clone the repository
-  git clone git@gitlab.com:BuildStream/buildstream.git
+  git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
 
   # Create a virtualenv sandbox for the installation, you need to
