@@ -650,7 +650,7 @@ class App():
                 elif choice == 'continue':
                     click.echo("\nContinuing with other non failing elements\n", err=True)
 
-    def tick(self):
+    def tick(self, elapsed):
         self.status.render()
 
     #
