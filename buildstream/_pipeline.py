@@ -20,7 +20,6 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 import os
-import datetime
 from pluginbase import PluginBase
 from operator import itemgetter
 
@@ -266,9 +265,7 @@ class Pipeline():
         track.enqueue(dependencies)
 
         self.message(self.target, MessageType.START, "Starting track")
-        starttime = datetime.datetime.now()
-        status = scheduler.run([track])
-        elapsed = datetime.datetime.now() - starttime
+        elapsed, status = scheduler.run([track])
         changed = len(track.changed_files.items())
 
         def rewrite_changed_sources():
@@ -321,9 +318,7 @@ class Pipeline():
         fetch.enqueue(plan)
 
         self.message(self.target, MessageType.START, "Fetching {} elements".format(len(plan)))
-        starttime = datetime.datetime.now()
-        status = scheduler.run([fetch])
-        elapsed = datetime.datetime.now() - starttime
+        elapsed, status = scheduler.run([fetch])
         fetched = len(fetch.fetched_elements)
 
         if status == SchedStatus.ERROR:
@@ -401,9 +396,7 @@ class Pipeline():
         fetch.enqueue(plan)
 
         self.message(self.target, MessageType.START, "Starting build")
-        starttime = datetime.datetime.now()
-        status = scheduler.run([fetch, build])
-        elapsed = datetime.datetime.now() - starttime
+        elapsed, status = scheduler.run([fetch, build])
         fetched = len(fetch.fetched_elements)
         built = len(build.built_elements)
 
