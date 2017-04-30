@@ -32,7 +32,7 @@ from ruamel import yaml
 from ._message import Message, MessageType, unconditional_messages
 from .exceptions import _BstError
 from .plugin import _plugin_lookup
-from . import utils, _yaml
+from . import utils, _yaml, _signals
 
 
 # Process class that doesn't call waitpid on its own.
@@ -84,6 +84,8 @@ class Scheduler():
         self.job_complete_callback = job_complete_callback
         self.context = context
         self.queues = None
+        self.starttime = None
+        self.suspendtime = None
 
         # Some local state
         self.queue_jobs = True      # Whether we should continue to queue jobs
@@ -106,6 +108,8 @@ class Scheduler():
     # an error arises
     #
     def run(self, queues):
+
+        self.starttime = datetime.datetime.now()
 
         # Attach the queues
         self.queues = queues
@@ -133,12 +137,15 @@ class Scheduler():
         self.queues = None
         self.loop = None
 
+        elapsed = datetime.datetime.now() - self.starttime
         if failed:
-            return SchedStatus.ERROR
+            status = SchedStatus.ERROR
         elif self.terminated:
-            return SchedStatus.TERMINATED
+            status = SchedStatus.TERMINATED
         else:
-            return SchedStatus.SUCCESS
+            status = SchedStatus.SUCCESS
+
+        return elapsed, status
 
     # terminate_jobs()
     #
@@ -157,6 +164,7 @@ class Scheduler():
     #
     def suspend_jobs(self):
         if not self.suspended:
+            self.suspendtime = datetime.datetime.now()
             self.suspended = True
             for queue in self.queues:
                 for job in queue.active_jobs:
@@ -172,6 +180,8 @@ class Scheduler():
                 for job in queue.active_jobs:
                     job.resume()
             self.suspended = False
+            self.starttime += (datetime.datetime.now() - self.suspendtime)
+            self.suspendtime = None
 
     # stop_queueing()
     #
@@ -269,7 +279,8 @@ class Scheduler():
 
     # Regular timeout for driving status in the UI
     def tick(self):
-        self.ticker_callback()
+        elapsed = datetime.datetime.now() - self.starttime
+        self.ticker_callback(elapsed)
         self.loop.call_later(1, self.tick)
 
 
@@ -579,10 +590,23 @@ class Job():
         self.queue = queue
         self.scheduler.context._set_message_handler(self.child_message_handler)
 
+        starttime = datetime.datetime.now()
+        stopped_time = None
+
+        def stop_time():
+            nonlocal stopped_time
+            stopped_time = datetime.datetime.now()
+
+        def resume_time():
+            nonlocal stopped_time
+            nonlocal starttime
+            starttime += (datetime.datetime.now() - stopped_time)
+
         # Time, log and and run the action function
         #
-        with element._logging_enabled(action_name) as filename:
-            starttime = datetime.datetime.now()
+        with _signals.suspendable(stop_time, resume_time), \
+            element._logging_enabled(action_name) as filename:
+
             self.message(element, MessageType.START, self.action_name,
                          logfile=filename)
 
