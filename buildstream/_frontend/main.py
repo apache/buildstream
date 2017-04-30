@@ -504,9 +504,6 @@ class App():
             # Whether to print additional debugging information
             debug=self.context.log_debug)
 
-        # Create our status printer, only available in interactive
-        self.status = Status(self.content_profile, self.format_profile)
-
         # Propagate pipeline feedback to the user
         self.context._set_message_handler(self.message_handler)
 
@@ -525,6 +522,9 @@ class App():
         except _BstError as e:
             click.echo("Error loading pipeline: %s" % str(e))
             sys.exit(1)
+
+        # Create our status printer, only available in interactive
+        self.status = Status(self.content_profile, self.format_profile, self.pipeline, self.scheduler)
 
         # Pipeline is loaded, lets start displaying pipeline messages from tasks
         self.logger.size_request(self.pipeline)
@@ -691,12 +691,14 @@ class App():
             message.message_type not in unconditional_messages):
             return
 
-        self.status.clear()
+        if self.status:
+            self.status.clear()
+
         text = self.logger.render(message)
         click.echo(text, nl=False)
 
         # Avoid the status messages when we're suspended
-        if self.scheduler and not self.scheduler.suspended:
+        if self.status and self.scheduler and not self.scheduler.suspended:
             self.status.render()
 
         # Additionally log to a file
@@ -755,14 +757,12 @@ class App():
         self.scheduler.disconnect_signals()
 
         self.status.clear()
-        self.status.pause()
         self.scheduler.suspend_jobs()
 
         yield
 
         if not self.scheduler.terminated:
             self.scheduler.resume_jobs()
-            self.status.resume()
             self.status.render()
 
         self.scheduler.connect_signals()
