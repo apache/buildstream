@@ -96,7 +96,6 @@ class Scheduler():
     # run()
     #
     # Args:
-    #    plan (list): A list of elements to process
     #    queues (list): A list of Queue objects
     #
     # Returns:
@@ -137,7 +136,6 @@ class Scheduler():
         self.queues = None
         self.loop = None
 
-        elapsed = datetime.datetime.now() - self.starttime
         if failed:
             status = SchedStatus.ERROR
         elif self.terminated:
@@ -145,7 +143,7 @@ class Scheduler():
         else:
             status = SchedStatus.SUCCESS
 
-        return elapsed, status
+        return self.elapsed_time(), status
 
     # terminate_jobs()
     #
@@ -190,6 +188,21 @@ class Scheduler():
     #
     def stop_queueing(self):
         self.queue_jobs = False
+
+    # elapsed_time()
+    #
+    # Fetches the current session elapsed time
+    #
+    # Returns:
+    #    (datetime): The amount of time since the start of the session,
+    #                discounting any time spent while jobs were suspended.
+    #
+    def elapsed_time(self):
+        timenow = datetime.datetime.now()
+        starttime = self.starttime
+        if not starttime:
+            starttime = timenow
+        return timenow - starttime
 
     #######################################################
     #                   Main Loop Events                  #
@@ -279,7 +292,7 @@ class Scheduler():
 
     # Regular timeout for driving status in the UI
     def tick(self):
-        elapsed = datetime.datetime.now() - self.starttime
+        elapsed = self.elapsed_time()
         self.ticker_callback(elapsed)
         self.loop.call_later(1, self.tick)
 
@@ -288,12 +301,14 @@ class Scheduler():
 #
 # Args:
 #    action_name (str): A name for printing status messages about this queue
+#    complete_name (str): A name for printing how many elements were processed
 #    max_jobs (int): Maximum parallel jobs for this queue
 #
 class Queue():
 
-    def __init__(self, action_name, max_jobs):
+    def __init__(self, action_name, complete_name, max_jobs):
         self.action_name = action_name
+        self.complete_name = complete_name
         self.max_jobs = max_jobs
         self.wait_queue = deque()
         self.done_queue = deque()
@@ -301,6 +316,7 @@ class Queue():
         self.active_jobs = []
         self.failed_elements = []
         self.results = []
+        self.processed = 0
 
         # Subclass initializer
         self.init()
@@ -391,6 +407,9 @@ class Queue():
         self.wait_queue.extend(wait)
         self.done_queue.extend(skip)
 
+        # Count skipped elements as processed
+        self.processed += len(skip)
+
     def dequeue(self):
         while len(self.done_queue) > 0:
             yield self.done_queue.popleft()
@@ -416,6 +435,10 @@ class Queue():
         self.wait_queue.extendleft(unready)
 
     def job_done(self, job, returncode, element):
+
+        # Count processed elements
+        self.processed += 1
+
         if returncode == 0:
             self.done_queue.append(element)
         else:
