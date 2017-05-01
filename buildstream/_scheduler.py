@@ -407,9 +407,6 @@ class Queue():
         self.wait_queue.extend(wait)
         self.done_queue.extend(skip)
 
-        # Count skipped elements as processed
-        self.processed += len(skip)
-
     def dequeue(self):
         while len(self.done_queue) > 0:
             yield self.done_queue.popleft()
