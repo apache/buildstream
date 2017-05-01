@@ -98,6 +98,10 @@ class Debug(Widget):
 # A widget for rendering the time codes
 class TimeCode(Widget):
 
+    def __init__(self, content_profile, format_profile, brackets=True):
+        self.brackets = brackets
+        super(TimeCode, self).__init__(content_profile, format_profile)
+
     def render(self, message):
         return self.render_time(message.elapsed)
 
@@ -115,9 +119,15 @@ class TimeCode(Widget):
                 for field in [hours, minutes, seconds]
             ]
 
-        return self.format_profile.fmt('[') + \
-            self.format_profile.fmt(':').join(fields) + \
-            self.format_profile.fmt(']')
+        text = ''
+        if self.brackets:
+            text += self.format_profile.fmt('[')
+
+        text += self.format_profile.fmt(':').join(fields)
+        if self.brackets:
+            text += self.format_profile.fmt(']')
+
+        return text
 
 
 # A widget for rendering the action name
@@ -202,11 +212,16 @@ class CacheKey(Widget):
         super(CacheKey, self).__init__(content_profile, format_profile)
 
         self.err_profile = err_profile
+        self.key_length = 0
 
     def size_request(self, pipeline):
         self.key_length = pipeline.context.log_key_length
 
     def render(self, message):
+
+        # This can only happen when logging before initialization in debug mode
+        if not self.key_length:
+            return self.format_profile.fmt('[') + (' ' * 8) + self.format_profile.fmt(']')
 
         key = ' ' * self.key_length
         if message.unique_id is not None:
