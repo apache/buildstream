@@ -200,6 +200,8 @@ class Pipeline():
         self.context = context
         self.project = project
         self.artifacts = ArtifactCache(self.context)
+        self.session_elements = 0
+        self.total_elements = 0
 
         pluginbase = PluginBase(package='buildstream.plugins')
         self.element_factory = ElementFactory(pluginbase, project._plugin_element_paths)
@@ -217,6 +219,8 @@ class Pipeline():
         # Preflight right away, after constructing the tree
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
             plugin.preflight()
+
+        self.total_elements = len(list(self.dependencies(Scope.ALL)))
 
         # Force interrogate the cache, ensure that elements have loaded
         # their consistency and cached states.
@@ -261,8 +265,10 @@ class Pipeline():
     #
     def track(self, scheduler, dependencies):
 
-        track = TrackQueue("Track", self.context.sched_fetchers)
+        dependencies = list(dependencies)
+        track = TrackQueue("Track", "Tracked", self.context.sched_fetchers)
         track.enqueue(dependencies)
+        self.session_elements = len(dependencies)
 
         self.message(self.target, MessageType.START, "Starting track")
         elapsed, status = scheduler.run([track])
@@ -314,7 +320,8 @@ class Pipeline():
         cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
         plan = [elt for elt in plan if elt not in cached]
 
-        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
+        self.session_elements = len(plan)
+        fetch = FetchQueue("Fetch", "Fetched", self.context.sched_fetchers)
         fetch.enqueue(plan)
 
         self.message(self.target, MessageType.START, "Fetching {} elements".format(len(plan)))
@@ -384,16 +391,17 @@ class Pipeline():
     def build(self, scheduler, build_all):
 
         if build_all:
-            plan = self.dependencies(Scope.ALL)
+            plan = list(self.dependencies(Scope.ALL))
         else:
             plan = Planner().plan(self.target)
 
         # We could bail out here on inconsistent elements, but
         # it could be the user wants to get as far as possible
         # even if some elements have failures.
-        fetch = FetchQueue("Fetch", self.context.sched_fetchers)
-        build = AssembleQueue("Build", self.context.sched_builders)
+        fetch = FetchQueue("Fetch", "Fetched", self.context.sched_fetchers)
+        build = AssembleQueue("Build", "Built", self.context.sched_builders)
         fetch.enqueue(plan)
+        self.session_elements = len(plan)
 
         self.message(self.target, MessageType.START, "Starting build")
         elapsed, status = scheduler.run([fetch, build])
