@@ -71,7 +71,6 @@ class Project():
 
         self._variables = {}    # The default variables overridden with project wide overrides
         self._environment = {}  # The base sandbox environment
-        self._devices = []      # List of device descriptions required for the sandbox
         self._elements = {}     # Element specific configurations
         self._aliases = {}      # Aliases dictionary
         self._plugin_source_paths = []   # Paths to custom sources
@@ -153,7 +152,6 @@ class Project():
         # Load sandbox configuration
         self._environment = _yaml.node_get(config, Mapping, 'environment')
         self._env_nocache = _yaml.node_get(config, list, 'environment-nocache')
-        self._devices = _yaml.node_get(config, list, 'devices')
 
         # Load project split rules
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
@@ -180,10 +178,7 @@ class Project():
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
-            self._cache_key = utils._generate_key({
-                # The project can configure what devices are available
-                # in the sandbox, this may possibly effect build output.
-                'devices': sorted(self._devices)
-            })
+            # (currently nothing here)
+            self._cache_key = utils._generate_key({})
 
         return self._cache_key
