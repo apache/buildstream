@@ -76,9 +76,9 @@ class SandboxBwrap(Sandbox):
             '--tmpfs', '/tmp'
         ]
 
-        # Bind host devices selectively according to project configuration
-        project = self._get_project()
-        for device in project._devices:
+        # Bind some minimal set of host devices
+        devices = ['/dev/full', '/dev/null', '/dev/urandom', '/dev/zero']
+        for device in devices:
             bwrap_command += ['--dev-bind', device, device]
 
         # Read/Write /buildstream directory
