@@ -115,12 +115,51 @@ Useful links:
 
 Building Docs
 ~~~~~~~~~~~~~
-To build the current set of docs, just::
+The documentation build is not integrated into the ``setup.py`` and is
+difficult (or impossible) to do so, so there is a little bit of setup
+you need to take care of first.
+
+Before you can build the BuildStream documentation yourself, you need
+to first install ``sphinx`` and ``sphinx-click``, using pip or some
+other mechanism::
+
+  pip install --user sphinx
+  pip install --user sphinx-click
+
+Furthermore, the documentation build requires that BuildStream itself
+be installed first, this can be a developer installation as described
+at the top of this text::
+
+  cd buildstream
+  pip install --user -e .
+
+Finally, to build the current set of docs, just run the following::
 
   cd doc
   make
 
 This will give you a build/html directory with the html docs.
+
+
+Man Pages
+~~~~~~~~~
+Unfortunately it is quite difficult to integrate the man pages build
+into the ``setup.py``, as such, whenever the frontend command line
+interface changes, the static man pages should be regenerated and
+committed with that.
+
+To do this, first ensure you have ``click_man`` installed, possibly
+with::
+
+  pip install --user click_man
+
+Then, in the toplevel directory of buildstream, run the following::
+
+  python3 setup.py --command-packages=click_man.commands man_pages
+
+And commit the result, ensuring that you have added anything in
+the ``man/`` subdirectory, which will be automatically included
+in the buildstream distribution.
 
 
 Documenting Conventions
