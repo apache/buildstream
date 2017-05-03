@@ -25,6 +25,7 @@ tests:
 pages:
   script:
   - pip3 install sphinx
+  - pip3 install sphinx-click
   - pip3 install --user -e .
   - make -C doc
   - mv doc/build/html public
