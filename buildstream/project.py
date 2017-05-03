@@ -23,15 +23,6 @@
 The :class:`.Project` object holds all of the project settings from
 the project configuration file including the project directory it
 was loaded from.
-
-The project configuration file should be named ``project.conf`` and
-be located at the project root. It holds information such as Source
-aliases relevant for the sources used in the given project as well as
-overrides for the configuration of element types used in the project.
-
-The default BuildStream project configuration is included here for reference:
-  .. literalinclude:: ../../buildstream/data/projectconfig.yaml
-     :language: yaml
 """
 
 import os

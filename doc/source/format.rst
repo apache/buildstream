@@ -34,7 +34,7 @@ A typical project structure may look like this::
 
 Except for the project configuration file, the user is allowed to structure
 their project directory in any way. For documentation on the format of the project
-configuration file, refer to the :mod:`Project <buildstream.project>` documentation.
+configuration file, refer to the :ref:`projectconf` documentation.
 
 Simpler projects may choose to place all element definition files at the
 root of the project directory while more complex projects may decide to
@@ -54,7 +54,7 @@ and override configurations which precede them.
 
 1. Builtin Defaults
 ~~~~~~~~~~~~~~~~~~~
-The :mod:`Project <buildstream.project>` provides a set of default values for *variables*
+The :ref:`projectconf` provides a set of default values for *variables*
 and the *environment* which are all documented with your copy of BuildStream. 
 
 
@@ -223,7 +223,7 @@ Variables
      sysconfdir: "%{prefix}/etc"
 
 Variables can be declared or overridden from an element. Variables can also be
-declared and overridden in the :mod:`Project Configuration <buildstream.project>`
+declared and overridden in the :ref:`projectconf`
 
 See `Using Variables`_ below for a more in depth discussion on variables in BuildStream.
 
@@ -242,8 +242,7 @@ variables will be effective in the :mod:`Sandbox <buildstream.sandbox>` where
 build instructions are run for this element.
 
 
-Environment variables can also be
-declared and overridden in the :mod:`Project Configuration <buildstream.project>`
+Environment variables can also be declared and overridden in the :ref:`projectconf`
 
 
 Config
