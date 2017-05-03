@@ -30,6 +30,7 @@ Here are some resources to help understand the BuildStream format and also to ge
 off the ground installing it on a new host.
 
 * :ref:`installing`
+* :ref:`config`
 * :ref:`format`
 
 

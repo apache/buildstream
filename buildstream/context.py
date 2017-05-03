@@ -28,15 +28,6 @@ line arguments and consists of information such as where to store
 logs and artifacts, where to perform builds and cache downloaded sources,
 verbosity levels and basically anything pertaining to the context
 in which BuildStream was invoked.
-
-Users can provide a configuration file to override parameters in
-the default configuration. Unless a configuration file is specified
-on the command line when invoking ``bst``, an attempt is made to
-load user specific configuration from ``$XDG_CONFIG_HOME/buildstream.conf``.
-
-The default BuildStream configuration is included here for reference:
-  .. literalinclude:: ../../buildstream/data/userconfig.yaml
-     :language: yaml
 """
 
 import os
