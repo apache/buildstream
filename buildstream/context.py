@@ -79,6 +79,9 @@ class Context():
         self.log_error_lines = 0
         """Maximum number of lines to print from build logs"""
 
+        self.log_element_format = None
+        """Format string for printing the pipeline at startup time"""
+
         self.sched_fetchers = 4
         """Maximum number of fetch or refresh tasks"""
 
@@ -143,6 +146,7 @@ class Context():
         self.log_debug = _yaml.node_get(logging, bool, 'debug')
         self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
+        self.log_element_format = _yaml.node_get(logging, str, 'element-format')
 
         # Load scheduler config
         scheduler = _yaml.node_get(defaults, Mapping, 'scheduler')
