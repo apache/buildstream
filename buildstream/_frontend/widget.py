@@ -27,7 +27,8 @@ from .. import utils
 from ..plugin import _plugin_lookup
 from .._message import MessageType
 from .. import ImplError
-from .. import Element, Scope
+from .. import Element, Scope, Consistency
+from . import Profile
 
 
 # Widget()
@@ -382,7 +383,9 @@ class LogLine(Widget):
     # Args:
     #    log_file (file): An optional file handle for additional logging
     #
-    def print_heading(self, context, project, target, arch, variant, log_file):
+    def print_heading(self, pipeline, variant, log_file):
+        context = pipeline.context
+        project = pipeline.project
         starttime = datetime.datetime.now()
         bst = pkg_resources.require("buildstream")[0]
         text = ''
@@ -393,12 +396,12 @@ class LogLine(Widget):
         values = OrderedDict()
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)
-        values["Target"] = target
-        values["Machine Architecture"] = arch
+        values["Target"] = pipeline.target.name
+        values["Machine Architecture"] = context.arch
         values["Variant"] = variant
         text += self.format_values(values)
 
-        # Main invocation context
+        # User configurations
         text += '\n'
         text += self.content_profile.fmt("User Configuration\n", bold=True)
         values = OrderedDict()
@@ -411,6 +414,13 @@ class LogLine(Widget):
         values["Maximum Fetch Tasks"] = context.sched_fetchers
         values["Maximum Build Tasks"] = context.sched_builders
         text += self.format_values(values)
+        text += '\n'
+
+        # Pipeline state
+        text += self.content_profile.fmt("Pipeline\n", bold=True)
+        deps = pipeline.dependencies(Scope.ALL)
+        text += self.show_pipeline(deps, context.log_element_format)
+        text += '\n'
 
         # Separator line before following output
         text += self.format_profile.fmt("~" * 79 + '\n')
@@ -431,3 +441,60 @@ class LogLine(Widget):
             text += '\n'
 
         return text
+
+    def show_pipeline(self, dependencies, format):
+        report = ''
+        p = Profile()
+
+        for element in dependencies:
+            line = p.fmt_subst(format, 'name', element.name, fg='blue', bold=True)
+            cache_key = element._get_display_key()
+            full_key = element._get_cache_key()
+
+            consistency = element._consistency()
+            if consistency == Consistency.INCONSISTENT:
+                line = p.fmt_subst(line, 'key', "")
+                line = p.fmt_subst(line, 'state', "no reference", fg='red')
+            else:
+                line = p.fmt_subst(line, 'key', cache_key, fg='yellow')
+                line = p.fmt_subst(line, 'full-key', full_key, fg='yellow')
+                if element._cached():
+                    line = p.fmt_subst(line, 'state', "cached", fg='magenta')
+                elif consistency == Consistency.RESOLVED:
+                    line = p.fmt_subst(line, 'state', "fetch needed", fg='red')
+                elif element._buildable():
+                    line = p.fmt_subst(line, 'state', "buildable", fg='green')
+                else:
+                    line = p.fmt_subst(line, 'state', "waiting", fg='blue')
+
+            # Element configuration
+            if "%{config" in format:
+                config = _yaml.node_sanitize(element._Element__config)
+                line = p.fmt_subst(
+                    line, 'config',
+                    yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
+
+            # Variables
+            if "%{vars" in format:
+                variables = _yaml.node_sanitize(element._Element__variables.variables)
+                line = p.fmt_subst(
+                    line, 'vars',
+                    yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
+
+            # Environment
+            if "%{env" in format:
+                environment = _yaml.node_sanitize(element._Element__environment)
+                line = p.fmt_subst(
+                    line, 'env',
+                    yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+
+            # Public
+            if "%{public" in format:
+                environment = _yaml.node_sanitize(element._Element__public)
+                line = p.fmt_subst(
+                    line, 'public',
+                    yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+
+            report += line + '\n'
+
+        return report.rstrip('\n')

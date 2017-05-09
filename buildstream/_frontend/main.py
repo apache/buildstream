@@ -213,13 +213,14 @@ def show(app, target, arch, variant, deps, order, format):
     the following symbols can be used in the format string:
 
     \b
-        %{name}   The element name
-        %{key}    The cache key (if all sources are consistent)
-        %{state}  cached, buildable, waiting or inconsistent
-        %{config} The element configuration
-        %{vars}   Variable configuration
-        %{env}    Environment settings
-        %{public} Public domain data
+        %{name}     The element name
+        %{key}      The abbreviated cache key (if all sources are consistent)
+        %{full-key} The full cache key (if all sources are consistent)
+        %{state}    cached, buildable, waiting or inconsistent
+        %{config}   The element configuration
+        %{vars}     Variable configuration
+        %{env}      Environment settings
+        %{public}   Public domain data
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
@@ -236,8 +237,6 @@ def show(app, target, arch, variant, deps, order, format):
             $'---------- %{name} ----------\\n%{vars}'
     """
     app.initialize(target, arch, variant)
-    report = ''
-    p = Profile()
 
     if deps is not None:
         scope = deps
@@ -255,59 +254,8 @@ def show(app, target, arch, variant, deps, order, format):
     else:
         dependencies = [app.pipeline.target]
 
-    profile_start(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
-
-    for element in dependencies:
-        line = p.fmt_subst(format, 'name', element.name, fg='blue', bold=True)
-        cache_key = element._get_display_key()
-
-        consistency = element._consistency()
-        if consistency == Consistency.INCONSISTENT:
-            line = p.fmt_subst(line, 'key', "")
-            line = p.fmt_subst(line, 'state', "no reference", fg='red')
-        else:
-            line = p.fmt_subst(line, 'key', cache_key, fg='yellow')
-            if element._cached():
-                line = p.fmt_subst(line, 'state', "cached", fg='magenta')
-            elif consistency == Consistency.RESOLVED:
-                line = p.fmt_subst(line, 'state', "fetch needed", fg='red')
-            elif element._buildable():
-                line = p.fmt_subst(line, 'state', "buildable", fg='green')
-            else:
-                line = p.fmt_subst(line, 'state', "waiting", fg='blue')
-
-        # Element configuration
-        if "%{config" in format:
-            config = _yaml.node_sanitize(element._Element__config)
-            line = p.fmt_subst(
-                line, 'config',
-                yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
-
-        # Variables
-        if "%{vars" in format:
-            variables = _yaml.node_sanitize(element._Element__variables.variables)
-            line = p.fmt_subst(
-                line, 'vars',
-                yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
-
-        # Environment
-        if "%{env" in format:
-            environment = _yaml.node_sanitize(element._Element__environment)
-            line = p.fmt_subst(
-                line, 'env',
-                yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
-
-        # Public
-        if "%{public" in format:
-            environment = _yaml.node_sanitize(element._Element__public)
-            line = p.fmt_subst(
-                line, 'public',
-                yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
-
-        report += line + '\n'
-
-    click.echo(report.rstrip('\n'))
-    profile_end(Topics.SHOW, target.replace(os.sep, '-') + '-' + arch)
+    report = app.logger.show_pipeline(dependencies, format)
+    click.echo(report)
 
 
 ##################################################################
@@ -658,8 +606,7 @@ class App():
     # will process a pipeline.
     #
     def print_heading(self):
-        self.logger.print_heading(self.context, self.project,
-                                  self.target, self.arch, self.variant,
+        self.logger.print_heading(self.pipeline, self.variant,
                                   self.main_options['log_file'])
 
     #
