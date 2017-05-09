@@ -64,4 +64,4 @@ logging:
   # this uses the same formatting as the `bst show` command.
   element-format: |
 
-    %{state: >14} %{key} %{name}
+    %{state: >12} %{key} %{name}
