@@ -1,4 +1,4 @@
-.TH "BST" "1" "12-Apr-2017" "" "bst Manual"
+.TH "BST" "1" "09-May-2017" "" "bst Manual"
 .SH NAME
 bst \- Build and manipulate BuildStream projects...
 .SH SYNOPSIS
@@ -14,7 +14,7 @@ user preferences configuration file.
 \fB\-\-version\fP
 Show the version and exit.
 .TP
-\fB\-c,\fP \-\-config PATH
+\fB\-c,\fP \-\-config FILE
 Configuration file to use
 .TP
 \fB\-C,\fP \-\-directory DIRECTORY
@@ -45,6 +45,11 @@ Maximum number of lines to show from a task log
 A file to store the main log (allows storing the main log while in interactive mode)
 .SH COMMANDS
 .PP
+\fBshow\fP
+  Show elements in the pipeline
+  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
+
+.PP
 \fBtrack\fP
   Track new source references
   See \fBbst-track(1)\fP for full documentation on the \fBtrack\fP command.
@@ -60,16 +65,11 @@ A file to store the main log (allows storing the main log while in interactive m
   See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
 
 .PP
-\fBcheckout\fP
-  Checkout a built artifact
-  See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
-
-.PP
-\fBshow\fP
-  Show elements in the pipeline
-  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
-
-.PP
 \fBshell\fP
   Shell into an element's sandbox environment
   See \fBbst-shell(1)\fP for full documentation on the \fBshell\fP command.
+
+.PP
+\fBcheckout\fP
+  Checkout a built artifact
+  See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
