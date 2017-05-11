@@ -447,17 +447,18 @@ class LogLine(Widget):
         p = Profile()
 
         for element in dependencies:
-            line = p.fmt_subst(format, 'name', element.name, fg='blue', bold=True)
+            line = format
             cache_key = element._get_display_key()
             full_key = element._get_cache_key()
 
+            line = p.fmt_subst(line, 'name', element.name, fg='blue', bold=True)
+            line = p.fmt_subst(line, 'key', cache_key, fg='yellow')
+            line = p.fmt_subst(line, 'full-key', full_key, fg='yellow')
+
             consistency = element._consistency()
             if consistency == Consistency.INCONSISTENT:
-                line = p.fmt_subst(line, 'key', "")
                 line = p.fmt_subst(line, 'state', "no reference", fg='red')
             else:
-                line = p.fmt_subst(line, 'key', cache_key, fg='yellow')
-                line = p.fmt_subst(line, 'full-key', full_key, fg='yellow')
                 if element._cached():
                     line = p.fmt_subst(line, 'state', "cached", fg='magenta')
                 elif consistency == Consistency.RESOLVED:
