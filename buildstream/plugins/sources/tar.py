@@ -34,6 +34,16 @@
    # Specify the ref. It's a sha256sum of the file you download.
    ref: 6c9f6f68a131ec6381da82f2bff978083ed7f4f7991d931bfa767b7965ebc94b
 
+   # Specify a glob pattern to indicate the base directory to extract
+   # from the tarball. The first matching directory will be used.
+   #
+   # Note that this is '*' by default since most standard release
+   # tarballs contain a self named subdirectory at the root which
+   # contains the files one normally wants to extract to build.
+   #
+   # To extract the root of the tarball directly, this can be set
+   # to an empty string.
+   base-dir: '*'
 """
 
 import os
@@ -42,6 +52,7 @@ import urllib.error
 import tarfile
 import hashlib
 import tempfile
+from pathlib import PurePath
 
 from buildstream import Source, SourceError, Consistency
 from buildstream import utils
@@ -50,9 +61,12 @@ from buildstream import utils
 class TarSource(Source):
 
     def configure(self, node):
+        project = self.get_project()
+
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.url = self.get_project().translate_url(self.original_url)
+        self.base_dir = self.node_get_member(node, str, 'base-dir', '*') or None
+        self.url = project.translate_url(self.original_url)
 
     def preflight(self):
         return
@@ -105,7 +119,15 @@ class TarSource(Source):
     def stage(self, directory):
         try:
             with tarfile.open(self._get_mirror_file()) as tar:
-                tar.extractall(directory)
+                base_dir = None
+                if self.base_dir:
+                    base_dir = self._find_base_dir(tar, self.base_dir)
+
+                if base_dir:
+                    tar.extractall(path=directory, members=self._extract_members(tar, base_dir))
+                else:
+                    tar.extractall(path=directory)
+
         except (tarfile.TarError, OSError) as e:
             raise SourceError("{}: Error staging source: {}".format(self, e)) from e
 
@@ -150,6 +172,45 @@ class TarSource(Source):
             for chunk in iter(lambda: f.read(4096), b""):
                 h.update(chunk)
         return h.hexdigest()
+
+    # Override and translate which filenames to extract
+    def _extract_members(self, tar, base_dir):
+        if not base_dir.endswith(os.sep):
+            base_dir = base_dir + os.sep
+
+        l = len(base_dir)
+        for member in tar.getmembers():
+            if member.path.startswith(base_dir):
+                member.path = member.path[l:]
+                yield member
+
+    # Yields members in the tarfile matching the glob pattern
+    def _glob_tar(self, tar, pattern, dirs_only=False):
+
+        # When using PurePath.match(), it behaves how we want
+        # only when comparing two absolute filenames, so we
+        # force them to be absolute
+        if not pattern.startswith(os.sep):
+            pattern = os.sep + pattern
+
+        for member in tar.getmembers():
+            if dirs_only and not member.isdir():
+                continue
+
+            member_try = member.name
+            if not member_try.startswith(os.sep):
+                member_try = os.sep + member_try
+
+            path = PurePath(member_try)
+            if path.match(pattern):
+                yield member.name
+
+    def _find_base_dir(self, tar, pattern):
+        matches = sorted(list(self._glob_tar(tar, pattern, dirs_only=True)))
+        if not matches:
+            raise SourceError("{}: Could not find base directory matching pattern: {}".format(self, pattern))
+
+        return matches[0]
 
 
 def setup():
