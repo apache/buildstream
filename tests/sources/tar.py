@@ -118,9 +118,31 @@ def _list_dir_contents(srcdir):
     return contents
 
 
-# Test that a staged checkout matches what was tarred up.
+# Test that a staged checkout matches what was tarred up, with the default first subdir
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
-def test_stage(tmpdir, datafiles):
+def test_stage_default_basedir(tmpdir, datafiles):
+    setup = Setup(datafiles, 'target.bst', tmpdir)
+    # Create a local tar
+    src_tar = os.path.join(str(tmpdir), "a.tar.gz")
+    _assemble_tar(str(datafiles), "a", src_tar)
+    setup.source.ref = setup.source._sha256sum(src_tar)
+
+    # Fetch the source
+    setup.source.fetch()
+
+    # Unpack the source
+    stage_dir = os.path.join(str(tmpdir), "stage")
+    os.makedirs(stage_dir)
+    setup.source.stage(stage_dir)
+    original_dir = os.path.join(str(datafiles), "a")
+    stage_contents = _list_dir_contents(stage_dir)
+    original_contents = _list_dir_contents(original_dir)
+    assert(stage_contents == original_contents)
+
+
+# Test that a staged checkout matches what was tarred up, with the full tarball
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-basedir'))
+def test_stage_no_basedir(tmpdir, datafiles):
     setup = Setup(datafiles, 'target.bst', tmpdir)
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
