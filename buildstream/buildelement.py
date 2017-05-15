@@ -20,6 +20,80 @@
 
 """The BuildElement class is a convenience element one can derive from for
 implementing the most common case of element.
+
+
+Description of assemble activities
+----------------------------------
+This element will perform the following steps to assemble an element:
+
+Stage dependencies
+~~~~~~~~~~~~~~~~~~
+The dependencies in the :func:`Scope.BUILD <buildstream.element.Scope.BUILD>`
+scope will be staged at the root of the sandbox
+
+Integrate dependencies
+~~~~~~~~~~~~~~~~~~~~~~
+The integration commands taken from the ``bst`` public domain of each dependency
+will be run in the sandbox to create and update caches. Typically ``ldconfig``
+among other things is run in this step.
+
+Stage sources
+~~~~~~~~~~~~~
+:mod:`Sources <buildstream.source>` are now staged according to their configuration
+into the ``%{build-root}`` directory (normally ``/buildstream/build``) inside the sandbox.
+
+Run commands
+~~~~~~~~~~~~
+Commands are now run in the sandbox.
+
+Commands are taken from the element configuration specified by the given
+:mod:`BuildElement <buildstream.buildelement>` subclass, which can in turn be
+overridden by the user in element declarations (``.bst`` files).
+
+Commands are run in the following order:
+
+* ``configure-commands``: Commands to configure how the element will build
+* ``build-commands``: Commands to build the element
+* ``install-commands``: Commands to install the results into ``%{install-root}``
+* ``strip-commands``: Commands to strip debugging symbols installed binaries
+
+In addition to the above command domains, each command list is checked
+for a ``pre-`` and ``post-`` command domain. So for instance, an element
+declaration can append or prepend commands without overriding the existing
+defaults provided by the element type
+
+**Example**
+
+.. code:: yaml
+
+  config:
+    pre-configure-commands:
+    - echo "Do something before default configure-commands"
+
+**Working Directory**
+
+Note that by default the working directory is where the sources are staged in
+``%{build-root}``, but this can be overridden to build inside of a subdirectory
+of the build directory using the ``command-subdir`` variable in an element
+declaration. e.g.:
+
+.. code:: yaml
+
+  variables:
+    command-subdir: src
+
+The above fragment will cause all commands to be run in the ``src/`` subdirectory
+of the staged sources.
+
+
+Result collection
+~~~~~~~~~~~~~~~~~
+Finally, the resulting build *artifact* is collected from the the ``%{install-root}``
+directory (which is normally configured as ``/buildstream/install``) inside the sandbox.
+
+All build elements must install into the ``%{install-root}`` using whatever
+semantic the given build system provides to do this. E.g. for standard autotools
+packages we simply do ``make DESTDIR=%{install-root} install``.
 """
 
 import os
@@ -67,6 +141,19 @@ class BuildElement(Element):
 
     def assemble(self, sandbox):
 
+        directory = sandbox.get_directory()
+        build_root = self.get_variable('build-root')
+        install_root = self.get_variable('install-root')
+        build_root_host = os.path.join(directory, build_root.lstrip(os.sep))
+        install_root_host = os.path.join(directory, install_root.lstrip(os.sep))
+
+        # Allow running all commands in a specified subdirectory
+        command_subdir = self.get_variable('command-subdir')
+        if command_subdir:
+            command_dir = os.path.join(build_root, command_subdir)
+        else:
+            command_dir = build_root
+
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
             self.stage_dependencies(sandbox, Scope.BUILD)
@@ -78,16 +165,11 @@ class BuildElement(Element):
                 dep.integrate(sandbox)
 
         # Stage sources in /buildstream/build
-        self.stage_sources(sandbox, '/buildstream/build')
+        self.stage_sources(sandbox, build_root)
 
         # Ensure builddir and installdir
-        directory = sandbox.get_directory()
-        os.makedirs(os.path.join(directory,
-                                 'buildstream',
-                                 'build'), exist_ok=True)
-        os.makedirs(os.path.join(directory,
-                                 'buildstream',
-                                 'install'), exist_ok=True)
+        os.makedirs(build_root_host, exist_ok=True)
+        os.makedirs(install_root_host, exist_ok=True)
 
         # Fetch the environment for this element
         environment = self.get_environment()
@@ -109,13 +191,13 @@ class BuildElement(Element):
                         #
                         exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
                                                SandboxFlags.ROOT_READ_ONLY,
-                                               cwd='/buildstream/build',
+                                               cwd=command_dir,
                                                env=environment)
                         if exitcode != 0:
                             raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
-        # Return the payload (XXX TODO: expand 'install-root' variable)
-        return '/buildstream/install'
+        # Return the payload, this is configurable but is generally always /buildstream/install
+        return install_root
 
     def _get_commands(self, node, name):
         list_node = self.node_get_member(node, list, name, default_value=[])
