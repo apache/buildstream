@@ -426,6 +426,21 @@ class Element(Plugin):
         """
         return _yaml.node_sanitize(self.__environment)
 
+    def get_variable(self, varname):
+        """Fetch the value of a variable resolved for this element.
+
+        Args:
+           varname (str): The name of the variable to fetch
+
+        Returns:
+           (str): The resolved value for *varname*, or None if no
+           variable was declared with the given name.
+        """
+        if varname in self.__variables.variables:
+            return self.__variables.variables[varname]
+
+        return None
+
     #############################################################
     #                  Abstract Element Methods                 #
     #############################################################
