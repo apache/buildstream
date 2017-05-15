@@ -12,21 +12,25 @@ variables:
     fi
 
   conf-cmd: ./configure
+  conf-args: |
+
+    --prefix=%{prefix} \
+    --exec-prefix=%{exec_prefix} \
+    --bindir=%{bindir} \
+    --sbindir=%{sbindir} \
+    --sysconfdir=%{sysconfdir} \
+    --datadir=%{datadir} \
+    --includedir=%{includedir} \
+    --libdir=%{libdir} \
+    --libexecdir=%{libexecdir} \
+    --localstatedir=%{localstatedir} \
+    --sharedstatedir=%{sharedstatedir} \
+    --mandir=%{mandir} \
+    --infodir=%{infodir}
+
   configure: |
 
-    %{conf-cmd} --prefix=%{prefix} \
-                --exec-prefix=%{exec_prefix} \
-                --bindir=%{bindir} \
-                --sbindir=%{sbindir} \
-                --sysconfdir=%{sysconfdir} \
-                --datadir=%{datadir} \
-                --includedir=%{includedir} \
-                --libdir=%{libdir} \
-                --libexecdir=%{libexecdir} \
-                --localstatedir=%{localstatedir} \
-                --sharedstatedir=%{sharedstatedir} \
-                --mandir=%{mandir} \
-                --infodir=%{infodir}
+    %{conf-cmd} %{conf-args}
 
   make: make
   make-install: make -j1 DESTDIR="%{install-root}" install
