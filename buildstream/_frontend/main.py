@@ -562,11 +562,15 @@ class App():
                        "  continue  - Continue queueing jobs as much as possible\n" +
                        "  quit      - Exit after all ongoing jobs complete\n" +
                        "  terminate - Terminate any ongoing jobs and exit\n")
+            if failure.logfile:
+                summary += "  log       - View the full log file\n"
             if failure.sandbox:
                 summary += "  shell     - Drop into a shell in the failed build sandbox\n"
             summary += "\nPressing ^C will terminate jobs and exit\n"
 
             choices = ['continue', 'quit', 'terminate']
+            if failure.logfile:
+                choices += ['log']
             if failure.sandbox:
                 choices += ['shell']
 
@@ -587,6 +591,10 @@ class App():
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     element._shell(Scope.BUILD, failure.sandbox)
+                elif choice == 'log':
+                    with open(failure.logfile, 'r') as logfile:
+                        content = logfile.read()
+                        click.echo_via_pager(content)
 
             if choice == 'terminate':
                 click.echo("\nTerminating all jobs\n", err=True)
