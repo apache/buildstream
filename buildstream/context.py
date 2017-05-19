@@ -79,6 +79,9 @@ class Context():
         self.log_error_lines = 0
         """Maximum number of lines to print from build logs"""
 
+        self.log_message_lines = 0
+        """Maximum number of lines to print in the master log for a detailed message"""
+
         self.log_element_format = None
         """Format string for printing the pipeline at startup time"""
 
@@ -146,6 +149,7 @@ class Context():
         self.log_debug = _yaml.node_get(logging, bool, 'debug')
         self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
+        self.log_message_lines = _yaml.node_get(logging, int, 'message-lines')
         self.log_element_format = _yaml.node_get(logging, str, 'element-format')
 
         # Load scheduler config

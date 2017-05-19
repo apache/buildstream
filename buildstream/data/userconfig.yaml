@@ -57,6 +57,12 @@ logging:
   # end of a failing build log
   error-lines: 20
 
+  # Maximum number of lines to print in a detailed
+  # message on the console or in the master log (the full
+  # messages are always recorded in the individual build
+  # logs)
+  message-lines: 20
+
   # Whether to enable debugging messages
   debug: False
 
