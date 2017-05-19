@@ -70,6 +70,8 @@ _, _, _, _, host_machine = os.uname()
               help="Print debugging output")
 @click.option('--error-lines', type=click.INT, default=None,
               help="Maximum number of lines to show from a task log")
+@click.option('--message-lines', type=click.INT, default=None,
+              help="Maximum number of lines to show in a detailed message")
 @click.option('--log-file',
               type=click.File(mode='w', encoding='UTF-8'),
               help="A file to store the main log (allows storing the main log while in interactive mode)")
@@ -430,6 +432,7 @@ class App():
             'debug': 'log_debug',
             'verbose': 'log_verbose',
             'error_lines': 'log_error_lines',
+            'message_lines': 'log_message_lines',
             'on_error': 'sched_error_action',
             'fetchers': 'sched_fetchers',
             'builders': 'sched_builders'
@@ -449,6 +452,8 @@ class App():
             indent=4,
             # Number of last lines in an element's log to print (when encountering errors)
             log_lines=self.context.log_error_lines,
+            # Maximum number of lines to print in a detailed message
+            message_lines=self.context.log_message_lines,
             # Whether to print additional debugging information
             debug=self.context.log_debug)
 

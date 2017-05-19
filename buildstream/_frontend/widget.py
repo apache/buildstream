@@ -275,6 +275,7 @@ class LogLine(Widget):
     def __init__(self, content_profile, format_profile, err_profile, detail_profile,
                  indent=4,
                  log_lines=10,
+                 message_lines=10,
                  debug=False):
         super(LogLine, self).__init__(content_profile, format_profile)
 
@@ -283,6 +284,7 @@ class LogLine(Widget):
         self.detail_profile = detail_profile
         self.indent = ' ' * indent
         self.log_lines = log_lines
+        self.message_lines = message_lines
 
         self.space_widget = Space(content_profile, format_profile)
         self.message_widget = MessageText(content_profile, format_profile)
@@ -331,8 +333,17 @@ class LogLine(Widget):
         # Now add some custom things
         if message.detail is not None:
 
-            detail = message.detail.rstrip('\n')
-            detail = self.indent + self.indent.join((detail.splitlines(True)))
+            # Split and truncate message detail down to message_lines lines
+            lines = message.detail.splitlines(True)
+
+            n_lines = len(lines)
+            if n_lines > self.message_lines:
+                lines = lines[0:self.message_lines]
+                lines += ['...']
+            else:
+                lines[n_lines - 1] = lines[n_lines - 1].rstrip('\n')
+
+            detail = self.indent + self.indent.join(lines)
 
             text += '\n'
             if message.message_type in [MessageType.FAIL, MessageType.BUG]:
