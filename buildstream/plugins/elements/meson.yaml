@@ -3,20 +3,24 @@
 variables:
 
   build-dir: _builddir
-  meson: |
 
-    meson %{build-dir} --prefix=%{prefix} \
-                       --bindir=%{bindir} \
-                       --sbindir=%{sbindir} \
-                       --sysconfdir=%{sysconfdir} \
-                       --datadir=%{datadir} \
-                       --includedir=%{includedir} \
-                       --libdir=%{libdir} \
-                       --libexecdir=%{libexecdir} \
-                       --localstatedir=%{localstatedir} \
-                       --sharedstatedir=%{sharedstatedir} \
-                       --mandir=%{mandir} \
-                       --infodir=%{infodir}
+  meson-extra: ''
+  meson-args: |
+
+    --prefix=%{prefix} \
+    --bindir=%{bindir} \
+    --sbindir=%{sbindir} \
+    --sysconfdir=%{sysconfdir} \
+    --datadir=%{datadir} \
+    --includedir=%{includedir} \
+    --libdir=%{libdir} \
+    --libexecdir=%{libexecdir} \
+    --localstatedir=%{localstatedir} \
+    --sharedstatedir=%{sharedstatedir} \
+    --mandir=%{mandir} \
+    --infodir=%{infodir} %{meson-extra}
+
+  meson: meson %{build-dir} %{meson-args}
 
   ninja: |
     ninja -j ${NINJAJOBS} -C %{build-dir}
