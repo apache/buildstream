@@ -10,11 +10,14 @@ variables:
 
     %{python} setup.py build
 
+  install-args: |
+
+    --prefix "%{prefix}" \
+    --root "%{install-root}"
+
   python-install: |
 
-    %{python} setup.py install \
-                --prefix "%{prefix}" \
-                --root "%{install-root}"
+    %{python} setup.py install %{install-args}
 
 
 config:
