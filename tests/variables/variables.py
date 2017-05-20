@@ -39,11 +39,10 @@ def assert_command(datafiles, tmpdir, target, command, expected):
     ('autotools.bst', 'install-commands', "make -j1 DESTDIR=\"/buildstream/install\" install"),
     ('cmake.bst', 'configure-commands',
      "cmake -DCMAKE_INSTALL_PREFIX:PATH=\"/usr\" \\\n" +
-     "      -DCMAKE_INSTALL_LIBDIR=lib"),
+     "-DCMAKE_INSTALL_LIBDIR=lib"),
     ('distutils.bst', 'install-commands',
-     "python3 setup.py install \\\n" +
-     "            --prefix \"/usr\" \\\n" +
-     "            --root \"/buildstream/install\""),
+     "python3 setup.py install --prefix \"/usr\" \\\n" +
+     "--root \"/buildstream/install\""),
     ('makemaker.bst', 'configure-commands', "perl Makefile.PL PREFIX=/buildstream/install/usr"),
     ('modulebuild.bst', 'configure-commands', "perl Build.PL --prefix \"/buildstream/install/usr\""),
     ('qmake.bst', 'install-commands', "make -j1 INSTALL_ROOT=\"/buildstream/install\" install"),
@@ -60,11 +59,10 @@ def test_defaults(datafiles, tmpdir, target, command, expected):
     ('autotools.bst', 'install-commands', "make -j1 DESTDIR=\"/custom/install/root\" install"),
     ('cmake.bst', 'configure-commands',
      "cmake -DCMAKE_INSTALL_PREFIX:PATH=\"/opt\" \\\n" +
-     "      -DCMAKE_INSTALL_LIBDIR=lib"),
+     "-DCMAKE_INSTALL_LIBDIR=lib"),
     ('distutils.bst', 'install-commands',
-     "python3 setup.py install \\\n" +
-     "            --prefix \"/opt\" \\\n" +
-     "            --root \"/custom/install/root\""),
+     "python3 setup.py install --prefix \"/opt\" \\\n" +
+     "--root \"/custom/install/root\""),
     ('makemaker.bst', 'configure-commands', "perl Makefile.PL PREFIX=/custom/install/root/opt"),
     ('modulebuild.bst', 'configure-commands', "perl Build.PL --prefix \"/custom/install/root/opt\""),
     ('qmake.bst', 'install-commands', "make -j1 INSTALL_ROOT=\"/custom/install/root\" install"),
