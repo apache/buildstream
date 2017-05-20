@@ -3,10 +3,15 @@
 variables:
 
   # FIXME: Get a more complete cmake invocation
+  cmake-extra: ''
+  cmake-args: |
+
+    -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}" \
+    -DCMAKE_INSTALL_LIBDIR=%{lib} %{cmake-extra}
+
   cmake: |
 
-    cmake -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}" \
-          -DCMAKE_INSTALL_LIBDIR=%{lib}
+    cmake %{cmake-args}
 
   make: make
   make-install: make -j1 DESTDIR="%{install-root}" install
