@@ -160,7 +160,7 @@ class BuildElement(Element):
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
-        with self.timed_activity("Integrating sandbox", silent_nested=True):
+        with self.timed_activity("Integrating sandbox"):
             for dep in self.dependencies(Scope.BUILD):
                 dep.integrate(sandbox)
 
