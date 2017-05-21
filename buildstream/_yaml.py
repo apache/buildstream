@@ -387,6 +387,26 @@ def ensure_provenance(node):
     return provenance
 
 
+# is_ruamel_str():
+#
+# Args:
+#    value: A value loaded from ruamel
+#
+# This returns if the value is "stringish", since ruamel
+# has some complex types to represent strings, this is needed
+# to avoid compositing exceptions in order to allow various
+# string types to be interchangable and acceptable
+#
+def is_ruamel_str(value):
+
+    if isinstance(value, str):
+        return True
+    elif isinstance(value, yaml.scalarstring.ScalarString):
+        return True
+
+    return False
+
+
 # composite_dict():
 #
 # Composites values in target with values from source
@@ -449,10 +469,13 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
         else:
 
             # Optionally enforce typesafe copy
-            if (typesafe and
-                target_value is not None and
-                not isinstance(source_value, type(target_value))):
-                raise CompositeTypeError(thispath, type(target_value), type(source_value))
+            if typesafe and target_value is not None:
+
+                # Exception here: depending on how strings were declared ruamel may
+                # use a different type, but for our purposes, any stringish type will do.
+                if not (is_ruamel_str(source_value) and is_ruamel_str(target_value)) \
+                   and not isinstance(source_value, type(target_value)):
+                    raise CompositeTypeError(thispath, type(target_value), type(source_value))
 
             if policy == CompositePolicy.OVERWRITE:
 
