@@ -373,7 +373,8 @@ class Element(Plugin):
 
         if bstdata is not None:
             commands = self.node_get_member(bstdata, list, 'integration-commands', default_value=[])
-            for cmd in commands:
+            for i in range(len(commands)):
+                cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
                 self.status("Running integration command", detail=cmd)
                 exitcode = sandbox.run(['sh', '-c', '-e', cmd], 0, env=environment)
                 if exitcode != 0:
