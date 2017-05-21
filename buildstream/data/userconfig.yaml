@@ -28,7 +28,7 @@ logdir: ${XDG_CACHE_HOME}/buildstream/logs
 scheduler:
 
   # Maximum number of simultaneous source downloading tasks.
-  fetchers: 4
+  fetchers: 10
 
   # Maximum number of simultaneous build tasks.
   builders: 4
