@@ -184,6 +184,37 @@ class TarSource(Source):
                 member.path = member.path[l:]
                 yield member
 
+    # We want to iterate over all paths of a tarball, but getmembers()
+    # is not enough because some tarballs simply do not contain the leading
+    # directory paths for the archived files.
+    def _list_tar_paths(self, tar, dirs_only=False):
+
+        visited = {}
+        for member in tar.getmembers():
+            if not member.isdir():
+
+                # Loop over the components of a path, for a path of a/b/c/d
+                # we will first visit 'a', then 'a/b' and then 'a/b/c', excluding
+                # the final component
+                components = member.name.split('/')
+                for i in range(len(components) - 1):
+                    dir_component = '/'.join([components[j] for j in range(i + 1)])
+                    if dir_component not in visited:
+                        visited[dir_component] = True
+                        try:
+                            # Dont yield directory members which actually do
+                            # exist in the archive
+                            _ = tar.getmember(dir_component)
+                        except KeyError:
+                            yield dir_component
+
+                continue
+
+            if dirs_only and not member.isdir():
+                continue
+
+            yield member.name
+
     # Yields members in the tarfile matching the glob pattern
     def _glob_tar(self, tar, pattern, dirs_only=False):
 
@@ -193,17 +224,14 @@ class TarSource(Source):
         if not pattern.startswith(os.sep):
             pattern = os.sep + pattern
 
-        for member in tar.getmembers():
-            if dirs_only and not member.isdir():
-                continue
-
-            member_try = member.name
+        for member in self._list_tar_paths(tar, dirs_only=dirs_only):
+            member_try = member
             if not member_try.startswith(os.sep):
                 member_try = os.sep + member_try
 
             path = PurePath(member_try)
             if path.match(pattern):
-                yield member.name
+                yield member
 
     def _find_base_dir(self, tar, pattern):
         matches = sorted(list(self._glob_tar(tar, pattern, dirs_only=True)))
