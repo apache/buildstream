@@ -337,9 +337,11 @@ class LogLine(Widget):
             lines = message.detail.splitlines(True)
 
             n_lines = len(lines)
-            if n_lines > self.message_lines:
+            abbrev = False
+            if message.message_type not in [MessageType.FAIL, MessageType.BUG] \
+               and n_lines > self.message_lines:
+                abbrev = True
                 lines = lines[0:self.message_lines]
-                lines += ['...']
             else:
                 lines[n_lines - 1] = lines[n_lines - 1].rstrip('\n')
 
@@ -350,7 +352,13 @@ class LogLine(Widget):
                 text += self.err_profile.fmt(detail, bold=True)
             else:
                 text += self.detail_profile.fmt(detail)
+
+            if abbrev:
+                text += self.indent + \
+                    self.content_profile.fmt('Message contains {} additional lines'
+                                             .format(n_lines - self.message_lines), dim=True)
             text += '\n'
+
             extra_nl = True
 
         if message.sandbox is not None:
