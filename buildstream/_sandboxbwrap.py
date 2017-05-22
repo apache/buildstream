@@ -77,7 +77,7 @@ class SandboxBwrap(Sandbox):
         ]
 
         # Bind some minimal set of host devices
-        devices = ['/dev/full', '/dev/null', '/dev/urandom', '/dev/zero']
+        devices = ['/dev/full', '/dev/null', '/dev/urandom', '/dev/random', '/dev/zero']
         for device in devices:
             bwrap_command += ['--dev-bind', device, device]
 
