@@ -5,6 +5,7 @@ before_script:
 - apt-get install -y -qq bubblewrap
 - apt-get install -y -qq python3.5
 - apt-get install -y -qq python3-pip
+- apt-get install -y -qq bzr
 - apt-get install --force-yes -qq ostree gir1.2-ostree-1.0 python3-dev python3-gi
 
 # Debian version is behind/not compatible with latest sphinx
