@@ -30,3 +30,7 @@ config:
   # List of commands to run in the sandbox
   #
   commands: []
+
+  # Directory to collect the output artifact from,
+  # default is %{install-root}
+  # collect:
