@@ -709,6 +709,12 @@ class Element(Plugin):
                 # Note important use of lstrip() here
                 collectdir = os.path.join(rootdir, collect.lstrip(os.sep))
 
+                if not os.path.exists(collectdir):
+                    raise ElementError(
+                        "Directory '{}' was not found inside the sandbox, "
+                        "unable to collect artifact contents"
+                        .format(collect))
+
                 # At this point, we expect an exception was raised leading to
                 # an error message, or we have good output to collect.
                 with self.timed_activity("Caching Artifact"):
