@@ -44,7 +44,7 @@ class ScriptElement(Element):
         self.base_dep = self.node_get_member(node, str, 'base')
         self.input_dep = self.node_get_member(node, str, 'input', '') or None
         self.stage_mode = self.node_get_member(node, str, 'stage-mode')
-        self.collect = self.node_get_member(node, str, 'collect')
+        self.collect = self.node_subst_member(node, 'collect', '%{install-root}')
 
         # Assert stage mode is valid
         if self.stage_mode and self.stage_mode not in ['build', 'install']:
@@ -145,8 +145,6 @@ class ScriptElement(Element):
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
         # Return the install dir
-        if not self.collect:
-            self.collect = os.path.join(os.sep, 'buildstream', 'install')
         return self.collect
 
 
