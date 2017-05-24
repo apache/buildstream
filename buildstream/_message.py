@@ -54,6 +54,7 @@ unconditional_messages = [
 class Message():
 
     def __init__(self, unique_id, message_type, message,
+                 task_id=None,
                  detail=None,
                  action_name=None,
                  elapsed=None,
@@ -70,7 +71,8 @@ class Message():
         self.logfile = logfile            # The log file path where commands took place
         self.sandbox = sandbox            # The sandbox directory where an error occurred (if any)
         self.pid = os.getpid()            # The process pid
-        self.unique_id = unique_id        # The plugin object unique identifier
+        self.unique_id = unique_id        # The plugin object ID issueing the message
+        self.task_id = task_id            # The plugin object ID of the task
         self.scheduler = scheduler        # Whether this is a scheduler level message
 
         if message_type in (MessageType.SUCCESS, MessageType.FAIL):
