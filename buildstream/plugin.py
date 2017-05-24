@@ -22,6 +22,7 @@ import os
 import datetime
 import subprocess
 import signal
+import sys
 from subprocess import CalledProcessError
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
@@ -548,7 +549,9 @@ class Plugin():
     #
     @contextmanager
     def _output_file(self):
-        if not self.__log:
+        if 'BST_TEST_SUITE' in os.environ:
+            yield sys.stdout
+        elif not self.__log:
             with open(os.devnull, "w") as output:
                 yield output
         else:

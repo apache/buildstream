@@ -119,5 +119,6 @@ setup(name='BuildStream',
                      'pytest-datafiles',
                      'pytest-pep8',
                      'pytest-cov',
+                     'pytest-env',
                      'pytest'],
       zip_safe=False)
