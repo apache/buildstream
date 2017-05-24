@@ -712,6 +712,7 @@ class Job():
 
         # Tag them on the way out the door...
         message.action_name = self.action_name
+        message.task_id = self.element._get_unique_id()
 
         # Log first
         self.child_log(plugin, message, context)
