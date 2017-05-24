@@ -48,14 +48,16 @@ all: docs
 #   from plugin documentation.
 #
 define plugin-doc-skeleton
-	@for file in $$(find ${1} -name "*.py"); do 		\
-	    base=$$(basename $$file);				\
-	    modname=$${base%.py};				\
-	    echo -n "Generating ${2}/$${modname}.rst... ";	\
-	    sed -e "s|@@MODULE@@|$${modname}|g" 		\
-		source/plugin.rsttemplate > 			\
-                ${2}/$${modname}.rst.tmp && 			\
-		mv ${2}/$${modname}.rst.tmp ${2}/$${modname}.rst || exit 1; \
+	@for file in $$(find ${1} -name "*.py"); do 			\
+	    base=$$(basename $$file);					\
+	    module=${2}.$${base%.py};					\
+	    modname=$${base%.py};					\
+	    echo -n "Generating source/${2}/$${modname}.rst... ";	\
+	    sed -e "s|@@MODULENAME@@|$${modname}|g" 			\
+	        -e "s|@@MODULE@@|$${module}|g" 				\
+		source/plugin.rsttemplate > 				\
+                source/${2}/$${modname}.rst.tmp && 			\
+		mv source/${2}/$${modname}.rst.tmp source/${2}/$${modname}.rst || exit 1; \
 	    echo "Done."; \
 	done
 endef
@@ -66,13 +68,13 @@ apidoc:
 	mkdir -p source/elements
 	mkdir -p source/sources
 	sphinx-apidoc --separate -o source $(CURDIR)/../buildstream
-	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,source/elements)
-	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,source/sources)
+	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
+	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
 
 # We set PYTHONPATH here because source/conf.py sys.modules hacks dont seem to help sphinx-build import the plugins
 .PHONY: docs
 docs: apidoc
-	PYTHONPATH=$(CURDIR)/../buildstream/plugins/sources:$(CURDIR)/../buildstream/plugins/elements \
+	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
 	    $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html \
 	    $(wildcard source/*.rst) \
 	    $(wildcard source/elements/*.rst) \

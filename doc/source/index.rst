@@ -43,32 +43,32 @@ Elements
 General Elements
 ~~~~~~~~~~~~~~~~
 
-* :mod:`stack` - Symbolic Element for dependency grouping
-* :mod:`import` - Import sources directly
-* :mod:`compose` - Compose the output of multiple elements
-* :mod:`script` - Run scripts to create output
+* :mod:`stack <elements.stack>` - Symbolic Element for dependency grouping
+* :mod:`import <elements.import>` - Import sources directly
+* :mod:`compose <elements.compose>` - Compose the output of multiple elements
+* :mod:`script <elements.script>` - Run scripts to create output
 
 Build Elements
 ~~~~~~~~~~~~~~
 
-* :mod:`manual` - Manual Build Element
-* :mod:`autotools` - Autotools Build Element
-* :mod:`cmake` - CMake Build Element
-* :mod:`qmake` - QMake Build Element
-* :mod:`distutils` - Python Distutils Build Element
-* :mod:`makemaker` - Perl MakeMaker Build Element
-* :mod:`modulebuild` - Perl Module::Build Build Element
-* :mod:`meson` - Meson Build Element
+* :mod:`manual <elements.manual>` - Manual Build Element
+* :mod:`autotools <elements.autotools>` - Autotools Build Element
+* :mod:`cmake <elements.cmake>` - CMake Build Element
+* :mod:`qmake <elements.qmake>` - QMake Build Element
+* :mod:`distutils <elements.distutils>` - Python Distutils Build Element
+* :mod:`makemaker <elements.makemaker>` - Perl MakeMaker Build Element
+* :mod:`modulebuild <elements.modulebuild>` - Perl Module::Build Build Element
+* :mod:`meson <elements.meson>` - Meson Build Element
 
 
 Sources
 --------
 The following source types are provided with BuildStream:
 
-* :mod:`local` - A Source implementation for local files and directories
-* :mod:`tar` - A Source implementation for tarballs
-* :mod:`git` - A Source implementation for git
-* :mod:`ostree` - A Source implementation for ostree
+* :mod:`local <sources.local>` - A Source implementation for local files and directories
+* :mod:`tar <sources.tar>` - A Source implementation for tarballs
+* :mod:`git <sources.git>` - A Source implementation for git
+* :mod:`ostree <sources.ostree>` - A Source implementation for ostree
 
 
 Core Framework

@@ -1,4 +1,4 @@
-@@MODULE@@ plugin
-=======================
+@@MODULENAME@@ plugin
+============================================
 
 .. automodule:: @@MODULE@@
