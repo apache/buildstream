@@ -186,8 +186,9 @@ class ElementName(Widget):
         self.fmt_string = '{: <' + str(longest_name) + '}'
 
     def render(self, message):
-        if message.unique_id is not None:
-            plugin = _plugin_lookup(message.unique_id)
+        element_id = message.task_id or message.unique_id
+        if element_id is not None:
+            plugin = _plugin_lookup(element_id)
             name = plugin.name
         else:
             name = ''
@@ -225,8 +226,9 @@ class CacheKey(Widget):
             return self.format_profile.fmt('[') + (' ' * 8) + self.format_profile.fmt(']')
 
         key = ' ' * self.key_length
-        if message.unique_id is not None:
-            plugin = _plugin_lookup(message.unique_id)
+        element_id = message.task_id or message.unique_id
+        if element_id is not None:
+            plugin = _plugin_lookup(element_id)
             if isinstance(plugin, Element):
                 key = plugin._get_display_key()
 
