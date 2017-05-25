@@ -48,7 +48,7 @@ all: docs
 #   from plugin documentation.
 #
 define plugin-doc-skeleton
-	@for file in $$(find ${1} -name "*.py"); do 			\
+	@for file in $$(find ${1} -name "*.py" ! -name "__init__.py"); do \
 	    base=$$(basename $$file);					\
 	    module=${2}.$${base%.py};					\
 	    modname=$${base%.py};					\
