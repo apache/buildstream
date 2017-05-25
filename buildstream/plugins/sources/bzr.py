@@ -68,7 +68,7 @@ class BzrSource(Source):
         self.host_bzr = utils.get_host_tool('bzr')
 
     def get_unique_key(self):
-        return [self.original_url, self.track, self.ref]
+        return [self.original_url, self.tracking, self.ref]
 
     def get_consistency(self):
         if self.ref is None or self.tracking is None:
