@@ -253,6 +253,15 @@ class Pipeline():
                     yield source
             yield element
 
+    # Generator function to iterate over only the elements
+    # which are required to build the pipeline target, omitting
+    # cached elements. The elements are yielded in a depth sorted
+    # ordering for optimal build plans
+    def plan(self):
+        build_plan = Planner().plan(self.target)
+        for element in build_plan:
+            yield element
+
     # Local message propagator
     #
     def message(self, plugin, message_type, message, **kwargs):
@@ -305,17 +314,11 @@ class Pipeline():
     #
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
-    #    needed (bool): If specified, track only sources that are
-    #                   needed to build the artifacts of the pipeline
-    #                   target. This does nothing when the pipeline
-    #                   artifacts are already built.
+    #    dependencies (list): List of elements to fetch
     #
-    def fetch(self, scheduler, needed):
+    def fetch(self, scheduler, dependencies):
 
-        if needed:
-            plan = list(Planner().plan(self.target))
-        else:
-            plan = list(self.dependencies(Scope.ALL))
+        plan = dependencies
 
         # Filter out elements with inconsistent sources, they can't be fetched.
         inconsistent = [elt for elt in plan if elt._consistency() == Consistency.INCONSISTENT]
@@ -398,7 +401,7 @@ class Pipeline():
         if build_all:
             plan = list(self.dependencies(Scope.ALL))
         else:
-            plan = Planner().plan(self.target)
+            plan = list(self.plan())
 
         # We could bail out here on inconsistent elements, but
         # it could be the user wants to get as far as possible
