@@ -404,7 +404,7 @@ class LogLine(Widget):
     # Args:
     #    log_file (file): An optional file handle for additional logging
     #
-    def print_heading(self, pipeline, variant, log_file):
+    def print_heading(self, pipeline, variant, log_file, deps=None):
         context = pipeline.context
         project = pipeline.project
         starttime = datetime.datetime.now()
@@ -439,7 +439,8 @@ class LogLine(Widget):
 
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)
-        deps = pipeline.dependencies(Scope.ALL)
+        if deps is None:
+            deps = pipeline.dependencies(Scope.ALL)
         text += self.show_pipeline(deps, context.log_element_format)
         text += '\n'
 
