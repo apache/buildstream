@@ -119,7 +119,6 @@ class FetchQueue(Queue):
 class TrackQueue(Queue):
 
     def init(self):
-        self.changed_files = {}
         self.changed_sources = []
 
     def process(self, element):
@@ -136,9 +135,22 @@ class TrackQueue(Queue):
             if source._set_ref(new_ref, source._Source__origin_node):
 
                 # Successful update of ref, we're at least resolved now
-                source._bump_consistency(Consistency.RESOLVED)
-                self.changed_files[source._Source__origin_filename] = source._Source__origin_toplevel
                 self.changed_sources.append(source)
+                source._bump_consistency(Consistency.RESOLVED)
+
+                project = source.get_project()
+                toplevel = source._Source__origin_toplevel
+                filename = source._Source__origin_filename
+                fullname = os.path.join(project.element_path, filename)
+
+                # Here we are in master process, what to do if writing
+                # to the disk fails for some reason ?
+                try:
+                    _yaml.dump(toplevel, fullname)
+                except OSError as e:
+                    source.error("Failed to update project file",
+                                 detail="{}: Failed to rewrite tracked source to file {}: {}"
+                                 .format(source, fullname, e))
 
 
 # A queue which assembles elements
@@ -272,24 +284,17 @@ class Pipeline():
 
         self.message(self.target, MessageType.START, "Starting track")
         elapsed, status = scheduler.run([track])
-        changed = len(track.changed_files.items())
-
-        def rewrite_changed_sources():
-            for filename, toplevel in track.changed_files.items():
-                fullname = os.path.join(self.project.element_path, filename)
-                _yaml.dump(toplevel, fullname)
+        changed = len(track.changed_sources)
 
         if status == SchedStatus.ERROR:
             self.message(self.target, MessageType.FAIL, "Track failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
-            rewrite_changed_sources()
             self.message(self.target, MessageType.WARN,
                          "Terminated after tracking {} sources".format(changed),
                          elapsed=elapsed)
             raise PipelineError()
         else:
-            rewrite_changed_sources()
             self.message(self.target, MessageType.SUCCESS,
                          "Tracked {} sources".format(changed),
                          elapsed=elapsed)
