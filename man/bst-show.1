@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "09-May-2017" "" "bst show Manual"
+.TH "BST SHOW" "1" "27-May-2017" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -41,8 +41,8 @@ If you want to use a newline in a format string in bash, use the '$' modifier:
         $'---------- %{name} ----------\n%{vars}'
 .SH OPTIONS
 .TP
-\fB\-d,\fP \-\-deps [all|build|run]
-Optionally specify a dependency scope to show
+\fB\-d,\fP \-\-deps [none|plan|all|build|run]
+Specify a dependency scope to show (default: none)
 .TP
 \fB\-\-order\fP [stage|alpha]
 Staging or alphabetic ordering of dependencies

@@ -1,4 +1,4 @@
-.TH "BST FETCH" "1" "09-May-2017" "" "bst fetch Manual"
+.TH "BST FETCH" "1" "27-May-2017" "" "bst fetch Manual"
 .SH NAME
 bst\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
@@ -8,8 +8,8 @@ bst\-fetch \- Fetch sources in a pipeline
 Fetch sources in a pipeline
 .SH OPTIONS
 .TP
-\fB\-\-needed\fP
-Fetch only sources required to build missing artifacts
+\fB\-d,\fP \-\-deps [none|plan|all|build|run]
+Specify a dependency scope to fetch (default: none)
 .TP
 \fB\-a,\fP \-\-arch TEXT
 The target architecture (default: x86_64)
