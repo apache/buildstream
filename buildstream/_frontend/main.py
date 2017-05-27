@@ -116,21 +116,23 @@ def build(app, target, arch, variant, all):
 #                          Fetch Command                         #
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
-@click.option('--needed', default=False, is_flag=True,
-              help="Fetch only sources required to build missing artifacts")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'plan', 'all', 'build', 'run']),
+              help='Specify a dependency scope to fetch (default: none)')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def fetch(app, target, arch, variant, needed):
+def fetch(app, target, arch, variant, deps):
     """Fetch sources in a pipeline"""
 
     app.initialize(target, arch, variant)
-    app.print_heading()
+    dependencies = app.deps_elements(deps)
+    app.print_heading(deps=dependencies)
     try:
-        app.pipeline.fetch(app.scheduler, needed)
+        app.pipeline.fetch(app.scheduler, dependencies)
         click.echo("")
     except PipelineError:
         click.echo("")
@@ -141,9 +143,9 @@ def fetch(app, target, arch, variant, needed):
 #                          Track Command                         #
 ##################################################################
 @cli.command(short_help="Track new source references")
-@click.option('--deps', '-d', default=None,
-              type=click.Choice(['all', 'build', 'run']),
-              help='Optionally specify a dependency scope to track')
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'plan', 'all', 'build', 'run']),
+              help='Specify a dependency scope to track (default: none)')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
@@ -160,21 +162,8 @@ def track(app, target, arch, variant, deps):
     The project data will be rewritten inline.
     """
     app.initialize(target, arch, variant, rewritable=True)
-
-    if deps is not None:
-        scope = deps
-        if scope == "all":
-            scope = Scope.ALL
-        elif scope == "build":
-            scope = Scope.BUILD
-        else:
-            scope = Scope.RUN
-
-        dependencies = app.pipeline.dependencies(scope)
-    else:
-        dependencies = [app.pipeline.target]
-
-    app.print_heading()
+    dependencies = app.deps_elements(deps)
+    app.print_heading(deps=dependencies)
     try:
         app.pipeline.track(app.scheduler, dependencies)
         click.echo("")
@@ -187,9 +176,9 @@ def track(app, target, arch, variant, deps):
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
-@click.option('--deps', '-d', default=None,
-              type=click.Choice(['all', 'build', 'run']),
-              help='Optionally specify a dependency scope to show')
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'plan', 'all', 'build', 'run']),
+              help='Specify a dependency scope to show (default: none)')
 @click.option('--order', default="stage",
               type=click.Choice(['stage', 'alpha']),
               help='Staging or alphabetic ordering of dependencies')
@@ -239,22 +228,9 @@ def show(app, target, arch, variant, deps, order, format):
             $'---------- %{name} ----------\\n%{vars}'
     """
     app.initialize(target, arch, variant)
-
-    if deps is not None:
-        scope = deps
-        if scope == "all":
-            scope = Scope.ALL
-        elif scope == "build":
-            scope = Scope.BUILD
-        else:
-            scope = Scope.RUN
-
-        if order == "alpha":
-            dependencies = sorted(app.pipeline.dependencies(scope))
-        else:
-            dependencies = app.pipeline.dependencies(scope)
-    else:
-        dependencies = [app.pipeline.target]
+    dependencies = app.deps_elements(deps)
+    if order == "alpha":
+        dependencies = sorted(dependencies)
 
     report = app.logger.show_pipeline(dependencies, format)
     click.echo(report)
@@ -486,6 +462,27 @@ class App():
         profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
 
     #
+    # Various commands define a --deps option to specify what elements to
+    # use in the result, this function reports a list that is appropriate for
+    # the selected option.
+    #
+    def deps_elements(self, mode):
+
+        if mode == 'none':
+            return [self.pipeline.target]
+        elif mode == 'plan':
+            return list(self.pipeline.plan())
+        else:
+            if mode == 'all':
+                scope = Scope.ALL
+            elif mode == 'build':
+                scope = Scope.BUILD
+            elif mode == 'run':
+                scope = Scope.RUN
+
+            return list(self.pipeline.dependencies(scope))
+
+    #
     # Handle ^C SIGINT interruptions in the scheduling main loop
     #
     def interrupt_handler(self):
@@ -618,9 +615,10 @@ class App():
     # Prints the application startup heading, used for commands which
     # will process a pipeline.
     #
-    def print_heading(self):
+    def print_heading(self, deps=None):
         self.logger.print_heading(self.pipeline, self.variant,
-                                  self.main_options['log_file'])
+                                  self.main_options['log_file'],
+                                  deps=deps)
 
     #
     # Handle messages from the pipeline
