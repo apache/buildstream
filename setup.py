@@ -110,7 +110,6 @@ setup(name='BuildStream',
       ],
       entry_points='''
       [console_scripts]
-      build-stream=buildstream._frontend:cli
       bst=buildstream._frontend:cli
       ''',
       setup_requires=['pytest-runner', 'setuptools_scm'],
