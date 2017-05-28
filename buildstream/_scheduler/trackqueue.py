@@ -39,7 +39,9 @@ class TrackQueue(Queue):
     complete_name = "Tracked"
     queue_type = QueueType.FETCH
 
-    def init(self):
+    def __init__(self):
+        super(TrackQueue, self).__init__()
+
         self.changed_sources = []
 
     def process(self, element):
