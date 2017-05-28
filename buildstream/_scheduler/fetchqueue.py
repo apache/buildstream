@@ -28,18 +28,30 @@ from . import Queue, QueueType
 
 # A queue which fetches element sources
 #
+# Args:
+#    recalculate (bool): Whether to forcefully recalculate cache consistency
+#                        this is necessary when tracking the pipeline first so
+#                        that we can reliably skip fetching elements which have
+#                        a consistent cache as a result of tracking (which is
+#                        not a requirement for tracking).
+#
 class FetchQueue(Queue):
 
     action_name = "Fetch"
     complete_name = "Fetched"
     queue_type = QueueType.FETCH
 
+    def __init__(self, recalculate=False):
+        super(FetchQueue, self).__init__()
+
+        self.recalculate = recalculate
+
     def process(self, element):
         for source in element.sources():
             source._fetch()
 
     def skip(self, element):
-        return element._consistency() == Consistency.CACHED
+        return element._consistency(recalculate=self.recalculate) == Consistency.CACHED
 
     def done(self, element, result, returncode):
 
