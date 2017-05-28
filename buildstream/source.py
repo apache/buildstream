@@ -198,8 +198,8 @@ class Source(Plugin):
 
     # Wrapper for get_consistency() api which caches the result
     #
-    def _get_consistency(self):
-        if self.__consistency is None:
+    def _get_consistency(self, recalculate=False):
+        if recalculate or self.__consistency is None:
             self.__consistency = self.get_consistency()
         return self.__consistency
 
