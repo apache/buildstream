@@ -278,7 +278,7 @@ class StatusHeader():
 
         # Format and calculate size for each queue progress
         for queue in self.scheduler.queues:
-            processed = str(queue.processed)
+            processed = str(len(queue.processed_elements))
             size += len(processed) + len(queue.complete_name) + 4
             text += ' ' + \
                 self.format_profile.fmt("[") + \

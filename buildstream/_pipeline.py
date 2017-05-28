@@ -29,12 +29,13 @@ from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
-from ._scheduler import Queue, SchedStatus
 from .plugin import _plugin_lookup
 from . import Element
 from . import SourceError, ElementError, Consistency
 from . import Scope
 from . import _yaml, utils
+
+from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue
 
 
 # Internal exception raised when a pipeline fails
@@ -86,95 +87,6 @@ class Planner():
 
         depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
         return [item[0] for item in depth_sorted if not item[0]._cached()]
-
-
-# A queue which fetches element sources
-#
-class FetchQueue(Queue):
-
-    def init(self):
-        self.fetched_elements = []
-
-    def process(self, element):
-        for source in element.sources():
-            source._fetch()
-
-    def skip(self, element):
-        return element._consistency() == Consistency.CACHED
-
-    def done(self, element, result, returncode):
-
-        if returncode != 0:
-            return
-
-        self.fetched_elements.append(element)
-        for source in element.sources():
-
-            # Successful fetch, we must be CACHED now
-            source._bump_consistency(Consistency.CACHED)
-
-
-# A queue which tracks sources
-#
-class TrackQueue(Queue):
-
-    def init(self):
-        self.changed_sources = []
-
-    def process(self, element):
-        return element._track()
-
-    def done(self, element, result, returncode):
-
-        if returncode != 0:
-            return
-
-        # Set the new refs in the main process one by one as they complete
-        for unique_id, new_ref in result:
-            source = _plugin_lookup(unique_id)
-            if source._set_ref(new_ref, source._Source__origin_node):
-
-                # Successful update of ref, we're at least resolved now
-                self.changed_sources.append(source)
-                source._bump_consistency(Consistency.RESOLVED)
-
-                project = source.get_project()
-                toplevel = source._Source__origin_toplevel
-                filename = source._Source__origin_filename
-                fullname = os.path.join(project.element_path, filename)
-
-                # Here we are in master process, what to do if writing
-                # to the disk fails for some reason ?
-                try:
-                    _yaml.dump(toplevel, fullname)
-                except OSError as e:
-                    source.error("Failed to update project file",
-                                 detail="{}: Failed to rewrite tracked source to file {}: {}"
-                                 .format(source, fullname, e))
-
-
-# A queue which assembles elements
-#
-class AssembleQueue(Queue):
-
-    def init(self):
-        self.built_elements = []
-
-    def process(self, element):
-        element._assemble()
-        return element._get_unique_id()
-
-    def ready(self, element):
-        return element._buildable()
-
-    def skip(self, element):
-        return element._cached()
-
-    def done(self, element, result, returncode):
-        # Elements are cached after they are successfully assembled
-        if returncode == 0:
-            element._set_cached()
-            self.built_elements.append(element)
 
 
 # Pipeline()
@@ -287,7 +199,7 @@ class Pipeline():
     def track(self, scheduler, dependencies):
 
         dependencies = list(dependencies)
-        track = TrackQueue("Track", "Tracked", self.context.sched_fetchers)
+        track = TrackQueue()
         track.enqueue(dependencies)
         self.session_elements = len(dependencies)
 
@@ -329,12 +241,12 @@ class Pipeline():
         plan = [elt for elt in plan if elt not in cached]
 
         self.session_elements = len(plan)
-        fetch = FetchQueue("Fetch", "Fetched", self.context.sched_fetchers)
+        fetch = FetchQueue()
         fetch.enqueue(plan)
 
         self.message(self.target, MessageType.START, "Fetching {} elements".format(len(plan)))
         elapsed, status = scheduler.run([fetch])
-        fetched = len(fetch.fetched_elements)
+        fetched = len(fetch.processed_elements)
 
         if status == SchedStatus.ERROR:
             self.message(self.target, MessageType.FAIL, "Fetch failed", elapsed=elapsed)
@@ -406,15 +318,15 @@ class Pipeline():
         # We could bail out here on inconsistent elements, but
         # it could be the user wants to get as far as possible
         # even if some elements have failures.
-        fetch = FetchQueue("Fetch", "Fetched", self.context.sched_fetchers)
-        build = AssembleQueue("Build", "Built", self.context.sched_builders)
+        fetch = FetchQueue()
+        build = BuildQueue()
         fetch.enqueue(plan)
         self.session_elements = len(plan)
 
         self.message(self.target, MessageType.START, "Starting build")
         elapsed, status = scheduler.run([fetch, build])
-        fetched = len(fetch.fetched_elements)
-        built = len(build.built_elements)
+        fetched = len(fetch.processed_elements)
+        built = len(build.processed_elements)
 
         if status == SchedStatus.ERROR:
             self.message(self.target, MessageType.FAIL, "Build failed", elapsed=elapsed)
