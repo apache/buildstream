@@ -1,21 +1,25 @@
-.TH "BST TRACK" "1" "27-May-2017" "" "bst track Manual"
+.TH "BST TRACK" "1" "28-May-2017" "" "bst track Manual"
 .SH NAME
 bst\-track \- Track new source references
 .SH SYNOPSIS
 .B bst track
 [OPTIONS] TARGET
 .SH DESCRIPTION
-Track new source references
+Consults the specified tracking branches for new versions available
+to build and updates the project with any newly available references.
 
-Updates the project with new source references from
-any sources which are configured to track a remote
-branch or tag.
+By default this will track sources for all dependencies of the specified
+target element.
 
-The project data will be rewritten inline.
+Specify `--deps` to control which sources to track:
+
+
+    none:  No dependencies, just the element itself
+    all:   All dependencies
 .SH OPTIONS
 .TP
-\fB\-d,\fP \-\-deps [none|plan|all|build|run]
-Specify a dependency scope to track (default: none)
+\fB\-d,\fP \-\-deps [none|all]
+The dependencies to track (default: all)
 .TP
 \fB\-a,\fP \-\-arch TEXT
 The target architecture (default: x86_64)

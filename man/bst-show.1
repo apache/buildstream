@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "27-May-2017" "" "bst show Manual"
+.TH "BST SHOW" "1" "28-May-2017" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -7,8 +7,15 @@ bst\-show \- Show elements in the pipeline
 .SH DESCRIPTION
 Show elements in the pipeline
 
-By default this will only show the specified element, use
-the --deps option to show an entire pipeline.
+By default this will show all of the dependencies of the
+specified target element.
+
+Specify `--deps` to control which elements to show:
+
+
+    none:  No dependencies, just the element itself
+    plan:  Only dependencies required for the build plan
+    all:   All dependencies
 
 
 FORMAT
@@ -41,8 +48,8 @@ If you want to use a newline in a format string in bash, use the '$' modifier:
         $'---------- %{name} ----------\n%{vars}'
 .SH OPTIONS
 .TP
-\fB\-d,\fP \-\-deps [none|plan|all|build|run]
-Specify a dependency scope to show (default: none)
+\fB\-d,\fP \-\-deps [none|plan|all]
+The dependencies to show (default: all)
 .TP
 \fB\-\-order\fP [stage|alpha]
 Staging or alphabetic ordering of dependencies
