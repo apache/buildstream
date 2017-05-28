@@ -118,9 +118,9 @@ def build(app, target, arch, variant, all, track):
 #                          Fetch Command                         #
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'plan', 'all', 'build', 'run']),
-              help='Specify a dependency scope to fetch (default: none)')
+@click.option('--deps', '-d', default='plan',
+              type=click.Choice(['none', 'plan', 'all']),
+              help='The dependencies to fetch (default: plan)')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
@@ -128,8 +128,20 @@ def build(app, target, arch, variant, all, track):
 @click.argument('target')
 @click.pass_obj
 def fetch(app, target, arch, variant, deps):
-    """Fetch sources in a pipeline"""
+    """Fetch sources required to build the pipeline
 
+    By default this will only try to fetch sources which are
+    required for the build plan of the specified target element,
+    omitting sources for any elements which are already built
+    and available in the artifact cache.
+
+    Specify `--deps` to control which sources to fetch:
+
+    \b
+        none:  No dependencies, just the element itself
+        plan:  Only dependencies required for the build plan
+        all:   All dependencies
+    """
     app.initialize(target, arch, variant)
     dependencies = app.deps_elements(deps)
     app.print_heading(deps=dependencies)
@@ -145,9 +157,9 @@ def fetch(app, target, arch, variant, deps):
 #                          Track Command                         #
 ##################################################################
 @cli.command(short_help="Track new source references")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'plan', 'all', 'build', 'run']),
-              help='Specify a dependency scope to track (default: none)')
+@click.option('--deps', '-d', default='all',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to track (default: all)')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
@@ -155,13 +167,17 @@ def fetch(app, target, arch, variant, deps):
 @click.argument('target')
 @click.pass_obj
 def track(app, target, arch, variant, deps):
-    """Track new source references
+    """Consults the specified tracking branches for new versions available
+    to build and updates the project with any newly available references.
 
-    Updates the project with new source references from
-    any sources which are configured to track a remote
-    branch or tag.
+    By default this will track sources for all dependencies of the specified
+    target element.
 
-    The project data will be rewritten inline.
+    Specify `--deps` to control which sources to track:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
     """
     app.initialize(target, arch, variant, rewritable=True)
     dependencies = app.deps_elements(deps)
@@ -178,9 +194,9 @@ def track(app, target, arch, variant, deps):
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'plan', 'all', 'build', 'run']),
-              help='Specify a dependency scope to show (default: none)')
+@click.option('--deps', '-d', default='all',
+              type=click.Choice(['none', 'plan', 'all']),
+              help='The dependencies to show (default: all)')
 @click.option('--order', default="stage",
               type=click.Choice(['stage', 'alpha']),
               help='Staging or alphabetic ordering of dependencies')
@@ -196,8 +212,15 @@ def track(app, target, arch, variant, deps):
 def show(app, target, arch, variant, deps, order, format):
     """Show elements in the pipeline
 
-    By default this will only show the specified element, use
-    the --deps option to show an entire pipeline.
+    By default this will show all of the dependencies of the
+    specified target element.
+
+    Specify `--deps` to control which elements to show:
+
+    \b
+        none:  No dependencies, just the element itself
+        plan:  Only dependencies required for the build plan
+        all:   All dependencies
 
     \b
     FORMAT
