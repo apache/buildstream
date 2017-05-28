@@ -307,10 +307,11 @@ class Pipeline():
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    build_all (bool): Whether to build all elements, or only those
     #                      which are required to build the target.
+    #    track_first (bool): Track sources before fetching and building (implies build_all)
     #
-    def build(self, scheduler, build_all):
+    def build(self, scheduler, build_all, track_first):
 
-        if build_all:
+        if build_all or track_first:
             plan = list(self.dependencies(Scope.ALL))
         else:
             plan = list(self.plan())
@@ -318,13 +319,22 @@ class Pipeline():
         # We could bail out here on inconsistent elements, but
         # it could be the user wants to get as far as possible
         # even if some elements have failures.
-        fetch = FetchQueue()
+        fetch = FetchQueue(recalculate=track_first)
         build = BuildQueue()
-        fetch.enqueue(plan)
+        track = None
+        if track_first:
+            track = TrackQueue()
+            track.enqueue(plan)
+            queues = [track, fetch, build]
+        else:
+            track = None
+            fetch.enqueue(plan)
+            queues = [fetch, build]
+
         self.session_elements = len(plan)
 
         self.message(self.target, MessageType.START, "Starting build")
-        elapsed, status = scheduler.run([fetch, build])
+        elapsed, status = scheduler.run(queues)
         fetched = len(fetch.processed_elements)
         built = len(build.processed_elements)
 
