@@ -66,19 +66,9 @@ class Queue():
         assert(self.complete_name is not None)
         assert(self.queue_type is not None)
 
-        # Subclass initializer
-        self.init()
-
     #####################################################
     #     Abstract Methods for Queue implementations    #
     #####################################################
-
-    # init()
-    #
-    # Initialize the queue, instead of overriding constructor.
-    #
-    def init(self):
-        pass
 
     # process()
     #
