@@ -30,6 +30,7 @@ import multiprocessing
 from ruamel import yaml
 
 # BuildStream toplevel imports
+from ..exceptions import _BstError
 from .._message import Message, MessageType, unconditional_messages
 from ..plugin import _plugin_lookup
 from .. import _yaml, _signals

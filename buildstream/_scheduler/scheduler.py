@@ -25,9 +25,6 @@ import asyncio
 import signal
 import datetime
 
-# BuildStream toplevel imports
-from ..exceptions import _BstError
-
 # Local imports
 from .queue import Queue, QueueType
 
