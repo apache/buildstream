@@ -155,7 +155,7 @@ class TarSource(Source):
                 os.rename(local_file, self._get_mirror_file(sha256))
 
                 return sha256
-        except (urllib.error.URLError, OSError) as e:
+        except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError) as e:
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e)) from e
 
