@@ -143,7 +143,7 @@ class Status():
             self.move_up()
 
         # Render the one line header
-        text = self.header.render(self.line_length, elapsed)
+        text = self.header.render(self.term_width, elapsed)
         click.echo(text)
 
         # Now we have the number of columns, and an allocation for
