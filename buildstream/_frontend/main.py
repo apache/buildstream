@@ -93,19 +93,21 @@ def cli(context, **kwargs):
 @cli.command(short_help="Build elements in a pipeline")
 @click.option('--all', default=False, is_flag=True,
               help="Build elements that would not be needed for the current build plan")
+@click.option('--track', default=False, is_flag=True,
+              help="Track new source references before building (implies --all)")
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def build(app, target, arch, variant, all):
+def build(app, target, arch, variant, all, track):
     """Build elements in a pipeline"""
 
-    app.initialize(target, arch, variant)
+    app.initialize(target, arch, variant, rewritable=track)
     app.print_heading()
     try:
-        app.pipeline.build(app.scheduler, all)
+        app.pipeline.build(app.scheduler, all, track)
         click.echo("")
     except PipelineError:
         click.echo("")
