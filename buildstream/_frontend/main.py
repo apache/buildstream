@@ -566,7 +566,16 @@ class App():
 
             # Get the last failure message for additional context
             failure = self.fail_messages.get(element._get_unique_id())
-            self.handle_failure(element, failure)
+
+            # XXX This is dangerous, sometimes we get the job completed *before*
+            # the failure message reaches us ??
+            if not failure:
+                self.status.clear()
+                click.echo("\n\n\nBUG: Message handling out of sync, " +
+                           "unable to retrieve failure message for element {}\n\n\n\n\n"
+                           .format(element))
+            else:
+                self.handle_failure(element, failure)
 
     def handle_failure(self, element, failure):
 
