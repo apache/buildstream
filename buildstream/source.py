@@ -204,13 +204,27 @@ class Source(Plugin):
         return self.__consistency
 
     # Bump local cached consistency state, this is done from
-    # the pipeline after the completion of fetch and track jobs.
+    # the pipeline after the successful completion of fetch
+    # and track jobs.
     #
     def _bump_consistency(self, consistency):
         if (self.__consistency is None or
             consistency > self.__consistency):
             self.__consistency = consistency
 
+    # Force a source to appear to be in an inconsistent state.
+    #
+    # This is used across the pipeline in sessions where the
+    # source in question are going to be tracked. This is important
+    # as it will prevent depending elements from producing cache
+    # keys until the source is RESOLVED and also prevent depending
+    # elements from being assembled until the source is CACHED.
+    #
+    def _force_inconsistent(self):
+        self.__consistency = Consistency.INCONSISTENT
+
+    # Wrapper function around plugin provided fetch method
+    #
     def _fetch(self):
         self.fetch()
 
