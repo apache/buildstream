@@ -23,6 +23,9 @@
 # Code based on Jürg's artifact cache and Andrew's ostree plugin
 #
 import os
+import subprocess
+from . import _site
+from . import utils
 from .exceptions import _BstError
 
 import gi
@@ -265,6 +268,28 @@ def fetch(repo, remote="origin", ref=None, progress=None):
             raise OSTreeError("Failed to fetch ref '{}' from '{}': {}".format(ref, remote, e.message)) from e
         else:
             raise OSTreeError("Failed to fetch from '{}': {}".format(remote, e.message)) from e
+
+
+# push()
+#
+# Pushes a ref to a remote repository
+#
+# Args:
+#    repo (OSTree.Repo): The repo
+#    remote (str): The url of the remote ostree repo
+#    ref (str): A ref to push
+#
+def push(repo, remote, ref):
+    exit_code, output = utils._call([
+        _site.ostree_push,
+        '--repo=' + repo.get_path().get_path(),
+        remote,
+        ref],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+
+    if exit_code:
+        raise OSTreeError("Failed to push artifact to remote SSH repository:\n{}".format(output))
 
 
 # configure_remote():

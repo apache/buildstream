@@ -39,3 +39,6 @@ default_user_config = os.path.join(root, 'data', 'userconfig.yaml')
 
 # Default project configuration
 default_project_config = os.path.join(root, 'data', 'projectconfig.yaml')
+
+# ostree-push shell script
+ostree_push = os.path.join(root, 'data', 'ostree-push')
