@@ -396,39 +396,7 @@ class Plugin():
               "Failed to download ponies from {}".format(
                   self.mirror_directory))
         """
-        if 'stdout' in kwargs or 'stderr' in kwargs:
-            raise ValueError('May not override destination output')
-
-        with self._output_file() as output_file:
-            kwargs['stdout'] = output_file
-            kwargs['stderr'] = output_file
-            kwargs['start_new_session'] = True
-
-            self.__note_command(output_file, *popenargs, **kwargs)
-
-            # Handle termination, suspend and resume
-            def kill_proc():
-                if process:
-                    process.kill()
-
-            def suspend_proc():
-                if process:
-                    group_id = os.getpgid(process.pid)
-                    os.killpg(group_id, signal.SIGSTOP)
-
-            def resume_proc():
-                if process:
-                    group_id = os.getpgid(process.pid)
-                    os.killpg(group_id, signal.SIGCONT)
-
-            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-                process = subprocess.Popen(*popenargs, **kwargs)
-                process.communicate()
-                exit_code = process.poll()
-
-            if fail and exit_code:
-                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
-
+        exit_code, _ = self.__call(*popenargs, fail=fail, **kwargs)
         return exit_code
 
     def check_output(self, *popenargs, fail=None, **kwargs):
@@ -476,44 +444,7 @@ class Plugin():
               raise SourceError(
                   fmt.format(plugin=self, track=tracking)) from e
         """
-        if 'stdout' in kwargs or 'stderr' in kwargs:
-            raise ValueError('May not override destination output')
-
-        with self._output_file() as output_file:
-            kwargs['stderr'] = output_file
-            kwargs['stdout'] = subprocess.PIPE
-            kwargs['start_new_session'] = True
-
-            self.__note_command(output_file, *popenargs, **kwargs)
-
-            # Handle termination, suspend and resume
-            def kill_proc():
-                if process:
-                    process.kill()
-
-            def suspend_proc():
-                if process:
-                    group_id = os.getpgid(process.pid)
-                    os.killpg(group_id, signal.SIGSTOP)
-
-            def resume_proc():
-                if process:
-                    group_id = os.getpgid(process.pid)
-                    os.killpg(group_id, signal.SIGCONT)
-
-            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-                process = subprocess.Popen(*popenargs, **kwargs)
-                output, _ = process.communicate()
-                exit_code = process.poll()
-
-            if fail and exit_code:
-                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
-
-            # Program output is returned as bytes, we want utf8 strings
-            if output is not None:
-                output = output.decode('UTF-8')
-
-        return (exit_code, output)
+        return self.__call(*popenargs, collect_stdout=True, fail=fail, **kwargs)
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -560,6 +491,70 @@ class Plugin():
     #############################################################
     #                     Local Private Methods                 #
     #############################################################
+
+    # Internal subprocess implementation for the call() and check_output() APIs
+    #
+    def __call(self, *popenargs, collect_stdout=False, fail=None, **kwargs):
+
+        if 'stdout' in kwargs or 'stderr' in kwargs:
+            raise ValueError('May not override destination output')
+
+        with self._output_file() as output_file:
+            kwargs['stdout'] = output_file
+            kwargs['stderr'] = output_file
+            kwargs['start_new_session'] = True
+            if collect_stdout:
+                kwargs['stdout'] = subprocess.PIPE
+
+            self.__note_command(output_file, *popenargs, **kwargs)
+
+            # Handle termination, suspend and resume
+            def kill_proc():
+                if process:
+                    # FIXME: Processes not always reliably killed.
+                    #
+                    # Child tasks are always spawned as new sessions
+                    # (i.e. session leader with setsid()), which means
+                    # we should send signals to the group.
+                    #
+                    # This seems more reliable than process.terminate()
+                    # and process.kill(), however in both cases we seem
+                    # to fail to kill some children, notably child ssh
+                    # sessions spawned by git.
+                    #
+                    # Perhaps we need a recursive process killing here
+                    # as our last resort.
+                    group_id = os.getpgid(process.pid)
+                    os.killpg(group_id, signal.SIGTERM)
+                    try:
+                        process.wait(5)
+                    except TimeoutExpired:
+                        os.killpg(group_id, signal.SIGKILL)
+
+            def suspend_proc():
+                if process:
+                    group_id = os.getpgid(process.pid)
+                    os.killpg(group_id, signal.SIGSTOP)
+
+            def resume_proc():
+                if process:
+                    group_id = os.getpgid(process.pid)
+                    os.killpg(group_id, signal.SIGCONT)
+
+            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
+                process = subprocess.Popen(*popenargs, **kwargs)
+                output, _ = process.communicate()
+                exit_code = process.poll()
+
+            if fail and exit_code:
+                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
+
+            # Program output is returned as bytes, we want utf8 strings
+            if output is not None:
+                output = output.decode('UTF-8')
+
+        return (exit_code, output)
+
     def __message(self, message_type, brief, **kwargs):
         message = Message(self.__unique_id, message_type, brief, **kwargs)
         self.__context._message(message)
