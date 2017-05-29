@@ -137,3 +137,24 @@ class ArtifactCache():
         ref = buildref(element)
 
         _ostree.commit(self.repo, content, ref)
+
+    # can_push():
+    #
+    # Check whether remote repository is available for pushing.
+    #
+    # Returns: True if remote repository is available, False otherwise
+    #
+    def can_push(self):
+        return self.context.artifact_share is not None
+
+    # push():
+    #
+    # Push committed artifact to remote repository.
+    #
+    # Args:
+    #     element (Element): The Element whose artifact is to be pushed
+    #
+    def push(self, element):
+        ref = buildref(element)
+
+        _ostree.push(self.repo, remote=self.context.artifact_share, ref=ref)
