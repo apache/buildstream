@@ -140,6 +140,21 @@ class Job():
         # Terminate the process using multiprocessing API pathway
         self.process.terminate()
 
+    # terminate_wait()
+    #
+    # Wait for terminated jobs to complete
+    #
+    # Args:
+    #    timeout (float): Seconds to wait
+    #
+    def terminate_wait(self, timeout):
+
+        # Join the child process after sending SIGTERM
+        self.process.join(timeout)
+        if self.process.exitcode is None:
+            self.message(self.element, MessageType.WARN,
+                         "{} Failed to terminate process cleanly".format(self.action_name))
+
     # suspend()
     #
     # Suspend this job.
