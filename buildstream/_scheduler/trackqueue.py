@@ -47,6 +47,10 @@ class TrackQueue(Queue):
     def process(self, element):
         return element._track()
 
+    def skip(self, element):
+        # We can skip elements entirely if they have no sources.
+        return len(list(element.sources())) == 0
+
     def done(self, element, result, returncode):
 
         if returncode != 0:
@@ -59,7 +63,6 @@ class TrackQueue(Queue):
 
                 # Successful update of ref, we're at least resolved now
                 self.changed_sources.append(source)
-                source._bump_consistency(Consistency.RESOLVED)
 
                 project = source.get_project()
                 toplevel = source._Source__origin_toplevel
@@ -74,3 +77,12 @@ class TrackQueue(Queue):
                     source.error("Failed to update project file",
                                  detail="{}: Failed to rewrite tracked source to file {}: {}"
                                  .format(source, fullname, e))
+
+        # Forcefully recalculate the element's consistency state after successfully
+        # tracking, this is avoid a following fetch queue operating on the sources
+        # if the tracked ref is cached as a result.
+        #
+        context = element.get_context()
+        context._push_message_depth(True)
+        element._consistency(recalculate=True)
+        context._pop_message_depth()
