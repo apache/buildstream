@@ -143,9 +143,21 @@ class Scheduler():
     # Forcefully terminates all ongoing jobs.
     #
     def terminate_jobs(self):
+        wait_start = datetime.datetime.now()
+        wait_limit = 10.0
+
+        # First tell all jobs to terminate
         for queue in self.queues:
             for job in queue.active_jobs:
                 job.terminate()
+
+        # Now wait for them to really terminate
+        for queue in self.queues:
+            for job in queue.active_jobs:
+                elapsed = datetime.datetime.now() - wait_start
+                timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
+                job.terminate_wait(timeout)
+
         self.loop.stop()
         self.terminated = True
 
