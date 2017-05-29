@@ -161,6 +161,11 @@ class Queue():
                 scheduler.put_job_token(self.queue_type)
                 unready.append(element)
                 continue
+            elif self.skip(element):
+                scheduler.put_job_token(self.queue_type)
+                self.done_queue.append(element)
+                self.skipped_elements.append(element)
+                continue
 
             job = Job(scheduler, element, self.action_name)
             scheduler.job_starting(job)
