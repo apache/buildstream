@@ -88,7 +88,7 @@ class Element(Plugin):
         self.__sources = []               # List of Sources
         self.__cache_key = None           # Our cached cache key
         self.__artifacts = artifacts      # Artifact cache
-        self.__cached = False             # Whether we have a cached artifact
+        self.__cached = None              # Whether we have a cached artifact
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults()
@@ -523,20 +523,33 @@ class Element(Plugin):
             consistency = min(consistency, source_consistency)
         return consistency
 
-    # _cached():
+    # _force_inconsistent():
     #
-    # Args:
-    #    recalcualte (bool): Whether to forcefully recalculate
+    # Force an element state to be inconsistent. Cache keys are unset, Artifacts appear
+    # to be not cached and any sources appear to be inconsistent.
+    #
+    # This is used across the pipeline in sessions where the
+    # elements in question are going to be tracked, causing the
+    # pipeline to rebuild safely by ensuring cache key recalculation
+    # and reinterrogation of element state after tracking of elements
+    # succeeds.
+    #
+    def _force_inconsistent(self):
+        self.__cached = None
+        self.__cache_key = None
+        for source in self.__sources:
+            source._force_inconsistent()
+
+    # _cached():
     #
     # Returns:
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self, recalculate=False):
+    def _cached(self):
 
-        if recalculate:
-            if (self.__cached is None or recalculate):
-                self.__cached = self.__artifacts.contains(self)
+        if self.__cached is None and self._get_cache_key() is not None:
+            self.__cached = self.__artifacts.contains(self)
 
         return False if self.__cached is None else self.__cached
 
