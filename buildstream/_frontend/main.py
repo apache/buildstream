@@ -104,7 +104,7 @@ def cli(context, **kwargs):
 def build(app, target, arch, variant, all, track):
     """Build elements in a pipeline"""
 
-    app.initialize(target, arch, variant, rewritable=track)
+    app.initialize(target, arch, variant, rewritable=track, inconsistent=track)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track)
@@ -179,7 +179,7 @@ def track(app, target, arch, variant, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(target, arch, variant, rewritable=True)
+    app.initialize(target, arch, variant, rewritable=True, inconsistent=True)
     dependencies = app.deps_elements(deps)
     app.print_heading(deps=dependencies)
     try:
@@ -402,7 +402,7 @@ class App():
     #
     # Initialize the main pipeline
     #
-    def initialize(self, target, arch, variant, rewritable=False):
+    def initialize(self, target, arch, variant, rewritable=False, inconsistent=False):
         self.target = target
         self.arch = arch
         self.variant = variant
@@ -469,6 +469,7 @@ class App():
 
         try:
             self.pipeline = Pipeline(self.context, self.project, target, variant,
+                                     inconsistent=inconsistent,
                                      rewritable=rewritable,
                                      load_ticker=self.load_ticker,
                                      resolve_ticker=self.resolve_ticker,
