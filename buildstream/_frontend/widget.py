@@ -225,17 +225,20 @@ class CacheKey(Widget):
         if not self.key_length:
             return self.format_profile.fmt('[') + (' ' * 8) + self.format_profile.fmt(']')
 
+        missing = False
         key = ' ' * self.key_length
         element_id = message.task_id or message.unique_id
         if element_id is not None:
             plugin = _plugin_lookup(element_id)
             if isinstance(plugin, Element):
+                if not plugin._get_cache_key():
+                    missing = True
                 key = plugin._get_display_key()
 
         if message.message_type in [MessageType.FAIL, MessageType.BUG]:
             text = self.err_profile.fmt(key)
         else:
-            text = self.content_profile.fmt(key)
+            text = self.content_profile.fmt(key, dim=missing)
 
         return self.format_profile.fmt('[') + text + self.format_profile.fmt(']')
 
@@ -473,9 +476,15 @@ class LogLine(Widget):
             cache_key = element._get_display_key()
             full_key = element._get_cache_key()
 
+            # Show unresolved cache keys as dim
+            dim_keys = False
+            if not full_key:
+                dim_keys = True
+                full_key = "{:?<64}".format('')
+
             line = p.fmt_subst(line, 'name', element.name, fg='blue', bold=True)
-            line = p.fmt_subst(line, 'key', cache_key, fg='yellow')
-            line = p.fmt_subst(line, 'full-key', full_key, fg='yellow')
+            line = p.fmt_subst(line, 'key', cache_key, fg='yellow', dim=dim_keys)
+            line = p.fmt_subst(line, 'full-key', full_key, fg='yellow', dim=dim_keys)
 
             consistency = element._consistency()
             if consistency == Consistency.INCONSISTENT:
