@@ -80,7 +80,8 @@ class Scheduler():
         # the user configuration
         self.job_tokens = {
             QueueType.FETCH: context.sched_fetchers,
-            QueueType.BUILD: context.sched_builders
+            QueueType.BUILD: context.sched_builders,
+            QueueType.PUSH: context.sched_pushers
         }
 
         # Some local state

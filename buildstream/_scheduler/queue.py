@@ -36,6 +36,9 @@ class QueueType():
     # CPU/Disk intensive tasks
     BUILD = 2
 
+    # Tasks which upload stuff to the internet
+    PUSH = 3
+
 
 # Queue()
 #

@@ -91,6 +91,9 @@ class Context():
         self.sched_builders = 4
         """Maximum number of build tasks"""
 
+        self.sched_pushers = 4
+        """Maximum number of push tasks"""
+
         self.sched_error_action = 'continue'
         """What to do when a build fails in non interactive mode"""
 
@@ -157,6 +160,7 @@ class Context():
         self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
+        self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 

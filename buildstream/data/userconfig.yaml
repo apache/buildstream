@@ -33,6 +33,9 @@ scheduler:
   # Maximum number of simultaneous build tasks.
   builders: 4
 
+  # Maximum number of simultaneous artifact uploading tasks.
+  pushers: 4
+
   # What to do when an element fails, if not running in
   # interactive mode:
   #
