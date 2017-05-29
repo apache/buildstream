@@ -96,6 +96,9 @@ class Planner():
 #    project (Project): The Project object
 #    target (str): A bst filename relative to the project directory
 #    target_variant (str): The selected variant of 'target', or None for the default
+#    inconsistent (bool): Whether to load the pipeline in a forcefully inconsistent state,
+#                         this is appropriate when source tracking will run and the
+#                         current source refs will not be the effective refs.
 #    rewritable (bool): Whether the loaded files should be rewritable
 #                       this is a bit more expensive due to deep copies
 #    load_ticker (callable): A function which will be called for each loaded element
@@ -117,6 +120,7 @@ class Planner():
 class Pipeline():
 
     def __init__(self, context, project, target, target_variant,
+                 inconsistent=False,
                  rewritable=False,
                  load_ticker=None,
                  resolve_ticker=None,
@@ -140,18 +144,26 @@ class Pipeline():
         if resolve_ticker:
             resolve_ticker(None)
 
-        # Preflight right away, after constructing the tree
+        # Preflight directly after resolving elements, before ever interrogating
+        # caches or anything.
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
             plugin.preflight()
 
         self.total_elements = len(list(self.dependencies(Scope.ALL)))
 
-        # Force interrogate the cache, ensure that elements have loaded
-        # their consistency and cached states.
         for element in self.dependencies(Scope.ALL):
             if cache_ticker:
                 cache_ticker(element.name)
-            element._cached(recalculate=True)
+
+            if inconsistent:
+                # Load the pipeline in an explicitly inconsistent state, use
+                # this for pipelines with tracking queues enabled.
+                element._force_inconsistent()
+            else:
+                # Resolve cache keys and interrogate the artifact cache
+                # for the first time.
+                element._cached()
+
         if cache_ticker:
             cache_ticker(None)
 
@@ -319,7 +331,7 @@ class Pipeline():
         # We could bail out here on inconsistent elements, but
         # it could be the user wants to get as far as possible
         # even if some elements have failures.
-        fetch = FetchQueue(recalculate=track_first)
+        fetch = FetchQueue()
         build = BuildQueue()
         track = None
         if track_first:
