@@ -68,6 +68,9 @@ class ArtifactCache():
     # Returns: True if the artifact is in the cache, False otherwise
     #
     def contains(self, element):
+        if not element._get_cache_key():
+            return False
+
         ref = buildref(element)
         return _ostree.exists(self.repo, ref)
 
