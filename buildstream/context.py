@@ -64,6 +64,9 @@ class Context():
         self.artifactdir = None
         """The local binary artifact cache directory"""
 
+        self.artifact_share = None
+        """The artifact cache share URL"""
+
         self.logdir = None
         """The directory to store build logs"""
 
@@ -145,6 +148,11 @@ class Context():
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
             setattr(self, dir, path)
+
+        try:
+            self.artifact_share = _yaml.node_get(defaults, str, 'artifact-share')
+        except:
+            self.artifact_share = None
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')
