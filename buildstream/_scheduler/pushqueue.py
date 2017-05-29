@@ -19,29 +19,28 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+# BuildStream toplevel imports
+from .. import Consistency
+
+# Local imports
 from . import Queue, QueueType
 
 
-# A queue which assembles elements
+# A queue which pushes element artifacts
 #
-class BuildQueue(Queue):
+class PushQueue(Queue):
 
-    action_name = "Build"
-    complete_name = "Built"
-    queue_type = QueueType.BUILD
+    action_name = "Push"
+    complete_name = "Pushed"
+    queue_type = QueueType.PUSH
 
     def process(self, element):
-        element._assemble()
-        return element._get_unique_id()
-
-    def ready(self, element):
-        return element._buildable()
+        element._push()
 
     def skip(self, element):
-        return element._cached()
+        return not element._built()
 
     def done(self, element, result, returncode):
-        # Elements are cached after they are successfully assembled
-        if returncode == 0:
-            element._set_cached()
-            element._set_built()
+
+        if returncode != 0:
+            return

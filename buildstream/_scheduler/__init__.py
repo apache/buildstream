@@ -23,5 +23,6 @@ from .queue import Queue, QueueType
 from .fetchqueue import FetchQueue
 from .trackqueue import TrackQueue
 from .buildqueue import BuildQueue
+from .pushqueue import PushQueue
 
 from .scheduler import Scheduler, SchedStatus

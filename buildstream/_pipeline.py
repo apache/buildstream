@@ -35,7 +35,7 @@ from . import SourceError, ElementError, Consistency, ImplError
 from . import Scope
 from . import _yaml, utils
 
-from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue
+from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PushQueue
 
 
 # Internal exception raised when a pipeline fails
@@ -372,14 +372,17 @@ class Pipeline():
         fetch = FetchQueue()
         build = BuildQueue()
         track = None
+        push = None
+        queues = []
         if track_first:
             track = TrackQueue()
-            track.enqueue(plan)
-            queues = [track, fetch, build]
-        else:
-            track = None
-            fetch.enqueue(plan)
-            queues = [fetch, build]
+            queues.append(track)
+        queues.append(fetch)
+        queues.append(build)
+        if self.artifacts.can_push():
+            push = PushQueue()
+            queues.append(push)
+        queues[0].enqueue(plan)
 
         self.session_elements = len(plan)
 
@@ -387,19 +390,24 @@ class Pipeline():
         elapsed, status = scheduler.run(queues)
         fetched = len(fetch.processed_elements)
         built = len(build.processed_elements)
+        if push:
+            pushed = len(push.processed_elements)
+        else:
+            pushed = 0
 
         if status == SchedStatus.ERROR:
             self.message(self.target, MessageType.FAIL, "Build failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
             self.message(self.target, MessageType.WARN,
-                         "Terminated after fetching {} elements and building {} elements"
-                         .format(fetched, built),
+                         "Terminated after fetching {} elements, building {} elements and pushing {} elements"
+                         .format(fetched, built, pushed),
                          elapsed=elapsed)
             raise PipelineError()
         else:
             self.message(self.target, MessageType.SUCCESS,
-                         "Fetched {} elements and built {} elements".format(fetched, built),
+                         "Fetched {} elements, built {} elements and pushed {} elements"
+                         .format(fetched, built, pushed),
                          elapsed=elapsed)
 
     # checkout()

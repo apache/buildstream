@@ -89,6 +89,7 @@ class Element(Plugin):
         self.__cache_key = None           # Our cached cache key
         self.__artifacts = artifacts      # Artifact cache
         self.__cached = None              # Whether we have a cached artifact
+        self.__built = False              # Element was locally built
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults()
@@ -620,6 +621,16 @@ class Element(Plugin):
     def _set_cached(self):
         self.__cached = True
 
+    # _set_built():
+    #
+    # Forcefully set the built state on the element.
+    #
+    # This is done by the Pipeline when an element successfully
+    # completes a build.
+    #
+    def _set_built(self):
+        self.__built = True
+
     # _buildable():
     #
     # Returns:
@@ -792,6 +803,24 @@ class Element(Plugin):
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
+
+    # _built():
+    #
+    # Returns:
+    #    (bool): Whether this element has been built locally
+    #
+    def _built(self):
+        return self.__built
+
+    # _push():
+    #
+    # Push locally cached artifact to remote artifact repository.
+    #
+    def _push(self):
+        self._assert_cached()
+
+        with self.timed_activity("Pushing Artifact"):
+            self.__artifacts.push(self)
 
     # _logfile()
     #
