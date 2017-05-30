@@ -28,6 +28,9 @@ import datetime
 # Local imports
 from .queue import Queue, QueueType
 
+# BuildStream toplevel imports
+from .. import _signals
+
 
 # A decent return code for Scheduler.run()
 class SchedStatus():
@@ -146,20 +149,22 @@ class Scheduler():
         wait_start = datetime.datetime.now()
         wait_limit = 10.0
 
-        # First tell all jobs to terminate
-        for queue in self.queues:
-            for job in queue.active_jobs:
-                job.terminate()
+        with _signals.blocked([signal.SIGINT]):
 
-        # Now wait for them to really terminate
-        for queue in self.queues:
-            for job in queue.active_jobs:
-                elapsed = datetime.datetime.now() - wait_start
-                timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-                job.terminate_wait(timeout)
+            # First tell all jobs to terminate
+            for queue in self.queues:
+                for job in queue.active_jobs:
+                    job.terminate()
 
-        self.loop.stop()
-        self.terminated = True
+            # Now wait for them to really terminate
+            for queue in self.queues:
+                for job in queue.active_jobs:
+                    elapsed = datetime.datetime.now() - wait_start
+                    timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
+                    job.terminate_wait(timeout)
+
+            self.loop.stop()
+            self.terminated = True
 
     # suspend_jobs()
     #
