@@ -106,7 +106,7 @@ setup(name='BuildStream',
       use_scm_version=True,
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml', 'data/*.yaml',
-                                    'data/ostree-push']},
+                                    'data/ostree-push', 'data/ostree-pull-ssh']},
       data_files=[('share/man/man1', list_man_pages())],
       install_requires=[
           'setuptools',

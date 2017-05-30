@@ -42,3 +42,6 @@ default_project_config = os.path.join(root, 'data', 'projectconfig.yaml')
 
 # ostree-push shell script
 ostree_push = os.path.join(root, 'data', 'ostree-push')
+
+# ostree-pull-ssh shell script
+ostree_pull_ssh = os.path.join(root, 'data', 'ostree-pull-ssh')
