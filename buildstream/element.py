@@ -893,7 +893,8 @@ class Element(Plugin):
 
         # Run shells with network enabled and readonly root.
         exitcode = sandbox.run(['sh', '-i'],
-                               SandboxFlags.NETWORK_ENABLED & SandboxFlags.ROOT_READ_ONLY,
+                               SandboxFlags.NETWORK_ENABLED |
+                               SandboxFlags.ROOT_READ_ONLY,
                                cwd=cwd, env=environment)
 
     def __compose_default_splits(self, defaults):
