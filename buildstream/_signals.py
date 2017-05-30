@@ -98,6 +98,10 @@ def suspend_handler(sig, frame):
 #
 # A context manager for handling process suspending and resumeing
 #
+# Args:
+#    suspend_callback (callable): A function to call as process suspend time.
+#    resume_callback (callable): A function to call as process resume time.
+#
 # This must be used in code blocks which spawn processes that become
 # their own session leader. In these cases, SIGSTOP and SIGCONT need
 # to be propagated to the child process group.
@@ -123,3 +127,38 @@ def suspendable(suspend_callback, resume_callback):
         signal.signal(signal.SIGTSTP, original_stop)
 
     suspendable_stack.pop()
+
+
+# blocked()
+#
+# A context manager for running a code block with blocked signals
+#
+# Args:
+#    signals (list): A list of unix signals to block
+#    discard (bool): Whether to discard entirely the signals which were
+#                    received and pending while the process had blocked them
+#
+@contextmanager
+def blocked(signal_list, discard=True):
+
+    def discard_handler(sig, frame):
+        pass
+
+    if discard:
+        orig_handlers = {}
+        for sig in signal_list:
+            orig_handlers[sig] = signal.signal(sig, discard_handler)
+
+    # Set and save the sigprocmask
+    blocked_signals = signal.pthread_sigmask(signal.SIG_BLOCK, signal_list)
+
+    yield
+
+    # If we have discarded the signals completely, this line will
+    # cause the discard_handler() to trigger for each signal in the list
+    signal.pthread_sigmask(signal.SIG_SETMASK, blocked_signals)
+
+    # Now that we've discarded signals, restore any originals
+    if discard:
+        for sig in signal_list:
+            signal.signal(sig, orig_handlers[sig])
