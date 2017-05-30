@@ -157,18 +157,25 @@ class SandboxBwrap(Sandbox):
         with _signals.suspendable(suspend_bwrap, resume_bwrap), \
             _signals.terminator(terminate_bwrap):
 
-            process = subprocess.Popen(
-                argv,
-                # The default is to share file descriptors from the parent process
-                # to the subprocess, which is rarely good for sandboxing.
-                close_fds=True,
-                env=env,
-                stdout=stdout,
-                stderr=stderr,
-                # We want a separate session, so that we are alone handling SIGTERM
-                start_new_session=True
-            )
-            process.communicate()
-            exit_code = process.poll()
+            try:
+                process = subprocess.Popen(
+                    argv,
+                    # The default is to share file descriptors from the parent process
+                    # to the subprocess, which is rarely good for sandboxing.
+                    close_fds=True,
+                    env=env,
+                    stdout=stdout,
+                    stderr=stderr,
+                    # We want a separate session, so that we are alone handling SIGTERM
+                    start_new_session=True
+                )
+                process.communicate()
+                exit_code = process.poll()
+            except KeyboardInterrupt:
+                # Dont care about keyboard interrupts, they will happen
+                # if a child shell is invoked without available job control
+                terminate_bwrap()
+                exit_code = -1
+                pass
 
         return exit_code
