@@ -89,6 +89,7 @@ class Element(Plugin):
         self.__cache_key = None           # Our cached cache key
         self.__artifacts = artifacts      # Artifact cache
         self.__cached = None              # Whether we have a cached artifact
+        self.__configure_stage = True     # This is just a flag saying that we are in the initial stages
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults()
@@ -115,6 +116,9 @@ class Element(Plugin):
         # ask the element to configure itself.
         self.__config = self.__extract_config(meta)
         self.configure(self.__config)
+
+        # Some things can no longer be done passed this stage
+        self.__configure_stage = False
 
     def __lt__(self, other):
         return self.name < other.name
@@ -221,6 +225,9 @@ class Element(Plugin):
           # variables in the returned string
           name = self.node_subst_member(node, 'name')
         """
+        if not self.__configure_stage:
+            raise ElementError("Attempt to substitute variable after configure stage")
+
         value = self.node_get_member(node, str, member_name, default_value=default_value)
         return self.__variables.subst(value)
 
@@ -258,6 +265,9 @@ class Element(Plugin):
               string = self.node_subst_list_element(
                   node, 'strings', [ i ])
         """
+        if not self.__configure_stage:
+            raise ElementError("Attempt to substitute variable after configure stage")
+
         value = self.node_get_list_element(node, str, member_name, indices)
         return self.__variables.subst(value)
 
