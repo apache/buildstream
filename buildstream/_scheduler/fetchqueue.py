@@ -34,11 +34,20 @@ class FetchQueue(Queue):
     complete_name = "Fetched"
     queue_type = QueueType.FETCH
 
+    def __init__(self, skip_cached=False):
+        super().__init__()
+
+        self.skip_cached = skip_cached
+
     def process(self, element):
         for source in element.sources():
             source._fetch()
 
     def skip(self, element):
+        # Optionally skip elements that are already in the artifact cache
+        if self.skip_cached and element._cached():
+            return True
+
         # This will automatically skip elements which
         # have no sources.
         return element._consistency() == Consistency.CACHED

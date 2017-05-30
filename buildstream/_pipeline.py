@@ -35,7 +35,7 @@ from . import SourceError, ElementError, Consistency, ImplError
 from . import Scope
 from . import _yaml, utils
 
-from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PushQueue
+from ._scheduler import SchedStatus, TrackQueue, ArtifactFetchQueue, FetchQueue, BuildQueue, PushQueue
 
 
 # Internal exception raised when a pipeline fails
@@ -369,14 +369,18 @@ class Pipeline():
         if not track_first:
             self.assert_consistent(plan)
 
-        fetch = FetchQueue()
+        fetch = FetchQueue(skip_cached=True)
         build = BuildQueue()
         track = None
+        artifactfetch = None
         push = None
         queues = []
         if track_first:
             track = TrackQueue()
             queues.append(track)
+        if self.artifacts.can_fetch():
+            artifactfetch = ArtifactFetchQueue()
+            queues.append(artifactfetch)
         queues.append(fetch)
         queues.append(build)
         if self.artifacts.can_push():
@@ -389,6 +393,8 @@ class Pipeline():
         self.message(self.target, MessageType.START, "Starting build")
         elapsed, status = scheduler.run(queues)
         fetched = len(fetch.processed_elements)
+        if artifactfetch:
+            fetched += len(artifactfetch.processed_elements)
         built = len(build.processed_elements)
         if push:
             pushed = len(push.processed_elements)

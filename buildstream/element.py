@@ -812,6 +812,20 @@ class Element(Plugin):
     def _built(self):
         return self.__built
 
+    # _fetch():
+    #
+    # Fetch artifact from remote artifact repository to local artifact cache.
+    #
+    # Returns: True if the artifact has been fetched, False otherwise
+    #
+    def _fetch(self):
+        try:
+            with self.timed_activity("Fetching Artifact"):
+                self.__artifacts.fetch(self)
+            return True
+        except:
+            return False
+
     # _push():
     #
     # Push locally cached artifact to remote artifact repository.

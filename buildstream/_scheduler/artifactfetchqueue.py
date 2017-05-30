@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2016 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -17,13 +17,31 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-from .queue import Queue, QueueType
+# Local imports
+from . import Queue, QueueType
 
-from .fetchqueue import FetchQueue
-from .trackqueue import TrackQueue
-from .buildqueue import BuildQueue
-from .pushqueue import PushQueue
-from .artifactfetchqueue import ArtifactFetchQueue
 
-from .scheduler import Scheduler, SchedStatus
+# A queue which fetches element artifacts
+#
+class ArtifactFetchQueue(Queue):
+
+    action_name = "Fetch"
+    complete_name = "Fetched"
+    queue_type = QueueType.FETCH
+
+    def process(self, element):
+        # does not raise an exception if artifact is unavailable
+        element._fetch()
+
+    def skip(self, element):
+        return element._cached()
+
+    def done(self, element, result, returncode):
+
+        if returncode != 0:
+            return
+
+        # return code is 0 even if artifact was unavailable
+        element._cached(recalculate=True)
