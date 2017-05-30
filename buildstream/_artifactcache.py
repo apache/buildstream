@@ -138,6 +138,27 @@ class ArtifactCache():
 
         _ostree.commit(self.repo, content, ref)
 
+    # can_fetch():
+    #
+    # Check whether remote repository is available for fetching.
+    #
+    # Returns: True if remote repository is available, False otherwise
+    #
+    def can_fetch(self):
+        return self.context.artifact_share is not None
+
+    # fetch():
+    #
+    # Fetch artifact from remote repository.
+    #
+    # Args:
+    #     element (Element): The Element whose artifact is to be fetched
+    #
+    def fetch(self, element):
+        ref = buildref(element)
+
+        _ostree.fetch_ssh(self.repo, remote=self.context.artifact_share, ref=ref)
+
     # can_push():
     #
     # Check whether remote repository is available for pushing.
