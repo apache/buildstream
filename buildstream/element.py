@@ -585,11 +585,17 @@ class Element(Plugin):
 
     # _cached():
     #
+    # Args:
+    #    recalculate (bool): Whether to forcefully recalculate
+    #
     # Returns:
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self):
+    def _cached(self, recalculate=False):
+
+        if recalculate:
+            self.__cached = None
 
         if self.__cached is None and self._get_cache_key() is not None:
             self.__cached = self.__artifacts.contains(self)
