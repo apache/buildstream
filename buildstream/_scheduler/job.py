@@ -128,7 +128,7 @@ class Job():
         # First resume the job if it's suspended
         self.resume(silent=True)
 
-        self.message(self.element, MessageType.WARN,
+        self.message(self.element, MessageType.STATUS,
                      "{} terminating".format(self.action_name))
 
         # Make sure there is no garbage on the queue
@@ -144,13 +144,24 @@ class Job():
     # Args:
     #    timeout (float): Seconds to wait
     #
+    # Returns:
+    #    (bool): True if the process terminated cleanly, otherwise False
     def terminate_wait(self, timeout):
 
         # Join the child process after sending SIGTERM
         self.process.join(timeout)
-        if self.process.exitcode is None:
-            self.message(self.element, MessageType.WARN,
-                         "{} Failed to terminate process cleanly".format(self.action_name))
+        return (self.process.exitcode is not None)
+
+    # kill()
+    #
+    # Forcefully kill the process
+    #
+    def kill(self):
+
+        # Force kill
+        self.message(self.element, MessageType.WARN,
+                     "{} killing".format(self.action_name))
+        os.kill(self.process.pid, signal.SIGKILL)
 
     # suspend()
     #
