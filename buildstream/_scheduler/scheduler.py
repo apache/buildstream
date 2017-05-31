@@ -146,8 +146,11 @@ class Scheduler():
     # Forcefully terminates all ongoing jobs.
     #
     def terminate_jobs(self):
+
+        # 20 seconds is a long time, but sometimes cleaning up man GB
+        # in a build directory can take a long time
         wait_start = datetime.datetime.now()
-        wait_limit = 10.0
+        wait_limit = 20.0
 
         with _signals.blocked([signal.SIGINT]):
 
@@ -161,7 +164,8 @@ class Scheduler():
                 for job in queue.active_jobs:
                     elapsed = datetime.datetime.now() - wait_start
                     timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-                    job.terminate_wait(timeout)
+                    if not job.terminate_wait(timeout):
+                        job.kill()
 
             self.loop.stop()
             self.terminated = True
