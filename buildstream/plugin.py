@@ -26,6 +26,7 @@ import sys
 from subprocess import CalledProcessError
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
+import psutil
 
 from . import _yaml, _signals
 from . import utils
@@ -511,25 +512,25 @@ class Plugin():
             # Handle termination, suspend and resume
             def kill_proc():
                 if process:
-                    # FIXME: Processes not always reliably killed.
+                    # FIXME: This is a brutal but reliable approach
                     #
-                    # Child tasks are always spawned as new sessions
-                    # (i.e. session leader with setsid()), which means
-                    # we should send signals to the group.
+                    # Other variations I've tried which try SIGTERM first
+                    # and then wait for child processes to exit gracefully
+                    # have not reliably cleaned up process trees and have
+                    # left orphaned git or ssh processes alive.
                     #
-                    # This seems more reliable than process.terminate()
-                    # and process.kill(), however in both cases we seem
-                    # to fail to kill some children, notably child ssh
-                    # sessions spawned by git.
+                    # This cleans up the subprocesses reliably but may
+                    # cause side effects such as possibly leaving stale
+                    # locks behind. Hopefully this should not be an issue
+                    # as long as any child processes only interact with
+                    # the temp directories which we control and cleanup
+                    # ourselves.
                     #
-                    # Perhaps we need a recursive process killing here
-                    # as our last resort.
-                    group_id = os.getpgid(process.pid)
-                    os.killpg(group_id, signal.SIGTERM)
-                    try:
-                        process.wait(5)
-                    except TimeoutExpired:
-                        os.killpg(group_id, signal.SIGKILL)
+                    proc = psutil.Process(process.pid)
+                    children = proc.children(recursive=True)
+                    for child in children:
+                        child.kill()
+                    proc.kill()
 
             def suspend_proc():
                 if process:
