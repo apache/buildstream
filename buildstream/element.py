@@ -889,7 +889,8 @@ class Element(Plugin):
         environment = self.get_environment()
         overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
         for override in overrides:
-            environment[override] = os.environ.get(override)
+            if os.environ.get(override) is not None:
+                environment[override] = os.environ.get(override)
 
         # Run shells with network enabled and readonly root.
         exitcode = sandbox.run(['sh', '-i'],
