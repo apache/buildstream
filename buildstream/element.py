@@ -224,6 +224,26 @@ class Element(Plugin):
         value = self.node_get_member(node, str, member_name, default_value=default_value)
         return self.__variables.subst(value)
 
+    def node_subst_list(self, node, member_name):
+        """Fetch a list from a node member, substituting any variables in the list
+
+        Args:
+          node (dict): A dictionary loaded from YAML
+          member_name (str): The name of the member to fetch (a list)
+
+        Returns:
+          The list in *member_name*
+
+        Raises:
+          :class:`.LoadError`
+
+        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_member`
+        except that it assumes the expected type is a list of strings and will also
+        perform variable substitutions.
+        """
+        value = self.node_get_member(node, list, member_name)
+        return [self.__variables.subst(x) for x in value]
+
     def node_subst_list_element(self, node, member_name, indices):
         """Fetch the value of a list element from a node member, substituting any variables
         in the loaded value with the element contextual variables.
