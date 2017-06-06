@@ -47,6 +47,7 @@ General Elements
 * :mod:`import <elements.import>` - Import sources directly
 * :mod:`compose <elements.compose>` - Compose the output of multiple elements
 * :mod:`script <elements.script>` - Run scripts to create output
+* :mod:`x86image <elements.x86image>` - Create x86 bootable disk images
 
 Build Elements
 ~~~~~~~~~~~~~~
