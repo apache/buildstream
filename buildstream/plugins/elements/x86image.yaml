@@ -21,7 +21,6 @@ config:
   # to be the system that you're planning to turn into an image.
   # input: foo-system.bst
 
-  root-read-only: True
   filesystem-tree-setup-commands:
   - |
     # XXX Split up the boot directory and the other
