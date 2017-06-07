@@ -96,7 +96,29 @@ class SandboxBwrap(Sandbox):
         bwrap_command += command
 
         # Run it and return exit code.
-        return self.run_bwrap(bwrap_command, stdout, stderr, env=env)
+        exit_code = self.run_bwrap(bwrap_command, stdout, stderr, env=env)
+
+        # Cleanup things which bwrap might have left behind
+        for device in devices:
+            device_path = os.path.join(directory, device.lstrip('/'))
+            try:
+                os.unlink(device_path)
+            except FileNotFoundError:
+                # ignore this, if bwrap cleaned up properly then it's not a problem.
+                pass
+
+        # Remove /tmp, this is a bwrap owned thing we want to be sure
+        # never ends up in an artifact
+        try:
+            os.rmdir(os.path.join(directory, 'tmp'))
+        except FileNotFoundError:
+            # ignore this, if bwrap cleaned up properly then it's not a problem.
+            #
+            # If the directory was not empty on the other hand, then this is clearly
+            # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
+            pass
+
+        return exit_code
 
     def run_bwrap(self, argv, stdout, stderr, env):
         # Wrapper around subprocess.Popen() with common settings.
