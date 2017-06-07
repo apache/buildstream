@@ -182,11 +182,11 @@ class ScriptElement(Element):
             # if no layout set, stage all dependencies into /
             for build_dep in self.dependencies(Scope.BUILD, recurse=False):
                 with self.timed_activity("Staging {} at /"
-                                         .format(build_dep), silent_nested=True):
+                                         .format(build_dep.name), silent_nested=True):
                     build_dep.stage_dependencies(sandbox, Scope.RUN, path="/")
 
             for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                with self.timed_activity("Integrating {}".format(build_dep), silent_nested=True):
+                with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
                     for dep in build_dep.dependencies(Scope.RUN):
                         dep.integrate(sandbox)
         else:
@@ -197,12 +197,12 @@ class ScriptElement(Element):
                     if element:
                         break
                 if item['destination'] == '/':
-                    with self.timed_activity("Staging {} at /".format(item['element']),
+                    with self.timed_activity("Staging {} at /".format(item['element'].name),
                                              silent_nested=True):
                         element.stage_dependencies(sandbox, Scope.RUN)
                 else:
                     with self.timed_activity("Staging {} at {}"
-                                             .format(item['element'], item['destination']),
+                                             .format(item['element'].name, item['destination']),
                                              silent_nested=True):
                         real_dstdir = os.path.join(sandbox.get_directory(),
                                                    item['destination'].lstrip(os.sep))
