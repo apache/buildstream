@@ -44,12 +44,16 @@ class Project():
 
     Args:
        directory (str): The project directory
-       arch (str): Symbolic machine architecture name
+       host_arch (str): Symbolic host machine architecture name
+       target_arch (str): Symbolic target machine architecture name
 
     Raises:
        :class:`.LoadError`
     """
-    def __init__(self, directory, arch):
+    def __init__(self, directory, host_arch, target_arch=None):
+
+        host_arch = host_arch
+        target_arch = target_arch or host_arch
 
         self.name = None
         """str: The project name"""
@@ -69,7 +73,7 @@ class Project():
         self._cache_key = None
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
-        self._load(arch)
+        self._load(host_arch, target_arch)
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
     def translate_url(self, url):
@@ -101,7 +105,7 @@ class Project():
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, arch):
+    def _load(self, host_arch, target_arch):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, "project.conf")
@@ -111,14 +115,20 @@ class Project():
         # be processed here before compositing any overrides
         variables = _yaml.node_get(config, Mapping, 'variables')
         variables['max-jobs'] = multiprocessing.cpu_count()
-        variables['bst-arch'] = arch
+
+        variables['bst-host-arch'] = host_arch
+        variables['bst-target-arch'] = target_arch
+
+        # This is kept around for compatibility with existing definitions,
+        # but we should probably remove it due to being ambiguous.
+        variables['bst-arch'] = host_arch
 
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf, typesafe=True)
 
         # Resolve arches keyword, project may have arch conditionals
-        _loader.resolve_arch(config, arch)
+        _loader.resolve_arch(config, host_arch, target_arch)
 
         # The project name
         self.name = _yaml.node_get(config, str, 'name')

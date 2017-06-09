@@ -45,15 +45,19 @@ class Context():
     """Context of how BuildStream was invoked
 
     Args:
-       arch (string): The target architecture to build for
+       host_arch (string): The desired architecture on which to run the build
+       target_arch (string): The machine on which the results of the build should execute
     """
-    def __init__(self, arch):
+    def __init__(self, host_arch, target_arch=None):
 
         self.config_origin = None
         """Filename indicating which configuration file was used, or None for the defaults"""
 
-        self.arch = arch
-        """The target architecture to build for"""
+        self.host_arch = host_arch
+        """The desired architecture on which to run the build"""
+
+        self.target_arch = target_arch or host_arch
+        """The machine on which the results of the build should execute"""
 
         self.sourcedir = None
         """The directory where various sources are stored"""
@@ -205,7 +209,8 @@ class Context():
 
             # Anything that alters the build goes into the unique key
             self._cache_key = utils._generate_key({
-                'arch': self.arch
+                'host-arch': self.host_arch,
+                'target-arch': self.target_arch
             })
 
         return self._cache_key

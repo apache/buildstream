@@ -45,6 +45,7 @@ class Symbol():
     VARIANT = "variant"
     VARIANTS = "variants"
     ARCHES = "arches"
+    HOST_ARCHES = "host-arches"
     SOURCES = "sources"
     CONFIG = "config"
     VARIABLES = "variables"
@@ -117,9 +118,11 @@ class VariantError(Exception):
 # the arches dict from the data node afterwards, this is shared
 # with project.py
 #
-def resolve_arch(data, active_arch):
+def resolve_arch(data, host_arch, target_arch=None):
 
-        arches = _yaml.node_get(data, Mapping, Symbol.ARCHES, default_value={})
+    def resolve_single_arch_conditional(symbol, active_arch):
+        arches = _yaml.node_get(data, Mapping, symbol, default_value={})
+
         arch = {}
         if arches:
             arch = _yaml.node_get(arches, Mapping, active_arch, default_value={})
@@ -133,12 +136,16 @@ def resolve_arch(data, active_arch):
                 provenance = _yaml.node_get_provenance(arch, key=active_arch)
                 raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                                 "%s: Arch %s specifies type '%s' for path '%s', expected '%s'" %
-                                (str(provenance), active_arch,
+                                (str(provenance),
+                                 active_arch,
                                  e.actual_type.__name__,
                                  e.path,
                                  e.expected_type.__name__)) from e
 
-        del data[Symbol.ARCHES]
+        del data[symbol]
+
+    resolve_single_arch_conditional(Symbol.HOST_ARCHES, active_arch=host_arch)
+    resolve_single_arch_conditional(Symbol.ARCHES, active_arch=target_arch or host_arch)
 
 
 # A transient object breaking down what is loaded
@@ -147,11 +154,12 @@ def resolve_arch(data, active_arch):
 #
 class LoadElement():
 
-    def __init__(self, data, filename, basedir, arch, elements):
+    def __init__(self, data, filename, basedir, host_arch, target_arch, elements):
 
         self.filename = filename
         self.data = data
-        self.arch = arch
+        self.host_arch = host_arch
+        self.target_arch = target_arch
         self.name = filename
         self.elements = elements
 
@@ -159,7 +167,7 @@ class LoadElement():
         self.basedir = basedir
 
         # Process arch conditionals
-        resolve_arch(self.data, self.arch)
+        resolve_arch(self.data, self.host_arch, self.target_arch)
 
         # Dependency objects after resolving variants
         self.variant_name = None
@@ -178,7 +186,7 @@ class LoadElement():
             variant = Variant(self.name, variant_node)
 
             # Process arch conditionals on individual variants
-            resolve_arch(variant.data, self.arch)
+            resolve_arch(variant.data, self.host_arch, self.target_arch)
             self.variants.append(variant)
 
         if len(self.variants) == 1:
@@ -356,7 +364,7 @@ def extract_depends_from_node(owner, data):
 #
 class Loader():
 
-    def __init__(self, basedir, filename, variant, arch):
+    def __init__(self, basedir, filename, variant, host_arch, target_arch):
 
         # Ensure we have an absolute path for the base directory
         #
@@ -381,8 +389,8 @@ class Loader():
         # Optional variant
         self.target_variant = variant
 
-        # Build architecture
-        self.arch = arch
+        self.host_arch = host_arch
+        self.target_arch = target_arch
 
         self.loaded_files = {}   # Table of files we've already loaded
         self.meta_elements = {}  # Dict of resolved meta elements by name
@@ -465,7 +473,7 @@ class Loader():
 
         # Load the element and track it in our elements table
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
-        element = LoadElement(data, filename, self.basedir, self.arch, self.elements)
+        element = LoadElement(data, filename, self.basedir, self.host_arch, self.target_arch, self.elements)
 
         self.elements[filename] = element
 

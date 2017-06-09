@@ -453,6 +453,9 @@ The ``arches`` attribute, if provided, overrides the element for a given archite
 name. It is not considered an error if the element does not provide an architecture
 clause for the specific architecture BuildStream was launched to build for.
 
+There is also a ``host-arches`` attribute, which operates in the same manner but
+follows the *host* architecture rather than the *target* architecture.
+
 In the above example we demonstrate that a given ``config`` attribute can be overridden
 by an architecture conditional, this can however be done for any segment of the
 element such as ``depends``, ``sources`` and ``public`` as well. It is however illegal
