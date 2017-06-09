@@ -140,7 +140,8 @@ class Pipeline():
         self.element_factory = ElementFactory(pluginbase, project._plugin_element_paths)
         self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
 
-        loader = Loader(self.project.element_path, target, target_variant, context.arch)
+        loader = Loader(self.project.element_path, target, target_variant,
+                        context.host_arch, context.target_arch)
         meta_element = loader.load(rewritable, load_ticker)
         if load_ticker:
             load_ticker(None)

@@ -426,7 +426,8 @@ class LogLine(Widget):
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)
         values["Target"] = pipeline.target.name
-        values["Machine Architecture"] = context.arch
+        values["Host Architecture"] = context.host_arch
+        values["Target Architecture"] = context.target_arch
         values["Variant"] = variant
         text += self.format_values(values)
 

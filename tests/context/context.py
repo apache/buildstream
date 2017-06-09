@@ -30,7 +30,7 @@ def context_fixture():
 def test_context_create(context_fixture):
     context = context_fixture['context']
     assert(isinstance(context, Context))
-    assert(context.arch == 'x86_64')
+    assert(context.host_arch == 'x86_64')
 
 
 #######################################

@@ -39,7 +39,7 @@ class Setup():
         if not os.path.exists(self.context.builddir):
             os.mkdir(self.context.builddir)
 
-        loader = Loader(directory, target, None, None)
+        loader = Loader(directory, target, None, None, None)
         element = loader.load()
         assert(len(element.sources) == 1)
         self.meta_source = element.sources[0]
