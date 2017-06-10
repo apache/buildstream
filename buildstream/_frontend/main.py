@@ -419,13 +419,6 @@ class App():
             click.echo("Error loading user configuration: %s" % str(e))
             sys.exit(1)
 
-        # Create the application's scheduler
-        self.scheduler = Scheduler(self.context,
-                                   interrupt_callback=self.interrupt_handler,
-                                   ticker_callback=self.tick,
-                                   job_start_callback=self.job_started,
-                                   job_complete_callback=self.job_completed)
-
         # Override things in the context from our command line options,
         # the command line when used, trumps the config files.
         #
@@ -442,6 +435,13 @@ class App():
             option_value = self.main_options.get(cli_option)
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
+
+        # Create the application's scheduler
+        self.scheduler = Scheduler(self.context,
+                                   interrupt_callback=self.interrupt_handler,
+                                   ticker_callback=self.tick,
+                                   job_start_callback=self.job_started,
+                                   job_complete_callback=self.job_completed)
 
         # Create the logger right before setting the message handler
         self.logger = LogLine(
