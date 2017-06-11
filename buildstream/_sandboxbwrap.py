@@ -26,9 +26,11 @@ import re
 import tempfile
 import psutil
 import signal
+from contextlib import ExitStack
 
 from . import utils, _signals
 from . import Sandbox, SandboxFlags
+from ._fuse import SafeHardlinks
 
 
 # SandboxBwrap()
@@ -39,18 +41,36 @@ class SandboxBwrap(Sandbox):
 
     def run(self, command, flags, cwd=None, env=None):
 
+        # Fallback to the sandbox default settings for
+        # the cwd and env.
+        #
+        if cwd is None:
+            cwd = self._get_work_directory()
+
+        if env is None:
+            env = self._get_environment()
+
         # We want command args as a list of strings
         if type(command) == str:
             command = [command]
 
         stdout, stderr = self._get_output()
-        directory = self.get_directory()
-        if cwd is None:
-            cwd = '/buildstream'
+        root_directory = self.get_directory()
+        scratch_directory = self._get_scratch_directory()
+        scratch_tempdir = os.path.join(scratch_directory, 'temp')
 
-        # Ensure mount points exist
-        for mount in ['proc', 'dev', 'buildstream']:
-            os.makedirs(os.path.join(directory, mount), exist_ok=True)
+        # If we're read-only, then just mount the real root, otherwise
+        # we're going to redirect that with a safe hardlinking fuse
+        # layer.
+        if flags & SandboxFlags.ROOT_READ_ONLY:
+            root_mount_source = root_directory
+        else:
+            root_mount_source = os.path.join(scratch_directory, 'root')
+            os.makedirs(root_mount_source, exist_ok=True)
+            os.makedirs(scratch_tempdir, exist_ok=True)
+
+        if cwd is None:
+            cwd = '/'
 
         # Grab the full path of the bwrap binary
         bwrap_command = [utils.get_host_tool('bwrap')]
@@ -62,7 +82,7 @@ class SandboxBwrap(Sandbox):
         # Add in the root filesystem stuff first rootfs is mounted as RW initially so
         # that further mounts can be placed on top. If a RO root is required, after
         # all other mounts are complete, root is remounted as RO
-        bwrap_command += ["--bind", directory, "/"]
+        bwrap_command += ["--bind", root_mount_source, "/"]
 
         if not flags & SandboxFlags.NETWORK_ENABLED:
             bwrap_command += ['--unshare-net']
@@ -81,10 +101,15 @@ class SandboxBwrap(Sandbox):
         for device in devices:
             bwrap_command += ['--dev-bind', device, device]
 
-        # Read/Write /buildstream directory
-        bwrap_command += [
-            '--bind', os.path.join(directory, 'buildstream'), '/buildstream'
-        ]
+        # Add bind mounts to marked directories, ensuring they are readwrite
+        #
+        # In the future the marked directories may gain some flags which will
+        # indicate their nature and how we need to mount them, for now they
+        # are just straight forward read-write mounts.
+        marked_directories = self._get_marked_directories()
+        for directory in marked_directories:
+            host_directory = os.path.join(root_directory, directory.lstrip(os.sep))
+            bwrap_command += ['--bind', host_directory, directory]
 
         if flags & SandboxFlags.ROOT_READ_ONLY:
             bwrap_command += ["--remount-ro", "/"]
@@ -95,12 +120,28 @@ class SandboxBwrap(Sandbox):
         # Add the command
         bwrap_command += command
 
-        # Run it and return exit code.
-        exit_code = self.run_bwrap(bwrap_command, stdout, stderr, env=env)
+        # bwrap might create some directories while being suid
+        # and may give them to root gid, if it does, we'll want
+        # to clean them up after, so record what we already had
+        # there just in case so that we can safely cleanup the debris.
+        #
+        existing_basedirs = {
+            directory: os.path.exists(os.path.join(root_directory, directory))
+            for directory in ['tmp', 'dev', 'proc']
+        }
+
+        with ExitStack() as stack:
+
+            # Add the safe hardlink mount to the stack context if we need it
+            if not flags & SandboxFlags.ROOT_READ_ONLY:
+                mount = SafeHardlinks(root_directory, scratch_tempdir)
+                stack.enter_context(mount.mounted(root_mount_source))
+
+            exit_code = self.run_bwrap(bwrap_command, stdout, stderr, env=env)
 
         # Cleanup things which bwrap might have left behind
         for device in devices:
-            device_path = os.path.join(directory, device.lstrip('/'))
+            device_path = os.path.join(root_mount_source, device.lstrip('/'))
             try:
                 os.unlink(device_path)
             except FileNotFoundError:
@@ -109,14 +150,22 @@ class SandboxBwrap(Sandbox):
 
         # Remove /tmp, this is a bwrap owned thing we want to be sure
         # never ends up in an artifact
-        try:
-            os.rmdir(os.path.join(directory, 'tmp'))
-        except FileNotFoundError:
-            # ignore this, if bwrap cleaned up properly then it's not a problem.
-            #
-            # If the directory was not empty on the other hand, then this is clearly
-            # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
-            pass
+        for basedir in ['tmp', 'dev', 'proc']:
+
+            # Skip removal of directories which already existed before
+            # launching bwrap
+            if not existing_basedirs[basedir]:
+                continue
+
+            base_directory = os.path.join(root_mount_source, basedir)
+            try:
+                os.rmdir(base_directory)
+            except FileNotFoundError:
+                # ignore this, if bwrap cleaned up properly then it's not a problem.
+                #
+                # If the directory was not empty on the other hand, then this is clearly
+                # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
+                pass
 
         return exit_code
 
