@@ -116,15 +116,14 @@ def commit(repo, dir, ref):
 
     def commit_filter(repo, path, file_info):
 
-        # If we wanted to commit as uid/gid root, then
-        # we would set the following in this filter:
+        # For now, just set everything in the repo as uid/gid 0
         #
-        #   file_info.set_attribute_uint32('unix::uid', 0)
-        #   file_info.set_attribute_uint32('unix::gid', 0)
+        # In the future we'll want to extract virtualized file
+        # attributes from a fuse layer and use that.
         #
-        # We don't do this because ostree user mode checkouts
-        # not only munge the ownership bits but _also_ the permission
-        # bits.
+        file_info.set_attribute_uint32('unix::uid', 0)
+        file_info.set_attribute_uint32('unix::gid', 0)
+
         return OSTree.RepoCommitFilterResult.ALLOW
 
     commit_modifier = OSTree.RepoCommitModifier.new(
