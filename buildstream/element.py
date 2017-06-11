@@ -281,8 +281,8 @@ class Element(Plugin):
         value = self.node_get_list_element(node, str, member_name, indices)
         return self.__variables.subst(value)
 
-    def stage(self, sandbox, path=None, splits=None, orphans=True):
-        """Stage this element's output in the sandbox
+    def stage_artifact(self, sandbox, path=None, splits=None, orphans=True):
+        """Stage this element's output artifact in the sandbox
 
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
@@ -311,7 +311,7 @@ class Element(Plugin):
 
           # Stage the dependencies for a build of 'self'
           for dep in self.dependencies(Scope.BUILD):
-              dep.stage(sandbox)
+              dep.stage_artifact(sandbox)
         """
 
         # Time to use the artifact, check once more that it's there
@@ -333,13 +333,13 @@ class Element(Plugin):
 
         return overwrites, ignored
 
-    def stage_dependencies(self, sandbox, scope, path=None, splits=None, orphans=True):
+    def stage_dependency_artifacts(self, sandbox, scope, path=None, splits=None, orphans=True):
         """Stage element dependencies in scope
 
         This is primarily a convenience wrapper around
-        :func:`Element.stage() <buildstream.element.Element.stage>` which takes
-        care of staging all the dependencies in `scope` and issueing the appropriate
-        warnings.
+        :func:`Element.stage_artifact() <buildstream.element.Element.stage_artifact>`
+        which takes care of staging all the dependencies in `scope` and issueing the
+        appropriate warnings.
 
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
@@ -356,7 +356,7 @@ class Element(Plugin):
         ignored = {}
 
         for dep in self.dependencies(scope):
-            o, i = dep.stage(sandbox, path=path, splits=splits, orphans=orphans)
+            o, i = dep.stage_artifact(sandbox, path=path, splits=splits, orphans=orphans)
             if o:
                 overwrites[dep.name] = o
             if i:
@@ -396,36 +396,27 @@ class Element(Plugin):
             for i in range(len(commands)):
                 cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
                 self.status("Running integration command", detail=cmd)
-                exitcode = sandbox.run(['sh', '-c', '-e', cmd], 0, env=environment)
+                exitcode = sandbox.run(['sh', '-c', '-e', cmd], 0, env=environment, cwd='/')
                 if exitcode != 0:
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
-    def stage_sources(self, sandbox, path=None):
-        """Stage this element's source input
+    def stage_sources(self, sandbox, directory):
+        """Stage this element's sources to a directory
 
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
-           path (str): An optional sandbox relative path
-
-        **Example:**
-
-        .. code:: python
-
-          # Stage the sources of 'self' to the /build directory
-          # in the sandbox
-          self.stage_sources(sandbox, '/build')
+           directory (str): An absolute path within the sandbox to stage the sources at
         """
-        basedir = sandbox.get_directory()
-        stagedir = basedir \
-            if path is None \
-            else os.path.join(basedir, path.lstrip(os.sep))
+
+        sandbox_root = sandbox.get_directory()
+        host_directory = os.path.join(sandbox_root, directory.lstrip(os.sep))
 
         with self.timed_activity("Staging sources", silent_nested=True):
             for source in self.__sources:
-                source._stage(stagedir)
+                source._stage(host_directory)
 
         # Ensure deterministic mtime of sources at build time
-        utils._set_deterministic_mtime(stagedir)
+        utils._set_deterministic_mtime(directory)
 
     def get_public_data(self, domain):
         """Fetch public data on this element
@@ -465,6 +456,38 @@ class Element(Plugin):
     #############################################################
     #                  Abstract Element Methods                 #
     #############################################################
+    def configure_sandbox(self, sandbox):
+        """Configures the the sandbox for execution
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        Raises:
+           (:class:`.ElementError`): When the element raises an error
+
+        Elements must implement this method to configure the sandbox object
+        for execution.
+        """
+        raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(
+            kind=self.get_kind()))
+
+    def stage(self, sandbox):
+        """Stage inputs into the sandbox directories
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        Raises:
+           (:class:`.ElementError`): When the element raises an error
+
+        Elements must implement this method to populate the sandbox
+        directory with data. This is done either by staging :class:`.Source`
+        objects, by staging the artifacts of the elements this element depends
+        on, or both.
+        """
+        raise ImplError("element plugin '{kind}' does not implement stage()".format(
+            kind=self.get_kind()))
+
     def assemble(self, sandbox):
         """Assemble the output artifact
 
@@ -472,7 +495,7 @@ class Element(Plugin):
            sandbox (:class:`.Sandbox`): The build sandbox
 
         Returns:
-           (str): A sandbox relative path to collect
+           (str): An absolute path within the sandbox to collect the artifact from
 
         Raises:
            (:class:`.ElementError`): When the element raises an error
@@ -731,10 +754,17 @@ class Element(Plugin):
                 shutil.rmtree(rootdir)
 
             with _signals.terminator(cleanup_rootdir), \
-                self.__sandbox(None, rootdir, output_file, output_file) as sandbox:  # nopep8
+                self.__sandbox(rootdir, output_file, output_file) as sandbox:  # nopep8
 
-                # Call the abstract plugin method
+                sandbox_root = sandbox.get_directory()
+
+                # Call the abstract plugin methods
                 try:
+                    # Step 1 - Configure
+                    self.configure_sandbox(sandbox)
+                    # Step 2 - Stage
+                    self.stage(sandbox)
+                    # Step 3 - Assemble
                     collect = self.assemble(sandbox)
                 except _BstError as e:
                     # If an error occurred assembling an element in a sandbox,
@@ -742,9 +772,7 @@ class Element(Plugin):
                     e.sandbox = rootdir
                     raise
 
-                # Note important use of lstrip() here
-                collectdir = os.path.join(rootdir, collect.lstrip(os.sep))
-
+                collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
                 if not os.path.exists(collectdir):
                     raise ElementError(
                         "Directory '{}' was not found inside the sandbox, "
@@ -847,14 +875,47 @@ class Element(Plugin):
     #
     # If directory is not specified, one will be staged using scope
     def _shell(self, scope=None, directory=None):
-        with self.__sandbox(scope, directory) as sandbox:
-            self.__run_shell(sandbox)
+
+        with self.__sandbox(directory) as sandbox:
+
+            # Configure, always step 1
+            self.configure_sandbox(sandbox)
+
+            # Stage something if we need it
+            if not directory:
+                if scope == Scope.BUILD:
+                    self.stage(sandbox)
+                elif scope == Scope.RUN:
+                    # Stage deps in the sandbox root
+                    with self.timed_activity("Staging dependencies", silent_nested=True):
+                        self.stage_dependency_artifacts(sandbox, scope)
+
+                    # Run any integration commands provided by the dependencies
+                    # once they are all staged and ready
+                    for dep in self.dependencies(scope):
+                        dep.integrate(sandbox)
+
+            # Override the element environment with some of
+            # the host environment and use that for the shell environment.
+            #
+            # XXX Hard code should be removed
+            environment = self.get_environment()
+            environment = copy.copy(environment)
+            overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
+            for override in overrides:
+                if os.environ.get(override) is not None:
+                    environment[override] = os.environ.get(override)
+
+            # Run shells with network enabled and readonly root.
+            exitcode = sandbox.run(['sh', '-i'],
+                                   SandboxFlags.NETWORK_ENABLED,
+                                   env=environment)
 
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
     @contextmanager
-    def __sandbox(self, scope, directory, stdout=None, stderr=None):
+    def __sandbox(self, directory, stdout=None, stderr=None):
         context = self.get_context()
         project = self.get_project()
 
@@ -873,50 +934,11 @@ class Element(Plugin):
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
             # Recursive contextmanager...
-            with self.__sandbox(scope, rootdir, stdout=stdout, stderr=stderr) as sandbox:
-
-                # Stage deps in the sandbox root
-                with self.timed_activity("Staging dependencies", silent_nested=True):
-                    self.stage_dependencies(sandbox, scope)
-
-                # Run any integration commands provided by the dependencies
-                # once they are all staged and ready
-                for dep in self.dependencies(scope):
-                    dep.integrate(sandbox)
-
-                if scope == Scope.BUILD:
-                    # Stage sources in /buildstream/build
-                    self.stage_sources(sandbox, '/buildstream/build')
-
+            with self.__sandbox(rootdir, stdout=stdout, stderr=stderr) as sandbox:
                 yield sandbox
 
             # Cleanup the build dir
             shutil.rmtree(rootdir)
-
-    def __run_shell(self, sandbox):
-
-        # Set the cwd to the build dir, if it exists (so that `bst shell` commands
-        # on broken builds automatically land the user in the build directory)
-        directory = sandbox.get_directory()
-        cwd = None
-        if os.path.isdir(os.path.join(directory, 'buildstream', 'build')):
-            cwd = '/buildstream/build'
-
-        # Override the element environment with some of
-        # the host environment and use that for the shell environment.
-        #
-        # XXX Hard code should be removed
-        environment = self.get_environment()
-        overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
-        for override in overrides:
-            if os.environ.get(override) is not None:
-                environment[override] = os.environ.get(override)
-
-        # Run shells with network enabled and readonly root.
-        exitcode = sandbox.run(['sh', '-i'],
-                               SandboxFlags.NETWORK_ENABLED |
-                               SandboxFlags.ROOT_READ_ONLY,
-                               cwd=cwd, env=environment)
 
     def __compose_default_splits(self, defaults):
         project = self.get_project()
