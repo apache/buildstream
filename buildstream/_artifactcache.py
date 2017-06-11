@@ -57,12 +57,6 @@ class ArtifactCache():
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.repo = _ostree.ensure(ostreedir, False)
 
-        # XXX FIXME: We're using compression here to avoid the hardlinks !
-        # We should be using hardlinks but need to fix
-        #    https://gitlab.com/BuildStream/buildstream/issues/19
-        #
-        self.repo = _ostree.ensure(ostreedir, True)
-
     # contains():
     #
     # Check whether the artifact for the specified Element is already available
@@ -114,7 +108,7 @@ class ArtifactCache():
 
             checkoutdir = os.path.join(tmpdir, ref)
 
-            _ostree.checkout(self.repo, checkoutdir, rev)
+            _ostree.checkout(self.repo, checkoutdir, rev, user=True)
 
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             try:
