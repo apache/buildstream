@@ -139,13 +139,13 @@ class BuildElement(Element):
 
         return dictionary
 
-    def assemble(self, sandbox):
-
-        directory = sandbox.get_directory()
+    def configure_sandbox(self, sandbox):
         build_root = self.get_variable('build-root')
         install_root = self.get_variable('install-root')
-        build_root_host = os.path.join(directory, build_root.lstrip(os.sep))
-        install_root_host = os.path.join(directory, install_root.lstrip(os.sep))
+
+        # Tell the sandbox to mount the build root and install root
+        sandbox.mark_directory(build_root)
+        sandbox.mark_directory(install_root)
 
         # Allow running all commands in a specified subdirectory
         command_subdir = self.get_variable('command-subdir')
@@ -153,10 +153,16 @@ class BuildElement(Element):
             command_dir = os.path.join(build_root, command_subdir)
         else:
             command_dir = build_root
+        sandbox.set_work_directory(command_dir)
+
+        # Setup environment
+        sandbox.set_environment(self.get_environment())
+
+    def stage(self, sandbox):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependencies(sandbox, Scope.BUILD)
+            self.stage_dependency_artifacts(sandbox, Scope.BUILD)
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
@@ -164,15 +170,10 @@ class BuildElement(Element):
             for dep in self.dependencies(Scope.BUILD):
                 dep.integrate(sandbox)
 
-        # Stage sources in /buildstream/build
-        self.stage_sources(sandbox, build_root)
+        # Stage sources in the build root
+        self.stage_sources(sandbox, self.get_variable('build-root'))
 
-        # Ensure builddir and installdir
-        os.makedirs(build_root_host, exist_ok=True)
-        os.makedirs(install_root_host, exist_ok=True)
-
-        # Fetch the environment for this element
-        environment = self.get_environment()
+    def assemble(self, sandbox):
 
         # Run commands
         for step in _command_steps:
@@ -190,14 +191,13 @@ class BuildElement(Element):
                         # if any untested command fails.
                         #
                         exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                               SandboxFlags.ROOT_READ_ONLY,
-                                               cwd=command_dir,
-                                               env=environment)
+                                               SandboxFlags.ROOT_READ_ONLY)
                         if exitcode != 0:
                             raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
-        # Return the payload, this is configurable but is generally always /buildstream/install
-        return install_root
+        # Return the payload, this is configurable but is generally
+        # always the /buildstream/install directory
+        return self.get_variable('install-root')
 
     def _get_commands(self, node, name):
         list_node = self.node_get_member(node, list, name, default_value=[])
