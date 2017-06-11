@@ -25,10 +25,15 @@ need only understand this interface, while it may be given a different
 sandbox implementation, any sandbox implementation it is given will
 conform to this interface.
 """
+import os
+
 from . import ImplError
 
 
 class SandboxFlags():
+    """Flags indicating how the sandbox should be run.
+    """
+
     ROOT_READ_ONLY = 0x01
     """The root filesystem is read only.
 
@@ -53,9 +58,60 @@ class Sandbox():
     def __init__(self, context, project, directory, stdout=None, stderr=None):
         self.__context = context
         self.__project = project
-        self.__directory = directory
         self.__stdout = stdout
         self.__stderr = stderr
+        self.__directories = []
+        self.__cwd = None
+        self.__env = None
+
+        # Setup the directories
+        self.__directory = directory
+        self.__root = os.path.join(self.__directory, 'root')
+        self.__scratch = os.path.join(self.__directory, 'scratch')
+        for directory in [self.__root, self.__scratch]:
+            os.makedirs(directory, exist_ok=True)
+
+    def get_directory(self):
+        """Fetches the sandbox root directory
+
+        The root directory is where artifacts for the base
+        runtime environment should be staged.
+
+        Returns:
+           (str): The sandbox root directory
+        """
+        return self.__root
+
+    def set_environment(self, environment):
+        """Sets the environment variables for the sandbox
+
+        Args:
+           directory (dict): The environment variables to use in the sandbox
+        """
+        self.__env = environment
+
+    def set_work_directory(self, directory):
+        """Sets the work directory for commands run in the sandbox
+
+        Args:
+           directory (str): An absolute path within the sandbox
+        """
+        self.__cwd = directory
+
+    def mark_directory(self, directory):
+        """Marks a sandbox directory and ensures it will exist
+
+        Args:
+           directory (str): An absolute path within the sandbox to mark
+
+        .. note::
+           Any marked directories will be read-write in the sandboxed
+           environment, only the root directory is allowed to be readonly.
+        """
+        self.__directories.append(directory)
+
+        host_directory = os.path.join(self.__root, directory.lstrip(os.sep))
+        os.makedirs(host_directory, exist_ok=True)
 
     def run(self, command, flags, cwd=None, env=None):
         """Run a command in the sandbox.
@@ -74,17 +130,14 @@ class Sandbox():
         Raises:
             (:class:`.ProgramNotFoundError`): If a host tool which the given sandbox
                                               implementation requires is not found.
+
+        .. note::
+
+           The optional *cwd* argument will default to the value set with
+           :func:`~buildstream.sandbox.Sandbox.set_work_directory`
         """
         raise ImplError("Sandbox of type '{}' does not implement run()"
                         .format(type(self).__name__))
-
-    def get_directory(self):
-        """Fetches the directory of this sandbox
-
-        Returns:
-           (str): The sandbox root directory
-        """
-        return self.__directory
 
     ################################################
     #               Private methods                #
@@ -106,6 +159,49 @@ class Sandbox():
     #    (Project): The project this sandbox was created for.
     def _get_project(self):
         return self.__project
+
+    # _get_marked_directories()
+    #
+    # Fetches the marked directories in the sandbox
+    #
+    # Returns:
+    #    (list): A list of directories.
+    def _get_marked_directories(self):
+        return self.__directories
+
+    # _get_environment()
+    #
+    # Fetches the environment variables for running commands
+    # in the sandbox.
+    #
+    # Returns:
+    #    (str): The sandbox work directory
+    def _get_environment(self):
+        return self.__env
+
+    # _get_work_directory()
+    #
+    # Fetches the working directory for running commands
+    # in the sandbox.
+    #
+    # Returns:
+    #    (str): The sandbox work directory
+    def _get_work_directory(self):
+        return self.__cwd
+
+    # _get_scratch_directory()
+    #
+    # Fetches the sandbox scratch directory, this directory can
+    # be used by the sandbox implementation to cache things or
+    # redirect temporary fuse mounts.
+    #
+    # The scratch directory is guaranteed to be on the same
+    # filesystem as the root directory.
+    #
+    # Returns:
+    #    (str): The sandbox scratch directory
+    def _get_scratch_directory(self):
+        return self.__scratch
 
     # _get_output()
     #
