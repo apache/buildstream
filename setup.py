@@ -106,7 +106,8 @@ setup(name='BuildStream',
           'ruamel.yaml',
           'pluginbase',
           'Click',
-          'blessings'
+          'blessings',
+          'fusepy'
       ],
       entry_points='''
       [console_scripts]
