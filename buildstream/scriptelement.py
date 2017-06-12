@@ -176,14 +176,23 @@ class ScriptElement(Element):
             'root-read-only': self.__root_read_only
         }
 
-    def assemble(self, sandbox):
+    def configure_sandbox(self, sandbox):
+
+        # Setup the environment and work directory
+        sandbox.set_work_directory(self.__cwd)
+
+        # Setup environment
+        sandbox.set_environment(self.get_environment())
+
+    def stage(self, sandbox):
+
         # Stage the elements, and run integration commands where appropriate.
         if not self.__layout:
             # if no layout set, stage all dependencies into /
             for build_dep in self.dependencies(Scope.BUILD, recurse=False):
                 with self.timed_activity("Staging {} at /"
                                          .format(build_dep.name), silent_nested=True):
-                    build_dep.stage_dependencies(sandbox, Scope.RUN, path="/")
+                    build_dep.stage_dependency_artifacts(sandbox, Scope.RUN, path="/")
 
             for build_dep in self.dependencies(Scope.BUILD, recurse=False):
                 with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
@@ -199,7 +208,7 @@ class ScriptElement(Element):
                 if item['destination'] == '/':
                     with self.timed_activity("Staging {} at /".format(item['element'].name),
                                              silent_nested=True):
-                        element.stage_dependencies(sandbox, Scope.RUN)
+                        element.stage_dependency_artifacts(sandbox, Scope.RUN)
                 else:
                     with self.timed_activity("Staging {} at {}"
                                              .format(item['element'].name, item['destination']),
@@ -207,7 +216,7 @@ class ScriptElement(Element):
                         real_dstdir = os.path.join(sandbox.get_directory(),
                                                    item['destination'].lstrip(os.sep))
                         os.makedirs(os.path.dirname(real_dstdir), exist_ok=True)
-                        element.stage_dependencies(sandbox, Scope.RUN, path=item['destination'])
+                        element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item['destination'])
 
             for item in self.__layout:
                 for bd in self.dependencies(Scope.BUILD, recurse=False):
@@ -224,7 +233,8 @@ class ScriptElement(Element):
         os.makedirs(os.path.join(sandbox.get_directory(), self.__install_root.lstrip(os.sep)),
                     exist_ok=True)
 
-        environment = self.get_environment()
+    def assemble(self, sandbox):
+
         for groupname, commands in self.__commands.items():
             with self.timed_activity("Running '{}'".format(groupname)):
                 for cmd in commands:
@@ -232,9 +242,7 @@ class ScriptElement(Element):
                     # Note the -e switch to 'sh' means to exit with an error
                     # if any untested command fails.
                     exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                           SandboxFlags.ROOT_READ_ONLY if self.__root_read_only else 0,
-                                           cwd=self.__cwd,
-                                           env=environment)
+                                           SandboxFlags.ROOT_READ_ONLY if self.__root_read_only else 0)
                     if exitcode != 0:
                         raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
