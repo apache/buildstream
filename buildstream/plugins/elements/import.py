@@ -51,6 +51,12 @@ class ImportElement(BuildElement):
             'target': self.target
         }
 
+    def configure_sandbox(self, sandbox):
+        pass
+
+    def stage(self, sandbox):
+        pass
+
     def assemble(self, sandbox):
 
         # Stage sources into the input directory
