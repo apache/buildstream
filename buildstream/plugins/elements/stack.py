@@ -42,6 +42,12 @@ class StackElement(Element):
         # do, so our unique key is just a constant.
         return 1
 
+    def configure_sandbox(self, sandbox):
+        pass
+
+    def stage(self, sandbox):
+        pass
+
     def assemble(self, sandbox):
 
         # Just create a dummy empty artifact, its existence is a statement
