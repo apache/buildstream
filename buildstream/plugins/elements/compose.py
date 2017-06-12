@@ -88,11 +88,17 @@ class ComposeElement(Element):
             'orphans': self.include_orphans
         }
 
+    def configure_sandbox(self, sandbox):
+        pass
+
+    def stage(self, sandbox):
+        pass
+
     def assemble(self, sandbox):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependencies(sandbox, Scope.BUILD)
+            self.stage_dependency_artifacts(sandbox, Scope.BUILD)
 
         # Make a snapshot of all the files.
         basedir = sandbox.get_directory()
@@ -147,10 +153,10 @@ class ComposeElement(Element):
 
             self.status("Including {} and {}".format(domains_str, orphans_str))
 
-            self.stage_dependencies(sandbox, Scope.BUILD,
-                                    path=stagedir,
-                                    splits=self.include,
-                                    orphans=self.include_orphans)
+            self.stage_dependency_artifacts(sandbox, Scope.BUILD,
+                                            path=stagedir,
+                                            splits=self.include,
+                                            orphans=self.include_orphans)
 
             if self.integration:
                 self.status("Moving {} integration files".format(len(integration_files)))
