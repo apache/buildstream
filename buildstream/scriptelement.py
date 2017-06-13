@@ -206,12 +206,12 @@ class ScriptElement(Element):
                     if element:
                         break
                 if item['destination'] == '/':
-                    with self.timed_activity("Staging {} at /".format(item['element'].name),
+                    with self.timed_activity("Staging {} at /".format(element.name),
                                              silent_nested=True):
                         element.stage_dependency_artifacts(sandbox, Scope.RUN)
                 else:
                     with self.timed_activity("Staging {} at {}"
-                                             .format(item['element'].name, item['destination']),
+                                             .format(element.name, item['destination']),
                                              silent_nested=True):
                         real_dstdir = os.path.join(sandbox.get_directory(),
                                                    item['destination'].lstrip(os.sep))
@@ -225,7 +225,7 @@ class ScriptElement(Element):
                         break
                 # Integration commands can only be run for elements staged to /
                 if item['destination'] == '/':
-                    with self.timed_activity("Integrating {}".format(item['element']),
+                    with self.timed_activity("Integrating {}".format(element.name),
                                              silent_nested=True):
                         for dep in element.dependencies(Scope.RUN):
                             dep.integrate(sandbox)
