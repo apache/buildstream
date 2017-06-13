@@ -59,10 +59,6 @@ class X86ImageElement(ScriptElement):
         self.set_install_root()
         self.set_root_read_only(True)
 
-    def preflight(self):
-        super(X86ImageElement, self).preflight()
-        self.validate_layout()
-
 
 # Plugin entry point
 def setup():
