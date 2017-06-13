@@ -26,7 +26,6 @@ import sys
 from subprocess import CalledProcessError
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
-import psutil
 
 from . import _yaml, _signals
 from . import utils
@@ -526,11 +525,7 @@ class Plugin():
                     # the temp directories which we control and cleanup
                     # ourselves.
                     #
-                    proc = psutil.Process(process.pid)
-                    children = proc.children(recursive=True)
-                    for child in children:
-                        child.kill()
-                    proc.kill()
+                    utils._kill_process_tree(process.pid)
 
             def suspend_proc():
                 if process:
