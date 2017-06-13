@@ -26,6 +26,8 @@ import re
 import tempfile
 import psutil
 import signal
+import errno
+import time
 from contextlib import ExitStack
 
 from . import utils, _signals
@@ -142,11 +144,10 @@ class SandboxBwrap(Sandbox):
         # Cleanup things which bwrap might have left behind
         for device in devices:
             device_path = os.path.join(root_mount_source, device.lstrip('/'))
-            try:
-                os.unlink(device_path)
-            except FileNotFoundError:
-                # ignore this, if bwrap cleaned up properly then it's not a problem.
-                pass
+
+            # This will remove the device in a loop, allowing some
+            # retries in case the device file leaked by bubblewrap is still busy
+            self.try_remove_device(device_path)
 
         # Remove /tmp, this is a bwrap owned thing we want to be sure
         # never ends up in an artifact
@@ -250,3 +251,37 @@ class SandboxBwrap(Sandbox):
                 pass
 
         return exit_code
+
+    def try_remove_device(self, device_path):
+
+        # Put some upper limit on the tries here
+        max_tries = 1000
+        tries = 0
+
+        while True:
+            try:
+                os.unlink(device_path)
+            except OSError as e:
+                if e.errno == errno.EBUSY:
+                    # This happens on some machines, seems there is a race sometimes
+                    # after bubblewrap returns and the device files it bind-mounted did
+                    # not finish unmounting.
+                    #
+                    if tries < max_tries:
+                        tries += 1
+                        time.sleep(1 / 100)
+                        continue
+                    else:
+                        # We've reached the upper limit of tries, bail out now
+                        # because something must have went wrong
+                        #
+                        raise
+                elif e.errno == errno.ENOENT:
+                    # Bubblewrap cleaned it up for us, no problem if we cant remove it
+                    break
+                else:
+                    # Something unexpected, reraise this error
+                    raise
+            else:
+                # Successfully removed the symlink
+                break
