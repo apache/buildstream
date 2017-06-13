@@ -27,6 +27,7 @@ import collections
 import hashlib
 import pickle
 import calendar
+import psutil
 from . import ProgramNotFoundError
 from . import _yaml
 
@@ -552,3 +553,28 @@ def _set_deterministic_mtime(directory):
                 os.utime(pathname, (magic_timestamp, magic_timestamp))
 
         os.utime(dirname, (magic_timestamp, magic_timestamp))
+
+
+# _kill_process_tree()
+#
+# Brutally murder a process and all of it's children
+#
+# Args:
+#    pid (int): Process ID
+#
+def _kill_process_tree(pid):
+    proc = psutil.Process(pid)
+    children = proc.children(recursive=True)
+
+    def kill_proc(p):
+        try:
+            p.kill()
+        except psutil.AccessDenied:
+            # Ignore this error, it can happen with
+            # some setuid bwrap processes.
+            pass
+
+    # Bloody Murder
+    for child in children:
+        kill_proc(child)
+    kill_proc(proc)
