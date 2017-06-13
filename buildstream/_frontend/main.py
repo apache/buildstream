@@ -392,8 +392,6 @@ class App():
         else:
             self.interactive = self.is_a_tty
 
-        self.terminating = False
-
         # Early enable messaging in debug mode
         if self.main_options['debug']:
             click.echo("DEBUG: Early enablement of messages")
@@ -509,15 +507,25 @@ class App():
             return list(self.pipeline.dependencies(scope))
 
     #
+    # Render the status area, conditional on some internal state
+    #
+    def maybe_render_status(self):
+
+        # If we're suspended or terminating, then dont render the status area
+        if self.status and self.scheduler and \
+           not (self.scheduler.suspended or self.scheduler.terminated):
+            self.status.render()
+
+    #
     # Handle ^C SIGINT interruptions in the scheduling main loop
     #
     def interrupt_handler(self):
 
         # Only handle ^C interactively in interactive mode
         if not self.interactive:
-            self.terminating = True
+            self.status.clear()
             self.scheduler.terminate_jobs()
-            sys.exit(-1)
+            return
 
         # Here we can give the user some choices, like whether they would
         # like to continue, abort immediately, or only complete processing of
@@ -555,11 +563,11 @@ class App():
 
     def job_started(self, element, action_name):
         self.status.add_job(element, action_name)
-        self.status.render()
+        self.maybe_render_status()
 
     def job_completed(self, element, action_name, success):
         self.status.remove_job(element, action_name)
-        self.status.render()
+        self.maybe_render_status()
 
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
@@ -644,7 +652,7 @@ class App():
                     click.echo("\nContinuing with other non failing elements\n", err=True)
 
     def tick(self, elapsed):
-        self.status.render()
+        self.maybe_render_status()
 
     #
     # Prints the application startup heading, used for commands which
@@ -659,11 +667,6 @@ class App():
     # Handle messages from the pipeline
     #
     def message_handler(self, message, context):
-
-        # Dont try to print messages while terminating
-        # in non-interactive mode
-        if self.terminating and not self.interactive:
-            return
 
         # Drop messages by default in the beginning while
         # loading the pipeline, unless debug is specified.
@@ -690,9 +693,8 @@ class App():
         text = self.logger.render(message)
         click.echo(text, nl=False)
 
-        # Avoid the status messages when we're suspended
-        if self.status and self.scheduler and not self.scheduler.suspended:
-            self.status.render()
+        # Maybe render the status area
+        self.maybe_render_status()
 
         # Additionally log to a file
         if self.main_options['log_file']:
@@ -754,8 +756,6 @@ class App():
 
         yield
 
-        if not self.scheduler.terminated:
-            self.scheduler.resume_jobs()
-            self.status.render()
-
+        self.maybe_render_status()
+        self.scheduler.resume_jobs()
         self.scheduler.connect_signals()
