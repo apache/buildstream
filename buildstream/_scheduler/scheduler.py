@@ -145,30 +145,25 @@ class Scheduler():
     #
     # Forcefully terminates all ongoing jobs.
     #
+    # For this to be effective, one needs to return to
+    # the scheduler loop first and allow the scheduler
+    # to complete gracefully.
+    #
+    # NOTE: This will block SIGINT so that graceful process
+    #       termination is not interrupted, and SIGINT will
+    #       remain blocked after Scheduler.run() returns.
+    #
     def terminate_jobs(self):
 
-        # 20 seconds is a long time, but sometimes cleaning up man GB
-        # in a build directory can take a long time
-        wait_start = datetime.datetime.now()
-        wait_limit = 20.0
+        # Set this right away, the frontend will check this
+        # attribute to decide whether or not to print status info
+        # etc and the following code block will trigger some callbacks.
+        self.terminated = True
+        self.loop.call_soon(self.terminate_jobs_real)
 
-        with _signals.blocked([signal.SIGINT]):
-
-            # First tell all jobs to terminate
-            for queue in self.queues:
-                for job in queue.active_jobs:
-                    job.terminate()
-
-            # Now wait for them to really terminate
-            for queue in self.queues:
-                for job in queue.active_jobs:
-                    elapsed = datetime.datetime.now() - wait_start
-                    timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-                    if not job.terminate_wait(timeout):
-                        job.kill()
-
-            self.loop.stop()
-            self.terminated = True
+        # Block this until we're finished terminating jobs,
+        # this will remain blocked forever.
+        signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
 
     # suspend_jobs()
     #
@@ -267,6 +262,27 @@ class Scheduler():
                 failed = True
                 break
         return failed
+
+    def terminate_jobs_real(self):
+        # 20 seconds is a long time, it can take a while and sometimes
+        # we still fail, need to look deeper into this again.
+        wait_start = datetime.datetime.now()
+        wait_limit = 20.0
+
+        # First tell all jobs to terminate
+        for queue in self.queues:
+            for job in queue.active_jobs:
+                job.terminate()
+
+        # Now wait for them to really terminate
+        for queue in self.queues:
+            for job in queue.active_jobs:
+                elapsed = datetime.datetime.now() - wait_start
+                timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
+                if not job.terminate_wait(timeout):
+                    job.kill()
+
+        self.loop.stop()
 
     # get_job_token():
     #
