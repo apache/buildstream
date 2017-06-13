@@ -33,7 +33,7 @@ from ruamel import yaml
 from ..exceptions import _BstError
 from .._message import Message, MessageType, unconditional_messages
 from ..plugin import _plugin_lookup
-from .. import _yaml, _signals
+from .. import _yaml, _signals, utils
 
 
 # Used to distinguish between status messages and return values
@@ -154,14 +154,14 @@ class Job():
 
     # kill()
     #
-    # Forcefully kill the process
+    # Forcefully kill the process, and any children it might have.
     #
     def kill(self):
 
         # Force kill
         self.message(self.element, MessageType.WARN,
-                     "{} killing".format(self.action_name))
-        os.kill(self.process.pid, signal.SIGKILL)
+                     "{} did not terminate gracefully, killing".format(self.action_name))
+        utils._kill_process_tree(self.process.pid)
 
     # suspend()
     #
