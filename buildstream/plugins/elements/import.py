@@ -43,7 +43,11 @@ class ImportElement(BuildElement):
         self.target = self.node_subst_member(node, 'target')
 
     def preflight(self):
-        pass
+        # Assert that we have at least one source to fetch.
+
+        sources = list(self.sources())
+        if not sources:
+            raise ElementError("{}: An import element must have at least one source.".format(self))
 
     def get_unique_key(self):
         return {
@@ -78,7 +82,7 @@ class ImportElement(BuildElement):
         os.makedirs(os.path.dirname(outputdir), exist_ok=True)
 
         if not os.path.exists(inputdir):
-            raise ElementError("{}: No files were found at path '{}'"
+            raise ElementError("{}: No files were found inside directory '{}'"
                                .format(self, self.source))
 
         # Move it over
