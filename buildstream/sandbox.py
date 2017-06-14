@@ -115,9 +115,6 @@ class Sandbox():
             'artifact': artifact
         })
 
-        host_directory = os.path.join(self.__root, directory.lstrip(os.sep))
-        os.makedirs(host_directory, exist_ok=True)
-
     def run(self, command, flags, cwd=None, env=None):
         """Run a command in the sandbox.
 
