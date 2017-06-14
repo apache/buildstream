@@ -98,17 +98,22 @@ class Sandbox():
         """
         self.__cwd = directory
 
-    def mark_directory(self, directory):
+    def mark_directory(self, directory, artifact=False):
         """Marks a sandbox directory and ensures it will exist
 
         Args:
            directory (str): An absolute path within the sandbox to mark
+           artifact (bool): Whether the content staged at this location
+                            contains artifacts
 
         .. note::
            Any marked directories will be read-write in the sandboxed
            environment, only the root directory is allowed to be readonly.
         """
-        self.__directories.append(directory)
+        self.__directories.append({
+            'directory': directory,
+            'artifact': artifact
+        })
 
         host_directory = os.path.join(self.__root, directory.lstrip(os.sep))
         os.makedirs(host_directory, exist_ok=True)
@@ -165,7 +170,12 @@ class Sandbox():
     # Fetches the marked directories in the sandbox
     #
     # Returns:
-    #    (list): A list of directories.
+    #    (list): A list of directory mark objects.
+    #
+    # The returned objects are dictionaries with the following attributes:
+    #    directory: The absolute path within the sandbox
+    #    artifact: Whether the path will contain artifacts or not
+    #
     def _get_marked_directories(self):
         return self.__directories
 
