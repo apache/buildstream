@@ -428,6 +428,7 @@ class Pipeline():
             with self.target.timed_activity("Copying files to {}".format(directory)):
                 utils.copy_files(sandbox_root, directory)
 
+
     # Internal:
     #
     # Returns all elements to be removed from the given list of
