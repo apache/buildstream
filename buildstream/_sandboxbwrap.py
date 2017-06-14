@@ -28,11 +28,115 @@ import psutil
 import signal
 import errno
 import time
-from contextlib import ExitStack
+from collections import OrderedDict
+from contextlib import contextmanager, ExitStack
 
 from . import utils, _signals
 from . import Sandbox, SandboxFlags
 from ._fuse import SafeHardlinks
+
+
+# Mount()
+#
+# Helper data object representing a single mount point in the mount map
+#
+class Mount():
+    def __init__(self, sandbox, mount_point, safe_hardlinks):
+        scratch_directory = sandbox._get_scratch_directory()
+        root_directory = sandbox.get_directory()
+
+        self.mount_point = mount_point
+        self.safe_hardlinks = safe_hardlinks
+
+        # FIXME: When the criteria for mounting something and it's parent
+        #        mount is identical, then there is no need to mount an additional
+        #        fuse layer (i.e. if the root is read-write and there is a directory
+        #        marked for staged artifacts directly within the rootfs, they can
+        #        safely share the same fuse layer).
+        #
+        #        In these cases it would be saner to redirect the sub-mount to
+        #        a regular mount point within the parent's redirected mount.
+        #
+        if self.safe_hardlinks:
+            # Redirected mount
+            self.mount_origin = os.path.join(root_directory, mount_point.lstrip(os.sep))
+            self.mount_base = os.path.join(scratch_directory, utils.url_directory_name(mount_point))
+            self.mount_source = os.path.join(self.mount_base, 'mount')
+            self.mount_tempdir = os.path.join(self.mount_base, 'temp')
+            os.makedirs(self.mount_source, exist_ok=True)
+            os.makedirs(self.mount_tempdir, exist_ok=True)
+        else:
+            # No redirection needed
+            self.mount_source = os.path.join(root_directory, mount_point.lstrip(os.sep))
+
+    @contextmanager
+    def mounted(self, sandbox):
+        if self.safe_hardlinks:
+            mount = SafeHardlinks(self.mount_origin, self.mount_tempdir)
+            with mount.mounted(self.mount_source):
+                yield
+        else:
+            # Nothing to mount here
+            yield
+
+
+# MountMap()
+#
+# Helper object for mapping of the sandbox mountpoints
+#
+# Args:
+#    sandbox (Sandbox): The sandbox object
+#    root_readonly (bool): Whether the sandbox root is readonly
+#    marks (list): List of dictionaries returned by Sandbox._get_marked_directories()
+#
+class MountMap():
+
+    def __init__(self, sandbox, root_readonly):
+        # We will be doing the mounts in the order in which they were declared.
+        self.mounts = OrderedDict()
+
+        # We want safe hardlinks on rootfs whenever root is not readonly
+        if root_readonly:
+            self.mounts['/'] = Mount(sandbox, '/', False)
+        else:
+            self.mounts['/'] = Mount(sandbox, '/', True)
+
+        for mark in sandbox._get_marked_directories():
+            directory = mark['directory']
+            artifact = mark['artifact']
+
+            # We want safe hardlinks for any non-root directory where
+            # artifacts will be staged to
+            self.mounts[directory] = Mount(sandbox, directory, artifact)
+
+    # get_mount_source()
+    #
+    # Gets the host directory where the mountpoint in the
+    # sandbox should be bind mounted from
+    #
+    # Args:
+    #    mountpoint (str): The absolute mountpoint path inside the sandbox
+    #
+    # Returns:
+    #    The host path to be mounted at the mount point
+    #
+    def get_mount_source(self, mountpoint):
+        return self.mounts[mountpoint].mount_source
+
+    # mounted()
+    #
+    # A context manager which ensures all the mount sources
+    # were mounted with any fuse layers which may have been needed.
+    #
+    # Args:
+    #    sandbox (Sandbox): The sandbox
+    #
+    @contextmanager
+    def mounted(self, sandbox):
+        with ExitStack() as stack:
+            for mountpoint, mount in self.mounts.items():
+                stack.enter_context(mount.mounted(sandbox))
+            yield
 
 
 # SandboxBwrap()
@@ -41,7 +145,20 @@ from ._fuse import SafeHardlinks
 #
 class SandboxBwrap(Sandbox):
 
+    # Minimal set of devices for the sandbox
+    DEVICES = [
+        '/dev/full',
+        '/dev/null',
+        '/dev/urandom',
+        '/dev/random',
+        '/dev/zero'
+    ]
+
     def run(self, command, flags, cwd=None, env=None):
+        stdout, stderr = self._get_output()
+        root_directory = self.get_directory()
+        scratch_directory = self._get_scratch_directory()
+        scratch_tempdir = os.path.join(scratch_directory, 'temp')
 
         # Fallback to the sandbox default settings for
         # the cwd and env.
@@ -56,20 +173,10 @@ class SandboxBwrap(Sandbox):
         if type(command) == str:
             command = [command]
 
-        stdout, stderr = self._get_output()
-        root_directory = self.get_directory()
-        scratch_directory = self._get_scratch_directory()
-        scratch_tempdir = os.path.join(scratch_directory, 'temp')
-
-        # If we're read-only, then just mount the real root, otherwise
-        # we're going to redirect that with a safe hardlinking fuse
-        # layer.
-        if flags & SandboxFlags.ROOT_READ_ONLY:
-            root_mount_source = root_directory
-        else:
-            root_mount_source = os.path.join(scratch_directory, 'root')
-            os.makedirs(root_mount_source, exist_ok=True)
-            os.makedirs(scratch_tempdir, exist_ok=True)
+        # Create the mount map, this will tell us where
+        # each mount point needs to be mounted from and to
+        mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY)
+        root_mount_source = mount_map.get_mount_source('/')
 
         if cwd is None:
             cwd = '/'
@@ -81,9 +188,11 @@ class SandboxBwrap(Sandbox):
         # are cleaned up when the bwrap process exits.
         bwrap_command += ['--unshare-pid']
 
-        # Add in the root filesystem stuff first rootfs is mounted as RW initially so
-        # that further mounts can be placed on top. If a RO root is required, after
-        # all other mounts are complete, root is remounted as RO
+        # Add in the root filesystem stuff first.
+        #
+        # The rootfs is mounted as RW initially so that further mounts can be
+        # placed on top. If a RO root is required, after all other mounts are
+        # complete, root is remounted as RO
         bwrap_command += ["--bind", root_mount_source, "/"]
 
         if not flags & SandboxFlags.NETWORK_ENABLED:
@@ -99,19 +208,15 @@ class SandboxBwrap(Sandbox):
         ]
 
         # Bind some minimal set of host devices
-        devices = ['/dev/full', '/dev/null', '/dev/urandom', '/dev/random', '/dev/zero']
-        for device in devices:
+        for device in self.DEVICES:
             bwrap_command += ['--dev-bind', device, device]
 
-        # Add bind mounts to marked directories, ensuring they are readwrite
-        #
-        # In the future the marked directories may gain some flags which will
-        # indicate their nature and how we need to mount them, for now they
-        # are just straight forward read-write mounts.
+        # Add bind mounts to any marked directories
         marked_directories = self._get_marked_directories()
-        for directory in marked_directories:
-            host_directory = os.path.join(root_directory, directory.lstrip(os.sep))
-            bwrap_command += ['--bind', host_directory, directory]
+        for mark in marked_directories:
+            mount_point = mark['directory']
+            mount_source = mount_map.get_mount_source(mount_point)
+            bwrap_command += ['--bind', mount_source, mount_point]
 
         if flags & SandboxFlags.ROOT_READ_ONLY:
             bwrap_command += ["--remount-ro", "/"]
@@ -132,17 +237,17 @@ class SandboxBwrap(Sandbox):
             for directory in ['tmp', 'dev', 'proc']
         }
 
-        with ExitStack() as stack:
+        # Use the MountMap context manager to ensure that any redirected
+        # mounts through fuse layers are in context and ready for bwrap
+        # to mount them from.
+        #
+        with mount_map.mounted(self):
 
-            # Add the safe hardlink mount to the stack context if we need it
-            if not flags & SandboxFlags.ROOT_READ_ONLY:
-                mount = SafeHardlinks(root_directory, scratch_tempdir)
-                stack.enter_context(mount.mounted(root_mount_source))
-
+            # Run bubblewrap !
             exit_code = self.run_bwrap(bwrap_command, stdout, stderr, env=env)
 
         # Cleanup things which bwrap might have left behind
-        for device in devices:
+        for device in self.DEVICES:
             device_path = os.path.join(root_mount_source, device.lstrip('/'))
 
             # This will remove the device in a loop, allowing some
