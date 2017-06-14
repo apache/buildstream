@@ -52,6 +52,7 @@ class X86ImageElement(ScriptElement):
             self.add_commands(group, cmds)
 
         self.layout_add(self.node_subst_member(node, 'base'), "/")
+        self.layout_add(None, '/buildstream')
         self.layout_add(self.node_subst_member(node, 'input'),
                         self.get_variable('build-root'))
 
