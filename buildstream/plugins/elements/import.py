@@ -82,7 +82,7 @@ class ImportElement(BuildElement):
         os.makedirs(os.path.dirname(outputdir), exist_ok=True)
 
         if not os.path.exists(inputdir):
-            raise ElementError("{}: No files were found at path '{}'"
+            raise ElementError("{}: No files were found inside directory '{}'"
                                .format(self, self.source))
 
         # Move it over
