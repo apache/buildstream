@@ -37,7 +37,7 @@ class ScriptElement(buildstream.ScriptElement):
     def configure(self, node):
         for n in self.node_get_member(node, list, 'layout', []):
             dst = self.node_subst_member(n, 'destination')
-            elm = self.node_subst_member(n, 'element')
+            elm = self.node_subst_member(n, 'element', default_value='') or None
             self.layout_add(elm, dst)
 
         cmds = []
