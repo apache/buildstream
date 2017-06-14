@@ -20,6 +20,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 import os
+import shutil
 from pluginbase import PluginBase
 from operator import itemgetter
 
@@ -392,3 +393,48 @@ class Pipeline():
                                     .format(directory, "  " + "  \n".join(overwrites)))
 
         utils.link_files(extract, directory)
+
+    # source_bundle()
+    #
+    # Create a build bundle for the given artifact.
+    #
+    # Args:
+    #    directory (str): The directory to checkout the artifact to
+    #
+    def source_bundle(self, scheduler, directory):
+        try:
+            if not os.path.isdir(directory):
+                os.makedirs(directory, exist_ok=True)
+        except e:
+            raise PipelineError("Failed to create output directory: {}".format(e)) from e
+
+        dependencies = list(self.dependencies(Scope.ALL))
+
+        self.fetch(scheduler, dependencies)
+
+        # We don't use the scheduler for this as it is almost entirely IO
+        # bound.
+
+        source_directory = os.path.join(directory, 'source')
+        os.makedirs(source_directory, exist_ok=True)
+
+        from . import Sandbox
+        sandbox = Sandbox(self.context, self.project, directory)
+        for d in dependencies:
+            if d.get_kind() == 'import':
+                # We need to avoid the host tools binaries which come as part of
+                # any BuildStream element's dependency chain. The whole reason for
+                # bootstrapping is that no host tools binaries exist yet :-)
+                pass
+            else:
+                element_source_directory = os.path.join(source_directory,
+                                                        d.normal_name)
+                try:
+                    d.stage_sources(sandbox, path=element_source_directory)
+                except:
+                    self.message(self.target, MessageType.INFO,
+                                 "Cleaning up partial directory '{}'"
+                                 .format(element_source_directory))
+                    shutil.rmtree(element_source_directory)
+                    raise
+
