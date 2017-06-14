@@ -95,7 +95,7 @@ class ScriptElement(Element):
         staging area for running commands.
 
         Args:
-          element (str): The name of the element to stage. This may be any
+          element (str): The name of the element to stage, or None. This may be any
           element found in the dependencies, whether it is a direct or indirect
           dependency.
           destination (str): The path inside the staging area for where to
@@ -106,6 +106,17 @@ class ScriptElement(Element):
         stage the Scope.BUILD dependencies of the element in question at the
         sandbox root. Otherwise, the Scope.RUN dependencies of each specified
         element will be staged in their specified destination directories.
+
+        .. note::
+
+           The order of directories in the layout is significant as they
+           will be mounted into the sandbox. It is an error to specify a parent
+           directory which will shadow a directory already present in the layout.
+
+        .. note::
+
+           In the case that no element is specified, a read-write directory will
+           be made available at the specified location.
         """
         if not self.__layout:
             self.__layout = []
@@ -143,15 +154,11 @@ class ScriptElement(Element):
 
             # Cannot proceed if layout specifies an element that isn't part
             # of the dependencies.
-            rundeps = set()
-            for rd in self.dependencies(Scope.BUILD, recurse=False):
-                rundeps |= set(rd.dependencies(Scope.RUN))
             for item in self.__layout:
-                element_name = item['element']
-                element_found = any([(rd.name == element_name) for rd in rundeps])
-                if not element_found:
-                    raise ElementError("{}: '{}' in layout not found in dependencies"
-                                       .format(self, element_name))
+                if item['element']:
+                    if not self.search(Scope.BUILD, item['element']):
+                        raise ElementError("{}: '{}' in layout not found in dependencies"
+                                           .format(self, item['element']))
 
     def preflight(self):
         # All dependencies on script elements must be BUILD only, otherwise
@@ -184,6 +191,14 @@ class ScriptElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
+        # Mark the artifact directories in the layout
+        for item in self.__layout:
+            if item['destination'] != '/':
+                if item['element']:
+                    sandbox.mark_directory(item['destination'], artifact=True)
+                else:
+                    sandbox.mark_directory(item['destination'])
+
     def stage(self, sandbox):
 
         # Stage the elements, and run integration commands where appropriate.
@@ -201,10 +216,12 @@ class ScriptElement(Element):
         else:
             # If layout, follow its rules.
             for item in self.__layout:
-                for bd in self.dependencies(Scope.BUILD, recurse=False):
-                    element = bd.search(Scope.RUN, item['element'])
-                    if element:
-                        break
+
+                # Skip layout members which dont stage an element
+                if not item['element']:
+                    continue
+
+                element = self.search(Scope.BUILD, item['element'])
                 if item['destination'] == '/':
                     with self.timed_activity("Staging {} at /".format(element.name),
                                              silent_nested=True):
@@ -219,10 +236,13 @@ class ScriptElement(Element):
                         element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item['destination'])
 
             for item in self.__layout:
-                for bd in self.dependencies(Scope.BUILD, recurse=False):
-                    element = bd.search(Scope.RUN, item['element'])
-                    if element:
-                        break
+
+                # Skip layout members which dont stage an element
+                if not item['element']:
+                    continue
+
+                element = self.search(Scope.BUILD, item['element'])
+
                 # Integration commands can only be run for elements staged to /
                 if item['destination'] == '/':
                     with self.timed_activity("Integrating {}".format(element.name),
