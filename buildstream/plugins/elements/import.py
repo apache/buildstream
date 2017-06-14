@@ -32,7 +32,7 @@ The empty configuration is as such:
 
 import os
 import shutil
-from buildstream import BuildElement
+from buildstream import BuildElement, ElementError
 
 
 # Element implementation for the 'import' kind.
@@ -76,6 +76,10 @@ class ImportElement(BuildElement):
 
         # Ensure target directory parent
         os.makedirs(os.path.dirname(outputdir), exist_ok=True)
+
+        if not os.path.exists(inputdir):
+            raise ElementError("{}: No files were found at path '{}'"
+                               .format(self, self.source))
 
         # Move it over
         shutil.move(inputdir, outputdir)
