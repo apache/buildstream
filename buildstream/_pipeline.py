@@ -373,22 +373,19 @@ class Pipeline():
     #    force (bool): Force overwrite files which exist in `directory`
     #
     def checkout(self, directory, force):
-
         try:
             os.makedirs(directory, exist_ok=True)
         except e:
             raise PipelineError("Failed to create checkout directory: {}".format(e)) from e
 
-        extract = self.artifacts.extract(self.target)
-        if not force:
-            extract_files = list(utils.list_relative_paths(extract))
-            checkout_files = list(utils.list_relative_paths(directory))
-            overwrites = [
-                f for f in checkout_files
-                if f in extract_files and f != '.'
-            ]
-            if overwrites:
-                raise PipelineError("Files already exist in {}\n\n{}"
-                                    .format(directory, "  " + "  \n".join(overwrites)))
+        if not force and os.listdir(directory):
+            raise PipelineError("Checkout directory is not empty: {}"
+                                .format(directory))
 
-        utils.link_files(extract, directory)
+        # Stage deps into a temporary sandbox first
+        with self.target._prepare_sandbox(Scope.RUN, None) as sandbox:
+
+            # Make copies from the sandbox into to the desired directory
+            sandbox_root = sandbox.get_directory()
+            with self.target.timed_activity("Copying files to {}".format(directory)):
+                utils.copy_files(sandbox_root, directory)
