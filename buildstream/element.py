@@ -864,21 +864,17 @@ class Element(Plugin):
             for dep in self.dependencies(Scope.ALL):
                 dep._set_log_handle(logfile, False)
 
-    # _shell():
+    # _prepare_sandbox():
     #
-    # Connects the terminal with a shell running in a staged
-    # environment
+    # This stages things for either _shell() (below) or also
+    # is used to stage things by the `bst checkout` codepath
     #
-    # Args:
-    #    scope (Scope): Either BUILD or RUN scopes are valid, or None
-    #    directory (str): A directory to an existing sandbox, or None
-    #
-    # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None):
+    @contextmanager
+    def _prepare_sandbox(self, scope, directory):
 
         with self.__sandbox(directory) as sandbox:
 
-            # Configure, always step 1
+            # Configure always comes first, and we need it.
             self.configure_sandbox(sandbox)
 
             # Stage something if we need it
@@ -892,8 +888,25 @@ class Element(Plugin):
 
                     # Run any integration commands provided by the dependencies
                     # once they are all staged and ready
-                    for dep in self.dependencies(scope):
-                        dep.integrate(sandbox)
+                    with self.timed_activity("Integrating sandbox"):
+                        for dep in self.dependencies(scope):
+                            dep.integrate(sandbox)
+
+            yield sandbox
+
+    # _shell():
+    #
+    # Connects the terminal with a shell running in a staged
+    # environment
+    #
+    # Args:
+    #    scope (Scope): Either BUILD or RUN scopes are valid, or None
+    #    directory (str): A directory to an existing sandbox, or None
+    #
+    # If directory is not specified, one will be staged using scope
+    def _shell(self, scope=None, directory=None):
+
+        with self._prepare_sandbox(scope, directory) as sandbox:
 
             # Override the element environment with some of
             # the host environment and use that for the shell environment.
