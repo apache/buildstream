@@ -195,7 +195,7 @@ def track(app, target, arch, variant, deps):
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
 @click.option('--deps', '-d', default='all',
-              type=click.Choice(['none', 'plan', 'all']),
+              type=click.Choice(['none', 'plan', 'run', 'build', 'all']),
               help='The dependencies to show (default: all)')
 @click.option('--order', default="stage",
               type=click.Choice(['stage', 'alpha']),
@@ -219,7 +219,9 @@ def show(app, target, arch, variant, deps, order, format):
 
     \b
         none:  No dependencies, just the element itself
-        plan:  Only dependencies required for the build plan
+        plan:  Dependencies required for a build plan
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
 
     \b
