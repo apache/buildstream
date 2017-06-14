@@ -63,11 +63,13 @@ class Mount():
             self.mount_base = os.path.join(scratch_directory, utils.url_directory_name(mount_point))
             self.mount_source = os.path.join(self.mount_base, 'mount')
             self.mount_tempdir = os.path.join(self.mount_base, 'temp')
+            os.makedirs(self.mount_origin, exist_ok=True)
             os.makedirs(self.mount_source, exist_ok=True)
             os.makedirs(self.mount_tempdir, exist_ok=True)
         else:
             # No redirection needed
             self.mount_source = os.path.join(root_directory, mount_point.lstrip(os.sep))
+            os.makedirs(self.mount_source, exist_ok=True)
 
     @contextmanager
     def mounted(self, sandbox):
