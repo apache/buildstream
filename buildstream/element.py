@@ -416,7 +416,7 @@ class Element(Plugin):
                 source._stage(host_directory)
 
         # Ensure deterministic mtime of sources at build time
-        utils._set_deterministic_mtime(directory)
+        utils._set_deterministic_mtime(host_directory)
 
     def get_public_data(self, domain):
         """Fetch public data on this element
