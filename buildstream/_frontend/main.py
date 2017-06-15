@@ -121,13 +121,15 @@ def build(app, target, arch, variant, all, track):
 @click.option('--deps', '-d', default='plan',
               type=click.Choice(['none', 'plan', 'all']),
               help='The dependencies to fetch (default: plan)')
+@click.option('--track', default=False, is_flag=True,
+              help="Track new source references before fetching")
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def fetch(app, target, arch, variant, deps):
+def fetch(app, target, arch, variant, deps, track):
     """Fetch sources required to build the pipeline
 
     By default this will only try to fetch sources which are
@@ -142,11 +144,11 @@ def fetch(app, target, arch, variant, deps):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    app.initialize(target, arch, variant)
+    app.initialize(target, arch, variant, rewritable=track, inconsistent=track)
     dependencies = app.deps_elements(deps)
     app.print_heading(deps=dependencies)
     try:
-        app.pipeline.fetch(app.scheduler, dependencies)
+        app.pipeline.fetch(app.scheduler, dependencies, track)
         click.echo("")
     except PipelineError:
         click.echo("")
