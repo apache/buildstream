@@ -46,6 +46,13 @@ except ImportError:
 # We require at least v2016.8 of OSTree, which contain the
 # fixes in this bug:
 #   https://github.com/ostreedev/ostree/pull/417
+#
+# Note: As of ostree v2017.4, we can use the symbols:
+#   OSTree.YEAR_VERSION
+#   OSTree.RELEASE_VERSION
+#
+# Directly, to make checks on the version, if we have
+# a version which lacks these symbols, then it is < v2017.4
 ##################################################################
 def exit_ostree(reason):
     print(reason + ": BuildStream requires OSTree >= v2016.8 with Python bindings. "
