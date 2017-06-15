@@ -176,6 +176,26 @@ class Pipeline():
                     yield source
             yield element
 
+    # Asserts that the pipeline is in a consistent state, that
+    # is to say that all sources are consistent and can at least
+    # be fetched.
+    #
+    # Consequently it also means that cache keys can be resolved.
+    #
+    def assert_consistent(self, toplevel):
+        inconsistent = []
+        for element in toplevel:
+            if element._consistency() == Consistency.INCONSISTENT:
+                inconsistent.append(element)
+
+        if inconsistent:
+            detail = "Exact versions are missing for the following elements\n" + \
+                     "Try tracking these elements first with `bst track`\n\n"
+            for element in inconsistent:
+                detail += "  " + element.name + "\n"
+            self.message(self.target, MessageType.ERROR, "Inconsistent pipeline", detail=detail)
+            raise PipelineError()
+
     # Generator function to iterate over only the elements
     # which are required to build the pipeline target, omitting
     # cached elements. The elements are yielded in a depth sorted
@@ -194,6 +214,48 @@ class Pipeline():
                     message_type,
                     message,
                     **args))
+
+    # Internal: Instantiates plugin-provided Element and Source instances
+    # from MetaElement and MetaSource objects
+    #
+    def resolve(self, meta_element, resolved=None, ticker=None):
+        if resolved is None:
+            resolved = {}
+
+        if meta_element in resolved:
+            return resolved[meta_element]
+
+        if ticker:
+            ticker(meta_element.name)
+
+        element = self.element_factory.create(meta_element.kind,
+                                              self.context,
+                                              self.project,
+                                              self.artifacts,
+                                              meta_element)
+
+        resolved[meta_element] = element
+
+        # resolve dependencies
+        for dep in meta_element.dependencies:
+            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.RUN)
+        for dep in meta_element.build_dependencies:
+            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.BUILD)
+
+        # resolve sources
+        for meta_source in meta_element.sources:
+            element._add_source(
+                self.source_factory.create(meta_source.kind,
+                                           self.context,
+                                           self.project,
+                                           meta_source)
+            )
+
+        return element
+
+    #############################################################
+    #                         Commands                          #
+    #############################################################
 
     # track()
     #
@@ -238,25 +300,35 @@ class Pipeline():
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to fetch
+    #    track_first (bool): Track new source references before fetching
     #
-    def fetch(self, scheduler, dependencies):
+    def fetch(self, scheduler, dependencies, track_first):
 
         plan = dependencies
 
-        # Filter out elements with inconsistent sources, they can't be fetched.
-        inconsistent = [elt for elt in plan if elt._consistency() == Consistency.INCONSISTENT]
-        plan = [elt for elt in plan if elt not in inconsistent]
+        # Assert that we have a consistent pipeline, or that
+        # the track option will make it consistent
+        if not track_first:
+            self.assert_consistent(plan)
 
         # Filter out elements with cached sources, we already have them.
         cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
         plan = [elt for elt in plan if elt not in cached]
 
         self.session_elements = len(plan)
+
         fetch = FetchQueue()
-        fetch.enqueue(plan)
+        if track_first:
+            track = TrackQueue()
+            track.enqueue(plan)
+            queues = [track, fetch]
+        else:
+            track = None
+            fetch.enqueue(plan)
+            queues = [fetch]
 
         self.message(self.target, MessageType.START, "Fetching {} elements".format(len(plan)))
-        elapsed, status = scheduler.run([fetch])
+        elapsed, status = scheduler.run(queues)
         fetched = len(fetch.processed_elements)
 
         if status == SchedStatus.ERROR:
@@ -271,44 +343,6 @@ class Pipeline():
             self.message(self.target, MessageType.SUCCESS,
                          "Fetched {} elements".format(fetched),
                          elapsed=elapsed)
-
-    # Internal: Instantiates plugin-provided Element and Source instances
-    # from MetaElement and MetaSource objects
-    #
-    def resolve(self, meta_element, resolved=None, ticker=None):
-        if resolved is None:
-            resolved = {}
-
-        if meta_element in resolved:
-            return resolved[meta_element]
-
-        if ticker:
-            ticker(meta_element.name)
-
-        element = self.element_factory.create(meta_element.kind,
-                                              self.context,
-                                              self.project,
-                                              self.artifacts,
-                                              meta_element)
-
-        resolved[meta_element] = element
-
-        # resolve dependencies
-        for dep in meta_element.dependencies:
-            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.RUN)
-        for dep in meta_element.build_dependencies:
-            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.BUILD)
-
-        # resolve sources
-        for meta_source in meta_element.sources:
-            element._add_source(
-                self.source_factory.create(meta_source.kind,
-                                           self.context,
-                                           self.project,
-                                           meta_source)
-            )
-
-        return element
 
     # build()
     #
@@ -327,9 +361,11 @@ class Pipeline():
         else:
             plan = list(self.plan())
 
-        # We could bail out here on inconsistent elements, but
-        # it could be the user wants to get as far as possible
-        # even if some elements have failures.
+        # Assert that we have a consistent pipeline, or that
+        # the track option will make it consistent
+        if not track_first:
+            self.assert_consistent(plan)
+
         fetch = FetchQueue()
         build = BuildQueue()
         track = None
