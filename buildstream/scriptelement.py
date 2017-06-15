@@ -41,7 +41,7 @@ class ScriptElement(Element):
     __cwd = "/"
     __root_read_only = False
     __commands = None
-    __layout = None
+    __layout = []
 
     def set_work_dir(self, work_dir=None):
         """Sets the working dir
@@ -118,6 +118,10 @@ class ScriptElement(Element):
            In the case that no element is specified, a read-write directory will
            be made available at the specified location.
         """
+        #
+        # Even if this is an empty list by default, make sure that it's
+        # instance data instead of appending stuff directly onto class data.
+        #
         if not self.__layout:
             self.__layout = []
         self.__layout.append({"element": element,
