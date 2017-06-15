@@ -72,7 +72,7 @@ class TarSource(Source):
         return
 
     def get_unique_key(self):
-        return [self.original_url, self.ref]
+        return [self.original_url, self.ref, self.base_dir]
 
     def get_consistency(self):
         if self.ref is None:
