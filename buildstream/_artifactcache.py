@@ -57,6 +57,16 @@ class ArtifactCache():
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.repo = _ostree.ensure(ostreedir, False)
 
+        if self.context.artifact_share and \
+           (self.context.artifact_share.startswith("http:") or
+            self.context.artifact_share.startswith("https:")):
+            self.remote = context.artifact_share
+            self.remote = self.remote.replace('http://', '').replace('https://', '')
+            self.remote = self.remote.replace('/', '-').replace(':', '-')
+            _ostree.configure_remote(self.repo, self.remote, context.artifact_share)
+        else:
+            self.remote = None
+
     # contains():
     #
     # Check whether the artifact for the specified Element is already available
@@ -157,7 +167,10 @@ class ArtifactCache():
     def fetch(self, element):
         ref = buildref(element)
 
-        _ostree.fetch_ssh(self.repo, remote=self.context.artifact_share, ref=ref)
+        if self.remote:
+            _ostree.fetch(self.repo, remote=self.remote, ref=ref)
+        else:
+            _ostree.fetch_ssh(self.repo, remote=self.context.artifact_share, ref=ref)
 
     # can_push():
     #
@@ -166,7 +179,7 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_push(self):
-        return self.context.artifact_share is not None
+        return self.context.artifact_share is not None and self.remote is None
 
     # push():
     #
