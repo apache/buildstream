@@ -118,6 +118,8 @@ def build(app, target, arch, variant, all, track):
 #                          Fetch Command                         #
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
+@click.option('--except', 'except_',
+              help="Except certain dependencies from fetching")
 @click.option('--deps', '-d', default='plan',
               type=click.Choice(['none', 'plan', 'all']),
               help='The dependencies to fetch (default: plan)')
@@ -129,7 +131,7 @@ def build(app, target, arch, variant, all, track):
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def fetch(app, target, arch, variant, deps, track):
+def fetch(app, target, arch, variant, deps, track, except_):
     """Fetch sources required to build the pipeline
 
     By default this will only try to fetch sources which are
@@ -159,6 +161,8 @@ def fetch(app, target, arch, variant, deps, track):
 #                          Track Command                         #
 ##################################################################
 @cli.command(short_help="Track new source references")
+@click.option('--except', 'except_',
+              help="Except certain dependencies from tracking")
 @click.option('--deps', '-d', default='all',
               type=click.Choice(['none', 'all']),
               help='The dependencies to track (default: all)')
@@ -168,7 +172,7 @@ def fetch(app, target, arch, variant, deps, track):
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def track(app, target, arch, variant, deps):
+def track(app, target, arch, variant, deps, except_):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
