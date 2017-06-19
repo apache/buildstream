@@ -467,10 +467,11 @@ class Pipeline():
     #
     def deps_elements(self, mode, except_=[]):
 
+        elements = None
         if mode == 'none':
-            return [self.target]
+            elements = [self.target]
         elif mode == 'plan':
-            return list(self.plan())
+            elements = list(self.plan())
         else:
             if mode == 'all':
                 scope = Scope.ALL
@@ -479,4 +480,6 @@ class Pipeline():
             elif mode == 'run':
                 scope = scope.RUN
 
-            return list(self.remove_elements(self.dependencies(scope), except_))
+            elements = list(self.dependencies(scope))
+
+        return self.remove_elements(elements, except_)
