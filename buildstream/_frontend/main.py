@@ -118,7 +118,7 @@ def build(app, target, arch, variant, all, track):
 #                          Fetch Command                         #
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
-@click.option('--except', 'except_',
+@click.option('--except', 'except_', multiple=True,
               help="Except certain dependencies from fetching")
 @click.option('--deps', '-d', default='plan',
               type=click.Choice(['none', 'plan', 'all']),
@@ -161,7 +161,7 @@ def fetch(app, target, arch, variant, deps, track, except_):
 #                          Track Command                         #
 ##################################################################
 @cli.command(short_help="Track new source references")
-@click.option('--except', 'except_',
+@click.option('--except', 'except_', multiple=True,
               help="Except certain dependencies from tracking")
 @click.option('--deps', '-d', default='all',
               type=click.Choice(['none', 'all']),
@@ -200,7 +200,7 @@ def track(app, target, arch, variant, deps, except_):
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
-@click.option('--except', 'except_',
+@click.option('--except', 'except_', multiple=True,
               help="Except certain dependencies")
 @click.option('--deps', '-d', default='all',
               type=click.Choice(['none', 'plan', 'run', 'build', 'all']),
