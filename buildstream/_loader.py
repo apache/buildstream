@@ -734,7 +734,11 @@ class Loader():
         meta_sources = []
 
         sources = _yaml.node_get(data, list, Symbol.SOURCES, default_value=[])
-        for source in sources:
+
+        # Safe loop calling into _yaml.node_get() for each element ensures
+        # we have good error reporting
+        for i in range(len(sources)):
+            source = _yaml.node_get(data, Mapping, Symbol.SOURCES, indices=[i])
             provenance = _yaml.node_get_provenance(source)
             kind = _yaml.node_get(source, str, Symbol.KIND)
             del source[Symbol.KIND]
