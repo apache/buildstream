@@ -408,12 +408,17 @@ class Pipeline():
             if element.name in removed:
                 to_remove.update(element.dependencies(Scope.ALL))
 
-        # FIXME: Is repeating until convergence necessary here?
-        # Of these, find all elements that are not a dependency of
-        # elements still in use.
-        for element in tree:
-            if element.name not in removed and element not in to_remove:
-                to_remove = to_remove.difference(element.dependencies(Scope.ALL, recurse=False))
+        old_to_remove = set()
 
-        to_remove = to_remove.union([e for e in tree if e.name in removed])
+        while old_to_remove != to_remove:
+            old_to_remove = to_remove
+
+            # Of these, find all elements that are not a dependency of
+            # elements still in use.
+            for element in tree:
+                if element.name not in removed and element not in to_remove:
+                    to_remove = to_remove.difference(element.dependencies(Scope.ALL, recurse=False))
+
+            to_remove = to_remove.union([e for e in tree if e.name in removed])
+
         return to_remove
