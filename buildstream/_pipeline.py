@@ -374,67 +374,19 @@ class Pipeline():
     #    force (bool): Force overwrite files which exist in `directory`
     #
     def checkout(self, directory, force):
-
         try:
             os.makedirs(directory, exist_ok=True)
         except e:
             raise PipelineError("Failed to create checkout directory: {}".format(e)) from e
 
-        extract = self.artifacts.extract(self.target)
-        if not force:
-            extract_files = list(utils.list_relative_paths(extract))
-            checkout_files = list(utils.list_relative_paths(directory))
-            overwrites = [
-                f for f in checkout_files
-                if f in extract_files and f != '.'
-            ]
-            if overwrites:
-                raise PipelineError("Files already exist in {}\n\n{}"
-                                    .format(directory, "  " + "  \n".join(overwrites)))
+        if not force and os.listdir(directory):
+            raise PipelineError("Checkout directory is not empty: {}"
+                                .format(directory))
 
-        utils.link_files(extract, directory)
+        # Stage deps into a temporary sandbox first
+        with self.target._prepare_sandbox(Scope.RUN, None) as sandbox:
 
-    # source_bundle()
-    #
-    # Create a build bundle for the given artifact.
-    #
-    # Args:
-    #    directory (str): The directory to checkout the artifact to
-    #
-    def source_bundle(self, scheduler, directory):
-        try:
-            if not os.path.isdir(directory):
-                os.makedirs(directory, exist_ok=True)
-        except e:
-            raise PipelineError("Failed to create output directory: {}".format(e)) from e
-
-        dependencies = list(self.dependencies(Scope.ALL))
-
-        self.fetch(scheduler, dependencies)
-
-        # We don't use the scheduler for this as it is almost entirely IO
-        # bound.
-
-        source_directory = os.path.join(directory, 'source')
-        os.makedirs(source_directory, exist_ok=True)
-
-        from . import Sandbox
-        sandbox = Sandbox(self.context, self.project, directory)
-        for d in dependencies:
-            if d.get_kind() == 'import':
-                # We need to avoid the host tools binaries which come as part of
-                # any BuildStream element's dependency chain. The whole reason for
-                # bootstrapping is that no host tools binaries exist yet :-)
-                pass
-            else:
-                element_source_directory = os.path.join(source_directory,
-                                                        d.normal_name)
-                try:
-                    d.stage_sources(sandbox, path=element_source_directory)
-                except:
-                    self.message(self.target, MessageType.INFO,
-                                 "Cleaning up partial directory '{}'"
-                                 .format(element_source_directory))
-                    shutil.rmtree(element_source_directory)
-                    raise
-
+            # Make copies from the sandbox into to the desired directory
+            sandbox_root = sandbox.get_directory()
+            with self.target.timed_activity("Copying files to {}".format(directory)):
+                utils.copy_files(sandbox_root, directory)
