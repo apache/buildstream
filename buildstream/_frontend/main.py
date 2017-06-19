@@ -349,31 +349,6 @@ def checkout(app, target, arch, variant, directory, force):
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
 
-
-##################################################################
-#                     Source Bundle Command                      #
-##################################################################
-@cli.command(short_help="Produce a build bundle to be manually executed")
-@click.option('--arch', '-a', default=host_machine,
-              help="The target architecture (default: %s)" % host_machine)
-@click.option('--variant',
-              help='A variant of the specified target')
-@click.argument('target')
-@click.argument('directory')
-@click.pass_obj
-def source_bundle(app, target, arch, variant, directory):
-    """Produce a build bundle to be manually executed
-    """
-    app.initialize(target, arch, variant)
-    try:
-        app.pipeline.source_bundle(app.scheduler, directory)
-        click.echo("")
-    except _BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e))
-        sys.exit(-1)
-
-
 ##################################################################
 #                    Main Application State                      #
 ##################################################################
