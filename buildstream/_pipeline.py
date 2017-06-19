@@ -31,7 +31,7 @@ from ._loader import Loader
 from ._sourcefactory import SourceFactory
 from .plugin import _plugin_lookup
 from . import Element
-from . import SourceError, ElementError, Consistency
+from . import SourceError, ElementError, Consistency, ImplError
 from . import Scope
 from . import _yaml, utils
 
@@ -50,7 +50,6 @@ class PipelineError(_BstError):
         if not message:
             message = "Unclassified Error"
         super(PipelineError, self).__init__(message)
-
 
 class Planner():
     def __init__(self):
@@ -425,3 +424,31 @@ class Pipeline():
             sandbox_root = sandbox.get_directory()
             with self.target.timed_activity("Copying files to {}".format(directory)):
                 utils.copy_files(sandbox_root, directory)
+
+    # Internal:
+    #
+    # Returns all elements to be removed from the given list of
+    # elements when the given removed elements and their unique
+    # dependencies are removed.
+    #
+    # Args:
+    #    elements (list of elements): The graph to sever elements from.
+    #    removed (list of strings): Names of the elements to remove.
+    def remove_elements(self, tree, removed):
+        to_remove = set()
+        tree = list(tree)
+
+        # Find all elements that might need to be removed.
+        for element in tree:
+            if element.name in removed:
+                to_remove.update(element.dependencies(Scope.ALL))
+
+        # FIXME: Is repeating until convergence necessary here?
+        # Of these, find all elements that are not a dependency of
+        # elements still in use.
+        for element in tree:
+            if element.name not in removed and element not in to_remove:
+                to_remove = to_remove.difference(element.dependencies(Scope.ALL, recurse=False))
+
+        to_remove = to_remove.union([e for e in tree if e.name in removed])
+        return to_remove

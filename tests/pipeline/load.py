@@ -135,3 +135,18 @@ def test_iterate_scope_build_of_child(datafiles, tmpdir):
 
     assert(element_list[0].name == "run-build.bst")
     assert(element_list[1].name == "build.bst")
+
+#################################################################
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'remove'))
+def test_remove_elements(datafiles, tmpdir):
+
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    pipeline = create_pipeline(tmpdir, basedir, 'build.bst', None)
+
+    # Remove second-level-2 and check that the correct dependencies
+    # are removed.
+    element_list = pipeline.target.dependencies(Scope.ALL)
+    element_list = pipeline.remove_elements(element_list, ['second-level-1.bst'])
+
+    assert(set(e.name for e in element_list) ==
+           set(['second-level-1.bst', 'third-level-1.bst']))
