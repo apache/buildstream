@@ -136,7 +136,10 @@ def test_iterate_scope_build_of_child(datafiles, tmpdir):
     assert(element_list[0].name == "run-build.bst")
     assert(element_list[1].name == "build.bst")
 
-#################################################################
+
+###############################################################
+#                   Testing element removal                   #
+###############################################################
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'remove'))
 def test_remove_elements(datafiles, tmpdir):
 

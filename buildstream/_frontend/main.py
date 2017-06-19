@@ -351,6 +351,7 @@ def checkout(app, target, arch, variant, directory, force):
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
 
+
 ##################################################################
 #                    Main Application State                      #
 ##################################################################

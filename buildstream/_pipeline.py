@@ -52,6 +52,7 @@ class PipelineError(_BstError):
             message = "Unclassified Error"
         super(PipelineError, self).__init__(message)
 
+
 class Planner():
     def __init__(self):
         self.depth_map = {}
