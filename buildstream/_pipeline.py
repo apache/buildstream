@@ -304,7 +304,6 @@ class Pipeline():
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to fetch
     #    track_first (bool): Track new source references before fetching
-    #    except_ (list): List of elements to except from fetching
     #
     def fetch(self, scheduler, dependencies, track_first):
 
