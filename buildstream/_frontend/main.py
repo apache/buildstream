@@ -147,7 +147,7 @@ def fetch(app, target, arch, variant, deps, track, except_):
         all:   All dependencies
     """
     app.initialize(target, arch, variant, rewritable=track, inconsistent=track)
-    dependencies = app.deps_elements(deps)
+    dependencies = app.pipeline.deps_elements(deps, except_)
     app.print_heading(deps=dependencies)
     try:
         app.pipeline.fetch(app.scheduler, dependencies, track)
@@ -186,7 +186,7 @@ def track(app, target, arch, variant, deps, except_):
         all:   All dependencies
     """
     app.initialize(target, arch, variant, rewritable=True, inconsistent=True)
-    dependencies = app.deps_elements(deps)
+    dependencies = app.pipeline.deps_elements(deps, except_)
     app.print_heading(deps=dependencies)
     try:
         app.pipeline.track(app.scheduler, dependencies)
@@ -200,6 +200,8 @@ def track(app, target, arch, variant, deps, except_):
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
+@click.option('--except', 'except_',
+              help="Except certain dependencies")
 @click.option('--deps', '-d', default='all',
               type=click.Choice(['none', 'plan', 'run', 'build', 'all']),
               help='The dependencies to show (default: all)')
@@ -215,7 +217,7 @@ def track(app, target, arch, variant, deps, except_):
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def show(app, target, arch, variant, deps, order, format):
+def show(app, target, arch, variant, deps, except_, order, format):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -261,7 +263,7 @@ def show(app, target, arch, variant, deps, order, format):
             $'---------- %{name} ----------\\n%{vars}'
     """
     app.initialize(target, arch, variant)
-    dependencies = app.deps_elements(deps)
+    dependencies = app.pipeline.deps_elements(deps, except_)
     if order == "alpha":
         dependencies = sorted(dependencies)
 
@@ -492,27 +494,6 @@ class App():
         self.messaging_enabled = True
 
         profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + arch)
-
-    #
-    # Various commands define a --deps option to specify what elements to
-    # use in the result, this function reports a list that is appropriate for
-    # the selected option.
-    #
-    def deps_elements(self, mode):
-
-        if mode == 'none':
-            return [self.pipeline.target]
-        elif mode == 'plan':
-            return list(self.pipeline.plan())
-        else:
-            if mode == 'all':
-                scope = Scope.ALL
-            elif mode == 'build':
-                scope = Scope.BUILD
-            elif mode == 'run':
-                scope = Scope.RUN
-
-            return list(self.pipeline.dependencies(scope))
 
     #
     # Render the status area, conditional on some internal state
