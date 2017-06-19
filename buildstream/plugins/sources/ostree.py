@@ -172,7 +172,7 @@ class OSTreeSource(Source):
                 gpg_key = 'file://' + self.gpg_key_path
 
             try:
-                _ostree.configure_origin(self.repo, self.url, key_url=gpg_key)
+                _ostree.configure_remote(self.repo, "origin", self.url, key_url=gpg_key)
             except OSTreeError as e:
                 raise SourceError("{}: Failed to configure origin {}\n\n{}".format(self, self.url, e)) from e
 

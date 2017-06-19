@@ -205,10 +205,11 @@ def checksum(repo, ref):
 
 # fetch()
 #
-# Fetch new objects from origin, if configured
+# Fetch new objects from a remote, if configured
 #
 # Args:
 #    repo (OSTree.Repo): The repo
+#    remote (str): An optional remote name, defaults to 'origin'
 #    ref (str): An optional ref to fetch, will reduce the amount of objects fetched
 #    progress (callable): An optional progress callback
 #
@@ -217,7 +218,7 @@ def checksum(repo, ref):
 # can save a lot of bandwidth but mirroring the full repo is
 # still possible.
 #
-def fetch(repo, ref=None, progress=None):
+def fetch(repo, remote="origin", ref=None, progress=None):
     # Fetch metadata of the repo from a remote
     #
     # cli example:
@@ -254,28 +255,29 @@ def fetch(repo, ref=None, progress=None):
         refs = [ref]
 
     try:
-        repo.pull("origin",
+        repo.pull(remote,
                   refs,
                   OSTree.RepoPullFlags.MIRROR,
                   async_progress,
                   None)  # Gio.Cancellable
     except GLib.GError as e:
         if ref is not None:
-            raise OSTreeError("Failed to fetch ref '{}' from origin: {}".format(ref, e.message)) from e
+            raise OSTreeError("Failed to fetch ref '{}' from '{}': {}".format(ref, remote, e.message)) from e
         else:
-            raise OSTreeError("Failed to fetch from origin: {}".format(e.message)) from e
+            raise OSTreeError("Failed to fetch from '{}': {}".format(remote, e.message)) from e
 
 
-# configure_origin():
+# configure_remote():
 #
-# Ensures a remote origin is setup to a given url.
+# Ensures a remote is setup to a given url.
 #
 # Args:
 #    repo (OSTree.Repo): The repo
+#    remote (str): The name of the remote
 #    url (str): The url of the remote ostree repo
 #    key_url (str): The optional url of a GPG key (should be a local file)
 #
-def configure_origin(repo, url, key_url=None):
+def configure_remote(repo, remote, url, key_url=None):
     # Add a remote OSTree repo. If no key is given, we disable gpg checking.
     #
     # cli exmaple:
@@ -289,7 +291,7 @@ def configure_origin(repo, url, key_url=None):
 
     repo.remote_change(None,      # Optional OSTree.Sysroot
                        OSTree.RepoRemoteChange.ADD_IF_NOT_EXISTS,
-                       "origin",  # Remote name
+                       remote,    # Remote name
                        url,       # Remote url
                        options,   # Remote options
                        None)      # Optional Gio.Cancellable
@@ -299,6 +301,6 @@ def configure_origin(repo, url, key_url=None):
         try:
             gfile = Gio.File.new_for_uri(key_url)
             stream = gfile.read()
-            repo.remote_gpg_import("origin", stream, None, 0, None)
+            repo.remote_gpg_import(remote, stream, None, 0, None)
         except GLib.GError as e:
             raise OSTreeError("Failed to add gpg key from url '{}': {}".format(key_url, e.message)) from e
