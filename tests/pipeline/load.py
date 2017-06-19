@@ -152,4 +152,5 @@ def test_remove_elements(datafiles, tmpdir):
     element_list = pipeline.remove_elements(element_list, ['second-level-1.bst'])
 
     assert(set(e.name for e in element_list) ==
-           set(['second-level-1.bst', 'third-level-1.bst', 'fourth-level-1.bst']))
+           set(['build.bst', 'third-level-2.bst', 'fourth-level-2.bst',
+                'first-level-1.bst', 'first-level-2.bst']))
