@@ -461,3 +461,24 @@ class Pipeline():
             to_remove = to_remove.union([e for e in tree if e.name in removed])
 
         return (element for element in tree if element not in to_remove)
+
+
+    # Various commands define a --deps option to specify what elements to
+    # use in the result, this function reports a list that is appropriate for
+    # the selected option.
+    #
+    def deps_elements(self, mode, except_=[]):
+
+        if mode == 'none':
+            return [self.target]
+        elif mode == 'plan':
+            return list(self.plan())
+        else:
+            if mode == 'all':
+                scope = Scope.ALL
+            elif mode == 'build':
+                scope = Scope.BUILD
+            elif mode == 'run':
+                scope = scope.RUN
+
+            return list(self.remove_elements(self.dependencies(scope), except_))
