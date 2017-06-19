@@ -363,7 +363,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
                 value = expected_type(value)
             else:
                 raise ValueError()
-        except ValueError:
+        except (ValueError, TypeError):
             provenance = node_get_provenance(node, key=key, indices=indices)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "%s: Value of '%s' is not of the expected type '%s'" %
