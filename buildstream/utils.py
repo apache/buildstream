@@ -487,7 +487,7 @@ def _relative_symlink_target(root, symlink, target):
 
         # We want a relative path from the directory in which symlink
         # is located, not from the symlink itself.
-        symlinkdir, _ = os.path.split(symlink)
+        symlinkdir, _ = os.path.split(os.path.realpath(symlink))
 
         # Create a full path to the target, including the leading staging
         # directory
