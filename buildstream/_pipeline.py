@@ -459,7 +459,7 @@ class Pipeline():
 
             to_remove = to_remove.union([e for e in tree if e.name in removed])
 
-        return (element for element in tree if element not in to_remove)
+        return [element for element in tree if element not in to_remove]
 
     # Various commands define a --deps option to specify what elements to
     # use in the result, this function reports a list that is appropriate for
