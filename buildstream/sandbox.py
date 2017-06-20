@@ -49,6 +49,14 @@ class SandboxFlags():
     be allowed for running a shell in a sandbox.
     """
 
+    INTERACTIVE = 0x04
+    """Whether to run the sandbox interactively
+
+    This determines if the sandbox should attempt to connect
+    the terminal through to the calling process, or detach
+    the terminal entirely.
+    """
+
 
 class Sandbox():
     """Sandbox()
