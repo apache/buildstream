@@ -243,10 +243,17 @@ class SandboxBwrap(Sandbox):
         # mounts through fuse layers are in context and ready for bwrap
         # to mount them from.
         #
-        with mount_map.mounted(self):
+        with ExitStack() as stack:
+            stack.enter_context(mount_map.mounted(self))
+
+            # If we're interactive, we want to inherit our stdin
+            if not flags & SandboxFlags.INTERACTIVE:
+                stdin = stack.enter_context(open(os.devnull, "r"))
+            else:
+                stdin = sys.stdin
 
             # Run bubblewrap !
-            exit_code = self.run_bwrap(bwrap_command, stdout, stderr, env=env)
+            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr, env=env)
 
             # Cleanup things which bwrap might have left behind, while
             # everything is still mounted because bwrap can be creating
@@ -279,7 +286,7 @@ class SandboxBwrap(Sandbox):
 
         return exit_code
 
-    def run_bwrap(self, argv, stdout, stderr, env):
+    def run_bwrap(self, argv, stdin, stdout, stderr, env):
         # Wrapper around subprocess.Popen() with common settings.
         #
         # This function blocks until the subprocess has terminated.
@@ -345,6 +352,7 @@ class SandboxBwrap(Sandbox):
                     # to the subprocess, which is rarely good for sandboxing.
                     close_fds=True,
                     env=env,
+                    stdin=stdin,
                     stdout=stdout,
                     stderr=stderr,
                     # We want a separate session, so that we are alone handling SIGTERM
