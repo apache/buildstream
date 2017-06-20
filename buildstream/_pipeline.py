@@ -31,7 +31,7 @@ from ._loader import Loader
 from ._sourcefactory import SourceFactory
 from .plugin import _plugin_lookup
 from . import Element
-from . import SourceError, ElementError, Consistency
+from . import SourceError, ElementError, Consistency, ImplError
 from . import Scope
 from . import _yaml, utils
 
@@ -266,6 +266,7 @@ class Pipeline():
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to track
+    #    except_ (list): List of elements to except from tracking
     #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
@@ -302,6 +303,7 @@ class Pipeline():
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to fetch
     #    track_first (bool): Track new source references before fetching
+    #    except_ (list): List of elements to except from fetching
     #
     def fetch(self, scheduler, dependencies, track_first):
 
@@ -425,3 +427,59 @@ class Pipeline():
             sandbox_root = sandbox.get_directory()
             with self.target.timed_activity("Copying files to {}".format(directory)):
                 utils.copy_files(sandbox_root, directory)
+
+    # Internal:
+    #
+    # Returns all elements to be removed from the given list of
+    # elements when the given removed elements and their unique
+    # dependencies are removed.
+    #
+    # Args:
+    #    elements (list of elements): The graph to sever elements from.
+    #    removed (list of strings): Names of the elements to remove.
+    def remove_elements(self, tree, removed):
+        to_remove = set()
+        tree = list(tree)
+
+        # Find all elements that might need to be removed.
+        for element in tree:
+            if element.name in removed:
+                to_remove.update(element.dependencies(Scope.ALL))
+
+        old_to_remove = set()
+
+        while old_to_remove != to_remove:
+            old_to_remove = to_remove
+
+            # Of these, find all elements that are not a dependency of
+            # elements still in use.
+            for element in tree:
+                if element.name not in removed and element not in to_remove:
+                    to_remove = to_remove.difference(element.dependencies(Scope.ALL, recurse=False))
+
+            to_remove = to_remove.union([e for e in tree if e.name in removed])
+
+        return [element for element in tree if element not in to_remove]
+
+    # Various commands define a --deps option to specify what elements to
+    # use in the result, this function reports a list that is appropriate for
+    # the selected option.
+    #
+    def deps_elements(self, mode, except_=[]):
+
+        elements = None
+        if mode == 'none':
+            elements = [self.target]
+        elif mode == 'plan':
+            elements = list(self.plan())
+        else:
+            if mode == 'all':
+                scope = Scope.ALL
+            elif mode == 'build':
+                scope = Scope.BUILD
+            elif mode == 'run':
+                scope = scope.RUN
+
+            elements = list(self.dependencies(scope))
+
+        return self.remove_elements(elements, except_)
