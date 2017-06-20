@@ -248,13 +248,15 @@ class SandboxBwrap(Sandbox):
             # Run bubblewrap !
             exit_code = self.run_bwrap(bwrap_command, stdout, stderr, env=env)
 
-        # Cleanup things which bwrap might have left behind
-        for device in self.DEVICES:
-            device_path = os.path.join(root_mount_source, device.lstrip('/'))
+            # Cleanup things which bwrap might have left behind, while
+            # everything is still mounted because bwrap can be creating
+            # the devices on the fuse mount, so we should remove it there.
+            for device in self.DEVICES:
+                device_path = os.path.join(root_mount_source, device.lstrip('/'))
 
-            # This will remove the device in a loop, allowing some
-            # retries in case the device file leaked by bubblewrap is still busy
-            self.try_remove_device(device_path)
+                # This will remove the device in a loop, allowing some
+                # retries in case the device file leaked by bubblewrap is still busy
+                self.try_remove_device(device_path)
 
         # Remove /tmp, this is a bwrap owned thing we want to be sure
         # never ends up in an artifact
