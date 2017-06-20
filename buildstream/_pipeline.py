@@ -20,6 +20,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 import os
+import shutil
 from pluginbase import PluginBase
 from operator import itemgetter
 
