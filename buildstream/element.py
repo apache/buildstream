@@ -921,7 +921,8 @@ class Element(Plugin):
 
             # Run shells with network enabled and readonly root.
             exitcode = sandbox.run(['sh', '-i'],
-                                   SandboxFlags.NETWORK_ENABLED,
+                                   SandboxFlags.NETWORK_ENABLED |
+                                   SandboxFlags.INTERACTIVE,
                                    env=environment)
 
     #############################################################
