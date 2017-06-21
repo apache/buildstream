@@ -364,6 +364,45 @@ def checkout(app, target, arch, variant, directory, force):
 
 
 ##################################################################
+#                     Source Bundle Command                      #
+##################################################################
+@cli.command(name="source-bundle", short_help="Produce a build bundle to be manually executed")
+@click.option('--except', 'except_', multiple=True,
+              help="Elements to except from the tarball")
+@click.option('--compression', default='gz',
+              type=click.Choice(['none', 'gz', 'bz2', 'xz']),
+              help="Compress the tar file using the given algorithm.")
+@click.option('--deps', '-d', default='build',
+              type=click.Choice(['none', 'plan', 'run', 'build']))
+@click.option('--track', default=False, is_flag=True,
+              help="Track new source references before building")
+@click.option('--arch', '-a', default=host_machine,
+              help="The target architecture (default: %s)" % host_machine)
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Overwrite files existing in checkout directory")
+@click.argument('target')
+@click.argument('name')
+@click.pass_obj
+def source_bundle(app, name, target, arch, variant, force,
+                  track, deps, compression, except_):
+    """Produce a build bundle to be manually executed
+    """
+    app.initialize(target, arch, variant, rewritable=track, inconsistent=track)
+    try:
+        dependencies = app.pipeline.deps_elements(deps, except_)
+        app.print_heading(dependencies)
+        app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
+                                   name, compression, except_)
+        click.echo("")
+    except _BstError as e:
+        click.echo("")
+        click.echo("ERROR: {}".format(e))
+        sys.exit(-1)
+
+
+##################################################################
 #                    Main Application State                      #
 ##################################################################
 
