@@ -44,11 +44,11 @@ class PipelineError(_BstError):
 
     def __init__(self, message=None):
 
-        # The "Unclassified Error" should never appear to a user,
+        # The empty string should never appear to a user,
         # this only allows us to treat this internal error as
         # a _BstError from the frontend.
-        if not message:
-            message = "Unclassified Error"
+        if message is None:
+            message = ""
         super(PipelineError, self).__init__(message)
 
 
@@ -446,12 +446,20 @@ class Pipeline():
         tree = list(tree)
 
         # Find all elements that might need to be removed.
-        for element in tree:
-            if element.name in removed:
-                to_remove.update(element.dependencies(Scope.ALL))
+        def search_tree(element_name):
+            for element in tree:
+                if element.name == element_name:
+                    return element
+            return None
+
+        for element_name in removed:
+            element = search_tree(element_name)
+            if element is None:
+                raise PipelineError("No element named {}".format(element_name))
+
+            to_remove.update(element.dependencies(Scope.ALL))
 
         old_to_remove = set()
-
         while old_to_remove != to_remove:
             old_to_remove = to_remove
 
