@@ -20,6 +20,10 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 import os
+import stat
+import shlex
+import tarfile
+from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
 from operator import itemgetter
 
@@ -33,6 +37,7 @@ from .plugin import _plugin_lookup
 from . import Element
 from . import SourceError, ElementError, Consistency, ImplError
 from . import Scope
+from . import _site
 from . import _yaml, utils
 
 from ._scheduler import SchedStatus, TrackQueue, ArtifactFetchQueue, FetchQueue, BuildQueue, PushQueue
@@ -509,3 +514,95 @@ class Pipeline():
             elements = list(self.dependencies(scope))
 
         return self.remove_elements(elements, except_)
+
+    # source_bundle()
+    #
+    # Create a build bundle for the given artifact.
+    #
+    # Args:
+    #    directory (str): The directory to checkout the artifact to
+    #
+    def source_bundle(self, scheduler, dependencies, force,
+                      track_first, name, compression, except_):
+
+        # Find the correct filename for the compression algorithm
+        name += ".tar"
+        if compression != "none":
+            name += "." + compression
+
+        # Attempt writing a file to generate a good error message
+        # early
+        #
+        # FIXME: A bit hackish
+        try:
+            open(name, mode="x")
+            os.remove(name)
+        except IOError as e:
+            raise PipelineError("Cannot write to {0}: {1}"
+                                .format(name, e)) from e
+
+        plan = list(dependencies)
+        self.fetch(scheduler, plan, track_first)
+
+        # We don't use the scheduler for this as it is almost entirely IO
+        # bound.
+
+        # Create a temporary directory to build the source tree in
+        builddir = self.target.get_context().builddir
+        prefix = "{}-".format(self.target.normal_name)
+
+        with TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:
+            source_directory = os.path.join(tempdir, 'source')
+            try:
+                os.makedirs(source_directory)
+            except e:
+                raise PipelineError("Failed to create directory: {}"
+                                    .format(e)) from e
+
+            for element in plan:
+                try:
+                    element._write_script(source_directory)
+                except ImplError:
+                    # Any elements that don't implement _write_script
+                    # should not be included in the later stages.
+                    plan.remove(element)
+
+            self._write_element_sources(tempdir, plan)
+            self._write_build_script(tempdir, plan)
+            self._collect_sources(tempdir, name, compression)
+
+    # Write all source elements to the given directory
+    def _write_element_sources(self, directory, elements):
+        for element in elements:
+            source_dir = os.path.join(directory, "source")
+            element_source_dir = os.path.join(source_dir, element.normal_name)
+
+            element._stage_sources_at(element_source_dir)
+
+    # Write a master build script to the sandbox
+    def _write_build_script(self, directory, elements):
+
+        module_string = ""
+        for element in elements:
+            module_string += shlex.quote(element.normal_name) + " "
+
+        script_path = os.path.join(directory, "build.sh")
+
+        with open(_site.build_all_template, "r") as f:
+            script_template = f.read()
+
+        with open(script_path, "w") as script:
+            script.write(script_template.format(modules=module_string))
+
+        os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
+
+    # Collect the sources in the given sandbox into a tarfile
+    def _collect_sources(self, directory, tar_name, compression):
+        with self.target.timed_activity("Creating tarball {}".format(tar_name)):
+            if compression == "none":
+                permissions = "w:"
+            else:
+                permissions = "w:" + compression
+
+            with tarfile.open(tar_name, permissions) as tar:
+                tar.add(directory, arcname=os.path.basename(directory))
