@@ -1,4 +1,4 @@
-.TH "BST FETCH" "1" "28-May-2017" "" "bst fetch Manual"
+.TH "BST FETCH" "1" "21-Jun-2017" "" "bst fetch Manual"
 .SH NAME
 bst\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
@@ -20,8 +20,14 @@ Specify `--deps` to control which sources to fetch:
     all:   All dependencies
 .SH OPTIONS
 .TP
+\fB\-\-except\fP TEXT
+Except certain dependencies from fetching
+.TP
 \fB\-d,\fP \-\-deps [none|plan|all]
 The dependencies to fetch (default: plan)
+.TP
+\fB\-\-track\fP
+Track new source references before fetching
 .TP
 \fB\-a,\fP \-\-arch TEXT
 The target architecture (default: x86_64)

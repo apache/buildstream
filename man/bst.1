@@ -1,4 +1,4 @@
-.TH "BST" "1" "28-May-2017" "" "bst Manual"
+.TH "BST" "1" "21-Jun-2017" "" "bst Manual"
 .SH NAME
 bst \- Build and manipulate BuildStream projects...
 .SH SYNOPSIS
@@ -48,6 +48,16 @@ Maximum number of lines to show in a detailed message
 A file to store the main log (allows storing the main log while in interactive mode)
 .SH COMMANDS
 .PP
+\fBfetch\fP
+  Fetch sources in a pipeline
+  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
+
+.PP
+\fBbuild\fP
+  Build elements in a pipeline
+  See \fBbst-build(1)\fP for full documentation on the \fBbuild\fP command.
+
+.PP
 \fBtrack\fP
   Track new source references
   See \fBbst-track(1)\fP for full documentation on the \fBtrack\fP command.
@@ -58,21 +68,11 @@ A file to store the main log (allows storing the main log while in interactive m
   See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
 
 .PP
-\fBfetch\fP
-  Fetch sources in a pipeline
-  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
+\fBshow\fP
+  Show elements in the pipeline
+  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
 
 .PP
 \fBshell\fP
   Shell into an element's sandbox environment
   See \fBbst-shell(1)\fP for full documentation on the \fBshell\fP command.
-
-.PP
-\fBbuild\fP
-  Build elements in a pipeline
-  See \fBbst-build(1)\fP for full documentation on the \fBbuild\fP command.
-
-.PP
-\fBshow\fP
-  Show elements in the pipeline
-  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.

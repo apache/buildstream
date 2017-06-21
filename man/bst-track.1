@@ -1,4 +1,4 @@
-.TH "BST TRACK" "1" "28-May-2017" "" "bst track Manual"
+.TH "BST TRACK" "1" "21-Jun-2017" "" "bst track Manual"
 .SH NAME
 bst\-track \- Track new source references
 .SH SYNOPSIS
@@ -17,6 +17,9 @@ Specify `--deps` to control which sources to track:
     none:  No dependencies, just the element itself
     all:   All dependencies
 .SH OPTIONS
+.TP
+\fB\-\-except\fP TEXT
+Except certain dependencies from tracking
 .TP
 \fB\-d,\fP \-\-deps [none|all]
 The dependencies to track (default: all)
