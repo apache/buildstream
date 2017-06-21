@@ -121,8 +121,7 @@ class ComposeElement(Element):
                         snapshot[path] != getmtime(os.path.join(basedir, path)))
                 ]
                 self.info("Integration effected {} files".format(len(integration_files)))
-
-        manifest += integration_files
+                manifest += integration_files
 
         # The remainder of this is expensive, make an early exit if
         # we're not being selective about what is to be included.
