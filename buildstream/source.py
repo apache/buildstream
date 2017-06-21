@@ -235,6 +235,7 @@ class Source(Plugin):
     def _stage(self, directory):
         if self.__directory is not None:
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
+        os.makedirs(directory, exist_ok=True)
         self.stage(directory)
 
     # Wrapper for set_ref(), also returns whether it changed.
