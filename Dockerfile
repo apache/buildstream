@@ -1,20 +1,22 @@
-FROM debian:stretch-slim
+# Docker image for running BuildStream
+# ====================================
+#
+# This image has BuildStream and its dependencies installed in /usr.
+# See Dockerfile-build.sh for the full build instructions.
+#
+# To build it, run this command from the current directory:
+#
+#     docker build --tag=buildstream:latest .
+#
+# The build takes a long time because it has to download lots of packages using
+# DNF and also build OSTree from source.
 
-RUN apt-get update --fix-missing -qq
-RUN apt-get install -y -qq bubblewrap
-RUN apt-get install -y -qq python3.5
-RUN apt-get install -y -qq python3-pip
-RUN apt-get install -y -qq ostree
-RUN apt-get install -y -qq gir1.2-ostree-1.0
-RUN apt-get install -y -qq python3-dev
-RUN apt-get install -y -qq python3-gi
-RUN apt-get install -y -qq git
 
-# Install BuildStream
-ADD . /buildstream
-RUN pip3 install /buildstream
-RUN rm -rf /buildstream
+FROM fedora:25
 
-# Use locales that exist, otherwise build-stream will not run
-ENV LC_ALL C.UTF-8
+ADD Dockerfile-build.sh /root/Dockerfile-build.sh
+RUN bash /root/Dockerfile-build.sh
+
+# Work around https://github.com/fedora-cloud/docker-brew-fedora/issues/14
 ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
