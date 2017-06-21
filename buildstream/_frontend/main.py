@@ -147,13 +147,13 @@ def fetch(app, target, arch, variant, deps, track, except_):
         all:   All dependencies
     """
     app.initialize(target, arch, variant, rewritable=track, inconsistent=track)
-    dependencies = app.pipeline.deps_elements(deps, except_)
-    app.print_heading(deps=dependencies)
     try:
+        dependencies = app.pipeline.deps_elements(deps, except_)
+        app.print_heading(deps=dependencies)
         app.pipeline.fetch(app.scheduler, dependencies, track)
         click.echo("")
-    except PipelineError:
-        click.echo("")
+    except PipelineError as e:
+        click.echo("{}".format(e))
         sys.exit(-1)
 
 
@@ -186,13 +186,13 @@ def track(app, target, arch, variant, deps, except_):
         all:   All dependencies
     """
     app.initialize(target, arch, variant, rewritable=True, inconsistent=True)
-    dependencies = app.pipeline.deps_elements(deps, except_)
-    app.print_heading(deps=dependencies)
     try:
+        dependencies = app.pipeline.deps_elements(deps, except_)
+        app.print_heading(deps=dependencies)
         app.pipeline.track(app.scheduler, dependencies)
         click.echo("")
-    except PipelineError:
-        click.echo("")
+    except PipelineError as e:
+        click.echo("{}".format(e))
         sys.exit(-1)
 
 
@@ -263,7 +263,12 @@ def show(app, target, arch, variant, deps, except_, order, format):
             $'---------- %{name} ----------\\n%{vars}'
     """
     app.initialize(target, arch, variant)
-    dependencies = app.pipeline.deps_elements(deps, except_)
+    try:
+        dependencies = app.pipeline.deps_elements(deps, except_)
+    except PipelineError as e:
+        click.echo("{}".format(e))
+        sys.exit(-1)
+
     if order == "alpha":
         dependencies = sorted(dependencies)
 
