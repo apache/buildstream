@@ -21,6 +21,7 @@
 import os
 import sys
 import re
+import stat
 import copy
 import inspect
 from collections import Mapping
@@ -33,13 +34,13 @@ from . import _yaml
 from ._yaml import CompositePolicy
 from ._variables import Variables
 from .exceptions import _BstError
-from . import LoadError, LoadErrorReason, ElementError
+from . import LoadError, LoadErrorReason, ElementError, ImplError
 from ._sandboxbwrap import SandboxBwrap
 from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
 from . import utils
 from . import _signals
-
+from . import _site
 
 class Scope(Enum):
     """Types of scope for a given element"""
@@ -484,6 +485,28 @@ class Element(Plugin):
         raise ImplError("element plugin '{kind}' does not implement stage()".format(
             kind=self.get_kind()))
 
+    def generate_script(self):
+        """Generate a build (sh) script to build this element
+
+        Returns:
+           (str): A string containing the shell commands required to build the element
+
+        BuildStream guarantees the following environment when the
+        generated script is run:
+
+        - All element variables have been exported.
+        - The cwd is `self.get_variable('build_root')/self.normal_name`.
+        - $PREFIX is set to `self.get_variable('install_root')`.
+        - The directory indicated by $PREFIX is an empty directory.
+
+        Files are expected to be installed to $PREFIX.
+
+        If the script fails, it is expected to return with an exit
+        code != 0.
+        """
+        raise ImplError("element plugin '{kind}' does not implement write_script()".format(
+            kind=self.get_kind()))
+
     def assemble(self, sandbox):
         """Assemble the output artifact
 
@@ -505,6 +528,34 @@ class Element(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
+
+    # _write_script():
+    #
+    # Writes a script to the given directory.
+    def _write_script(self, directory):
+        with open(_site.build_module_template, "r") as f:
+            script_template = f.read()
+
+        variable_string = ""
+        for var, val in self.get_environment().items():
+            variable_string += "{0}={1} ".format(var, val)
+
+        script = script_template.format(
+            name=self.normal_name,
+            build_root=self.get_variable('build-root'),
+            install_root=self.get_variable('install-root'),
+            variables=variable_string,
+            commands=self.generate_script()
+        )
+
+        os.makedirs(directory, exist_ok=True)
+        script_path = os.path.join(directory, "build-" + self.normal_name)
+
+        with self.timed_activity("Writing build script", silent_nested=True):
+            with open(script_path, "w") as script_file:
+                script_file.write(script)
+
+            os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
 
     # _add_source():
     #
