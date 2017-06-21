@@ -438,6 +438,10 @@ class Pipeline():
     #    elements (list of elements): The graph to sever elements from.
     #    removed (list of strings): Names of the elements to remove.
     def remove_elements(self, tree, removed):
+
+        if removed is None:
+            removed = []
+
         to_remove = set()
         tree = list(tree)
 
@@ -465,7 +469,7 @@ class Pipeline():
     # use in the result, this function reports a list that is appropriate for
     # the selected option.
     #
-    def deps_elements(self, mode, except_=[]):
+    def deps_elements(self, mode, except_=None):
 
         elements = None
         if mode == 'none':
