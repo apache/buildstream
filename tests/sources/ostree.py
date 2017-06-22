@@ -34,14 +34,9 @@ class OSTreeSetup(Setup):
 
 def run_ostree_bash_script():
     # Run the generate-ostree.sh script
-
-    process = subprocess.Popen(
+    return subprocess.call(
         ['%s/generate-ostree.sh' % (DATA_DIR,)],
         stderr=subprocess.PIPE)
-    process.wait()
-    BASH_DONE = True
-
-    return process.returncode
 
 
 def run_ostree_cli(repo, cmd):
