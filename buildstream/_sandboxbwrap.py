@@ -209,9 +209,24 @@ class SandboxBwrap(Sandbox):
             '--tmpfs', '/tmp'
         ]
 
-        # Bind some minimal set of host devices
-        for device in self.DEVICES:
-            bwrap_command += ['--dev-bind', device, device]
+        # In interactive mode, we want a complete devpts inside
+        # the container, so there is a /dev/console and such. In
+        # the regular non-interactive sandbox, we want to hand pick
+        # a minimal set of devices to expose to the sandbox.
+        #
+        # We want to launch bwrap in a new session in non-interactive
+        # mode so that we handle the SIGTERM and SIGTSTP signals separately
+        # from the nested bwrap process, but in interactive mode this
+        # causes launched shells to lack job control (we dont really
+        # know why that is).
+        #
+        if flags & SandboxFlags.INTERACTIVE:
+            bwrap_command += ['--dev', '/dev']
+            bwrap_new_session = False
+        else:
+            bwrap_new_session = True
+            for device in self.DEVICES:
+                bwrap_command += ['--dev-bind', device, device]
 
         # Add bind mounts to any marked directories
         marked_directories = self._get_marked_directories()
@@ -246,47 +261,50 @@ class SandboxBwrap(Sandbox):
         with ExitStack() as stack:
             stack.enter_context(mount_map.mounted(self))
 
-            # If we're interactive, we want to inherit our stdin
-            if not flags & SandboxFlags.INTERACTIVE:
-                stdin = stack.enter_context(open(os.devnull, "r"))
-            else:
+            # If we're interactive, we want to inherit our stdin,
+            # otherwise redirect to /dev/null, ensuring process
+            # disconnected from terminal.
+            if flags & SandboxFlags.INTERACTIVE:
                 stdin = sys.stdin
+            else:
+                stdin = stack.enter_context(open(os.devnull, "r"))
 
             # Run bubblewrap !
-            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr, env=env)
+            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr, env, bwrap_new_session)
 
             # Cleanup things which bwrap might have left behind, while
             # everything is still mounted because bwrap can be creating
             # the devices on the fuse mount, so we should remove it there.
-            for device in self.DEVICES:
-                device_path = os.path.join(root_mount_source, device.lstrip('/'))
+            if not flags & SandboxFlags.INTERACTIVE:
+                for device in self.DEVICES:
+                    device_path = os.path.join(root_mount_source, device.lstrip('/'))
 
-                # This will remove the device in a loop, allowing some
-                # retries in case the device file leaked by bubblewrap is still busy
-                self.try_remove_device(device_path)
+                    # This will remove the device in a loop, allowing some
+                    # retries in case the device file leaked by bubblewrap is still busy
+                    self.try_remove_device(device_path)
 
-        # Remove /tmp, this is a bwrap owned thing we want to be sure
-        # never ends up in an artifact
-        for basedir in ['tmp', 'dev', 'proc']:
+            # Remove /tmp, this is a bwrap owned thing we want to be sure
+            # never ends up in an artifact
+            for basedir in ['tmp', 'dev', 'proc']:
 
-            # Skip removal of directories which already existed before
-            # launching bwrap
-            if not existing_basedirs[basedir]:
-                continue
+                # Skip removal of directories which already existed before
+                # launching bwrap
+                if not existing_basedirs[basedir]:
+                    continue
 
-            base_directory = os.path.join(root_mount_source, basedir)
-            try:
-                os.rmdir(base_directory)
-            except FileNotFoundError:
-                # ignore this, if bwrap cleaned up properly then it's not a problem.
-                #
-                # If the directory was not empty on the other hand, then this is clearly
-                # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
-                pass
+                base_directory = os.path.join(root_mount_source, basedir)
+                try:
+                    os.rmdir(base_directory)
+                except FileNotFoundError:
+                    # ignore this, if bwrap cleaned up properly then it's not a problem.
+                    #
+                    # If the directory was not empty on the other hand, then this is clearly
+                    # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
+                    pass
 
         return exit_code
 
-    def run_bwrap(self, argv, stdin, stdout, stderr, env):
+    def run_bwrap(self, argv, stdin, stdout, stderr, env, new_session):
         # Wrapper around subprocess.Popen() with common settings.
         #
         # This function blocks until the subprocess has terminated.
@@ -355,8 +373,7 @@ class SandboxBwrap(Sandbox):
                     stdin=stdin,
                     stdout=stdout,
                     stderr=stderr,
-                    # We want a separate session, so that we are alone handling SIGTERM
-                    start_new_session=True
+                    start_new_session=new_session
                 )
                 process.communicate()
                 exit_code = process.poll()
