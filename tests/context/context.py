@@ -41,7 +41,7 @@ def test_context_load(context_fixture):
     cache_home = context_fixture['xdg-cache']
     assert(isinstance(context, Context))
 
-    context.load()
+    context.load(config=os.devnull)
     assert(context.sourcedir == os.path.join(cache_home, 'buildstream', 'sources'))
     assert(context.builddir == os.path.join(cache_home, 'buildstream', 'build'))
     assert(context.artifactdir == os.path.join(cache_home, 'buildstream', 'artifacts'))
