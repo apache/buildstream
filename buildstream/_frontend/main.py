@@ -253,13 +253,13 @@ def show(app, target, arch, variant, deps, except_, order, format):
     examle:
 
     \b
-        build-stream show target.bst --format \\
+        bst show target.bst --format \\
             'Name: %{name: ^20} Key: %{key: ^8} State: %{state}'
 
     If you want to use a newline in a format string in bash, use the '$' modifier:
 
     \b
-        build-stream show target.bst --format \\
+        bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
     app.initialize(target, arch, variant)
