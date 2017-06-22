@@ -3,13 +3,22 @@ import pytest
 import subprocess
 
 from buildstream import SourceError, LoadError, Consistency, PluginError
+from buildstream import exceptions, utils
 
 from .fixture import Setup
+
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'bzr',
 )
+
+
+try:
+    utils.get_host_tool('bzr')
+    HAVE_BZR = True
+except exceptions.ProgramNotFoundError:
+    HAVE_BZR = False
 
 
 class BzrSetup(Setup):
@@ -55,6 +64,7 @@ class BzrSetup(Setup):
 
 # Test that the source can be parsed meaningfully.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_create_source(tmpdir, datafiles):
     setup = Setup(datafiles, 'target.bst', tmpdir)
     assert(setup.source.get_kind() == 'bzr')
@@ -65,6 +75,7 @@ def test_create_source(tmpdir, datafiles):
 
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic-no-ref'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_no_ref(tmpdir, datafiles):
     setup = Setup(datafiles, 'target.bst', tmpdir)
     assert(setup.source.get_consistency() == Consistency.INCONSISTENT)
@@ -72,6 +83,7 @@ def test_no_ref(tmpdir, datafiles):
 
 # Test that with ref, consistency is resolved
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_consistency_resolved(tmpdir, datafiles):
     setup = BzrSetup(datafiles, 'target.bst', tmpdir)
     assert(setup.source.get_consistency() == Consistency.RESOLVED)
@@ -79,6 +91,7 @@ def test_consistency_resolved(tmpdir, datafiles):
 
 # Test that with ref and fetching, consistency is cached
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_consistency_cached(tmpdir, datafiles):
     setup = BzrSetup(datafiles, 'target.bst', tmpdir)
     repodir = os.path.join(str(datafiles), 'foo')
@@ -97,6 +110,7 @@ def test_consistency_cached(tmpdir, datafiles):
 
 # Test that without track, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic-no-track'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_no_track(tmpdir, datafiles):
     with pytest.raises(LoadError):
         setup = Setup(datafiles, 'target.bst', tmpdir)
@@ -104,6 +118,7 @@ def test_no_track(tmpdir, datafiles):
 
 # Test that when I fetch, it ends up in the cache.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_fetch(tmpdir, datafiles):
     # Pretty long setup
     setup = BzrSetup(datafiles, 'target.bst', tmpdir)
@@ -124,6 +139,7 @@ def test_fetch(tmpdir, datafiles):
 
 # Test that staging fails without ref
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_stage_bad_ref(tmpdir, datafiles):
     # Pretty long setup
     setup = BzrSetup(datafiles, 'target-bad-ref.bst', tmpdir)
@@ -144,6 +160,7 @@ def test_stage_bad_ref(tmpdir, datafiles):
 
 # Test that I can stage the repo successfully
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_stage(tmpdir, datafiles):
     # Pretty long setup
     setup = BzrSetup(datafiles, 'target.bst', tmpdir)
@@ -167,6 +184,7 @@ def test_stage(tmpdir, datafiles):
 
 # Test that I can track the branch
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+@pytest.mark.skipif(HAVE_BZR is False, reason="`bzr` is not available")
 def test_track(tmpdir, datafiles):
     # Pretty long setup
     setup = BzrSetup(datafiles, 'target-bad-ref.bst', tmpdir)
