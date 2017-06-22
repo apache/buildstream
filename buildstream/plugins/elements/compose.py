@@ -107,6 +107,7 @@ class ComposeElement(Element):
             for f in utils.list_relative_paths(basedir)
         }
         manifest = []
+        integration_files = []
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
