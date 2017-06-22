@@ -169,7 +169,7 @@ class GitMirror():
 
         io = StringIO(content)
         parser = RawConfigParser()
-        parser.readfp(io)
+        parser.read_file(io)
 
         for section in parser.sections():
             # validate section name against the 'submodule "foo"' pattern
