@@ -169,6 +169,8 @@ class ArtifactCache():
 
         if self.remote:
             _ostree.fetch(self.repo, remote=self.remote, ref=ref)
+        elif self.context.artifact_share.startswith("/"):
+            _ostree.fetch(self.repo, remote="file://" + self.context.artifact_share, ref=ref)
         else:
             _ostree.fetch_ssh(self.repo, remote=self.context.artifact_share, ref=ref)
 
