@@ -402,7 +402,7 @@ class Element(Plugin):
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
     def stage_sources(self, sandbox, directory):
-        """Stage this element's sources to a directory
+        """Stage this element's sources to a directory in the sandbox
 
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
@@ -412,12 +412,7 @@ class Element(Plugin):
         sandbox_root = sandbox.get_directory()
         host_directory = os.path.join(sandbox_root, directory.lstrip(os.sep))
 
-        with self.timed_activity("Staging sources", silent_nested=True):
-            for source in self.__sources:
-                source._stage(host_directory)
-
-        # Ensure deterministic mtime of sources at build time
-        utils._set_deterministic_mtime(host_directory)
+        self._stage_sources_at(host_directory)
 
     def get_public_data(self, domain):
         """Fetch public data on this element
@@ -973,6 +968,21 @@ class Element(Plugin):
                                    SandboxFlags.NETWORK_ENABLED |
                                    SandboxFlags.INTERACTIVE,
                                    env=environment)
+
+    # _stage_sources_at():
+    #
+    # Stage this element's sources to a directory
+    #
+    # Args:
+    #     directory (str): An absolute path to stage the sources at
+    #
+    def _stage_sources_at(self, directory):
+        with self.timed_activity("Staging sources", silent_nested=True):
+            for source in self.__sources:
+                source._stage(directory)
+
+        # Ensure deterministic mtime of sources at build time
+        utils._set_deterministic_mtime(directory)
 
     #############################################################
     #                   Private Local Methods                   #
