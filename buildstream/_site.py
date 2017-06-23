@@ -39,3 +39,9 @@ default_user_config = os.path.join(root, 'data', 'userconfig.yaml')
 
 # Default project configuration
 default_project_config = os.path.join(root, 'data', 'projectconfig.yaml')
+
+# Script template to call module building scripts
+build_all_template = os.path.join(root, 'data', 'build-all.sh.in')
+
+# Module building script template
+build_module_template = os.path.join(root, 'data', 'build-module.sh.in')
