@@ -302,16 +302,21 @@ def fetch_ssh(repo, remote, ref):
 #    ref (str): A ref to push
 #
 def push(repo, remote, ref):
-    exit_code, output = utils._call([
-        _site.ostree_push,
-        '--repo=' + repo.get_path().get_path(),
-        remote,
-        ref],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
+    if remote.startswith("/"):
+        # local repository
+        push_repo = ensure(remote, True)
+        fetch(push_repo, remote=repo.get_path().get_uri(), ref=ref)
+    else:
+        exit_code, output = utils._call([
+            _site.ostree_push,
+            '--repo=' + repo.get_path().get_path(),
+            remote,
+            ref],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
 
-    if exit_code:
-        raise OSTreeError("Failed to push artifact to remote SSH repository:\n{}".format(output))
+        if exit_code:
+            raise OSTreeError("Failed to push artifact to remote SSH repository:\n{}".format(output))
 
 
 # configure_remote():
