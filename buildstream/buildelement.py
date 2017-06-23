@@ -208,3 +208,15 @@ class BuildElement(Element):
             commands.append(command)
 
         return commands
+
+    def generate_script(self):
+        script = ""
+        for step in _command_steps:
+            for prefix in _command_prefixes:
+                command_name = prefix + step
+                commands = self.commands[command_name]
+
+                for cmd in commands:
+                    script += "(set -e; {}\n) || exit 1\n".format(cmd)
+
+        return script
