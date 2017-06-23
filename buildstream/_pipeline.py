@@ -411,7 +411,7 @@ class Pipeline():
     def checkout(self, directory, force):
         try:
             os.makedirs(directory, exist_ok=True)
-        except e:
+        except Exception as e:
             raise PipelineError("Failed to create checkout directory: {}".format(e)) from e
 
         if not force and os.listdir(directory):
