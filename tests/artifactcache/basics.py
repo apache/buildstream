@@ -18,6 +18,7 @@ def pipeline(tmpdir):
     project = Project(DATA_DIR, 'x86_64')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context.builddir = os.path.join(str(tmpdir), 'build')
+    context.artifact_share = os.path.join(str(tmpdir), 'share')
 
     return Pipeline(context, project, "simple.bst", None)
 
@@ -32,7 +33,7 @@ def test_empty_extract(pipeline):
         pipeline.artifacts.extract(pipeline.target)
 
 
-def test_commit_extract(pipeline):
+def build_commit(pipeline):
     os.makedirs(pipeline.context.builddir, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=pipeline.context.builddir) as builddir:
         # create file as mock build output
@@ -44,6 +45,9 @@ def test_commit_extract(pipeline):
         # commit build output to artifact cache
         pipeline.artifacts.commit(pipeline.target, builddir)
 
+
+def test_commit_extract(pipeline):
+    build_commit(pipeline)
     assert(pipeline.artifacts.contains(pipeline.target))
 
     # extract artifact and verify the content
@@ -51,3 +55,16 @@ def test_commit_extract(pipeline):
     with open(os.path.join(extractdir, 'bin', 'baz'), 'r') as f:
         content = f.read()
         assert(content == 'hello, world')
+
+
+def test_push_fetch(pipeline):
+    build_commit(pipeline)
+    assert(pipeline.artifacts.contains(pipeline.target))
+
+    pipeline.artifacts.push(pipeline.target)
+
+    pipeline.artifacts.remove(pipeline.target)
+    assert(not pipeline.artifacts.contains(pipeline.target))
+
+    pipeline.artifacts.fetch(pipeline.target)
+    assert(pipeline.artifacts.contains(pipeline.target))
