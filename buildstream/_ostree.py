@@ -187,6 +187,29 @@ def exists(repo, ref):
     return has_object
 
 
+# remove():
+#
+# Removes the given commit or symbolic ref from the repo.
+#
+# Args:
+#    repo (OSTree.Repo): The repo
+#    ref (str): A commit checksum or symbolic ref
+#
+def remove(repo, ref):
+
+    # Get the commit checksum, this will:
+    #
+    #  o Return a commit checksum if ref is a symbolic branch
+    #  o Return the same commit checksum if ref is a valid commit checksum
+    #  o Return None if the ostree repo doesnt know this ref.
+    #
+    ref = checksum(repo, ref)
+    if ref is None:
+        return
+
+    repo.delete_object(OSTree.ObjectType.COMMIT, ref, None)
+
+
 # checksum():
 #
 # Returns the commit checksum for a given symbolic ref,
