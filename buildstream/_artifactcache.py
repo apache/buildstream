@@ -84,6 +84,21 @@ class ArtifactCache():
         ref = buildref(element)
         return _ostree.exists(self.repo, ref)
 
+    # remove():
+    #
+    # Removes the artifact for the specified Element from the local artifact
+    # cache.
+    #
+    # Args:
+    #     element (Element): The Element to remove
+    #
+    def remove(self, element):
+        if not element._get_cache_key():
+            return
+
+        ref = buildref(element)
+        _ostree.remove(self.repo, ref)
+
     # extract():
     #
     # Extract cached artifact for the specified Element if it hasn't
