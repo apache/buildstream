@@ -42,6 +42,7 @@ from . import utils
 from . import _signals
 from . import _site
 
+
 class Scope(Enum):
     """Types of scope for a given element"""
 

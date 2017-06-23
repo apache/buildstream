@@ -45,3 +45,9 @@ ostree_push = os.path.join(root, 'data', 'ostree-push')
 
 # ostree-pull-ssh shell script
 ostree_pull_ssh = os.path.join(root, 'data', 'ostree-pull-ssh')
+
+# Script template to call module building scripts
+build_all_template = os.path.join(root, 'data', 'build-all.sh.in')
+
+# Module building script template
+build_module_template = os.path.join(root, 'data', 'build-module.sh.in')
