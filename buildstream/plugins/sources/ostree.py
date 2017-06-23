@@ -136,9 +136,16 @@ class OSTreeSource(Source):
                     raise SourceError("{}: Failed to checkout ref '{}' from origin: {}\n\n{}"
                                       .format(self, self.ref, self.url, e)) from e
 
-            os.makedirs(os.path.dirname(directory), exist_ok=True)
+            # The target directory is guaranteed to exist, here we must move the
+            # content of out checkout into the existing target directory.
+            #
+            # We may not be able to create the target directory as it's parent
+            # may be readonly, and the directory itself is often a mount point.
+            #
             try:
-                shutil.move(checkoutdir, directory)
+                for entry in os.listdir(checkoutdir):
+                    source_path = os.path.join(checkoutdir, entry)
+                    shutil.move(source_path, directory)
             except (shutil.Error, OSError) as e:
                 raise SourceError("{}: Failed to move ostree checkout {} from '{}' to '{}'\n\n{}"
                                   .format(self, self.url, tmpdir, directory, e)) from e
