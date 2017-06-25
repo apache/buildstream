@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import os
 import signal
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from collections import deque
 
 
@@ -135,30 +135,43 @@ def suspendable(suspend_callback, resume_callback):
 #
 # Args:
 #    signals (list): A list of unix signals to block
-#    discard (bool): Whether to discard entirely the signals which were
-#                    received and pending while the process had blocked them
+#    ignore (bool): Whether to ignore entirely the signals which were
+#                   received and pending while the process had blocked them
 #
 @contextmanager
-def blocked(signal_list, discard=True):
+def blocked(signal_list, ignore=True):
 
-    def discard_handler(sig, frame):
-        pass
+    with ExitStack() as stack:
 
-    if discard:
-        orig_handlers = {}
-        for sig in signal_list:
-            orig_handlers[sig] = signal.signal(sig, discard_handler)
+        # Optionally add the ignored() context manager to this context
+        if ignore:
+            stack.enter_context(ignored(signal_list))
 
-    # Set and save the sigprocmask
-    blocked_signals = signal.pthread_sigmask(signal.SIG_BLOCK, signal_list)
+        # Set and save the sigprocmask
+        blocked_signals = signal.pthread_sigmask(signal.SIG_BLOCK, signal_list)
+
+        yield
+
+        # If we have discarded the signals completely, this line will
+        # cause the discard_handler() to trigger for each signal in the list
+        signal.pthread_sigmask(signal.SIG_SETMASK, blocked_signals)
+
+
+# ignored()
+#
+# A context manager for running a code block with ignored signals
+#
+# Args:
+#    signals (list): A list of unix signals to ignore
+#
+@contextmanager
+def ignored(signal_list):
+
+    orig_handlers = {}
+    for sig in signal_list:
+        orig_handlers[sig] = signal.signal(sig, signal.SIG_IGN)
 
     yield
 
-    # If we have discarded the signals completely, this line will
-    # cause the discard_handler() to trigger for each signal in the list
-    signal.pthread_sigmask(signal.SIG_SETMASK, blocked_signals)
-
-    # Now that we've discarded signals, restore any originals
-    if discard:
-        for sig in signal_list:
-            signal.signal(sig, orig_handlers[sig])
+    for sig in signal_list:
+        signal.signal(sig, orig_handlers[sig])
