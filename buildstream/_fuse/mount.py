@@ -95,7 +95,7 @@ class Mount():
         # Ensure the child fork() does not inherit our signal handlers, if the
         # child wants to handle a signal then it will first set it's own
         # handler, and then unblock it.
-        with _signals.blocked([signal.SIGTERM, signal.SIGTSTP, signal.SIGINT], discard=False):
+        with _signals.blocked([signal.SIGTERM, signal.SIGTSTP, signal.SIGINT], ignore=False):
             self.__process.start()
 
         # This is horrible, we're going to wait until mountpoint is mounted and that's it.
