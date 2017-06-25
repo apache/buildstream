@@ -113,6 +113,14 @@ class Mount():
             self.__process.terminate()
             self.__process.join()
 
+        # Not sure why this can happen, but sometimes subsequent checks
+        # on the directory can fail with "transport endpoint not connected",
+        # this code is an attempt to ensure we synchronize subsequent accesses
+        # to an unmounted directory, so that we wait until the OS really
+        # unmounts it before proceeding.
+        while os.path.ismount(self.__mountpoint):
+            time.sleep(1 / 100)
+
         self.__mountpoint = None
         self.__process = None
 
