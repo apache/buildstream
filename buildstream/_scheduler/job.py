@@ -99,7 +99,7 @@ class Job():
         #  A.) Child should inherit blocked SIGINT state, it's never handled there
         #  B.) Child should not inherit SIGTSTP handled state
         #
-        with _signals.blocked([signal.SIGINT], discard=False):
+        with _signals.blocked([signal.SIGINT], ignore=False):
             self.scheduler.loop.remove_signal_handler(signal.SIGTSTP)
             self.process.start()
             self.scheduler.loop.add_signal_handler(signal.SIGTSTP, self.scheduler.suspend_event)
