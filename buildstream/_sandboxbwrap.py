@@ -214,17 +214,9 @@ class SandboxBwrap(Sandbox):
         # the regular non-interactive sandbox, we want to hand pick
         # a minimal set of devices to expose to the sandbox.
         #
-        # We want to launch bwrap in a new session in non-interactive
-        # mode so that we handle the SIGTERM and SIGTSTP signals separately
-        # from the nested bwrap process, but in interactive mode this
-        # causes launched shells to lack job control (we dont really
-        # know why that is).
-        #
         if flags & SandboxFlags.INTERACTIVE:
             bwrap_command += ['--dev', '/dev']
-            bwrap_new_session = False
         else:
-            bwrap_new_session = True
             for device in self.DEVICES:
                 bwrap_command += ['--dev-bind', device, device]
 
@@ -270,7 +262,8 @@ class SandboxBwrap(Sandbox):
                 stdin = stack.enter_context(open(os.devnull, "r"))
 
             # Run bubblewrap !
-            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr, env, bwrap_new_session)
+            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr, env,
+                                       (flags & SandboxFlags.INTERACTIVE))
 
             # Cleanup things which bwrap might have left behind, while
             # everything is still mounted because bwrap can be creating
@@ -304,7 +297,7 @@ class SandboxBwrap(Sandbox):
 
         return exit_code
 
-    def run_bwrap(self, argv, stdin, stdout, stderr, env, new_session):
+    def run_bwrap(self, argv, stdin, stdout, stderr, env, interactive):
         # Wrapper around subprocess.Popen() with common settings.
         #
         # This function blocks until the subprocess has terminated.
@@ -360,29 +353,34 @@ class SandboxBwrap(Sandbox):
                     group_id = os.getpgid(user_proc.pid)
                     os.killpg(group_id, signal.SIGCONT)
 
-        with _signals.suspendable(suspend_bwrap, resume_bwrap), \
-            _signals.terminator(terminate_bwrap):
+        with ExitStack() as stack:
 
-            try:
-                process = subprocess.Popen(
-                    argv,
-                    # The default is to share file descriptors from the parent process
-                    # to the subprocess, which is rarely good for sandboxing.
-                    close_fds=True,
-                    env=env,
-                    stdin=stdin,
-                    stdout=stdout,
-                    stderr=stderr,
-                    start_new_session=new_session
-                )
-                process.communicate()
-                exit_code = process.poll()
-            except KeyboardInterrupt:
-                # Dont care about keyboard interrupts, they will happen
-                # if a child shell is invoked without available job control
-                terminate_bwrap()
-                exit_code = -1
-                pass
+            # We want to launch bwrap in a new session in non-interactive
+            # mode so that we handle the SIGTERM and SIGTSTP signals separately
+            # from the nested bwrap process, but in interactive mode this
+            # causes launched shells to lack job control (we dont really
+            # know why that is).
+            #
+            if interactive:
+                new_session = False
+            else:
+                new_session = True
+                stack.enter_context(_signals.suspendable(suspend_bwrap, resume_bwrap))
+                stack.enter_context(_signals.terminator(terminate_bwrap))
+
+            process = subprocess.Popen(
+                argv,
+                # The default is to share file descriptors from the parent process
+                # to the subprocess, which is rarely good for sandboxing.
+                close_fds=True,
+                env=env,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=new_session
+            )
+            process.communicate()
+            exit_code = process.poll()
 
         return exit_code
 
