@@ -1,18 +1,16 @@
-# Install some requirements for BuildStream
+image: samthursfield/buildstream:0.1-20170621.1
+
 before_script:
-- echo "deb http://ftp.uk.debian.org/debian/ testing main" >> /etc/apt/sources.list
-- apt-get update --fix-missing -qq
-- apt-get install -y -qq bubblewrap
-- apt-get install -y -qq python3.5
-- apt-get install -y -qq python3-pip
-- apt-get install -y -qq bzr
-- apt-get install --force-yes -qq ostree gir1.2-ostree-1.0 python3-dev python3-gi
+  # Diagnostics
+  - mount
+  - df -h
 
-# Debian version is behind/not compatible with latest sphinx
-- apt-get remove python-requests
-- pip3 install --upgrade pip
-- pip3 install --upgrade requests
+  # Work around https://github.com/fedora-cloud/docker-brew-fedora/issues/14
+  - export LANG="C.UTF-8"
+  - export LC_ALL="C.UTF-8"
 
+  # Store cache in the shared Docker volume
+  - export XDG_CACHE_HOME=/cache
 
 # Run premerge commits
 #
@@ -20,6 +18,15 @@ tests:
   script:
   - python3 setup.py test
 
+# Run integration tests
+#
+integration_tests:
+  script:
+    - dnf install -y findutils bzr
+    - pip3 install --upgrade .
+    - git clone https://gitlab.com/BuildStream/buildstream-tests.git
+    - cd buildstream-tests
+    - ./run-test.sh test
 
 # Automatically build documentation, only for merges which land
 # on master branch.
