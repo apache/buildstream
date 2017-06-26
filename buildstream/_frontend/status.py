@@ -20,6 +20,7 @@
 import datetime
 import click
 from blessings import Terminal
+from collections import OrderedDict
 
 # Import a widget internal for formatting time codes
 from .widget import TimeCode
@@ -276,13 +277,20 @@ class StatusHeader():
             self.content_profile.fmt(total) + \
             self.format_profile.fmt("]")
 
-        # Format and calculate size for each queue progress
+        # Group queues by name
+        queue_status = OrderedDict()
         for queue in self.scheduler.queues:
-            processed = str(len(queue.processed_elements))
-            size += len(processed) + len(queue.complete_name) + 4
+            if queue.complete_name not in queue_status:
+                queue_status[queue.complete_name] = 0
+            queue_status[queue.complete_name] += len(queue.processed_elements)
+
+        # Format and calculate size for each queue progress
+        for queue_name, processed_elements in queue_status.items():
+            processed = str(processed_elements)
+            size += len(processed) + len(queue_name) + 4
             text += ' ' + \
                 self.format_profile.fmt("[") + \
-                self.content_profile.fmt(queue.complete_name) + \
+                self.content_profile.fmt(queue_name) + \
                 self.format_profile.fmt(":") + \
                 self.content_profile.fmt(processed) + \
                 self.format_profile.fmt("]")
