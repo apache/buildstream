@@ -21,12 +21,19 @@
 
 """Script element
 
-This element allows one to run some commands to mutate the
-input and create some output.
+This element allows one to run commands provided by dependencies to
+mutate the input and create some output.
+
+Script elements may only contain build dependencies. See :ref:`format`
+for more detaul on specifying dependencies.
+
+Script elements may only contain build dependencies. See
+:ref:`format` for more detail on specifying dependencies.
 
 The default configuration and possible options are as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/script.yaml
      :language: yaml
+
 """
 
 import buildstream
