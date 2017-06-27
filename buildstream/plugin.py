@@ -23,7 +23,6 @@ import datetime
 import subprocess
 import signal
 import sys
-from subprocess import CalledProcessError
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
@@ -502,52 +501,15 @@ class Plugin():
         with self._output_file() as output_file:
             kwargs['stdout'] = output_file
             kwargs['stderr'] = output_file
-            kwargs['start_new_session'] = True
             if collect_stdout:
                 kwargs['stdout'] = subprocess.PIPE
 
             self.__note_command(output_file, *popenargs, **kwargs)
 
-            # Handle termination, suspend and resume
-            def kill_proc():
-                if process:
-                    # FIXME: This is a brutal but reliable approach
-                    #
-                    # Other variations I've tried which try SIGTERM first
-                    # and then wait for child processes to exit gracefully
-                    # have not reliably cleaned up process trees and have
-                    # left orphaned git or ssh processes alive.
-                    #
-                    # This cleans up the subprocesses reliably but may
-                    # cause side effects such as possibly leaving stale
-                    # locks behind. Hopefully this should not be an issue
-                    # as long as any child processes only interact with
-                    # the temp directories which we control and cleanup
-                    # ourselves.
-                    #
-                    utils._kill_process_tree(process.pid)
-
-            def suspend_proc():
-                if process:
-                    group_id = os.getpgid(process.pid)
-                    os.killpg(group_id, signal.SIGSTOP)
-
-            def resume_proc():
-                if process:
-                    group_id = os.getpgid(process.pid)
-                    os.killpg(group_id, signal.SIGCONT)
-
-            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-                process = subprocess.Popen(*popenargs, **kwargs)
-                output, _ = process.communicate()
-                exit_code = process.poll()
+            exit_code, output = utils._call(*popenargs, **kwargs)
 
             if fail and exit_code:
                 raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
-
-            # Program output is returned as bytes, we want utf8 strings
-            if output is not None:
-                output = output.decode('UTF-8')
 
         return (exit_code, output)
 
