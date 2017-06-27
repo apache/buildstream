@@ -28,8 +28,10 @@ import hashlib
 import pickle
 import calendar
 import psutil
+import subprocess
 from . import ProgramNotFoundError
 from . import _yaml
+from . import _signals
 
 
 def list_relative_paths(directory):
@@ -578,3 +580,60 @@ def _kill_process_tree(pid):
     for child in children:
         kill_proc(child)
     kill_proc(proc)
+
+
+# _call()
+#
+# A wrapper for subprocess.call() supporting suspend and resum
+#
+# Args:
+#    popenargs (list): Popen() arguments
+#    rest_of_args (kwargs): Remaining arguments to subprocess.call()
+#
+# Returns:
+#    (int): The process exit code.
+#    (str): The program output.
+#
+def _call(*popenargs, **kwargs):
+
+    kwargs['start_new_session'] = True
+
+    # Handle termination, suspend and resume
+    def kill_proc():
+        if process:
+            # FIXME: This is a brutal but reliable approach
+            #
+            # Other variations I've tried which try SIGTERM first
+            # and then wait for child processes to exit gracefully
+            # have not reliably cleaned up process trees and have
+            # left orphaned git or ssh processes alive.
+            #
+            # This cleans up the subprocesses reliably but may
+            # cause side effects such as possibly leaving stale
+            # locks behind. Hopefully this should not be an issue
+            # as long as any child processes only interact with
+            # the temp directories which we control and cleanup
+            # ourselves.
+            #
+            _kill_process_tree(process.pid)
+
+    def suspend_proc():
+        if process:
+            group_id = os.getpgid(process.pid)
+            os.killpg(group_id, signal.SIGSTOP)
+
+    def resume_proc():
+        if process:
+            group_id = os.getpgid(process.pid)
+            os.killpg(group_id, signal.SIGCONT)
+
+    with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
+        process = subprocess.Popen(*popenargs, **kwargs)
+        output, _ = process.communicate()
+        exit_code = process.poll()
+
+    # Program output is returned as bytes, we want utf8 strings
+    if output is not None:
+        output = output.decode('UTF-8')
+
+    return (exit_code, output)
