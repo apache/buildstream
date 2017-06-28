@@ -373,7 +373,8 @@ def checkout(app, target, arch, variant, directory, force):
               type=click.Choice(['none', 'gz', 'bz2', 'xz']),
               help="Compress the tar file using the given algorithm.")
 @click.option('--deps', '-d', default='build',
-              type=click.Choice(['none', 'plan', 'run', 'build']))
+              type=click.Choice(['none', 'run', 'build']),
+              help='The elements to bundle (default: build)')
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before building")
 @click.option('--arch', '-a', default=host_machine,
@@ -388,6 +389,13 @@ def checkout(app, target, arch, variant, directory, force):
 def source_bundle(app, name, target, arch, variant, force,
                   track, deps, compression, except_):
     """Produce a build bundle to be manually executed
+
+    Specify `--deps` to control which elements to show:
+
+    \b
+        none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
     """
     app.initialize(target, arch, variant, rewritable=track, inconsistent=track)
     try:
