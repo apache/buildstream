@@ -444,8 +444,16 @@ class Pipeline():
             raise PipelineError("Checkout directory is not empty: {}"
                                 .format(directory))
 
+        # BuildStream will one day be able to run host-incompatible binaries
+        # by using a QEMU sandbox, but for now we need to disable integration
+        # commands for cross-build artifacts.
+        can_integrate = (self.context.host_arch == self.context.target_arch)
+        if not can_integrate:
+            self.message(self.target, MessageType.WARN,
+                         "Host-incompatible checkout -- no integration commands can be run")
+
         # Stage deps into a temporary sandbox first
-        with self.target._prepare_sandbox(Scope.RUN, None) as sandbox:
+        with self.target._prepare_sandbox(Scope.RUN, None, integrate=can_integrate) as sandbox:
 
             # Make copies from the sandbox into to the desired directory
             sandbox_root = sandbox.get_directory()

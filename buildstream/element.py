@@ -944,7 +944,7 @@ class Element(Plugin):
     # is used to stage things by the `bst checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, directory):
+    def _prepare_sandbox(self, scope, directory, integrate=True):
 
         with self.__sandbox(directory) as sandbox:
 
@@ -962,9 +962,10 @@ class Element(Plugin):
 
                     # Run any integration commands provided by the dependencies
                     # once they are all staged and ready
-                    with self.timed_activity("Integrating sandbox"):
-                        for dep in self.dependencies(scope):
-                            dep.integrate(sandbox)
+                    if integrate:
+                        with self.timed_activity("Integrating sandbox"):
+                            for dep in self.dependencies(scope):
+                                dep.integrate(sandbox)
 
             yield sandbox
 
