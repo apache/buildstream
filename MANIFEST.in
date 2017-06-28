@@ -2,6 +2,8 @@
 include README.rst
 include HACKING.rst
 include COPYING
+include Dockerfile
+include Dockerfile-build.sh
 
 # Documentation package includes
 include doc/Makefile
