@@ -319,7 +319,7 @@ class Element(Plugin):
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_display_key())):
             # Get the extracted artifact
-            artifact = self.__artifacts.extract(self)
+            artifact = os.path.join(self.__artifacts.extract(self), 'files')
 
             # Hard link it into the staging area
             #
@@ -823,8 +823,17 @@ class Element(Plugin):
 
                 # At this point, we expect an exception was raised leading to
                 # an error message, or we have good output to collect.
-                with self.timed_activity("Caching Artifact"):
-                    self.__artifacts.commit(self, collectdir)
+
+                with tempfile.TemporaryDirectory(prefix='tmp', dir=sandbox_root) as assembledir:
+                    # Create artifact directory structure
+                    filesdir = os.path.join(assembledir, 'files')
+                    os.mkdir(filesdir)
+
+                    # Hard link files from collect dir to files directory
+                    utils.link_files(collectdir, filesdir)
+
+                    with self.timed_activity("Caching Artifact"):
+                        self.__artifacts.commit(self, assembledir)
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
@@ -1195,7 +1204,7 @@ class Element(Plugin):
         }
 
     def __compute_splits(self, splits, orphans):
-        basedir = self.__artifacts.extract(self)
+        basedir = os.path.join(self.__artifacts.extract(self), 'files')
 
         # No splitting requested, just report complete artifact
         if orphans and not splits:
