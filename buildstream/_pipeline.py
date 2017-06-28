@@ -523,23 +523,23 @@ class Pipeline():
     #    directory (str): The directory to checkout the artifact to
     #
     def source_bundle(self, scheduler, dependencies, force,
-                      track_first, name, compression, except_):
+                      track_first, compression, except_, directory):
 
         # Find the correct filename for the compression algorithm
-        name += ".tar"
+        tar_location = os.path.join(directory, self.target.normal_name + ".tar")
         if compression != "none":
-            name += "." + compression
+            tar_location += "." + compression
 
         # Attempt writing a file to generate a good error message
         # early
         #
         # FIXME: A bit hackish
         try:
-            open(name, mode="x")
-            os.remove(name)
+            open(tar_location, mode="x")
+            os.remove(tar_location)
         except IOError as e:
             raise PipelineError("Cannot write to {0}: {1}"
-                                .format(name, e)) from e
+                                .format(tar_location, e)) from e
 
         plan = list(dependencies)
         self.fetch(scheduler, plan, track_first)
@@ -569,7 +569,8 @@ class Pipeline():
 
             self._write_element_sources(tempdir, plan)
             self._write_build_script(tempdir, plan)
-            self._collect_sources(tempdir, name, compression)
+            self._collect_sources(tempdir, tar_location,
+                                  self.target.normal_name, compression)
 
     # Write all source elements to the given directory
     def _write_element_sources(self, directory, elements):
@@ -597,7 +598,7 @@ class Pipeline():
         os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
 
     # Collect the sources in the given sandbox into a tarfile
-    def _collect_sources(self, directory, tar_name, compression):
+    def _collect_sources(self, directory, tar_name, element_name, compression):
         with self.target.timed_activity("Creating tarball {}".format(tar_name)):
             if compression == "none":
                 permissions = "w:"
@@ -605,4 +606,4 @@ class Pipeline():
                 permissions = "w:" + compression
 
             with tarfile.open(tar_name, permissions) as tar:
-                tar.add(directory, arcname=os.path.basename(directory))
+                tar.add(directory, arcname=element_name)

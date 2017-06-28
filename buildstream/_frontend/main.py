@@ -383,10 +383,11 @@ def checkout(app, target, arch, variant, directory, force):
               help='A variant of the specified target')
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
+@click.option('--directory', default=os.getcwd(),
+              help="The directory to write the tarball to")
 @click.argument('target')
-@click.argument('name')
 @click.pass_obj
-def source_bundle(app, name, target, arch, variant, force,
+def source_bundle(app, target, arch, variant, force, directory,
                   track, deps, compression, except_):
     """Produce a build bundle to be manually executed
 
@@ -402,7 +403,7 @@ def source_bundle(app, name, target, arch, variant, force,
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(dependencies)
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
-                                   name, compression, except_)
+                                   compression, except_, directory)
         click.echo("")
     except _BstError as e:
         click.echo("")
