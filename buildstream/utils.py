@@ -34,6 +34,24 @@ from . import _yaml
 from . import _signals
 
 
+class FileListResult():
+    """An object which stores the result of one of the operations
+    which run on a list of files.
+    """
+
+    def __init__(self):
+
+        self.overwritten = []
+        """List of files which were overwritten in the target directory"""
+
+        self.ignored = []
+        """List of files which were ignored, because they would have
+        replaced a non empty directory"""
+
+        self.failed_attributes = []
+        """List of files for which attributes could not be copied over"""
+
+
 def list_relative_paths(directory):
     """A generator for walking directory relative paths
 
@@ -81,12 +99,13 @@ def list_relative_paths(directory):
             yield relpath
 
 
-def safe_copy(src, dest):
+def safe_copy(src, dest, result=None):
     """Copy a file while preserving attributes
 
     Args:
        src (str): The source filename
        dest (str): The destination filename
+       result (:class:`~.FileListResult`): An optional collective result
 
     This is almost the same as shutil.copy2(), except that
     we unlink *dest* before overwriting it if it exists, just
@@ -97,17 +116,30 @@ def safe_copy(src, dest):
         os.unlink(dest)
     except OSError as e:
         if e.errno != errno.ENOENT:
-            raise e
+            raise
 
-    shutil.copy2(src, dest)
+    shutil.copyfile(src, dest)
+    try:
+        shutil.copystat(src, dest)
+    except PermissionError:
+        # If we failed to copy over some file stats, dont treat
+        # it as an unrecoverable error, but provide some feedback
+        # we can use for a warning.
+        #
+        # This has a tendency of happening when attempting to copy
+        # over extended file attributes.
+        if result:
+            result.failed_attributes.append(dest)
+        pass
 
 
-def safe_move(src, dest):
+def safe_move(src, dest, result=None):
     """Move a file while preserving attributes
 
     Args:
        src (str): The source filename
        dest (str): The destination filename
+       result (:class:`~.FileListResult`): An optional collective result
 
     This is almost the same as shutil.move(), except that
     we unlink *dest* before overwriting it if it exists, just
@@ -118,17 +150,25 @@ def safe_move(src, dest):
         os.unlink(dest)
     except OSError as e:
         if e.errno != errno.ENOENT:
-            raise e
+            raise
 
-    shutil.move(src, dest)
+    # Attempt rename, fallback to safe_copy()
+    try:
+        os.rename(src, dest)
+    except OSError as e:
+        if e.errno == errno.EXDEV:
+            safe_copy(src, dest)
+        else:
+            raise
 
 
-def safe_link(src, dest):
+def safe_link(src, dest, result=None):
     """Try to create a hardlink, but resort to copying in the case of cross device links.
 
     Args:
        src (str): The source filename
        dest (str): The destination filename
+       result (:class:`~.FileListResult`): An optional collective result
     """
 
     # First unlink the target if it exists
@@ -136,16 +176,16 @@ def safe_link(src, dest):
         os.unlink(dest)
     except OSError as e:
         if e.errno != errno.ENOENT:
-            raise e
+            raise
 
     # If we can't link it due to cross-device hardlink, copy
     try:
         os.link(src, dest)
     except OSError as e:
         if e.errno == errno.EXDEV:
-            shutil.copy2(src, dest)
+            safe_copy(src, dest)
         else:
-            raise e
+            raise
 
 
 def safe_remove(path):
@@ -195,10 +235,7 @@ def copy_files(src, dest, files=None, ignore_missing=False):
        ignore_missing (bool): Dont raise any error if a source file is missing
 
     Returns:
-       This returns two lists, the first list contains any files which
-       were overwritten in `dest` and the second list contains any
-       files which were not copied as they would replace a non empty
-       directory in `dest`
+       (:class:`~.FileListResult`): The result describing what happened during this file operation
 
     Note::
 
@@ -209,8 +246,9 @@ def copy_files(src, dest, files=None, ignore_missing=False):
     if files is None:
         files = list_relative_paths(src)
 
-    # Use shutil.copy2() which uses copystat() to preserve attributes
-    return _process_list(src, dest, files, safe_copy, ignore_missing=ignore_missing)
+    result = FileListResult()
+    _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing)
+    return result
 
 
 def move_files(src, dest, files=None, ignore_missing=False):
@@ -223,10 +261,7 @@ def move_files(src, dest, files=None, ignore_missing=False):
        ignore_missing (bool): Dont raise any error if a source file is missing
 
     Returns:
-       This returns two lists, the first list contains any files which
-       were overwritten in `dest` and the second list contains any
-       files which were not moved as they would replace a non empty
-       directory in `dest`
+       (:class:`~.FileListResult`): The result describing what happened during this file operation
 
     Note::
 
@@ -237,8 +272,9 @@ def move_files(src, dest, files=None, ignore_missing=False):
     if files is None:
         files = list_relative_paths(src)
 
-    # Use shutil.move() which uses copystat() to preserve attributes
-    return _process_list(src, dest, files, safe_move, ignore_missing=ignore_missing)
+    result = FileListResult()
+    _process_list(src, dest, files, safe_move, result, ignore_missing=ignore_missing)
+    return result
 
 
 def link_files(src, dest, files=None, ignore_missing=False):
@@ -251,10 +287,7 @@ def link_files(src, dest, files=None, ignore_missing=False):
        ignore_missing (bool): Dont raise any error if a source file is missing
 
     Returns:
-       This returns two lists, the first list contains any files which
-       were overwritten in `dest` and the second list contains any
-       files which were not moved as they would replace a non empty
-       directory in `dest`
+       (:class:`~.FileListResult`): The result describing what happened during this file operation
 
     Note::
 
@@ -270,7 +303,9 @@ def link_files(src, dest, files=None, ignore_missing=False):
     if files is None:
         files = list_relative_paths(src)
 
-    return _process_list(src, dest, files, safe_link, ignore_missing=ignore_missing)
+    result = FileListResult()
+    _process_list(src, dest, files, safe_link, result, ignore_missing=ignore_missing)
+    return result
 
 
 def get_host_tool(name):
@@ -373,28 +408,24 @@ def _ensure_real_directory(root, destpath):
 #    destdir: The destination base directory
 #    filelist: List of relative file paths
 #    actionfunc: The function to call for regular files
+#    result: The FileListResult
 #    ignore_missing: Dont raise any error if a source file is missing
 #
-# Returns:
-#    (list): Overwritten files
-#    (list): Ignored overwritten files
 #
-def _process_list(srcdir, destdir, filelist, actionfunc, ignore_missing=False):
+def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=False):
 
     # Note we consume the filelist (which is a generator and not a list)
     # by sorting it, this is necessary to ensure that we processes symbolic
     # links which lead to directories before processing files inside those
     # directories.
     #
-    overwrites = []
-    ignored = []
     for path in sorted(filelist):
         srcpath = os.path.join(srcdir, path)
         destpath = os.path.join(destdir, path)
 
         # Collect overlaps
         if os.path.lexists(destpath) and not os.path.isdir(destpath):
-            overwrites.append(path)
+            result.overwritten.append(path)
 
         # The destination directory may not have been created separately
         _copy_directories(srcdir, destdir, path)
@@ -427,7 +458,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, ignore_missing=False):
 
         elif stat.S_ISLNK(mode):
             if not safe_remove(destpath):
-                ignored.append(path)
+                result.ignored.append(path)
                 continue
 
             target = os.readlink(srcpath)
@@ -437,15 +468,15 @@ def _process_list(srcdir, destdir, filelist, actionfunc, ignore_missing=False):
         elif stat.S_ISREG(mode):
             # Process the file.
             if not safe_remove(destpath):
-                ignored.append(path)
+                result.ignored.append(path)
                 continue
 
-            actionfunc(srcpath, destpath)
+            actionfunc(srcpath, destpath, result=result)
 
         elif stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
             # Block or character device. Put contents of st_dev in a mknod.
             if not safe_remove(destpath):
-                ignored.append(path)
+                result.ignored.append(path)
                 continue
 
             if os.path.lexists(destpath):
@@ -456,8 +487,6 @@ def _process_list(srcdir, destdir, filelist, actionfunc, ignore_missing=False):
         else:
             # Unsupported type.
             raise OSError('Cannot extract %s into staging-area. Unsupported type.' % srcpath)
-
-    return (overwrites, ignored)
 
 
 # _relative_symlink_target()
