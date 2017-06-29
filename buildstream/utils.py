@@ -491,14 +491,9 @@ def _relative_symlink_target(root, symlink, target):
         # is located, not from the symlink itself.
         symlinkdir, _ = os.path.split(os.path.realpath(symlink))
 
-        # Since we are asking for a relative path of a realpath() on
-        # the symlink, we also need a realpath() of the staging area
-        # (the build directory can also have leading symlinks)
-        real_root = os.path.realpath(root)
-
         # Create a full path to the target, including the leading staging
         # directory
-        fulltarget = os.path.join(real_root, target)
+        fulltarget = os.path.join(root, target)
 
         # now get the relative path from the directory where the symlink
         # is located within the staging root, to the target within the same
