@@ -29,6 +29,7 @@ import pickle
 import calendar
 import psutil
 import subprocess
+import signal
 from pathlib import PurePath
 from . import ProgramNotFoundError
 from . import _yaml
