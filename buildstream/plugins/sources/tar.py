@@ -52,7 +52,6 @@ import urllib.error
 import tarfile
 import hashlib
 import tempfile
-from pathlib import PurePath
 
 from buildstream import Source, SourceError, Consistency
 from buildstream import utils
@@ -215,26 +214,9 @@ class TarSource(Source):
 
             yield member.name
 
-    # Yields members in the tarfile matching the glob pattern
-    def _glob_tar(self, tar, pattern, dirs_only=False):
-
-        # When using PurePath.match(), it behaves how we want
-        # only when comparing two absolute filenames, so we
-        # force them to be absolute
-        if not pattern.startswith(os.sep):
-            pattern = os.sep + pattern
-
-        for member in self._list_tar_paths(tar, dirs_only=dirs_only):
-            member_try = member
-            if not member_try.startswith(os.sep):
-                member_try = os.sep + member_try
-
-            path = PurePath(member_try)
-            if path.match(pattern):
-                yield member
-
     def _find_base_dir(self, tar, pattern):
-        matches = sorted(list(self._glob_tar(tar, pattern, dirs_only=True)))
+        paths = self._list_tar_paths(tar, dirs_only=True)
+        matches = sorted(list(utils.glob(paths, pattern)))
         if not matches:
             raise SourceError("{}: Could not find base directory matching pattern: {}".format(self, pattern))
 
