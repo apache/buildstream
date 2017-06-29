@@ -163,9 +163,9 @@ def fetch(app, target, arch, variant, deps, track, except_):
 @cli.command(short_help="Track new source references")
 @click.option('--except', 'except_', multiple=True,
               help="Except certain dependencies from tracking")
-@click.option('--deps', '-d', default='all',
+@click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
-              help='The dependencies to track (default: all)')
+              help='The dependencies to track (default: none)')
 @click.option('--arch', '-a', default=host_machine,
               help="The target architecture (default: %s)" % host_machine)
 @click.option('--variant',
@@ -176,8 +176,8 @@ def track(app, target, arch, variant, deps, except_):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
-    By default this will track sources for all dependencies of the specified
-    target element.
+    By default this will track just the specified element, but you can also
+    update a whole tree of dependencies in one go.
 
     Specify `--deps` to control which sources to track:
 
