@@ -92,6 +92,7 @@ class Element(Plugin):
         self.__artifacts = artifacts      # Artifact cache
         self.__cached = None              # Whether we have a cached artifact
         self.__built = False              # Element was locally built
+        self.__log_path = None            # Path to dedicated log file or None
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults()
@@ -827,10 +828,16 @@ class Element(Plugin):
                 with tempfile.TemporaryDirectory(prefix='tmp', dir=sandbox_root) as assembledir:
                     # Create artifact directory structure
                     filesdir = os.path.join(assembledir, 'files')
+                    logsdir = os.path.join(assembledir, 'logs')
                     os.mkdir(filesdir)
+                    os.mkdir(logsdir)
 
                     # Hard link files from collect dir to files directory
                     utils.link_files(collectdir, filesdir)
+
+                    # Copy build log
+                    if self.__log_path:
+                        shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
 
                     with self.timed_activity("Caching Artifact"):
                         self.__artifacts.commit(self, assembledir)
@@ -913,8 +920,8 @@ class Element(Plugin):
     #
     @contextmanager
     def _logging_enabled(self, action_name):
-        fullpath = self._logfile(action_name)
-        with open(fullpath, 'a') as logfile:
+        self.__log_path = self._logfile(action_name)
+        with open(self.__log_path, 'a') as logfile:
 
             # Write one last line to the log and flush it to disk
             def flush_log():
@@ -932,8 +939,9 @@ class Element(Plugin):
 
             self._set_log_handle(logfile)
             with _signals.terminator(flush_log):
-                yield fullpath
+                yield self.__log_path
             self._set_log_handle(None)
+            self.__log_path = None
 
     # Override plugin _set_log_handle(), set it for our sources and dependencies too
     #
