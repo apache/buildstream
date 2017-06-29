@@ -29,6 +29,7 @@ import pickle
 import calendar
 import psutil
 import subprocess
+from pathlib import PurePath
 from . import ProgramNotFoundError
 from . import _yaml
 from . import _signals
@@ -97,6 +98,32 @@ def list_relative_paths(directory):
             fullpath = os.path.join(dirpath, f)
             relpath = os.path.relpath(fullpath, directory)
             yield relpath
+
+
+def glob(paths, pattern):
+    """A generator to yield paths which match the glob pattern
+
+    Args:
+       paths (iterable): The paths to check
+       pattern (str): A glob pattern
+
+    This generator will iterate over the passed *paths* and
+    yield only the filenames which matched the provided *pattern*.
+    """
+    # When using PurePath.match(), it behaves as expected
+    # only when comparing two absolute filenames, so we
+    # force them to be absolute
+    if not pattern.startswith(os.sep):
+        pattern = os.sep + pattern
+
+    for filename in paths:
+        filename_try = filename
+        if not filename_try.startswith(os.sep):
+            filename_try = os.sep + filename_try
+
+        path = PurePath(filename_try)
+        if path.match(pattern):
+            yield filename
 
 
 def safe_copy(src, dest, result=None):
