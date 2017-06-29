@@ -297,10 +297,7 @@ class Element(Plugin):
            (:class:`.ElementError`): If the element has not yet produced an artifact.
 
         Returns:
-           This returns two lists, the first list contains any files which
-           were overwritten in `dest` and the second list contains any
-           files which were not staged as they would replace a non empty
-           directory in `dest`
+           (:class:`~.utils.FileListResult`): The result describing what happened while staging
 
         Note::
 
@@ -332,9 +329,9 @@ class Element(Plugin):
                 else os.path.join(basedir, path.lstrip(os.sep))
 
             files = self.__compute_splits(splits, orphans)
-            overwrites, ignored = utils.link_files(artifact, stagedir, files=files)
+            result = utils.link_files(artifact, stagedir, files=files)
 
-        return overwrites, ignored
+        return result
 
     def stage_dependency_artifacts(self, sandbox, scope, path=None, splits=None, orphans=True):
         """Stage element dependencies in scope
@@ -357,13 +354,12 @@ class Element(Plugin):
         """
         overwrites = {}
         ignored = {}
-
         for dep in self.dependencies(scope):
-            o, i = dep.stage_artifact(sandbox, path=path, splits=splits, orphans=orphans)
-            if o:
-                overwrites[dep.name] = o
-            if i:
-                ignored[dep.name] = i
+            result = dep.stage_artifact(sandbox, path=path, splits=splits, orphans=orphans)
+            if result.overwritten:
+                overwrites[dep.name] = result.overwritten
+            if result.ignored:
+                ignored[dep.name] = result.ignored
 
         if overwrites:
             detail = "Staged files overwrite existing files in staging area:\n"
