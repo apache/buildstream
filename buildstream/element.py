@@ -581,7 +581,7 @@ class Element(Plugin):
         if scope == Scope.RUN:
             for element in self.__runtime_dependencies:
                 yield element
-        elif scope != Scope.BUILD:
+        elif scope == Scope.BUILD:
             for element in self.__build_dependencies:
                 yield element
         else:
