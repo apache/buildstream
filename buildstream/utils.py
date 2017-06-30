@@ -114,19 +114,19 @@ def glob(paths, pattern):
     +--------+------------------------------------------------------------------+
     | Meta   | Description                                                      |
     +========+==================================================================+
-    | \*     | Match any pattern except a path separator                        |
+    | \*     | Zero or more of any character, excepting path separators         |
     +--------+------------------------------------------------------------------+
-    | \**    | Match any pattern, including path separators                     |
+    | \**    | Zero or more of any character, including path separators         |
     +--------+------------------------------------------------------------------+
-    | ?      | Match any single character                                       |
+    | ?      | One of any character, except for path separators                 |
     +--------+------------------------------------------------------------------+
-    | [abc]  | Match one of the specified characters                            |
+    | [abc]  | One of any of the specified characters                           |
     +--------+------------------------------------------------------------------+
-    | [a-z]  | Match one of the characters in the specified range               |
+    | [a-z]  | One of the characters in the specified range                     |
     +--------+------------------------------------------------------------------+
-    | [!abc] | Match any single character, except the specified characters      |
+    | [!abc] | Any single character, except the specified characters            |
     +--------+------------------------------------------------------------------+
-    | [!a-z] | Match any single character, except those in the specified range  |
+    | [!a-z] | Any single character, except those in the specified range        |
     +--------+------------------------------------------------------------------+
 
     .. note::
