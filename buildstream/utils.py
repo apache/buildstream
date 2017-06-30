@@ -290,11 +290,11 @@ def copy_files(src, dest, files=None, ignore_missing=False):
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
 
-    Note::
+    .. note::
 
-      Directories in `dest` are replaced with files from `src`,
-      unless the existing directory in `dest` is not empty in which
-      case the path will be reported in the return value.
+       Directories in `dest` are replaced with files from `src`,
+       unless the existing directory in `dest` is not empty in which
+       case the path will be reported in the return value.
     """
     if files is None:
         files = list_relative_paths(src)
@@ -316,11 +316,11 @@ def move_files(src, dest, files=None, ignore_missing=False):
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
 
-    Note::
+    .. note::
 
-      Directories in `dest` are replaced with files from `src`,
-      unless the existing directory in `dest` is not empty in which
-      case the path will be reported in the return value.
+       Directories in `dest` are replaced with files from `src`,
+       unless the existing directory in `dest` is not empty in which
+       case the path will be reported in the return value.
     """
     if files is None:
         files = list_relative_paths(src)
@@ -342,16 +342,16 @@ def link_files(src, dest, files=None, ignore_missing=False):
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
 
-    Note::
+    .. note::
 
-      Directories in `dest` are replaced with files from `src`,
-      unless the existing directory in `dest` is not empty in which
-      case the path will be reported in the return value.
+       Directories in `dest` are replaced with files from `src`,
+       unless the existing directory in `dest` is not empty in which
+       case the path will be reported in the return value.
 
-    Note::
+    .. note::
 
-      If a hardlink cannot be created due to crossing filesystems,
-      then the file will be copied instead.
+       If a hardlink cannot be created due to crossing filesystems,
+       then the file will be copied instead.
     """
     if files is None:
         files = list_relative_paths(src)
