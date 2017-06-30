@@ -138,13 +138,13 @@ split-rules:
   # and shared libraries by default.
   runtime:
   - |
-    %{bindir}/.*
+    %{bindir}/*
   - |
-    %{sbindir}/.*
+    %{sbindir}/*
   - |
-    %{libexecdir}/.*
+    %{libexecdir}/*
   - |
-    %{libdir}/lib[^/]*\.so(\.\d+)*
+    %{libdir}/lib*.so*
 
   # The devel domain includes additional things which
   # you may need for development.
@@ -154,41 +154,41 @@ split-rules:
   # libtool archives.
   devel:
   - |
-    %{includedir}/.*
+    %{includedir}/**
   - |
-    %{libdir}/lib.*\.a
+    %{libdir}/lib*.a
   - |
-    %{libdir}/lib.*\.la
+    %{libdir}/lib*.la
   - |
-    %{libdir}/pkgconfig/.*\.pc
+    %{libdir}/pkgconfig/*.pc
   - |
-    %{datadir}/pkgconfig/.*\.pc
+    %{datadir}/pkgconfig/*.pc
   - |
-    %{datadir}/aclocal/.*\.m4
+    %{datadir}/aclocal/*.m4
 
   # The debug domain includes debugging information stripped
   # away from libraries and executables
   debug:
   - |
-    %{debugdir}/.*
+    %{debugdir}/**
 
   # The doc domain includes documentation
   doc:
   - |
-    %{docdir}/.*
+    %{docdir}/**
   - |
-    %{infodir}/.*
+    %{infodir}/**
   - |
-    %{mandir}/.*
+    %{mandir}/**
 
   # The locale domain includes translations etc
   locale:
   - |
-    %{datadir}/locale/.*
+    %{datadir}/locale/**
   - |
-    %{datadir}/i18n/.*
+    %{datadir}/i18n/**
   - |
-    %{datadir}/zoneinfo/.*
+    %{datadir}/zoneinfo/**
 
 # Element Overrides
 #
