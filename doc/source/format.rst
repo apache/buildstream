@@ -265,6 +265,8 @@ For meaningful documentation on what can be specified in the ``config`` section 
 element ``kind``, refer to the element specific documentation. 
 
 
+.. _format_public:
+
 Public
 ~~~~~~
 

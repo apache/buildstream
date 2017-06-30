@@ -34,6 +34,7 @@ off the ground installing it on a new host.
 * :ref:`config`
 * :ref:`projectconf`
 * :ref:`format`
+* :ref:`public`
 
 
 Elements
@@ -83,6 +84,7 @@ implement custom :mod:`Element <buildstream.element>` or
 * :mod:`Source <buildstream.source>` - Base Source Class
 * :mod:`Element <buildstream.element>` - Base Element Class
 * :mod:`BuildElement <buildstream.buildelement>` - Build Element Class
+* :mod:`ScriptElement <buildstream.scriptelement>` - Script Element Class
 * :mod:`Context <buildstream.context>` - Invocation Context
 * :mod:`Project <buildstream.project>` - Loaded Project
 * :mod:`Sandbox <buildstream.sandbox>` - Build Sandbox
