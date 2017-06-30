@@ -30,7 +30,7 @@ import calendar
 import psutil
 import subprocess
 import signal
-from pathlib import PurePath
+import re
 from . import ProgramNotFoundError
 from . import _yaml
 from . import _signals
@@ -110,20 +110,45 @@ def glob(paths, pattern):
 
     This generator will iterate over the passed *paths* and
     yield only the filenames which matched the provided *pattern*.
+
+    +--------+------------------------------------------------------------------+
+    | Meta   | Description                                                      |
+    +========+==================================================================+
+    | \*     | Match any pattern except a path separator                        |
+    +--------+------------------------------------------------------------------+
+    | \**    | Match any pattern, including path separators                     |
+    +--------+------------------------------------------------------------------+
+    | ?      | Match any single character                                       |
+    +--------+------------------------------------------------------------------+
+    | [abc]  | Match one of the specified characters                            |
+    +--------+------------------------------------------------------------------+
+    | [a-z]  | Match one of the characters in the specified range               |
+    +--------+------------------------------------------------------------------+
+    | [!abc] | Match any single character, except the specified characters      |
+    +--------+------------------------------------------------------------------+
+    | [!a-z] | Match any single character, except those in the specified range  |
+    +--------+------------------------------------------------------------------+
+
+    .. note::
+
+       Escaping of the metacharacters is not possible
+
     """
-    # When using PurePath.match(), it behaves as expected
-    # only when comparing two absolute filenames, so we
-    # force them to be absolute
+    # Ensure leading slash, just because we want patterns
+    # to match file lists regardless of whether the patterns
+    # or file lists had a leading slash or not.
     if not pattern.startswith(os.sep):
         pattern = os.sep + pattern
+
+    expression = _glob2re(pattern)
+    regexer = re.compile(expression)
 
     for filename in paths:
         filename_try = filename
         if not filename_try.startswith(os.sep):
             filename_try = os.sep + filename_try
 
-        path = PurePath(filename_try)
-        if path.match(pattern):
+        if regexer.match(filename_try):
             yield filename
 
 
@@ -694,3 +719,70 @@ def _call(*popenargs, **kwargs):
         output = output.decode('UTF-8')
 
     return (exit_code, output)
+
+
+# _glob2re()
+#
+# Function to translate a glob style pattern into a regex
+#
+# Args:
+#    pat (str): The glob pattern
+#
+# This is a modified version of the python standard library's
+# fnmatch.translate() function which supports path like globbing
+# a bit more correctly, and additionally supports recursive glob
+# patterns with double asterisk.
+#
+# Note that this will only support the most basic of standard
+# glob patterns, and additionally the recursive double asterisk.
+#
+# Support includes:
+#
+#   *          Match any pattern except a path separator
+#   **         Match any pattern, including path separators
+#   ?          Match any single character
+#   [abc]      Match one of the specified characters
+#   [A-Z]      Match one of the characters in the specified range
+#   [!abc]     Match any single character, except the specified characters
+#   [!A-Z]     Match any single character, except those in the specified range
+#
+def _glob2re(pat):
+    i, n = 0, len(pat)
+    res = ''
+    while i < n:
+        c = pat[i]
+        i = i + 1
+        if c == '*':
+            # fnmatch.translate() simply uses the '.*' separator here,
+            # we only want that for double asterisk (bash 'globstar' behavior)
+            #
+            if i < n and pat[i] == '*':
+                res = res + '.*'
+                i = i + 1
+            else:
+                res = res + '[^/]*'
+        elif c == '?':
+            # fnmatch.translate() simply uses the '.' wildcard here, but
+            # we dont want to match path separators here
+            res = res + '[^/]'
+        elif c == '[':
+            j = i
+            if j < n and pat[j] == '!':
+                j = j + 1
+            if j < n and pat[j] == ']':
+                j = j + 1
+            while j < n and pat[j] != ']':
+                j = j + 1
+            if j >= n:
+                res = res + '\\['
+            else:
+                stuff = pat[i:j].replace('\\', '\\\\')
+                i = j + 1
+                if stuff[0] == '!':
+                    stuff = '^' + stuff[1:]
+                elif stuff[0] == '^':
+                    stuff = '\\' + stuff
+                res = '%s[%s]' % (res, stuff)
+        else:
+            res = res + re.escape(c)
+    return res + '\Z(?ms)'
