@@ -299,11 +299,11 @@ class Element(Plugin):
         Returns:
            (:class:`~.utils.FileListResult`): The result describing what happened while staging
 
-        Note::
+        .. note::
 
            Directories in `dest` are replaced with files from `src`,
-           unless the existing directory in `dest` is not empty in which
-           case the path will be reported in the return value.
+           unless the existing directory in `dest` is not empty in
+           which case the path will be reported in the return value.
 
         **Example:**
 
