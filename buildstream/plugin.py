@@ -218,6 +218,11 @@ class Plugin():
         whenever the YAML input configuration is faulty.
 
         Implementations may raise :class:`.SourceError` or :class:`.ElementError` for other errors.
+
+        .. note::
+
+           During configure, logging is suppressed unless buildstream is run with
+           debugging output enabled.
         """
         raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
             tag=self.__type_tag, kind=self.get_kind()))
