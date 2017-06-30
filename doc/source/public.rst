@@ -68,7 +68,11 @@ The ``split-rules`` domains are used by the
 :func:`Element.stage_artifact() <buildstream.element.Element.stage_artifact>`
 method when deciding what domains of an artifact should be staged.
 
-This is used for creating compositions with the
-:mod:`compose <elements.compose>` element and can be used by other deployment
-related elements for the purpose of splitting element artifacts into separate
-packages.
+The strings listed in each domain are first substituted with the
+:ref:`variables <format_variables>` in context of the given element, and
+then applied as a glob style match, as understood by
+:func:`utils.glob() <buildstream.utils.glob>`
+
+This is used for creating compositions with the :mod:`compose <elements.compose>`
+element and can be used by other deployment related elements for the purpose of
+splitting element artifacts into separate packages.

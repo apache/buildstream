@@ -356,6 +356,7 @@ required both at build time and runtime.
    ``runtime`` dependencies will also be staged for the purpose of building.
 
 
+.. _format_variables:
 
 Using Variables
 ---------------
