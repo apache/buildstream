@@ -1206,7 +1206,7 @@ class Element(Plugin):
         bstdata = self.get_public_data('bst')
         splits = bstdata.get('split-rules')
         self.__splits = {
-            domain: re.compile('^(?:' + '|'.join(rules) + ')$')
+            domain: re.compile('^(?:' + '|'.join([utils._glob2re(r) for r in rules]) + ')$')
             for domain, rules in self.node_items(splits)
         }
 
