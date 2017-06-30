@@ -96,11 +96,11 @@ class ScriptElement(Element):
 
         Args:
           element (str): The name of the element to stage, or None. This may be any
-          element found in the dependencies, whether it is a direct or indirect
-          dependency.
+                         element found in the dependencies, whether it is a direct
+                         or indirect dependency.
           destination (str): The path inside the staging area for where to
-          stage this element. If it is not "/", then integration commands will
-          not be run.
+                             stage this element. If it is not "/", then integration
+                             commands will not be run.
 
         If this function is never called, then the default behavior is to just
         stage the Scope.BUILD dependencies of the element in question at the
