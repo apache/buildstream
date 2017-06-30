@@ -21,11 +21,19 @@
 import os
 import signal
 import time
+import sys
 
 from fuse import FUSE
 from contextlib import contextmanager
 from multiprocessing import Process
 from .. import _signals
+
+
+# Just a custom exception to raise here, for identifying possible
+# bugs with a fuse layer implementation
+#
+class FuseMountError(Exception):
+    pass
 
 
 # This is a convenience class which takes care of synchronizing the
@@ -113,13 +121,10 @@ class Mount():
             self.__process.terminate()
             self.__process.join()
 
-        # Not sure why this can happen, but sometimes subsequent checks
-        # on the directory can fail with "transport endpoint not connected",
-        # this code is an attempt to ensure we synchronize subsequent accesses
-        # to an unmounted directory, so that we wait until the OS really
-        # unmounts it before proceeding.
-        while os.path.ismount(self.__mountpoint):
-            time.sleep(1 / 100)
+            # Report an error if ever the underlying operations crashed for some reason.
+            if self.__process.exitcode != 0:
+                raise FuseMountError("{} reported exit code {} when unmounting"
+                                     .format(type(self).__name__, self.__process.exitcode))
 
         self.__mountpoint = None
         self.__process = None
@@ -180,3 +185,8 @@ class Mount():
         # will handle SIGTERM and gracefully exit it's own little main loop.
         #
         FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True, nonempty=True)
+
+        # Explicit 0 exit code, if the operations crashed for some reason, the exit
+        # code will not be 0, and we want to know about it.
+        #
+        sys.exit(0)
