@@ -76,12 +76,12 @@ class Planner():
             return
 
         self.visiting_elements.add(element)
-        for dep in element._direct_deps(Scope.RUN):
+        for dep in element.dependencies(Scope.RUN, recurse=False):
             self.plan_element(dep, depth)
 
         # Dont try to plan builds of elements that are cached already
         if not element._cached():
-            for dep in element._direct_deps(Scope.BUILD):
+            for dep in element.dependencies(Scope.BUILD, recurse=False):
                 self.plan_element(dep, depth + 1)
 
         self.depth_map[element] = depth
