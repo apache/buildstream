@@ -289,6 +289,8 @@ may specify additional domains to be understood and processed by their own eleme
 plugins.
 
 
+.. _format_dependencies:
+
 Dependencies
 ------------
 The dependency model in BuildStream is simplified by treating software distribution

@@ -24,6 +24,12 @@
 This element allows one to run some commands to mutate the
 input and create some output.
 
+.. note::
+
+   Script elements may only specify build dependencies. See
+   :ref:`the format documentation <format_dependencies>` for more
+   detail on specifying dependencies.
+
 The default configuration and possible options are as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/script.yaml
      :language: yaml
