@@ -59,7 +59,7 @@ config:
     KERNEL /vmlinuz
     INITRD /initramfs.gz
   
-    APPEND root=/dev/sda2 rootfstype=ext4 rootdelay=20 init=/usr/lib/systemd/systemd
+    APPEND root=/dev/sda2 rootfstype=ext4 rootdelay=20 init=/sbin/init
     EOF
   filesystem-image-creation-commands:
   - |
