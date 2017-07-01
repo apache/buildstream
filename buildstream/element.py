@@ -571,26 +571,6 @@ class Element(Plugin):
         if scope != Scope.BUILD:
             self.__runtime_dependencies.append(dependency)
 
-    # _direct_deps():
-    #
-    # Generator function for the element's direct dependencies
-    #
-    # Note this is not recursive like the public element.dependencies().
-    #
-    def _direct_deps(self, scope):
-        if scope == Scope.RUN:
-            for element in self.__runtime_dependencies:
-                yield element
-        elif scope == Scope.BUILD:
-            for element in self.__build_dependencies:
-                yield element
-        else:
-            for element in self.__runtime_dependencies:
-                yield element
-            for element in self.__build_dependencies:
-                if element not in self.__runtime_dependencies:
-                    yield element
-
     # _consistency():
     #
     # Args:
@@ -711,7 +691,9 @@ class Element(Plugin):
         if self.__cache_key is None:
 
             # No cache keys for dependencies which have no cache keys
-            dependencies = [e._get_cache_key() for e in self._direct_deps(Scope.BUILD)]
+            dependencies = [
+                e._get_cache_key() for e in self.dependencies(Scope.BUILD, recurse=False)
+            ]
             for dep in dependencies:
                 if dep is None:
                     return None
