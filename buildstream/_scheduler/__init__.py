@@ -24,6 +24,6 @@ from .fetchqueue import FetchQueue
 from .trackqueue import TrackQueue
 from .buildqueue import BuildQueue
 from .pushqueue import PushQueue
-from .artifactfetchqueue import ArtifactFetchQueue
+from .pullqueue import PullQueue
 
 from .scheduler import Scheduler, SchedStatus

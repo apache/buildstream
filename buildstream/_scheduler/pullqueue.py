@@ -25,10 +25,10 @@ from . import Queue, QueueType
 
 # A queue which fetches element artifacts
 #
-class ArtifactFetchQueue(Queue):
+class PullQueue(Queue):
 
-    action_name = "Fetch"
-    complete_name = "Fetched"
+    action_name = "Pull"
+    complete_name = "Pulled"
     queue_type = QueueType.FETCH
 
     def process(self, element):
