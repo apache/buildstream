@@ -404,7 +404,7 @@ class Pipeline():
         else:
             pushed = 0
         if pull:
-            pulled += len(pull.processed_elements)
+            pulled = len(pull.processed_elements)
         else:
             pulled = 0
 
