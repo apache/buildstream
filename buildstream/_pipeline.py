@@ -40,7 +40,7 @@ from . import Scope
 from . import _site
 from . import _yaml, utils
 
-from ._scheduler import SchedStatus, TrackQueue, ArtifactFetchQueue, FetchQueue, BuildQueue, PushQueue
+from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 
 
 # Internal exception raised when a pipeline fails
@@ -377,15 +377,15 @@ class Pipeline():
         fetch = FetchQueue(skip_cached=True)
         build = BuildQueue()
         track = None
-        artifactfetch = None
+        pull = None
         push = None
         queues = []
         if track_first:
             track = TrackQueue()
             queues.append(track)
         if self.artifacts.can_fetch():
-            artifactfetch = ArtifactFetchQueue()
-            queues.append(artifactfetch)
+            pull = PullQueue()
+            queues.append(pull)
         queues.append(fetch)
         queues.append(build)
         if self.artifacts.can_push():
@@ -398,27 +398,29 @@ class Pipeline():
         self.message(self.target, MessageType.START, "Starting build")
         elapsed, status = scheduler.run(queues)
         fetched = len(fetch.processed_elements)
-        if artifactfetch:
-            fetched += len(artifactfetch.processed_elements)
         built = len(build.processed_elements)
         if push:
             pushed = len(push.processed_elements)
         else:
             pushed = 0
+        if pull:
+            pulled += len(pull.processed_elements)
+        else:
+            pulled = 0
 
         if status == SchedStatus.ERROR:
             self.message(self.target, MessageType.FAIL, "Build failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
             self.message(self.target, MessageType.WARN,
-                         "Terminated after fetching {} elements, building {} elements and pushing {} elements"
-                         .format(fetched, built, pushed),
+                         "Terminated after fetching {} elements, pulling {} elements, building {} elements and pushing {} elements"
+                         .format(fetched, pulled, built, pushed),
                          elapsed=elapsed)
             raise PipelineError()
         else:
             self.message(self.target, MessageType.SUCCESS,
-                         "Fetched {} elements, built {} elements and pushed {} elements"
-                         .format(fetched, built, pushed),
+                         "Fetched {} elements, pulled {} elements, built {} elements and pushed {} elements"
+                         .format(fetched, pulled, built, pushed),
                          elapsed=elapsed)
 
     # checkout()
