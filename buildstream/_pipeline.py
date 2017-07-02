@@ -413,8 +413,10 @@ class Pipeline():
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
             self.message(self.target, MessageType.WARN,
-                         "Terminated after fetching {} elements, pulling {} elements, building {} elements and pushing {} elements"
-                         .format(fetched, pulled, built, pushed),
+                         "Terminated after fetching {} elements, ".format(fetched) +
+                         "pulling {} elements, ".format(pulled) +
+                         "building {} elements ".format(built) +
+                         "and pushing {} elements".format(pushed),
                          elapsed=elapsed)
             raise PipelineError()
         else:
