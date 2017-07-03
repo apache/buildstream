@@ -331,7 +331,15 @@ class Scheduler():
                 elements = list(elements)
 
             # Kickoff whatever processes can be processed at this time
-            for queue in self.queues:
+            #
+            # We start by queuing from the last queue first, because we want to
+            # give priority to queues later in the scheduling process in the case
+            # that multiple queues share the same token type.
+            #
+            # This avoids starvation situations where we dont move on to fetch
+            # tasks for elements which failed to pull, and thus need all the pulls
+            # to complete before ever starting a build
+            for queue in reversed(self.queues):
                 queue.process_ready()
 
         # If nothings ticking, time to bail out
