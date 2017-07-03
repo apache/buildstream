@@ -96,17 +96,32 @@ fi
 # Exit handler
 cleanup() {
     if [ -n "$remote_repo" ]; then
-        if mountpoint "$remote_repo" > /dev/null; then
-            fusermount -u "$remote_repo"
-        fi
-        rm -rf "$remote_repo"
+	if [ ! -z "$sshfs_pid" ]; then
+	    kill -TERM "$sshfs_pid"
+	    wait "$sshfs_pid"
+
+	    touch "killed_sshfs"
+	fi
+
+	# This is just unreliable, sleep 2 and retry seems to fix
+	# the case of forceful termination
+	fusermount -u "$remote_repo" || true
+	sleep 2
+	fusermount -u "$remote_repo" || true
+
+	rmdir "$remote_repo"
     fi
 }
 trap cleanup EXIT
+trap cleanup TERM
 
 # Mount the remote repo
 remote_repo=$(mktemp -d ostree-push.XXXXXXXXXX)
-sshfs "$remote_repo" "$REMOTE"
+
+sshfs "$remote_repo" "$REMOTE" &
+sshfs_pid="$!"
+wait "$sshfs_pid"
+sshfs_pid=""
 
 # Use pull-local to emulate pushing
 ostree pull-local --repo="$remote_repo" "${PULL_ARGS[@]}" "$OSTREE_REPO" "$@"
