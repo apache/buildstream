@@ -19,7 +19,7 @@
 
 ARGS=$(getopt -n "$0" \
               -o uvh \
-              -l repo:,update,gpg-sign:,gpg-homedir:,verbose,debug,help \
+              -l repo:,basedir:,update,gpg-sign:,gpg-homedir:,verbose,debug,help \
               -- "$@")
 eval set -- "$ARGS"
 
@@ -29,6 +29,7 @@ Usage: $0 [OPTION]... REMOTE [REF]...
 Push OSTree REFs to REMOTE
 
   --repo=PATH			path to OSTree repository
+  --basedir=PATH		location to create local mounts
   -u, --update			update the summary file
   --gpg-sign=KEY-ID		GPG key ID to sign the summary with
   --gpg-homedir=HOMEDIR		GPG homedir for finding keys
@@ -41,10 +42,15 @@ EOF
 PULL_ARGS=()
 SUMMARY_ARGS=()
 UPDATE=false
+BASEDIR=$(pwd)
 while true; do
     case "$1" in
         --repo)
             OSTREE_REPO=$2
+            shift 2
+            ;;
+        --basedir)
+            BASEDIR=$2
             shift 2
             ;;
         -u|--update)
@@ -96,13 +102,6 @@ fi
 # Exit handler
 cleanup() {
     if [ -n "$remote_repo" ]; then
-	if [ ! -z "$sshfs_pid" ]; then
-	    kill -TERM "$sshfs_pid"
-	    wait "$sshfs_pid"
-
-	    touch "killed_sshfs"
-	fi
-
 	# This is just unreliable, sleep 2 and retry seems to fix
 	# the case of forceful termination
 	fusermount -u "$remote_repo" || true
@@ -112,21 +111,42 @@ cleanup() {
 	rmdir "$remote_repo"
     fi
 }
+
+# Terminate handler
+terminate() {
+    if [ ! -z "$term_pid" ]; then
+	kill -TERM "$term_pid"
+	wait "$term_pid"
+    fi
+    if [ ! -z "$kill_pid" ]; then
+	kill -KILL "$kill_pid"
+    fi
+
+    # Do the cleanup after
+    cleanup
+}
+
 trap cleanup EXIT
-trap cleanup TERM
+trap terminate TERM
 
 # Mount the remote repo
-remote_repo=$(mktemp -d ostree-pull.XXXXXXXXXX)
+remote_repo=$(mktemp -d "${BASEDIR}/ostree-pull.XXXXXXXXXX")
 
 sshfs "$remote_repo" "$REMOTE" &
-sshfs_pid="$!"
-wait "$sshfs_pid"
-sshfs_pid=""
+term_pid="$!"
+wait "$term_pid"
+term_pid=""
 
 # Use pull-local to emulate pushing
-ostree pull-local --repo="$OSTREE_REPO" "${PULL_ARGS[@]}" "$remote_repo" "$@"
+ostree pull-local --repo="$OSTREE_REPO" "${PULL_ARGS[@]}" "$remote_repo" "$@" &
+kill_pid="$!"
+wait "$kill_pid"
+kill_pid=""
 
 # Update the local summary if asked
 if $UPDATE; then
-    ostree summary --repo="$OSTREE_REPO" "${SUMMARY_ARGS[@]}"
+    ostree summary --repo="$OSTREE_REPO" "${SUMMARY_ARGS[@]}" &
+    kill_pid="$!"
+    wait "$kill_pid"
+    kill_pid=""
 fi
