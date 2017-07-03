@@ -670,34 +670,50 @@ def _kill_process_tree(pid):
 #
 # Args:
 #    popenargs (list): Popen() arguments
+#    terminate (bool): Whether to attempt graceful termination before killing
 #    rest_of_args (kwargs): Remaining arguments to subprocess.call()
 #
 # Returns:
 #    (int): The process exit code.
 #    (str): The program output.
 #
-def _call(*popenargs, **kwargs):
+def _call(*popenargs, terminate=False, **kwargs):
 
     kwargs['start_new_session'] = True
 
     # Handle termination, suspend and resume
     def kill_proc():
         if process:
-            # FIXME: This is a brutal but reliable approach
-            #
-            # Other variations I've tried which try SIGTERM first
-            # and then wait for child processes to exit gracefully
-            # have not reliably cleaned up process trees and have
-            # left orphaned git or ssh processes alive.
-            #
-            # This cleans up the subprocesses reliably but may
-            # cause side effects such as possibly leaving stale
-            # locks behind. Hopefully this should not be an issue
-            # as long as any child processes only interact with
-            # the temp directories which we control and cleanup
-            # ourselves.
-            #
-            _kill_process_tree(process.pid)
+
+            # Some callers know that their subprocess can be
+            # gracefully terminated, make an attempt first
+            if terminate:
+                proc = psutil.Process(process.pid)
+                proc.terminate()
+
+                exit_code = None
+                try:
+                    exit_code = proc.wait(20)
+                except TimeoutExpired:
+                    # Did not terminate within the timeout: murder
+                    _kill_process_tree(process.pid)
+
+            else:
+                # FIXME: This is a brutal but reliable approach
+                #
+                # Other variations I've tried which try SIGTERM first
+                # and then wait for child processes to exit gracefully
+                # have not reliably cleaned up process trees and have
+                # left orphaned git or ssh processes alive.
+                #
+                # This cleans up the subprocesses reliably but may
+                # cause side effects such as possibly leaving stale
+                # locks behind. Hopefully this should not be an issue
+                # as long as any child processes only interact with
+                # the temp directories which we control and cleanup
+                # ourselves.
+                #
+                _kill_process_tree(process.pid)
 
     def suspend_proc():
         if process:
