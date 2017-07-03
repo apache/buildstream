@@ -299,13 +299,15 @@ def fetch(repo, remote="origin", ref=None, progress=None):
 #
 # Args:
 #    repo (OSTree.Repo): The repo
+#    mountdir (str): The directory to create mounts at
 #    remote (str): The url of the remote ostree repo
-#    ref (str): A ref to push
+#    ref (str): A ref to pull
 #
-def fetch_ssh(repo, remote, ref):
+def fetch_ssh(repo, mountdir, remote, ref):
     exit_code, output = utils._call([
         _site.ostree_pull_ssh,
         '--repo=' + repo.get_path().get_path(),
+        '--basedir=' + mountdir,
         remote,
         ref],
         terminate=True,
@@ -322,10 +324,11 @@ def fetch_ssh(repo, remote, ref):
 #
 # Args:
 #    repo (OSTree.Repo): The repo
+#    mountdir (str): The directory to create mounts at
 #    remote (str): The url of the remote ostree repo
 #    ref (str): A ref to push
 #
-def push(repo, remote, ref):
+def push(repo, mountdir, remote, ref):
     if remote.startswith("/"):
         # local repository
         push_repo = ensure(remote, True)
@@ -334,6 +337,7 @@ def push(repo, remote, ref):
         exit_code, output = utils._call([
             _site.ostree_push,
             '--repo=' + repo.get_path().get_path(),
+            '--basedir=' + mountdir,
             remote,
             ref],
             terminate=True,
