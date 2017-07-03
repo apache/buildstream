@@ -96,14 +96,16 @@ fi
 # Exit handler
 cleanup() {
     if [ -n "$remote_repo" ]; then
-        fusermount -u "$remote_repo"
+        if mountpoint "$remote_repo" > /dev/null; then
+            fusermount -u "$remote_repo"
+        fi
         rm -rf "$remote_repo"
     fi
 }
 trap cleanup EXIT
 
 # Mount the remote repo
-remote_repo=$(mktemp -d ostree-push.XXXXXXXXXX)
+remote_repo=$(mktemp -d ostree-pull.XXXXXXXXXX)
 sshfs "$remote_repo" "$REMOTE"
 
 # Use pull-local to emulate pushing

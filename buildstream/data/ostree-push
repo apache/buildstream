@@ -96,7 +96,9 @@ fi
 # Exit handler
 cleanup() {
     if [ -n "$remote_repo" ]; then
-        fusermount -u "$remote_repo"
+        if mountpoint "$remote_repo" > /dev/null; then
+            fusermount -u "$remote_repo"
+        fi
         rm -rf "$remote_repo"
     fi
 }
