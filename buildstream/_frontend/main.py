@@ -62,6 +62,8 @@ _, _, _, _, host_machine = os.uname()
               help="Maximum simultaneous download tasks")
 @click.option('--builders', type=click.INT, default=None,
               help="Maximum simultaneous build tasks")
+@click.option('--pushers', type=click.INT, default=None,
+              help="Maximum simultaneous upload tasks")
 @click.option('--no-interactive', is_flag=True, default=False,
               help="Force non interactive mode, otherwise this is automatically decided")
 @click.option('--verbose/--no-verbose', default=None,
@@ -490,7 +492,8 @@ class App():
             'message_lines': 'log_message_lines',
             'on_error': 'sched_error_action',
             'fetchers': 'sched_fetchers',
-            'builders': 'sched_builders'
+            'builders': 'sched_builders',
+            'pushers': 'sched_pushers'
         }
         for cli_option, context_attr in override_map.items():
             option_value = self.main_options.get(cli_option)
