@@ -817,8 +817,10 @@ class Element(Plugin):
                     # Create artifact directory structure
                     filesdir = os.path.join(assembledir, 'files')
                     logsdir = os.path.join(assembledir, 'logs')
+                    metadir = os.path.join(assembledir, 'meta')
                     os.mkdir(filesdir)
                     os.mkdir(logsdir)
+                    os.mkdir(metadir)
 
                     # Hard link files from collect dir to files directory
                     utils.link_files(collectdir, filesdir)
@@ -826,6 +828,9 @@ class Element(Plugin):
                     # Copy build log
                     if self.__log_path:
                         shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
+
+                    # Store public data
+                    _yaml.dump(_yaml.node_sanitize(self.__public), os.path.join(metadir, 'public.yaml'))
 
                     with self.timed_activity("Caching Artifact"):
                         self.__artifacts.commit(self, assembledir)
