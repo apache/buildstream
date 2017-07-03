@@ -187,7 +187,10 @@ class ArtifactCache():
         elif self.context.artifact_share.startswith("/"):
             _ostree.fetch(self.repo, remote="file://" + self.context.artifact_share, ref=ref)
         else:
-            _ostree.fetch_ssh(self.repo, remote=self.context.artifact_share, ref=ref)
+            mountdir = os.path.join(self.context.artifactdir, 'mounts')
+            os.makedirs(mountdir, exist_ok=True)
+
+            _ostree.fetch_ssh(self.repo, mountdir, remote=self.context.artifact_share, ref=ref)
 
     # can_push():
     #
@@ -207,5 +210,7 @@ class ArtifactCache():
     #
     def push(self, element):
         ref = buildref(element)
+        mountdir = os.path.join(self.context.artifactdir, 'mounts')
+        os.makedirs(mountdir, exist_ok=True)
 
-        _ostree.push(self.repo, remote=self.context.artifact_share, ref=ref)
+        _ostree.push(self.repo, mountdir, remote=self.context.artifact_share, ref=ref)
