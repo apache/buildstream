@@ -308,6 +308,7 @@ def fetch_ssh(repo, remote, ref):
         '--repo=' + repo.get_path().get_path(),
         remote,
         ref],
+        terminate=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
 
@@ -335,6 +336,7 @@ def push(repo, remote, ref):
             '--repo=' + repo.get_path().get_path(),
             remote,
             ref],
+            terminate=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
 
