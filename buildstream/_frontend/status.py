@@ -38,10 +38,11 @@ from .widget import TimeCode
 #    format_profile (Profile): Formatting profile for formatting text
 #    pipeline (Pipeline): The Pipeline
 #    scheduler (Scheduler): The Scheduler
+#    colors (bool): Whether to print the ANSI color codes in the output
 #
 class Status():
 
-    def __init__(self, content_profile, format_profile, pipeline, scheduler):
+    def __init__(self, content_profile, format_profile, pipeline, scheduler, colors=False):
 
         self.content_profile = content_profile
         self.format_profile = format_profile
@@ -51,6 +52,7 @@ class Status():
         self.last_lines = 0  # Number of status lines we last printed to console
         self.term = Terminal()
         self.spacing = 1
+        self.colors = colors
         self.header = StatusHeader(content_profile, format_profile, pipeline, scheduler)
 
         self.term_width, _ = click.get_terminal_size()
@@ -144,7 +146,7 @@ class Status():
 
         # Render the one line header
         text = self.header.render(self.term_width, elapsed)
-        click.echo(text)
+        click.echo(text, color=self.colors)
 
         # Now we have the number of columns, and an allocation for
         # alignment of each column
@@ -160,7 +162,7 @@ class Status():
                     text += ' ' * self.spacing
 
             # Print the line
-            click.echo(text)
+            click.echo(text, color=self.colors)
 
         # Track what we printed last, for the next clear
         self.last_lines = self.alloc_lines + self.header.lines
