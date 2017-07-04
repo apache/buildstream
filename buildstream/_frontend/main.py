@@ -77,8 +77,8 @@ _, _, _, _, host_machine = os.uname()
 @click.option('--log-file',
               type=click.File(mode='w', encoding='UTF-8'),
               help="A file to store the main log (allows storing the main log while in interactive mode)")
-@click.option('--ansi-colors/--no-ansi-colors', default=None,
-              help="Force enable/disable ANSI color and control codes in output")
+@click.option('--colors/--no-colors', default=None,
+              help="Force enable/disable ANSI color codes in output")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
@@ -465,9 +465,9 @@ class App():
             self.messaging_enabled = True
 
         # Resolve whether to use colors in output
-        if self.main_options['ansi_colors'] is None:
+        if self.main_options['colors'] is None:
             self.colors = self.is_a_tty
-        elif self.main_options['ansi_colors']:
+        elif self.main_options['colors']:
             self.colors = True
         else:
             self.colors = False
