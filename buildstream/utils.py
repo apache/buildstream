@@ -605,6 +605,26 @@ def _generate_key(value):
     return hashlib.sha256(string).hexdigest()
 
 
+# _set_deterministic_user()
+#
+# Set the uid/gid for every file in a directory tree to the process'
+# euid/guid.
+#
+# Args:
+#    directory (str): The directory to recursively set the uid/gid on
+#
+def _set_deterministic_user(directory):
+    user = os.geteuid()
+    group = os.getegid()
+
+    for root, dirs, files in os.walk(directory.encode("utf-8"), topdown=False):
+        for filename in files:
+            shutil.chown(os.path.join(root, filename), user, group)
+
+        for dirname in dirs:
+            shutil.chown(os.path.join(root, dirname), user, group)
+
+
 # _set_deterministic_mtime()
 #
 # Set the mtime for every file in a directory tree to the same.
