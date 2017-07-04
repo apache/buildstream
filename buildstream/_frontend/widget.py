@@ -405,9 +405,13 @@ class LogLine(Widget):
     # and so on.
     #
     # Args:
+    #    pipeline (Pipeline): The pipeline to print the heading of
     #    log_file (file): An optional file handle for additional logging
+    #    variant (str): The selected variant for the pipeline target
+    #    deps (list): Optional list of elements, default is to use the whole pipeline
+    #    styling (bool): Whether to enable ansi escape codes in the output
     #
-    def print_heading(self, pipeline, variant, log_file, deps=None):
+    def print_heading(self, pipeline, variant, log_file, deps=None, styling=False):
         context = pipeline.context
         project = pipeline.project
         starttime = datetime.datetime.now()
@@ -451,7 +455,7 @@ class LogLine(Widget):
         # Separator line before following output
         text += self.format_profile.fmt("~" * 79 + '\n')
 
-        click.echo(text, nl=False)
+        click.echo(text, color=styling, nl=False)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 
