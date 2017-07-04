@@ -575,7 +575,7 @@ def _relative_symlink_target(root, symlink, target):
 
         # Create a full path to the target, including the leading staging
         # directory
-        fulltarget = os.path.join(root, target)
+        fulltarget = os.path.join(os.path.realpath(root), target)
 
         # now get the relative path from the directory where the symlink
         # is located within the staging root, to the target within the same
