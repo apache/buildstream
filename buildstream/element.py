@@ -1013,6 +1013,8 @@ class Element(Plugin):
 
         # Ensure deterministic mtime of sources at build time
         utils._set_deterministic_mtime(directory)
+        # Ensure deterministic owners of sources at build time
+        utils._set_deterministic_user(directory)
 
     #############################################################
     #                   Private Local Methods                   #
