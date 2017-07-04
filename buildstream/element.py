@@ -112,6 +112,7 @@ class Element(Plugin):
 
         # Grab public domain data declared for this instance
         self.__public = self.__extract_public(meta)
+        self.__dynamic_public = None
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -420,7 +421,10 @@ class Element(Plugin):
         Returns:
            (dict): The public data dictionary for the given domain
         """
-        return self.__public.get(domain)
+        if self.__dynamic_public is None:
+            self._load_public_data()
+
+        return self.__dynamic_public.get(domain)
 
     def get_environment(self):
         """Fetch the environment suitable for running in the sandbox
@@ -787,6 +791,10 @@ class Element(Plugin):
 
                 sandbox_root = sandbox.get_directory()
 
+                # By default, the dynamic public data is the same as the static public data.
+                # The plugin's assemble() method may modify this, though.
+                self.__dynamic_public = self.__public
+
                 # Call the abstract plugin methods
                 try:
                     # Step 1 - Configure
@@ -828,7 +836,7 @@ class Element(Plugin):
                         shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
 
                     # Store public data
-                    _yaml.dump(_yaml.node_sanitize(self.__public), os.path.join(metadir, 'public.yaml'))
+                    _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
                     with self.timed_activity("Caching Artifact"):
                         self.__artifacts.commit(self, assembledir)
@@ -1241,3 +1249,11 @@ class Element(Plugin):
 
             if include_file:
                 yield filename.lstrip(os.sep)
+
+    def _load_public_data(self):
+        self._assert_cached()
+        assert(self.__dynamic_public is None)
+
+        # Load the public data from the artifact
+        metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+        self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
