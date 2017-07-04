@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "21-Jun-2017" "" "bst show Manual"
+.TH "BST SHOW" "1" "04-Jul-2017" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -40,13 +40,13 @@ as a pythonic formatting string, so python formatting features apply,
 examle:
 
 
-    build-stream show target.bst --format \
+    bst show target.bst --format \
         'Name: %{name: ^20} Key: %{key: ^8} State: %{state}'
 
 If you want to use a newline in a format string in bash, use the '$' modifier:
 
 
-    build-stream show target.bst --format \
+    bst show target.bst --format \
         $'---------- %{name} ----------\n%{vars}'
 .SH OPTIONS
 .TP

@@ -1,4 +1,4 @@
-.TH "BST TRACK" "1" "21-Jun-2017" "" "bst track Manual"
+.TH "BST TRACK" "1" "04-Jul-2017" "" "bst track Manual"
 .SH NAME
 bst\-track \- Track new source references
 .SH SYNOPSIS
@@ -8,8 +8,8 @@ bst\-track \- Track new source references
 Consults the specified tracking branches for new versions available
 to build and updates the project with any newly available references.
 
-By default this will track sources for all dependencies of the specified
-target element.
+By default this will track just the specified element, but you can also
+update a whole tree of dependencies in one go.
 
 Specify `--deps` to control which sources to track:
 
@@ -22,7 +22,7 @@ Specify `--deps` to control which sources to track:
 Except certain dependencies from tracking
 .TP
 \fB\-d,\fP \-\-deps [none|all]
-The dependencies to track (default: all)
+The dependencies to track (default: none)
 .TP
 \fB\-a,\fP \-\-arch TEXT
 The target architecture (default: x86_64)

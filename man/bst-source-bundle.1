@@ -1,0 +1,40 @@
+.TH "BST SOURCE-BUNDLE" "1" "04-Jul-2017" "" "bst source-bundle Manual"
+.SH NAME
+bst\-source-bundle \- Produce a build bundle to be manually executed
+.SH SYNOPSIS
+.B bst source-bundle
+[OPTIONS] TARGET
+.SH DESCRIPTION
+Produce a build bundle to be manually executed
+
+Specify `--deps` to control which elements to show:
+
+
+    none:  No dependencies, just the element itself
+    run:   Runtime dependencies, including the element itself
+    build: Build time dependencies, excluding the element itself
+.SH OPTIONS
+.TP
+\fB\-\-except\fP TEXT
+Elements to except from the tarball
+.TP
+\fB\-\-compression\fP [none|gz|bz2|xz]
+Compress the tar file using the given algorithm.
+.TP
+\fB\-d,\fP \-\-deps [none|run|build]
+The elements to bundle (default: build)
+.TP
+\fB\-\-track\fP
+Track new source references before building
+.TP
+\fB\-a,\fP \-\-arch TEXT
+The target architecture (default: x86_64)
+.TP
+\fB\-\-variant\fP TEXT
+A variant of the specified target
+.TP
+\fB\-f,\fP \-\-force
+Overwrite files existing in checkout directory
+.TP
+\fB\-\-directory\fP TEXT
+The directory to write the tarball to
