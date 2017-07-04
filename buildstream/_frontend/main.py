@@ -77,6 +77,8 @@ _, _, _, _, host_machine = os.uname()
 @click.option('--log-file',
               type=click.File(mode='w', encoding='UTF-8'),
               help="A file to store the main log (allows storing the main log while in interactive mode)")
+@click.option('--ansi-colors/--no-ansi-colors', default=None,
+              help="Force enable/disable ANSI color and control codes in output")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
@@ -275,7 +277,7 @@ def show(app, target, arch, variant, deps, except_, order, format):
         dependencies = sorted(dependencies)
 
     report = app.logger.show_pipeline(dependencies, format)
-    click.echo(report)
+    click.echo(report, color=app.colors)
 
 
 ##################################################################
@@ -462,6 +464,14 @@ class App():
             click.echo("DEBUG: Early enablement of messages")
             self.messaging_enabled = True
 
+        # Resolve whether to use colors in output
+        if self.main_options['ansi_colors'] is None:
+            self.colors = self.is_a_tty
+        elif self.main_options['ansi_colors']:
+            self.colors = True
+        else:
+            self.colors = False
+
     #
     # Initialize the main pipeline
     #
@@ -543,7 +553,9 @@ class App():
             sys.exit(1)
 
         # Create our status printer, only available in interactive
-        self.status = Status(self.content_profile, self.format_profile, self.pipeline, self.scheduler)
+        self.status = Status(self.content_profile, self.format_profile,
+                             self.pipeline, self.scheduler,
+                             colors=self.colors)
 
         # Pipeline is loaded, lets start displaying pipeline messages from tasks
         self.logger.size_request(self.pipeline)
@@ -706,6 +718,7 @@ class App():
     def print_heading(self, deps=None):
         self.logger.print_heading(self.pipeline, self.variant,
                                   self.main_options['log_file'],
+                                  styling=self.colors,
                                   deps=deps)
 
     #
@@ -736,7 +749,7 @@ class App():
             self.status.clear()
 
         text = self.logger.render(message)
-        click.echo(text, nl=False)
+        click.echo(text, color=self.colors, nl=False)
 
         # Maybe render the status area
         self.maybe_render_status()
