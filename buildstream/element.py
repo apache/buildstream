@@ -93,6 +93,7 @@ class Element(Plugin):
         self.__cached = None              # Whether we have a cached artifact
         self.__built = False              # Element was locally built
         self.__log_path = None            # Path to dedicated log file or None
+        self.__splits = None
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults()
@@ -111,9 +112,6 @@ class Element(Plugin):
 
         # Grab public domain data declared for this instance
         self.__public = self.__extract_public(meta)
-
-        # Compile splitters
-        self.__init_splits()
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -1212,6 +1210,9 @@ class Element(Plugin):
             for filename in utils.list_relative_paths(basedir):
                 yield filename
             return
+
+        if not self.__splits:
+            self.__init_splits()
 
         element_domains = list(self.__splits.keys())
         include_domains = element_domains
