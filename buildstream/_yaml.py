@@ -23,6 +23,7 @@ import copy
 from enum import Enum
 
 from ruamel import yaml
+from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
 from . import ImplError, LoadError, LoadErrorReason
 
 
@@ -538,6 +539,17 @@ def composite(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
                          e.actual_type.__name__)) from e
 
 
+# SanitizedDict is an OrderedDict that is dumped as unordered mapping.
+# This provides deterministic output for unordered mappings.
+#
+class SanitizedDict(collections.OrderedDict):
+    pass
+
+
+RoundTripRepresenter.add_representer(SanitizedDict,
+                                     SafeRepresenter.represent_dict)
+
+
 # node_sanitize()
 #
 # Returnes an alphabetically ordered recursive copy
@@ -549,7 +561,7 @@ def node_sanitize(node):
 
     if isinstance(node, collections.Mapping):
 
-        result = collections.OrderedDict()
+        result = SanitizedDict()
 
         for key in sorted(node):
             if key == PROVENANCE_KEY:
