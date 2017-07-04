@@ -692,7 +692,7 @@ class Element(Plugin):
 
             # No cache keys for dependencies which have no cache keys
             dependencies = [
-                e._get_cache_key() for e in self.dependencies(Scope.BUILD, recurse=False)
+                e._get_cache_key() for e in self.dependencies(Scope.BUILD)
             ]
             for dep in dependencies:
                 if dep is None:
