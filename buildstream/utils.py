@@ -619,10 +619,10 @@ def _set_deterministic_user(directory):
 
     for root, dirs, files in os.walk(directory.encode("utf-8"), topdown=False):
         for filename in files:
-            shutil.chown(os.path.join(root, filename), user, group)
+            os.chown(os.path.join(root, filename), user, group, follow_symlinks=False)
 
         for dirname in dirs:
-            shutil.chown(os.path.join(root, dirname), user, group)
+            os.chown(os.path.join(root, dirname), user, group, follow_symlinks=False)
 
 
 # _set_deterministic_mtime()
