@@ -435,7 +435,7 @@ class Element(Plugin):
 
         data = self.__dynamic_public.get(domain)
         if data is not None:
-            data = copy.deepcopy(data)
+            data = _yaml.node_copy(data)
 
         return data
 
@@ -455,7 +455,7 @@ class Element(Plugin):
             self._load_public_data()
 
         if data is not None:
-            data = copy.deepcopy(data)
+            data = _yaml.node_copy(data)
 
         self.__dynamic_public[domain] = data
 
