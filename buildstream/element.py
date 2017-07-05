@@ -619,21 +619,32 @@ class Element(Plugin):
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self, recalculate=False):
+    # Note: The recalculate argument is actually tristate:
+    #
+    #    o None: Calculate cache state if not previously calculated
+    #    o True: Force recalculate cached state, even if already checked
+    #    o False: Only return cached state, never recalculate automatically
+    #
+    def _cached(self, recalculate=None):
 
         if recalculate:
             self.__cached = None
 
-        if self.__cached is None and self._get_cache_key() is not None:
-            self.__cached = self.__artifacts.contains(self)
+        if recalculate != False:
+            if self.__cached is None and self._get_cache_key() is not None:
+                self.__cached = self.__artifacts.contains(self)
 
         return False if self.__cached is None else self.__cached
 
     # _assert_cached()
     #
+    # Args:
+    #    recalculate (bool): Argument to pass to Element._cached()
+    #
     # Raises an error if the artifact is not cached.
-    def _assert_cached(self):
-        if not self._cached():
+    #
+    def _assert_cached(self, recalculate=None):
+        if not self._cached(recalculate=recalculate):
             raise ElementError("{}: Missing artifact {}"
                                .format(self, self._get_display_key()))
 
@@ -1251,7 +1262,7 @@ class Element(Plugin):
                 yield filename.lstrip(os.sep)
 
     def _load_public_data(self):
-        self._assert_cached()
+        self._assert_cached(recalculate=False)
         assert(self.__dynamic_public is None)
 
         # Load the public data from the artifact
