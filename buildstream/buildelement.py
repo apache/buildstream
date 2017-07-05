@@ -217,6 +217,6 @@ class BuildElement(Element):
                 commands = self.commands[command_name]
 
                 for cmd in commands:
-                    script += "(set -e; {}\n) || exit 1\n".format(cmd)
+                    script += "(set -ex; {}\n) || exit 1\n".format(cmd)
 
         return script
