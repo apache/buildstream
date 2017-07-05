@@ -420,11 +420,44 @@ class Element(Plugin):
 
         Returns:
            (dict): The public data dictionary for the given domain
+
+        .. note::
+
+           This can only be called in the build phase of an element and
+           never before. This may be called in
+           :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`,
+           :func:`Element.stage() <buildstream.element.Element.stage>` and in
+           :func:`Element.assemble() <buildstream.element.Element.assemble>`
+
         """
         if self.__dynamic_public is None:
             self._load_public_data()
 
-        return self.__dynamic_public.get(domain)
+        data = self.__dynamic_public.get(domain)
+        if data is not None:
+            data = copy.deepcopy(data)
+
+        return data
+
+    def set_public_data(self, domain, data):
+        """Set public data on this element
+
+        Args:
+           domain (str): A public domain name to fetch data for
+           data (dict): The public data dictionary for the given domain
+
+        This allows an element to dynamically mutate public data of
+        elements or add new domains as the result of success completion
+        of the :func:`Element.assemble() <buildstream.element.Element.assemble>`
+        method.
+        """
+        if self.__dynamic_public is None:
+            self._load_public_data()
+
+        if data is not None:
+            data = copy.deepcopy(data)
+
+        self.__dynamic_public[domain] = data
 
     def get_environment(self):
         """Fetch the environment suitable for running in the sandbox
