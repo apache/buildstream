@@ -22,7 +22,6 @@ import sys
 import click
 import pkg_resources  # From setuptools
 from contextlib import contextmanager
-from ruamel import yaml
 from blessings import Terminal
 
 # Import buildstream public symbols
@@ -33,7 +32,6 @@ from ..exceptions import _BstError
 from .._message import MessageType, unconditional_messages
 from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
-from .. import utils, _yaml
 from .._profile import Topics, profile_start, profile_end
 
 # Import frontend assets

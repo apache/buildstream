@@ -22,8 +22,9 @@ import subprocess
 import datetime
 import pkg_resources
 from collections import OrderedDict
+from ruamel import yaml
 
-from .. import utils
+from .. import utils, _yaml
 from ..plugin import _plugin_lookup
 from .._message import MessageType
 from .. import ImplError
