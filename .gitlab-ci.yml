@@ -1,5 +1,9 @@
 image: samthursfield/buildstream:0.1-20170621.1
 
+cache:
+  paths:
+    - cache/buildstream/sources/
+
 before_script:
   # Diagnostics
   - mount
@@ -9,8 +13,9 @@ before_script:
   - export LANG="C.UTF-8"
   - export LC_ALL="C.UTF-8"
 
-  # Store cache in the shared Docker volume
-  - export XDG_CACHE_HOME=/cache
+  # Store cache in the project directory
+  - mkdir -p "$(pwd)/cache"
+  - export XDG_CACHE_HOME="$(pwd)/cache"
 
 # Run premerge commits
 #
