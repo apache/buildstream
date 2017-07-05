@@ -64,7 +64,7 @@ class ComposeElement(Element):
     def get_unique_key(self):
         return {
             'integrate': self.integration,
-            'include': self.include,
+            'include': sorted(self.include),
             'orphans': self.include_orphans
         }
 
