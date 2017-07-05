@@ -62,29 +62,9 @@ class ComposeElement(Element):
             raise ElementError("{}: Compose elements may not have sources".format(self))
 
     def get_unique_key(self):
-        # The output of this element will be effected depending
-        # on the splitting rules defined by the elements in this
-        # composition.
-        #
-        # As such, we include the split rules themselves in the
-        # cache key calculation.
-        #
-        include_rules = [
-            {
-                'element': elt.name,
-                'splits': [
-                    {
-                        'domain': domain,
-                        'rules': rules
-                    }
-                    for domain, rules in sorted(self.splits(elt))
-                ]
-            }
-            for elt in self.dependencies(Scope.BUILD)
-        ]
         return {
             'integrate': self.integration,
-            'include': include_rules,
+            'include': self.include,
             'orphans': self.include_orphans
         }
 
@@ -165,15 +145,6 @@ class ComposeElement(Element):
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
-
-    # Generator for extracting the split rules to be included
-    # for a given element (which should be in the dependency chain)
-    def splits(self, element):
-        bstdata = element.get_public_data('bst')
-        splits = bstdata.get('split-rules')
-        for domain, rules in self.node_items(splits):
-            if not self.include or domain in self.include:
-                yield (domain, rules)
 
 
 # Like os.path.getmtime(), but doesnt explode on symlinks
