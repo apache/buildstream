@@ -663,7 +663,7 @@ class Element(Plugin):
         if recalculate:
             self.__cached = None
 
-        if recalculate != False:
+        if recalculate is not False:
             if self.__cached is None and self._get_cache_key() is not None:
                 self.__cached = self.__artifacts.contains(self)
 
