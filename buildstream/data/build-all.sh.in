@@ -33,7 +33,7 @@ for module in {modules}; do
     "$SRCDIR/build-$module"
 
     if [ -e /sbin/ldconfig ]; then
-        /sbin/ldcondig || true;
+        /sbin/ldconfig || true;
     fi
 done
 
