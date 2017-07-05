@@ -602,3 +602,33 @@ def list_chain_copy(source):
             copy.append(item)
 
     return copy
+
+
+def node_copy(source):
+    copy = {}
+    for key, value in source.items():
+        if isinstance(value, collections.Mapping):
+            copy[key] = node_copy(value)
+        elif isinstance(value, list):
+            copy[key] = list_copy(value)
+        elif isinstance(value, Provenance):
+            copy[key] = value.clone()
+
+    ensure_provenance(copy)
+
+    return copy
+
+
+def list_copy(source):
+    copy = []
+    for item in source:
+        if isinstance(item, collections.Mapping):
+            copy.append(node_copy(item))
+        elif isinstance(item, list):
+            copy.append(list_copy(item))
+        elif isinstance(item, Provenance):
+            copy.append(item.clone())
+        else:
+            copy.append(item)
+
+    return copy
