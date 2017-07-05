@@ -154,6 +154,8 @@ split-rules:
   # libtool archives.
   devel:
   - |
+    %{includedir}
+  - |
     %{includedir}/**
   - |
     %{libdir}/lib*.a
@@ -170,23 +172,37 @@ split-rules:
   # away from libraries and executables
   debug:
   - |
+    %{debugdir}
+  - |
     %{debugdir}/**
 
   # The doc domain includes documentation
   doc:
   - |
+    %{docdir}
+  - |
     %{docdir}/**
   - |
+    %{infodir}
+  - |
     %{infodir}/**
+  - |
+    %{mandir}
   - |
     %{mandir}/**
 
   # The locale domain includes translations etc
   locale:
   - |
+    %{datadir}/locale
+  - |
     %{datadir}/locale/**
   - |
+    %{datadir}/i18n
+  - |
     %{datadir}/i18n/**
+  - |
+    %{datadir}/zoneinfo
   - |
     %{datadir}/zoneinfo/**
 
