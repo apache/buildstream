@@ -62,6 +62,20 @@ class Scope(Enum):
     """
 
 
+class _KeyStrength(Enum):
+    """Strength of cache key"""
+
+    STRONG = 1
+    """Includes strong cache keys of all build dependencies and their
+    runtime dependencies.
+    """
+
+    WEAK = 2
+    """Includes names of direct build dependencies but does not include
+    cache keys of dependencies.
+    """
+
+
 class Element(Plugin):
     """Element()
 
@@ -89,6 +103,7 @@ class Element(Plugin):
         self.__build_dependencies = []    # Direct build dependency Elements
         self.__sources = []               # List of Sources
         self.__cache_key = None           # Our cached cache key
+        self.__weak_cache_key = None      # Our cached weak cache key
         self.__artifacts = artifacts      # Artifact cache
         self.__cached = None              # Whether we have a cached artifact
         self.__built = False              # Element was locally built
@@ -640,6 +655,7 @@ class Element(Plugin):
     def _force_inconsistent(self):
         self.__cached = None
         self.__cache_key = None
+        self.__weak_cache_key = None
         for source in self.__sources:
             source._force_inconsistent()
 
@@ -762,19 +778,34 @@ class Element(Plugin):
     #
     # Returns the cache key, calculating it if necessary
     #
+    # Args:
+    #    strength (_KeyStrength): Either STRONG or WEAK key strength
+    #
     # Returns:
     #    (str): A hex digest cache key for this Element, or None
     #
     # None is returned if information for the cache key is missing.
     #
-    def _get_cache_key(self):
+    def _get_cache_key(self, strength=_KeyStrength.STRONG):
         if self.__cache_key is None:
+            # Calculate strong cache key
             dependencies = [
                 e._get_cache_key() for e in self.dependencies(Scope.BUILD)
             ]
             self.__cache_key = self.__calculate_cache_key(dependencies)
 
-        return self.__cache_key
+            # Calculate weak cache key
+            # Weak cache key includes names of direct build dependencies
+            # but does not include keys of dependencies.
+            dependencies = [
+                e.name for e in self.dependencies(Scope.BUILD, recurse=False)
+            ]
+            self.__weak_cache_key = self.__calculate_cache_key(dependencies)
+
+        if strength == _KeyStrength.STRONG:
+            return self.__cache_key
+        else:
+            return self.__weak_cache_key
 
     # _get_full_display_key():
     #
