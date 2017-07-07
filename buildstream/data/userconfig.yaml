@@ -10,6 +10,9 @@
 # paths.
 #
 
+# Whether elements must be rebuilt when their dependencies have changed
+strict: True
+
 # Location to store sources
 sourcedir: ${XDG_CACHE_HOME}/buildstream/sources
 

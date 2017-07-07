@@ -59,6 +59,9 @@ class Context():
         self.target_arch = target_arch or host_arch
         """The machine on which the results of the build should execute"""
 
+        self.strict_build_plan = True
+        """Whether elements must be rebuilt when their dependencies have changed"""
+
         self.sourcedir = None
         """The directory where various sources are stored"""
 
@@ -149,6 +152,8 @@ class Context():
             self.config_origin = os.path.abspath(config)
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config, typesafe=True)
+
+        self.strict_build_plan = _yaml.node_get(defaults, bool, 'strict')
 
         for dir in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
             # Allow the ~ tilde expansion and any environment variables in
