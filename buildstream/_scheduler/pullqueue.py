@@ -19,6 +19,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+# BuildStream toplevel imports
+from ..element import _KeyStrength
+
 # Local imports
 from . import Queue, QueueType
 
@@ -36,7 +39,7 @@ class PullQueue(Queue):
         return element._pull()
 
     def skip(self, element):
-        return element._cached()
+        return element._cached(strength=_KeyStrength.STRONG)
 
     def done(self, element, result, returncode):
 
