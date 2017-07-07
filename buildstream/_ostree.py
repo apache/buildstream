@@ -158,6 +158,28 @@ def commit(repo, dir, ref, branch=None):
         raise
 
 
+# set_ref():
+#
+# Set symbolic reference to specified revision.
+#
+# Args:
+#    repo (OSTree.Repo): The repo
+#    ref (str): A symbolic reference (tag) for the commit
+#    rev (str): Commit checksum
+#
+def set_ref(repo, ref, rev):
+
+    repo.prepare_transaction()
+    try:
+        repo.transaction_set_ref(None, ref, rev)
+
+        # complete repo transaction
+        repo.commit_transaction(None)
+    except:
+        repo.abort_transaction()
+        raise
+
+
 # exists():
 #
 # Checks wether a given commit or symbolic ref exists and
