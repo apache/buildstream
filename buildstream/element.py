@@ -99,15 +99,16 @@ class Element(Plugin):
         and creating directory names and such.
         """
 
-        self.__runtime_dependencies = []  # Direct runtime dependency Elements
-        self.__build_dependencies = []    # Direct build dependency Elements
-        self.__sources = []               # List of Sources
-        self.__cache_key = None           # Our cached cache key
-        self.__weak_cache_key = None      # Our cached weak cache key
-        self.__artifacts = artifacts      # Artifact cache
-        self.__cached = None              # Whether we have a cached artifact
-        self.__built = False              # Element was locally built
-        self.__log_path = None            # Path to dedicated log file or None
+        self.__runtime_dependencies = []        # Direct runtime dependency Elements
+        self.__build_dependencies = []          # Direct build dependency Elements
+        self.__sources = []                     # List of Sources
+        self.__cache_key = None                 # Our cached cache key
+        self.__weak_cache_key = None            # Our cached weak cache key
+        self.__cache_key_from_artifact = None   # Our cached cache key from artifact
+        self.__artifacts = artifacts            # Artifact cache
+        self.__cached = None                    # Whether we have a cached artifact
+        self.__built = False                    # Element was locally built
+        self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
 
         # Ensure we have loaded this class's defaults
@@ -806,6 +807,30 @@ class Element(Plugin):
             return self.__cache_key
         else:
             return self.__weak_cache_key
+
+    # _get_cache_key_from_artifact():
+    #
+    # Returns the strong cache key as stored in the cached artifact
+    #
+    # Args:
+    #    recalculate (bool): Whether to forcefully recalculate
+    #
+    # Returns:
+    #    (str): A hex digest cache key for this Element
+    #
+    def _get_cache_key_from_artifact(self, recalculate=False):
+        if recalculate:
+            self.__cache_key_from_artifact = None
+
+        if self.__cache_key_from_artifact is None:
+            self._assert_cached(recalculate=False)
+
+            # Load the strong cache key from the artifact
+            metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+            meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
+            self.__cache_key_from_artifact = meta['keys']['strong']
+
+        return self.__cache_key_from_artifact
 
     # _get_full_display_key():
     #
