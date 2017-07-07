@@ -716,6 +716,48 @@ class Element(Plugin):
 
         return True
 
+    # __calculate_cache_key():
+    #
+    # Calculates the cache key
+    #
+    # Returns:
+    #    (str): A hex digest cache key for this Element, or None
+    #
+    # None is returned if information for the cache key is missing.
+    #
+    def __calculate_cache_key(self, dependencies):
+
+        # It is not really necessary to check if the Source object's
+        # local mirror has the ref cached locally or not, it's only important
+        # to know if the source has a ref specified or not, in order to
+        # produce a cache key.
+        #
+        if self._consistency() == Consistency.INCONSISTENT:
+            return None
+
+        # No cache keys for dependencies which have no cache keys
+        if None in dependencies:
+            return None
+
+        # Filter out nocache variables from the element's environment
+        cache_env = {
+            key: value
+            for key, value in self.node_items(self.__environment)
+            if key not in self.__env_nocache
+        }
+
+        context = self.get_context()
+        project = self.get_project()
+        return utils._generate_key({
+            'context': context._get_cache_key(),
+            'project': project._get_cache_key(),
+            'element': self.get_unique_key(),
+            'environment': cache_env,
+            'sources': [s.get_unique_key() for s in self.__sources],
+            'dependencies': dependencies,
+            'public': self.__public
+        })
+
     # _get_cache_key():
     #
     # Returns the cache key, calculating it if necessary
@@ -726,43 +768,11 @@ class Element(Plugin):
     # None is returned if information for the cache key is missing.
     #
     def _get_cache_key(self):
-
-        # It is not really necessary to check if the Source object's
-        # local mirror has the ref cached locally or not, it's only important
-        # to know if the source has a ref specified or not, in order to
-        # produce a cache key.
-        #
-        if self._consistency() == Consistency.INCONSISTENT:
-            return None
-
         if self.__cache_key is None:
-
-            # No cache keys for dependencies which have no cache keys
             dependencies = [
                 e._get_cache_key() for e in self.dependencies(Scope.BUILD)
             ]
-            for dep in dependencies:
-                if dep is None:
-                    return None
-
-            # Filter out nocache variables from the element's environment
-            cache_env = {
-                key: value
-                for key, value in self.node_items(self.__environment)
-                if key not in self.__env_nocache
-            }
-
-            context = self.get_context()
-            project = self.get_project()
-            self.__cache_key = utils._generate_key({
-                'context': context._get_cache_key(),
-                'project': project._get_cache_key(),
-                'element': self.get_unique_key(),
-                'environment': cache_env,
-                'sources': [s.get_unique_key() for s in self.__sources],
-                'dependencies': dependencies,
-                'public': self.__public
-            })
+            self.__cache_key = self.__calculate_cache_key(dependencies)
 
         return self.__cache_key
 
