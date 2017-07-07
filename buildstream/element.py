@@ -698,16 +698,6 @@ class Element(Plugin):
             raise ElementError("{}: Missing artifact {}"
                                .format(self, self._get_display_key()))
 
-    # _set_cached():
-    #
-    # Forcefully set the cached state on the element.
-    #
-    # This is done by the Pipeline when an element successfully
-    # completes a build.
-    #
-    def _set_cached(self):
-        self.__cached = True
-
     # _set_built():
     #
     # Forcefully set the built state on the element.

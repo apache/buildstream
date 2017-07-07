@@ -43,7 +43,7 @@ class BuildQueue(Queue):
     def done(self, element, result, returncode):
         # Elements are cached after they are successfully assembled
         if returncode == 0:
-            element._set_cached()
+            element._cached(recalculate=True)
             element._set_built()
 
         return True
