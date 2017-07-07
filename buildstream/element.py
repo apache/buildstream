@@ -832,6 +832,21 @@ class Element(Plugin):
 
         return self.__cache_key_from_artifact
 
+    # _get_cache_key_for_build():
+    #
+    # Returns the strong cache key using cached artifacts as dependencies
+    #
+    # Returns:
+    #    (str): A hex digest cache key for this Element
+    #
+    # This is the cache key for a fresh build of this element.
+    #
+    def _get_cache_key_for_build(self):
+        dependencies = [
+            e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
+        ]
+        return self.__calculate_cache_key(dependencies)
+
     # _get_full_display_key():
     #
     # Returns cache keys for display purposes
@@ -968,11 +983,11 @@ class Element(Plugin):
                     _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
                     dependencies = {
-                        e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                        e.name: e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
                     }
                     meta = {
                         'keys': {
-                            'strong': self._get_cache_key(_KeyStrength.STRONG),
+                            'strong': self._get_cache_key_for_build(),
                             'weak': self._get_cache_key(_KeyStrength.WEAK),
                             'dependencies': dependencies
                         }
