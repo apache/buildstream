@@ -114,8 +114,9 @@ def checkout(repo, path, commit, user=False):
 #    repo (OSTree.Repo): The repo
 #    dir (str): The source directory to commit to the repo
 #    ref (str): A symbolic reference (tag) for the commit
+#    branch (str): Optional branch for the commit
 #
-def commit(repo, dir, ref):
+def commit(repo, dir, ref, branch=None):
 
     def commit_filter(repo, path, file_info):
 
@@ -145,6 +146,10 @@ def commit(repo, dir, ref):
 
         # create tag
         repo.transaction_set_ref(None, ref, rev)
+
+        # optionally create/update branch (without parent commit for now)
+        if branch:
+            repo.transaction_set_ref(None, branch, rev)
 
         # complete repo transaction
         repo.commit_transaction(None)
