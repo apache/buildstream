@@ -83,6 +83,8 @@ _, _, _, _, host_machine = os.uname()
               help="Machine architecture for the sandbox (defaults to --arch)")
 @click.option('--target-arch',
               help="Machine architecture for build output (defaults to --arch)")
+@click.option('--strict/--no-strict', default=None, is_flag=True,
+              help="Elements must be rebuilt when their dependencies have changed")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
@@ -494,6 +496,7 @@ class App():
         # the command line when used, trumps the config files.
         #
         override_map = {
+            'strict': 'strict_build_plan',
             'debug': 'log_debug',
             'verbose': 'log_verbose',
             'error_lines': 'log_error_lines',
