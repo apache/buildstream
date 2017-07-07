@@ -942,6 +942,18 @@ class Element(Plugin):
                     # Store public data
                     _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
+                    dependencies = {
+                        e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                    }
+                    meta = {
+                        'keys': {
+                            'strong': self._get_cache_key(_KeyStrength.STRONG),
+                            'weak': self._get_cache_key(_KeyStrength.WEAK),
+                            'dependencies': dependencies
+                        }
+                    }
+                    _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
+
                     with self.timed_activity("Caching Artifact"):
                         self.__artifacts.commit(self, assembledir)
 
