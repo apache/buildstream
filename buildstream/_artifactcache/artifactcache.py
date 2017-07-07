@@ -23,6 +23,7 @@ import tempfile
 
 from .. import _ostree, utils
 from ..exceptions import _ArtifactError
+from ..element import _KeyStrength
 from .._ostree import OSTreeError
 
 from .pushreceive import push as push_artifact
@@ -31,7 +32,6 @@ from .pushreceive import PushException
 
 def buildref(element, key):
     project = element.get_project()
-    key = element._get_cache_key()
 
     # Normalize ostree ref unsupported chars
     element_name = element.normal_name.replace('+', 'X')
@@ -68,14 +68,19 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element to check
+    #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
     #
     # Returns: True if the artifact is in the cache, False otherwise
     #
-    def contains(self, element):
-        if not element._get_cache_key():
+    def contains(self, element, strength=None):
+        if strength is None:
+            strength = _KeyStrength.STRONG if self.context.strict_build_plan else _KeyStrength.WEAK
+
+        key = element._get_cache_key(strength)
+        if not key:
             return False
 
-        ref = buildref(element)
+        ref = buildref(element, key)
         return _ostree.exists(self.repo, ref)
 
     # remove():
@@ -87,10 +92,11 @@ class ArtifactCache():
     #     element (Element): The Element to remove
     #
     def remove(self, element):
-        if not element._get_cache_key():
+        key = element._get_cache_key()
+        if not key:
             return
 
-        ref = buildref(element)
+        ref = buildref(element, key)
         _ostree.remove(self.repo, ref)
 
     # extract():
@@ -110,17 +116,24 @@ class ArtifactCache():
     # Returns: path to extracted artifact
     #
     def extract(self, element):
-        ref = buildref(element)
-
-        dest = os.path.join(self.extractdir, ref)
-        if os.path.isdir(dest):
-            # artifact has already been extracted
-            return dest
+        ref = buildref(element, element._get_cache_key())
 
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, ref)
+
+        # resolve weak cache key, if artifact is missing for strong cache key
+        # and the context allows use of weak cache keys
+        if not rev and not self.context.strict_build_plan:
+            ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
+            rev = _ostree.checksum(self.repo, ref)
+
         if not rev:
             raise _ArtifactError("Artifact missing for {}".format(ref))
+
+        dest = os.path.join(self.extractdir, element.get_project().name, element.normal_name, rev)
+        if os.path.isdir(dest):
+            # artifact has already been extracted
+            return dest
 
         os.makedirs(self.extractdir, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix='tmp', dir=self.extractdir) as tmpdir:
@@ -153,9 +166,13 @@ class ArtifactCache():
     #     content (str): The element's content directory
     #
     def commit(self, element, content):
-        ref = buildref(element)
+        # tag with strong cache key based on dependency versions used for the build
+        ref = buildref(element, element._get_cache_key_for_build())
 
-        _ostree.commit(self.repo, content, ref)
+        # also store under weak cache key
+        weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
+
+        _ostree.commit(self.repo, content, ref, weak_ref)
 
     # can_fetch():
     #
@@ -183,13 +200,41 @@ class ArtifactCache():
         else:
             raise _ArtifactError("Attempt to pull artifact without any pull URL")
 
-        ref = buildref(element)
+        weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
         try:
+            # try fetching the artifact using the strong cache key
+            ref = buildref(element, element._get_cache_key())
             _ostree.fetch(self.repo, remote=remote,
                           ref=ref, progress=progress)
+
+            # resolve ref to checksum
+            rev = _ostree.checksum(self.repo, ref)
+
+            # update weak ref by pointing it to this newly fetched artifact
+            _ostree.set_ref(self.repo, weak_ref, rev)
         except OSTreeError as e:
-            raise _ArtifactError("Failed to pull artifact for element {}: {}"
-                                 .format(element.name, e)) from e
+            # fetch the artifact using the weak cache key, if the context allows it
+            # (and it's not already in the local cache)
+            if self.context.strict_build_plan or element._cached():
+                raise _ArtifactError("Failed to pull artifact for element {}: {}"
+                                     .format(element.name, e)) from e
+
+            try:
+                _ostree.fetch(self.repo, remote=remote,
+                              ref=weak_ref, progress=progress)
+
+                # extract strong cache key from this newly fetched artifact
+                element._cached(recalculate=True)
+                ref = buildref(element, element._get_cache_key_from_artifact())
+
+                # resolve ref to checksum
+                rev = _ostree.checksum(self.repo, ref)
+
+                # create tag for strong cache key
+                _ostree.set_ref(self.repo, ref, rev)
+            except OSTreeError as e:
+                raise _ArtifactError("Failed to pull artifact for element {}: {}"
+                                     .format(element.name, e)) from e
 
     # can_push():
     #
@@ -218,11 +263,13 @@ class ArtifactCache():
         if self.context.artifact_push is None:
             raise _ArtifactError("Attempt to push artifact without any push URL")
 
-        ref = buildref(element)
+        ref = buildref(element, element._get_cache_key_from_artifact())
+        weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
         if self.context.artifact_push.startswith("/"):
             # local repository
             push_repo = _ostree.ensure(self.context.artifact_push, True)
             _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+            _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
 
             # Local remotes are not really a thing, just return True here
             return True
@@ -238,6 +285,7 @@ class ArtifactCache():
 
                     # Now push the ref we want to push into our temporary archive-z2 repo
                     _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+                    _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
 
                 with element.timed_activity("Sending artifact"), \
                     element._output_file() as output_file:
@@ -245,7 +293,7 @@ class ArtifactCache():
                         pushed = push_artifact(temp_repo.get_path().get_path(),
                                                self.context.artifact_push,
                                                self.context.artifact_push_port,
-                                               [ref], output_file)
+                                               [ref, weak_ref], output_file)
                     except PushException as e:
                         raise _ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
 
