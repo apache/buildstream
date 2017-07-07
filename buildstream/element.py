@@ -675,16 +675,26 @@ class Element(Plugin):
     #    o True: Force recalculate cached state, even if already checked
     #    o False: Only return cached state, never recalculate automatically
     #
-    def _cached(self, recalculate=None):
+    def _cached(self, recalculate=None, strength=None):
 
         if recalculate:
             self.__cached = None
+            self.__strong_cached = None
+
+        if strength is None:
+            strength = _KeyStrength.STRONG if self.get_context().strict_build_plan else _KeyStrength.WEAK
 
         if recalculate is not False:
             if self.__cached is None and self._get_cache_key() is not None:
                 self.__cached = self.__artifacts.contains(self)
+                self.__strong_cached = self.__artifacts.contains(self, strength=_KeyStrength.STRONG)
 
-        return False if self.__cached is None else self.__cached
+        if self.__cached is None:
+            return False
+        elif strength == _KeyStrength.STRONG:
+            return self.__strong_cached
+        else:
+            return self.__cached
 
     # _assert_cached()
     #
