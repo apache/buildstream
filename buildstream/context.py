@@ -68,8 +68,11 @@ class Context():
         self.artifactdir = None
         """The local binary artifact cache directory"""
 
-        self.artifact_share = None
-        """The artifact cache share URL"""
+        self.artifact_pull = None
+        """The URL from which to download prebuilt artifacts"""
+
+        self.artifact_push = None
+        """The URL to upload built artifacts to"""
 
         self.logdir = None
         """The directory to store build logs"""
@@ -153,10 +156,10 @@ class Context():
             path = os.path.expandvars(path)
             setattr(self, dir, path)
 
-        try:
-            self.artifact_share = _yaml.node_get(defaults, str, 'artifact-share')
-        except:
-            self.artifact_share = None
+        # Load artifact share configuration
+        artifacts = _yaml.node_get(defaults, Mapping, 'artifacts')
+        self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', '') or None
+        self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', '') or None
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

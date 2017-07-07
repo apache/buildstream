@@ -46,6 +46,17 @@ scheduler:
   on-error: quit
 
 #
+#    Artifacts
+#
+artifacts:
+
+  # A url from which to download prebuilt artifacts
+  pull-url: ''
+
+  # A url to upload built artifacts to
+  push-url: ''
+
+#
 #    Logging
 #
 logging:
