@@ -18,7 +18,8 @@ def pipeline(tmpdir):
     project = Project(DATA_DIR, 'x86_64')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context.builddir = os.path.join(str(tmpdir), 'build')
-    context.artifact_share = os.path.join(str(tmpdir), 'share')
+    context.artifact_pull = os.path.join(str(tmpdir), 'share')
+    context.artifact_push = os.path.join(str(tmpdir), 'share')
 
     return Pipeline(context, project, "simple.bst", None)
 
@@ -57,7 +58,8 @@ def test_commit_extract(pipeline):
         assert(content == 'hello, world')
 
 
-def test_push_fetch(pipeline):
+def test_push_pull(pipeline):
+
     build_commit(pipeline)
     assert(pipeline.artifacts.contains(pipeline.target))
 
@@ -66,5 +68,5 @@ def test_push_fetch(pipeline):
     pipeline.artifacts.remove(pipeline.target)
     assert(not pipeline.artifacts.contains(pipeline.target))
 
-    pipeline.artifacts.fetch(pipeline.target)
+    pipeline.artifacts.pull(pipeline.target)
     assert(pipeline.artifacts.contains(pipeline.target))
