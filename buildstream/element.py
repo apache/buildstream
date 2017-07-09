@@ -36,6 +36,7 @@ from ._variables import Variables
 from .exceptions import _BstError
 from . import LoadError, LoadErrorReason, ElementError, ImplError
 from ._sandboxbwrap import SandboxBwrap
+from ._artifactcache import ArtifactError
 from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
 from . import utils
@@ -896,19 +897,40 @@ class Element(Plugin):
     def _built(self):
         return self.__built
 
-    # _fetch():
+    # _pull():
     #
-    # Fetch artifact from remote artifact repository to local artifact cache.
+    # Pull artifact from remote artifact repository into local artifact cache.
     #
-    # Returns: True if the artifact has been fetched, False otherwise
+    # Returns: True if the artifact has been downloaded, False otherwise
     #
-    def _fetch(self):
+    def _pull(self):
+
+        def progress(percent, message):
+            self.status(message)
+
+        # Avoid sending failure messages by not using a timed activity
+        # here, in any case the overall activity is timed by the PullQueue
+        # in the scheduler.
+        #
+        # Instead just issue an info message about whether an artifact
+        # was available or not.
         try:
-            with self.timed_activity("Fetching Artifact"):
-                self.__artifacts.fetch(self)
-            return True
-        except:
-            return False
+            self.__artifacts.pull(self, progress=progress)
+
+            # Notify successfull download
+            display_key = self._get_display_key()
+            self.info("Downloaded artifact {}".format(display_key))
+            downloaded = True
+        except ArtifactError:
+            # Just return false, so that the frontend knows that
+            # the artifact was not downloaded
+            #
+            # FIXME: Ideally we would want to raise an exception here if there
+            #        was an error, but just return False if there was no error
+            #        an no artifact was available to download
+            downloaded = False
+
+        return downloaded
 
     # _push():
     #
