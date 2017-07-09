@@ -19,11 +19,10 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import tempfile
 import shutil
 from contextlib import contextmanager
 
-from . import _yaml, _signals
+from . import _yaml, _signals, utils
 from . import ImplError
 from . import Plugin
 
@@ -96,16 +95,8 @@ class Source(Plugin):
         directory in the case of forced termination.
         """
         mirrordir = self.get_mirror_directory()
-        tempdir = tempfile.mkdtemp(dir=mirrordir)
-
-        def cleanup_tempdir():
-            if os.path.isdir(tempdir):
-                shutil.rmtree(tempdir)
-
-        with _signals.terminator(cleanup_tempdir):
+        with utils._tempdir(dir=mirrordir) as tempdir:
             yield tempdir
-
-        cleanup_tempdir()
 
     def get_consistency(self):
         """Report whether the source has a resolved reference
