@@ -293,29 +293,23 @@ def fetch(repo, remote="origin", ref=None, progress=None):
             raise OSTreeError("Failed to fetch from '{}': {}".format(remote, e.message)) from e
 
 
-# fetch_ssh()
+# get_ostree_push()
 #
-# Pushes a ref to a remote repository
-#
-# Args:
-#    repo (OSTree.Repo): The repo
-#    mountdir (str): The directory to create mounts at
-#    remote (str): The url of the remote ostree repo
-#    ref (str): A ref to pull
-#
-def fetch_ssh(repo, mountdir, remote, ref):
-    exit_code, output = utils._call([
-        _site.ostree_pull_ssh,
-        '--repo=' + repo.get_path().get_path(),
-        '--basedir=' + mountdir,
-        remote,
-        ref],
-        terminate=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
+# Fetch the host ostree-push host tool required for pushing
+# to remote ostree repositories.
+def get_ostree_push():
+    if not get_ostree_push.ostree_push_checked:
+        try:
+            get_ostree_push.ostree_push = utils.get_host_tool('ostree-push')
+        except ProgramNotFoundError:
+            pass
+        get_ostree_push.ostree_push_checked = True
+    return get_ostree_push.ostree_push
 
-    if exit_code:
-        raise OSTreeError("Failed to fetch artifact from remote SSH repository:\n{}".format(output))
+
+# Some static variables for get_ostree_push()
+get_ostree_push.ostree_push_checked = False
+get_ostree_push.ostree_push = None
 
 
 # push()
@@ -324,28 +318,42 @@ def fetch_ssh(repo, mountdir, remote, ref):
 #
 # Args:
 #    repo (OSTree.Repo): The repo
-#    mountdir (str): The directory to create mounts at
+#    workdir (str): A directory to work in and create temp dirs inside of
 #    remote (str): The url of the remote ostree repo
 #    ref (str): A ref to push
+#    output_file (file): An optional file handle for capturing the output of ostree-push
 #
-def push(repo, mountdir, remote, ref):
+def push(repo, workdir, remote, ref, output_file=None):
+
     if remote.startswith("/"):
         # local repository
         push_repo = ensure(remote, True)
         fetch(push_repo, remote=repo.get_path().get_uri(), ref=ref)
     else:
-        exit_code, output = utils._call([
-            _site.ostree_push,
-            '--repo=' + repo.get_path().get_path(),
-            '--basedir=' + mountdir,
-            remote,
-            ref],
-            terminate=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
+        with utils._tempdir(dir=workdir, prefix='push-repo-') as temp_repo_dir:
+
+            # First create a temporary archive-z2 repository, we can
+            # only use ostree-push with archive-z2 local repo.
+            temp_repo = ensure(temp_repo_dir, True)
+
+            # Now push the ref we want to push into our temporary archive-z2 repo
+            fetch(temp_repo, remote=repo.get_path().get_uri(), ref=ref)
+
+            kwargs = {}
+            kwargs['terminate'] = True
+            if output_file is not None:
+                kwargs['stdout'] = output_file
+                kwargs['stderr'] = output_file
+
+            # Now use ostree-push to push the repo
+            exit_code, _ = utils._call([
+                get_ostree_push(), '--verbose',
+                '--repo', temp_repo.get_path().get_path(),
+                remote, ref
+            ], **kwargs)
 
         if exit_code:
-            raise OSTreeError("Failed to push artifact to remote SSH repository:\n{}".format(output))
+            raise OSTreeError("Failed to push artifact {} to artifact server at {}".format(ref, remote))
 
 
 # configure_remote():
