@@ -40,12 +40,6 @@ default_user_config = os.path.join(root, 'data', 'userconfig.yaml')
 # Default project configuration
 default_project_config = os.path.join(root, 'data', 'projectconfig.yaml')
 
-# ostree-push shell script
-ostree_push = os.path.join(root, 'data', 'ostree-push')
-
-# ostree-pull-ssh shell script
-ostree_pull_ssh = os.path.join(root, 'data', 'ostree-pull-ssh')
-
 # Script template to call module building scripts
 build_all_template = os.path.join(root, 'data', 'build-all.sh.in')
 
