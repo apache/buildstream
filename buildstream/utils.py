@@ -31,6 +31,8 @@ import psutil
 import subprocess
 import signal
 import re
+import tempfile
+from contextlib import contextmanager
 from . import ProgramNotFoundError
 from . import _yaml
 from . import _signals
@@ -657,6 +659,36 @@ def _set_deterministic_mtime(directory):
                 os.utime(pathname, (magic_timestamp, magic_timestamp))
 
         os.utime(dirname, (magic_timestamp, magic_timestamp))
+
+
+# _tempdir()
+#
+# A context manager for doing work in a temporary directory.
+#
+# Args:
+#    dir (str): A path to a parent directory for the temporary directory
+#    suffix (str): A suffix for the temproary directory name
+#    prefix (str): A prefix for the temporary directory name
+#
+# Yields:
+#    (str): The temporary directory
+#
+# In addition to the functionality provided by python's
+# tempfile.TemporaryDirectory() context manager, this one additionally
+# supports cleaning up the temp directory on SIGTERM.
+#
+@contextmanager
+def _tempdir(suffix=None, prefix=None, dir=None):
+    tempdir = tempfile.mkdtemp(suffix=suffix, prefix=prefix, dir=dir)
+
+    def cleanup_tempdir():
+        if os.path.isdir(tempdir):
+            shutil.rmtree(tempdir)
+
+    with _signals.terminator(cleanup_tempdir):
+        yield tempdir
+
+    cleanup_tempdir()
 
 
 # _kill_process_tree()
