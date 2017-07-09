@@ -21,9 +21,9 @@
 import os
 import tempfile
 
-from . import Element
-from . import _ostree
+from . import _ostree, utils
 from .exceptions import _BstError
+from ._ostree import OSTreeError
 
 
 # For users of this file, they must expect (except) it.
@@ -57,13 +57,9 @@ class ArtifactCache():
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.repo = _ostree.ensure(ostreedir, False)
 
-        if self.context.artifact_share and \
-           (self.context.artifact_share.startswith("http:") or
-            self.context.artifact_share.startswith("https:")):
-            self.remote = context.artifact_share
-            self.remote = self.remote.replace('http://', '').replace('https://', '')
-            self.remote = self.remote.replace('/', '-').replace(':', '-')
-            _ostree.configure_remote(self.repo, self.remote, context.artifact_share)
+        if self.context.artifact_pull:
+            self.remote = utils.url_directory_name(context.artifact_pull)
+            _ostree.configure_remote(self.repo, self.remote, self.context.artifact_pull)
         else:
             self.remote = None
 
@@ -170,27 +166,32 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_fetch(self):
-        return self.context.artifact_share is not None
+        return self.remote is not None
 
-    # fetch():
+    # pull():
     #
-    # Fetch artifact from remote repository.
+    # Pull artifact from remote repository.
     #
     # Args:
     #     element (Element): The Element whose artifact is to be fetched
+    #     progress (callable): The progress callback, if any
     #
-    def fetch(self, element):
-        ref = buildref(element)
+    def pull(self, element, progress=None):
 
-        if self.remote:
-            _ostree.fetch(self.repo, remote=self.remote, ref=ref)
-        elif self.context.artifact_share.startswith("/"):
-            _ostree.fetch(self.repo, remote="file://" + self.context.artifact_share, ref=ref)
+        if self.context.artifact_pull.startswith("/"):
+            remote = "file://" + self.context.artifact_pull
+        elif self.remote is not None:
+            remote = self.remote
         else:
-            mountdir = os.path.join(self.context.artifactdir, 'mounts')
-            os.makedirs(mountdir, exist_ok=True)
+            raise ArtifactError("Attempt to pull artifact without any pull URL")
 
-            _ostree.fetch_ssh(self.repo, mountdir, remote=self.context.artifact_share, ref=ref)
+        ref = buildref(element)
+        try:
+            _ostree.fetch(self.repo, remote=remote,
+                          ref=ref, progress=progress)
+        except OSTreeError as e:
+            raise ArtifactError("Failed to pull artifact for element {}: {}"
+                                .format(element.name, e)) from e
 
     # can_push():
     #
@@ -199,7 +200,7 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_push(self):
-        return self.context.artifact_share is not None and self.remote is None
+        return self.context.artifact_push is not None
 
     # push():
     #
@@ -209,8 +210,15 @@ class ArtifactCache():
     #     element (Element): The Element whose artifact is to be pushed
     #
     def push(self, element):
-        ref = buildref(element)
-        mountdir = os.path.join(self.context.artifactdir, 'mounts')
-        os.makedirs(mountdir, exist_ok=True)
 
-        _ostree.push(self.repo, mountdir, remote=self.context.artifact_share, ref=ref)
+        if self.context.artifact_push is None:
+            raise ArtifactError("Attempt to push artifact without any push URL")
+
+        ref = buildref(element)
+        workdir = os.path.join(self.context.artifactdir, 'work')
+        os.makedirs(workdir, exist_ok=True)
+
+        with element._output_file() as output_file:
+            _ostree.push(self.repo, workdir,
+                         remote=self.context.artifact_push, ref=ref,
+                         output_file=output_file)
