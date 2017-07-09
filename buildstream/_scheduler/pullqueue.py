@@ -23,7 +23,7 @@
 from . import Queue, QueueType
 
 
-# A queue which fetches element artifacts
+# A queue which pulls element artifacts
 #
 class PullQueue(Queue):
 
@@ -33,7 +33,7 @@ class PullQueue(Queue):
 
     def process(self, element):
         # does not raise an exception if artifact is unavailable
-        element._fetch()
+        element._pull()
 
     def skip(self, element):
         return element._cached()
