@@ -1,4 +1,4 @@
-.TH "BST FETCH" "1" "04-Jul-2017" "" "bst fetch Manual"
+.TH "BST FETCH" "1" "10-Jul-2017" "" "bst fetch Manual"
 .SH NAME
 bst\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
@@ -30,7 +30,13 @@ The dependencies to fetch (default: plan)
 Track new source references before fetching
 .TP
 \fB\-a,\fP \-\-arch TEXT
-The target architecture (default: x86_64)
+Architecture of the machine running the build (default: x86_64)
+.TP
+\fB\-\-host\-arch\fP TEXT
+Run as a native build for the given architecture (defaults to --arch)
+.TP
+\fB\-\-target\-arch\fP TEXT
+Produce elements that execute on this architecture (defaults to --arch)
 .TP
 \fB\-\-variant\fP TEXT
 A variant of the specified target

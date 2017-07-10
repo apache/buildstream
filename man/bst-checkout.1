@@ -1,4 +1,4 @@
-.TH "BST CHECKOUT" "1" "04-Jul-2017" "" "bst checkout Manual"
+.TH "BST CHECKOUT" "1" "10-Jul-2017" "" "bst checkout Manual"
 .SH NAME
 bst\-checkout \- Checkout a built artifact
 .SH SYNOPSIS
@@ -13,7 +13,13 @@ Checkout a built artifact to the specified directory
 Overwrite files existing in checkout directory
 .TP
 \fB\-a,\fP \-\-arch TEXT
-The target architecture (default: x86_64)
+Architecture of the machine running the build (default: x86_64)
+.TP
+\fB\-\-host\-arch\fP TEXT
+Run as a native build for the given architecture (defaults to --arch)
+.TP
+\fB\-\-target\-arch\fP TEXT
+Produce elements that execute on this architecture (defaults to --arch)
 .TP
 \fB\-\-variant\fP TEXT
 A variant of the specified target

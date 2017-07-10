@@ -1,4 +1,4 @@
-.TH "BST TRACK" "1" "04-Jul-2017" "" "bst track Manual"
+.TH "BST TRACK" "1" "10-Jul-2017" "" "bst track Manual"
 .SH NAME
 bst\-track \- Track new source references
 .SH SYNOPSIS
@@ -25,7 +25,13 @@ Except certain dependencies from tracking
 The dependencies to track (default: none)
 .TP
 \fB\-a,\fP \-\-arch TEXT
-The target architecture (default: x86_64)
+Architecture of the machine running the build (default: x86_64)
+.TP
+\fB\-\-host\-arch\fP TEXT
+Run as a native build for the given architecture (defaults to --arch)
+.TP
+\fB\-\-target\-arch\fP TEXT
+Produce elements that execute on this architecture (defaults to --arch)
 .TP
 \fB\-\-variant\fP TEXT
 A variant of the specified target

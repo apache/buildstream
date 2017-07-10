@@ -1,4 +1,4 @@
-.TH "BST BUILD" "1" "04-Jul-2017" "" "bst build Manual"
+.TH "BST BUILD" "1" "10-Jul-2017" "" "bst build Manual"
 .SH NAME
 bst\-build \- Build elements in a pipeline
 .SH SYNOPSIS
@@ -15,7 +15,13 @@ Build elements that would not be needed for the current build plan
 Track new source references before building (implies --all)
 .TP
 \fB\-a,\fP \-\-arch TEXT
-The target architecture (default: x86_64)
+Architecture of the machine running the build (default: x86_64)
+.TP
+\fB\-\-host\-arch\fP TEXT
+Run as a native build for the given architecture (defaults to --arch)
+.TP
+\fB\-\-target\-arch\fP TEXT
+Produce elements that execute on this architecture (defaults to --arch)
 .TP
 \fB\-\-variant\fP TEXT
 A variant of the specified target
