@@ -125,6 +125,11 @@ class Queue():
     #    result (any): The return value of the process() implementation
     #    returncode (int): The process return code, 0 = success
     #
+    # Returns:
+    #    (bool): True if the element should appear to be skipped,
+    #            this is useful in cases where we can only determine
+    #            "skipped" status after processing.
+    #
     def done(self, element, result, returncode):
         pass
 
@@ -182,19 +187,26 @@ class Queue():
 
     def job_done(self, job, returncode, element):
 
-        if returncode == 0:
-            self.done_queue.append(element)
-            self.processed_elements.append(element)
-        else:
-            self.failed_elements.append(element)
-
         # Shutdown the job
         job.shutdown()
-
         self.active_jobs.remove(job)
 
-        # Give the result of the job to the Queue implementor
-        self.done(element, job.result, returncode)
+        # Give the result of the job to the Queue implementor,
+        # and determine if it should be considered as processed
+        # or skipped.
+        if self.done(element, job.result, returncode):
+            skip = True
+        else:
+            skip = False
+
+        if returncode == 0:
+            self.done_queue.append(element)
+            if skip:
+                self.skipped_elements.append(element)
+            else:
+                self.processed_elements.append(element)
+        else:
+            self.failed_elements.append(element)
 
         # Notify frontend
         self.scheduler.job_completed(job, returncode == 0)
