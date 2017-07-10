@@ -19,8 +19,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from argparse import ArgumentParser
-from enum import Enum
+import click
 import logging
 import os
 import struct
@@ -30,6 +29,7 @@ import tempfile
 import shutil
 import tarfile
 import signal
+from enum import Enum
 from urllib.parse import urlparse
 
 from .. import _signals
@@ -582,22 +582,20 @@ def push(repo, remote, branch, output):
             terminate_push()
 
 
-def receive_main():
-    aparser = ArgumentParser(description='Receive pushed ostree objects')
-    aparser.add_argument('--repo', help='repository path')
-    aparser.add_argument('-v', '--verbose', action='store_true',
-                         help='enable verbose output')
-    aparser.add_argument('--debug', action='store_true',
-                         help='enable debugging output')
-    args = aparser.parse_args()
-
+@click.command(short_help="Receive pushed artifacts over ssh")
+@click.option('--repo', help="Repository path to add artifacts to")
+@click.option('--verbose', '-v', is_flag=True, default=False, help="Verbose mode")
+@click.option('--debug', '-d', is_flag=True, default=False, help="Debug mode")
+def receive_main(repo, verbose, debug):
+    """A BuildStream sister program for receiving artifacts send to a shared artifact cache
+    """
     loglevel = logging.WARNING
-    if args.verbose:
+    if verbose:
         loglevel = logging.INFO
-    if args.debug:
+    if debug:
         loglevel = logging.DEBUG
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=loglevel, stream=sys.stderr)
 
-    receiver = OSTreeReceiver(args.repo)
+    receiver = OSTreeReceiver(repo)
     return receiver.run()
