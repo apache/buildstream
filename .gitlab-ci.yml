@@ -35,11 +35,8 @@ integration_tests:
 
 # Automatically build documentation, only for merges which land
 # on master branch.
-#
-# FIXME: Weird `ln -s python` thing going on
 pages:
   script:
-  - ln -s /usr/bin/python3 /usr/bin/python
   - dnf install -y findutils
   - pip3 install sphinx
   - pip3 install sphinx-click
