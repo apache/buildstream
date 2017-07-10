@@ -32,8 +32,8 @@ class PullQueue(Queue):
     queue_type = QueueType.FETCH
 
     def process(self, element):
-        # does not raise an exception if artifact is unavailable
-        element._pull()
+        # returns whether an artifact was downloaded or not
+        return element._pull()
 
     def skip(self, element):
         return element._cached()
@@ -41,7 +41,11 @@ class PullQueue(Queue):
     def done(self, element, result, returncode):
 
         if returncode != 0:
-            return
+            return False
 
         # return code is 0 even if artifact was unavailable
         element._cached(recalculate=True)
+
+        # Element._pull() returns True if it downloaded an artifact,
+        # here we want to appear skipped if we did not download.
+        return not result
