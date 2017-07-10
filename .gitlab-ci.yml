@@ -37,6 +37,7 @@ integration_tests:
 # on master branch.
 pages:
   script:
+  - dnf install -y findutils
   - pip3 install sphinx
   - pip3 install sphinx-click
   - pip3 install --user -e .
