@@ -21,9 +21,9 @@
 import os
 import tempfile
 
-from . import _ostree, utils
-from .exceptions import _BstError
-from ._ostree import OSTreeError
+from .. import _ostree, utils
+from ..exceptions import _BstError
+from .._ostree import OSTreeError
 
 
 # For users of this file, they must expect (except) it.
