@@ -25,6 +25,9 @@ from .. import _ostree, utils
 from ..exceptions import _BstError
 from .._ostree import OSTreeError
 
+from .pushreceive import push as push_artifact
+from .pushreceive import PushException
+
 
 # For users of this file, they must expect (except) it.
 class ArtifactError(_BstError):
@@ -215,10 +218,26 @@ class ArtifactCache():
             raise ArtifactError("Attempt to push artifact without any push URL")
 
         ref = buildref(element)
-        workdir = os.path.join(self.context.artifactdir, 'work')
-        os.makedirs(workdir, exist_ok=True)
+        if self.context.artifact_push.startswith("/"):
+            # local repository
+            push_repo = _ostree.ensure(self.context.artifact_push, True)
+            _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+        else:
+            # Push over ssh
+            #
+            with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:
 
-        with element._output_file() as output_file:
-            _ostree.push(self.repo, workdir,
-                         remote=self.context.artifact_push, ref=ref,
-                         output_file=output_file)
+                # First create a temporary archive-z2 repository, we can
+                # only use ostree-push with archive-z2 local repo.
+                temp_repo = _ostree.ensure(temp_repo_dir, True)
+
+                # Now push the ref we want to push into our temporary archive-z2 repo
+                _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+
+                with element._output_file() as output_file:
+                    try:
+                        push_artifact(temp_repo.get_path().get_path(),
+                                      self.context.artifact_push,
+                                      ref, output_file)
+                    except PushException as e:
+                        raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
