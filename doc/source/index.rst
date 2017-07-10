@@ -35,6 +35,7 @@ off the ground installing it on a new host.
 * :ref:`projectconf`
 * :ref:`format`
 * :ref:`public`
+* :ref:`artifacts`
 
 
 Elements
