@@ -78,11 +78,11 @@ _, _, _, _, host_machine = os.uname()
 @click.option('--colors/--no-colors', default=None,
               help="Force enable/disable ANSI color codes in output")
 @click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
+              help="Machine architecture (default: %s)" % host_machine)
 @click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
+              help="Machine architecture for the sandbox (defaults to --arch)")
 @click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
+              help="Machine architecture for build output (defaults to --arch)")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
