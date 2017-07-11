@@ -161,6 +161,9 @@ def safe_copy(src, dest, result=None):
        src (str): The source filename
        dest (str): The destination filename
        result (:class:`~.FileListResult`): An optional collective result
+    Raises:
+       (OSError): In case there was an error writing files
+       (shutil.Error): In case there was an error raised by the shutil module
 
     This is almost the same as shutil.copy2(), except that
     we unlink *dest* before overwriting it if it exists, just
@@ -172,6 +175,10 @@ def safe_copy(src, dest, result=None):
     except OSError as e:
         if e.errno != errno.ENOENT:
             raise
+
+    parent_dir = os.path.dirname(dest)
+    if not os.access(parent_dir, os.W_OK):
+        raise PermissionError("Directory {} forbids writing".format(parent_dir))
 
     shutil.copyfile(src, dest)
     try:
