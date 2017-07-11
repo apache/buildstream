@@ -438,6 +438,7 @@ class App():
         # UI Colors Profiles
         self.content_profile = Profile(fg='yellow')
         self.format_profile = Profile(fg='cyan', dim=True)
+        self.success_profile = Profile(fg='green')
         self.error_profile = Profile(fg='red', dim=True)
         self.detail_profile = Profile(dim=True)
 
@@ -545,6 +546,7 @@ class App():
 
         # Create our status printer, only available in interactive
         self.status = Status(self.content_profile, self.format_profile,
+                             self.success_profile, self.error_profile,
                              self.pipeline, self.scheduler,
                              colors=self.colors)
 

@@ -42,10 +42,14 @@ from .widget import TimeCode
 #
 class Status():
 
-    def __init__(self, content_profile, format_profile, pipeline, scheduler, colors=False):
+    def __init__(self, content_profile, format_profile,
+                 success_profile, error_profile,
+                 pipeline, scheduler, colors=False):
 
         self.content_profile = content_profile
         self.format_profile = format_profile
+        self.success_profile = success_profile
+        self.error_profile = error_profile
         self.pipeline = pipeline
         self.scheduler = scheduler
         self.jobs = []
@@ -53,7 +57,9 @@ class Status():
         self.term = Terminal()
         self.spacing = 1
         self.colors = colors
-        self.header = StatusHeader(content_profile, format_profile, pipeline, scheduler)
+        self.header = StatusHeader(content_profile, format_profile,
+                                   success_profile, error_profile,
+                                   pipeline, scheduler)
 
         self.term_width, _ = click.get_terminal_size()
         self.alloc_lines = 0
@@ -233,61 +239,74 @@ class Status():
 # The header widget renders total elapsed time and the main invocation information
 class StatusHeader():
 
-    def __init__(self, content_profile, format_profile, pipeline, scheduler):
+    def __init__(self, content_profile, format_profile,
+                 success_profile, error_profile,
+                 pipeline, scheduler):
+
         self.content_profile = content_profile
         self.format_profile = format_profile
+        self.success_profile = success_profile
+        self.error_profile = error_profile
         self.pipeline = pipeline
         self.scheduler = scheduler
         self.time_code = TimeCode(content_profile, format_profile, brackets=False)
         self.lines = 3
+
+    def render_queue(self, queue):
+        processed = str(len(queue.processed_elements))
+        skipped = str(len(queue.skipped_elements))
+        failed = str(len(queue.failed_elements))
+
+        size = 6  # Space for the formatting '[', ': ', '/', '/' and ']'
+        size += len(queue.complete_name)
+        size += len(processed) + len(skipped) + len(failed)
+        text = self.format_profile.fmt("[") + \
+            self.content_profile.fmt(queue.complete_name) + \
+            self.format_profile.fmt(": ") + \
+            self.success_profile.fmt(processed) + \
+            self.format_profile.fmt("/") + \
+            self.content_profile.fmt(skipped) + \
+            self.format_profile.fmt("/") + \
+            self.error_profile.fmt(failed) + \
+            self.format_profile.fmt("]")
+
+        return (text, size)
 
     def render(self, line_length, elapsed):
         line_length = max(line_length, 80)
         size = 0
         text = ''
 
+        session = str(self.pipeline.session_elements)
+        total = str(self.pipeline.total_elements)
+
         # Format and calculate size for pipeline target and overall time code
+        size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
         size += 8  # Size of time code
         size += len(self.pipeline.target.name) + 1
         text += self.time_code.render_time(elapsed)
         text += ' ' + self.content_profile.fmt(self.pipeline.target.name)
+        text += ' ' + self.format_profile.fmt('(') + \
+                self.content_profile.fmt(session) + \
+                self.format_profile.fmt('/') + \
+                self.content_profile.fmt(total) + \
+                self.format_profile.fmt(')')
 
         line1 = self.centered(text, size, line_length, '=')
         size = 0
         text = ''
 
-        # Number of elements to process in the session
-        session = str(self.pipeline.session_elements)
-        size += 10 + len(session)
-        text += self.format_profile.fmt("[") + \
-            self.content_profile.fmt("Session") + \
-            self.format_profile.fmt(":") + \
-            self.content_profile.fmt(session) + \
-            self.format_profile.fmt("]")
-
-        # Space
-        size += 1
-        text += ' '
-
-        # Total elements of the pipeline
-        total = str(self.pipeline.total_elements)
-        size += 8 + len(total)
-        text += self.format_profile.fmt("[") + \
-            self.content_profile.fmt("Total") + \
-            self.format_profile.fmt(":") + \
-            self.content_profile.fmt(total) + \
-            self.format_profile.fmt("]")
-
         # Format and calculate size for each queue progress
         for queue in self.scheduler.queues:
-            processed = str(len(queue.processed_elements))
-            size += len(processed) + len(queue.complete_name) + 4
-            text += ' ' + \
-                self.format_profile.fmt("[") + \
-                self.content_profile.fmt(queue.complete_name) + \
-                self.format_profile.fmt(":") + \
-                self.content_profile.fmt(processed) + \
-                self.format_profile.fmt("]")
+
+            # Add spacing
+            if self.scheduler.queues.index(queue) > 0:
+                size += 1
+                text += ' '
+
+            queue_text, queue_size = self.render_queue(queue)
+            size += queue_size
+            text += queue_text
 
         line2 = self.centered(text, size, line_length, ' ')
 
