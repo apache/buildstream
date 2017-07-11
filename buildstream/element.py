@@ -936,11 +936,15 @@ class Element(Plugin):
     #
     # Push locally cached artifact to remote artifact repository.
     #
+    # Returns:
+    #   (bool): True if the remote was updated, False if it already existed
+    #           and no updated was required
+    #
     def _push(self):
         self._assert_cached()
 
         with self.timed_activity("Pushing Artifact"):
-            self.__artifacts.push(self)
+            return self.__artifacts.push(self)
 
     # _logfile()
     #
