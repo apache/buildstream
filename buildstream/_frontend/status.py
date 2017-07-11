@@ -257,16 +257,14 @@ class StatusHeader():
         skipped = str(len(queue.skipped_elements))
         failed = str(len(queue.failed_elements))
 
-        size = 6  # Space for the formatting '[', ': ', '/', '/' and ']'
+        size = 5  # Space for the formatting '[', ':', ' ', ' ' and ']'
         size += len(queue.complete_name)
         size += len(processed) + len(skipped) + len(failed)
         text = self.format_profile.fmt("[") + \
             self.content_profile.fmt(queue.complete_name) + \
-            self.format_profile.fmt(": ") + \
-            self.success_profile.fmt(processed) + \
-            self.format_profile.fmt("/") + \
-            self.content_profile.fmt(skipped) + \
-            self.format_profile.fmt("/") + \
+            self.format_profile.fmt(":") + \
+            self.success_profile.fmt(processed) + ' ' + \
+            self.content_profile.fmt(skipped) + ' ' + \
             self.error_profile.fmt(failed) + \
             self.format_profile.fmt("]")
 
