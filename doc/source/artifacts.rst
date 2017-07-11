@@ -139,20 +139,9 @@ then a user can use the following user configuration:
      # A url to upload built artifacts to
      push-url: artifacts@artifacts.com:artifacts
 
-Also, if you have used a custom port for uploading
-artifacts, there is no syntax for specifying that in
-the URL.
-
-Instead the user must specify this in their own ssh
-configuration in ``~/.ssh/config``
-
-This can be done with the following snippet, assuming
-the same ``artifacts.com`` url, and port ``10000``:
-
-.. code:: bash
-
-   Host artifacts.com
-        Port 10000
+     # If the artifact server uses a custom port for sshd
+     # then you can specify it here
+     push-port: 666
 
 
 Authenticating Users
