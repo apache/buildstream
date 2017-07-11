@@ -77,6 +77,12 @@ _, _, _, _, host_machine = os.uname()
               help="A file to store the main log (allows storing the main log while in interactive mode)")
 @click.option('--colors/--no-colors', default=None,
               help="Force enable/disable ANSI color codes in output")
+@click.option('--arch', '-a', default=host_machine,
+              help="Architecture of the machine running the build (default: %s)" % host_machine)
+@click.option('--host-arch',
+              help="Run as a native build for the given architecture (defaults to --arch)")
+@click.option('--target-arch',
+              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
@@ -97,21 +103,14 @@ def cli(context, **kwargs):
               help="Build elements that would not be needed for the current build plan")
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before building (implies --all)")
-@click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
-@click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def build(app, target, arch, host_arch, target_arch, variant, all, track):
+def build(app, target, variant, all, track):
     """Build elements in a pipeline"""
 
-    app.initialize(target, host_arch or arch, target_arch or arch, variant,
-                   rewritable=track, inconsistent=track)
+    app.initialize(target, variant, rewritable=track, inconsistent=track)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track)
@@ -132,17 +131,11 @@ def build(app, target, arch, host_arch, target_arch, variant, all, track):
               help='The dependencies to fetch (default: plan)')
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before fetching")
-@click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
-@click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def fetch(app, target, arch, host_arch, target_arch, variant, deps, track, except_):
+def fetch(app, target, variant, deps, track, except_):
     """Fetch sources required to build the pipeline
 
     By default this will only try to fetch sources which are
@@ -157,8 +150,7 @@ def fetch(app, target, arch, host_arch, target_arch, variant, deps, track, excep
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    app.initialize(target, host_arch or arch, target_arch or arch, variant,
-                   rewritable=track, inconsistent=track)
+    app.initialize(target, variant, rewritable=track, inconsistent=track)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(deps=dependencies)
@@ -178,17 +170,11 @@ def fetch(app, target, arch, host_arch, target_arch, variant, deps, track, excep
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to track (default: none)')
-@click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
-@click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def track(app, target, arch, host_arch, target_arch, variant, deps, except_):
+def track(app, target, variant, deps, except_):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
@@ -201,8 +187,7 @@ def track(app, target, arch, host_arch, target_arch, variant, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(target, host_arch or arch, target_arch or arch, variant,
-                   rewritable=True, inconsistent=True)
+    app.initialize(target, variant, rewritable=True, inconsistent=True)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(deps=dependencies)
@@ -228,17 +213,11 @@ def track(app, target, arch, host_arch, target_arch, variant, deps, except_):
 @click.option('--format', '-f', metavar='FORMAT', default="%{state: >12} %{key} %{name}",
               type=click.STRING,
               help='Format string for each element')
-@click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
-@click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def show(app, target, arch, host_arch, target_arch, variant, deps, except_, order, format):
+def show(app, target, variant, deps, except_, order, format):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -283,7 +262,7 @@ def show(app, target, arch, host_arch, target_arch, variant, deps, except_, orde
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(target, host_arch or arch, target_arch or arch, variant)
+    app.initialize(target, variant)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
     except PipelineError as e:
@@ -307,17 +286,11 @@ def show(app, target, arch, host_arch, target_arch, variant, deps, except_, orde
 @click.option('--scope', '-s', default=None,
               type=click.Choice(['build', 'run']),
               help='Specify element scope to stage')
-@click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
-@click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def shell(app, target, arch, host_arch, target_arch, variant, builddir, scope):
+def shell(app, target, variant, builddir, scope):
     """Shell into an element's sandbox environment
 
     This can be used either to debug building or to launch
@@ -336,7 +309,7 @@ def shell(app, target, arch, host_arch, target_arch, variant, builddir, scope):
     elif scope == "build":
         scope = Scope.BUILD
 
-    app.initialize(target, host_arch or arch, target_arch or arch, variant)
+    app.initialize(target, variant)
 
     # Assert we have everything we need built.
     missing_deps = []
@@ -368,21 +341,15 @@ def shell(app, target, arch, host_arch, target_arch, variant, builddir, scope):
 @cli.command(short_help="Checkout a built artifact")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
-@click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
-@click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.argument('directory')
 @click.pass_obj
-def checkout(app, target, arch, host_arch, target_arch, variant, directory, force):
+def checkout(app, target, variant, directory, force):
     """Checkout a built artifact to the specified directory
     """
-    app.initialize(target, host_arch or arch, target_arch or arch, variant)
+    app.initialize(target, variant)
     try:
         app.pipeline.checkout(directory, force)
         click.echo("")
@@ -406,12 +373,6 @@ def checkout(app, target, arch, host_arch, target_arch, variant, directory, forc
               help='The elements to bundle (default: build)')
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before building")
-@click.option('--arch', '-a', default=host_machine,
-              help="Architecture of the machine running the build (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Run as a native build for the given architecture (defaults to --arch)")
-@click.option('--target-arch',
-              help="Produce elements that execute on this architecture (defaults to --arch)")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.option('--force', '-f', default=False, is_flag=True,
@@ -420,7 +381,7 @@ def checkout(app, target, arch, host_arch, target_arch, variant, directory, forc
               help="The directory to write the tarball to")
 @click.argument('target')
 @click.pass_obj
-def source_bundle(app, target, arch, host_arch, target_arch, variant, force, directory,
+def source_bundle(app, target, variant, force, directory,
                   track, deps, compression, except_):
     """Produce a build bundle to be manually executed
 
@@ -431,8 +392,7 @@ def source_bundle(app, target, arch, host_arch, target_arch, variant, force, dir
         run:   Runtime dependencies, including the element itself
         build: Build time dependencies, excluding the element itself
     """
-    app.initialize(target, host_arch or arch, target_arch or arch, variant,
-                   rewritable=track, inconsistent=track)
+    app.initialize(target, variant, rewritable=track, inconsistent=track)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(dependencies)
@@ -457,9 +417,9 @@ class App():
         self.logger = None
         self.status = None
         self.target = None
-        self.host_arch = None
-        self.target_arch = None
         self.variant = None
+        self.host_arch = main_options['host_arch'] or main_options['arch']
+        self.target_arch = main_options['target_arch'] or main_options['arch']
 
         # Main asset handles
         self.context = None
@@ -506,20 +466,18 @@ class App():
     #
     # Initialize the main pipeline
     #
-    def initialize(self, target, host_arch, target_arch, variant,
-                   rewritable=False, inconsistent=False):
+    def initialize(self, target, variant, rewritable=False, inconsistent=False):
         self.target = target
-        self.host_arch = host_arch
-        self.target_arch = target_arch
         self.variant = variant
 
-        profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + host_arch + '-' + target_arch)
+        profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' +
+                      self.host_arch + '-' + self.target_arch)
 
         directory = self.main_options['directory']
         config = self.main_options['config']
 
         try:
-            self.context = Context(host_arch, target_arch)
+            self.context = Context(self.host_arch, self.target_arch)
             self.context.load(config)
         except _BstError as e:
             click.echo("Error loading user configuration: %s" % str(e))
@@ -569,7 +527,7 @@ class App():
         self.context._set_message_handler(self.message_handler)
 
         try:
-            self.project = Project(directory, host_arch, target_arch)
+            self.project = Project(directory, self.host_arch, self.target_arch)
         except _BstError as e:
             click.echo("Error loading project: %s" % str(e))
             sys.exit(1)
@@ -594,7 +552,7 @@ class App():
         self.logger.size_request(self.pipeline)
         self.messaging_enabled = True
 
-        profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + host_arch + '-' + target_arch)
+        profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + self.host_arch + '-' + self.target_arch)
 
     #
     # Render the status area, conditional on some internal state
