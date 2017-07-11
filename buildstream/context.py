@@ -74,6 +74,9 @@ class Context():
         self.artifact_push = None
         """The URL to upload built artifacts to"""
 
+        self.artifact_push_port = 22
+        """The port number for pushing artifacts over ssh"""
+
         self.logdir = None
         """The directory to store build logs"""
 
@@ -158,8 +161,9 @@ class Context():
 
         # Load artifact share configuration
         artifacts = _yaml.node_get(defaults, Mapping, 'artifacts')
-        self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', '') or None
-        self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', '') or None
+        self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
+        self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
+        self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

@@ -56,6 +56,10 @@ artifacts:
   # A url to upload built artifacts to
   push-url: ''
 
+  # Specify the port number for pushing artifacts, if it's
+  # not the default port 22
+  push-port: 22
+
 #
 #    Logging
 #
