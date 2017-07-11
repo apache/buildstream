@@ -102,13 +102,19 @@ For this you will want something like the following in your ``/etc/ssh/sshd_conf
    # Allow ssh logins/commands with the artifacts user
    AllowUsers artifacts
 
-   # Dont allow password authentication for artifacts user
-   #
-   # Also lets restrict these logins to only running
-   # the artifact receive process
+   # Some specifics for the artifacts user
    Match user artifacts
-        ForceCommand bst-artifact-receive
+
+        # Dont allow password authentication for artifacts user
+	#
         PasswordAuthentication no
+
+        # Also lets dedicate this login for only running the
+	# bst-artifact-receive program, note that the full
+	# command must be specified here; 'artifacts' is
+	# the HOME relative path to the artifact cache.
+	#
+        ForceCommand bst-artifact-receive --verbose artifacts
 
 
 User Configuration
