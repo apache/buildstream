@@ -320,12 +320,14 @@ class OSTreePusher(object):
             ssh_cmd += ['-l', self.remote_user]
         if self.remote_port:
             ssh_cmd += ['-p', self.remote_port]
-        ssh_cmd += [self.remote_host, 'bst-artifact-receive',
-                    '--repo=%s' % self.remote_path]
+
+        ssh_cmd += [self.remote_host, 'bst-artifact-receive']
         if self.verbose:
             ssh_cmd += ['--verbose']
         if self.debug:
             ssh_cmd += ['--debug']
+        ssh_cmd += [self.remote_path]
+
         logging.info('Executing {}'.format(' '.join(ssh_cmd)))
         self.ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
                                     stdout=subprocess.PIPE,
@@ -583,10 +585,10 @@ def push(repo, remote, branch, output):
 
 
 @click.command(short_help="Receive pushed artifacts over ssh")
-@click.option('--repo', help="Repository path to add artifacts to")
 @click.option('--verbose', '-v', is_flag=True, default=False, help="Verbose mode")
 @click.option('--debug', '-d', is_flag=True, default=False, help="Debug mode")
-def receive_main(repo, verbose, debug):
+@click.argument('repo')
+def receive_main(verbose, debug, repo):
     """A BuildStream sister program for receiving artifacts send to a shared artifact cache
     """
     loglevel = logging.WARNING
