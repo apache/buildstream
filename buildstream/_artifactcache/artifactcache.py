@@ -212,6 +212,12 @@ class ArtifactCache():
     # Args:
     #     element (Element): The Element whose artifact is to be pushed
     #
+    # Returns:
+    #   (bool): True if the remote was updated, False if it already existed
+    #           and no updated was required
+    #
+    # Raises:
+    #   ArtifactError if there was an error
     def push(self, element):
 
         if self.context.artifact_push is None:
@@ -222,22 +228,30 @@ class ArtifactCache():
             # local repository
             push_repo = _ostree.ensure(self.context.artifact_push, True)
             _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+
+            # Local remotes are not really a thing, just return True here
+            return True
         else:
             # Push over ssh
             #
             with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:
 
-                # First create a temporary archive-z2 repository, we can
-                # only use ostree-push with archive-z2 local repo.
-                temp_repo = _ostree.ensure(temp_repo_dir, True)
+                with element.timed_activity("Preparing compressed archive"):
+                    # First create a temporary archive-z2 repository, we can
+                    # only use ostree-push with archive-z2 local repo.
+                    temp_repo = _ostree.ensure(temp_repo_dir, True)
 
-                # Now push the ref we want to push into our temporary archive-z2 repo
-                _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+                    # Now push the ref we want to push into our temporary archive-z2 repo
+                    _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
 
-                with element._output_file() as output_file:
+                with element.timed_activity("Sending artifact"), \
+                    element._output_file() as output_file:
                     try:
-                        push_artifact(temp_repo.get_path().get_path(),
-                                      self.context.artifact_push,
-                                      ref, output_file)
+                        pushed = push_artifact(temp_repo.get_path().get_path(),
+                                               self.context.artifact_push,
+                                               self.context.artifact_push_port,
+                                               ref, output_file)
                     except PushException as e:
                         raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
+
+                return pushed

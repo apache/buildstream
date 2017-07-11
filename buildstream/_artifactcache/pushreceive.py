@@ -285,7 +285,7 @@ class PushMessageReader(object):
 
 
 class OSTreePusher(object):
-    def __init__(self, repopath, remotepath, branches=[], verbose=False,
+    def __init__(self, repopath, remotepath, remote_port, branches=[], verbose=False,
                  debug=False, output=None):
         self.repopath = repopath
         self.remotepath = remotepath
@@ -296,7 +296,7 @@ class OSTreePusher(object):
         self.remote_host = None
         self.remote_user = None
         self.remote_repo = None
-        self.remote_port = None
+        self.remote_port = remote_port
         self._set_remote_args()
 
         if self.repopath is None:
@@ -318,8 +318,8 @@ class OSTreePusher(object):
         ssh_cmd = ['ssh']
         if self.remote_user:
             ssh_cmd += ['-l', self.remote_user]
-        if self.remote_port:
-            ssh_cmd += ['-p', self.remote_port]
+        if self.remote_port != 22:
+            ssh_cmd += ['-p', str(self.remote_port)]
 
         ssh_cmd += [self.remote_host, 'bst-artifact-receive']
         if self.verbose:
@@ -349,7 +349,6 @@ class OSTreePusher(object):
             self.remote_port = url.port
         else:
             # Scp/git style remote (user@hostname:path)
-            self.remote_port = None
             parts = self.remotepath.split('@', 1)
             if len(parts) > 1:
                 self.remote_user = parts[0]
@@ -380,6 +379,7 @@ class OSTreePusher(object):
             if parent is None:
                 break
         if remote is not None and parent != remote:
+            self.writer.send_done()
             raise PushExistsException('Remote commit %s not descendent of '
                                       'commit %s' % (remote, local))
 
@@ -559,21 +559,31 @@ class OSTreeReceiver(object):
 # Args:
 #   repo: The local repository path
 #   remote: The ssh remote url to push to
+#   remote_port: The ssh port at the remote url
 #   branch: The ref to push
 #   output: The output where logging should go
-def push(repo, remote, branch, output):
+#
+# Returns:
+#   (bool): True if the remote was updated, False if it already existed
+#           and no updated was required
+#
+# Raises:
+#   PushException if there was an error
+#
+def push(repo, remote, remote_port, branch, output):
 
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=logging.INFO, stream=output)
 
-    pusher = OSTreePusher(repo, remote, [branch], True, False, output=output)
+    pusher = OSTreePusher(repo, remote, remote_port, [branch], True, False, output=output)
 
     def terminate_push():
         pusher.close()
 
     with _signals.terminator(terminate_push):
         try:
-            return pusher.run()
+            pusher.run()
+            return True
         except PushException:
             terminate_push()
             raise
@@ -582,6 +592,7 @@ def push(repo, remote, branch, output):
             # on the push and dont bother re-raising the error
             logging.info("Ref {} was already present in remote {}".format(branch, remote))
             terminate_push()
+            return False
 
 
 @click.command(short_help="Receive pushed artifacts over ssh")
