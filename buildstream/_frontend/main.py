@@ -790,7 +790,7 @@ class App():
                            .format(self.file_count, self.cache_count), nl=False, err=True)
             elif self.cache_count == 1:
                 click.echo("Checking {} elements."
-                           .format(self.file_count, self.cache_count), nl=False, err=True)
+                           .format(self.file_count), nl=False, err=True)
             else:
                 click.echo(".", nl=False, err=True)
         else:
