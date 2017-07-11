@@ -60,8 +60,8 @@ we really require is that you make the artifacts available over https (you can u
 http but until we figure out using gpg signed ostree commits for the artifacts, it's
 better to serve over https).
 
-Here is an example, note that you must have a certificate **pem** file to use, and
-as usual.
+Here is an example, note that you must have a certificate **pem** file to use, as
+is the case for hosting anything over https.
 
 .. code:: python
 
