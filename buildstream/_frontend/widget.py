@@ -132,18 +132,6 @@ class TimeCode(Widget):
         return text
 
 
-# A widget for rendering the action name
-class ActionName(Widget):
-
-    def render(self, message):
-        action_name = message.action_name
-        if not action_name:
-            action_name = ""
-        return self.format_profile.fmt('[') + \
-            self.content_profile.fmt("{: ^5}".format(action_name)) + \
-            self.format_profile.fmt(']')
-
-
 # A widget for rendering the MessageType
 class TypeName(Widget):
 
@@ -174,7 +162,7 @@ class ElementName(Widget):
 
         # Pre initialization format string, before we know the length of
         # element names in the pipeline
-        self.fmt_string = '{: <35}'
+        self.fmt_string = '{: <30}'
 
     def size_request(self, pipeline):
         longest_name = 0
@@ -183,7 +171,7 @@ class ElementName(Widget):
 
         # Put a cap at a specific width, usually some elements cause the line
         # to be too long, just live with the unaligned columns in that case
-        longest_name = min(longest_name, 35)
+        longest_name = min(longest_name, 30)
         self.fmt_string = '{: <' + str(longest_name) + '}'
 
     def render(self, message):
@@ -194,9 +182,15 @@ class ElementName(Widget):
         else:
             name = ''
 
+        # Sneak the action name in with the element name
+        action_name = message.action_name
+        if not action_name:
+            action_name = "Main"
+
         return self.format_profile.fmt('[') + \
-            self.content_profile.fmt(
-                self.fmt_string.format(name)) + \
+            self.content_profile.fmt("{: >5}".format(action_name.lower())) + \
+            self.format_profile.fmt(':') + \
+            self.content_profile.fmt(self.fmt_string.format(name)) + \
             self.format_profile.fmt(']')
 
 
@@ -298,8 +292,7 @@ class LogLine(Widget):
 
         if debug:
             self.columns.extend([
-                Debug(content_profile, format_profile),
-                ActionName(content_profile, format_profile)
+                Debug(content_profile, format_profile)
             ])
 
         self.columns.extend([
