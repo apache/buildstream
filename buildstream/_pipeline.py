@@ -441,7 +441,10 @@ class Pipeline():
             # Make copies from the sandbox into to the desired directory
             sandbox_root = sandbox.get_directory()
             with self.target.timed_activity("Copying files to {}".format(directory)):
-                utils.copy_files(sandbox_root, directory)
+                try:
+                    utils.copy_files(sandbox_root, directory)
+                except OSError as e:
+                    raise PipelineError("Failed to copy files: {}".format(e)) from e
 
     # remove_elements():
     #
