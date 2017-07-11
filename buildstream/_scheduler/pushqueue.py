@@ -35,7 +35,8 @@ class PushQueue(Queue):
     queue_type = QueueType.PUSH
 
     def process(self, element):
-        element._push()
+        # returns whether an artifact was uploaded or not
+        return element._push()
 
     def skip(self, element):
         return not element._built()
@@ -43,4 +44,9 @@ class PushQueue(Queue):
     def done(self, element, result, returncode):
 
         if returncode != 0:
-            return
+            return False
+
+        # Element._push() returns True if it uploaded an artifact,
+        # here we want to appear skipped if the remote already had
+        # the artifact.
+        return not result
