@@ -115,8 +115,10 @@ def build(app, target, variant, all, track):
     try:
         app.pipeline.build(app.scheduler, all, track)
         click.echo("")
+        app.print_summary()
     except PipelineError:
         click.echo("")
+        app.print_summary()
         sys.exit(-1)
 
 
@@ -156,8 +158,10 @@ def fetch(app, target, variant, deps, track, except_):
         app.print_heading(deps=dependencies)
         app.pipeline.fetch(app.scheduler, dependencies, track)
         click.echo("")
+        app.print_summary()
     except PipelineError as e:
         click.echo("{}".format(e))
+        app.print_summary()
         sys.exit(-1)
 
 
@@ -193,8 +197,10 @@ def track(app, target, variant, deps, except_):
         app.print_heading(deps=dependencies)
         app.pipeline.track(app.scheduler, dependencies)
         click.echo("")
+        app.print_summary()
     except PipelineError as e:
         click.echo("{}".format(e))
+        app.print_summary()
         sys.exit(-1)
 
 
@@ -513,6 +519,7 @@ class App():
         self.logger = LogLine(
             self.content_profile,
             self.format_profile,
+            self.success_profile,
             self.error_profile,
             self.detail_profile,
             # Indentation for detailed messages
@@ -713,6 +720,14 @@ class App():
                                   self.main_options['log_file'],
                                   styling=self.colors,
                                   deps=deps)
+
+    #
+    # Print a summary of the queues
+    #
+    def print_summary(self):
+        self.logger.print_summary(self.pipeline, self.scheduler,
+                                  self.main_options['log_file'],
+                                  styling=self.colors)
 
     #
     # Handle messages from the pipeline
