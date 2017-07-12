@@ -767,23 +767,42 @@ class Element(Plugin):
 
         return self.__cache_key
 
+    # _get_full_display_key():
+    #
+    # Returns cache keys for display purposes
+    #
+    # Returns:
+    #    (str): A full hex digest cache key for this Element
+    #    (str): An abbreviated hex digest cache key for this Element
+    #    (bool): True if key should be shown as dim, False otherwise
+    #
+    # Question marks are returned if information for the cache key is missing.
+    #
+    def _get_full_display_key(self):
+        context = self.get_context()
+        cache_key = self._get_cache_key()
+        dim_key = False
+
+        if not cache_key:
+            cache_key = "{:?<64}".format('')
+            # Show unresolved cache keys as dim
+            dim_key = True
+
+        length = min(len(cache_key), context.log_key_length)
+        return (cache_key, cache_key[0:length], dim_key)
+
     # _get_display_key():
     #
     # Returns an abbreviated cache key for display purposes
     #
     # Returns:
-    #    (str): An abbreviated hex digest cache key for this Element, or zeros
+    #    (str): An abbreviated hex digest cache key for this Element
     #
-    # Zeros are returned if information for the cache key is missing.
+    # Question marks are returned if information for the cache key is missing.
     #
     def _get_display_key(self):
-        context = self.get_context()
-        cache_key = self._get_cache_key()
-        if cache_key:
-            length = min(len(cache_key), context.log_key_length)
-            return cache_key[0:length]
-
-        return ("{:?<" + str(context.log_key_length) + "}").format('')
+        _, display_key, _ = self._get_full_display_key()
+        return display_key
 
     # _get_variables()
     #
