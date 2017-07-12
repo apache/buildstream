@@ -130,7 +130,6 @@ class Scheduler():
         self.disconnect_signals()
 
         failed = self.failed_elements()
-        self.queues = None
         self.loop = None
 
         if failed:
