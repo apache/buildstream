@@ -286,19 +286,19 @@ class Pipeline():
 
         self.message(self.target, MessageType.START, "Starting track")
         elapsed, status = scheduler.run([track])
-        changed = len(track.changed_sources)
+        changed = len(track.processed_elements)
 
         if status == SchedStatus.ERROR:
             self.message(self.target, MessageType.FAIL, "Track failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
             self.message(self.target, MessageType.WARN,
-                         "Terminated after tracking {} sources".format(changed),
+                         "Terminated after updating {} source references".format(changed),
                          elapsed=elapsed)
             raise PipelineError()
         else:
             self.message(self.target, MessageType.SUCCESS,
-                         "Tracked {} sources".format(changed),
+                         "Updated {} source references".format(changed),
                          elapsed=elapsed)
 
     # fetch()
@@ -398,33 +398,16 @@ class Pipeline():
 
         self.message(self.target, MessageType.START, "Starting build")
         elapsed, status = scheduler.run(queues)
-        fetched = len(fetch.processed_elements)
         built = len(build.processed_elements)
-        if push:
-            pushed = len(push.processed_elements)
-        else:
-            pushed = 0
-        if pull:
-            pulled = len(pull.processed_elements)
-        else:
-            pulled = 0
 
         if status == SchedStatus.ERROR:
             self.message(self.target, MessageType.FAIL, "Build failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
-            self.message(self.target, MessageType.WARN,
-                         "Terminated after fetching {} elements, ".format(fetched) +
-                         "pulling {} elements, ".format(pulled) +
-                         "building {} elements ".format(built) +
-                         "and pushing {} elements".format(pushed),
-                         elapsed=elapsed)
+            self.message(self.target, MessageType.WARN, "Terminated", elapsed=elapsed)
             raise PipelineError()
         else:
-            self.message(self.target, MessageType.SUCCESS,
-                         "Fetched {} elements, pulled {} elements, built {} elements and pushed {} elements"
-                         .format(fetched, pulled, built, pushed),
-                         elapsed=elapsed)
+            self.message(self.target, MessageType.SUCCESS, "Build Complete", elapsed=elapsed)
 
     # checkout()
     #
@@ -460,7 +443,9 @@ class Pipeline():
             with self.target.timed_activity("Copying files to {}".format(directory)):
                 utils.copy_files(sandbox_root, directory)
 
-    # Internal:
+    # remove_elements():
+    #
+    # Internal function
     #
     # Returns all elements to be removed from the given list of
     # elements when the given removed elements and their unique
