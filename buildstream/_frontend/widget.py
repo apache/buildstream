@@ -226,9 +226,7 @@ class CacheKey(Widget):
         if element_id is not None:
             plugin = _plugin_lookup(element_id)
             if isinstance(plugin, Element):
-                if not plugin._get_cache_key():
-                    missing = True
-                key = plugin._get_display_key()
+                _, key, missing = plugin._get_full_display_key()
 
         if message.message_type in [MessageType.FAIL, MessageType.BUG]:
             text = self.err_profile.fmt(key)
@@ -527,14 +525,8 @@ class LogLine(Widget):
 
         for element in dependencies:
             line = format
-            cache_key = element._get_display_key()
-            full_key = element._get_cache_key()
 
-            # Show unresolved cache keys as dim
-            dim_keys = False
-            if not full_key:
-                dim_keys = True
-                full_key = "{:?<64}".format('')
+            full_key, cache_key, dim_keys = element._get_full_display_key()
 
             line = p.fmt_subst(line, 'name', element.name, fg='blue', bold=True)
             line = p.fmt_subst(line, 'key', cache_key, fg='yellow', dim=dim_keys)
