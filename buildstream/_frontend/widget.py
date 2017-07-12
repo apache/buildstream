@@ -272,7 +272,7 @@ class LogFile(Widget):
 # A widget for formatting a log line
 class LogLine(Widget):
 
-    def __init__(self, content_profile, format_profile, err_profile, detail_profile,
+    def __init__(self, content_profile, format_profile, success_profile, err_profile, detail_profile,
                  indent=4,
                  log_lines=10,
                  message_lines=10,
@@ -280,6 +280,7 @@ class LogLine(Widget):
         super(LogLine, self).__init__(content_profile, format_profile)
 
         self.columns = []
+        self.success_profile = success_profile
         self.err_profile = err_profile
         self.detail_profile = detail_profile
         self.indent = ' ' * indent
@@ -454,7 +455,51 @@ class LogLine(Widget):
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 
-    def format_values(self, values):
+    # Print queue summaries at the end of a scheduler run
+    #
+    def print_summary(self, pipeline, scheduler, log_file, styling=False):
+
+        text = self.content_profile.fmt("Pipeline Summary\n", bold=True)
+        values = OrderedDict()
+        values['Total'] = self.content_profile.fmt(str(pipeline.total_elements))
+        values['Session'] = self.content_profile.fmt(str(pipeline.session_elements))
+
+        processed_maxlen = 1
+        skipped_maxlen = 1
+        failed_maxlen = 1
+        for queue in scheduler.queues:
+            processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
+            skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
+            failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
+
+        for queue in scheduler.queues:
+            processed = str(len(queue.processed_elements))
+            skipped = str(len(queue.skipped_elements))
+            failed = str(len(queue.failed_elements))
+
+            processed_align = ' ' * (processed_maxlen - len(processed))
+            skipped_align = ' ' * (skipped_maxlen - len(skipped))
+            failed_align = ' ' * (failed_maxlen - len(failed))
+
+            status_text = self.content_profile.fmt("processed ") + \
+                self.success_profile.fmt(processed) + \
+                self.format_profile.fmt(', ') + processed_align
+
+            status_text += self.content_profile.fmt("skipped ") + \
+                self.content_profile.fmt(skipped) + \
+                self.format_profile.fmt(', ') + skipped_align
+
+            status_text += self.content_profile.fmt("failed ") + \
+                self.err_profile.fmt(failed) + ' ' + failed_align
+            values["{} Queue".format(queue.action_name)] = status_text
+
+        text += self.format_values(values, style_value=False)
+
+        click.echo(text, color=styling, nl=False)
+        if log_file:
+            click.echo(text, file=log_file, color=False, nl=False)
+
+    def format_values(self, values, style_value=True):
         text = ''
         max_key_len = 0
         for key, value in values.items():
@@ -462,7 +507,10 @@ class LogLine(Widget):
 
         for key, value in values.items():
             text += self.format_profile.fmt("  {}: {}".format(key, ' ' * (max_key_len - len(key))))
-            text += self.content_profile.fmt(str(value))
+            if style_value:
+                text += self.content_profile.fmt(str(value))
+            else:
+                text += str(value)
             text += '\n'
 
         return text
