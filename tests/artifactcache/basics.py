@@ -46,6 +46,7 @@ def build_commit(pipeline):
 
         # commit build output to artifact cache
         pipeline.artifacts.commit(pipeline.target, builddir)
+        pipeline.target._cached(recalculate=True)
 
 
 def test_commit_extract(pipeline):
