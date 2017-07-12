@@ -467,31 +467,32 @@ class LogLine(Widget):
         processed_maxlen = 1
         skipped_maxlen = 1
         failed_maxlen = 1
-        for queue in scheduler.queues:
-            processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
-            skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
-            failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
+        if scheduler.queues is not None:
+            for queue in scheduler.queues:
+                processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
+                skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
+                failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
 
-        for queue in scheduler.queues:
-            processed = str(len(queue.processed_elements))
-            skipped = str(len(queue.skipped_elements))
-            failed = str(len(queue.failed_elements))
+            for queue in scheduler.queues:
+                processed = str(len(queue.processed_elements))
+                skipped = str(len(queue.skipped_elements))
+                failed = str(len(queue.failed_elements))
 
-            processed_align = ' ' * (processed_maxlen - len(processed))
-            skipped_align = ' ' * (skipped_maxlen - len(skipped))
-            failed_align = ' ' * (failed_maxlen - len(failed))
+                processed_align = ' ' * (processed_maxlen - len(processed))
+                skipped_align = ' ' * (skipped_maxlen - len(skipped))
+                failed_align = ' ' * (failed_maxlen - len(failed))
 
-            status_text = self.content_profile.fmt("processed ") + \
-                self.success_profile.fmt(processed) + \
-                self.format_profile.fmt(', ') + processed_align
+                status_text = (self.content_profile.fmt("processed ") +
+                               self.success_profile.fmt(processed) +
+                               self.format_profile.fmt(', ') + processed_align)
 
-            status_text += self.content_profile.fmt("skipped ") + \
-                self.content_profile.fmt(skipped) + \
-                self.format_profile.fmt(', ') + skipped_align
+                status_text += (self.content_profile.fmt("skipped ") +
+                                self.content_profile.fmt(skipped) +
+                                self.format_profile.fmt(', ') + skipped_align)
 
-            status_text += self.content_profile.fmt("failed ") + \
-                self.err_profile.fmt(failed) + ' ' + failed_align
-            values["{} Queue".format(queue.action_name)] = status_text
+                status_text += (self.content_profile.fmt("failed ") +
+                                self.err_profile.fmt(failed) + ' ' + failed_align)
+                values["{} Queue".format(queue.action_name)] = status_text
 
         text += self.format_values(values, style_value=False)
 
