@@ -260,13 +260,13 @@ class StatusHeader():
         size = 5  # Space for the formatting '[', ':', ' ', ' ' and ']'
         size += len(queue.complete_name)
         size += len(processed) + len(skipped) + len(failed)
-        text = self.format_profile.fmt("[") + \
+        text = self.format_profile.fmt("(") + \
             self.content_profile.fmt(queue.complete_name) + \
             self.format_profile.fmt(":") + \
             self.success_profile.fmt(processed) + ' ' + \
             self.content_profile.fmt(skipped) + ' ' + \
             self.error_profile.fmt(failed) + \
-            self.format_profile.fmt("]")
+            self.format_profile.fmt(")")
 
         return (text, size)
 
@@ -299,8 +299,8 @@ class StatusHeader():
 
             # Add spacing
             if self.scheduler.queues.index(queue) > 0:
-                size += 1
-                text += ' '
+                size += 2
+                text += self.format_profile.fmt('→ ')
 
             queue_text, queue_size = self.render_queue(queue)
             size += queue_size
