@@ -280,7 +280,10 @@ class Job():
             self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed,
                          logfile=filename)
 
-            self.child_shutdown(0)
+        # Shutdown needs to stay outside of the above context manager,
+        # make sure we dont try to handle SIGTERM while the process
+        # is already busy in sys.exit()
+        self.child_shutdown(0)
 
     def child_complete(self, pid, returncode, element):
         self.complete(self, returncode, element)
