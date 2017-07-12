@@ -613,6 +613,8 @@ def node_copy(source):
             copy[key] = list_copy(value)
         elif isinstance(value, Provenance):
             copy[key] = value.clone()
+        else:
+            copy[key] = value
 
     ensure_provenance(copy)
 
