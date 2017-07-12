@@ -47,7 +47,8 @@ class PullQueue(Queue):
             return False
 
         # return code is 0 even if artifact was unavailable
-        element._cached(recalculate=True)
+        if element._cached(recalculate=True):
+            element._get_cache_key_from_artifact(recalculate=True)
 
         # Element._pull() returns True if it downloaded an artifact,
         # here we want to appear skipped if we did not download.
