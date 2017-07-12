@@ -48,4 +48,4 @@ class PullQueue(Queue):
 
         # Element._pull() returns True if it downloaded an artifact,
         # here we want to appear skipped if we did not download.
-        return not result
+        return result

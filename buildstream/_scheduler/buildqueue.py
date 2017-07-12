@@ -45,3 +45,5 @@ class BuildQueue(Queue):
         if returncode == 0:
             element._set_cached()
             element._set_built()
+
+        return True

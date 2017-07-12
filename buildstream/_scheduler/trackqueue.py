@@ -42,8 +42,6 @@ class TrackQueue(Queue):
     def __init__(self):
         super(TrackQueue, self).__init__()
 
-        self.changed_sources = []
-
     def process(self, element):
         return element._track()
 
@@ -54,16 +52,16 @@ class TrackQueue(Queue):
     def done(self, element, result, returncode):
 
         if returncode != 0:
-            return
+            return False
+
+        changed = False
 
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
             source = _plugin_lookup(unique_id)
             if source._set_ref(new_ref, source._Source__origin_node):
 
-                # Successful update of ref, we're at least resolved now
-                self.changed_sources.append(source)
-
+                changed = True
                 project = source.get_project()
                 toplevel = source._Source__origin_toplevel
                 filename = source._Source__origin_filename
@@ -86,3 +84,6 @@ class TrackQueue(Queue):
         context._push_message_depth(True)
         element._consistency(recalculate=True)
         context._pop_message_depth()
+
+        # We'll appear as a skipped element if tracking resulted in no change
+        return changed

@@ -49,4 +49,4 @@ class PushQueue(Queue):
         # Element._push() returns True if it uploaded an artifact,
         # here we want to appear skipped if the remote already had
         # the artifact.
-        return not result
+        return result

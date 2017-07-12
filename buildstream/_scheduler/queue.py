@@ -126,9 +126,8 @@ class Queue():
     #    returncode (int): The process return code, 0 = success
     #
     # Returns:
-    #    (bool): True if the element should appear to be skipped,
-    #            this is useful in cases where we can only determine
-    #            "skipped" status after processing.
+    #    (bool): True if the element should appear to be processsed,
+    #            Otherwise False will count the element as "skipped"
     #
     def done(self, element, result, returncode):
         pass
@@ -195,9 +194,9 @@ class Queue():
         # and determine if it should be considered as processed
         # or skipped.
         if self.done(element, job.result, returncode):
-            skip = True
-        else:
             skip = False
+        else:
+            skip = True
 
         if returncode == 0:
             self.done_queue.append(element)

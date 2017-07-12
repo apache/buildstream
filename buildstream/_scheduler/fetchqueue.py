@@ -55,9 +55,11 @@ class FetchQueue(Queue):
     def done(self, element, result, returncode):
 
         if returncode != 0:
-            return
+            return False
 
         for source in element.sources():
 
             # Successful fetch, we must be CACHED now
             source._bump_consistency(Consistency.CACHED)
+
+        return True
