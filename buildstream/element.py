@@ -860,13 +860,22 @@ class Element(Plugin):
     #
     def _get_full_display_key(self):
         context = self.get_context()
-        cache_key = self._get_cache_key()
-        dim_key = False
+        cache_key = None
+        dim_key = True
+
+        if self._consistency() == Consistency.INCONSISTENT:
+            cache_key = None
+        elif context.strict_build_plan or self._cached(strength=_KeyStrength.STRONG):
+            cache_key = self._get_cache_key()
+        elif self._cached():
+            cache_key = self._get_cache_key_from_artifact()
+        elif self._buildable():
+            cache_key = self._get_cache_key_for_build()
 
         if not cache_key:
             cache_key = "{:?<64}".format('')
-            # Show unresolved cache keys as dim
-            dim_key = True
+        elif self._get_cache_key() == cache_key:
+            dim_key = False
 
         length = min(len(cache_key), context.log_key_length)
         return (cache_key, cache_key[0:length], dim_key)
