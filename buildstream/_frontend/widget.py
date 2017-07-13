@@ -459,6 +459,12 @@ class LogLine(Widget):
     #
     def print_summary(self, pipeline, scheduler, log_file, styling=False):
 
+        # Early silent return if there are no queues, can happen
+        # only in the case that the pipeline early returned due to
+        # an inconsistent pipeline state.
+        if scheduler.queues is None:
+            return
+
         text = self.content_profile.fmt("Pipeline Summary\n", bold=True)
         values = OrderedDict()
         values['Total'] = self.content_profile.fmt(str(pipeline.total_elements))
