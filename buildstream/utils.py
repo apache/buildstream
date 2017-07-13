@@ -162,6 +162,10 @@ def safe_copy(src, dest, result=None):
        dest (str): The destination filename
        result (:class:`~.FileListResult`): An optional collective result
 
+    Raises:
+       OSError: In the case of unexpected system call failures
+       shutil.Error: In case of unexpected system call failures
+
     This is almost the same as shutil.copy2(), except that
     we unlink *dest* before overwriting it if it exists, just
     incase *dest* is a hardlink to a different file.
@@ -196,6 +200,10 @@ def safe_move(src, dest, result=None):
        dest (str): The destination filename
        result (:class:`~.FileListResult`): An optional collective result
 
+    Raises:
+       OSError: In the case of unexpected system call failures
+       shutil.Error: In case of unexpected system call failures
+
     This is almost the same as shutil.move(), except that
     we unlink *dest* before overwriting it if it exists, just
     incase *dest* is a hardlink to a different file.
@@ -224,6 +232,10 @@ def safe_link(src, dest, result=None):
        src (str): The source filename
        dest (str): The destination filename
        result (:class:`~.FileListResult`): An optional collective result
+
+    Raises:
+       OSError: In the case of unexpected system call failures
+       shutil.Error: In case of unexpected system call failures
     """
 
     # First unlink the target if it exists
@@ -257,7 +269,7 @@ def safe_remove(path):
        if `path` was a non empty directory.
 
     Raises:
-        OSError: If any other system error occured
+       OSError: In the case of unexpected system call failures
     """
     if os.path.lexists(path):
 
@@ -292,6 +304,10 @@ def copy_files(src, dest, files=None, ignore_missing=False):
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
 
+    Raises:
+       OSError: In the case of unexpected system call failures
+       shutil.Error: In case of unexpected system call failures
+
     .. note::
 
        Directories in `dest` are replaced with files from `src`,
@@ -318,6 +334,10 @@ def move_files(src, dest, files=None, ignore_missing=False):
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
 
+    Raises:
+       OSError: In the case of unexpected system call failures
+       shutil.Error: In case of unexpected system call failures
+
     .. note::
 
        Directories in `dest` are replaced with files from `src`,
@@ -343,6 +363,10 @@ def link_files(src, dest, files=None, ignore_missing=False):
 
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
+
+    Raises:
+       OSError: In the case of unexpected system call failures
+       shutil.Error: In case of unexpected system call failures
 
     .. note::
 
