@@ -2,8 +2,9 @@ import os
 import pytest
 import tempfile
 
-from buildstream import Context, Project
+from buildstream import Context, Project, _yaml
 from buildstream.exceptions import _ArtifactError
+from buildstream.element import _KeyStrength
 from buildstream._artifactcache import ArtifactCache
 from buildstream._pipeline import Pipeline
 
@@ -38,11 +39,24 @@ def test_empty_extract(pipeline):
 def build_commit(pipeline):
     os.makedirs(pipeline.context.builddir, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=pipeline.context.builddir) as builddir:
+        filesdir = os.path.join(builddir, 'files')
+        metadir = os.path.join(builddir, 'meta')
+        os.mkdir(filesdir)
+        os.mkdir(metadir)
+
         # create file as mock build output
-        bindir = os.path.join(builddir, 'bin')
+        bindir = os.path.join(filesdir, 'bin')
         os.mkdir(bindir)
         with open(os.path.join(bindir, 'baz'), 'w') as f:
             f.write('hello, world')
+
+        meta = {
+            'keys': {
+                'strong': pipeline.target._get_cache_key(_KeyStrength.STRONG),
+                'weak': pipeline.target._get_cache_key(_KeyStrength.WEAK),
+            }
+        }
+        _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
         # commit build output to artifact cache
         pipeline.artifacts.commit(pipeline.target, builddir)
@@ -55,7 +69,8 @@ def test_commit_extract(pipeline):
 
     # extract artifact and verify the content
     extractdir = pipeline.artifacts.extract(pipeline.target)
-    with open(os.path.join(extractdir, 'bin', 'baz'), 'r') as f:
+    filesdir = os.path.join(extractdir, 'files')
+    with open(os.path.join(filesdir, 'bin', 'baz'), 'r') as f:
         content = f.read()
         assert(content == 'hello, world')
 
