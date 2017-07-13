@@ -423,6 +423,9 @@ class Pipeline():
         except OSError as e:
             raise PipelineError("Failed to create checkout directory: {}".format(e)) from e
 
+        if not os.access(directory, os.W_OK):
+            raise PipelineError("Directory {} not writable".format(directory))
+
         if not force and os.listdir(directory):
             raise PipelineError("Checkout directory is not empty: {}"
                                 .format(directory))
