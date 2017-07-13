@@ -630,6 +630,43 @@ class Pipeline():
 
         self.open_workspace(scheduler, workspace_dir, source_index, no_checkout,
                             track, False)
+    # push()
+    #
+    # Pushes elements in the pipeline
+    #
+    # Args:
+    #    scheduler (Scheduler): The scheduler to run this pipeline on
+    #    elements (list): List of elements to push
+    #
+    def push(self, scheduler, elements):
+
+        if not self.artifacts.can_push():
+            self.message(self.target, MessageType.FAIL, "Not configured for pushing artifacts")
+
+        plan = elements
+        self.assert_consistent(plan)
+        self.session_elements = len(plan)
+
+        push = PushQueue()
+        push.enqueue(plan)
+        queues = [push]
+
+        self.message(self.target, MessageType.START, "Pushing {} artifacts".format(len(plan)))
+        elapsed, status = scheduler.run(queues)
+        pushed = len(push.processed_elements)
+
+        if status == SchedStatus.ERROR:
+            self.message(self.target, MessageType.FAIL, "Push failed", elapsed=elapsed)
+            raise PipelineError()
+        elif status == SchedStatus.TERMINATED:
+            self.message(self.target, MessageType.WARN,
+                         "Terminated after pushing {} elements".format(pushed),
+                         elapsed=elapsed)
+            raise PipelineError()
+        else:
+            self.message(self.target, MessageType.SUCCESS,
+                         "Pushed {} complete".format(pushed),
+                         elapsed=elapsed)
 
     # remove_elements():
     #
