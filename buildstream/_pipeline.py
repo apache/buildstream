@@ -19,6 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+import datetime
 import os
 import stat
 import shlex
@@ -282,6 +283,21 @@ class Pipeline():
 
         return element
 
+    # Internal: If a remote artifact cache is configured for pushing, check that it
+    # actually works.
+    def assert_remote_artifact_cache(self):
+        if self.artifacts.can_push():
+            starttime = datetime.datetime.now()
+            self.message(self.target, MessageType.START, "Checking connectivity to remote artifact cache")
+            try:
+                self.artifacts.preflight()
+            except _ArtifactError as e:
+                self.message(self.target, MessageType.FAIL, str(e),
+                             elapsed=datetime.datetime.now() - starttime)
+                raise PipelineError()
+            self.message(self.target, MessageType.SUCCESS, "Connectivity OK",
+                         elapsed=datetime.datetime.now() - starttime)
+
     #############################################################
     #                         Commands                          #
     #############################################################
@@ -390,6 +406,8 @@ class Pipeline():
             self.message(self.target, MessageType.WARN, "Unused workspaces",
                          detail="\n".join([el + "-" + str(src) for el, src, _
                                            in self.unused_workspaces]))
+
+        self.assert_remote_artifact_cache()
 
         if build_all or track_first:
             plan = list(self.dependencies(Scope.ALL))

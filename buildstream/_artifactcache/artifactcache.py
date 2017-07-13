@@ -28,6 +28,7 @@ from ..exceptions import _ArtifactError
 from ..element import _KeyStrength
 from .._ostree import OSTreeError
 
+from .pushreceive import check_push_connection
 from .pushreceive import push as push_artifact
 from .pushreceive import PushException
 
@@ -66,6 +67,15 @@ class ArtifactCache():
         self.__remote_refs = None
 
         self.__offline = False
+
+    def preflight(self):
+        if self.can_push() and not self.context.artifact_push.startswith("/"):
+            try:
+                check_push_connection(self.context.artifact_push,
+                                      self.context.artifact_push_port)
+            except PushException as e:
+                raise _ArtifactError("BuildStream will be unable to push artifacts "
+                                     "to the shared cache: {}".format(e))
 
     # contains():
     #
