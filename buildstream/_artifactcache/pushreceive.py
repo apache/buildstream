@@ -326,7 +326,7 @@ class OSTreePusher(object):
             ssh_cmd += ['--verbose']
         if self.debug:
             ssh_cmd += ['--debug']
-        ssh_cmd += [self.remote_path]
+        ssh_cmd += [self.remotepath]
 
         logging.info('Executing {}'.format(' '.join(ssh_cmd)))
         self.ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
@@ -361,7 +361,7 @@ class OSTreePusher(object):
                 raise PushException('Remote repository "%s" does not '
                                     'contain a hostname and path separated '
                                     'by ":"' % self.remotepath)
-            self.remote_host, self.remote_path = parts
+            self.remote_host, self.remotepath = parts
 
     def needed_commits(self, remote, local, needed):
         parent = local
