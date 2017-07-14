@@ -218,7 +218,7 @@ def track(app, target, variant, deps, except_):
 @click.option('--order', default="stage",
               type=click.Choice(['stage', 'alpha']),
               help='Staging or alphabetic ordering of dependencies')
-@click.option('--format', '-f', metavar='FORMAT', default="%{state: >12} %{key} %{name}",
+@click.option('--format', '-f', metavar='FORMAT', default="%{state: >12} %{key} %{name} %{workspace-dirs}",
               type=click.STRING,
               help='Format string for each element')
 @click.option('--variant',
@@ -247,14 +247,16 @@ def show(app, target, variant, deps, except_, order, format):
     the following symbols can be used in the format string:
 
     \b
-        %{name}     The element name
-        %{key}      The abbreviated cache key (if all sources are consistent)
-        %{full-key} The full cache key (if all sources are consistent)
-        %{state}    cached, buildable, waiting or inconsistent
-        %{config}   The element configuration
-        %{vars}     Variable configuration
-        %{env}      Environment settings
-        %{public}   Public domain data
+        %{name}           The element name
+        %{key}            The abbreviated cache key (if all sources are consistent)
+        %{full-key}       The full cache key (if all sources are consistent)
+        %{state}          cached, buildable, waiting or inconsistent
+        %{config}         The element configuration
+        %{vars}           Variable configuration
+        %{env}            Environment settings
+        %{public}         Public domain data
+        %{workspaced}     If the element is workspaced
+        %{workspace-dirs} A list of workspace directories
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
@@ -411,6 +413,117 @@ def source_bundle(app, target, variant, force, directory,
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
+
+
+##################################################################
+#                      Workspace Command                         #
+##################################################################
+@cli.group(short_help="")
+def workspace():
+    pass
+
+
+##################################################################
+#                     Workspace Open Command                     #
+##################################################################
+@workspace.command(short_help="Create a workspace for manual source modification")
+@click.option('--no-checkout', default=False, is_flag=True,
+              help="Do not checkout the source, only link to the given directory")
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Overwrite files existing in checkout directory")
+@click.option('--source', '-s', default=None,
+              help="The source to create a workspace for. Projects with one source may omit this")
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.option('--track', default=False, is_flag=True,
+              help="Track and fetch new source references before checking out the workspace")
+@click.argument('element')
+@click.argument('directory')
+@click.pass_obj
+def open(app, no_checkout, force, source, variant, track, element, directory):
+    app.initialize(element, variant, rewritable=track, inconsistent=track)
+    try:
+        app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
+        click.echo("")
+    except _BstError as e:
+        click.echo("")
+        click.echo("ERROR: {}".format(e))
+        sys.exit(-1)
+
+
+##################################################################
+#                     Workspace Close Command                    #
+##################################################################
+@workspace.command(short_help="Close a workspace created with `workspace open`")
+@click.option('--source', '-s', default=None,
+              help="The source of the workspace to remove. Projects with one source may omit this")
+@click.option('--remove-dir', default=False, is_flag=True,
+              help="Remove the path that contains the closed workspace")
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.argument('element')
+@click.pass_obj
+def close(app, source, remove_dir, variant, element):
+    if remove_dir:
+        if not click.confirm('This will remove all your changes, are you sure?'):
+            click.echo('Aborting')
+            sys.exit(-1)
+
+    app.initialize(element, variant)
+    try:
+        app.pipeline.close_workspace(source, remove_dir)
+        click.echo("")
+    except _BstError as e:
+        click.echo("")
+        click.echo("ERROR: {}".format(e))
+        sys.exit(-1)
+
+
+##################################################################
+#                     Workspace Reset Command                    #
+##################################################################
+@workspace.command(short_help="Reset a workspace to its original state")
+@click.option('--source', '-s', default=None,
+              help="The source of the workspace to reset. Projects with one source may omit this")
+@click.option('--track', default=False, is_flag=True,
+              help="Track and fetch the latest source before resetting")
+@click.option('--no-checkout', default=False, is_flag=True,
+              help="Do not checkout the source, only link to the given directory")
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.confirmation_option(prompt='This will remove all your changes, are you sure?')
+@click.argument('element')
+@click.pass_obj
+def reset(app, source, track, no_checkout, variant, element):
+    app.initialize(element, variant)
+    try:
+        app.pipeline.reset_workspace(app.scheduler, source, track, no_checkout)
+        click.echo("")
+    except _BstError as e:
+        click.echo("")
+        click.echo("ERROR: {}".format(e))
+        sys.exit(-1)
+
+
+##################################################################
+#                     Workspace List Command                     #
+##################################################################
+@workspace.command(name="list", short_help="List open workspaces")
+@click.pass_obj
+def list_(app):
+    project = Project(app.main_options['directory'],
+                      app.host_arch,
+                      app.target_arch)
+
+    logger = LogLine(app.content_profile,
+                     app.format_profile,
+                     app.success_profile,
+                     app.error_profile,
+                     app.detail_profile,
+                     indent=4)
+
+    report = logger.show_workspaces(project._workspaces())
+    click.echo(report, color=app.colors)
 
 
 ##################################################################
