@@ -444,9 +444,20 @@ class OSTreePusher(object):
 
         # Collect commits and objects to push
         commits = set()
+        ref_count = 0
         for branch, revs in update_refs.items():
             logging.info('Updating {} {} to {}'.format(branch, revs[0], revs[1]))
-            needed = self.needed_commits(revs[0], revs[1], commits)
+            try:
+                self.needed_commits(revs[0], revs[1], commits)
+                ref_count += 1
+            except PushExistsException:
+                if exc_info is None:
+                    exc_info = sys.exc_info()
+
+        # Re-raise PushExistsException if all refs exist already
+        if ref_count == 0:
+            raise exc_info[0].with_traceback(exc_info[1], exc_info[2])
+
         logging.info('Enumerating objects to send')
         objects = self.needed_objects(commits)
 
@@ -560,7 +571,7 @@ class OSTreeReceiver(object):
 #   repo: The local repository path
 #   remote: The ssh remote url to push to
 #   remote_port: The ssh port at the remote url
-#   branch: The ref to push
+#   branches: The refs to push
 #   output: The output where logging should go
 #
 # Returns:
@@ -570,12 +581,12 @@ class OSTreeReceiver(object):
 # Raises:
 #   PushException if there was an error
 #
-def push(repo, remote, remote_port, branch, output):
+def push(repo, remote, remote_port, branches, output):
 
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=logging.INFO, stream=output)
 
-    pusher = OSTreePusher(repo, remote, remote_port, [branch], True, False, output=output)
+    pusher = OSTreePusher(repo, remote, remote_port, branches, True, False, output=output)
 
     def terminate_push():
         pusher.close()
@@ -590,7 +601,7 @@ def push(repo, remote, remote_port, branch, output):
         except PushExistsException:
             # If the commit already existed, just bail out
             # on the push and dont bother re-raising the error
-            logging.info("Ref {} was already present in remote {}".format(branch, remote))
+            logging.info("Ref {} was already present in remote {}".format(branches, remote))
             terminate_push()
             return False
 

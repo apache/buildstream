@@ -245,7 +245,7 @@ class ArtifactCache():
                         pushed = push_artifact(temp_repo.get_path().get_path(),
                                                self.context.artifact_push,
                                                self.context.artifact_push_port,
-                                               ref, output_file)
+                                               [ref], output_file)
                     except PushException as e:
                         raise _ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
 
