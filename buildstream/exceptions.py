@@ -128,3 +128,7 @@ class ProgramNotFoundError(_BstError):
     bubblewrap is installed for it to work.
     """
     pass
+
+
+class _ArtifactError(_BstError):
+    pass

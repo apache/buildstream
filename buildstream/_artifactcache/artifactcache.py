@@ -22,19 +22,14 @@ import os
 import tempfile
 
 from .. import _ostree, utils
-from ..exceptions import _BstError
+from ..exceptions import _ArtifactError
 from .._ostree import OSTreeError
 
 from .pushreceive import push as push_artifact
 from .pushreceive import PushException
 
 
-# For users of this file, they must expect (except) it.
-class ArtifactError(_BstError):
-    pass
-
-
-def buildref(element):
+def buildref(element, key):
     project = element.get_project()
     key = element._get_cache_key()
 
@@ -109,7 +104,7 @@ class ArtifactCache():
     #     element (Element): The Element to extract
     #
     # Raises:
-    #     ArtifactError: In cases there was an OSError, or if the artifact
+    #     _ArtifactError: In cases there was an OSError, or if the artifact
     #                    did not exist.
     #
     # Returns: path to extracted artifact
@@ -125,7 +120,7 @@ class ArtifactCache():
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, ref)
         if not rev:
-            raise ArtifactError("Artifact missing for {}".format(ref))
+            raise _ArtifactError("Artifact missing for {}".format(ref))
 
         os.makedirs(self.extractdir, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix='tmp', dir=self.extractdir) as tmpdir:
@@ -144,8 +139,8 @@ class ArtifactCache():
                 # If rename fails with these errors, another process beat
                 # us to it so just ignore.
                 if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
-                    raise ArtifactError("Failed to extract artifact for ref '{}': {}"
-                                        .format(ref, e)) from e
+                    raise _ArtifactError("Failed to extract artifact for ref '{}': {}"
+                                         .format(ref, e)) from e
 
         return dest
 
@@ -186,15 +181,15 @@ class ArtifactCache():
         elif self.remote is not None:
             remote = self.remote
         else:
-            raise ArtifactError("Attempt to pull artifact without any pull URL")
+            raise _ArtifactError("Attempt to pull artifact without any pull URL")
 
         ref = buildref(element)
         try:
             _ostree.fetch(self.repo, remote=remote,
                           ref=ref, progress=progress)
         except OSTreeError as e:
-            raise ArtifactError("Failed to pull artifact for element {}: {}"
-                                .format(element.name, e)) from e
+            raise _ArtifactError("Failed to pull artifact for element {}: {}"
+                                 .format(element.name, e)) from e
 
     # can_push():
     #
@@ -217,11 +212,11 @@ class ArtifactCache():
     #           and no updated was required
     #
     # Raises:
-    #   ArtifactError if there was an error
+    #   _ArtifactError if there was an error
     def push(self, element):
 
         if self.context.artifact_push is None:
-            raise ArtifactError("Attempt to push artifact without any push URL")
+            raise _ArtifactError("Attempt to push artifact without any push URL")
 
         ref = buildref(element)
         if self.context.artifact_push.startswith("/"):
@@ -252,6 +247,6 @@ class ArtifactCache():
                                                self.context.artifact_push_port,
                                                ref, output_file)
                     except PushException as e:
-                        raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
+                        raise _ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
 
                 return pushed

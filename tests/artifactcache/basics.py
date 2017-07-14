@@ -3,7 +3,8 @@ import pytest
 import tempfile
 
 from buildstream import Context, Project
-from buildstream._artifactcache import ArtifactCache, ArtifactError
+from buildstream.exceptions import _ArtifactError
+from buildstream._artifactcache import ArtifactCache
 from buildstream._pipeline import Pipeline
 
 DATA_DIR = os.path.join(
@@ -30,7 +31,7 @@ def test_empty_contains(pipeline):
 
 # Test that we get an ArtifactError when trying to extract a nonexistent artifact
 def test_empty_extract(pipeline):
-    with pytest.raises(ArtifactError) as exc:
+    with pytest.raises(_ArtifactError) as exc:
         pipeline.artifacts.extract(pipeline.target)
 
 

@@ -33,10 +33,9 @@ import shutil
 from . import _yaml
 from ._yaml import CompositePolicy
 from ._variables import Variables
-from .exceptions import _BstError
+from .exceptions import _BstError, _ArtifactError
 from . import LoadError, LoadErrorReason, ElementError, ImplError
 from ._sandboxbwrap import SandboxBwrap
-from ._artifactcache import ArtifactError
 from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
 from . import utils
@@ -940,7 +939,7 @@ class Element(Plugin):
             display_key = self._get_display_key()
             self.info("Downloaded artifact {}".format(display_key))
             downloaded = True
-        except ArtifactError:
+        except _ArtifactError:
             # Just return false, so that the frontend knows that
             # the artifact was not downloaded
             #

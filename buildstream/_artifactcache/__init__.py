@@ -18,7 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .artifactcache import ArtifactCache, ArtifactError
+from .artifactcache import ArtifactCache
 
 # Entry points for our local ostree-push implementation
 from .pushreceive import receive_main
