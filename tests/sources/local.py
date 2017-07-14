@@ -48,7 +48,7 @@ def test_unique_key(tmpdir, datafiles):
     assert(setup.source.get_kind() == 'local')
 
     # Get the unique key
-    unique_key = setup.source.get_unique_key()
+    unique_key = setup.source._get_unique_key()
 
     # No easy way to test this, let's just check that the
     # returned 'thing' is an array of tuples and the first element
