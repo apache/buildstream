@@ -19,6 +19,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import hashlib
+import tempfile
 import shutil
 from contextlib import contextmanager
 
@@ -67,6 +69,7 @@ class Source(Plugin):
         self.__origin_toplevel = meta.origin_toplevel   # Toplevel YAML node for the file
         self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
         self.__consistency = None                       # Cached consistency state
+        self.__workspace = None                         # Directory of the currently active workspace
 
         self.configure(meta.config)
 
@@ -227,7 +230,20 @@ class Source(Plugin):
         if self.__directory is not None:
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
         os.makedirs(directory, exist_ok=True)
-        self.stage(directory)
+
+        if self._has_workspace():
+            self._stage_workspace(directory)
+        else:
+            self.stage(directory)
+
+    # Wrapper for get_unique_key() api that returns a key for a
+    # workspace if a workspace is active.
+    #
+    def _get_unique_key(self):
+        if self._has_workspace():
+            return self._get_workspace_key()
+        else:
+            return self.get_unique_key()
 
     # Wrapper for set_ref(), also returns whether it changed.
     #
@@ -255,3 +271,63 @@ class Source(Plugin):
             self.info("Found new revision: {}".format(new_ref))
 
         return new_ref
+
+    # Set the current workspace directory
+    #
+    def _set_workspace(self, directory):
+        self.__workspace = directory
+
+    # Return the current workspace directory
+    def _get_workspace(self):
+        return self.__workspace
+
+    # Delete the workspace
+    #
+    def _del_workspace(self):
+        self.__workspace = None
+
+    # Whether the source has a set workspace
+    #
+    def _has_workspace(self):
+        return self.__workspace is not None
+
+    # Stage the workspace
+    #
+    def _stage_workspace(self, directory):
+        fullpath = os.path.join(self.get_project().directory, self.__workspace)
+
+        with self.timed_activity("Staging local files at {}".format(self.__workspace)):
+            if os.path.isdir(fullpath):
+                utils.copy_files(fullpath, directory)
+            else:
+                destfile = os.path.join(directory, os.path.basename(self.__workspace))
+                utils.safe_copy(fullpath, destfile)
+
+    # Get a unique key for the workspace
+    def _get_workspace_key(self):
+        fullpath = os.path.join(self.get_project().directory, self.__workspace)
+
+        # Get a list of tuples of the the project relative paths and fullpaths
+        if os.path.isdir(fullpath):
+            filelist = utils.list_relative_paths(fullpath)
+            filelist = [(relpath, os.path.join(fullpath, relpath)) for relpath in filelist]
+        else:
+            filelist = [(self.__workspace, fullpath)]
+
+        # Return a list of (relative filename, sha256 digest) tuples, a sorted list
+        # has already been returned by list_relative_paths()
+        return [(relpath, sha256sum(fullpath)) for relpath, fullpath in filelist]
+
+
+# Get the sha256 sum for the content of a file
+def sha256sum(filename):
+
+    # If it's a directory or symlink, just return 0 string
+    if os.path.isdir(filename) or os.path.islink(filename):
+        return "0"
+
+    h = hashlib.sha256()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            h.update(chunk)
+    return h.hexdigest()
