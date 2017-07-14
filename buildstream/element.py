@@ -135,6 +135,8 @@ class Element(Plugin):
         self.__config = self.__extract_config(meta)
         self.configure(self.__config)
 
+        self.__workspaced_artifact = None
+
     def __lt__(self, other):
         return self.name < other.name
 
@@ -708,6 +710,17 @@ class Element(Plugin):
             raise ElementError("{}: Missing artifact {}"
                                .format(self, self._get_display_key()))
 
+    # _tainted():
+    #
+    # Returns:
+    #    (bool) Whether this element should be excluded from pushing.
+    #
+    def _tainted(self):
+        workspaced = self._workspaced_artifact()
+
+        # Other conditions should be or-ed
+        return workspaced
+
     # _set_built():
     #
     # Forcefully set the built state on the element.
@@ -743,7 +756,6 @@ class Element(Plugin):
     # None is returned if information for the cache key is missing.
     #
     def __calculate_cache_key(self, dependencies):
-
         # It is not really necessary to check if the Source object's
         # local mirror has the ref cached locally or not, it's only important
         # to know if the source has a ref specified or not, in order to
@@ -770,7 +782,7 @@ class Element(Plugin):
             'project': project._get_cache_key(),
             'element': self.get_unique_key(),
             'environment': cache_env,
-            'sources': [s.get_unique_key() for s in self.__sources],
+            'sources': [s._get_unique_key() for s in self.__sources],
             'dependencies': dependencies,
             'public': self.__public
         })
@@ -991,10 +1003,12 @@ class Element(Plugin):
                     # Store public data
                     _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
+                    # Store artifact metadata
                     dependencies = {
                         e.name: e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
                     }
                     meta = {
+                        'workspaced': self._workspaced(),
                         'keys': {
                             'strong': self._get_cache_key_for_build(),
                             'weak': self._get_cache_key(_KeyStrength.WEAK),
@@ -1063,6 +1077,12 @@ class Element(Plugin):
     def _push(self):
         self._assert_cached()
 
+        if self._tainted():
+            self.warn("Not pushing tainted artifact.",
+                      detail=("The artifact was built with a workspaced source"
+                              if self._workspaced_artifact() else ""))
+            return False
+
         with self.timed_activity("Pushing Artifact"):
             return self.__artifacts.push(self)
 
@@ -1102,6 +1122,41 @@ class Element(Plugin):
 
         os.makedirs(directory, exist_ok=True)
         return os.path.join(directory, logfile)
+
+    # Set a source's workspace
+    #
+    def _set_source_workspace(self, source_index, path):
+        self.__sources[source_index]._set_workspace(path)
+
+    # Whether this element has a source that is workspaced.
+    #
+    def _workspaced(self):
+        return any(source._has_workspace() for source in self.sources())
+
+    # Get all source workspace directories.
+    #
+    def _workspace_dirs(self):
+        for source in self.sources():
+            if source._has_workspace():
+                yield source._get_workspace()
+
+    # _workspaced_artifact():
+    #
+    # Returns whether the current artifact is workspaced.
+    #
+    # Returns:
+    #    (bool): Whether the current artifact is workspaced.
+    #
+    def _workspaced_artifact(self):
+
+        if self.__workspaced_artifact is None:
+            self._assert_cached(recalculate=False)
+
+            metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+            meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
+            self.__workspaced_artifact = meta['workspaced']
+
+        return self.__workspaced_artifact
 
     # Run some element methods with logging directed to
     # a dedicated log file, here we yield the filename
