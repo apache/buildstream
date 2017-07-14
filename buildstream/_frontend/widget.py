@@ -17,6 +17,7 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+import os
 import click
 import subprocess
 import datetime
@@ -519,6 +520,23 @@ class LogLine(Widget):
 
         return text
 
+    def show_workspaces(self, workspaces):
+        text = ''
+        p = Profile()
+        format = "%{name}-%{index}:\t%{path}"
+        text += self.content_profile.fmt("Workspaces\n", bold=True)
+
+        for element_name, source_index, workspace in workspaces:
+            line = format
+
+            line = p.fmt_subst(line, 'name', element_name, fg='blue')
+            line = p.fmt_subst(line, 'index', source_index, fg='yellow')
+            line = p.fmt_subst(line, 'path', workspace.replace(os.getenv('HOME', '/root'), '~'), fg='green')
+
+            text += line + '\n'
+
+        return text
+
     def show_pipeline(self, dependencies, format):
         report = ''
         p = Profile()
@@ -572,6 +590,23 @@ class LogLine(Widget):
                 line = p.fmt_subst(
                     line, 'public',
                     yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+
+            # Workspaced
+            if "%{workspaced" in format:
+                line = p.fmt_subst(
+                    line, 'workspaced',
+                    '(workspaced)' if element._workspaced() else '', fg='yellow')
+
+            # Workspace-dirs
+            if "%{workspace-dirs" in format:
+                dirs = [path.replace(os.getenv('HOME', '/root'), '~')
+                        for path in element._workspace_dirs()]
+                if len(dirs) > 0:
+                    line = p.fmt_subst(
+                        line, 'workspace-dirs', "Workspaces: " + ", ".join(dirs))
+                else:
+                    line = p.fmt_subst(
+                        line, 'workspace-dirs', '')
 
             report += line + '\n'
 
