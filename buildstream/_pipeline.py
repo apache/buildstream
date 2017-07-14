@@ -22,10 +22,11 @@
 import os
 import stat
 import shlex
+import shutil
 import tarfile
+from operator import itemgetter
 from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
-from operator import itemgetter
 
 from .exceptions import _BstError
 from ._message import Message, MessageType
@@ -33,9 +34,7 @@ from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
-from .plugin import _plugin_lookup
-from . import Element
-from . import SourceError, ElementError, Consistency, ImplError
+from . import Consistency, ImplError, LoadError
 from . import Scope
 from . import _site
 from . import _yaml, utils
@@ -135,6 +134,7 @@ class Pipeline():
         self.artifacts = ArtifactCache(self.context)
         self.session_elements = 0
         self.total_elements = 0
+        self.unused_workspaces = []
 
         pluginbase = PluginBase(package='buildstream.plugins')
         self.element_factory = ElementFactory(pluginbase, project._plugin_element_paths)
@@ -156,6 +156,15 @@ class Pipeline():
             plugin.preflight()
 
         self.total_elements = len(list(self.dependencies(Scope.ALL)))
+
+        for element_name, source, workspace in project._workspaces():
+            element = self.target.search(Scope.ALL, element_name)
+
+            if element is None:
+                self.unused_workspaces.append((element_name, source, workspace))
+                continue
+
+            self.project._set_workspace(element, source, workspace)
 
         for element in self.dependencies(Scope.ALL):
             if cache_ticker:
@@ -364,6 +373,10 @@ class Pipeline():
     #    track_first (bool): Track sources before fetching and building (implies build_all)
     #
     def build(self, scheduler, build_all, track_first):
+        if len(self.unused_workspaces) > 0:
+            self.message(self.target, MessageType.WARN, "Unused workspaces",
+                         detail="\n".join([el + "-" + str(src) for el, src, _
+                                           in self.unused_workspaces]))
 
         if build_all or track_first:
             plan = list(self.dependencies(Scope.ALL))
@@ -449,6 +462,144 @@ class Pipeline():
                 except OSError as e:
                     raise PipelineError("Failed to copy files: {}".format(e)) from e
 
+    # open_workspace
+    #
+    # Open a project workspace.
+    #
+    # Args:
+    #    directory (str): The directory to stage the source in
+    #    source_index (int): The index of the source to stage
+    #    no_checkout (bool): Whether to skip checking out the source
+    #    track_first (bool): Whether to track and fetch first
+    #    force (bool): Whether to ignore contents in an existing directory
+    #
+    def open_workspace(self, scheduler, directory, source_index, no_checkout, track_first, force):
+        workdir = os.path.abspath(directory)
+        sources = list(self.target.sources())
+        source_index = self.validate_workspace_index(source_index)
+
+        # Check directory
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as e:
+            raise PipelineError("Failed to create workspace directory: {}".format(e)) from e
+
+        if not force and os.listdir(directory):
+            raise PipelineError("Checkout directory is not empty: {}".format(directory))
+
+        # Check for workspace config
+        if self.project._get_workspace(self.target.name, source_index):
+            raise PipelineError("Workspace '{}' is already defined."
+                                .format(self.target.name + " - " + str(source_index)))
+
+        plan = [self.target]
+
+        # Track/fetch if required
+        queues = []
+        track = None
+
+        if track_first:
+            track = TrackQueue()
+            queues.append(track)
+        if not no_checkout or track_first:
+            fetch = FetchQueue(skip_cached=True)
+            queues.append(fetch)
+
+        if len(queues) > 0:
+            queues[0].enqueue(plan)
+
+            elapsed, status = scheduler.run(queues)
+            fetched = len(fetch.processed_elements)
+
+            if status == SchedStatus.ERROR:
+                self.message(self.target, MessageType.FAIL, "Tracking failed", elapsed=elapsed)
+                raise PipelineError()
+            elif status == SchedStatus.TERMINATED:
+                self.message(self.target, MessageType.WARN,
+                             "Terminated after fetching {} elements".format(fetched),
+                             elapsed=elapsed)
+                raise PipelineError()
+            else:
+                self.message(self.target, MessageType.SUCCESS,
+                             "Fetched {} elements".format(fetched), elapsed=elapsed)
+
+        if not no_checkout:
+            source = sources[source_index]
+            with self.target.timed_activity("Staging source to {}".format(directory)):
+                if source.get_consistency() != Consistency.CACHED:
+                    raise PipelineError("Could not stage uncached source. " +
+                                        "Use `--track` to track and " +
+                                        "fetch the latest version of the " +
+                                        "source.")
+                source._stage(directory)
+
+        self.project._set_workspace(self.target, source_index, workdir)
+
+        with self.target.timed_activity("Saving workspace configuration"):
+            self.project._save_workspace_config()
+
+    # close_workspace
+    #
+    # Close a project workspace
+    #
+    # Args:
+    #    source_index (int) - The index of the source
+    #    remove_dir (bool) - Whether to remove the associated directory
+    #
+    def close_workspace(self, source_index, remove_dir):
+        source_index = self.validate_workspace_index(source_index)
+
+        # Remove workspace directory if prompted
+        if remove_dir:
+            path = self.project._get_workspace(self.target.name, source_index)
+            if path is not None:
+                with self.target.timed_activity("Removing workspace directory {}"
+                                                .format(path)):
+                    try:
+                        shutil.rmtree(path)
+                    except OSError as e:
+                        raise PipelineError("Could not remove  '{}': {}"
+                                            .format(path, e)) from e
+
+        # Delete the workspace config entry
+        with self.target.timed_activity("Removing workspace"):
+            try:
+                self.project._delete_workspace(self.target.name, source_index)
+            except KeyError:
+                raise PipelineError("Workspace '{}' is currently not defined"
+                                    .format(self.target.name + " - " + str(source_index)))
+
+        # Update workspace config
+        self.project._save_workspace_config()
+
+    # reset_workspace
+    #
+    # Reset a workspace to its original state, discarding any user
+    # changes.
+    #
+    # Args:
+    #    scheduler: The app scheduler
+    #    source_index (int): The index of the source to reset
+    #    track (bool): Whether to also track the source
+    #    no_checkout (bool): Whether to check out the source (at all)
+    #
+    def reset_workspace(self, scheduler, source_index, track, no_checkout):
+        source_index = self.validate_workspace_index(source_index)
+        workspace_dir = self.project._get_workspace(self.target.name, source_index)
+
+        if workspace_dir is None:
+            raise PipelineError("Workspace '{}' is currently not defined"
+                                .format(self.target.name + " - " + str(source_index)))
+
+        self.close_workspace(source_index, True)
+
+        # Reset source to avoid checking out the (now empty) workspace
+        source = list(self.target.sources())[source_index]
+        source._del_workspace()
+
+        self.open_workspace(scheduler, workspace_dir, source_index, no_checkout,
+                            track, False)
+
     # remove_elements():
     #
     # Internal function
@@ -495,6 +646,19 @@ class Pipeline():
             to_remove = to_remove.union([e for e in tree if e.name in removed])
 
         return [element for element in tree if element not in to_remove]
+
+    def validate_workspace_index(self, source_index):
+        sources = list(self.target.sources())
+
+        # Validate source_index
+        if len(sources) < 1:
+            raise PipelineError("The given element has no sources")
+        if len(sources) == 1 and source_index is None:
+            source_index = 0
+        if source_index is None:
+            raise PipelineError("An index needs to be specified for elements with more than one source")
+
+        return source_index
 
     # Various commands define a --deps option to specify what elements to
     # use in the result, this function reports a list that is appropriate for
