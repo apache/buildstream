@@ -33,7 +33,7 @@ from . import _site
 from . import _yaml
 from . import _loader  # For resolve_arch()
 from ._profile import Topics, profile_start, profile_end
-
+from . import LoadError, LoadErrorReason
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -68,6 +68,7 @@ class Project():
         self._environment = {}  # The base sandbox environment
         self._elements = {}     # Element specific configurations
         self._aliases = {}      # Aliases dictionary
+        self.__workspaces = {}   # Workspaces
         self._plugin_source_paths = []   # Paths to custom sources
         self._plugin_element_paths = []  # Paths to custom plugins
         self._cache_key = None
@@ -159,6 +160,113 @@ class Project():
 
         # Element configurations
         self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
+
+        # Workspace configurations
+        self.__workspaces = self._load_workspace_config()
+
+    # _workspaces()
+    #
+    # Generator function to enumerate workspaces.
+    #
+    # Yields:
+    #    A tuple in the following format: (element, source, path).
+    def _workspaces(self):
+        for element in self.__workspaces:
+            if element == _yaml.PROVENANCE_KEY:
+                continue
+            for source in self.__workspaces[element]:
+                if source == _yaml.PROVENANCE_KEY:
+                    continue
+                yield (element, int(source), self.__workspaces[element][source])
+
+    # _get_workspace()
+    #
+    # Get the path of the workspace source associated with the given
+    # element's source at the given index
+    #
+    # Args:
+    #    element (str) - The element name
+    #    index (int) - The source index
+    #
+    # Returns:
+    #    None if no workspace is open, the path to the workspace
+    #    otherwise
+    #
+    def _get_workspace(self, element, index):
+        try:
+            return self.__workspaces[element][index]
+        except KeyError:
+            return None
+
+    # _set_workspace()
+    #
+    # Set the path of the workspace associated with the given
+    # element's source at the given index
+    #
+    # Args:
+    #    element (str) - The element name
+    #    index (int) - The source index
+    #    path (str) - The path to set the workspace to
+    #
+    def _set_workspace(self, element, index, path):
+        if element.name not in self.__workspaces:
+            self.__workspaces[element.name] = {}
+
+        self.__workspaces[element.name][index] = path
+        element._set_source_workspace(index, path)
+
+    # _delete_workspace()
+    #
+    # Remove the workspace from the workspace element. Note that this
+    # does *not* remove the workspace from the stored yaml
+    # configuration, call _save_workspace_config() afterwards.
+    #
+    # Args:
+    #    element (str) - The element name
+    #    index (int) - The source index
+    #
+    def _delete_workspace(self, element, index):
+        del self.__workspaces[element][index]
+
+        # Contains a provenance object
+        if len(self.__workspaces[element]) == 1:
+            del self.__workspaces[element]
+
+    # _load_workspace_config()
+    #
+    # Load the workspace configuration and return a node containing
+    # all open workspaces for the project
+    #
+    # Returns:
+    #
+    #    A node containing a dict that assigns projects to their
+    #    workspaces. For example:
+    #
+    #        amhello.bst: {
+    #            0: /home/me/automake,
+    #            1: /home/me/amhello
+    #        }
+    #
+    def _load_workspace_config(self):
+        os.makedirs(os.path.join(self.directory, ".bst"), exist_ok=True)
+        workspace_file = os.path.join(self.directory, ".bst", "workspaces.yml")
+        try:
+            open(workspace_file, "a").close()
+        except IOError as e:
+            raise LoadError(LoadErrorReason.MISSING_FILE,
+                            "Could not load workspace config: {}".format(e)) from e
+
+        return _yaml.load(workspace_file)
+
+    # _save_workspace_config()
+    #
+    # Dump the current workspace element to the project configuration
+    # file. This makes any changes performed with _delete_workspace or
+    # _set_workspace permanent
+    #
+    def _save_workspace_config(self):
+        _yaml.dump(_yaml.node_sanitize(self.__workspaces),
+                   os.path.join(self.directory, ".bst", "workspaces.yml"))
 
     def _extract_plugin_paths(self, node, name):
         if not node:
