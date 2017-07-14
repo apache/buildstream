@@ -563,7 +563,7 @@ def node_sanitize(node):
 
         result = SanitizedDict()
 
-        for key in sorted(node):
+        for key in sorted(node, key=lambda s: (s == PROVENANCE_KEY, s)):
             if key == PROVENANCE_KEY:
                 continue
             result[key] = node_sanitize(node[key])
