@@ -143,6 +143,7 @@ class Element(Plugin):
         self.__config = self.__extract_config(meta)
         self.configure(self.__config)
 
+        self.__tainted = None
         self.__workspaced_artifact = None
 
     def __lt__(self, other):
@@ -720,14 +721,26 @@ class Element(Plugin):
 
     # _tainted():
     #
-    # Returns:
-    #    (bool) Whether this element should be excluded from pushing.
+    # Args:
+    #    recalculate (bool) - Whether to force recalculation
     #
-    def _tainted(self):
-        workspaced = self._workspaced_artifact()
+    # Returns:
+    #    (bool) False if this artifact should be excluded from pushing.
+    #
+    def _tainted(self, recalculate=False):
+        if recalculate or self.__tainted is None:
 
-        # Other conditions should be or-ed
-        return workspaced
+            # Whether this artifact has a workspace
+            workspaced = self._workspaced_artifact()
+
+            # Whether this artifact's dependencies are tainted
+            dependencies = any(d._tainted() for d in self.dependencies(Scope.BUILD)
+                               if d != self)
+
+            # Other conditions should be or-ed
+            self.__tainted = workspaced or dependencies
+
+        return self.__tainted
 
     # _set_built():
     #
@@ -1086,9 +1099,7 @@ class Element(Plugin):
         self._assert_cached()
 
         if self._tainted():
-            self.warn("Not pushing tainted artifact.",
-                      detail=("The artifact was built with a workspaced source"
-                              if self._workspaced_artifact() else ""))
+            self.warn("Not pushing tainted artifact.")
             return False
 
         with self.timed_activity("Pushing Artifact"):
