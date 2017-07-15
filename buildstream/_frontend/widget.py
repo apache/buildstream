@@ -545,6 +545,9 @@ class LogLine(Widget):
                 else:
                     line = p.fmt_subst(line, 'state', "waiting", fg='blue')
 
+            # The variant
+            line = p.fmt_subst(line, 'variant', element.variant or "", fg='yellow', bold=True, dim=True)
+
             # Element configuration
             if "%{config" in format:
                 config = _yaml.node_sanitize(element._Element__config)
