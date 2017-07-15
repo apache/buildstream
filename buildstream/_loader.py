@@ -61,12 +61,14 @@ class Symbol():
 # A simple dependency object
 #
 class Dependency():
-    def __init__(self, owner_name, name, variant_name=None, filename=None, dep_type=None):
+    def __init__(self, owner_name, name, variant_name=None, filename=None,
+                 dep_type=None, provenance=None):
         self.owner = owner_name
         self.name = name
         self.variant_name = variant_name
         self.filename = filename
         self.dep_type = dep_type
+        self.provenance = provenance
 
 
 # Holds a variant dictionary and normalized Dependency list
@@ -79,6 +81,34 @@ class Variant():
         self.dependencies = extract_depends_from_node(owner, self.data)
 
         del self.data[Symbol.VARIANT]
+
+
+# VariantDisagreement is raised to indicate that 2 elements
+# depend on a given element in a way that conflicts
+#
+class VariantDisagreement(Exception):
+    def __init__(self, element_config, dependency):
+        super(VariantDisagreement, self).__init__(
+            "Variant disagreement occurred.\n"
+            "Element '%s' requested element '%s (%s)'\n"
+            "Element '%s' requested element '%s (%s)" %
+            (element_config.dependency.owner, element_config.filename,
+             element_config.dependency.variant_name,
+             dependency.owner, element_config.filename,
+             dependency.variant_name))
+
+
+# VariantInvalid is raised to indicate that a nonexisting
+# variant name on an element was requested
+#
+class VariantInvalid(Exception):
+    def __init__(self, dependency, element, variant_name):
+        message = "Variant '{}' is invalid for element {}" \
+                  .format(variant_name, element.name)
+        if dependency:
+            message = "{}: {}".format(dependency.provenance, message)
+
+        super(VariantInvalid, self).__init__(message)
 
 
 # A utility object wrapping the LoadElement, this represents
@@ -95,21 +125,6 @@ class LoadElementConfig():
         self.filename = element.filename
         self.variant_name = variant_name
         self.deps = element.deps_for_variant(variant_name)
-
-
-# VariantError is raised to indicate that 2 elements
-# depend on a given element in a way that conflicts
-#
-class VariantError(Exception):
-    def __init__(self, element_config, dependency):
-        super(VariantError, self).__init__(
-            "Variant disagreement occurred.\n"
-            "Element '%s' requested element '%s (%s)'\n"
-            "Element '%s' requested element '%s (%s)" %
-            (element_config.dependency.owner, element_config.filename,
-             element_config.dependency.variant_name,
-             dependency.owner, element_config.filename,
-             dependency.variant_name))
 
 
 # resolve_arch()
@@ -316,9 +331,10 @@ def extract_depends_from_node(owner, data):
     output_deps = []
 
     for dep in depends:
+        dep_provenance = _yaml.node_get_provenance(data, key=Symbol.DEPENDS, indices=[depends.index(dep)])
 
         if isinstance(dep, str):
-            dependency = Dependency(owner, dep, filename=dep)
+            dependency = Dependency(owner, dep, filename=dep, provenance=dep_provenance)
 
         elif isinstance(dep, Mapping):
             # Make variant optional, for this we set it to None after
@@ -337,7 +353,8 @@ def extract_depends_from_node(owner, data):
                                 (str(provenance), dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
-            dependency = Dependency(owner, filename, variant_name=variant, filename=filename, dep_type=dep_type)
+            dependency = Dependency(owner, filename, variant_name=variant, filename=filename,
+                                    dep_type=dep_type, provenance=dep_provenance)
 
         else:
             index = depends.index(dep)
@@ -392,7 +409,6 @@ class Loader():
         self.host_arch = host_arch
         self.target_arch = target_arch
 
-        self.loaded_files = {}   # Table of files we've already loaded
         self.meta_elements = {}  # Dict of resolved meta elements by name
         self.elements = {}       # Dict of elements
 
@@ -417,7 +433,14 @@ class Loader():
         # First pass, recursively load files and populate our table of LoadElements
         #
         profile_start(Topics.LOAD_PROJECT, self.target_filename)
-        self.load_file(self.target_filename, rewritable, ticker)
+
+        try:
+            target = self.load_file(self.target_filename, rewritable, ticker)
+            if self.target_variant and target.lookup_variant(self.target_variant) is None:
+                raise VariantInvalid(None, target, self.target_variant)
+        except VariantInvalid as e:
+            raise LoadError(LoadErrorReason.INVALID_VARIANT, str(e)) from e
+
         profile_end(Topics.LOAD_PROJECT, self.target_filename)
 
         #
@@ -454,16 +477,8 @@ class Loader():
     def load_file(self, filename, rewritable, ticker):
 
         # Silently ignore already loaded files
-        if filename in self.loaded_files:
-            return
-        self.loaded_files[filename] = True
-
-        # Raise error if two files claim the same name
         if filename in self.elements:
-            element = self.elements[filename]
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Tried to load file '%s' but existing file '%s' has the same name" %
-                            (filename, element.filename))
+            return self.elements[filename]
 
         # Call the ticker
         if ticker:
@@ -479,11 +494,21 @@ class Loader():
 
         # Load all possible dependency files for the new LoadElement
         for dep in element.base_deps:
-            self.load_file(dep.filename, rewritable, ticker)
+            self.load_dependency_file(dep, rewritable, ticker)
 
         for variant in element.variants:
             for dep in variant.dependencies:
-                self.load_file(dep.filename, rewritable, ticker)
+                self.load_dependency_file(dep, rewritable, ticker)
+
+        return element
+
+    def load_dependency_file(self, dependency, rewritable, ticker):
+
+        element = self.load_file(dependency.filename, rewritable, ticker)
+
+        # Check for invalid variant dependencies
+        if dependency.variant_name and element.lookup_variant(dependency.variant_name) is None:
+            raise VariantInvalid(dependency, element, dependency.variant_name)
 
     ########################################
     #          Resolving Variants          #
@@ -531,7 +556,7 @@ class Loader():
         toplevel_config = LoadElementConfig(None, target_element, target_variant)
         try:
             pool = self.configure_variants(toplevel_config, [])
-        except VariantError as e:
+        except VariantDisagreement as e:
             raise LoadError(LoadErrorReason.VARIANT_DISAGREEMENT, str(e)) from e
 
         # Now apply the chosen variant configurations
@@ -573,7 +598,7 @@ class Loader():
                 else:
                     # Two different variants of the same element should be reached
                     # on a path of variant agreement.
-                    raise VariantError(element_config, config.dependency)
+                    raise VariantDisagreement(element_config, config.dependency)
 
         # Now add ourselves to the pool and recurse into the dependency list
         new_pool = pool + [element_config]
@@ -621,7 +646,7 @@ class Loader():
                 # ... Then recurse into sibling elements
                 accum_pool = self.configure_dependency_variants(deps[1:], try_pool)
 
-            except VariantError as e:
+            except VariantDisagreement as e:
 
                 # Hold onto the error
                 last_error = e
@@ -630,7 +655,7 @@ class Loader():
                 # element configurations
                 continue
 
-        # If unable to find any valid configuration, raise a VariantError
+        # If unable to find any valid configuration, raise a VariantDisagreement
         if not accum_pool:
             raise last_error
 
