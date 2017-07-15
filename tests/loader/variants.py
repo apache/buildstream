@@ -123,6 +123,34 @@ def test_variant_invalid_unused_dependency(datafiles):
 
 
 ##############################################################
+#               Test Variant Default and Priority            #
+##############################################################
+@pytest.mark.datafiles(DATA_DIR)
+def test_variant_default_target(datafiles):
+
+    # Assert that the default (first) variant is chosen for a toplevel target with variants.
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(
+        basedir, 'elements/simple-variant-compositing.bst', None, None, None)
+
+    element = loader.load()
+    assert(element.variant == 'pink')
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_variant_default_dependency(datafiles):
+
+    # Assert that the default (first) variant is chosen for a dependency of a toplevel
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(
+        basedir, 'elements/depends-on-element-with-variants.bst', None, None, None)
+
+    element = loader.load()
+    dependency = element.dependencies[0]
+    assert(dependency.variant == 'pink')
+
+
+##############################################################
 #                Test Simple Variant Compositing             #
 ##############################################################
 @pytest.mark.datafiles(DATA_DIR)
