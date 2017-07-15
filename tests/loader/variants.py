@@ -76,6 +76,53 @@ def test_variant_illegal_composite(datafiles):
 
 
 ##############################################################
+#                Test Invalid Variant Requests               #
+##############################################################
+@pytest.mark.datafiles(DATA_DIR)
+def test_variant_invalid_target(datafiles):
+
+    # Test that an invalid variant requested as the pipeline target raises the appropriate error
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(
+        basedir, 'elements/simple-variant-compositing.bst', 'green', None, None)
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load()
+
+    assert (exc.value.reason == LoadErrorReason.INVALID_VARIANT)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_variant_invalid_dependency(datafiles):
+
+    # Test that an invalid variant requested as an element dependency raises the appropriate error
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(
+        basedir, 'elements/simple-variant-invalid.bst', None, None, None)
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load()
+
+    assert (exc.value.reason == LoadErrorReason.INVALID_VARIANT)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_variant_invalid_unused_dependency(datafiles):
+
+    # Test that an invalid variant requested as an element dependency which is
+    # unused in the effective variant resolution still raises the appropriate
+    # error (ensure that errors occur even on unused variant paths)
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(
+        basedir, 'elements/simple-unused-variant-invalid.bst', 'blue', None, None)
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load()
+
+    assert (exc.value.reason == LoadErrorReason.INVALID_VARIANT)
+
+
+##############################################################
 #                Test Simple Variant Compositing             #
 ##############################################################
 @pytest.mark.datafiles(DATA_DIR)
