@@ -218,7 +218,7 @@ def track(app, target, variant, deps, except_):
 @click.option('--order', default="stage",
               type=click.Choice(['stage', 'alpha']),
               help='Staging or alphabetic ordering of dependencies')
-@click.option('--format', '-f', metavar='FORMAT', default="%{state: >12} %{key} %{name}",
+@click.option('--format', '-f', metavar='FORMAT', default=None,
               type=click.STRING,
               help='Format string for each element')
 @click.option('--variant',
@@ -248,6 +248,7 @@ def show(app, target, variant, deps, except_, order, format):
 
     \b
         %{name}     The element name
+        %{variant}  The selected element variant
         %{key}      The abbreviated cache key (if all sources are consistent)
         %{full-key} The full cache key (if all sources are consistent)
         %{state}    cached, buildable, waiting or inconsistent
@@ -279,6 +280,9 @@ def show(app, target, variant, deps, except_, order, format):
 
     if order == "alpha":
         dependencies = sorted(dependencies)
+
+    if not format:
+        format = app.context.log_element_format
 
     report = app.logger.show_pipeline(dependencies, format)
     click.echo(report, color=app.colors)
