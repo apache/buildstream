@@ -99,6 +99,14 @@ class Element(Plugin):
         and creating directory names and such.
         """
 
+        self.variant = meta.variant
+        """The effective variant for this element
+
+        If the element declares variants, then this will reflect the
+        variant which was chosen and resolved at load time, otherwise
+        this will be ``None``.
+        """
+
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__sources = []                     # List of Sources
