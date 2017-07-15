@@ -73,10 +73,14 @@ class LoadErrorReason(Enum):
     when loading the project.
     """
 
-    CIRCULAR_DEPENDENCY = 6
+    INVALID_VARIANT = 6
+    """A nonexistent variant was requested.
+    """
+
+    CIRCULAR_DEPENDENCY = 7
     """An circular dependency chain was detected"""
 
-    UNRESOLVED_VARIABLE = 7
+    UNRESOLVED_VARIABLE = 8
     """A variable could not be resolved. This can happen if your project
     has cyclic dependencies in variable declarations, or, when substituting
     a string which refers to an undefined variable.
