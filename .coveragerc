@@ -1,0 +1,6 @@
+[run]
+omit = buildstream/_profile.py
+branch = True
+
+[report]
+show_missing = True
