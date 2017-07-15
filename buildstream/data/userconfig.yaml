@@ -87,8 +87,8 @@ logging:
   # Whether to enable debugging messages
   debug: False
 
-  # Format string for printing the pipeline at startup,
-  # this uses the same formatting as the `bst show` command.
+  # Format string for printing the pipeline at startup, this
+  # also determines the default display format for `bst show`
   element-format: |
 
-    %{state: >12} %{key} %{name}
+    %{state: >12} %{key} %{name} %{variant}
