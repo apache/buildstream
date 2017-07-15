@@ -97,6 +97,8 @@ def sha256sum(filename):
     # If it's a directory, just return 0 string
     if os.path.isdir(filename):
         return "0"
+    elif os.path.islink(filename):
+        return "1"
 
     h = hashlib.sha256()
     with open(filename, "rb") as f:
