@@ -655,6 +655,10 @@ class Loader():
                 # element configurations
                 continue
 
+            # If we've reached here without any disagreement, then we've found the
+            # first valid configuration, which should take priority over any others.
+            break
+
         # If unable to find any valid configuration, raise a VariantDisagreement
         if not accum_pool:
             raise last_error
