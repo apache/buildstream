@@ -575,7 +575,7 @@ class Loader():
             # })
             #
 
-            pools = self.configure_variants(toplevel_config, {})
+            pools = self.try_element_configuration(toplevel_config, {})
 
         except VariantDisagreement as e:
             raise LoadError(LoadErrorReason.VARIANT_DISAGREEMENT, str(e)) from e
@@ -586,7 +586,7 @@ class Loader():
             element_config.element.apply_element_config(element_config)
 
     #
-    # configure_variants()
+    # try_element_configuration()
     #
     # Args:
     #   element_config (LoadElementConfig): the element to try
@@ -601,36 +601,31 @@ class Loader():
     # the given configuration and the first valid configuration of its
     # dependencies
     #
-    def configure_variants(self, element_config, pool, depth=0, visited=None, visit_count=None):
+    def try_element_configuration(self, element_config, pool, depth=0):
 
         # print("{}TRY: {}".format(' ' * depth, element_config))
 
         if element_config.filename in pool:
             config = pool[element_config.filename]
 
-            # The configuration pool can have only one selected configuration
-            # for each element, handle intersections and conflicts.
-            #
-            if config.element is element_config.element:
+            if config.variant_name != element_config.variant_name:
 
-                if config.variant_name != element_config.variant_name:
+                # Two different variants of the same element should be reached
+                # on a path of variant agreement.
+                raise VariantDisagreement(element_config, config)
 
-                    # Two different variants of the same element should be reached
-                    # on a path of variant agreement.
-                    raise VariantDisagreement(element_config, config)
-
-                else:
-                    # A path converges on the same element configuration,
-                    # no need to recurse as we already have a result for this.
-                    return [pool]
+            else:
+                # A path converges on the same element configuration,
+                # no need to recurse as we already have a result for this.
+                return [pool]
 
         # Now add ourselves to the pool and recurse into the dependency list
         new_pool = dict(pool)
         new_pool[element_config.filename] = element_config
 
-        return self.configure_dependency_variants(element_config, element_config.deps, new_pool, depth=depth + 1, visited=visited, visit_count=visit_count)
+        return self.configure_dependency_variants(element_config, element_config.deps, new_pool, depth=depth + 1)
 
-    def configure_dependency_variants(self, parent_config, deps, pool, depth=0, visited=None, visit_count=None):
+    def configure_dependency_variants(self, parent_config, deps, pool, depth=0):
 
         # This is just the end of the list
         if not deps:
@@ -661,54 +656,11 @@ class Loader():
         valid_pools = []
         for element_config in element_configs_to_try:
 
-            # XXX DEBUG START
-            if visited is None:
-                visited = {}
-            if visit_count is None:
-                visit_count = {}
-
-            iter_key = (
-                parent_config.filename, parent_config.variant_name,
-                element_config.filename, element_config.variant_name
-            )
-            count = visit_count.get(iter_key, 0)
-            if count > 0:
-                print("Visited path {} times: {}".format(count, element_config.make_path()))
-
-            visit_count[iter_key] = count + 1
-            # XXX DEBUG END
-
-            iter_result = visited.get(iter_key)
-
-            if iter_result is not None:
-                valid_pools += iter_result['pools']
-                if iter_result['error']:
-                    last_error = iter_result['error']
-                print("Assigning {} valid pools with error {}".format(len(iter_result['pools']), iter_result['error']))
-                continue
-            else:
-                print("Fresh iteration")
-
-            iter_result = {
-                'pools': [],
-                'error': None
-            }
-
-            config_pools = []
-            iter_error = None
-
             # Recurse into this dependency for this config first
             try:
-                try_pools = self.configure_variants(element_config, pool, depth=depth, visited=visited, visit_count=visit_count)
+                try_pools = self.try_element_configuration(element_config, pool, depth=depth)
             except VariantDisagreement as e:
-                last_error = iter_error = e
-
-                # XXX
-
-                iter_result['pools'] = config_pools
-                iter_result['error'] = iter_error
-                visited[iter_key] = iter_result
-
+                last_error = e
                 continue
 
             # For each valid configuration for this element
@@ -716,17 +668,11 @@ class Loader():
 
                 # Recurse into the siblings, siblings either pass of fail as a whole
                 try:
-                    config_pools += self.configure_dependency_variants(parent_config, deps[1:], try_pool,
-                                                                       depth=depth + 1, visited=visited, visit_count=visit_count)
+                    valid_pools += self.configure_dependency_variants(parent_config, deps[1:], try_pool,
+                                                                      depth=depth + 1)
                 except VariantDisagreement as e:
-                    last_error = iter_error = e
+                    last_error = e
                     continue
-
-            iter_result['pools'] = config_pools
-            iter_result['error'] = iter_error
-            visited[iter_key] = iter_result
-
-            valid_pools += config_pools
 
         # If unable to find any valid configuration, raise a VariantDisagreement
         if not valid_pools:
