@@ -87,15 +87,12 @@ class Variant():
 # depend on a given element in a way that conflicts
 #
 class VariantDisagreement(Exception):
-    def __init__(self, element_config, dependency):
+    def __init__(self, element_config1, element_config2):
+        path1 = element_config1.make_path()
+        path2 = element_config2.make_path()
         super(VariantDisagreement, self).__init__(
-            "Variant disagreement occurred.\n"
-            "Element '%s' requested element '%s (%s)'\n"
-            "Element '%s' requested element '%s (%s)" %
-            (element_config.dependency.owner, element_config.filename,
-             element_config.dependency.variant_name,
-             dependency.owner, element_config.filename,
-             dependency.variant_name))
+            "Variant disagreement occurred.\n  {}\n  {}"
+            .format(path1, path2))
 
 
 # VariantInvalid is raised to indicate that a nonexisting
@@ -119,12 +116,24 @@ class VariantInvalid(Exception):
 #  o The dependencies the element has when configured for the given variant
 #
 class LoadElementConfig():
-    def __init__(self, dependency, element, variant_name=None):
-        self.dependency = dependency
+    def __init__(self, parent_config, element, variant_name=None):
+        self.parent_config = parent_config
         self.element = element
         self.filename = element.filename
         self.variant_name = variant_name
         self.deps = element.deps_for_variant(variant_name)
+
+    def __str__(self):
+        if self.variant_name:
+            return "{} ({})".format(self.filename, self.variant_name)
+
+        return self.filename
+
+    def make_path(self):
+        path = str(self)
+        if self.parent_config:
+            path = self.parent_config.make_path() + ' -> ' + path
+        return path
 
 
 # resolve_arch()
@@ -412,6 +421,9 @@ class Loader():
         self.meta_elements = {}  # Dict of resolved meta elements by name
         self.elements = {}       # Dict of elements
 
+
+        self.debug_count = 0  # XXX
+        
     ########################################
     #           Main Entry Point           #
     ########################################
@@ -555,13 +567,22 @@ class Loader():
         #
         toplevel_config = LoadElementConfig(None, target_element, target_variant)
         try:
-            pool = self.configure_variants(toplevel_config, [])
+
+            # XXX Start with self.configure_dependency_variants instead !!!
+            #
+            # pool = self.configure_dependency_variants(toplevel_config.deps, {
+            #     toplevel_config.filename: toplevel_config
+            # })
+            #
+
+            pools = self.configure_variants(toplevel_config, {})
+
         except VariantDisagreement as e:
             raise LoadError(LoadErrorReason.VARIANT_DISAGREEMENT, str(e)) from e
 
         # Now apply the chosen variant configurations
         #
-        for element_config in pool:
+        for _, element_config in pools[0].items():
             element_config.element.apply_element_config(element_config)
 
     #
@@ -569,7 +590,7 @@ class Loader():
     #
     # Args:
     #   element_config (LoadElementConfig): the element to try
-    #   pool (list): A list of LoadElementConfig objects
+    #   pool (dict): A dict of LoadElementConfig objects
     #
     # Returns:
     #   A new configuration
@@ -580,35 +601,40 @@ class Loader():
     # the given configuration and the first valid configuration of its
     # dependencies
     #
-    def configure_variants(self, element_config, pool):
+    def configure_variants(self, element_config, pool, depth=0, visited=None, visit_count=None):
 
-        # First, check the new element configuration to try against
-        # the existing ones in the pool for conflicts.
-        #
-        for config in pool:
+        # print("{}TRY: {}".format(' ' * depth, element_config))
+
+        if element_config.filename in pool:
+            config = pool[element_config.filename]
 
             # The configuration pool can have only one selected configuration
             # for each element, handle intersections and conflicts.
             #
             if config.element is element_config.element:
-                if config.variant_name == element_config.variant_name:
-                    # A path converges on the same element configuration,
-                    # this iteration can be safely discarded.
-                    return pool
-                else:
+
+                if config.variant_name != element_config.variant_name:
+
                     # Two different variants of the same element should be reached
                     # on a path of variant agreement.
-                    raise VariantDisagreement(element_config, config.dependency)
+                    raise VariantDisagreement(element_config, config)
+
+                else:
+                    # A path converges on the same element configuration,
+                    # no need to recurse as we already have a result for this.
+                    return [pool]
 
         # Now add ourselves to the pool and recurse into the dependency list
-        new_pool = pool + [element_config]
-        return self.configure_dependency_variants(element_config.deps, new_pool)
+        new_pool = dict(pool)
+        new_pool[element_config.filename] = element_config
 
-    def configure_dependency_variants(self, deps, pool):
+        return self.configure_dependency_variants(element_config, element_config.deps, new_pool, depth=depth + 1, visited=visited, visit_count=visit_count)
+
+    def configure_dependency_variants(self, parent_config, deps, pool, depth=0, visited=None, visit_count=None):
 
         # This is just the end of the list
         if not deps:
-            return pool
+            return [pool]
 
         # Loop over the possible variants for this dependency
         dependency = deps[0]
@@ -619,51 +645,94 @@ class Loader():
         #
         element_configs_to_try = []
         if dependency.variant_name:
-            config = LoadElementConfig(dependency, element, dependency.variant_name)
+            config = LoadElementConfig(parent_config, element, dependency.variant_name)
             element_configs_to_try.append(config)
         elif len(element.variants) == 0:
-            config = LoadElementConfig(dependency, element, None)
+            config = LoadElementConfig(parent_config, element, None)
             element_configs_to_try.append(config)
         else:
             for variant in element.variants:
-                config = LoadElementConfig(dependency, element, variant.name)
+                config = LoadElementConfig(parent_config, element, variant.name)
                 element_configs_to_try.append(config)
 
         # Loop over every possible element configuration for this dependency
         #
-        accum_pool = None
         last_error = None
-
+        valid_pools = []
         for element_config in element_configs_to_try:
 
-            # Reset the attempted new pool for each try
-            accum_pool = None
+            # XXX DEBUG START
+            if visited is None:
+                visited = {}
+            if visit_count is None:
+                visit_count = {}
 
+            iter_key = (
+                parent_config.filename, parent_config.variant_name,
+                element_config.filename, element_config.variant_name
+            )
+            count = visit_count.get(iter_key, 0)
+            if count > 0:
+                print("Visited path {} times: {}".format(count, element_config.make_path()))
+
+            visit_count[iter_key] = count + 1
+            # XXX DEBUG END
+
+            iter_result = visited.get(iter_key)
+
+            if iter_result is not None:
+                valid_pools += iter_result['pools']
+                if iter_result['error']:
+                    last_error = iter_result['error']
+                print("Assigning {} valid pools with error {}".format(len(iter_result['pools']), iter_result['error']))
+                continue
+            else:
+                print("Fresh iteration")
+
+            iter_result = {
+                'pools': [],
+                'error': None
+            }
+
+            config_pools = []
+            iter_error = None
+
+            # Recurse into this dependency for this config first
             try:
-                # If this configuration of the this element succeeds...
-                try_pool = self.configure_variants(element_config, pool)
-
-                # ... Then recurse into sibling elements
-                accum_pool = self.configure_dependency_variants(deps[1:], try_pool)
-
+                try_pools = self.configure_variants(element_config, pool, depth=depth, visited=visited, visit_count=visit_count)
             except VariantDisagreement as e:
+                last_error = iter_error = e
 
-                # Hold onto the error
-                last_error = e
+                # XXX
 
-                # If this element configuration failed, then find more possible
-                # element configurations
+                iter_result['pools'] = config_pools
+                iter_result['error'] = iter_error
+                visited[iter_key] = iter_result
+
                 continue
 
-            # If we've reached here without any disagreement, then we've found the
-            # first valid configuration, which should take priority over any others.
-            break
+            # For each valid configuration for this element
+            for try_pool in try_pools:
+
+                # Recurse into the siblings, siblings either pass of fail as a whole
+                try:
+                    config_pools += self.configure_dependency_variants(parent_config, deps[1:], try_pool,
+                                                                       depth=depth + 1, visited=visited, visit_count=visit_count)
+                except VariantDisagreement as e:
+                    last_error = iter_error = e
+                    continue
+
+            iter_result['pools'] = config_pools
+            iter_result['error'] = iter_error
+            visited[iter_key] = iter_result
+
+            valid_pools += config_pools
 
         # If unable to find any valid configuration, raise a VariantDisagreement
-        if not accum_pool:
+        if not valid_pools:
             raise last_error
 
-        return accum_pool
+        return valid_pools
 
     ########################################
     #            Element Sorting           #
