@@ -87,15 +87,16 @@ class Variant():
 # depend on a given element in a way that conflicts
 #
 class VariantDisagreement(Exception):
-    def __init__(self, element_config, dependency):
+    def __init__(self, element_config1, element_config2, variant=None):
+        path1 = element_config1.make_path()
+
+        if variant:
+            path2 = "Expected variant {}".format(variant)
+        else:
+            path2 = element_config2.make_path()
         super(VariantDisagreement, self).__init__(
-            "Variant disagreement occurred.\n"
-            "Element '%s' requested element '%s (%s)'\n"
-            "Element '%s' requested element '%s (%s)" %
-            (element_config.dependency.owner, element_config.filename,
-             element_config.dependency.variant_name,
-             dependency.owner, element_config.filename,
-             dependency.variant_name))
+            "Variant disagreement occurred.\n  {}\n  {}"
+            .format(path1, path2))
 
 
 # VariantInvalid is raised to indicate that a nonexisting
@@ -119,12 +120,24 @@ class VariantInvalid(Exception):
 #  o The dependencies the element has when configured for the given variant
 #
 class LoadElementConfig():
-    def __init__(self, dependency, element, variant_name=None):
-        self.dependency = dependency
+    def __init__(self, parent_config, element, variant_name=None):
+        self.parent_config = parent_config
         self.element = element
         self.filename = element.filename
         self.variant_name = variant_name
         self.deps = element.deps_for_variant(variant_name)
+
+    def __str__(self):
+        if self.variant_name:
+            return "{} ({})".format(self.filename, self.variant_name)
+
+        return self.filename
+
+    def make_path(self):
+        path = str(self)
+        if self.parent_config:
+            path = self.parent_config.make_path() + ' -> ' + path
+        return path
 
 
 # resolve_arch()
@@ -555,21 +568,23 @@ class Loader():
         #
         toplevel_config = LoadElementConfig(None, target_element, target_variant)
         try:
-            pool = self.configure_variants(toplevel_config, [])
+            pool, _ = self.try_element_configuration(toplevel_config, {}, {})
+
         except VariantDisagreement as e:
             raise LoadError(LoadErrorReason.VARIANT_DISAGREEMENT, str(e)) from e
 
         # Now apply the chosen variant configurations
         #
-        for element_config in pool:
+        for _, element_config in pool.items():
             element_config.element.apply_element_config(element_config)
 
     #
-    # configure_variants()
+    # try_element_configuration()
     #
     # Args:
     #   element_config (LoadElementConfig): the element to try
-    #   pool (list): A list of LoadElementConfig objects
+    #   pool (dict): A dict of LoadElementConfig objects
+    #   restruction_pool: A dict of variant names explicitly required
     #
     # Returns:
     #   A new configuration
@@ -580,35 +595,51 @@ class Loader():
     # the given configuration and the first valid configuration of its
     # dependencies
     #
-    def configure_variants(self, element_config, pool):
+    def try_element_configuration(self, element_config, pool, restriction_pool):
 
-        # First, check the new element configuration to try against
-        # the existing ones in the pool for conflicts.
-        #
-        for config in pool:
+        if element_config.filename in pool:
+            config = pool[element_config.filename]
 
             # The configuration pool can have only one selected configuration
             # for each element, handle intersections and conflicts.
             #
             if config.element is element_config.element:
-                if config.variant_name == element_config.variant_name:
-                    # A path converges on the same element configuration,
-                    # this iteration can be safely discarded.
-                    return pool
-                else:
+
+                if config.variant_name != element_config.variant_name:
+
                     # Two different variants of the same element should be reached
                     # on a path of variant agreement.
-                    raise VariantDisagreement(element_config, config.dependency)
+                    raise VariantDisagreement(element_config, config)
+                else:
+                    # A path converges on the same element configuration,
+                    # no need to recurse as we already have a result for this.
+                    return (pool, restriction_pool)
+
+        if element_config.filename in restriction_pool:
+            restrict_variant = restriction_pool[element_config.filename]
+
+            if element_config.variant_name and element_config.variant_name != restrict_variant:
+                raise VariantDisagreement(element_config, None, restrict_variant)
 
         # Now add ourselves to the pool and recurse into the dependency list
-        new_pool = pool + [element_config]
-        return self.configure_dependency_variants(element_config.deps, new_pool)
+        new_pool = dict(pool)
+        new_pool[element_config.filename] = element_config
 
-    def configure_dependency_variants(self, deps, pool):
+        # Add restriction pool to go along with this pool
+        #
+        new_restriction_pool = dict(restriction_pool)
+        for dep in element_config.deps:
+            if dep.variant_name:
+                new_restriction_pool[dep.name] = dep.variant_name
+
+        return self.configure_dependency_variants(element_config, element_config.deps,
+                                                  new_pool, new_restriction_pool)
+
+    def configure_dependency_variants(self, parent_config, deps, pool, restriction_pool):
 
         # This is just the end of the list
         if not deps:
-            return pool
+            return (pool, restriction_pool)
 
         # Loop over the possible variants for this dependency
         dependency = deps[0]
@@ -619,40 +650,38 @@ class Loader():
         #
         element_configs_to_try = []
         if dependency.variant_name:
-            config = LoadElementConfig(dependency, element, dependency.variant_name)
+            config = LoadElementConfig(parent_config, element, dependency.variant_name)
             element_configs_to_try.append(config)
         elif len(element.variants) == 0:
-            config = LoadElementConfig(dependency, element, None)
+            config = LoadElementConfig(parent_config, element, None)
             element_configs_to_try.append(config)
         else:
             for variant in element.variants:
-                config = LoadElementConfig(dependency, element, variant.name)
+                config = LoadElementConfig(parent_config, element, variant.name)
                 element_configs_to_try.append(config)
 
         # Loop over every possible element configuration for this dependency
         #
-        accum_pool = None
+        result_pool = None
+        result_restrict = None
         last_error = None
 
         for element_config in element_configs_to_try:
 
             # Reset the attempted new pool for each try
-            accum_pool = None
+            result_pool = None
+            result_restrict = None
 
             try:
                 # If this configuration of the this element succeeds...
-                try_pool = self.configure_variants(element_config, pool)
+                try_pool, try_restrict = self.try_element_configuration(element_config, pool, restriction_pool)
 
                 # ... Then recurse into sibling elements
-                accum_pool = self.configure_dependency_variants(deps[1:], try_pool)
+                result_pool, result_restrict = self.configure_dependency_variants(parent_config, deps[1:],
+                                                                                  try_pool, try_restrict)
 
             except VariantDisagreement as e:
-
-                # Hold onto the error
                 last_error = e
-
-                # If this element configuration failed, then find more possible
-                # element configurations
                 continue
 
             # If we've reached here without any disagreement, then we've found the
@@ -660,10 +689,10 @@ class Loader():
             break
 
         # If unable to find any valid configuration, raise a VariantDisagreement
-        if not accum_pool:
+        if not result_pool:
             raise last_error
 
-        return accum_pool
+        return (result_pool, result_restrict)
 
     ########################################
     #            Element Sorting           #
