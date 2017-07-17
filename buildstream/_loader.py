@@ -44,6 +44,7 @@ class Symbol():
     DEPENDS = "depends"
     VARIANT = "variant"
     VARIANTS = "variants"
+    PROJECT_VARIANT = "project-variant"
     ARCHES = "arches"
     HOST_ARCHES = "host-arches"
     SOURCES = "sources"
@@ -75,10 +76,13 @@ class Dependency():
 # for later compositing, after resolving which variants to choose
 #
 class Variant():
-    def __init__(self, owner, data):
+    def __init__(self, owner, data, project_variants):
         self.data = data
         self.name = _yaml.node_get(self.data, str, Symbol.VARIANT)
         self.dependencies = extract_depends_from_node(owner, self.data)
+
+        # Assert valid project variants
+        assert_project_variant(self.data, project_variants)
 
         del self.data[Symbol.VARIANT]
 
@@ -176,13 +180,25 @@ def resolve_arch(data, host_arch, target_arch=None):
     resolve_single_arch_conditional(Symbol.ARCHES, active_arch=target_arch or host_arch)
 
 
+def assert_project_variant(node, project_variants):
+    variant = _yaml.node_get(node, str,
+                             Symbol.PROJECT_VARIANT,
+                             default_value="") or None
+    if variant and variant not in project_variants:
+        provenance = _yaml.node_get_provenance(node, key=Symbol.PROJECT_VARIANT)
+        raise LoadError(LoadErrorReason.INVALID_DATA,
+                        "{}: Specified invalid project variant '{}'".format(provenance, variant))
+
+
 # A transient object breaking down what is loaded
 # allowing us to do complex operations in multiple
 # passes
 #
 class LoadElement():
 
-    def __init__(self, data, filename, basedir, host_arch, target_arch, elements):
+    def __init__(self, data, filename, basedir,
+                 host_arch, target_arch,
+                 elements, project_variants):
 
         self.filename = filename
         self.data = data
@@ -196,6 +212,9 @@ class LoadElement():
 
         # Process arch conditionals
         resolve_arch(self.data, self.host_arch, self.target_arch)
+
+        # Assert valid project variant, if any
+        assert_project_variant(self.data, project_variants)
 
         # Dependency objects after resolving variants
         self.variant_name = None
@@ -211,7 +230,7 @@ class LoadElement():
         for variant_node in variants_node:
             index = variants_node.index(variant_node)
             variant_node = _yaml.node_get(self.data, Mapping, Symbol.VARIANTS, indices=[index])
-            variant = Variant(self.name, variant_node)
+            variant = Variant(self.name, variant_node, project_variants)
 
             # Process arch conditionals on individual variants
             resolve_arch(variant.data, self.host_arch, self.target_arch)
@@ -394,7 +413,7 @@ def extract_depends_from_node(owner, data):
 #
 class Loader():
 
-    def __init__(self, basedir, filename, variant, host_arch, target_arch):
+    def __init__(self, basedir, filename, variant, host_arch, target_arch, project_variants):
 
         # Ensure we have an absolute path for the base directory
         #
@@ -418,6 +437,11 @@ class Loader():
 
         # Optional variant
         self.target_variant = variant
+
+        # Project Variant
+        self.project_variants = project_variants
+        self.project_variant = None
+        self.project_variant_requester = None
 
         self.host_arch = host_arch
         self.target_arch = target_arch
@@ -471,6 +495,11 @@ class Loader():
         profile_end(Topics.CIRCULAR_CHECK, self.target_filename)
 
         #
+        # Resolve the project variant, if any
+        #
+        self.resolve_project_variant(self.target)
+
+        #
         # Sort direct dependencies of elements by their dependency ordering
         #
         profile_start(Topics.SORT_DEPENDENCIES, self.target_filename)
@@ -501,7 +530,9 @@ class Loader():
 
         # Load the element and track it in our elements table
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
-        element = LoadElement(data, filename, self.basedir, self.host_arch, self.target_arch, self.elements)
+        element = LoadElement(data, filename, self.basedir,
+                              self.host_arch, self.target_arch,
+                              self.elements, self.project_variants)
 
         self.elements[filename] = element
 
@@ -695,6 +726,66 @@ class Loader():
         return (result_pool, result_restrict)
 
     ########################################
+    #     Checking Circular Dependencies   #
+    ########################################
+    #
+    # Detect circular dependencies on LoadElements with
+    # dependencies already resolved.
+    #
+    def check_circular_deps(self, element_name, check_elements=None, validated=None):
+
+        if check_elements is None:
+            check_elements = {}
+        if validated is None:
+            validated = {}
+
+        element = self.elements[element_name]
+
+        # Skip already validated branches
+        if validated.get(element_name) is not None:
+            return
+
+        if check_elements.get(element_name) is not None:
+            raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
+                            "Circular dependency detected for element: %s" %
+                            element.filename)
+
+        # Push / Check each dependency / Pop
+        check_elements[element_name] = True
+        for dep in element.deps:
+            self.check_circular_deps(dep.name, check_elements, validated)
+        del check_elements[element_name]
+
+        # Eliminate duplicate paths
+        validated[element_name] = True
+
+    ########################################
+    #         Resolve Project Variant      #
+    ########################################
+    def resolve_project_variant(self, element_name):
+        element = self.elements[element_name]
+        project_variant = _yaml.node_get(element.data, str,
+                                         Symbol.PROJECT_VARIANT,
+                                         default_value="") or None
+
+        if project_variant:
+            if not self.project_variant:
+                self.project_variant = project_variant
+                self.project_variant_requester = element_name
+            elif project_variant != self.project_variant:
+                request1 = "{} requested project variant '{}'" \
+                           .format(self.project_variant_requester,
+                                   self.project_variant)
+                request2 = "{} requested project variant '{}'" \
+                           .format(element_name, project_variant)
+                raise LoadError(LoadErrorReason.VARIANT_DISAGREEMENT,
+                                "Project variant disagreement occurred.\n  {}\n  {}"
+                                .format(request1, request2))
+
+        for dep in element.deps:
+            self.resolve_project_variant(dep.name)
+
+    ########################################
     #            Element Sorting           #
     ########################################
     #
@@ -753,37 +844,6 @@ class Loader():
     ########################################
     #          Element Collection          #
     ########################################
-    #
-    # Detect circular dependencies on LoadElements with
-    # dependencies already resolved.
-    #
-    def check_circular_deps(self, element_name, check_elements=None, validated=None):
-
-        if check_elements is None:
-            check_elements = {}
-        if validated is None:
-            validated = {}
-
-        element = self.elements[element_name]
-
-        # Skip already validated branches
-        if validated.get(element_name) is not None:
-            return
-
-        if check_elements.get(element_name) is not None:
-            raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                            "Circular dependency detected for element: %s" %
-                            element.filename)
-
-        # Push / Check each dependency / Pop
-        check_elements[element_name] = True
-        for dep in element.deps:
-            self.check_circular_deps(dep.name, check_elements, validated)
-        del check_elements[element_name]
-
-        # Eliminate duplicate paths
-        validated[element_name] = True
-
     # Collect the toplevel elements we have, resolve their deps and return !
     #
     def collect_element(self, element_name):
