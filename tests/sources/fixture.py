@@ -24,10 +24,6 @@ class Setup():
         self.context = Context('x86_64')
         self.project = Project(directory, 'x86_64')
 
-        # Allow repo aliases to access files in the directories using tmpdir and datafiles
-        self.project._aliases['tmpdir'] = "file:///" + str(tmpdir)
-        self.project._aliases['datafiles'] = "file:///" + str(datafiles)
-
         # A message handler is required
         self.context._set_message_handler(message_handler)
 
@@ -39,8 +35,14 @@ class Setup():
         if not os.path.exists(self.context.builddir):
             os.mkdir(self.context.builddir)
 
-        loader = Loader(directory, target, None, None, None)
+        loader = Loader(directory, target, None, None, None, [])
         element = loader.load()
+        self.project._resolve(loader.project_variant)
+
+        # Allow repo aliases to access files in the directories using tmpdir and datafiles
+        self.project._aliases['tmpdir'] = "file:///" + str(tmpdir)
+        self.project._aliases['datafiles'] = "file:///" + str(datafiles)
+
         assert(len(element.sources) == 1)
         self.meta_source = element.sources[0]
 

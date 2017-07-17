@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(
 def test_variant_not_list(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variants-not-list.bst', None, None, None)
+    loader = Loader(basedir, 'elements/variants-not-list.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -30,7 +30,7 @@ def test_variant_not_list(datafiles):
 def test_variant_unnamed(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/unnamed-variant.bst', None, None, None)
+    loader = Loader(basedir, 'elements/unnamed-variant.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -42,7 +42,7 @@ def test_variant_unnamed(datafiles):
 def test_variant_bad_name(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/variant-bad-name.bst', None, None, None)
+    loader = Loader(basedir, 'elements/variant-bad-name.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -54,7 +54,7 @@ def test_variant_bad_name(datafiles):
 def test_variant_only_one(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/only-one-variant.bst', None, None, None)
+    loader = Loader(basedir, 'elements/only-one-variant.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -67,7 +67,7 @@ def test_variant_illegal_composite(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/variant-illegal-composite.bst', None, None, None)
+        basedir, 'elements/variant-illegal-composite.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -84,7 +84,7 @@ def test_variant_invalid_target(datafiles):
     # Test that an invalid variant requested as the pipeline target raises the appropriate error
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-variant-compositing.bst', 'green', None, None)
+        basedir, 'elements/simple-variant-compositing.bst', 'green', None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -98,7 +98,7 @@ def test_variant_invalid_dependency(datafiles):
     # Test that an invalid variant requested as an element dependency raises the appropriate error
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-variant-invalid.bst', None, None, None)
+        basedir, 'elements/simple-variant-invalid.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -114,7 +114,7 @@ def test_variant_invalid_unused_dependency(datafiles):
     # error (ensure that errors occur even on unused variant paths)
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-unused-variant-invalid.bst', 'blue', None, None)
+        basedir, 'elements/simple-unused-variant-invalid.bst', 'blue', None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -131,7 +131,7 @@ def test_variant_default_target(datafiles):
     # Assert that the default (first) variant is chosen for a toplevel target with variants.
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-variant-compositing.bst', None, None, None)
+        basedir, 'elements/simple-variant-compositing.bst', None, None, None, [])
 
     element = loader.load()
     assert(element.variant == 'pink')
@@ -143,7 +143,7 @@ def test_variant_default_dependency(datafiles):
     # Assert that the default (first) variant is chosen for a dependency of a toplevel
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/depends-on-element-with-variants.bst', None, None, None)
+        basedir, 'elements/depends-on-element-with-variants.bst', None, None, None, [])
 
     element = loader.load()
     dependency = element.dependencies[0]
@@ -158,7 +158,7 @@ def test_variant_simple_composite_default(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-variant-compositing.bst', None, None, None)
+        basedir, 'elements/simple-variant-compositing.bst', None, None, None, [])
 
     element = loader.load()
 
@@ -175,7 +175,7 @@ def test_variant_simple_composite_pink_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-variant-compositing.bst', 'pink', None, None)
+        basedir, 'elements/simple-variant-compositing.bst', 'pink', None, None, [])
 
     element = loader.load()
 
@@ -192,7 +192,7 @@ def test_variant_simple_composite_blue_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-variant-compositing.bst', 'blue', None, None)
+        basedir, 'elements/simple-variant-compositing.bst', 'blue', None, None, [])
 
     element = loader.load()
 
@@ -230,7 +230,7 @@ def test_variant_simple_dependency_default(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-dependency-variants.bst', None, None, None)
+        basedir, 'elements/simple-dependency-variants.bst', None, None, None, [])
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -245,7 +245,7 @@ def test_variant_simple_dependency_pink_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-dependency-variants.bst', 'pink', None, None)
+        basedir, 'elements/simple-dependency-variants.bst', 'pink', None, None, [])
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -260,7 +260,7 @@ def test_variant_simple_dependency_blue_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-dependency-variants.bst', 'blue', None, None)
+        basedir, 'elements/simple-dependency-variants.bst', 'blue', None, None, [])
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -275,7 +275,7 @@ def test_variant_indirect_dependency_default(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/indirect-dependency-variants.bst', None, None, None)
+        basedir, 'elements/indirect-dependency-variants.bst', None, None, None, [])
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -294,7 +294,7 @@ def test_variant_indirect_dependency_blue_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/indirect-dependency-variants.bst', 'blue', None, None)
+        basedir, 'elements/indirect-dependency-variants.bst', 'blue', None, None, [])
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -313,7 +313,7 @@ def test_variant_indirect_dependency_pink_pony(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/indirect-dependency-variants.bst', 'pink', None, None)
+        basedir, 'elements/indirect-dependency-variants.bst', 'pink', None, None, [])
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -331,7 +331,7 @@ def test_variant_indirect_dependency_pink_pony(datafiles):
 def test_engine_resolve_agreement(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/tricky.bst', None, None, None)
+    loader = Loader(basedir, 'elements/tricky.bst', None, None, None, [])
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -346,7 +346,7 @@ def test_engine_resolve_agreement(datafiles):
 def test_engine_disagreement(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/disagreement.bst', None, None, None)
+    loader = Loader(basedir, 'elements/disagreement.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
