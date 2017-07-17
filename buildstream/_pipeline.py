@@ -136,16 +136,22 @@ class Pipeline():
         self.session_elements = 0
         self.total_elements = 0
 
-        pluginbase = PluginBase(package='buildstream.plugins')
-        self.element_factory = ElementFactory(pluginbase, project._plugin_element_paths)
-        self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
-
         loader = Loader(self.project.element_path, target, target_variant,
-                        context.host_arch, context.target_arch)
+                        context.host_arch, context.target_arch,
+                        list(project._list_variants()))
         meta_element = loader.load(rewritable, load_ticker)
         if load_ticker:
             load_ticker(None)
 
+        # Resolve project variant now that we've decided on one
+        project._resolve(loader.project_variant)
+
+        # Create the factories after resolving the project
+        pluginbase = PluginBase(package='buildstream.plugins')
+        self.element_factory = ElementFactory(pluginbase, project._plugin_element_paths)
+        self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
+
+        # Resolve the real elements now that we've resolved the project
         self.target = self.resolve(meta_element, ticker=resolve_ticker)
         if resolve_ticker:
             resolve_ticker(None)
