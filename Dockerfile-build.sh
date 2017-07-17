@@ -9,7 +9,7 @@ set -eu
 OSTREE_COMMIT=9a79d13ce307d8b5b2fe0c373c5d778ad7128b5a
 
 dnf update -y
-dnf install -y bubblewrap git python3-gobject
+dnf install -y bubblewrap git python3-gobject bzr
 
 # redhat-rpm-config seems to be needed to avoid some weird error, see:
 # https://stackoverflow.com/questions/41925585/
