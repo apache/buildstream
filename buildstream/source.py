@@ -25,7 +25,7 @@ import shutil
 from contextlib import contextmanager
 
 from . import _yaml, _signals, utils
-from . import ImplError
+from . import ImplError, LoadError, LoadErrorReason
 from . import Plugin
 
 
@@ -327,7 +327,12 @@ def sha256sum(filename):
         return "0"
 
     h = hashlib.sha256()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
+    try:
+        with open(filename, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                h.update(chunk)
+    except FileNotFoundError as e:
+        raise LoadError(LoadErrorReason.MISSING_FILE,
+                        "Failed loading workspace. Did you remove the workspace directory? {}".format(e))
+
     return h.hexdigest()
