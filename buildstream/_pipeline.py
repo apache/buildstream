@@ -572,6 +572,10 @@ class Pipeline():
         # Update workspace config
         self.project._save_workspace_config()
 
+        # Reset source to avoid checking out the (now empty) workspace
+        source = list(self.target.sources())[source_index]
+        source._del_workspace()
+
     # reset_workspace
     #
     # Reset a workspace to its original state, discarding any user
@@ -592,10 +596,6 @@ class Pipeline():
                                 .format(self.target.name + " - " + str(source_index)))
 
         self.close_workspace(source_index, True)
-
-        # Reset source to avoid checking out the (now empty) workspace
-        source = list(self.target.sources())[source_index]
-        source._del_workspace()
 
         self.open_workspace(scheduler, workspace_dir, source_index, no_checkout,
                             track, False)
