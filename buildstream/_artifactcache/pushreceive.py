@@ -444,6 +444,7 @@ class OSTreePusher(object):
 
         # Collect commits and objects to push
         commits = set()
+        exc_info = None
         ref_count = 0
         for branch, revs in update_refs.items():
             logging.info('Updating {} {} to {}'.format(branch, revs[0], revs[1]))
@@ -455,7 +456,7 @@ class OSTreePusher(object):
                     exc_info = sys.exc_info()
 
         # Re-raise PushExistsException if all refs exist already
-        if ref_count == 0:
+        if ref_count == 0 and exc_info:
             raise exc_info[0].with_traceback(exc_info[1], exc_info[2])
 
         logging.info('Enumerating objects to send')
