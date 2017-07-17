@@ -145,6 +145,7 @@ class Element(Plugin):
 
         self.__tainted = None
         self.__workspaced_artifact = None
+        self.__workspaced_dependencies_artifact = None
 
     def __lt__(self, other):
         return self.name < other.name
@@ -721,11 +722,17 @@ class Element(Plugin):
 
     # _tainted():
     #
+    # Whether this artifact should be pushed to an artifact cache.
+    #
     # Args:
     #    recalculate (bool) - Whether to force recalculation
     #
     # Returns:
     #    (bool) False if this artifact should be excluded from pushing.
+    #
+    # Note:
+    #    This method should only be called after the element's
+    #    artifact is present in the local artifact cache.
     #
     def _tainted(self, recalculate=False):
         if recalculate or self.__tainted is None:
@@ -734,11 +741,12 @@ class Element(Plugin):
             workspaced = self._workspaced_artifact()
 
             # Whether this artifact's dependencies are tainted
-            dependencies = any(d._tainted() for d in self.dependencies(Scope.BUILD)
-                               if d != self)
+            workspaced_dependencies = any(val for key, val in
+                                          self._workspaced_dependencies_artifact().items()
+                                          if key != _yaml.PROVENANCE_KEY)
 
             # Other conditions should be or-ed
-            self.__tainted = workspaced or dependencies
+            self.__tainted = workspaced or workspaced_dependencies
 
         return self.__tainted
 
@@ -1028,13 +1036,17 @@ class Element(Plugin):
                     dependencies = {
                         e.name: e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
                     }
+                    workspaced_dependencies = {
+                        e.name: e._workspaced() for e in self.dependencies(Scope.BUILD)
+                    }
                     meta = {
-                        'workspaced': self._workspaced(),
                         'keys': {
                             'strong': self._get_cache_key_for_build(),
                             'weak': self._get_cache_key(_KeyStrength.WEAK),
                             'dependencies': dependencies
-                        }
+                        },
+                        'workspaced': self._workspaced(),
+                        'workspaced_dependencies': workspaced_dependencies
                     }
                     _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
@@ -1176,6 +1188,17 @@ class Element(Plugin):
             self.__workspaced_artifact = meta['workspaced']
 
         return self.__workspaced_artifact
+
+    def _workspaced_dependencies_artifact(self):
+
+        if self.__workspaced_dependencies_artifact is None:
+            self._assert_cached(recalculate=False)
+
+            metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+            meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
+            self.__workspaced_dependencies_artifact = meta['workspaced_dependencies']
+
+        return self.__workspaced_dependencies_artifact
 
     # Run some element methods with logging directed to
     # a dedicated log file, here we yield the filename
