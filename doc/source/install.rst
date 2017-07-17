@@ -195,7 +195,8 @@ following command:
 
 ::
 
-    docker run -it -u $UID:$EUID -v `pwd`:/bst-src:rw \
+    docker run -it -u $UID:$EUID -v /etc/passwd:/etc/passwd \
+               -v `pwd`:/bst-src:rw \
                --privileged -w /bst-src buildstream \
 	       python3 setup.py test
 
@@ -204,6 +205,8 @@ Options explained:
 -  ``-it``: Interactive shell and TTY support.
 -  ``-u $UID:$EUID``: Use $UID as user-id and $EUID as group-id when
    running the container.
+-  ``-v /etc/passwd:/etc/passwd``: Mount passwd file in container to ensure
+   the user with uid $UID exists (Needed for bzr support).
 -  ``-v $(pwd):/bst-src:rw``: Mount BuildStream source tree in
    ``/bst-src`` with RW permissions.
 -  ``--privileged``: To give extra privileges to the container (Needed
@@ -222,7 +225,7 @@ Run the following command to run a bash session inside the container:
 
 ::
 
-    docker run -it -u $UID:$EUID \
+    docker run -it -u $UID:$EUID -v /etc/passwd:/etc/passwd \
            -v /path/to/buildstream/workspace:/src:rw \
 	   -v /path/to/buildstream/tmp:/buildstream:rw \
 	   buildstream bash
@@ -232,6 +235,8 @@ Options:
 -  ``-it``: Interactive shell and TTY support.
 -  ``-u $UID:$EUID``: Use $UID as user-id and $EUID as group-id when
    running the container.
+-  ``-v /etc/passwd:/etc/passwd``: Mount passwd file in container to ensure
+   the user with uid $UID exists (Needed for bzr support).
 -  ``-v /path/to/buildstream/workspace:/src:rw``: Mount your workspace in
    ``/src`` inside the container.
 -  ``-v /path/to/buildstream/tmp:/buildstream:rw``: Mount a temporary folder
