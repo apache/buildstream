@@ -21,6 +21,7 @@ before_script:
 #
 tests:
   script:
+  - dnf install -y bzr
   - python3 setup.py test
 
 # Run integration tests
