@@ -61,6 +61,8 @@ class ArtifactCache():
         else:
             self.remote = None
 
+        self.__remote_refs = None
+
     # contains():
     #
     # Check whether the artifact for the specified Element is already available
@@ -235,6 +237,20 @@ class ArtifactCache():
             except OSTreeError as e:
                 raise _ArtifactError("Failed to pull artifact for element {}: {}"
                                      .format(element.name, e)) from e
+
+    # fetch_remote_refs():
+    #
+    # Fetch list of artifacts from remote repository.
+    #
+    def fetch_remote_refs(self):
+        if self.context.artifact_pull.startswith("/"):
+            remote = "file://" + self.context.artifact_pull
+        elif self.remote is not None:
+            remote = self.remote
+        else:
+            raise _ArtifactError("Attempt to fetch remote refs without any pull URL")
+
+        self.__remote_refs = _ostree.list_remote_refs(self.repo, remote=remote)
 
     # can_push():
     #
