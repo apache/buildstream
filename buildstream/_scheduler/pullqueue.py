@@ -39,7 +39,19 @@ class PullQueue(Queue):
         return element._pull()
 
     def skip(self, element):
-        return element._cached(strength=_KeyStrength.STRONG)
+        if element._cached(strength=_KeyStrength.STRONG):
+            return True
+        elif element._remotely_cached(strength=_KeyStrength.STRONG):
+            # pull artifact using strong key
+            return False
+        elif element._cached():
+            return True
+        elif element._remotely_cached():
+            # pull artifact using weak key
+            return False
+        else:
+            # nothing to pull
+            return True
 
     def done(self, element, result, returncode):
 
