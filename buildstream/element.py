@@ -115,6 +115,7 @@ class Element(Plugin):
         self.__cache_key_from_artifact = None   # Our cached cache key from artifact
         self.__artifacts = artifacts            # Artifact cache
         self.__cached = None                    # Whether we have a cached artifact
+        self.__remotely_cached = None           # Whether we have a remotely cached artifact
         self.__built = False                    # Element was locally built
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
@@ -719,6 +720,42 @@ class Element(Plugin):
         if not self._cached(recalculate=recalculate):
             raise ElementError("{}: Missing artifact {}"
                                .format(self, self._get_display_key()))
+
+    # _remotely_cached():
+    #
+    # Args:
+    #    recalculate (bool): Whether to forcefully recalculate
+    #
+    # Returns:
+    #    (bool): Whether this element is already present in
+    #            the remote artifact cache
+    #
+    # Note: The recalculate argument is actually tristate:
+    #
+    #    o None: Calculate cache state if not previously calculated
+    #    o True: Force recalculate cached state, even if already checked
+    #    o False: Only return cached state, never recalculate automatically
+    #
+    def _remotely_cached(self, recalculate=None, strength=None):
+
+        if recalculate:
+            self.__remotely_cached = None
+            self.__remotely_strong_cached = None
+
+        if strength is None:
+            strength = _KeyStrength.STRONG if self.get_context().strict_build_plan else _KeyStrength.WEAK
+
+        if recalculate is not False:
+            if self.__remotely_cached is None and self._get_cache_key() is not None:
+                self.__remotely_cached = self.__artifacts.remote_contains(self)
+                self.__remotely_strong_cached = self.__artifacts.remote_contains(self, strength=_KeyStrength.STRONG)
+
+        if self.__remotely_cached is None:
+            return False
+        elif strength == _KeyStrength.STRONG:
+            return self.__remotely_strong_cached
+        else:
+            return self.__remotely_cached
 
     # _tainted():
     #
