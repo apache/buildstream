@@ -357,3 +357,22 @@ def configure_remote(repo, remote, url, key_url=None):
             repo.remote_gpg_import(remote, stream, None, 0, None)
         except GLib.GError as e:
             raise OSTreeError("Failed to add gpg key from url '{}': {}".format(key_url, e.message)) from e
+
+
+# list_remote_refs():
+#
+# Fetch list of refs from a remote.
+#
+# Args:
+#    repo (OSTree.Repo): The repo
+#    remote (str): An optional remote name, defaults to 'origin'
+#
+# Returns:
+#    (dict): A dict of refs to checksums.
+#
+def list_remote_refs(repo, remote="origin"):
+    try:
+        _, refs = repo.remote_list_refs(remote)
+        return refs
+    except GLib.GError as e:
+        raise OSTreeError("Failed to fetch remote refs from '{}': {}".format(remote, e.message)) from e
