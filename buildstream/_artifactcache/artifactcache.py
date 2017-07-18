@@ -87,6 +87,31 @@ class ArtifactCache():
         ref = buildref(element, key)
         return _ostree.exists(self.repo, ref)
 
+    # remote_contains():
+    #
+    # Check whether the artifact for the specified Element is already available
+    # in the remote artifact cache.
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
+    #
+    # Returns: True if the artifact is in the cache, False otherwise
+    #
+    def remote_contains(self, element, strength=None):
+        if not self.__remote_refs:
+            return False
+
+        if strength is None:
+            strength = _KeyStrength.STRONG if self.context.strict_build_plan else _KeyStrength.WEAK
+
+        key = element._get_cache_key(strength)
+        if not key:
+            return False
+
+        ref = buildref(element, key)
+        return ref in self.__remote_refs
+
     # remove():
     #
     # Removes the artifact for the specified Element from the local artifact
