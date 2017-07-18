@@ -172,6 +172,9 @@ class Pipeline():
 
             self.project._set_workspace(element, source, workspace)
 
+        if self.artifacts.can_fetch():
+            self.artifacts.fetch_remote_refs()
+
         for element in self.dependencies(Scope.ALL):
             if cache_ticker:
                 cache_ticker(element.name)
