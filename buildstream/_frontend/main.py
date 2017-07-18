@@ -430,7 +430,7 @@ def workspace():
 ##################################################################
 #                     Workspace Open Command                     #
 ##################################################################
-@workspace.command(short_help="Create a workspace for manual source modification")
+@workspace.command(name='open', short_help="Create a workspace for manual source modification")
 @click.option('--no-checkout', default=False, is_flag=True,
               help="Do not checkout the source, only link to the given directory")
 @click.option('--force', '-f', default=False, is_flag=True,
@@ -444,7 +444,7 @@ def workspace():
 @click.argument('element')
 @click.argument('directory')
 @click.pass_obj
-def open(app, no_checkout, force, source, variant, track, element, directory):
+def workspace_open(app, no_checkout, force, source, variant, track, element, directory):
     app.initialize(element, variant, rewritable=track, inconsistent=track)
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
@@ -458,7 +458,7 @@ def open(app, no_checkout, force, source, variant, track, element, directory):
 ##################################################################
 #                     Workspace Close Command                    #
 ##################################################################
-@workspace.command(short_help="Close a workspace created with `workspace open`")
+@workspace.command(name='close', short_help="Close a workspace")
 @click.option('--source', '-s', default=None,
               help="The source of the workspace to remove. Projects with one source may omit this")
 @click.option('--remove-dir', default=False, is_flag=True,
@@ -467,7 +467,7 @@ def open(app, no_checkout, force, source, variant, track, element, directory):
               help='A variant of the specified target')
 @click.argument('element')
 @click.pass_obj
-def close(app, source, remove_dir, variant, element):
+def workspace_close(app, source, remove_dir, variant, element):
     if remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
@@ -486,7 +486,7 @@ def close(app, source, remove_dir, variant, element):
 ##################################################################
 #                     Workspace Reset Command                    #
 ##################################################################
-@workspace.command(short_help="Reset a workspace to its original state")
+@workspace.command(name='reset', short_help="Reset a workspace to its original state")
 @click.option('--source', '-s', default=None,
               help="The source of the workspace to reset. Projects with one source may omit this")
 @click.option('--track', default=False, is_flag=True,
@@ -498,7 +498,7 @@ def close(app, source, remove_dir, variant, element):
 @click.confirmation_option(prompt='This will remove all your changes, are you sure?')
 @click.argument('element')
 @click.pass_obj
-def reset(app, source, track, no_checkout, variant, element):
+def workspace_reset(app, source, track, no_checkout, variant, element):
     app.initialize(element, variant)
     try:
         app.pipeline.reset_workspace(app.scheduler, source, track, no_checkout)
@@ -512,9 +512,9 @@ def reset(app, source, track, no_checkout, variant, element):
 ##################################################################
 #                     Workspace List Command                     #
 ##################################################################
-@workspace.command(name="list", short_help="List open workspaces")
+@workspace.command(name='list', short_help="List open workspaces")
 @click.pass_obj
-def list_(app):
+def workspace_list(app):
     project = Project(app.main_options['directory'],
                       app.host_arch,
                       app.target_arch)
