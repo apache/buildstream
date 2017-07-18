@@ -18,7 +18,9 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+import multiprocessing
 import os
+import sys
 import tempfile
 
 from .. import _ostree, utils
@@ -250,7 +252,22 @@ class ArtifactCache():
         else:
             raise _ArtifactError("Attempt to fetch remote refs without any pull URL")
 
-        self.__remote_refs = _ostree.list_remote_refs(self.repo, remote=remote)
+        def child_action(repo, remote, q):
+            try:
+                q.put((True, _ostree.list_remote_refs(self.repo, remote=remote)))
+            except OSTreeError as e:
+                q.put((False, e))
+
+        q = multiprocessing.Queue()
+        p = multiprocessing.Process(target=child_action, args=(self.repo, remote, q))
+        p.start()
+        ret, res = q.get()
+        p.join()
+
+        if ret:
+            self.__remote_refs = res
+        else:
+            raise _ArtifactError("Failed to fetch remote refs") from res
 
     # can_push():
     #
