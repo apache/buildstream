@@ -230,25 +230,21 @@ class ArtifactCache():
             raise _ArtifactError("Attempt to pull artifact without any pull URL")
 
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
+
         try:
-            # try fetching the artifact using the strong cache key
-            ref = buildref(element, element._get_cache_key())
-            _ostree.fetch(self.repo, remote=remote,
-                          ref=ref, progress=progress)
+            if self.remote_contains(element, strength=_KeyStrength.STRONG):
+                # fetch the artifact using the strong cache key
+                ref = buildref(element, element._get_cache_key())
+                _ostree.fetch(self.repo, remote=remote,
+                              ref=ref, progress=progress)
 
-            # resolve ref to checksum
-            rev = _ostree.checksum(self.repo, ref)
+                # resolve ref to checksum
+                rev = _ostree.checksum(self.repo, ref)
 
-            # update weak ref by pointing it to this newly fetched artifact
-            _ostree.set_ref(self.repo, weak_ref, rev)
-        except OSTreeError as e:
-            # fetch the artifact using the weak cache key, if the context allows it
-            # (and it's not already in the local cache)
-            if self.context.strict_build_plan or element._cached():
-                raise _ArtifactError("Failed to pull artifact for element {}: {}"
-                                     .format(element.name, e)) from e
-
-            try:
+                # update weak ref by pointing it to this newly fetched artifact
+                _ostree.set_ref(self.repo, weak_ref, rev)
+            elif self.remote_contains(element):
+                # fetch the artifact using the weak cache key
                 _ostree.fetch(self.repo, remote=remote,
                               ref=weak_ref, progress=progress)
 
@@ -261,9 +257,12 @@ class ArtifactCache():
 
                 # create tag for strong cache key
                 _ostree.set_ref(self.repo, ref, rev)
-            except OSTreeError as e:
-                raise _ArtifactError("Failed to pull artifact for element {}: {}"
-                                     .format(element.name, e)) from e
+            else:
+                raise _ArtifactError("Attempt to pull unavailable artifact for element {}"
+                                     .format(element.name))
+        except OSTreeError as e:
+            raise _ArtifactError("Failed to pull artifact for element {}: {}"
+                                 .format(element.name, e)) from e
 
     # fetch_remote_refs():
     #
