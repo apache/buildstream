@@ -1112,29 +1112,12 @@ class Element(Plugin):
         def progress(percent, message):
             self.status(message)
 
-        # Avoid sending failure messages by not using a timed activity
-        # here, in any case the overall activity is timed by the PullQueue
-        # in the scheduler.
-        #
-        # Instead just issue an info message about whether an artifact
-        # was available or not.
-        try:
-            self.__artifacts.pull(self, progress=progress)
+        self.__artifacts.pull(self, progress=progress)
 
-            # Notify successfull download
-            display_key = self._get_display_key()
-            self.info("Downloaded artifact {}".format(display_key))
-            downloaded = True
-        except _ArtifactError:
-            # Just return false, so that the frontend knows that
-            # the artifact was not downloaded
-            #
-            # FIXME: Ideally we would want to raise an exception here if there
-            #        was an error, but just return False if there was no error
-            #        an no artifact was available to download
-            downloaded = False
-
-        return downloaded
+        # Notify successfull download
+        display_key = self._get_display_key()
+        self.info("Downloaded artifact {}".format(display_key))
+        return True
 
     # _push():
     #
