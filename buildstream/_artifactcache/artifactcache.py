@@ -65,6 +65,8 @@ class ArtifactCache():
 
         self.__remote_refs = None
 
+        self.__offline = False
+
     # contains():
     #
     # Check whether the artifact for the specified Element is already available
@@ -224,7 +226,7 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_fetch(self):
-        return self.remote is not None
+        return not self.__offline and self.remote is not None
 
     # pull():
     #
@@ -235,6 +237,9 @@ class ArtifactCache():
     #     progress (callable): The progress callback, if any
     #
     def pull(self, element, progress=None):
+
+        if self.__offline:
+            raise _ArtifactError("Attempt to pull artifact while offline")
 
         if self.context.artifact_pull.startswith("/"):
             remote = "file://" + self.context.artifact_pull
@@ -314,7 +319,7 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_push(self):
-        return self.context.artifact_push is not None
+        return not self.__offline and self.context.artifact_push is not None
 
     # push():
     #
@@ -330,6 +335,9 @@ class ArtifactCache():
     # Raises:
     #   _ArtifactError if there was an error
     def push(self, element):
+
+        if self.__offline:
+            raise _ArtifactError("Attempt to push artifact while offline")
 
         if self.context.artifact_push is None:
             raise _ArtifactError("Attempt to push artifact without any push URL")
@@ -369,3 +377,10 @@ class ArtifactCache():
                         raise _ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
 
                 return pushed
+
+    # set_offline():
+    #
+    # Do not attempt to pull or push artifacts.
+    #
+    def set_offline(self):
+        self.__offline = True
