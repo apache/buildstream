@@ -11,7 +11,6 @@ variables:
             for package in %{packages}; do
               dpkg-deb --build %{build-root}/$package %{install-root}
             done
-            
 
 config:
   # The element that should be staged into "/". It must contain
