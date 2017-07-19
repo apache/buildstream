@@ -39,7 +39,7 @@ class PushQueue(Queue):
         return element._push()
 
     def skip(self, element):
-        return not element._built()
+        return element._skip_push()
 
     def done(self, element, result, returncode):
 
