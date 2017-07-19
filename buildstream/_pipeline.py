@@ -28,7 +28,7 @@ from operator import itemgetter
 from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
 
-from .exceptions import _BstError
+from .exceptions import _BstError, _ArtifactError
 from ._message import Message, MessageType
 from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
@@ -173,7 +173,11 @@ class Pipeline():
             self.project._set_workspace(element, source, workspace)
 
         if self.artifacts.can_fetch():
-            self.artifacts.fetch_remote_refs()
+            try:
+                self.artifacts.fetch_remote_refs()
+            except _ArtifactError:
+                self.message(self.target, MessageType.WARN, "Failed to fetch remote refs")
+                self.artifacts.set_offline()
 
         for element in self.dependencies(Scope.ALL):
             if cache_ticker:
