@@ -116,7 +116,6 @@ class Element(Plugin):
         self.__artifacts = artifacts            # Artifact cache
         self.__cached = None                    # Whether we have a cached artifact
         self.__remotely_cached = None           # Whether we have a remotely cached artifact
-        self.__built = False                    # Element was locally built
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
 
@@ -787,16 +786,6 @@ class Element(Plugin):
 
         return self.__tainted
 
-    # _set_built():
-    #
-    # Forcefully set the built state on the element.
-    #
-    # This is done by the Pipeline when an element successfully
-    # completes a build.
-    #
-    def _set_built(self):
-        self.__built = True
-
     # _buildable():
     #
     # Returns:
@@ -1092,14 +1081,6 @@ class Element(Plugin):
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
-
-    # _built():
-    #
-    # Returns:
-    #    (bool): Whether this element has been built locally
-    #
-    def _built(self):
-        return self.__built
 
     # _pull():
     #
