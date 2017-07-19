@@ -1119,6 +1119,23 @@ class Element(Plugin):
         self.info("Downloaded artifact {}".format(display_key))
         return True
 
+    # _skip_push():
+    #
+    # Determine whether element should be pushed.
+    #
+    # Returns:
+    #   (bool): True if this element should not be pushed
+    #
+    def _skip_push(self):
+        self._assert_cached()
+
+        # Do not push tained artifact
+        if self._tainted():
+            return True
+
+        # Do not push artifact that is already in the remote artifact repository
+        return self.__artifacts.remote_contains_key(self, self._get_cache_key_from_artifact())
+
     # _push():
     #
     # Push locally cached artifact to remote artifact repository.
