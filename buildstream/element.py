@@ -1185,7 +1185,10 @@ class Element(Plugin):
 
             metadir = os.path.join(self.__artifacts.extract(self), 'meta')
             meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
-            self.__workspaced_artifact = meta['workspaced']
+            if 'workspaced' in meta:
+                self.__workspaced_artifact = meta['workspaced']
+            else:
+                self.__workspaced_artifact = False
 
         return self.__workspaced_artifact
 
@@ -1196,7 +1199,10 @@ class Element(Plugin):
 
             metadir = os.path.join(self.__artifacts.extract(self), 'meta')
             meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
-            self.__workspaced_dependencies_artifact = meta['workspaced_dependencies']
+            if 'workspaced_dependencies' in meta:
+                self.__workspaced_dependencies_artifact = meta['workspaced_dependencies']
+            else:
+                self.__workspaced_dependencies_artifact = {}
 
         return self.__workspaced_dependencies_artifact
 
