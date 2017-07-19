@@ -44,6 +44,5 @@ class BuildQueue(Queue):
         # Elements are cached after they are successfully assembled
         if returncode == 0:
             element._cached(recalculate=True)
-            element._set_built()
 
         return True
