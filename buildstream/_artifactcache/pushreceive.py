@@ -135,13 +135,21 @@ class PushMessageWriter(object):
         self.file.write(msg)
         self.file.flush()
 
-    def send_info(self, repo):
+    def send_info(self, repo, refs):
         cmdtype = PushCommandType.info
         mode = repo.get_mode()
-        _, refs = repo.list_refs(None, None)
+
+        ref_map = {}
+        for ref in refs:
+            _, checksum = repo.resolve_rev(ref, True)
+            if checksum:
+                _, has_object = repo.has_object(OSTree.ObjectType.COMMIT, ref, None)
+                if has_object:
+                    ref_map[ref] = checksum
+
         args = {
             'mode': GLib.Variant('i', mode),
-            'refs': GLib.Variant('a{ss}', refs)
+            'refs': GLib.Variant('a{ss}', ref_map)
         }
         command = PushCommand(cmdtype, args)
         self.write(command)
@@ -416,6 +424,9 @@ class OSTreePusher(object):
         remote_refs = {}
         update_refs = {}
 
+        # Send info immediately
+        self.writer.send_info(self.repo, list(self.refs.keys()))
+
         # Receive remote info
         logging.info('Receiving repository information')
         args = self.reader.receive_info()
@@ -504,8 +515,12 @@ class OSTreeReceiver(object):
             raise
 
     def do_run(self):
-        # Send info immediately
-        self.writer.send_info(self.repo)
+        # Receive remote info
+        args = self.reader.receive_info()
+        remote_refs = args['refs']
+
+        # Send info back
+        self.writer.send_info(self.repo, list(remote_refs.keys()))
 
         # Wait for update or done command
         cmdtype, args = self.reader.receive([PushCommandType.update,
