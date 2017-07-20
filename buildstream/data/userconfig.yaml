@@ -57,6 +57,7 @@ artifacts:
   pull-url: ''
 
   # A url to upload built artifacts to
+  # (must point to the same repository as pull-url)
   push-url: ''
 
   # Specify the port number for pushing artifacts, if it's
