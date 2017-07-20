@@ -1,8 +1,9 @@
+import multiprocessing
 import os
 import pytest
 import tempfile
 
-from buildstream import Context, Project, _yaml
+from buildstream import Context, Project, _yaml, _ostree
 from buildstream.exceptions import _ArtifactError
 from buildstream.element import _KeyStrength
 from buildstream._artifactcache import ArtifactCache
@@ -81,10 +82,20 @@ def test_push_pull(pipeline, tmpdir):
     build_commit(pipeline)
     assert(pipeline.artifacts.contains(pipeline.target))
 
-    pipeline.artifacts.push(pipeline.target)
+    # push artifact in subprocess to avoid hang in the next OSTree operation
+    p = multiprocessing.Process(target=pipeline.artifacts.push, args=(pipeline.target,))
+    p.start()
+    p.join()
+
+    # generate summary file
+    push_repo = _ostree.ensure(pipeline.context.artifact_push, True)
+    push_repo.regenerate_summary()
 
     pipeline.artifacts.remove(pipeline.target)
     assert(not pipeline.artifacts.contains(pipeline.target))
+
+    # read summary file
+    pipeline.artifacts.fetch_remote_refs()
 
     pipeline.artifacts.pull(pipeline.target)
     assert(pipeline.artifacts.contains(pipeline.target))
