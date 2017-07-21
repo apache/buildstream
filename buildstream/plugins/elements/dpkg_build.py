@@ -125,8 +125,23 @@ class DpkgElement(BuildElement):
         with open(controlpath) as f:
             return re.findall(r"Package:\s*(.+)\n", f.read())
 
+    def configure(self, node):
+        # __original_commands is needed for cache-key generation,
+        # as commands can be altered during builds and invalidate the key
+        super().configure(node)
+        self.__original_commands = dict(self.commands)
+
+    def get_unique_key(self):
+        key = super().get_unique_key()
+        # Overriding because we change self.commands mid-build, making it
+        # unsuitable to be included in the cache key.
+        for domain, cmds in self.__original_commands.items():
+            key[domain] = cmds
+
+        return key
+
     def assemble(self, sandbox):
-        # Replace %{packages} if no variable was set
+        # Replace <PACKAGES> if no variable was set
         packages = self._get_packages(sandbox)
         self.commands = dict([
             (group, [
