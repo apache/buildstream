@@ -220,12 +220,12 @@ class ArtifactCache():
     #     element (Element): The Element commit an artifact for
     #     content (str): The element's content directory
     #
-    def commit(self, element, content):
+    def commit(self, key, weak_key, element, content):
         # tag with strong cache key based on dependency versions used for the build
-        ref = buildref(element, element._get_cache_key_for_build())
+        ref = buildref(element, key)
 
         # also store under weak cache key
-        weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
+        weak_ref = buildref(element, weak_key)
 
         _ostree.commit(self.repo, content, ref, weak_ref)
 

@@ -1015,6 +1015,11 @@ class Element(Plugin):
                 # The plugin's assemble() method may modify this, though.
                 self.__dynamic_public = self.__public
 
+                # Calculate effective cache key before calling plugin methods
+                # to ensure the key is not affected by any side-effects of
+                # these methods
+                effective_cache_key = self._get_cache_key_for_build()
+
                 # Call the abstract plugin methods
                 try:
                     # Step 1 - Configure
@@ -1067,7 +1072,7 @@ class Element(Plugin):
                     }
                     meta = {
                         'keys': {
-                            'strong': self._get_cache_key_for_build(),
+                            'strong': effective_cache_key,
                             'weak': self._get_cache_key(_KeyStrength.WEAK),
                             'dependencies': dependencies
                         },
@@ -1077,7 +1082,9 @@ class Element(Plugin):
                     _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
                     with self.timed_activity("Caching Artifact"):
-                        self.__artifacts.commit(self, assembledir)
+                        self.__artifacts.commit(effective_cache_key,
+                                                self._get_cache_key(strength=_KeyStrength.WEAK),
+                                                self, assembledir)
 
             # Finally cleanup the build dir
             shutil.rmtree(rootdir)
