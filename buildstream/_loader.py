@@ -762,7 +762,13 @@ class Loader():
     ########################################
     #         Resolve Project Variant      #
     ########################################
-    def resolve_project_variant(self, element_name):
+    def resolve_project_variant(self, element_name, resolved=None):
+        if resolved is None:
+            resolved = {}
+
+        if resolved.get(element_name) is not None:
+            return
+
         element = self.elements[element_name]
         project_variant = _yaml.node_get(element.data, str,
                                          Symbol.PROJECT_VARIANT,
@@ -783,7 +789,9 @@ class Loader():
                                 .format(request1, request2))
 
         for dep in element.deps:
-            self.resolve_project_variant(dep.name)
+            self.resolve_project_variant(dep.name, resolved)
+
+        resolved[element_name] = True
 
     ########################################
     #            Element Sorting           #
