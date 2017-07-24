@@ -137,7 +137,7 @@ setup(name='BuildStream',
       entry_points='''
       [console_scripts]
       bst=buildstream._frontend:cli
-      bst-artifact-receive=buildstream._artifactcache:receive_main
+      bst-artifact-receive=buildstream._artifactcache.pushreceive:receive_main
       ''',
       setup_requires=['pytest-runner', 'setuptools_scm'],
       tests_require=['pep8',
