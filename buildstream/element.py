@@ -1042,7 +1042,7 @@ class Element(Plugin):
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = self.__public
+                self.__dynamic_public = _yaml.node_copy(self.__public)
 
                 # Call the abstract plugin methods
                 try:
