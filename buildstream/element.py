@@ -811,14 +811,6 @@ class Element(Plugin):
     # None is returned if information for the cache key is missing.
     #
     def __calculate_cache_key(self, dependencies):
-        # It is not really necessary to check if the Source object's
-        # local mirror has the ref cached locally or not, it's only important
-        # to know if the source has a ref specified or not, in order to
-        # produce a cache key.
-        #
-        if self._consistency() == Consistency.INCONSISTENT:
-            return None
-
         # No cache keys for dependencies which have no cache keys
         if None in dependencies:
             return None
@@ -856,6 +848,14 @@ class Element(Plugin):
     #
     def _get_cache_key(self, strength=_KeyStrength.STRONG):
         if self.__cache_key is None:
+            # It is not really necessary to check if the Source object's
+            # local mirror has the ref cached locally or not, it's only important
+            # to know if the source has a ref specified or not, in order to
+            # produce a cache key.
+            #
+            if self._consistency() == Consistency.INCONSISTENT:
+                return None
+
             # Calculate strong cache key
             dependencies = [
                 e._get_cache_key() for e in self.dependencies(Scope.BUILD)
