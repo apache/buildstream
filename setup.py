@@ -26,13 +26,6 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 4:
     print("BuildStream requires Python >= 3.4")
     sys.exit(1)
 
-bwrap_path = shutil.which('bwrap')
-if not bwrap_path:
-    print("Bubblewrap not found: BuildStream requires Bubblewrap (bwrap) for"
-          " sandboxing the build environment. Install it using your package manager"
-          " (usually bwrap or bubblewrap)")
-    sys.exit(1)
-
 try:
     from setuptools import setup, find_packages
 except ImportError:
@@ -40,43 +33,6 @@ except ImportError:
           " your package manager (usually python3-setuptools) or via pip (pip3"
           " install setuptools).")
     sys.exit(1)
-
-
-##################################################################
-# OSTree version requirements
-##################################################################
-REQUIRED_OSTREE_YEAR = 2017
-REQUIRED_OSTREE_RELEASE = 8
-
-
-def exit_ostree(reason):
-    print(reason +
-          "\nBuildStream requires OSTree >= v{}.{} with Python bindings. "
-          .format(REQUIRED_OSTREE_YEAR, REQUIRED_OSTREE_RELEASE) +
-          "Install it using your package manager (usually ostree or gir1.2-ostree-1.0).")
-    sys.exit(1)
-
-try:
-    import gi
-except ImportError:
-    print("BuildStream requires PyGObject (aka PyGI). Install it using"
-          " your package manager (usually pygobject3 or python-gi).")
-    sys.exit(1)
-
-try:
-    gi.require_version('OSTree', '1.0')
-    from gi.repository import OSTree
-except:
-    exit_ostree("OSTree not found")
-
-try:
-    if OSTree.YEAR_VERSION < REQUIRED_OSTREE_YEAR or \
-       (OSTree.YEAR_VERSION == REQUIRED_OSTREE_YEAR and
-        OSTree.RELEASE_VERSION < REQUIRED_OSTREE_RELEASE):
-        exit_ostree("OSTree v{}.{} is too old."
-                    .format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
-except AttributeError:
-    exit_ostree("OSTree is too old.")
 
 
 ###########################################
