@@ -576,6 +576,10 @@ class App():
         else:
             self.interactive = self.is_a_tty
 
+        # Whether we handle failures interactively
+        # defaults to whether we are interactive or not.
+        self.interactive_failures = self.interactive
+
         # Early enable messaging in debug mode
         if self.main_options['debug']:
             click.echo("DEBUG: Early enablement of messages")
@@ -627,6 +631,12 @@ class App():
             option_value = self.main_options.get(cli_option)
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
+
+        # Disable interactive failures if --on-error was specified
+        # on the command line, but not if it was only specified
+        # in the config.
+        if self.main_options.get('on_error') is not None:
+            self.interactive_failures = False
 
         # Create the application's scheduler
         self.scheduler = Scheduler(self.context,
@@ -766,7 +776,8 @@ class App():
     def handle_failure(self, element, failure):
 
         # Handle non interactive mode setting of what to do when a job fails.
-        if not self.interactive:
+        if not self.interactive_failures:
+
             if self.context.sched_error_action == 'terminate':
                 self.scheduler.terminate_jobs()
             elif self.context.sched_error_action == 'quit':
