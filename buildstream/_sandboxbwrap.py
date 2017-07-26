@@ -253,6 +253,11 @@ class SandboxBwrap(Sandbox):
         with ExitStack() as stack:
             stack.enter_context(mount_map.mounted(self))
 
+            # Ensure the cwd exists
+            if cwd is not None:
+                workdir = os.path.join(root_mount_source, cwd.lstrip(os.sep))
+                os.makedirs(workdir, exist_ok=True)
+
             # If we're interactive, we want to inherit our stdin,
             # otherwise redirect to /dev/null, ensuring process
             # disconnected from terminal.
