@@ -649,6 +649,10 @@ def push(repo, remote, remote_port, branches, output):
         try:
             pusher.run()
             return True
+        except ConnectionError as e:
+            # Connection attempt failed or connection was terminated unexpectedly
+            terminate_push()
+            raise PushException("Connection failed") from e
         except PushException:
             terminate_push()
             raise
