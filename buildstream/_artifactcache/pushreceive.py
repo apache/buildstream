@@ -548,24 +548,7 @@ class OSTreeReceiver(object):
         if cmdtype == PushCommandType.done:
             return 0
         update_refs = args
-        for branch, revs in update_refs.items():
-            # Check that each branch can be updated appropriately
-            _, current = self.repo.resolve_rev(branch, True)
-            if current is None:
-                # From commit should be all 0s
-                if revs[0] != '0' * 64:
-                    self.writer.send_status(False,
-                                            'Invalid from commit %s '
-                                            'for new branch %s' % (revs[0], branch))
-                    self.reader.receive_done()
-                    return 1
-            elif revs[0] != current:
-                self.writer.send_status(False,
-                                        'Branch %s is at %s, not %s' % (branch, current, revs[0]))
-                self.reader.receive_done()
-                return 1
 
-        # All updates valid
         self.writer.send_status(True)
 
         # Wait for putobjects or done
