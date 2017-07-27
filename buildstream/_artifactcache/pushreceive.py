@@ -40,7 +40,7 @@ gi.require_version('OSTree', '1.0')
 from gi.repository import GLib, Gio, OSTree  # nopep8
 
 
-PROTO_VERSION = 0
+PROTO_VERSION = 1
 HEADER_SIZE = 5
 
 
@@ -496,6 +496,12 @@ class OSTreePusher(object):
         # Send all the objects to receiver, checking status after each
         self.writer.send_putobjects(self.repo, objects)
 
+        # Inform receiver that all objects have been sent
+        self.writer.send_done()
+
+        # Wait until receiver has completed
+        self.reader.receive_done()
+
         return self.close()
 
 
@@ -562,6 +568,9 @@ class OSTreeReceiver(object):
         # Receive the actual objects
         received_objects = self.reader.receive_putobjects(self.repo)
 
+        # Ensure that pusher has sent all objects
+        self.reader.receive_done()
+
         # If we didn't get any objects, we're done
         if len(received_objects) == 0:
             return 0
@@ -578,6 +587,9 @@ class OSTreeReceiver(object):
         for branch, revs in update_refs.items():
             logging.debug('Setting ref {} to {}'.format(branch, revs[1]))
             self.repo.set_ref_immediate(None, branch, revs[1], None)
+
+        # Inform pusher that everything is in place
+        self.writer.send_done()
 
         return 0
 
