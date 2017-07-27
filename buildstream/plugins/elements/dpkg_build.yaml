@@ -19,6 +19,8 @@ variables:
     for pkg in %{packages}; do
       cp -a debian/${pkg}/* %{install-root}
     done
+  clear-debian: |
+    rm -r %{install-root}/DEBIAN
   patch: |
     if grep -q "3.0 (quilt)" debian/source/format; then
       quilt push -a
@@ -50,6 +52,8 @@ config:
   install-commands:
   - |
     %{install-packages}
+  - |
+    %{clear-debian}
 
   # Commands for stripping debugging information out of
   # installed binaries
