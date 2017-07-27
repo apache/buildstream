@@ -102,7 +102,7 @@ will create a package named "foo-bar"
 package-scripts
 ---------------
 
-preinstall, postinstall, prerm and postrm scripts will be generated
+preinst, postinst, prerm and postrm scripts will be generated
 based on data in pacakge-scripts, if it exists. The scripts are formatted as
 raw text, e.g.
 
@@ -111,11 +111,11 @@ raw text, e.g.
    public:
      package-scripts:
        foo:
-         preinstall: |
+         preinst: |
            #!/usr/bin/bash
            /sbin/ldconfig
        bar:
-         postinstall: |
+         postinst: |
            #!/usr/bin/bash
            /usr/share/fonts/generate_fonts.sh
 

@@ -88,7 +88,7 @@ e.g.
 package-scripts
 ---------------
 
-preinstall, postinstall, prerm and postrm scripts may be written to the
+preinst, postinst, prerm and postrm scripts may be written to the
 package if they are detected. They are written as raw text. e.g.
 
 .. code:: yaml
@@ -96,11 +96,11 @@ package if they are detected. They are written as raw text. e.g.
    public:
      package-scripts:
        foo:
-         preinstall: |
+         preinst: |
            #!/usr/bin/bash
            /sbin/ldconfig
        bar:
-         postinstall: |
+         postinst: |
            #!/usr/bin/bash
            /usr/share/fonts/generate_fonts.sh
 
