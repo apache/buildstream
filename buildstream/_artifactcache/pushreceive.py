@@ -583,6 +583,12 @@ class OSTreeReceiver(object):
             logging.debug('Renaming {} to {}'.format(tmp_path, obj_path))
             os.rename(tmp_path, obj_path)
 
+        # Verify that we have the specified commit objects
+        for branch, revs in update_refs.items():
+            _, has_object = self.repo.has_object(OSTree.ObjectType.COMMIT, revs[1], None)
+            if not has_object:
+                raise PushException('Missing commit {} for ref {}'.format(revs[1], branch))
+
         # Finally, update the refs
         for branch, revs in update_refs.items():
             logging.debug('Setting ref {} to {}'.format(branch, revs[1]))
