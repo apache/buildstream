@@ -55,6 +55,7 @@ class Queue():
         self.wait_queue = deque()
         self.done_queue = deque()
         self.active_jobs = []
+        self.max_retries = 0
 
         # For the frontend to know how many elements
         # were successfully processed, failed, or skipped
@@ -139,6 +140,8 @@ class Queue():
     # Attach to the scheduler
     def attach(self, scheduler):
         self.scheduler = scheduler
+        if self.queue_type == QueueType.FETCH or self.queue_type == QueueType.PUSH:
+            self.max_retries = scheduler.context.sched_network_retries
 
     def enqueue(self, elts):
         if not elts:
@@ -177,7 +180,7 @@ class Queue():
             job = Job(scheduler, element, self.action_name)
             scheduler.job_starting(job)
 
-            job.spawn(self.process, self.job_done)
+            job.spawn(self.process, self.job_done, self.max_retries)
             self.active_jobs.append(job)
 
         # These were not ready but were in the beginning, give em

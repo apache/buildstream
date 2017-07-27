@@ -78,15 +78,21 @@ class Job():
         self.pid = None                       # The child's pid in the parent
         self.result = None                    # Return value of child action in the parent
 
+        self.tries = 0
+
     # spawn()
     #
     # Args:
     #    action (callable): The action function
     #    complete (callable): The function to call when complete
+    #    max_retries (int): The maximum number of retries
     #
-    def spawn(self, action, complete):
+    def spawn(self, action, complete, max_retries=0):
         self.action = action
         self.complete = complete
+
+        self.tries += 1
+        self.max_retries = max_retries
 
         self.parent_start_listening()
 
@@ -263,9 +269,15 @@ class Job():
 
             except _BstError as e:
                 elapsed = datetime.datetime.now() - starttime
-                self.message(element, MessageType.FAIL, self.action_name,
-                             elapsed=elapsed, detail=str(e),
-                             logfile=filename, sandbox=e.sandbox)
+
+                if self.tries <= self.max_retries:
+                    self.message(element, MessageType.FAIL, "Try #{} failed, retrying".format(self.tries),
+                                 elapsed=elapsed)
+                else:
+                    self.message(element, MessageType.FAIL, self.action_name,
+                                 elapsed=elapsed, detail=str(e),
+                                 logfile=filename, sandbox=e.sandbox)
+
                 self.child_shutdown(1)
 
             except Exception as e:
@@ -290,6 +302,11 @@ class Job():
         self.child_shutdown(0)
 
     def child_complete(self, pid, returncode, element):
+        if returncode != 0 and self.tries <= self.max_retries:
+            self.shutdown()
+            self.spawn(self.action, self.complete, self.max_retries)
+            return
+
         self.complete(self, returncode, element)
 
     def child_shutdown(self, exit_code):
@@ -335,6 +352,10 @@ class Job():
 
         # Log first
         self.child_log(plugin, message, context)
+
+        if message.message_type == MessageType.FAIL and self.tries <= self.max_retries:
+            # Job will be retried, display failures as warnings in the frontend
+            message.message_type = MessageType.WARN
 
         # Send to frontend if appropriate
         if (context._silent_messages() and

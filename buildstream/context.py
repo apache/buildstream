@@ -110,6 +110,9 @@ class Context():
         self.sched_pushers = 4
         """Maximum number of push tasks"""
 
+        self.sched_network_retries = 2
+        """Maximum number of retries for network tasks"""
+
         self.sched_error_action = 'continue'
         """What to do when a build fails in non interactive mode"""
 
@@ -185,6 +188,7 @@ class Context():
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
+        self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 

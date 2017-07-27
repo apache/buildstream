@@ -62,6 +62,8 @@ _, _, _, _, host_machine = os.uname()
               help="Maximum simultaneous build tasks")
 @click.option('--pushers', type=click.INT, default=None,
               help="Maximum simultaneous upload tasks")
+@click.option('--network-retries', type=click.INT, default=None,
+              help="Maximum retries for network tasks")
 @click.option('--no-interactive', is_flag=True, default=False,
               help="Force non interactive mode, otherwise this is automatically decided")
 @click.option('--verbose/--no-verbose', default=None,
@@ -625,7 +627,8 @@ class App():
             'on_error': 'sched_error_action',
             'fetchers': 'sched_fetchers',
             'builders': 'sched_builders',
-            'pushers': 'sched_pushers'
+            'pushers': 'sched_pushers',
+            'network_retries': 'sched_network_retries'
         }
         for cli_option, context_attr in override_map.items():
             option_value = self.main_options.get(cli_option)
