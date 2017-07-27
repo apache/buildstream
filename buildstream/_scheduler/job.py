@@ -172,16 +172,20 @@ class Job():
             self.message(self.element, MessageType.STATUS,
                          "{} suspending".format(self.action_name))
 
-            # Use SIGTSTP so that child processes may handle and propagate
-            # it to processes they spawn that become session leaders
-            os.kill(self.process.pid, signal.SIGTSTP)
+            try:
+                # Use SIGTSTP so that child processes may handle and propagate
+                # it to processes they spawn that become session leaders
+                os.kill(self.process.pid, signal.SIGTSTP)
 
-            # For some reason we receive exactly one suspend event for every
-            # SIGTSTP we send to the child fork(), even though the child forks
-            # are setsid(). We keep a count of these so we can ignore them
-            # in our event loop suspend_event()
-            self.scheduler.internal_stops += 1
-            self.suspended = True
+                # For some reason we receive exactly one suspend event for every
+                # SIGTSTP we send to the child fork(), even though the child forks
+                # are setsid(). We keep a count of these so we can ignore them
+                # in our event loop suspend_event()
+                self.scheduler.internal_stops += 1
+                self.suspended = True
+            except ProcessLookupError:
+                # ignore, process has already exited
+                pass
 
     # resume()
     #
