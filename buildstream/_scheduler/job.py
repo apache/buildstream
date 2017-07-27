@@ -78,8 +78,6 @@ class Job():
         self.pid = None                       # The child's pid in the parent
         self.result = None                    # Return value of child action in the parent
 
-        self.parent_start_listening()
-
     # spawn()
     #
     # Args:
@@ -89,6 +87,8 @@ class Job():
     def spawn(self, action, complete):
         self.action = action
         self.complete = complete
+
+        self.parent_start_listening()
 
         # Spawn the process
         self.process = Process(target=self.child_action,
