@@ -1,4 +1,4 @@
-.TH "BST" "1" "11-Jul-2017" "" "bst Manual"
+.TH "BST" "1" "27-Jul-2017" "" "bst Manual"
 .SH NAME
 bst \- Build and manipulate BuildStream projects...
 .SH SYNOPSIS
@@ -32,6 +32,9 @@ Maximum simultaneous build tasks
 \fB\-\-pushers\fP INTEGER
 Maximum simultaneous upload tasks
 .TP
+\fB\-\-network\-retries\fP INTEGER
+Maximum retries for network tasks
+.TP
 \fB\-\-no\-interactive\fP
 Force non interactive mode, otherwise this is automatically decided
 .TP
@@ -61,26 +64,14 @@ Machine architecture for the sandbox (defaults to --arch)
 .TP
 \fB\-\-target\-arch\fP TEXT
 Machine architecture for build output (defaults to --arch)
+.TP
+\fB\-\-strict\fP / \-\-no\-strict
+Elements must be rebuilt when their dependencies have changed
 .SH COMMANDS
-.PP
-\fBcheckout\fP
-  Checkout a built artifact
-  See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
-
 .PP
 \fBshell\fP
   Shell into an element's sandbox environment
   See \fBbst-shell(1)\fP for full documentation on the \fBshell\fP command.
-
-.PP
-\fBfetch\fP
-  Fetch sources in a pipeline
-  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
-
-.PP
-\fBshow\fP
-  Show elements in the pipeline
-  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
 
 .PP
 \fBbuild\fP
@@ -93,6 +84,26 @@ Machine architecture for build output (defaults to --arch)
   See \fBbst-track(1)\fP for full documentation on the \fBtrack\fP command.
 
 .PP
+\fBshow\fP
+  Show elements in the pipeline
+  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
+
+.PP
 \fBsource-bundle\fP
   Produce a build bundle to be manually executed
   See \fBbst-source-bundle(1)\fP for full documentation on the \fBsource-bundle\fP command.
+
+.PP
+\fBfetch\fP
+  Fetch sources in a pipeline
+  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
+
+.PP
+\fBcheckout\fP
+  Checkout a built artifact
+  See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
+
+.PP
+\fBworkspace\fP
+  Manipulate developer workspaces
+  See \fBbst-workspace(1)\fP for full documentation on the \fBworkspace\fP command.

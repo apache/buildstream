@@ -424,15 +424,16 @@ def source_bundle(app, target, variant, force, directory,
 ##################################################################
 #                      Workspace Command                         #
 ##################################################################
-@cli.group(short_help="")
+@cli.group(short_help="Manipulate developer workspaces")
 def workspace():
+    """Manipulate developer workspaces"""
     pass
 
 
 ##################################################################
 #                     Workspace Open Command                     #
 ##################################################################
-@workspace.command(name='open', short_help="Create a workspace for manual source modification")
+@workspace.command(name='open', short_help="Open a new workspace")
 @click.option('--no-checkout', default=False, is_flag=True,
               help="Do not checkout the source, only link to the given directory")
 @click.option('--force', '-f', default=False, is_flag=True,
@@ -447,6 +448,8 @@ def workspace():
 @click.argument('directory')
 @click.pass_obj
 def workspace_open(app, no_checkout, force, source, variant, track, element, directory):
+    """Open a workspace for manual source modification"""
+
     app.initialize(element, variant, rewritable=track, inconsistent=track)
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
@@ -470,6 +473,8 @@ def workspace_open(app, no_checkout, force, source, variant, track, element, dir
 @click.argument('element')
 @click.pass_obj
 def workspace_close(app, source, remove_dir, variant, element):
+    """Close a workspace"""
+
     if remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
@@ -501,6 +506,8 @@ def workspace_close(app, source, remove_dir, variant, element):
 @click.argument('element')
 @click.pass_obj
 def workspace_reset(app, source, track, no_checkout, variant, element):
+    """Reset a workspace to its original state"""
+
     app.initialize(element, variant)
     try:
         app.pipeline.reset_workspace(app.scheduler, source, track, no_checkout)
@@ -517,6 +524,8 @@ def workspace_reset(app, source, track, no_checkout, variant, element):
 @workspace.command(name='list', short_help="List open workspaces")
 @click.pass_obj
 def workspace_list(app):
+    """List open workspaces"""
+
     project = Project(app.main_options['directory'],
                       app.host_arch,
                       app.target_arch)

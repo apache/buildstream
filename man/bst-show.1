@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "11-Jul-2017" "" "bst show Manual"
+.TH "BST SHOW" "1" "27-Jul-2017" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -26,14 +26,17 @@ The --format option controls what should be printed for each element,
 the following symbols can be used in the format string:
 
 
-    %{name}     The element name
-    %{key}      The abbreviated cache key (if all sources are consistent)
-    %{full-key} The full cache key (if all sources are consistent)
-    %{state}    cached, buildable, waiting or inconsistent
-    %{config}   The element configuration
-    %{vars}     Variable configuration
-    %{env}      Environment settings
-    %{public}   Public domain data
+    %{name}           The element name
+    %{variant}        The selected element variant
+    %{key}            The abbreviated cache key (if all sources are consistent)
+    %{full-key}       The full cache key (if all sources are consistent)
+    %{state}          cached, buildable, waiting or inconsistent
+    %{config}         The element configuration
+    %{vars}           Variable configuration
+    %{env}            Environment settings
+    %{public}         Public domain data
+    %{workspaced}     If the element is workspaced
+    %{workspace-dirs} A list of workspace directories
 
 The value of the %{symbol} without the leading '%' character is understood
 as a pythonic formatting string, so python formatting features apply,
