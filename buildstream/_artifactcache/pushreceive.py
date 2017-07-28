@@ -289,7 +289,7 @@ class PushMessageReader(object):
                 # Current Python tarfile stops reading after the first block.
                 # Read the second block as well to ensure the stream is at
                 # the right position for following messages.
-                if tar.fileobj.tell() - filepos == 512:
+                if tar.fileobj.tell() - filepos < 1024:
                     tar.fileobj.read(512)
                 break
 
