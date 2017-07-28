@@ -282,8 +282,15 @@ class PushMessageReader(object):
         # This should block while tar.next() reads the next
         # tar object from the stream.
         while True:
+            filepos = tar.fileobj.tell()
             tar_info = tar.next()
             if not tar_info:
+                # End of stream marker consists of two 512 Byte blocks.
+                # Current Python tarfile stops reading after the first block.
+                # Read the second block as well to ensure the stream is at
+                # the right position for following messages.
+                if tar.fileobj.tell() - filepos == 512:
+                    tar.fileobj.read(512)
                 break
 
             tar.extract(tar_info, self.tmpdir)
