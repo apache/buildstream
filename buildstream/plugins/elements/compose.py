@@ -41,6 +41,8 @@ from buildstream import Element, ElementError, Scope
 # Element implementation for the 'compose' kind.
 class ComposeElement(Element):
 
+    strict_rebuild = True
+
     def configure(self, node):
         # We name this variable 'integration' only to avoid
         # collision with the Element.integrate() method.
