@@ -87,6 +87,11 @@ class Element(Plugin):
     __defaults = {}          # The defaults from the yaml file and project
     __defaults_set = False   # Flag, in case there are no defaults at all
 
+    strict_rebuild = False
+    """Whether to rebuild this element in non strict mode if
+    any of the dependencies have changed.
+    """
+
     def __init__(self, context, project, artifacts, meta):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
@@ -894,9 +899,16 @@ class Element(Plugin):
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
             # but does not include keys of dependencies.
-            dependencies = [
-                e.name for e in self.dependencies(Scope.BUILD, recurse=False)
-            ]
+            if self.strict_rebuild:
+                dependencies = [
+                    e._get_cache_key(strength=_KeyStrength.WEAK)
+                    for e in self.dependencies(Scope.BUILD, recurse=False)
+                ]
+            else:
+                dependencies = [
+                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
+                ]
+
             self.__weak_cache_key = self.__calculate_cache_key(dependencies)
 
         if strength == _KeyStrength.STRONG:
