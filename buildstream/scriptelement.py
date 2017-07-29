@@ -43,6 +43,8 @@ class ScriptElement(Element):
     __commands = None
     __layout = []
 
+    strict_rebuild = True
+
     def set_work_dir(self, work_dir=None):
         """Sets the working dir
 
