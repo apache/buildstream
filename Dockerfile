@@ -9,10 +9,10 @@
 #     docker build --tag=buildstream:latest .
 #
 # The build takes a long time because it has to download lots of packages using
-# DNF and also build OSTree from source.
+# DNF.
 
 
-FROM fedora:25
+FROM fedora:26
 
 ADD Dockerfile-build.sh /root/Dockerfile-build.sh
 RUN bash /root/Dockerfile-build.sh
