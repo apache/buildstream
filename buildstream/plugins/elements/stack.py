@@ -31,6 +31,8 @@ from buildstream import Element
 # Element implementation for the 'stack' kind.
 class StackElement(Element):
 
+    strict_rebuild = True
+
     def configure(self, node):
         pass
 
