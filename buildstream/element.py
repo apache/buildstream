@@ -902,7 +902,7 @@ class Element(Plugin):
             if self.strict_rebuild:
                 dependencies = [
                     e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD, recurse=False)
+                    for e in self.dependencies(Scope.BUILD)
                 ]
             else:
                 dependencies = [
