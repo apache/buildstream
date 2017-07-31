@@ -23,7 +23,9 @@ import subprocess
 import datetime
 import pkg_resources
 from collections import OrderedDict
+from contextlib import ExitStack
 from ruamel import yaml
+from mmap import mmap
 
 from .. import utils, _yaml
 from ..plugin import _plugin_lookup
@@ -386,12 +388,27 @@ class LogLine(Widget):
         return text
 
     def read_last_lines(self, logfile):
-        tail_command = utils.get_host_tool('tail')
+        with ExitStack() as stack:
+            # mmap handles low-level memory details, allowing for
+            # faster searches
+            f = stack.enter_context(open(logfile, 'r+'))
+            log = stack.enter_context(mmap(f.fileno(), os.path.getsize(f.name)))
 
-        # Lets just expect this to always pass for now...
-        output = subprocess.check_output([tail_command, '-n', str(self.log_lines), logfile])
-        output = output.decode('UTF-8')
-        return output.rstrip()
+            count = 0
+            end = log.size() - 1
+
+            while count < self.log_lines and end >= 0:
+                location = log.rfind(b'\n', 0, end)
+                count += 1
+
+                # If location is -1 (none found), this will print the
+                # first character despite the later +1
+                end = location
+
+            # end+1 since we do not want to print the first newline
+            # (consistent with `tail` behavior)
+            lines = log[end:].splitlines()
+            return '\n'.join([line.decode('utf-8') for line in lines]).rstrip()
 
     #
     # A message to be printed at program startup, indicating
