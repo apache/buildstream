@@ -1372,7 +1372,7 @@ class Element(Plugin):
             if command:
                 argv = [arg for arg in command]
             else:
-                argv = ['sh', '-i']
+                argv = ['/bin/sh', '-i']
 
             self.status("Running command", detail=" ".join(argv))
 
