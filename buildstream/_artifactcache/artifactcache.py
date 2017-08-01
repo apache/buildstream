@@ -277,12 +277,12 @@ class ArtifactCache():
                 _ostree.fetch(self.repo, remote=remote,
                               ref=weak_ref, progress=progress)
 
+                # resolve weak_ref to checksum
+                rev = _ostree.checksum(self.repo, weak_ref)
+
                 # extract strong cache key from this newly fetched artifact
                 element._cached(recalculate=True)
                 ref = buildref(element, element._get_cache_key_from_artifact())
-
-                # resolve ref to checksum
-                rev = _ostree.checksum(self.repo, ref)
 
                 # create tag for strong cache key
                 _ostree.set_ref(self.repo, ref, rev)
