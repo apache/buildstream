@@ -361,6 +361,6 @@ class Scheduler():
             self.job_start_callback(job.element, job.action_name)
 
     # Called by the Queue when a Job completed
-    def job_completed(self, job, success):
+    def job_completed(self, queue, job, success):
         if self.job_complete_callback:
-            self.job_complete_callback(job.element, job.action_name, success)
+            self.job_complete_callback(job.element, queue, job.action_name, success)

@@ -764,7 +764,7 @@ class App():
         self.status.add_job(element, action_name)
         self.maybe_render_status()
 
-    def job_completed(self, element, action_name, success):
+    def job_completed(self, element, queue, action_name, success):
         self.status.remove_job(element, action_name)
         self.maybe_render_status()
 
@@ -783,9 +783,9 @@ class App():
                            "unable to retrieve failure message for element {}\n\n\n\n\n"
                            .format(element))
             else:
-                self.handle_failure(element, failure)
+                self.handle_failure(element, queue, failure)
 
-    def handle_failure(self, element, failure):
+    def handle_failure(self, element, queue, failure):
 
         # Handle non interactive mode setting of what to do when a job fails.
         if not self.interactive_failures:
@@ -806,21 +806,22 @@ class App():
                        "Choose one of the following options:\n" +
                        "  continue  - Continue queueing jobs as much as possible\n" +
                        "  quit      - Exit after all ongoing jobs complete\n" +
-                       "  terminate - Terminate any ongoing jobs and exit\n")
+                       "  terminate - Terminate any ongoing jobs and exit\n" +
+                       "  retry     - Retry this job\n")
             if failure.logfile:
                 summary += "  log       - View the full log file\n"
             if failure.sandbox:
                 summary += "  shell     - Drop into a shell in the failed build sandbox\n"
             summary += "\nPressing ^C will terminate jobs and exit\n"
 
-            choices = ['continue', 'quit', 'terminate']
+            choices = ['continue', 'quit', 'terminate', 'retry']
             if failure.logfile:
                 choices += ['log']
             if failure.sandbox:
                 choices += ['shell']
 
             choice = ''
-            while choice not in ['continue', 'quit', 'terminate']:
+            while choice not in ['continue', 'quit', 'terminate', 'retry']:
                 click.echo(summary, err=True)
 
                 try:
@@ -850,6 +851,10 @@ class App():
                     self.scheduler.stop_queueing()
                 elif choice == 'continue':
                     click.echo("\nContinuing with other non failing elements\n", err=True)
+                elif choice == 'retry':
+                    click.echo("\nRetrying failed job\n", err=True)
+                    queue.failed_elements.remove(element)
+                    queue.enqueue([element])
 
     def tick(self, elapsed):
         self.maybe_render_status()

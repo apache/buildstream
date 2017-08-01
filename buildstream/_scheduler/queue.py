@@ -210,10 +210,11 @@ class Queue():
         else:
             self.failed_elements.append(element)
 
-        # Notify frontend
-        self.scheduler.job_completed(job, returncode == 0)
-
         # Give the token for this job back to the scheduler
         # immediately before invoking another round of scheduling
         self.scheduler.put_job_token(self.queue_type)
+
+        # Notify frontend
+        self.scheduler.job_completed(self, job, returncode == 0)
+
         self.scheduler.sched()
