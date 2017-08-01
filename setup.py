@@ -43,19 +43,16 @@ except ImportError:
 
 
 ##################################################################
-# We require at least v2016.8 of OSTree, which contain the
-# fixes in this bug:
-#   https://github.com/ostreedev/ostree/pull/417
-#
-# Note: As of ostree v2017.4, we can use the symbols:
-#   OSTree.YEAR_VERSION
-#   OSTree.RELEASE_VERSION
-#
-# Directly, to make checks on the version, if we have
-# a version which lacks these symbols, then it is < v2017.4
+# OSTree version requirements
 ##################################################################
+REQUIRED_OSTREE_YEAR = 2017
+REQUIRED_OSTREE_RELEASE = 8
+
+
 def exit_ostree(reason):
-    print(reason + ": BuildStream requires OSTree >= v2016.8 with Python bindings. "
+    print(reason +
+          "\nBuildStream requires OSTree >= v{}.{} with Python bindings. "
+          .format(REQUIRED_OSTREE_YEAR, REQUIRED_OSTREE_RELEASE) +
           "Install it using your package manager (usually ostree or gir1.2-ostree-1.0).")
     sys.exit(1)
 
@@ -72,10 +69,11 @@ try:
 except:
     exit_ostree("OSTree not found")
 
-try:
-    checkout_at = OSTree.Repo.checkout_at
-except AttributeError:
-    exit_ostree("OSTree too old")
+if OSTree.YEAR_VERSION < REQUIRED_OSTREE_YEAR or \
+   (OSTree.YEAR_VERSION == REQUIRED_OSTREE_YEAR and
+    OSTree.RELEASE_VERSION < REQUIRED_OSTREE_RELEASE):
+    exit_ostree("OSTree v{}.{} is too old."
+                .format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
 
 
 ###########################################
