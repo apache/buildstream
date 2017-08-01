@@ -631,6 +631,44 @@ class Pipeline():
         self.open_workspace(scheduler, workspace_dir, source_index, no_checkout,
                             track, False)
 
+    # pull()
+    #
+    # Pulls elements from the pipeline
+    #
+    # Args:
+    #    scheduler (Scheduler): The scheduler to run this pipeline on
+    #    elements (list): List of elements to pull
+    #
+    def pull(self, scheduler, elements):
+
+        if not self.artifacts.can_fetch():
+            self.message(self.target, MessageType.FAIL, "Not configured for pulling artifacts")
+
+        plan = elements
+        self.assert_consistent(plan)
+        self.session_elements = len(plan)
+
+        pull = PullQueue()
+        pull.enqueue(plan)
+        queues = [pull]
+
+        self.message(self.target, MessageType.START, "Pulling {} artifacts".format(len(plan)))
+        elapsed, status = scheduler.run(queues)
+        pulled = len(pull.processed_elements)
+
+        if status == SchedStatus.ERROR:
+            self.message(self.target, MessageType.FAIL, "Pull failed", elapsed=elapsed)
+            raise PipelineError()
+        elif status == SchedStatus.TERMINATED:
+            self.message(self.target, MessageType.WARN,
+                         "Terminated after pulling {} elements".format(pulled),
+                         elapsed=elapsed)
+            raise PipelineError()
+        else:
+            self.message(self.target, MessageType.SUCCESS,
+                         "Pulled {} complete".format(pulled),
+                         elapsed=elapsed)
+
     # push()
     #
     # Pushes elements in the pipeline

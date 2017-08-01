@@ -209,6 +209,37 @@ def track(app, target, variant, deps, except_):
 
 
 ##################################################################
+#                           Pull Command                         #
+##################################################################
+@cli.command(short_help="Pull a built artifact")
+@click.option('--variant',
+              help='A variant of the specified target')
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to fetch (default: none)')
+@click.argument('target')
+@click.pass_obj
+def pull(app, target, variant, deps):
+    """Pull a built artifact from the configured remote artifact cache.
+
+    Specify `--deps` to control which artifacts to pull:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
+    """
+    app.initialize(target, variant)
+    try:
+        to_pull = app.pipeline.deps_elements(deps)
+        app.pipeline.pull(app.scheduler, to_pull)
+        click.echo("")
+    except _BstError as e:
+        click.echo("")
+        click.echo("ERROR: {}".format(e))
+        sys.exit(-1)
+
+
+##################################################################
 #                           Push Command                         #
 ##################################################################
 @cli.command(short_help="Push a built artifact")
