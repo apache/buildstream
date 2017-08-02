@@ -38,15 +38,15 @@ import shutil
 from . import _yaml
 from ._yaml import CompositePolicy
 from ._variables import Variables
-from .exceptions import _BstError, _ArtifactError
+from .exceptions import _BstError
 from . import LoadError, LoadErrorReason, ElementError, ImplError
-from ._sandboxbwrap import SandboxBwrap
-from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
 from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
+from . import SandboxFlags
 from . import utils
 from . import _signals
 from . import _site
+from ._platform import Platform
 
 
 class Scope(Enum):
@@ -456,7 +456,7 @@ class Element(Plugin):
             for i in range(len(commands)):
                 cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
                 self.status("Running integration command", detail=cmd)
-                exitcode = sandbox.run(['sh', '-c', '-e', cmd], 0, env=environment, cwd='/')
+                exitcode = sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/')
                 if exitcode != 0:
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
@@ -866,7 +866,8 @@ class Element(Plugin):
             'environment': cache_env,
             'sources': [s._get_unique_key() for s in self.__sources],
             'dependencies': dependencies,
-            'public': self.__public
+            'public': self.__public,
+            'cache': type(self.__artifacts).__name__
         })
 
     # _get_cache_key():
@@ -1403,15 +1404,13 @@ class Element(Plugin):
     def __sandbox(self, directory, stdout=None, stderr=None):
         context = self.get_context()
         project = self.get_project()
+        platform = Platform.get_platform(context, project)
 
         if directory is not None and os.path.exists(directory):
-
-            # We'll want a factory function and some decision making about
-            # which sandbox implementation to use, when we have more than
-            # one sandbox implementation.
-            #
-            sandbox = SandboxBwrap(context, project, directory, stdout=stdout, stderr=stderr)
-
+            sandbox = platform.create_sandbox(context, project,
+                                              directory,
+                                              stdout=stdout,
+                                              stderr=stderr)
             yield sandbox
 
         else:

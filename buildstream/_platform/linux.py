@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2017 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,20 +16,28 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Tristan Maat <tristan.maat@codethink.co.uk>
 
-# Exceptions and utilities first
-from .exceptions import PluginError, LoadError, LoadErrorReason, \
-    SourceError, ElementError, ImplError, ProgramNotFoundError, PlatformError
+import os
+import sys
 
-# Core components
-from .context import Context
-from .project import Project
-from .sandbox import Sandbox, SandboxFlags
+from .. import utils
+from ..sandbox import SandboxBwrap
+from .._artifactcache.ostreecache import OSTreeCache
 
-# Plugin auther facing APIs
-from .plugin import Plugin
-from .source import Source, Consistency
-from .element import Element, Scope
-from .buildelement import BuildElement
-from .scriptelement import ScriptElement
+from . import Platform
+
+
+class Linux(Platform):
+
+    def __init__(self, context, project):
+
+        super().__init__(context, project)
+        self._artifact_cache = OSTreeCache(context, project)
+
+    @property
+    def artifactcache(self):
+        return self._artifact_cache
+
+    def create_sandbox(self, *args, **kwargs):
+        return SandboxBwrap(*args, **kwargs)

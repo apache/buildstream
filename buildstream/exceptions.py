@@ -141,5 +141,11 @@ class ProgramNotFoundError(_BstError):
     pass
 
 
+class PlatformError(_BstError):
+    """Raised if the current platform is not supported.
+    """
+    pass
+
+
 class _ArtifactError(_BstError):
     pass

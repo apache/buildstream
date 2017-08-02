@@ -31,7 +31,6 @@ from pluginbase import PluginBase
 
 from .exceptions import _BstError, _ArtifactError
 from ._message import Message, MessageType
-from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
@@ -39,6 +38,7 @@ from . import Consistency, ImplError, LoadError
 from . import Scope
 from . import _site
 from . import _yaml, utils
+from ._platform import Platform
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 
@@ -146,8 +146,8 @@ class Pipeline():
 
         # Resolve project variant now that we've decided on one
         project._resolve(loader.project_variant)
-
-        self.artifacts = ArtifactCache(self.context, self.project)
+        self.platform = Platform.get_platform(context, project)
+        self.artifacts = self.platform.artifactcache
 
         # Create the factories after resolving the project
         pluginbase = PluginBase(package='buildstream.plugins')
@@ -178,7 +178,7 @@ class Pipeline():
         if self.artifacts.can_fetch():
             try:
                 if remote_ticker:
-                    remote_ticker(self.artifacts.artifact_pull)
+                    remote_ticker(context.artifact_pull)
                 self.artifacts.fetch_remote_refs()
             except _ArtifactError:
                 self.message(self.target, MessageType.WARN, "Failed to fetch remote refs")
@@ -686,8 +686,6 @@ class Pipeline():
 
         if not self.artifacts.can_push():
             raise PipelineError("Not configured for pushing artifacts")
-        if not self.can_push_remote_artifact_cache():
-            raise PipelineError("Unable to push to the configured remote artifact cache")
 
         plan = elements
         self.assert_consistent(plan)

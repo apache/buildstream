@@ -128,6 +128,7 @@ class Context():
         self._cache_key = None
         self._message_handler = None
         self._message_depth = deque()
+        self._platform = None
 
     def load(self, config=None):
         """Loads the configuration files

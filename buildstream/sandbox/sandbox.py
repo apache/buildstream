@@ -180,12 +180,11 @@ class Sandbox():
 
     Sandbox programming interface for :class:`.Element` plugins.
     """
-    def __init__(self, context, project, directory,
-                 stdout=None, stderr=None):
+    def __init__(self, context, project, directory, **kwargs):
         self.__context = context
         self.__project = project
-        self.__stdout = stdout
-        self.__stderr = stderr
+        self.__stdout = kwargs['stdout']
+        self.__stderr = kwargs['stderr']
         self.__directories = []
         self.__cwd = None
         self.__env = None
