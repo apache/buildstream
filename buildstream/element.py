@@ -1149,7 +1149,8 @@ class Element(Plugin):
     #   (bool): True if this element should not be pushed
     #
     def _skip_push(self):
-        self._assert_cached()
+        if not self._cached(recalculate=None):
+            return True
 
         # Do not push tained artifact
         if self._tainted():
