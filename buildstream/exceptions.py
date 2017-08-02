@@ -141,5 +141,13 @@ class ProgramNotFoundError(_BstError):
     pass
 
 
+class PlatformError(_BstError):
+    """Raised if the current platform is not supported.
+
+    Currently supported platforms are linux, sunos and aix.
+    """
+    pass
+
+
 class _ArtifactError(_BstError):
     pass

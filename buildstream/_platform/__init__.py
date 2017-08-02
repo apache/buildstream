@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2017 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,20 +16,6 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Tristan Maat <tristan.maat@codethink.co.uk>
 
-# Exceptions and utilities first
-from .exceptions import PluginError, LoadError, LoadErrorReason, \
-    SourceError, ElementError, ImplError, ProgramNotFoundError, PlatformError
-
-# Core components
-from .context import Context
-from .project import Project
-from .sandbox import Sandbox, SandboxFlags
-
-# Plugin auther facing APIs
-from .plugin import Plugin
-from .source import Source, Consistency
-from .element import Element, Scope
-from .buildelement import BuildElement
-from .scriptelement import ScriptElement
+from .platform import Platform

@@ -38,12 +38,11 @@ import shutil
 from . import _yaml
 from ._yaml import CompositePolicy
 from ._variables import Variables
-from .exceptions import _BstError, _ArtifactError
+from .exceptions import _BstError
 from . import LoadError, LoadErrorReason, ElementError, ImplError
-from ._sandboxbwrap import SandboxBwrap
-from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
 from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
+from . import SandboxFlags
 from . import utils
 from . import _signals
 from . import _site
@@ -376,15 +375,8 @@ class Element(Plugin):
             # Get the extracted artifact
             artifact = os.path.join(self.__artifacts.extract(self), 'files')
 
-            # Hard link it into the staging area
-            #
-            basedir = sandbox.get_directory()
-            stagedir = basedir \
-                if path is None \
-                else os.path.join(basedir, path.lstrip(os.sep))
-
             files = self.__compute_splits(include, exclude, orphans)
-            result = utils.link_files(artifact, stagedir, files=files)
+            result = self.get_context()._platform.stage_to_sandbox(artifact, sandbox, path=path, files=files)
 
         return result
 
@@ -456,7 +448,7 @@ class Element(Plugin):
             for i in range(len(commands)):
                 cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
                 self.status("Running integration command", detail=cmd)
-                exitcode = sandbox.run(['sh', '-c', '-e', cmd], 0, env=environment, cwd='/')
+                exitcode = sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/')
                 if exitcode != 0:
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
@@ -879,7 +871,8 @@ class Element(Plugin):
             'environment': cache_env,
             'sources': [s._get_unique_key() for s in self.__sources],
             'dependencies': dependencies,
-            'public': self.__public
+            'public': self.__public,
+            'cache': type(self.__artifacts).__name__
         })
 
     # _get_cache_key():
@@ -1423,7 +1416,9 @@ class Element(Plugin):
             # which sandbox implementation to use, when we have more than
             # one sandbox implementation.
             #
-            sandbox = SandboxBwrap(context, project, directory, stdout=stdout, stderr=stderr)
+            sandbox = context._platform.create_sandbox(context, project, self,
+                                                       directory, stdout=stdout,
+                                                       stderr=stderr)
 
             yield sandbox
 

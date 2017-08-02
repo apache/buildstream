@@ -41,6 +41,7 @@ from . import _yaml
 from . import utils
 from . import LoadError, LoadErrorReason
 from ._profile import Topics, profile_start, profile_end
+from ._platform import Platform
 
 
 class Context():
@@ -125,6 +126,7 @@ class Context():
         self._cache_key = None
         self._message_handler = None
         self._message_depth = deque()
+        self._platform = None
 
     def load(self, config=None):
         """Loads the configuration files
@@ -200,6 +202,9 @@ class Context():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: on-error should be one of: {}".format(
                                 provenance, ", ".join(valid_actions)))
+
+        # Initialize platform
+        self._platform = Platform.get_platform(self)
 
     #############################################################
     #            Private Methods used in BuildStream            #

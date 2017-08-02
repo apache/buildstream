@@ -31,7 +31,6 @@ from pluginbase import PluginBase
 
 from .exceptions import _BstError, _ArtifactError
 from ._message import Message, MessageType
-from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
@@ -133,7 +132,7 @@ class Pipeline():
                  cache_ticker=None):
         self.context = context
         self.project = project
-        self.artifacts = ArtifactCache(self.context)
+        self.artifacts = context._platform.artifactcache
         self.session_elements = 0
         self.total_elements = 0
         self.unused_workspaces = []

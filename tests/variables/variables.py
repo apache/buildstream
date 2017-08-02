@@ -3,6 +3,7 @@ import pytest
 
 from buildstream import Context, Project, BuildElement
 from buildstream._pipeline import Pipeline
+from buildstream._platform import Platform
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -13,6 +14,7 @@ def create_pipeline(tmpdir, basedir, target, variant):
     context = Context('x86_64')
     project = Project(basedir, 'x86_64')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
+    context._platform = Platform.get_platform(context)
 
     return Pipeline(context, project, target, variant)
 
