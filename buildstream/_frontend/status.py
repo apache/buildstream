@@ -299,8 +299,8 @@ class StatusHeader():
 
             # Add spacing
             if self.scheduler.queues.index(queue) > 0:
-                size += 2
-                text += self.format_profile.fmt('→ ')
+                size += 3
+                text += self.format_profile.fmt('-> ')
 
             queue_text, queue_size = self.render_queue(queue)
             size += queue_size
