@@ -588,9 +588,13 @@ def workspace_reset(app, source, track, no_checkout, variant, element):
 def workspace_list(app):
     """List open workspaces"""
 
-    project = Project(app.main_options['directory'],
-                      app.host_arch,
-                      app.target_arch)
+    try:
+        project = Project(app.main_options['directory'],
+                          app.host_arch,
+                          app.target_arch)
+    except _BstError as e:
+        click.echo("Error loading project: %s" % str(e))
+        sys.exit(1)
 
     logger = LogLine(app.content_profile,
                      app.format_profile,
