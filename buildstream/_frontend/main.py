@@ -45,7 +45,7 @@ _, _, _, _, host_machine = os.uname()
 ##################################################################
 #                          Main Options                          #
 ##################################################################
-@click.group()
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
 @click.version_option(version=build_stream_version)
 @click.option('--config', '-c',
               type=click.Path(exists=True, dir_okay=False, readable=True),
