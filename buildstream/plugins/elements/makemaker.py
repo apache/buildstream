@@ -31,7 +31,7 @@ The MakeMaker default configuration:
 from buildstream import BuildElement
 
 
-# Element implementation for the 'autotools' kind.
+# Element implementation for the 'makemaker' kind.
 class MakeMakerElement(BuildElement):
     pass
 
