@@ -743,6 +743,7 @@ class App():
                                      rewritable=rewritable,
                                      load_ticker=self.load_ticker,
                                      resolve_ticker=self.resolve_ticker,
+                                     remote_ticker=self.remote_ticker,
                                      cache_ticker=self.cache_ticker)
         except _BstError as e:
             click.echo("Error loading pipeline: %s" % str(e))
@@ -1000,6 +1001,9 @@ class App():
                 click.echo(".", nl=False, err=True)
         else:
             click.echo('', err=True)
+
+    def remote_ticker(self, name):
+        click.echo("Fetching artifact list from {}".format(name), err=True)
 
     def cache_ticker(self, name):
         if name:
