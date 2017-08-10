@@ -64,6 +64,7 @@ Build Elements
 * :mod:`modulebuild <elements.modulebuild>` - Perl Module::Build Build Element
 * :mod:`meson <elements.meson>` - Meson Build Element
 * :mod:`dpkg_build <elements.dpkg_build>` - Dpkg-based build element
+* :mod:`pip <elements.pip>` - Pip build element
 
 
 Sources

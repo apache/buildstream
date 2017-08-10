@@ -1,0 +1,24 @@
+# Pip default configurations
+
+variables:
+
+  pip: pip
+
+config:
+
+  configure-commands: []
+  build-commands: []
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands:
+  - |
+    %{pip} install --no-deps --root=%{install-root} --prefix=%{prefix} .
+
+  # Commands for stripping debugging information out of
+  # installed binaries
+  #
+  strip-commands:
+  - |
+    %{strip-binaries}
