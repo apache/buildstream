@@ -69,11 +69,14 @@ try:
 except:
     exit_ostree("OSTree not found")
 
-if OSTree.YEAR_VERSION < REQUIRED_OSTREE_YEAR or \
-   (OSTree.YEAR_VERSION == REQUIRED_OSTREE_YEAR and
-    OSTree.RELEASE_VERSION < REQUIRED_OSTREE_RELEASE):
-    exit_ostree("OSTree v{}.{} is too old."
-                .format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
+try:
+    if OSTree.YEAR_VERSION < REQUIRED_OSTREE_YEAR or \
+       (OSTree.YEAR_VERSION == REQUIRED_OSTREE_YEAR and
+        OSTree.RELEASE_VERSION < REQUIRED_OSTREE_RELEASE):
+        exit_ostree("OSTree v{}.{} is too old."
+                    .format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
+except AttributeError:
+    exit_ostree("OSTree is too old.")
 
 
 ###########################################
