@@ -784,7 +784,7 @@ class Pipeline():
             elif mode == 'build':
                 scope = Scope.BUILD
             elif mode == 'run':
-                scope = scope.RUN
+                scope = Scope.RUN
 
             elements = list(self.dependencies(scope))
 
