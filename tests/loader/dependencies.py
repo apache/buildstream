@@ -169,3 +169,20 @@ def test_build_runtime_dependency(datafiles):
     assert(isinstance(firstdep, MetaElement))
     firstbuilddep = element.build_dependencies[0]
     assert(firstdep == firstbuilddep)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_all_dependency(datafiles):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(basedir, 'elements/alldep.bst', None, None, None, [])
+    element = loader.load()
+
+    assert(isinstance(element, MetaElement))
+    assert(element.kind == 'pony')
+
+    assert(len(element.dependencies) == 1)
+    assert(len(element.build_dependencies) == 1)
+    firstdep = element.dependencies[0]
+    assert(isinstance(firstdep, MetaElement))
+    firstbuilddep = element.build_dependencies[0]
+    assert(firstdep == firstbuilddep)
