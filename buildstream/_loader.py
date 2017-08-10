@@ -56,6 +56,7 @@ class Symbol():
     TYPE = "type"
     BUILD = "build"
     RUNTIME = "runtime"
+    ALL = "all"
     DIRECTORY = "directory"
 
 
@@ -376,12 +377,12 @@ def extract_depends_from_node(owner, data):
 
             # Make type optional, for this we set it to None after
             dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value="")
-            if not dep_type:
+            if not dep_type or dep_type == Symbol.ALL:
                 dep_type = None
             elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
                 provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "%s: Dependency type '%s' is not 'build' or 'runtime'" %
+                                "%s: Dependency type '%s' is not 'build', 'runtime' or 'all'" %
                                 (str(provenance), dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
