@@ -446,9 +446,6 @@ def checkout(app, target, variant, directory, force):
 @click.option('--compression', default='gz',
               type=click.Choice(['none', 'gz', 'bz2', 'xz']),
               help="Compress the tar file using the given algorithm.")
-@click.option('--deps', '-d', default='build',
-              type=click.Choice(['none', 'run', 'build']),
-              help='The elements to bundle (default: build)')
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before building")
 @click.option('--variant',
@@ -460,19 +457,11 @@ def checkout(app, target, variant, directory, force):
 @click.argument('target')
 @click.pass_obj
 def source_bundle(app, target, variant, force, directory,
-                  track, deps, compression, except_):
-    """Produce a build bundle to be manually executed
-
-    Specify `--deps` to control which elements to show:
-
-    \b
-        none:  No dependencies, just the element itself
-        run:   Runtime dependencies, including the element itself
-        build: Build time dependencies, excluding the element itself
-    """
+                  track, compression, except_):
+    """Produce a source bundle to be manually executed"""
     app.initialize(target, variant, rewritable=track, inconsistent=track)
     try:
-        dependencies = app.pipeline.deps_elements(deps, except_)
+        dependencies = app.pipeline.deps_elements('all', except_)
         app.print_heading(dependencies)
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
                                    compression, except_, directory)
