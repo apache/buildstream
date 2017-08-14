@@ -518,7 +518,7 @@ class Pipeline():
         except OSError as e:
             raise PipelineError("Failed to create workspace directory: {}".format(e)) from e
 
-        if not force and os.listdir(directory):
+        if not no_checkout and not force and os.listdir(directory):
             raise PipelineError("Checkout directory is not empty: {}".format(directory))
 
         # Check for workspace config
