@@ -91,6 +91,32 @@ class ImportElement(BuildElement):
         # And we're done
         return '/output'
 
+    def generate_script(self):
+        build_root = self.get_variable('build-root')
+        install_root = self.get_variable('install-root')
+        commands = []
+
+        # The directory to grab
+        inputdir = os.path.join(build_root, self.normal_name, self.source.lstrip(os.sep))
+        inputdir = inputdir.rstrip(os.sep)
+
+        # The output target directory
+        outputdir = os.path.join(install_root, self.target.lstrip(os.sep))
+        outputdir = outputdir.rstrip(os.sep)
+
+        # Ensure target directory parent exists but target directory doesn't
+        commands.append("mkdir -p {}".format(os.path.dirname(outputdir)))
+        commands.append("[ ! -e {} ] || rmdir {}".format(outputdir, outputdir))
+
+        # Move it over
+        commands.append("mv {} {}".format(inputdir, outputdir))
+
+        script = ""
+        for cmd in commands:
+            script += "(set -ex; {}\n) || exit 1\n".format(cmd)
+
+        return script
+
 
 # Plugin entry point
 def setup():
