@@ -489,7 +489,7 @@ def workspace():
               help="Do not checkout the source, only link to the given directory")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
-@click.option('--source', '-s', default=None,
+@click.option('--source', '-s', default=None, type=click.INT, metavar='INDEX',
               help="The source to create a workspace for. Projects with one source may omit this")
 @click.option('--variant',
               help='A variant of the specified target')
@@ -515,7 +515,7 @@ def workspace_open(app, no_checkout, force, source, variant, track, element, dir
 #                     Workspace Close Command                    #
 ##################################################################
 @workspace.command(name='close', short_help="Close a workspace")
-@click.option('--source', '-s', default=None,
+@click.option('--source', '-s', default=None, type=click.INT, metavar='INDEX',
               help="The source of the workspace to remove. Projects with one source may omit this")
 @click.option('--remove-dir', default=False, is_flag=True,
               help="Remove the path that contains the closed workspace")
@@ -545,7 +545,7 @@ def workspace_close(app, source, remove_dir, variant, element):
 #                     Workspace Reset Command                    #
 ##################################################################
 @workspace.command(name='reset', short_help="Reset a workspace to its original state")
-@click.option('--source', '-s', default=None,
+@click.option('--source', '-s', default=None, type=click.INT, metavar='INDEX',
               help="The source of the workspace to reset. Projects with one source may omit this")
 @click.option('--track', default=False, is_flag=True,
               help="Track and fetch the latest source before resetting")
