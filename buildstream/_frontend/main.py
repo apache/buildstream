@@ -364,11 +364,13 @@ def show(app, target, variant, deps, except_, order, format):
 @click.option('--scope', '-s', default=None,
               type=click.Choice(['build', 'run']),
               help='Specify element scope to stage')
+@click.option('--command', '-c', metavar='COMMAND', default=None, type=click.STRING,
+              help='Specify command to execute')
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target')
 @click.pass_obj
-def shell(app, target, variant, builddir, scope):
+def shell(app, target, variant, builddir, scope, command):
     """Shell into an element's sandbox environment
 
     This can be used either to debug building or to launch
@@ -406,7 +408,8 @@ def shell(app, target, variant, builddir, scope):
         sys.exit(-1)
 
     try:
-        app.pipeline.target._shell(scope, builddir)
+        exitcode = app.pipeline.target._shell(scope, builddir, command=command)
+        sys.exit(exitcode)
     except _BstError as e:
         click.echo("")
         click.echo("Errors shelling into this pipeline: %s" % str(e))
