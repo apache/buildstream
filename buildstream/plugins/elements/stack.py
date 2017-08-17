@@ -43,7 +43,7 @@ class StackElement(Element):
         return 1
 
     def configure_sandbox(self, sandbox):
-        pass
+        sandbox.always_ro = True
 
     def stage(self, sandbox):
         pass

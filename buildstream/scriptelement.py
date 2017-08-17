@@ -205,6 +205,8 @@ class ScriptElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
+        sandbox.always_ro = self.__root_read_only
+
         # Mark the artifact directories in the layout
         for item in self.__layout:
             if item['destination'] != '/':

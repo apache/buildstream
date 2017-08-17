@@ -80,7 +80,8 @@ class ComposeElement(Element):
         return key
 
     def configure_sandbox(self, sandbox):
-        pass
+        if all(dep._runs_integration() for dep in self.dependencies(Scope.ALL)):
+            sandbox.always_ro = True
 
     def stage(self, sandbox):
         pass

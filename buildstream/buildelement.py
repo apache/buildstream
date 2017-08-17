@@ -158,6 +158,9 @@ class BuildElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
+        if all(dep._runs_integration() for dep in self.dependencies(Scope.ALL)):
+            sandbox.always_ro = True
+
     def stage(self, sandbox):
 
         # Stage deps in the sandbox root
@@ -166,9 +169,10 @@ class BuildElement(Element):
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
-        with self.timed_activity("Integrating sandbox"):
-            for dep in self.dependencies(Scope.BUILD):
-                dep.integrate(sandbox)
+        if self._runs_integration():
+            with self.timed_activity("Integrating sandbox"):
+                for dep in self.dependencies(Scope.BUILD):
+                    dep.integrate(sandbox)
 
         # Stage sources in the build root
         self.stage_sources(sandbox, self.get_variable('build-root'))
