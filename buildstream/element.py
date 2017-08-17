@@ -1347,8 +1347,10 @@ class Element(Plugin):
     #    scope (Scope): Either BUILD or RUN scopes are valid, or None
     #    directory (str): A directory to an existing sandbox, or None
     #
+    # Returns: Exit code
+    #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None):
+    def _shell(self, scope=None, directory=None, command=None):
 
         with self._prepare_sandbox(scope, directory) as sandbox:
 
@@ -1363,11 +1365,16 @@ class Element(Plugin):
                 if os.environ.get(override) is not None:
                     environment[override] = os.environ.get(override)
 
+            argv = ['sh']
+            flags = SandboxFlags.NETWORK_ENABLED
+            if command:
+                argv += ['-c', command]
+            else:
+                argv += ['-i']
+                flags |= SandboxFlags.INTERACTIVE
+
             # Run shells with network enabled and readonly root.
-            exitcode = sandbox.run(['sh', '-i'],
-                                   SandboxFlags.NETWORK_ENABLED |
-                                   SandboxFlags.INTERACTIVE,
-                                   env=environment)
+            return sandbox.run(argv, flags, env=environment)
 
     # _stage_sources_at():
     #
