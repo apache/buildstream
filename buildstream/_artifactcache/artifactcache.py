@@ -21,6 +21,7 @@
 import multiprocessing
 import os
 import sys
+import string
 import tempfile
 
 from .. import _ostree, utils
@@ -37,7 +38,11 @@ def buildref(element, key):
     project = element.get_project()
 
     # Normalize ostree ref unsupported chars
-    element_name = element.normal_name.replace('+', 'X')
+    valid_chars = string.digits + string.ascii_letters + '-._'
+    element_name = ''.join([
+        x if x in valid_chars else '_'
+        for x in element.normal_name
+    ])
 
     # assume project and element names are not allowed to contain slashes
     return '{0}/{1}/{2}'.format(project.name, element_name, key)
