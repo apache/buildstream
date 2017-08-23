@@ -23,8 +23,8 @@ fi
 mkdir -p '{build_root}'
 mkdir -p '{install_root}'
 
-cp -a "$SRCDIR/{name}" '{build_root}/{name}'
-cd '{build_root}/{name}'
+cp -a "$SRCDIR/{name}/." '{build_root}'
+cd '{build_root}'
 
 export PREFIX='{install_root}'
 
@@ -33,7 +33,7 @@ export {variables}
 # Build the module
 {commands}
 
-rm -rf '{build_root}/{name}'
+rm -rf '{build_root}'
 
 # Install the module
 echo 'Installing {name}'
