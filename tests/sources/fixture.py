@@ -43,12 +43,14 @@ class Setup():
         self.project._aliases['tmpdir'] = "file:///" + str(tmpdir)
         self.project._aliases['datafiles'] = "file:///" + str(datafiles)
 
-        assert(len(element.sources) == 1)
-        self.meta_source = element.sources[0]
+        assert(len(element.sources) >= 1)
 
         base = PluginBase(package='buildstream.plugins')
         self.factory = SourceFactory(base)
-        self.source = self.factory.create(self.meta_source.kind,
-                                          self.context,
-                                          self.project,
-                                          self.meta_source)
+
+        self.sources = [self.factory.create(source.kind,
+                                            self.context,
+                                            self.project,
+                                            source)
+                        for source in element.sources]
+        self.source = self.sources[0]

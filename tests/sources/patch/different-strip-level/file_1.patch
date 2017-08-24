@@ -1,0 +1,7 @@
+diff --git foo/a/file.txt foo/b/file.txt
+index a496efe..341ef26 100644
+--- foo/a/file.txt
++++ foo/b/file.txt
+@@ -1 +1 @@
+-This is a text file
++This is text file with superpowers

@@ -27,7 +27,7 @@ before_script:
 pytest:
   stage: test
   script:
-  - dnf install -y bzr
+  - dnf install -y bzr patch
   - python3 setup.py test
   - mkdir -p coverage-pytest/
   - cp .coverage.* coverage-pytest/coverage.pytest
