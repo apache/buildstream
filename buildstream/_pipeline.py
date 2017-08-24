@@ -837,18 +837,23 @@ class Pipeline():
                 raise PipelineError("Failed to create directory: {}"
                                     .format(e)) from e
 
-            for element in plan:
-                try:
-                    element._write_script(source_directory)
-                except ImplError:
-                    # Any elements that don't implement _write_script
-                    # should not be included in the later stages.
-                    plan.remove(element)
+            # Any elements that don't implement _write_script
+            # should not be included in the later stages.
+            plan = [element for element in plan
+                    if self._write_element_script(source_directory, element)]
 
             self._write_element_sources(tempdir, plan)
             self._write_build_script(tempdir, plan)
             self._collect_sources(tempdir, tar_location,
                                   self.target.normal_name, compression)
+
+    # Write the element build script to the given directory
+    def _write_element_script(self, directory, element):
+        try:
+            element._write_script(directory)
+        except ImplError:
+            return False
+        return True
 
     # Write all source elements to the given directory
     def _write_element_sources(self, directory, elements):
