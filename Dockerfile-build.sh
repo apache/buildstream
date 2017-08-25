@@ -19,3 +19,4 @@ pip3 install .
 echo "Removing BuildStream build dependencies"
 dnf remove -y python3-devel
 dnf remove -y gcc redhat-rpm-config
+dnf clean all
