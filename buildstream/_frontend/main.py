@@ -36,10 +36,30 @@ from .._profile import Topics, profile_start, profile_end
 
 # Import frontend assets
 from . import Profile, LogLine, Status
+from .complete import main_bashcomplete, complete_target
 
 # Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version
 _, _, _, _, host_machine = os.uname()
+
+
+##################################################################
+#            Override of click's main entry point                #
+##################################################################
+def override_main(self, args=None, prog_name=None, complete_var=None,
+                  standalone_mode=True, **extra):
+
+    # Hook for the Bash completion.  This only activates if the Bash
+    # completion is actually enabled, otherwise this is quite a fast
+    # noop.
+    main_bashcomplete(self, prog_name)
+
+    original_main(self, args=args, prog_name=prog_name, complete_var=None,
+                  standalone_mode=standalone_mode, **extra)
+
+
+original_main = click.BaseCommand.main
+click.BaseCommand.main = override_main
 
 
 ##################################################################
@@ -109,7 +129,9 @@ def cli(context, **kwargs):
               help="Track new source references before building (implies --all)")
 @click.option('--variant',
               help='A variant of the specified target')
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def build(app, target, variant, all, track):
     """Build elements in a pipeline"""
@@ -139,7 +161,9 @@ def build(app, target, variant, all, track):
               help="Track new source references before fetching")
 @click.option('--variant',
               help='A variant of the specified target')
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def fetch(app, target, variant, deps, track, except_):
     """Fetch sources required to build the pipeline
@@ -180,7 +204,9 @@ def fetch(app, target, variant, deps, track, except_):
               help='The dependencies to track (default: none)')
 @click.option('--variant',
               help='A variant of the specified target')
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def track(app, target, variant, deps, except_):
     """Consults the specified tracking branches for new versions available
@@ -217,7 +243,9 @@ def track(app, target, variant, deps, except_):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to fetch (default: none)')
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def pull(app, target, variant, deps):
     """Pull a built artifact from the configured remote artifact cache.
@@ -248,7 +276,9 @@ def pull(app, target, variant, deps):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to fetch (default: none)')
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def push(app, target, variant, deps):
     """Push a built artifact to the configured remote artifact cache.
@@ -287,7 +317,9 @@ def push(app, target, variant, deps):
               help='Format string for each element')
 @click.option('--variant',
               help='A variant of the specified target')
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def show(app, target, variant, deps, except_, order, format):
     """Show elements in the pipeline
@@ -368,7 +400,9 @@ def show(app, target, variant, deps, except_, order, format):
               help='Specify command to execute')
 @click.option('--variant',
               help='A variant of the specified target')
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def shell(app, target, variant, builddir, scope, command):
     """Shell into an element's sandbox environment
@@ -424,8 +458,10 @@ def shell(app, target, variant, builddir, scope, command):
               help="Overwrite files existing in checkout directory")
 @click.option('--variant',
               help='A variant of the specified target')
-@click.argument('target')
-@click.argument('directory')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
+@click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
 def checkout(app, target, variant, directory, force):
     """Checkout a built artifact to the specified directory
@@ -457,7 +493,9 @@ def checkout(app, target, variant, directory, force):
               help="Overwrite files existing in checkout directory")
 @click.option('--directory', default=os.getcwd(),
               help="The directory to write the tarball to")
-@click.argument('target')
+@click.argument('target',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def source_bundle(app, target, variant, force, directory,
                   track, compression, except_):
@@ -498,8 +536,10 @@ def workspace():
               help='A variant of the specified target')
 @click.option('--track', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
-@click.argument('element')
-@click.argument('directory')
+@click.argument('element',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
+@click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
 def workspace_open(app, no_checkout, force, source, variant, track, element, directory):
     """Open a workspace for manual source modification"""
@@ -524,7 +564,9 @@ def workspace_open(app, no_checkout, force, source, variant, track, element, dir
               help="Remove the path that contains the closed workspace")
 @click.option('--variant',
               help='A variant of the specified target')
-@click.argument('element')
+@click.argument('element',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def workspace_close(app, source, remove_dir, variant, element):
     """Close a workspace"""
@@ -557,7 +599,9 @@ def workspace_close(app, source, remove_dir, variant, element):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.confirmation_option(prompt='This will remove all your changes, are you sure?')
-@click.argument('element')
+@click.argument('element',
+                type=click.Path(dir_okay=False, readable=True),
+                autocompletion=complete_target)
 @click.pass_obj
 def workspace_reset(app, source, track, no_checkout, variant, element):
     """Reset a workspace to its original state"""
