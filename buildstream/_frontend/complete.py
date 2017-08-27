@@ -27,6 +27,10 @@ import click
 from click.parser import split_arg_string
 from click.core import MultiCommand, Option, Argument
 
+from .. import _yaml
+from .. import LoadError
+
+
 WORDBREAK = '='
 
 COMPLETION_SCRIPT = '''
@@ -44,7 +48,7 @@ complete -F %(complete_func)s -o nospace %(script_names)s
 _invalid_ident_char_re = re.compile(r'[^a-zA-Z0-9_]')
 
 
-def _complete_path(path_type, incomplete):
+def complete_path(path_type, incomplete, base_directory='.'):
     """Helper method for implementing the completions() method
     for File and Path parameter types.
     """
@@ -62,13 +66,15 @@ def _complete_path(path_type, incomplete):
         # we are completing files in the filesystem root
         if not base_path:
             base_path = os.path.sep
+        else:
+            base_path = os.path.join(base_directory, base_path)
 
     try:
         if base_path:
             if os.path.isdir(base_path):
                 entries = [os.path.join(base_path, e) for e in os.listdir(base_path)]
         else:
-            entries = os.listdir(".")
+            entries = os.listdir(base_directory)
     except OSError:
         # If for any reason the os reports an error from os.listdir(), just
         # ignore this and avoid a stack trace
@@ -98,12 +104,10 @@ def get_param_type_completion(param_type, incomplete):
 
     if isinstance(param_type, click.Choice):
         return [c + " " for c in param_type.choices]
-    elif isinstance(param_type, click.BoolParamType):
-        return ["yes ", "no "]
     elif isinstance(param_type, click.File):
-        return _complete_path("File", incomplete)
+        return complete_path("File", incomplete)
     elif isinstance(param_type, click.Path):
-        return _complete_path(param_type.path_type, incomplete)
+        return complete_path(param_type.path_type, incomplete)
 
     return []
 
@@ -127,14 +131,14 @@ def resolve_ctx(cli, prog_name, args):
     ctx = cli.make_context(prog_name, args, resilient_parsing=True)
     args_remaining = ctx.protected_args + ctx.args
     while ctx is not None and args_remaining:
-      if isinstance(ctx.command, MultiCommand):
-        cmd = ctx.command.get_command(ctx, args_remaining[0])
-        if cmd is None:
-            return None
-        ctx = cmd.make_context(args_remaining[0], args_remaining[1:], parent=ctx, resilient_parsing=True)
-        args_remaining = ctx.protected_args + ctx.args
-      else:
-        ctx = ctx.parent
+        if isinstance(ctx.command, MultiCommand):
+            cmd = ctx.command.get_command(ctx, args_remaining[0])
+            if cmd is None:
+                return None
+            ctx = cmd.make_context(args_remaining[0], args_remaining[1:], parent=ctx, resilient_parsing=True)
+            args_remaining = ctx.protected_args + ctx.args
+        else:
+            ctx = ctx.parent
 
     return ctx
 
@@ -198,7 +202,7 @@ def get_user_autocompletions(ctx, args, incomplete, cmd_param):
                                         args=args,
                                         incomplete=incomplete)
     else:
-        return cmd_param.type.completions(incomplete) or []
+        return get_param_type_completion(cmd_param.type, incomplete) or []
 
 
 def get_choices(cli, prog_name, args, incomplete):
@@ -252,9 +256,10 @@ def get_choices(cli, prog_name, args, incomplete):
         # completion for any subcommands
         choices.extend([cmd + " " for cmd in ctx.command.list_commands(ctx)])
 
-    if not start_of_option(incomplete) and ctx.parent is not None and isinstance(ctx.parent.command, MultiCommand) and ctx.parent.command.chain:
+    if not start_of_option(incomplete) and ctx.parent is not None \
+       and isinstance(ctx.parent.command, MultiCommand) and ctx.parent.command.chain:
         # completion for chained commands
-        remaining_comands = set(ctx.parent.command.list_commands(ctx.parent))-set(ctx.parent.protected_args)
+        remaining_comands = set(ctx.parent.command.list_commands(ctx.parent)) - set(ctx.parent.protected_args)
         choices.extend([cmd + " " for cmd in remaining_comands])
 
     for item in choices:
@@ -274,15 +279,14 @@ def do_complete(cli, prog_name):
     for item in get_choices(cli, prog_name, args, incomplete):
         click.echo(item)
 
-    return True
-
 
 def bashcomplete(cli, prog_name, complete_instr):
     if complete_instr == 'source':
         click.echo(get_completion_script(prog_name, '_BST_COMPLETION'))
         return True
     elif complete_instr == 'complete':
-        return do_complete(cli, prog_name)
+        do_complete(cli, prog_name)
+        return True
     return False
 
 
@@ -300,9 +304,53 @@ def fast_exit(code):
 def main_bashcomplete(cmd, prog_name):
     """Internal handler for the bash completion support."""
     complete_instr = os.environ.get('_BST_COMPLETION')
-    
-    if not complete_instr:
-        return
 
-    if bashcomplete(cmd, prog_name, complete_instr):
+    if complete_instr and bashcomplete(cmd, prog_name, complete_instr):
         fast_exit(1)
+
+
+# Special completion for completing the target options
+def complete_target(ctx, args, incomplete):
+    app = ctx.obj
+
+    # First resolve the directory, in case there is an
+    # active --directory/-C option
+    #
+    base_directory = '.'
+    idx = -1
+    try:
+        idx = args.index('-C')
+    except ValueError:
+        try:
+            idx = args.index('--directory')
+        except ValueError:
+            pass
+
+    if idx >= 0 and len(args) > idx + 1:
+        base_directory = args[idx + 1]
+
+    # Now parse the project.conf just to find the element path,
+    # this is unfortunately a bit heavy.
+    project_file = os.path.join(base_directory, 'project.conf')
+    element_directory = None
+    try:
+        project = _yaml.load(project_file)
+        element_directory = project['element-path']
+    except LoadError:
+        # If there is no project directory in context, just dont
+        # even bother trying to complete anything.
+        return []
+
+    # If a project was loaded, use it's element-path to
+    # adjust our completion's base directory
+    if element_directory:
+        base_directory = os.path.join(base_directory, element_directory)
+
+    entries = complete_path("File", incomplete, base_directory=base_directory)
+    prefix_len = len(base_directory)
+    filtered = [
+        e[prefix_len + 1:] if base_directory in e else e
+        for e in entries
+    ]
+
+    return filtered
