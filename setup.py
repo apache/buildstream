@@ -108,7 +108,23 @@ setup(name='BuildStream',
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
                                     'data/*.yaml', 'data/*.sh.in']},
-      data_files=[('share/man/man1', list_man_pages())],
+      data_files=[
+          # This is a weak attempt to integrate with the user nicely,
+          # installing things outside of the python package itself with pip is
+          # not recommended, but there seems to be no standard structure for
+          # addressing this; so just installing this here.
+          #
+          # These do not get installed in developer mode (`pip install --user -e .`)
+          #
+          # The completions are ignored by bash unless it happens to be installed
+          # in the right directory; this is more like a weak statement that we
+          # attempt to install bash completion scriptlet.
+          #
+          ('share/man/man1', list_man_pages()),
+          ('share/bash-completion/completions', [
+              os.path.join('buildstream', 'data', 'bst')
+          ])
+      ],
       install_requires=[
           'setuptools',
           'psutil',
