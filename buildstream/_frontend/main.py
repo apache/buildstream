@@ -25,7 +25,7 @@ from contextlib import contextmanager
 from blessings import Terminal
 
 # Import buildstream public symbols
-from .. import Context, Project, Scope, Consistency
+from .. import Context, Project, Scope, Consistency, LoadError
 
 # Import various buildstream internals
 from ..exceptions import _BstError
@@ -33,10 +33,11 @@ from .._message import MessageType, unconditional_messages
 from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
+from .. import _yaml
 
 # Import frontend assets
 from . import Profile, LogLine, Status
-from .complete import main_bashcomplete, complete_target
+from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
 # Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version
@@ -46,13 +47,66 @@ _, _, _, _, host_machine = os.uname()
 ##################################################################
 #            Override of click's main entry point                #
 ##################################################################
+
+# Special completion for completing the bst elements in a project dir
+def complete_target(ctx, args, incomplete):
+    app = ctx.obj
+
+    # First resolve the directory, in case there is an
+    # active --directory/-C option
+    #
+    base_directory = '.'
+    idx = -1
+    try:
+        idx = args.index('-C')
+    except ValueError:
+        try:
+            idx = args.index('--directory')
+        except ValueError:
+            pass
+
+    if idx >= 0 and len(args) > idx + 1:
+        base_directory = args[idx + 1]
+
+    # Now parse the project.conf just to find the element path,
+    # this is unfortunately a bit heavy.
+    project_file = os.path.join(base_directory, 'project.conf')
+    element_directory = None
+    try:
+        project = _yaml.load(project_file)
+        element_directory = project['element-path']
+    except LoadError:
+        # If there is no project directory in context, just dont
+        # even bother trying to complete anything.
+        return []
+
+    # If a project was loaded, use it's element-path to
+    # adjust our completion's base directory
+    if element_directory:
+        base_directory = os.path.join(base_directory, element_directory)
+
+    return complete_path("File", incomplete, base_directory=base_directory)
+
+
+def override_completions(cmd_param, ctx, args, incomplete):
+
+    # We can't easily extend click's data structures without
+    # modifying click itself, so just do some weak special casing
+    # right here and select which parameters we want to handle specially.
+    if isinstance(cmd_param.type, click.Path) and \
+       (cmd_param.name == 'target' or cmd_param.name == 'element'):
+        return complete_target(ctx, args, incomplete)
+
+    raise CompleteUnhandled()
+
+
 def override_main(self, args=None, prog_name=None, complete_var=None,
                   standalone_mode=True, **extra):
 
     # Hook for the Bash completion.  This only activates if the Bash
     # completion is actually enabled, otherwise this is quite a fast
     # noop.
-    main_bashcomplete(self, prog_name)
+    main_bashcomplete(self, prog_name, override_completions)
 
     original_main(self, args=args, prog_name=prog_name, complete_var=None,
                   standalone_mode=standalone_mode, **extra)
@@ -130,8 +184,7 @@ def cli(context, **kwargs):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def build(app, target, variant, all, track):
     """Build elements in a pipeline"""
@@ -162,8 +215,7 @@ def build(app, target, variant, all, track):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def fetch(app, target, variant, deps, track, except_):
     """Fetch sources required to build the pipeline
@@ -205,8 +257,7 @@ def fetch(app, target, variant, deps, track, except_):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def track(app, target, variant, deps, except_):
     """Consults the specified tracking branches for new versions available
@@ -244,8 +295,7 @@ def track(app, target, variant, deps, except_):
               type=click.Choice(['none', 'all']),
               help='The dependencies to fetch (default: none)')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def pull(app, target, variant, deps):
     """Pull a built artifact from the configured remote artifact cache.
@@ -277,8 +327,7 @@ def pull(app, target, variant, deps):
               type=click.Choice(['none', 'all']),
               help='The dependencies to fetch (default: none)')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def push(app, target, variant, deps):
     """Push a built artifact to the configured remote artifact cache.
@@ -318,8 +367,7 @@ def push(app, target, variant, deps):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def show(app, target, variant, deps, except_, order, format):
     """Show elements in the pipeline
@@ -401,8 +449,7 @@ def show(app, target, variant, deps, except_, order, format):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def shell(app, target, variant, builddir, scope, command):
     """Shell into an element's sandbox environment
@@ -459,8 +506,7 @@ def shell(app, target, variant, builddir, scope, command):
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
 def checkout(app, target, variant, directory, force):
@@ -494,8 +540,7 @@ def checkout(app, target, variant, directory, force):
 @click.option('--directory', default=os.getcwd(),
               help="The directory to write the tarball to")
 @click.argument('target',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def source_bundle(app, target, variant, force, directory,
                   track, compression, except_):
@@ -537,8 +582,7 @@ def workspace():
 @click.option('--track', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
 @click.argument('element',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
 def workspace_open(app, no_checkout, force, source, variant, track, element, directory):
@@ -565,8 +609,7 @@ def workspace_open(app, no_checkout, force, source, variant, track, element, dir
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('element',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def workspace_close(app, source, remove_dir, variant, element):
     """Close a workspace"""
@@ -600,8 +643,7 @@ def workspace_close(app, source, remove_dir, variant, element):
               help='A variant of the specified target')
 @click.confirmation_option(prompt='This will remove all your changes, are you sure?')
 @click.argument('element',
-                type=click.Path(dir_okay=False, readable=True),
-                autocompletion=complete_target)
+                type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def workspace_reset(app, source, track, no_checkout, variant, element):
     """Reset a workspace to its original state"""

@@ -27,9 +27,6 @@ import click
 from click.parser import split_arg_string
 from click.core import MultiCommand, Option, Argument
 
-from .. import _yaml
-from .. import LoadError
-
 
 WORDBREAK = '='
 
@@ -45,7 +42,13 @@ COMPLETION_SCRIPT = '''
 complete -F %(complete_func)s -o nospace %(script_names)s
 '''
 
-_invalid_ident_char_re = re.compile(r'[^a-zA-Z0-9_]')
+
+# An exception for our custom completion handler to
+# indicate that it does not want to handle completion
+# for this parameter
+#
+class CompleteUnhandled(Exception):
+    pass
 
 
 def complete_path(path_type, incomplete, base_directory='.'):
@@ -69,6 +72,9 @@ def complete_path(path_type, incomplete, base_directory='.'):
         else:
             base_path = os.path.join(base_directory, base_path)
 
+    elif os.path.isdir(incomplete):
+        base_path = incomplete
+
     try:
         if base_path:
             if os.path.isdir(base_path):
@@ -80,12 +86,27 @@ def complete_path(path_type, incomplete, base_directory='.'):
         # ignore this and avoid a stack trace
         pass
 
-    return [
+    base_directory_slash = base_directory + os.sep
+    base_directory_len = len(base_directory) + len(os.sep)
+
+    def fix_path(path):
         # Append slashes to any entries which are directories, or
         # spaces for other files since they cannot be further completed
-        e + os.path.sep if os.path.isdir(e) else e + " "
+        if os.path.isdir(path) and not path.endswith(os.sep):
+            path = path + os.sep
+        else:
+            path = path + " "
 
-        for e in sorted(entries)
+        # Remove the artificial leading path portion which
+        # may have been prepended for search purposes.
+        if path.startswith(base_directory_slash):
+            path = path[base_directory_len:]
+
+        return path
+
+    return [
+        # Return an appropriate path for each entry
+        fix_path(e) for e in sorted(entries)
 
         # Filter out non directory elements when searching for a directory,
         # the opposite is fine, however.
@@ -189,7 +210,7 @@ def is_incomplete_argument(current_params, cmd_param):
     return False
 
 
-def get_user_autocompletions(ctx, args, incomplete, cmd_param):
+def get_user_autocompletions(ctx, args, incomplete, cmd_param, override):
     """
     :param ctx: context associated with the parsed command
     :param args: full list of args
@@ -197,15 +218,18 @@ def get_user_autocompletions(ctx, args, incomplete, cmd_param):
     :param cmd_param: command definition
     :return: all the possible user-specified completions for the param
     """
-    if cmd_param.autocompletion is not None:
-        return cmd_param.autocompletion(ctx=ctx,
-                                        args=args,
-                                        incomplete=incomplete)
-    else:
+
+    # Use the type specific default completions unless it was overridden
+    try:
+        return override(cmd_param=cmd_param,
+                        ctx=ctx,
+                        args=args,
+                        incomplete=incomplete)
+    except CompleteUnhandled:
         return get_param_type_completion(cmd_param.type, incomplete) or []
 
 
-def get_choices(cli, prog_name, args, incomplete):
+def get_choices(cli, prog_name, args, incomplete, override):
     """
     :param cli: command definition
     :param prog_name: the program that is running
@@ -241,14 +265,14 @@ def get_choices(cli, prog_name, args, incomplete):
         # completion for option values by choices
         for cmd_param in ctx.command.params:
             if isinstance(cmd_param, Option) and is_incomplete_option(all_args, cmd_param):
-                choices.extend(get_user_autocompletions(ctx, all_args, incomplete, cmd_param))
+                choices.extend(get_user_autocompletions(ctx, all_args, incomplete, cmd_param, override))
                 found_param = True
                 break
     if not found_param:
         # completion for argument values by choices
         for cmd_param in ctx.command.params:
             if isinstance(cmd_param, Argument) and is_incomplete_argument(ctx.params, cmd_param):
-                choices.extend(get_user_autocompletions(ctx, all_args, incomplete, cmd_param))
+                choices.extend(get_user_autocompletions(ctx, all_args, incomplete, cmd_param, override))
                 found_param = True
                 break
 
@@ -267,7 +291,7 @@ def get_choices(cli, prog_name, args, incomplete):
             yield item
 
 
-def do_complete(cli, prog_name):
+def do_complete(cli, prog_name, override):
     cwords = split_arg_string(os.environ['COMP_WORDS'])
     cword = int(os.environ['COMP_CWORD'])
     args = cwords[1:cword]
@@ -276,16 +300,16 @@ def do_complete(cli, prog_name):
     except IndexError:
         incomplete = ''
 
-    for item in get_choices(cli, prog_name, args, incomplete):
+    for item in get_choices(cli, prog_name, args, incomplete, override):
         click.echo(item)
 
 
-def bashcomplete(cli, prog_name, complete_instr):
+def bashcomplete(cli, prog_name, complete_instr, override):
     if complete_instr == 'source':
         click.echo(get_completion_script(prog_name, '_BST_COMPLETION'))
         return True
     elif complete_instr == 'complete':
-        do_complete(cli, prog_name)
+        do_complete(cli, prog_name, override)
         return True
     return False
 
@@ -301,56 +325,9 @@ def fast_exit(code):
 
 # Main function called from main.py at startup here
 #
-def main_bashcomplete(cmd, prog_name):
+def main_bashcomplete(cmd, prog_name, override):
     """Internal handler for the bash completion support."""
     complete_instr = os.environ.get('_BST_COMPLETION')
 
-    if complete_instr and bashcomplete(cmd, prog_name, complete_instr):
+    if complete_instr and bashcomplete(cmd, prog_name, complete_instr, override):
         fast_exit(1)
-
-
-# Special completion for completing the target options
-def complete_target(ctx, args, incomplete):
-    app = ctx.obj
-
-    # First resolve the directory, in case there is an
-    # active --directory/-C option
-    #
-    base_directory = '.'
-    idx = -1
-    try:
-        idx = args.index('-C')
-    except ValueError:
-        try:
-            idx = args.index('--directory')
-        except ValueError:
-            pass
-
-    if idx >= 0 and len(args) > idx + 1:
-        base_directory = args[idx + 1]
-
-    # Now parse the project.conf just to find the element path,
-    # this is unfortunately a bit heavy.
-    project_file = os.path.join(base_directory, 'project.conf')
-    element_directory = None
-    try:
-        project = _yaml.load(project_file)
-        element_directory = project['element-path']
-    except LoadError:
-        # If there is no project directory in context, just dont
-        # even bother trying to complete anything.
-        return []
-
-    # If a project was loaded, use it's element-path to
-    # adjust our completion's base directory
-    if element_directory:
-        base_directory = os.path.join(base_directory, element_directory)
-
-    entries = complete_path("File", incomplete, base_directory=base_directory)
-    prefix_len = len(base_directory)
-    filtered = [
-        e[prefix_len + 1:] if base_directory in e else e
-        for e in entries
-    ]
-
-    return filtered
