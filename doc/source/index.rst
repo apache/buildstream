@@ -31,6 +31,7 @@ off the ground installing it on a new host.
 
 * :ref:`installing`
 * :ref:`invoking`
+* :ref:`completion`
 * :ref:`config`
 * :ref:`projectconf`
 * :ref:`format`
