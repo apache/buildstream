@@ -25,8 +25,8 @@ This element creates a selective composition of its dependencies.
 This is normally used at near the end of a pipeline to prepare
 something for later deployment.
 
-Since this element's output includes all of its input, it may only
-depend on its dependencies as `build` type dependencies.
+Since this element's output includes its dependencies, it may only
+depend on elements as `build` type dependencies.
 
 The default configuration and possible options are as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/compose.yaml
@@ -48,6 +48,7 @@ class ComposeElement(Element):
         # collision with the Element.integrate() method.
         self.integration = self.node_get_member(node, bool, 'integrate')
         self.include = self.node_get_member(node, list, 'include')
+        self.exclude = self.node_get_member(node, list, 'exclude')
         self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
 
     def preflight(self):
@@ -64,11 +65,15 @@ class ComposeElement(Element):
             raise ElementError("{}: Compose elements may not have sources".format(self))
 
     def get_unique_key(self):
-        return {
-            'integrate': self.integration,
-            'include': sorted(self.include),
-            'orphans': self.include_orphans
-        }
+        key = {}
+        key['integrate'] = self.integration,
+        key['include'] = sorted(self.include),
+        key['orphans'] = self.include_orphans
+
+        if self.exclude:
+            key['exclude'] = sorted(self.exclude)
+
+        return key
 
     def configure_sandbox(self, sandbox):
         pass
@@ -109,7 +114,7 @@ class ComposeElement(Element):
 
         # The remainder of this is expensive, make an early exit if
         # we're not being selective about what is to be included.
-        if not self.include and self.include_orphans:
+        if not (self.include or self.exclude) and self.include_orphans:
             return '/'
 
         # XXX We should be moving things outside of the build sandbox
@@ -123,22 +128,28 @@ class ComposeElement(Element):
         # We already saved the manifest for created files in the integration phase,
         # now collect the rest of the manifest.
         #
-        with self.timed_activity("Creating composition", silent_nested=True):
-            if not self.include:
-                domains_str = "all domains"
-            else:
-                domains_str = "domains " + ", ".join(self.include)
 
-            if self.include_orphans:
-                orphans_str = "orphaned files"
-            else:
-                orphans_str = "no orphaned files"
+        lines = []
+        if self.include:
+            lines.append("Including files from domains: " + ", ".join(self.include))
+        else:
+            lines.append("Including files from all domains")
 
-            self.status("Including {} and {}".format(domains_str, orphans_str))
+        if self.exclude:
+            lines.append("Excluding files from domains: " + ", ".join(self.exclude))
 
+        if self.include_orphans:
+            lines.append("Including orphaned files")
+        else:
+            lines.append("Excluding orphaned files")
+
+        detail = "\n".join(lines)
+
+        with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
             self.stage_dependency_artifacts(sandbox, Scope.BUILD,
                                             path=stagedir,
-                                            splits=self.include,
+                                            include=self.include,
+                                            exclude=self.exclude,
                                             orphans=self.include_orphans)
 
             if self.integration:

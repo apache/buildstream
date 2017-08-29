@@ -19,6 +19,14 @@ config:
   #
   include: []
 
+  # A list of domains to exclude from each artifact, as
+  # they were defined in the element's 'split-rules'.
+  #
+  # In the case that a file is spoken for by a domain
+  # in the 'include' list and another in the 'exclude'
+  # list, then the file will be excluded.
+  exclude: []
+
   # Whether to include orphan files which are not
   # included by any of the 'split-rules' present on
   # a given element.
