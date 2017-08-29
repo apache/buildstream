@@ -317,13 +317,19 @@ class Element(Plugin):
         value = self.node_get_list_element(node, str, member_name, indices)
         return self.__variables.subst(value)
 
-    def stage_artifact(self, sandbox, path=None, splits=None, orphans=True):
+    def stage_artifact(self, sandbox, path=None, include=None, exclude=None, orphans=True):
         """Stage this element's output artifact in the sandbox
+
+        This will stage the files from the artifact to the sandbox at specified location.
+        The files are selected for staging according to the `include`, `exclude` and `orphans`
+        parameters; if `include` is not specified then all files spoken for by any domain
+        are included unless explicitly excluded with an `exclude` domain.
 
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
            path (str): An optional sandbox relative path
-           splits (list): An optional list of domains to stage files from
+           include (list): An optional list of domains to include files from
+           exclude (list): An optional list of domains to exclude files from
            orphans (bool): Whether to include files not spoken for by split domains
 
         Raises:
@@ -361,12 +367,13 @@ class Element(Plugin):
                 if path is None \
                 else os.path.join(basedir, path.lstrip(os.sep))
 
-            files = self.__compute_splits(splits, orphans)
+            files = self.__compute_splits(include, exclude, orphans)
             result = utils.link_files(artifact, stagedir, files=files)
 
         return result
 
-    def stage_dependency_artifacts(self, sandbox, scope, path=None, splits=None, orphans=True):
+    def stage_dependency_artifacts(self, sandbox, scope, path=None,
+                                   include=None, exclude=None, orphans=True):
         """Stage element dependencies in scope
 
         This is primarily a convenience wrapper around
@@ -378,7 +385,8 @@ class Element(Plugin):
            sandbox (:class:`.Sandbox`): The build sandbox
            scope (:class:`.Scope`): The scope to stage dependencies in
            path (str): An optional sandbox relative path
-           splits (list): An optional list of domains to stage files from
+           include (list): An optional list of domains to include files from
+           exclude (list): An optional list of domains to exclude files from
            orphans (bool): Whether to include files not spoken for by split domains
 
         Raises:
@@ -388,7 +396,11 @@ class Element(Plugin):
         overwrites = {}
         ignored = {}
         for dep in self.dependencies(scope):
-            result = dep.stage_artifact(sandbox, path=path, splits=splits, orphans=orphans)
+            result = dep.stage_artifact(sandbox,
+                                        path=path,
+                                        include=include,
+                                        exclude=exclude,
+                                        orphans=orphans)
             if result.overwritten:
                 overwrites[dep.name] = result.overwritten
             if result.ignored:
@@ -1571,11 +1583,11 @@ class Element(Plugin):
             for domain, rules in self.node_items(splits)
         }
 
-    def __compute_splits(self, splits, orphans):
+    def __compute_splits(self, include=None, exclude=None, orphans=True):
         basedir = os.path.join(self.__artifacts.extract(self), 'files')
 
         # No splitting requested, just report complete artifact
-        if orphans and not splits:
+        if orphans and not (include or exclude):
             for filename in utils.list_relative_paths(basedir):
                 yield filename
             return
@@ -1584,12 +1596,20 @@ class Element(Plugin):
             self.__init_splits()
 
         element_domains = list(self.__splits.keys())
-        include_domains = element_domains
-        if splits:
-            include_domains = [
-                domain for domain in splits if domain in element_domains
-            ]
+        if not include:
+            include = element_domains
+        if not exclude:
+            exclude = []
 
+        # Ignore domains that dont apply to this element
+        #
+        include = [domain for domain in include if domain in element_domains]
+        exclude = [domain for domain in exclude if domain in element_domains]
+
+        # FIXME: Instead of listing the paths in an extracted artifact,
+        #        we should be using a manifest loaded from the artifact
+        #        metadata.
+        #
         element_files = [
             os.path.join(os.sep, filename)
             for filename in utils.list_relative_paths(basedir)
@@ -1597,18 +1617,21 @@ class Element(Plugin):
 
         for filename in element_files:
             include_file = False
+            exclude_file = False
             claimed_file = False
 
             for domain in element_domains:
                 if self.__splits[domain].match(filename):
                     claimed_file = True
-                    if domain in include_domains:
+                    if domain in include:
                         include_file = True
+                    if domain in exclude:
+                        exclude_file = True
 
             if orphans and not claimed_file:
                 include_file = True
 
-            if include_file:
+            if include_file and not exclude_file:
                 yield filename.lstrip(os.sep)
 
     def _load_public_data(self):
