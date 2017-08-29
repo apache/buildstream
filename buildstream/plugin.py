@@ -318,11 +318,12 @@ class Plugin():
         self.__message(MessageType.ERROR, brief, detail=detail)
 
     @contextmanager
-    def timed_activity(self, activity_name, silent_nested=False):
+    def timed_activity(self, activity_name, detail=None, silent_nested=False):
         """Context manager for performing timed activities in plugins
 
         Args:
            activity_name (str): The name of the activity
+           detail (str): An optional detailed message, can be multiline output
            silent_nested (bool): If specified, nested messages will be silenced
 
         This function lets you perform timed tasks in your plugin,
@@ -355,7 +356,7 @@ class Plugin():
         with _signals.suspendable(stop_time, resume_time):
             try:
                 # Push activity depth for status messages
-                self.__message(MessageType.START, activity_name)
+                self.__message(MessageType.START, activity_name, detail=detail)
                 self.__context._push_message_depth(silent_nested)
                 yield
 
