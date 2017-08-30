@@ -196,6 +196,28 @@ def test_element_bad_setup(plugin_fixture, datafiles):
         foo_type = factory.lookup('foo')
 
 
+# Load a factory with a plugin which requires an absurdly
+# high version of buildstream
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionsource'))
+def test_source_badversion(plugin_fixture, datafiles):
+    factory = SourceFactory(plugin_fixture['base'],
+                            [os.path.join(datafiles.dirname,
+                                          datafiles.basename)])
+    with pytest.raises(PluginError) as exc:
+        foo_type = factory.lookup('foo')
+
+
+# Load a factory with a plugin which requires an absurdly
+# high version of buildstream
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionelement'))
+def test_element_badversion(plugin_fixture, datafiles):
+    factory = ElementFactory(plugin_fixture['base'],
+                             [os.path.join(datafiles.dirname,
+                                           datafiles.basename)])
+    with pytest.raises(PluginError) as exc:
+        foo_type = factory.lookup('foo')
+
+
 ##############################################################
 #      Check we can load different contexts of plugin        #
 ##############################################################
