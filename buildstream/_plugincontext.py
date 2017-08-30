@@ -44,10 +44,13 @@ class PluginContext():
             raise PluginError("Cannot create plugin context without any searchpath")
 
         self.base_type = base_type  # The base class plugins derive from
-        self.source = None          # The PluginSource object
         self.types = {}             # Plugin type lookup table by kind
 
-        self.load_plugins(plugin_base, searchpath)
+        # Raise an error if we have more than one plugin with the same name
+        self.assert_searchpath(searchpath)
+
+        # The PluginSource object
+        self.source = plugin_base.make_plugin_source(searchpath=searchpath)
 
     # lookup():
     #
@@ -61,20 +64,17 @@ class PluginContext():
     # Raises: PluginError
     #
     def lookup(self, kind):
+        return self.ensure_plugin(kind)
+
+    def ensure_plugin(self, kind):
+
         if kind not in self.types:
-            raise PluginError("No %s type registered for kind '%s'" %
-                              (self.base_type.__name__, kind))
+            if kind not in self.source.list_plugins():
+                raise PluginError("No %s type registered for kind '%s'" %
+                                  (self.base_type.__name__, kind))
+            self.load_plugin(kind)
 
         return self.types[kind]
-
-    def load_plugins(self, base, searchpath):
-
-        # Raise an error if we have more than one plugin with the same name
-        self.assert_searchpath(searchpath)
-
-        self.source = base.make_plugin_source(searchpath=searchpath)
-        for kind in self.source.list_plugins():
-            self.load_plugin(kind)
 
     def load_plugin(self, kind):
 
