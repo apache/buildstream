@@ -32,6 +32,7 @@ import subprocess
 import signal
 import re
 import tempfile
+import pkg_resources
 from contextlib import contextmanager
 from . import ProgramNotFoundError
 from . import _yaml
@@ -423,6 +424,20 @@ def url_directory_name(url):
         return x if x in valid_chars else '_'
 
     return ''.join([transl(x) for x in url])
+
+
+def get_bst_version():
+    """Gets the major, minor release portion of the
+    BuildStream version.
+
+    Returns:
+       (int): The major version
+       (int): The minor version
+    """
+    package = pkg_resources.require("buildstream")[0]
+    versions = package.version.split('.')[:2]
+
+    return (int(versions[0]), int(versions[1]))
 
 
 # Recursively make directories in target area and copy permissions
