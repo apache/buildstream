@@ -41,7 +41,11 @@ from buildstream import Element, ElementError, Scope
 # Element implementation for the 'compose' kind.
 class ComposeElement(Element):
 
-    strict_rebuild = True
+    # The compose element's output is it's dependencies, so
+    # we must rebuild if the dependencies change even when
+    # not in strict build plans.
+    #
+    BST_STRICT_REBUILD = True
 
     def configure(self, node):
         # We name this variable 'integration' only to avoid

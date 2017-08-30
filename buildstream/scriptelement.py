@@ -43,7 +43,11 @@ class ScriptElement(Element):
     __commands = None
     __layout = []
 
-    strict_rebuild = True
+    # The compose element's output is it's dependencies, so
+    # we must rebuild if the dependencies change even when
+    # not in strict build plans.
+    #
+    BST_STRICT_REBUILD = True
 
     def set_work_dir(self, work_dir=None):
         """Sets the working dir

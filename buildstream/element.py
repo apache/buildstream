@@ -103,7 +103,7 @@ class Element(Plugin):
     artifact version.
     """
 
-    strict_rebuild = False
+    BST_STRICT_REBUILD = False
     """Whether to rebuild this element in non strict mode if
     any of the dependencies have changed.
     """
@@ -900,7 +900,7 @@ class Element(Plugin):
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
             # but does not include keys of dependencies.
-            if self.strict_rebuild:
+            if self.BST_STRICT_REBUILD:
                 dependencies = [
                     e._get_cache_key(strength=_KeyStrength.WEAK)
                     for e in self.dependencies(Scope.BUILD)
