@@ -115,77 +115,85 @@ def test_conflict_element(plugin_fixture, datafiles):
 # Load a factory with a plugin that returns a value instead of Source subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'notatype'))
 def test_source_notatype(plugin_fixture, datafiles):
+    factory = SourceFactory(plugin_fixture['base'],
+                            [os.path.join(datafiles.dirname,
+                                          datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = SourceFactory(plugin_fixture['base'],
-                                [os.path.join(datafiles.dirname,
-                                              datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 # Load a factory with a plugin that returns a value instead of Element subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'notatype'))
 def test_element_notatype(plugin_fixture, datafiles):
+    factory = ElementFactory(plugin_fixture['base'],
+                             [os.path.join(datafiles.dirname,
+                                           datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = ElementFactory(plugin_fixture['base'],
-                                 [os.path.join(datafiles.dirname,
-                                               datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 # Load a factory with a plugin that returns a type
 # which is not a Source subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'wrongtype'))
 def test_source_wrongtype(plugin_fixture, datafiles):
+    factory = SourceFactory(plugin_fixture['base'],
+                            [os.path.join(datafiles.dirname,
+                                          datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = SourceFactory(plugin_fixture['base'],
-                                [os.path.join(datafiles.dirname,
-                                              datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 # Load a factory with a plugin that returns a type
 # which is not a Element subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'wrongtype'))
 def test_element_wrongtype(plugin_fixture, datafiles):
+    factory = ElementFactory(plugin_fixture['base'],
+                             [os.path.join(datafiles.dirname,
+                                           datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = ElementFactory(plugin_fixture['base'],
-                                 [os.path.join(datafiles.dirname,
-                                               datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 # Load a factory with a plugin which fails to provide a setup() function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'nosetup'))
 def test_source_missing_setup(plugin_fixture, datafiles):
+    factory = SourceFactory(plugin_fixture['base'],
+                            [os.path.join(datafiles.dirname,
+                                          datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = SourceFactory(plugin_fixture['base'],
-                                [os.path.join(datafiles.dirname,
-                                              datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 # Load a factory with a plugin which fails to provide a setup() function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'nosetup'))
 def test_element_missing_setup(plugin_fixture, datafiles):
+    factory = ElementFactory(plugin_fixture['base'],
+                             [os.path.join(datafiles.dirname,
+                                           datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = ElementFactory(plugin_fixture['base'],
-                                 [os.path.join(datafiles.dirname,
-                                               datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 # Load a factory with a plugin which provides a setup symbol
 # that is not a function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badsetup'))
 def test_source_bad_setup(plugin_fixture, datafiles):
+    factory = SourceFactory(plugin_fixture['base'],
+                            [os.path.join(datafiles.dirname,
+                                          datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = SourceFactory(plugin_fixture['base'],
-                                [os.path.join(datafiles.dirname,
-                                              datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 # Load a factory with a plugin which provides a setup symbol
 # that is not a function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badsetup'))
 def test_element_bad_setup(plugin_fixture, datafiles):
+    factory = ElementFactory(plugin_fixture['base'],
+                             [os.path.join(datafiles.dirname,
+                                           datafiles.basename)])
     with pytest.raises(PluginError) as exc:
-        factory = ElementFactory(plugin_fixture['base'],
-                                 [os.path.join(datafiles.dirname,
-                                               datafiles.basename)])
+        foo_type = factory.lookup('foo')
 
 
 ##############################################################
