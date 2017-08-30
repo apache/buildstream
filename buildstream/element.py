@@ -87,6 +87,22 @@ class Element(Plugin):
     __defaults = {}          # The defaults from the yaml file and project
     __defaults_set = False   # Flag, in case there are no defaults at all
 
+    # The core artifact version requires a bump whenever the cache key
+    # algorithm, the artifact structure, or the artifact metadata changes
+    # in an incompatible way.
+    #
+    __bst_core_artifact_version = 0
+
+    BST_ARTIFACT_VERSION = 0
+    """The element plugin's artifact version
+
+    Elements must first set this to 1 if they change their unique key
+    structure in a way that would produce a different key for the
+    same input, or introduce a change in the build output for the
+    same unique key. Further changes of this nature require bumping the
+    artifact version.
+    """
+
     strict_rebuild = False
     """Whether to rebuild this element in non strict mode if
     any of the dependencies have changed.
@@ -528,19 +544,6 @@ class Element(Plugin):
 
         return None
 
-    def get_artifact_version(self):
-        """Return the element plugin's artifact version
-
-        Returns:
-           (int): Artifact version
-
-        Elements must implement this method if they change their unique
-        key structure in an incompatible way or trigger a change in the
-        build output for the same unique key. Every further change
-        requires bumping the returned version.
-        """
-        return 0
-
     #############################################################
     #                  Abstract Element Methods                 #
     #############################################################
@@ -831,20 +834,6 @@ class Element(Plugin):
 
         return True
 
-    # _get_core_artifact_version():
-    #
-    # Return the artifact version of core BuildStream.
-    #
-    # Returns
-    #    (int): Artifact version
-    #
-    # The returned version requires a bump whenever the cache key
-    # algorithm, the artifact structure, or the artifact metadata
-    # changes in an incompatible way.
-    #
-    def _get_core_artifact_version(self):
-        return 0
-
     # __calculate_cache_key():
     #
     # Calculates the cache key
@@ -869,8 +858,8 @@ class Element(Plugin):
         context = self.get_context()
         project = self.get_project()
         return utils._generate_key({
-            'artifact-version': "{}.{}".format(self._get_core_artifact_version(),
-                                               self.get_artifact_version()),
+            'artifact-version': "{}.{}".format(self.__bst_core_artifact_version,
+                                               self.BST_ARTIFACT_VERSION),
             'context': context._get_cache_key(),
             'project': project._get_cache_key(),
             'element': self.get_unique_key(),
