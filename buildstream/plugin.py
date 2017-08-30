@@ -41,6 +41,13 @@ class Plugin():
     Some common features to both Sources and Elements are found
     in this class.
     """
+
+    BST_REQUIRED_VERSION_MAJOR = 0
+    """Minimum required major version"""
+
+    BST_REQUIRED_VERSION_MINOR = 0
+    """Minimum required minor version"""
+
     def __init__(self, name, context, project, provenance, type_tag):
 
         self.name = name
