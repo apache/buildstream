@@ -20,6 +20,7 @@
 
 import os
 from .exceptions import PluginError
+from . import utils
 
 
 # A Context for loading plugin types
@@ -70,42 +71,63 @@ class PluginContext():
 
         if kind not in self.types:
             if kind not in self.source.list_plugins():
-                raise PluginError("No %s type registered for kind '%s'" %
-                                  (self.base_type.__name__, kind))
+                raise PluginError("No {} type registered for kind '{}'"
+                                  .format(self.base_type.__name__, kind))
             self.load_plugin(kind)
 
         return self.types[kind]
 
     def load_plugin(self, kind):
 
-        plugin = self.source.load_plugin(kind)
+        try:
+            plugin = self.source.load_plugin(kind)
+        except ImportError as e:
+            raise PluginError("Failed to load {} plugin '{}': {}"
+                              .format(self.base_type.__name__, kind, e)) from e
+
         try:
             plugin_type = plugin.setup()
         except AttributeError as e:
-            raise PluginError("%s plugin '%s' did not provide a setup() function" %
-                              (self.base_type.__name__, kind)) from e
+            raise PluginError("{} plugin '{}' did not provide a setup() function"
+                              .format(self.base_type.__name__, kind)) from e
         except TypeError as e:
-            raise PluginError("setup symbol in %s plugin '%s' is not a function" %
-                              (self.base_type.__name__, kind)) from e
+            raise PluginError("setup symbol in {} plugin '{}' is not a function"
+                              .format(self.base_type.__name__, kind)) from e
 
         self.assert_plugin(kind, plugin_type)
+        self.assert_version(kind, plugin_type)
         self.types[kind] = plugin_type
 
     def assert_plugin(self, kind, plugin_type):
         if kind in self.types:
-            raise PluginError("Tried to register %s plugin for existing kind '%s' "
-                              "(already registered %s)" %
-                              (self.base_type.__name__, kind, self.types[kind].__name__))
+            raise PluginError("Tried to register {} plugin for existing kind '{}' "
+                              "(already registered {})"
+                              .format(self.base_type.__name__, kind, self.types[kind].__name__))
         try:
             if not issubclass(plugin_type, self.base_type):
-                raise PluginError("%s plugin '%s' returned type '%s', which is not a subclass of %s" %
-                                  (self.base_type.__name__, kind,
-                                   plugin_type.__name__,
-                                   self.base_type.__name__))
+                raise PluginError("{} plugin '{}' returned type '{}', which is not a subclass of {}"
+                                  .format(self.base_type.__name__, kind,
+                                          plugin_type.__name__,
+                                          self.base_type.__name__))
         except TypeError as e:
-            raise PluginError("%s plugin '%s' returned something that is not a type (expected subclass of %s)" %
-                              (self.base_type.__name__, kind,
-                               self.base_type.__name__)) from e
+            raise PluginError("{} plugin '{}' returned something that is not a type (expected subclass of {})"
+                              .format(self.base_type.__name__, kind,
+                                      self.base_type.__name__)) from e
+
+    def assert_version(self, kind, plugin_type):
+
+        # Now assert BuildStream version
+        bst_major, bst_minor = utils.get_bst_version()
+
+        if bst_major < plugin_type.BST_REQUIRED_VERSION_MAJOR or \
+           (bst_major == plugin_type.BST_REQUIRED_VERSION_MAJOR and
+            bst_minor < plugin_type.BST_REQUIRED_VERSION_MINOR):
+            raise PluginError("BuildStream {}.{} is too old for {} plugin '{}' (requires {}.{})"
+                              .format(
+                                  bst_major, bst_minor,
+                                  self.base_type.__name__, kind,
+                                  plugin_type.BST_REQUIRED_VERSION_MAJOR,
+                                  plugin_type.BST_REQUIRED_VERSION_MINOR))
 
     # We want a PluginError when trying to create a context
     # where more than one plugin has the same name
@@ -121,10 +143,10 @@ class PluginContext():
 
                     if name in names:
                         idx = names.index(name)
-                        raise PluginError("Failed to register %s plugin '%s' from: %s\n"
-                                          "%s plugin '%s' is already registered by: %s" %
-                                          (self.base_type.__name__, name, fullname,
-                                           self.base_type.__name__, name, fullnames[idx]))
+                        raise PluginError("Failed to register {} plugin '{}' from: {}\n"
+                                          "{} plugin '{}' is already registered by: {}"
+                                          .format(self.base_type.__name__, name, fullname,
+                                                  self.base_type.__name__, name, fullnames[idx]))
 
                     names.append(name)
                     fullnames.append(fullname)
