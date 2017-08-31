@@ -49,6 +49,14 @@ class _ProjectVariant():
         del self.data['variant']
 
 
+BST_FORMAT_VERSION = 0
+"""The base BuildStream format version
+
+This version is bumped whenever enhancements are made
+to the ``project.conf`` format or the format in general.
+"""
+
+
 class Project():
     """Project Configuration
 
@@ -82,6 +90,8 @@ class Project():
         self._variants = []
         self._host_arch = host_arch
         self._target_arch = target_arch or host_arch
+        self._source_format_versions = {}
+        self._element_format_versions = {}
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._unresolved_config = self._load_first_half()
@@ -209,6 +219,32 @@ class Project():
 
         # The project name
         self.name = _yaml.node_get(self._unresolved_config, str, 'name')
+
+        # Version requirements
+        versions = _yaml.node_get(self._unresolved_config, Mapping, 'required-versions')
+
+        # Assert project version first
+        format_version = _yaml.node_get(versions, int, 'project')
+        if BST_FORMAT_VERSION < format_version:
+            major, minor = utils.get_bst_version()
+            raise LoadError(
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+                "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
+                .format(format_version, major, minor, BST_FORMAT_VERSION))
+
+        # The source versions
+        source_versions = _yaml.node_get(versions, Mapping, 'sources', default_value={})
+        for key, _ in source_versions.items():
+            if key == _yaml.PROVENANCE_KEY:
+                continue
+            self._source_format_versions[key] = _yaml.node_get(source_versions, int, key)
+
+        # The element versions
+        element_versions = _yaml.node_get(versions, Mapping, 'elements', default_value={})
+        for key, _ in element_versions.items():
+            if key == _yaml.PROVENANCE_KEY:
+                continue
+            self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
 
         # Load the plugin paths
         plugins = _yaml.node_get(self._unresolved_config, Mapping, 'plugins', default_value={})

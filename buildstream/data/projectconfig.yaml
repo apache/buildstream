@@ -4,6 +4,29 @@
 #
 # name: myproject
 
+# Format version requirements
+#
+# Indicates the minimum required format version the
+# project requires.
+#
+required-versions:
+
+  # The minimum base BuildStream format
+  project: 0
+
+  # A minimum plugin format version for each individual
+  # plugin (as advertized by the plugin BST_FORMAT_VERSION
+  # class attributes), may be asserted here.
+  #
+  # E.g., to require version 3 of the the autotools
+  # element format:
+  #
+  #   elements:
+  #     autotools: 3
+  #
+  elements: {}
+  sources: {}
+
 # Base project relative element path, elements will be loaded
 # from this base.
 
