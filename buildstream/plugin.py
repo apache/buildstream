@@ -48,6 +48,21 @@ class Plugin():
     BST_REQUIRED_VERSION_MINOR = 0
     """Minimum required minor version"""
 
+    BST_FORMAT_VERSION = 0
+    """The plugin's YAML format version
+
+    This should be set to ``1`` the first time any new configuration
+    is understood by your :func:`~buildstream.plugin.Plugin.configure`
+    implementation and subsequently bumped every time your
+    configuration is enhanced.
+
+    .. note::
+
+       Plugins are expected to maintain backward compatibility
+       in the format and configurations they expose. The versioning
+       is intended to track availability of new features only.
+    """
+
     def __init__(self, name, context, project, provenance, type_tag):
 
         self.name = name
@@ -67,6 +82,22 @@ class Plugin():
         self.__unique_id = _plugin_register(self)  # Unique ID
         self.__log = None               # The log handle when running a task
 
+        # Infer the kind identifier
+        modulename = type(self).__module__
+        self.__kind = modulename.split('.')[-1]
+
+        # Ugly special case to determine the minimum required version
+        # from the project.
+        if type_tag == 'element':
+            version = project._element_format_versions.get(self.get_kind(), 0)
+        else:
+            version = project._source_format_versions.get(self.get_kind(), 0)
+
+        # Raise PluginError on format version mismatch here
+        if self.BST_FORMAT_VERSION < version:
+            raise PluginError("{}: Format version {} is too old for requested version {}"
+                              .format(self, self.BST_FORMAT_VERSION, version))
+
         self.debug("Created: {}".format(self))
 
     def __del__(self):
@@ -77,7 +108,7 @@ class Plugin():
 
     def __str__(self):
         return "{kind} {typetag} at {provenance}".format(
-            kind=self.get_kind(),
+            kind=self.__kind,
             typetag=self.__type_tag,
             provenance=self.__provenance)
 
@@ -87,8 +118,7 @@ class Plugin():
         Returns:
            (str): The kind of this plugin
         """
-        modulename = type(self).__module__
-        return modulename.split('.')[-1]
+        return self.__kind
 
     def get_context(self):
         """Fetches the context
