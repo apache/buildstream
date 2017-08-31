@@ -69,3 +69,14 @@ def test_project_alias(datafiles):
     # Test the override
     assert (project.translate_url('baserock:foo') == 'git://git.baserock.org/baserock/foo')
     assert (project.translate_url('gnome:bar') == 'git://git.gnome.org/bar')
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_project_unsupported(datafiles):
+    directory = os.path.join(datafiles.dirname, datafiles.basename, "unsupported")
+
+    with pytest.raises(LoadError) as exc:
+        project = Project(directory, 'x86_64')
+        project._resolve(None)
+
+    assert (exc.value.reason == LoadErrorReason.UNSUPPORTED_PROJECT)
