@@ -86,6 +86,9 @@ class LoadErrorReason(Enum):
     a string which refers to an undefined variable.
     """
 
+    UNSUPPORTED_PROJECT = 9
+    """BuildStream does not support the required project format version"""
+
 
 class LoadError(_BstError):
     """Raised while loading some YAML.
