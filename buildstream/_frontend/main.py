@@ -466,10 +466,12 @@ def show(app, target, variant, deps, except_, order, format):
               help='Specify command to execute')
 @click.option('--variant',
               help='A variant of the specified target')
+@click.option('--interactive', '-i', default=False, is_flag=True,
+              help="Force interactive mode even when running a command")
 @click.argument('target',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def shell(app, target, variant, builddir, scope, command):
+def shell(app, target, variant, builddir, scope, command, interactive):
     """Shell into an element's sandbox environment
 
     This can be used either to debug building or to launch
@@ -507,7 +509,8 @@ def shell(app, target, variant, builddir, scope, command):
         sys.exit(-1)
 
     try:
-        exitcode = app.pipeline.target._shell(scope, builddir, command=command)
+        exitcode = app.pipeline.target._shell(scope, builddir, command=command,
+                                              interactive=interactive)
         sys.exit(exitcode)
     except _BstError as e:
         click.echo("")

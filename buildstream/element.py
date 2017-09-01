@@ -1351,7 +1351,8 @@ class Element(Plugin):
     # Returns: Exit code
     #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, command=None):
+    def _shell(self, scope=None, directory=None, command=None,
+               interactive=False):
 
         with self._prepare_sandbox(scope, directory) as sandbox:
 
@@ -1370,6 +1371,8 @@ class Element(Plugin):
             flags = SandboxFlags.NETWORK_ENABLED
             if command:
                 argv += ['-c', command]
+                if interactive:
+                    flags |= SandboxFlags.INTERACTIVE
             else:
                 argv += ['-i']
                 flags |= SandboxFlags.INTERACTIVE
