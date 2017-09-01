@@ -240,14 +240,22 @@ class Source(Plugin):
         else:
             self.stage(directory)
 
-    # Wrapper for get_unique_key() api that returns a key for a
-    # workspace if a workspace is active.
+    # Wrapper for get_unique_key() api
+    #
+    # This adds any core attributes to the key and
+    # also calculates something different if workspaces
+    # are active.
     #
     def _get_unique_key(self):
+        key = {}
+
+        key['directory'] = self.__directory
         if self._has_workspace():
-            return self._get_workspace_key()
+            key['workspace'] = self._get_workspace_key()
         else:
-            return self.get_unique_key()
+            key['unique'] = self.get_unique_key()
+
+        return key
 
     # Wrapper for set_ref(), also returns whether it changed.
     #
