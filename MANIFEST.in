@@ -16,3 +16,4 @@ recursive-include tests *.yaml
 recursive-include tests *.bst
 recursive-include tests *.conf
 recursive-include tests *.sh
+recursive-include tests *.expected
