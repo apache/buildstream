@@ -237,7 +237,14 @@ class GitSource(Source):
         # Here we want to encode the local name of the repository and
         # the ref, if the user changes the alias to fetch the same sources
         # from another location, it should not effect the cache key.
-        return [self.original_url, self.mirror.ref]
+        key = [self.original_url, self.mirror.ref]
+
+        # We want the cache key to change if the source was
+        # configured differently, and submodules count.
+        if self.submodule_overrides:
+            key.append(self.submodule_overrides)
+
+        return key
 
     def get_consistency(self):
         if self.have_all_refs():
