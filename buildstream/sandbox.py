@@ -18,13 +18,16 @@
 #  Authors:
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-"""Sandbox abstraction layer.
+"""
+Sandbox
+=======
 
 :class:`.Element` plugins which want to interface with the sandbox
 need only understand this interface, while it may be given a different
 sandbox implementation, any sandbox implementation it is given will
 conform to this interface.
 """
+
 import os
 
 from . import ImplError

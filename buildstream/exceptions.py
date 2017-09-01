@@ -17,6 +17,10 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+"""
+Exceptions
+==========
+"""
 
 from enum import Enum
 

@@ -18,7 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Context for running BuildStream pipelines
+"""
+Context
+=======
 
 The :class:`.Context` object holds all of the user preferences
 and context for a given invocation of BuildStream.

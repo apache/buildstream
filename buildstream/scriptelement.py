@@ -18,7 +18,11 @@
 #  Authors:
 #        Jonathan Maw <jonathan.maw@codethink.co.uk>
 
-"""The ScriptElement class is a convenience class one can derive for
+"""
+ScriptElement
+=============
+
+The ScriptElement class is a convenience class one can derive for
 implementing elements that stage elements and run command-lines on them.
 
 Any derived classes must write their own configure() implementation, using

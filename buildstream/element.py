@@ -18,6 +18,11 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+"""
+Element
+=======
+"""
+
 import os
 import sys
 import re

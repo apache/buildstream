@@ -67,7 +67,7 @@ endef
 apidoc:
 	mkdir -p source/elements
 	mkdir -p source/sources
-	sphinx-apidoc --separate -o source $(CURDIR)/../buildstream
+	sphinx-apidoc --separate --module-first --no-headings -o source $(CURDIR)/../buildstream
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
 

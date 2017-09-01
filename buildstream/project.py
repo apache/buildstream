@@ -18,7 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Loaded Project Configuration
+"""
+Project
+=======
 
 The :class:`.Project` object holds all of the project settings from
 the project configuration file including the project directory it
