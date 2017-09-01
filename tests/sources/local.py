@@ -43,24 +43,6 @@ def test_preflight_fail(tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_unique_key(tmpdir, datafiles):
-    setup = Setup(datafiles, 'target.bst', tmpdir)
-    assert(setup.source.get_kind() == 'local')
-
-    # Get the unique key
-    unique_key = setup.source._get_unique_key()
-
-    # No easy way to test this, let's just check that the
-    # returned 'thing' is an array of tuples and the first element
-    # of the first tuple is the filename, and the second is not falsy
-    assert(isinstance(unique_key, list))
-    assert(len(unique_key) == 1)
-    filename, digest = unique_key[0]
-    assert(filename == 'file.txt')
-    assert(digest)
-
-
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_stage_file(tmpdir, datafiles):
     setup = Setup(datafiles, 'target.bst', tmpdir)
     assert(setup.source.get_kind() == 'local')
