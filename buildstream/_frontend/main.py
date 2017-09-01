@@ -74,11 +74,16 @@ def complete_target(ctx, args, incomplete):
     element_directory = None
     try:
         project = _yaml.load(project_file)
-        element_directory = project['element-path']
     except LoadError:
         # If there is no project directory in context, just dont
         # even bother trying to complete anything.
         return []
+
+    # The project is not required to have an element-path
+    try:
+        element_directory = project['element-path']
+    except KeyError:
+        pass
 
     # If a project was loaded, use it's element-path to
     # adjust our completion's base directory
