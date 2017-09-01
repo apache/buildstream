@@ -7,7 +7,7 @@
 #
 # If BuildStream is not installed system wide, you can
 # simply source this script to enable completions or append
-# this script to your ~/.bash_completions.
+# this script to your ~/.bash_completion file.
 #
 _bst_completion() {
     local IFS=$'
