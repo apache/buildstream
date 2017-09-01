@@ -28,8 +28,7 @@ ifeq ($(PYV), 2)
 	SPHINXBUILD = ./sphinx-build3
 endif
 
-
-all: docs
+.PHONY: all templates html devhelp
 
 # Canned recipe for generating plugin api skeletons
 #   $1 = the plugin directory
@@ -62,25 +61,30 @@ define plugin-doc-skeleton
 	done
 endef
 
+# We set PYTHONPATH here because source/conf.py sys.modules hacks dont seem to help sphinx-build import the plugins
+all: html devhelp
 
-.PHONY: apidoc
-apidoc:
+# Generate rst templates for the docs using a mix of sphinx-apidoc and
+# our 'plugin-doc-skeleton' routine for plugin pages.
+templates:
 	mkdir -p source/elements
 	mkdir -p source/sources
-	sphinx-apidoc --separate --module-first --no-headings -o source $(CURDIR)/../buildstream
+	sphinx-apidoc --force --separate --module-first --no-headings -o source $(CURDIR)/../buildstream
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
 
-# We set PYTHONPATH here because source/conf.py sys.modules hacks dont seem to help sphinx-build import the plugins
-.PHONY: docs
-docs: apidoc
+# Targets which generate docs with sphinx build
+#
+#
+html devhelp: templates
+	@echo "Building $@..."
 	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
-	    $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html \
+	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
 	    $(wildcard source/*.rst) \
 	    $(wildcard source/elements/*.rst) \
 	    $(wildcard source/sources/*.rst)
 	@echo
-	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+	@echo "Build of $@ finished, output: $(CURDIR)/$(BUILDDIR)/$@"
 
 testy:
 	@echo "Using $(SPHINXBUILD)"
