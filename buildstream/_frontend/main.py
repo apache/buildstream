@@ -1063,6 +1063,9 @@ class App():
     # Tickers at initialization time
     #
     def load_ticker(self, name):
+        if not self.context.log_verbose:
+            return
+
         if name:
             self.file_count += 1
 
@@ -1077,6 +1080,9 @@ class App():
             click.echo('', err=True)
 
     def resolve_ticker(self, name):
+        if not self.context.log_verbose:
+            return
+
         if name:
             self.resolve_count += 1
 
@@ -1092,9 +1098,15 @@ class App():
             click.echo('', err=True)
 
     def remote_ticker(self, name):
+        if not self.context.log_verbose:
+            return
+
         click.echo("Fetching artifact list from {}".format(name), err=True)
 
     def cache_ticker(self, name):
+        if not self.context.log_verbose:
+            return
+
         if name:
             self.cache_count += 1
 
