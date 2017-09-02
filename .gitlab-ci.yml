@@ -29,7 +29,7 @@ tests:
 integration_tests:
   script:
     - dnf install -y findutils bzr
-    - pip3 install --upgrade .
+    - pip3 install --user -e .
     - git clone https://gitlab.com/BuildStream/buildstream-tests.git
     - cd buildstream-tests
     - ./run-test.sh --arg --colors test
