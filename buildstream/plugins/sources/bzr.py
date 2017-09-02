@@ -112,6 +112,10 @@ class BzrSource(Source):
                        .format(self.ref, self._get_branch_dir(), directory))
 
     def _check_ref(self):
+        # If the mirror doesnt exist yet, then we dont have the ref
+        if not os.path.exists(self._get_branch_dir()):
+            return False
+
         return self.call([self.host_bzr, "revno",
                           "--revision=revno:{}".format(self.ref),
                           self._get_branch_dir()]) == 0
