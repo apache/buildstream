@@ -35,14 +35,11 @@
 # run over to the corresponding .expected source files and commit
 # the result.
 #
+from tests.testutils.runcli import cli
 
 import os
 from collections import OrderedDict
-from click.testing import CliRunner
 import pytest
-
-# Import the main cli entrypoint
-from buildstream._frontend.main import cli
 
 
 ##############################################
@@ -148,17 +145,10 @@ DATA_DIR = os.path.join(
 )
 
 
-@pytest.fixture(scope="module")
-def runner():
-    return CliRunner()
-
-
 @pytest.mark.datafiles(DATA_DIR)
-def test_cache_key(datafiles, runner):
-    project_dir = os.path.join(datafiles.dirname, datafiles.basename)
-    result = runner.invoke(cli, [
-        '--no-verbose',
-        '--directory', project_dir,
+def test_cache_key(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=[
         'show',
         '--format', '%{name}::%{full-key}',
         'target.bst'
@@ -168,4 +158,4 @@ def test_cache_key(datafiles, runner):
         raise AssertionError("BuildStream exited with code {} and output:\n{}"
                              .format(result.exit_code, result.output))
 
-    assert_cache_keys(project_dir, result.output)
+    assert_cache_keys(project, result.output)
