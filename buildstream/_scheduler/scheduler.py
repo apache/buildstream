@@ -112,7 +112,7 @@ class Scheduler():
         for queue in queues:
             queue.attach(self)
 
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
 
         # Add timeouts
         if self.ticker_callback:
