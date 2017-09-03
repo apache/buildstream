@@ -1,11 +1,8 @@
-from click.testing import CliRunner
 import pytest
+from tests.testutils.runcli import cli
 
 # For utils.get_bst_version()
 from buildstream import utils
-
-# Import the main cli entrypoint
-from buildstream._frontend.main import cli
 
 
 def assert_version(cli_version_output):
@@ -18,12 +15,7 @@ def assert_version(cli_version_output):
                              .format(cli_version_output))
 
 
-@pytest.fixture(scope="module")
-def runner():
-    return CliRunner()
-
-
-def test_version(runner):
-    result = runner.invoke(cli, ['--version'])
+def test_version(cli):
+    result = cli.run(args=['--version'])
     assert result.exit_code == 0
     assert_version(result.output)
