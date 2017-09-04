@@ -63,7 +63,19 @@ class ArtifactCache():
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.repo = _ostree.ensure(ostreedir, False)
 
+        self.__pull_local = False
+        self.__push_local = False
+
+        if self.context.artifact_push:
+            if self.context.artifact_push.startswith("/") or \
+               self.context.artifact_push.startswith("file://"):
+                self.__push_local = True
+
         if self.context.artifact_pull:
+            if self.context.artifact_pull.startswith("/") or \
+               self.context.artifact_pull.startswith("file://"):
+                self.__pull_local = True
+
             self.remote = utils.url_directory_name(context.artifact_pull)
             _ostree.configure_remote(self.repo, self.remote, self.context.artifact_pull)
         else:
@@ -241,7 +253,8 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_fetch(self):
-        return not self.__offline and self.remote is not None
+        return (not self.__offline or self.__pull_local) and \
+            self.remote is not None
 
     # pull():
     #
@@ -253,7 +266,7 @@ class ArtifactCache():
     #
     def pull(self, element, progress=None):
 
-        if self.__offline:
+        if self.__offline and not self.__pull_local:
             raise _ArtifactError("Attempt to pull artifact while offline")
 
         if self.context.artifact_pull.startswith("/"):
@@ -334,7 +347,8 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_push(self):
-        return not self.__offline and self.context.artifact_push is not None
+        return (not self.__offline or self.__push_local) and \
+            self.context.artifact_push is not None
 
     # push():
     #
@@ -351,7 +365,7 @@ class ArtifactCache():
     #   _ArtifactError if there was an error
     def push(self, element):
 
-        if self.__offline:
+        if self.__offline and not self.__push_local:
             raise _ArtifactError("Attempt to push artifact while offline")
 
         if self.context.artifact_push is None:
