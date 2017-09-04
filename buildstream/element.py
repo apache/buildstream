@@ -43,6 +43,7 @@ from . import LoadError, LoadErrorReason, ElementError, ImplError
 from ._sandboxbwrap import SandboxBwrap
 from . import Sandbox, SandboxFlags
 from . import Plugin, Consistency
+from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import utils
 from . import _signals
 from . import _site
@@ -91,12 +92,6 @@ class Element(Plugin):
     """
     __defaults = {}          # The defaults from the yaml file and project
     __defaults_set = False   # Flag, in case there are no defaults at all
-
-    # The core artifact version requires a bump whenever the cache key
-    # algorithm, the artifact structure, or the artifact metadata changes
-    # in an incompatible way.
-    #
-    __bst_core_artifact_version = 0
 
     BST_ARTIFACT_VERSION = 0
     """The element plugin's artifact version
@@ -863,7 +858,7 @@ class Element(Plugin):
         context = self.get_context()
         project = self.get_project()
         return utils._generate_key({
-            'artifact-version': "{}.{}".format(self.__bst_core_artifact_version,
+            'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
                                                self.BST_ARTIFACT_VERSION),
             'context': context._get_cache_key(),
             'project': project._get_cache_key(),
