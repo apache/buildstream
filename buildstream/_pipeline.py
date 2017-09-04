@@ -645,7 +645,7 @@ class Pipeline():
     def pull(self, scheduler, elements):
 
         if not self.artifacts.can_fetch():
-            self.message(self.target, MessageType.FAIL, "Not configured for pulling artifacts")
+            raise PipelineError("Not configured for pulling artifacts")
 
         plan = elements
         self.assert_consistent(plan)
@@ -683,7 +683,7 @@ class Pipeline():
     def push(self, scheduler, elements):
 
         if not self.artifacts.can_push():
-            self.message(self.target, MessageType.FAIL, "Not configured for pushing artifacts")
+            raise PipelineError("Not configured for pushing artifacts")
 
         plan = elements
         self.assert_consistent(plan)
