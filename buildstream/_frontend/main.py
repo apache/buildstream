@@ -682,15 +682,20 @@ def workspace_list(app):
         click.echo("Error loading project: %s" % str(e))
         sys.exit(1)
 
-    logger = LogLine(app.content_profile,
-                     app.format_profile,
-                     app.success_profile,
-                     app.error_profile,
-                     app.detail_profile,
-                     indent=4)
+    workspaces = []
+    for element_name, source_index, directory in project._workspaces():
+        workspace = {
+            'element': element_name,
+            'directory': directory,
+        }
+        if source_index > 0:
+            workspace['index'] = source_index
 
-    report = logger.show_workspaces(project._workspaces())
-    click.echo(report, color=app.colors)
+        workspaces.append(workspace)
+
+    _yaml.dump({
+        'workspaces': workspaces
+    })
 
 
 ##################################################################
