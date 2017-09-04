@@ -1,12 +1,11 @@
 import os
 import pytest
 import shutil
-from tests.testutils.runcli import cli
-from tests.testutils.repo import create_repo
+from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
 
-repo_kinds = [('git'), ('bzr'), ('ostree'), ('tar')]
+repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -161,7 +160,7 @@ def test_list(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [('git'), ('bzr'), ('ostree'), ('tar')])
+@pytest.mark.parametrize("kind", repo_kinds)
 def test_build(cli, tmpdir, datafiles, kind):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
     checkout = os.path.join(str(tmpdir), 'checkout')

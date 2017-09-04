@@ -1,15 +1,15 @@
+from collections import OrderedDict
 import pytest
 from .git import Git
 from .bzr import Bzr
 from .ostree import OSTree
 from .tar import Tar
 
-available_repos = {
-    'git': Git,
-    'bzr': Bzr,
-    'ostree': OSTree,
-    'tar': Tar
-}
+ALL_REPO_KINDS = OrderedDict()
+ALL_REPO_KINDS['git'] = Git
+ALL_REPO_KINDS['bzr'] = Bzr
+ALL_REPO_KINDS['ostree'] = OSTree
+ALL_REPO_KINDS['tar'] = Tar
 
 
 # create_repo()
@@ -22,7 +22,7 @@ available_repos = {
 #
 def create_repo(kind, directory):
     try:
-        constructor = available_repos[kind]
+        constructor = ALL_REPO_KINDS[kind]
     except KeyError as e:
         raise AssertionError("Unsupported repo kind {}".format(kind)) from e
 

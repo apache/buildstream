@@ -1,10 +1,8 @@
 import os
 import pytest
-from tests.testutils.runcli import cli
-from tests.testutils.repo import create_repo
+from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
-
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -14,7 +12,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [('git'), ('bzr'), ('ostree'), ('tar')])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_track(cli, tmpdir, datafiles, kind):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')

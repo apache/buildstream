@@ -1,7 +1,6 @@
 import os
 import pytest
-from tests.testutils.runcli import cli
-from tests.testutils.repo import create_repo
+from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
 
@@ -37,7 +36,7 @@ def test_build_checkout(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [('git'), ('bzr'), ('ostree'), ('tar')])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_fetch_build_checkout(cli, tmpdir, datafiles, kind):
     checkout = os.path.join(cli.directory, 'checkout')
     project = os.path.join(datafiles.dirname, datafiles.basename)
