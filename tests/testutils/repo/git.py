@@ -1,6 +1,9 @@
 import shutil
 import subprocess
+import pytest
+
 from .repo import Repo
+from ..site import HAVE_GIT
 
 GIT_ENV = {
     'GIT_AUTHOR_DATE': '1320966000 +0200',
@@ -13,6 +16,11 @@ GIT_ENV = {
 
 
 class Git(Repo):
+
+    def __init__(self, directory):
+        if not HAVE_GIT:
+            pytest.skip("git is not available")
+        super(Git, self).__init__(directory)
 
     def create(self, directory):
         self.copy_directory(directory, self.repo)
