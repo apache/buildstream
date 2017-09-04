@@ -3,8 +3,8 @@ import pytest
 import subprocess
 
 from buildstream import SourceError, LoadError, Consistency, PluginError
-from buildstream import exceptions, utils
 
+from tests.testutils.site import HAVE_BZR
 from .fixture import Setup
 
 
@@ -12,13 +12,6 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'bzr',
 )
-
-
-try:
-    utils.get_host_tool('bzr')
-    HAVE_BZR = True
-except exceptions.ProgramNotFoundError:
-    HAVE_BZR = False
 
 
 class BzrSetup(Setup):
