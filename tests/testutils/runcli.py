@@ -81,6 +81,19 @@ class Cli():
         assert result.exit_code == 0
         return result.output.strip()
 
+    # Fetch an element's cache key by invoking bst show
+    # on the project with the CLI
+    #
+    def get_element_key(self, project, element_name):
+        result = self.run(project=project, silent=True, args=[
+            'show',
+            '--deps', 'none',
+            '--format', '%{full-key}',
+            element_name
+        ])
+        assert result.exit_code == 0
+        return result.output.strip()
+
 
 # Main fixture
 #
