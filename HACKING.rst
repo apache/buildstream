@@ -219,6 +219,12 @@ You can always abort on the first failure by running::
 
   ./setup.py test --addopts -x
 
+If you want to run a specific test or a group of tests, you
+can specify a prefix to match. E.g. if you want to run all of
+the frontend tests you can do::
+
+  ./setup.py test --addopts -k --addopts 'tests/frontend/'
+
 
 Adding Tests
 ~~~~~~~~~~~~
