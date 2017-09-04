@@ -521,23 +521,6 @@ class LogLine(Widget):
 
         return text
 
-    def show_workspaces(self, workspaces):
-        text = ''
-        p = Profile()
-        format = "%{name}-%{index}:\t%{path}"
-        text += self.content_profile.fmt("Workspaces\n", bold=True)
-
-        for element_name, source_index, workspace in workspaces:
-            line = format
-
-            line = p.fmt_subst(line, 'name', element_name, fg='blue')
-            line = p.fmt_subst(line, 'index', source_index, fg='yellow')
-            line = p.fmt_subst(line, 'path', workspace.replace(os.getenv('HOME', '/root'), '~'), fg='green')
-
-            text += line + '\n'
-
-        return text
-
     def show_pipeline(self, dependencies, format):
         report = ''
         p = Profile()
