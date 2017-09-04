@@ -197,13 +197,23 @@ class CompositePolicy(Enum):
 # Raises: LoadError
 #
 def load(filename, shortname=None, copy_tree=False):
+    if not shortname:
+        shortname = filename
 
     try:
         with open(filename) as f:
-            contents = yaml.load(f, yaml.loader.RoundTripLoader)
+            return load_data(f, shortname=shortname, copy_tree=copy_tree)
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Could not find file at %s" % filename) from e
+
+
+# Like load(), but doesnt require the data to be in a file
+#
+def load_data(data, shortname=None, copy_tree=False):
+
+    try:
+        contents = yaml.load(data, yaml.loader.RoundTripLoader)
     except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Malformed YAML:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
@@ -215,10 +225,7 @@ def load(filename, shortname=None, copy_tree=False):
         else:
             raise LoadError(LoadErrorReason.INVALID_YAML,
                             "YAML file has content of type '%s' instead of expected type 'dict': %s" %
-                            (type(contents).__name__, filename))
-
-    if not shortname:
-        shortname = filename
+                            (type(contents).__name__, shortname))
 
     return node_decorated_copy(shortname, contents, copy_tree=copy_tree)
 
