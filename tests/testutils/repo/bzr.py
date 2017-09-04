@@ -1,7 +1,10 @@
 import os
 import shutil
 import subprocess
+import pytest
+
 from .repo import Repo
+from ..site import HAVE_BZR
 
 BZR_ENV = {
     "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"
@@ -9,6 +12,11 @@ BZR_ENV = {
 
 
 class Bzr(Repo):
+
+    def __init__(self, directory):
+        if not HAVE_BZR:
+            pytest.skip("bzr is not available")
+        super(Bzr, self).__init__(directory)
 
     def create(self, directory):
         branch_dir = os.path.join(self.repo, 'trunk')
