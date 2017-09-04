@@ -60,11 +60,11 @@ class Cli():
             bst_args += args
             result = self.cli_runner.invoke(bst_cli, bst_args)
 
-            if result.exit_code != 0:
-                command = "bst " + " ".join(bst_args)
-                print("BuildStream exited with error code {} for invocation:\n\t{}"
-                      .format(result.exit_code, command))
-                print("Program output was:\n{}".format(result.output))
+            # Some informative stdout we can observe when anything fails
+            command = "bst " + " ".join(bst_args)
+            print("BuildStream exited with code {} for invocation:\n\t{}"
+                  .format(result.exit_code, command))
+            print("Program output was:\n{}".format(result.output))
 
             return result
 
