@@ -199,6 +199,17 @@ class Source(Plugin):
     def _get_consistency(self, recalculate=False):
         if recalculate or self.__consistency is None:
             self.__consistency = self.get_consistency()
+
+            if self._has_workspace() and \
+               self.__consistency > Consistency.INCONSISTENT:
+
+                # A workspace is considered inconsistent in the case
+                # that it's directory went missing
+                #
+                fullpath = os.path.join(self.get_project().directory, self.__workspace)
+                if not os.path.exists(fullpath):
+                    self.__consistency = Consistency.INCONSISTENT
+
         return self.__consistency
 
     # Bump local cached consistency state, this is done from
@@ -328,11 +339,11 @@ class Source(Plugin):
 
         # Return a list of (relative filename, sha256 digest) tuples, a sorted list
         # has already been returned by list_relative_paths()
-        return [(relpath, sha256sum(fullpath)) for relpath, fullpath in filelist]
+        return [(relpath, _sha256sum(fullpath)) for relpath, fullpath in filelist]
 
 
 # Get the sha256 sum for the content of a file
-def sha256sum(filename):
+def _sha256sum(filename):
 
     # If it's a directory or symlink, just return 0 string
     if os.path.isdir(filename) or os.path.islink(filename):
