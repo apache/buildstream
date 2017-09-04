@@ -38,6 +38,23 @@ from . import _loader  # For resolve_arch()
 from ._profile import Topics, profile_start, profile_end
 from . import LoadError, LoadErrorReason
 
+BST_FORMAT_VERSION = 0
+"""The base BuildStream format version
+
+This version is bumped whenever enhancements are made
+to the ``project.conf`` format or the format in general.
+"""
+
+BST_ARTIFACT_VERSION = 0
+"""The base BuildStream artifact version
+
+The artifact version changes whenever the cache key
+calculation algorithm changes in an incompatible way
+or if buildstream was changed in a way which can cause
+the same cache key to produce something that is no longer
+the same.
+"""
+
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
 
@@ -49,14 +66,6 @@ class _ProjectVariant():
         self.name = _yaml.node_get(data, str, 'variant')
         self.data = data
         del self.data['variant']
-
-
-BST_FORMAT_VERSION = 0
-"""The base BuildStream format version
-
-This version is bumped whenever enhancements are made
-to the ``project.conf`` format or the format in general.
-"""
 
 
 class Project():
