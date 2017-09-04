@@ -111,7 +111,20 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
     # Hook for the Bash completion.  This only activates if the Bash
     # completion is actually enabled, otherwise this is quite a fast
     # noop.
-    main_bashcomplete(self, prog_name, override_completions)
+    if main_bashcomplete(self, prog_name, override_completions):
+
+        # If we're running tests we cant just go calling exit()
+        # from the main process.
+        #
+        # The below is a quicker exit path for the sake
+        # of making completions respond faster.
+        if 'BST_TEST_SUITE' not in os.environ:
+            sys.stdout.flush()
+            sys.stderr.flush()
+            os._exit(0)
+
+        # Regular client return for test cases
+        return
 
     original_main(self, args=args, prog_name=prog_name, complete_var=None,
                   standalone_mode=standalone_mode, **extra)
@@ -298,7 +311,7 @@ def track(app, target, variant, deps, except_):
               help='A variant of the specified target')
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
-              help='The dependencies to fetch (default: none)')
+              help='The dependency artifacts to pull (default: none)')
 @click.argument('target',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
@@ -330,7 +343,7 @@ def pull(app, target, variant, deps):
               help='A variant of the specified target')
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
-              help='The dependencies to fetch (default: none)')
+              help='The dependencies to push (default: none)')
 @click.argument('target',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
