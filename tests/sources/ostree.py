@@ -54,17 +54,6 @@ def run_ostree_cli(repo, cmd):
     return process.returncode, out, err
 
 
-# XXX This intermittently fails when port 8000 is in use.
-@contextmanager
-def run_ostree_mini_server():
-    PORT = 8000
-    Handler = http.server.SimpleHTTPRequestHandler
-    httpd = socketserver.TCPServer(("", PORT), Handler)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
-
-    yield
-
-
 ###############################################################
 #                            Tests                            #
 ###############################################################
@@ -106,17 +95,6 @@ def test_ostree_shell_commits():
     reg = re.compile(r'commit ([a-z0-9]{64})')
     commits = [m.groups()[0] for m in reg.finditer(str(out))]
     assert(len(commits) == 2)
-
-
-def test_ostree_shell_url_reachable():
-    # http://127.0.0.1:8000 returns 200_ok
-
-    with run_ostree_mini_server():
-        h = http.client.HTTPConnection('127.0.0.1:8000')
-        h.request("GET", '/')
-        res = h.getresponse()
-
-        assert(res.code == 200)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'head'))
