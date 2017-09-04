@@ -18,9 +18,11 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import sys
 import collections
 import copy
 from enum import Enum
+from contextlib import ExitStack
 
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
@@ -227,10 +229,12 @@ def load(filename, shortname=None, copy_tree=False):
 #    node (dict): A node previously loaded with _yaml.load() above
 #    filename (str): The YAML file to load
 #
-#
-def dump(node, filename):
-
-    with open(filename, 'w') as f:
+def dump(node, filename=None):
+    with ExitStack() as stack:
+        if filename:
+            f = stack.enter_context(open(filename, 'w'))
+        else:
+            f = sys.stdout
         yaml.round_trip_dump(node, f)
 
 
