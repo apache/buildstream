@@ -6,6 +6,8 @@ import subprocess
 from buildstream import SourceError
 from buildstream import utils
 
+from tests.testutils.site import HAVE_GIT
+
 # import our common fixture
 from .fixture import Setup
 
@@ -130,12 +132,14 @@ def git_add_submodule(setup, reponame, url, path):
 ###############################################################
 #                            Tests                            #
 ###############################################################
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_create_source(tmpdir, datafiles):
     setup = Setup(datafiles, 'target.bst', tmpdir)
     assert(setup.source.get_kind() == 'git')
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_unique_key(tmpdir, datafiles):
 
@@ -150,6 +154,7 @@ def test_unique_key(tmpdir, datafiles):
     assert(unique_key[1] == '12345')
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_fetch(tmpdir, datafiles):
 
@@ -172,6 +177,7 @@ def test_fetch(tmpdir, datafiles):
     assert(os.path.isdir(fullpath))
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_fetch_bad_ref(tmpdir, datafiles):
 
@@ -191,6 +197,7 @@ def test_fetch_bad_ref(tmpdir, datafiles):
         setup.source.fetch()
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_stage(tmpdir, datafiles):
 
@@ -211,6 +218,7 @@ def test_stage(tmpdir, datafiles):
     assert(os.path.exists(os.path.join(stagedir, 'file.txt')))
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_fetch_new_ref_and_stage(tmpdir, datafiles):
 
@@ -247,6 +255,7 @@ def test_fetch_new_ref_and_stage(tmpdir, datafiles):
     assert(os.path.exists(os.path.join(stagedir, 'anotherfile.txt')))
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_track(tmpdir, datafiles):
 
@@ -269,6 +278,7 @@ def test_track(tmpdir, datafiles):
     assert(new_ref == '3ac9cce94dd57e50a101e03dd6d43e0fc8a56b95')
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch(tmpdir, datafiles):
 
@@ -296,6 +306,7 @@ def test_submodule_fetch(tmpdir, datafiles):
     assert(os.path.isdir(fullpath))
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_stage(tmpdir, datafiles):
 
@@ -326,6 +337,7 @@ def test_submodule_stage(tmpdir, datafiles):
     assert(os.path.exists(os.path.join(stagedir, 'subrepo', 'ponyfile.txt')))
 
 
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_fetch_new_ref_with_submodule(tmpdir, datafiles):
 
