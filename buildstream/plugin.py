@@ -526,9 +526,7 @@ class Plugin():
     #
     @contextmanager
     def _output_file(self):
-        if 'BST_TEST_SUITE' in os.environ:
-            yield sys.stdout
-        elif not self.__log:
+        if not self.__log:
             with open(os.devnull, "w") as output:
                 yield output
         else:
