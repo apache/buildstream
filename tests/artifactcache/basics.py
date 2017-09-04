@@ -97,5 +97,9 @@ def test_push_pull(pipeline, tmpdir):
     # read summary file
     pipeline.artifacts.fetch_remote_refs()
 
-    pipeline.artifacts.pull(pipeline.target)
+    # Fetch artifact in subprocess to avoid hang in the next OSTree operation
+    p = multiprocessing.Process(target=pipeline.artifacts.pull, args=(pipeline.target,))
+    p.start()
+    p.join()
+
     assert(pipeline.artifacts.contains(pipeline.target))
