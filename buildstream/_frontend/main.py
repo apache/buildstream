@@ -619,12 +619,12 @@ def workspace_open(app, no_checkout, force, source, variant, track, element, dir
 def workspace_close(app, source, remove_dir, variant, element):
     """Close a workspace"""
 
-    if remove_dir:
+    app.initialize(element, variant)
+    if app.interactive and remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
             sys.exit(-1)
 
-    app.initialize(element, variant)
     try:
         app.pipeline.close_workspace(source, remove_dir)
         click.echo("")
@@ -646,14 +646,17 @@ def workspace_close(app, source, remove_dir, variant, element):
               help="Do not checkout the source, only link to the given directory")
 @click.option('--variant',
               help='A variant of the specified target')
-@click.confirmation_option(prompt='This will remove all your changes, are you sure?')
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def workspace_reset(app, source, track, no_checkout, variant, element):
     """Reset a workspace to its original state"""
-
     app.initialize(element, variant)
+    if app.interactive:
+        if not click.confirm('This will remove all your changes, are you sure?'):
+            click.echo('Aborting')
+            sys.exit(-1)
+
     try:
         app.pipeline.reset_workspace(app.scheduler, source, track, no_checkout)
         click.echo("")
