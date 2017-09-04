@@ -1,8 +1,15 @@
 import subprocess
 from .repo import Repo
 
+from ..site import HAVE_OSTREE_CLI
+
 
 class OSTree(Repo):
+
+    def __init__(self, directory):
+        if not HAVE_OSTREE_CLI:
+            pytest.skip("ostree cli is not available")
+        super(OSTree, self).__init__(directory)
 
     def create(self, directory):
         subprocess.call(['ostree', 'init',
