@@ -42,7 +42,7 @@ class Mount():
 
         argv = [utils.get_host_tool('mount')]
         if mount_type:
-            argv.extend([self.platform.switch(sunos='-F', default='-t'), mount_type])
+            argv.extend([self.platform.switch(default='-F', linux='-t'), mount_type])
         if options:
             argv.extend(['-o', options])
         if flags:

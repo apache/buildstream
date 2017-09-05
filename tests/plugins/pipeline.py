@@ -3,6 +3,9 @@ import pytest
 
 from buildstream import Context, Project, Scope, PluginError
 from buildstream._pipeline import Pipeline
+from buildstream._platform import Platform
+
+from tests.testutils.site import HAVE_ROOT
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -16,10 +19,12 @@ def create_pipeline(tmpdir, basedir, target, variant):
 
     context.deploydir = os.path.join(str(tmpdir), 'deploy')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
+    context._platform = Platform.get_platform(context)
 
     return Pipeline(context, project, target, variant)
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customsource'))
 def test_customsource(datafiles, tmpdir):
 
@@ -28,6 +33,7 @@ def test_customsource(datafiles, tmpdir):
     assert(pipeline.target.get_kind() == "autotools")
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customelement'))
 def test_customelement(datafiles, tmpdir):
 
@@ -36,6 +42,7 @@ def test_customelement(datafiles, tmpdir):
     assert(pipeline.target.get_kind() == "foo")
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionsource'))
 def test_badversionsource(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
@@ -44,6 +51,7 @@ def test_badversionsource(datafiles, tmpdir):
         pipeline = create_pipeline(tmpdir, basedir, 'simple.bst', None)
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionelement'))
 def test_badversionelement(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)

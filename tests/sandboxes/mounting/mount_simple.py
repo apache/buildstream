@@ -1,12 +1,11 @@
 import os
-import sys
 import pytest
 import tempfile
 from contextlib import ExitStack
 
 from buildstream._sandboxchroot import Mount
 from buildstream._platform import Platform
-from buildstream import Context, _ostree
+from buildstream import Context
 
 
 @pytest.fixture()
@@ -14,12 +13,12 @@ def mount(tmpdir):
     context = Context('x86_64')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context.builddir = os.path.join(str(tmpdir), 'build')
-    context._platform = Platform(context)
+    context._platform = Platform.get_platform(context)
 
     return Mount(context._platform)
 
 
-@pytest.mark.skip(reason="requires root permissions")
+@pytest.mark.skipif(not os.geteuid() == 0, reason="requires root permissions")
 def test_bind_mount(mount):
     with ExitStack() as stack:
         src = stack.enter_context(tempfile.TemporaryDirectory())
@@ -28,7 +27,7 @@ def test_bind_mount(mount):
         with open(os.path.join(src, 'test'), 'a') as test:
             test.write('Test')
 
-        with mount.bind_mount(src, target) as dest:
+        with mount.bind_mount(target, src) as dest:
             # Ensure we get the correct path back
             assert dest == target
 
@@ -47,13 +46,13 @@ def test_bind_mount(mount):
             assert test.read() == 'Test'
 
 
-@pytest.mark.skip(reason="requires root permissions")
+@pytest.mark.skipif(not os.geteuid() == 0, reason="requires root permissions")
 def test_mount_proc(mount):
     with ExitStack() as stack:
         src = '/proc'
         target = stack.enter_context(tempfile.TemporaryDirectory())
 
-        with mount.mount(src, target, 'proc', ro=True) as dest:
+        with mount.mount(target, src, 'proc', ro=True) as dest:
             # Ensure we get the correct path back
             assert dest == target
 

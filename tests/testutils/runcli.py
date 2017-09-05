@@ -1,4 +1,6 @@
 import os
+import sys
+import traceback
 from contextlib import contextmanager, ExitStack
 from click.testing import CliRunner
 import pytest
@@ -66,6 +68,14 @@ class Cli():
             if env is not None:
                 stack.enter_context(environment(env))
 
+            # Ensure we have a working stdout - required to work
+            # around a bug that appears to cause AIX to close
+            # sys.__stdout__ after setup.py
+            try:
+                sys.__stdout__.fileno()
+            except ValueError:
+                sys.__stdout__ = open('/dev/stdout', 'w')
+
             result = self.cli_runner.invoke(bst_cli, bst_args)
 
         # Some informative stdout we can observe when anything fails
@@ -73,6 +83,9 @@ class Cli():
         print("BuildStream exited with code {} for invocation:\n\t{}"
               .format(result.exit_code, command))
         print("Program output was:\n{}".format(result.output))
+
+        if result.exc_info and result.exc_info[0] != SystemExit:
+            traceback.print_exception(*result.exc_info)
 
         return result
 
