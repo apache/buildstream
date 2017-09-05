@@ -3,10 +3,7 @@ import pytest
 from tests.testutils import cli
 
 # Project directory
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "project",
-)
+DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 MAIN_COMMANDS = [
     'build ',
@@ -127,7 +124,7 @@ def test_option_choice(cli, cmd, word_idx, expected):
     assert_completion(cli, cmd, word_idx, expected)
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("cmd,word_idx,expected,subdir", [
     # Note that elements/ and files/ are partial completions and
     # as such do not come with trailing whitespace
@@ -151,7 +148,7 @@ def test_option_file(datafiles, cli, cmd, word_idx, expected, subdir):
     assert_completion(cli, cmd, word_idx, expected, cwd=cwd)
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("cmd,word_idx,expected,subdir", [
     # Note that regular files like project.conf are not returned when
     # completing for a directory
@@ -168,26 +165,49 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("cmd,word_idx,expected,subdir", [
+@pytest.mark.parametrize("project,cmd,word_idx,expected,subdir", [
     # When running in the project directory
-    ('bst show ', 2, [e + ' ' for e in PROJECT_ELEMENTS], None),
-    ('bst build com', 2, ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], None),
+    ('project', 'bst show ', 2, [e + ' ' for e in PROJECT_ELEMENTS], None),
+    ('project', 'bst build com', 2,
+     ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], None),
 
     # When running from the files subdir
-    ('bst show ', 2, [], 'files'),
-    ('bst build com', 2, [], 'files'),
+    ('project', 'bst show ', 2, [], 'files'),
+    ('project', 'bst build com', 2, [], 'files'),
 
     # When passing the project directory
-    ('bst --directory ../ show ', 4, [e + ' ' for e in PROJECT_ELEMENTS], 'files'),
-    ('bst --directory ../ build com', 4,
+    ('project', 'bst --directory ../ show ', 4, [e + ' ' for e in PROJECT_ELEMENTS], 'files'),
+    ('project', 'bst --directory ../ build com', 4,
      ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], 'files'),
 
     # Also try multi arguments together
-    ('bst --directory ../ checkout t ', 4, ['target.bst '], 'files'),
-    ('bst --directory ../ checkout target.bst ', 5, ['bin-files/', 'dev-files/'], 'files'),
+    ('project', 'bst --directory ../ checkout t ', 4, ['target.bst '], 'files'),
+    ('project', 'bst --directory ../ checkout target.bst ', 5, ['bin-files/', 'dev-files/'], 'files'),
+
+    # When running in the project directory
+    ('no-element-path', 'bst show ', 2,
+     [e + ' ' for e in (PROJECT_ELEMENTS + ['project.conf'])] + ['files/'], None),
+    ('no-element-path', 'bst build com', 2,
+     ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], None),
+
+    # When running from the files subdir
+    ('no-element-path', 'bst show ', 2, [], 'files'),
+    ('no-element-path', 'bst build com', 2, [], 'files'),
+
+    # When passing the project directory
+    ('no-element-path', 'bst --directory ../ show ', 4,
+     [e + ' ' for e in (PROJECT_ELEMENTS + ['project.conf'])] + ['files/'], 'files'),
+    ('no-element-path', 'bst --directory ../ show f', 4, ['files/'], 'files'),
+    ('no-element-path', 'bst --directory ../ show files/', 4, ['files/bin-files/', 'files/dev-files/'], 'files'),
+    ('no-element-path', 'bst --directory ../ build com', 4,
+     ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], 'files'),
+
+    # Also try multi arguments together
+    ('no-element-path', 'bst --directory ../ checkout t ', 4, ['target.bst '], 'files'),
+    ('no-element-path', 'bst --directory ../ checkout target.bst ', 5, ['bin-files/', 'dev-files/'], 'files'),
 ])
-def test_argument_element(datafiles, cli, cmd, word_idx, expected, subdir):
-    cwd = str(datafiles)
+def test_argument_element(datafiles, cli, project, cmd, word_idx, expected, subdir):
+    cwd = os.path.join(str(datafiles), project)
     if subdir:
         cwd = os.path.join(cwd, subdir)
     assert_completion(cli, cmd, word_idx, expected, cwd=cwd)
