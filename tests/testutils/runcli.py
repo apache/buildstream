@@ -36,9 +36,10 @@ class Cli():
     #    configure (bool): Whether to pass a --config argument
     #    project (str): An optional path to a project
     #    silent (bool): Whether to pass --no-verbose
+    #    env (dict): Environment variables to temporarily set during the test
     #    args (list): A list of arguments to pass buildstream
     #
-    def run(self, configure=True, project=None, silent=False, args=None):
+    def run(self, configure=True, project=None, silent=False, env=None, cwd=None, args=None):
         if args is None:
             args = []
 
@@ -58,15 +59,22 @@ class Cli():
                 bst_args += ['--directory', project]
 
             bst_args += args
+
+            if cwd is not None:
+                stack.enter_context(chdir(cwd))
+
+            if env is not None:
+                stack.enter_context(environment(env))
+
             result = self.cli_runner.invoke(bst_cli, bst_args)
 
-            # Some informative stdout we can observe when anything fails
-            command = "bst " + " ".join(bst_args)
-            print("BuildStream exited with code {} for invocation:\n\t{}"
-                  .format(result.exit_code, command))
-            print("Program output was:\n{}".format(result.output))
+        # Some informative stdout we can observe when anything fails
+        command = "bst " + " ".join(bst_args)
+        print("BuildStream exited with code {} for invocation:\n\t{}"
+              .format(result.exit_code, command))
+        print("Program output was:\n{}".format(result.output))
 
-            return result
+        return result
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
@@ -104,6 +112,31 @@ def cli(tmpdir):
     directory = os.path.join(str(tmpdir), 'cache')
     os.makedirs(directory)
     return Cli(directory)
+
+
+@contextmanager
+def chdir(directory):
+    old_dir = os.getcwd()
+    os.chdir(directory)
+    yield
+    os.chdir(old_dir)
+
+
+@contextmanager
+def environment(env):
+
+    old_env = {}
+    for key, value in env.items():
+        old_env[key] = os.environ.get(key)
+        os.environ[key] = value
+
+    yield
+
+    for key, value in old_env.items():
+        if value is None:
+            del os.environ[key]
+        else:
+            os.environ[key] = value
 
 
 @contextmanager
