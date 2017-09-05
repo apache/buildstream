@@ -5,6 +5,8 @@ from buildstream import Context, Project, Scope
 from buildstream._pipeline import Pipeline
 from buildstream._platform import Platform
 
+from tests.testutils.site import HAVE_ROOT
+
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'load',
@@ -22,6 +24,7 @@ def create_pipeline(tmpdir, basedir, target, variant):
     return Pipeline(context, project, target, variant)
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'simple'))
 def test_load_simple(datafiles, tmpdir):
 
@@ -39,6 +42,7 @@ def test_load_simple(datafiles, tmpdir):
 ###############################################################
 #        Testing Element.dependencies() iteration             #
 ###############################################################
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
 def test_iterate_scope_all(datafiles, tmpdir):
 
@@ -65,6 +69,7 @@ def test_iterate_scope_all(datafiles, tmpdir):
     assert(element_list[6].name == "target.bst")
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
 def test_iterate_scope_run(datafiles, tmpdir):
 
@@ -88,6 +93,7 @@ def test_iterate_scope_run(datafiles, tmpdir):
     assert(element_list[3].name == "target.bst")
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
 def test_iterate_scope_build(datafiles, tmpdir):
 
@@ -111,6 +117,7 @@ def test_iterate_scope_build(datafiles, tmpdir):
     assert(element_list[2].name == "dep-two.bst")
 
 
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
 def test_iterate_scope_build_of_child(datafiles, tmpdir):
 
@@ -142,6 +149,7 @@ def test_iterate_scope_build_of_child(datafiles, tmpdir):
 ###############################################################
 #                   Testing element removal                   #
 ###############################################################
+@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'remove'))
 def test_remove_elements(datafiles, tmpdir):
 

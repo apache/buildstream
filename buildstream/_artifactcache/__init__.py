@@ -19,5 +19,3 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .artifactcache import ArtifactCache
-from .ostreecache import OSTreeCache
-from .tarcache import TarCache

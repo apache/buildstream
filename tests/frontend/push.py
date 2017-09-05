@@ -1,6 +1,7 @@
 import os
 import pytest
 from tests.testutils import cli, create_artifact_share
+from tests.testutils.site import IS_LINUX
 
 from buildstream import _yaml
 
@@ -23,6 +24,7 @@ def assert_shared(cli, share, project, element_name):
                              .format(share.repo, element_name))
 
 
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.parametrize(
     'user_url, project_url, override_url',
     [
@@ -82,6 +84,7 @@ def test_push(cli, tmpdir, datafiles, user_url, project_url, override_url):
     assert_shared(cli, share, project, 'target.bst')
 
 
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_all(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)

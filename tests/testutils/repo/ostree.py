@@ -1,14 +1,16 @@
+import pytest
 import subprocess
 from .repo import Repo
 
-from ..site import HAVE_OSTREE_CLI
+from ..site import HAVE_OSTREE_CLI, HAVE_OSTREE
 
 
 class OSTree(Repo):
 
     def __init__(self, directory):
-        if not HAVE_OSTREE_CLI:
+        if not HAVE_OSTREE_CLI or not HAVE_OSTREE:
             pytest.skip("ostree cli is not available")
+
         super(OSTree, self).__init__(directory)
 
     def create(self, directory):

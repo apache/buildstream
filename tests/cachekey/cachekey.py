@@ -36,7 +36,7 @@
 # the result.
 #
 from tests.testutils.runcli import cli
-from tests.testutils.site import HAVE_BZR, HAVE_GIT
+from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX
 
 import os
 from collections import OrderedDict
@@ -149,8 +149,10 @@ DATA_DIR = os.path.join(
 # The cache key test uses a project which exercises all plugins,
 # so we cant run it at all if we dont have them installed.
 #
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.skipif(HAVE_OSTREE is False, reason="ostree is not available")
 @pytest.mark.datafiles(DATA_DIR)
 def test_cache_key(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
