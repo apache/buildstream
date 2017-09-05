@@ -61,6 +61,10 @@ def complete_path(path_type, incomplete, base_directory='.'):
     # otherwise list files starting from the current working directory.
     entries = []
     base_path = ''
+
+    # This is getting a bit messy
+    listed_base_directory = False
+
     if os.path.sep in incomplete:
         split = incomplete.rsplit(os.path.sep, 1)
         base_path = split[0]
@@ -78,18 +82,27 @@ def complete_path(path_type, incomplete, base_directory='.'):
                 entries = [os.path.join(base_path, e) for e in os.listdir(base_path)]
         else:
             entries = os.listdir(base_directory)
+            listed_base_directory = True
     except OSError:
         # If for any reason the os reports an error from os.listdir(), just
         # ignore this and avoid a stack trace
         pass
 
-    base_directory_slash = base_directory + os.sep
-    base_directory_len = len(base_directory) + len(os.sep)
+    base_directory_slash = base_directory
+    if not base_directory_slash.endswith(os.sep):
+        base_directory_slash += os.sep
+    base_directory_len = len(base_directory_slash)
+
+    def entry_is_dir(entry):
+        if listed_base_directory:
+            entry = os.path.join(base_directory, entry)
+        return os.path.isdir(entry)
 
     def fix_path(path):
+
         # Append slashes to any entries which are directories, or
         # spaces for other files since they cannot be further completed
-        if os.path.isdir(path) and not path.endswith(os.sep):
+        if entry_is_dir(path) and not path.endswith(os.sep):
             path = path + os.sep
         else:
             path = path + " "
@@ -107,7 +120,7 @@ def complete_path(path_type, incomplete, base_directory='.'):
 
         # Filter out non directory elements when searching for a directory,
         # the opposite is fine, however.
-        if not (path_type == 'Directory' and not os.path.isdir(e))
+        if not (path_type == 'Directory' and not entry_is_dir(e))
     ]
 
 
