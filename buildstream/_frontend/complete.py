@@ -67,10 +67,7 @@ def complete_path(path_type, incomplete, base_directory='.'):
 
         # If there was nothing on the left of the last separator,
         # we are completing files in the filesystem root
-        if not base_path:
-            base_path = os.path.sep
-        else:
-            base_path = os.path.join(base_directory, base_path)
+        base_path = os.path.join(base_directory, base_path)
 
     elif os.path.isdir(incomplete):
         base_path = incomplete
@@ -131,14 +128,6 @@ def get_param_type_completion(param_type, incomplete):
         return complete_path(param_type.path_type, incomplete)
 
     return []
-
-
-def get_completion_script(prog_name, complete_var):
-    return (COMPLETION_SCRIPT % {
-        'complete_func': '_bst_completion',
-        'script_names': 'bst',
-        'autocomplete_var': complete_var,
-    }).strip() + ';'
 
 
 def resolve_ctx(cli, prog_name, args):
@@ -304,30 +293,13 @@ def do_complete(cli, prog_name, override):
         click.echo(item)
 
 
-def bashcomplete(cli, prog_name, complete_instr, override):
-    if complete_instr == 'source':
-        click.echo(get_completion_script(prog_name, '_BST_COMPLETION'))
-        return True
-    elif complete_instr == 'complete':
-        do_complete(cli, prog_name, override)
-        return True
-    return False
-
-
-def fast_exit(code):
-    """Exit without garbage collection, this speeds up exit by about 10ms for
-    things like bash completion.
-    """
-    sys.stdout.flush()
-    sys.stderr.flush()
-    os._exit(code)
-
-
 # Main function called from main.py at startup here
 #
 def main_bashcomplete(cmd, prog_name, override):
     """Internal handler for the bash completion support."""
-    complete_instr = os.environ.get('_BST_COMPLETION')
 
-    if complete_instr and bashcomplete(cmd, prog_name, complete_instr, override):
-        fast_exit(1)
+    if '_BST_COMPLETION' in os.environ:
+        do_complete(cmd, prog_name, override)
+        return True
+
+    return False
