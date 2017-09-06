@@ -1,0 +1,8 @@
+kind: pony
+description: The vehicle of choice for rainbow travel
+mods:
+  - happy
+  - sad
+children:
+  - naam: dopey
+    mood: silly

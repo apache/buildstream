@@ -587,6 +587,24 @@ def node_sanitize(node):
     return node
 
 
+def validate_node(node, valid_keys):
+
+    # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
+    valid_keys = set(valid_keys)
+    valid_keys.add(PROVENANCE_KEY)
+    invalid_keys = [key for key in node if key not in valid_keys]
+
+    if invalid_keys:
+        provenance = node_get_provenance(node)
+        error_prefix = ""
+        if provenance:
+            error_prefix = "[%s]: " % str(provenance)
+
+        key_list = ', '.join(invalid_keys)
+        raise LoadError(LoadErrorReason.INVALID_YAML,
+                        "{}Unexpected keys: {}".format(error_prefix, key_list))
+
+
 def node_chain_copy(source):
     copy = collections.ChainMap({}, source)
     for key, value in source.items():
