@@ -18,8 +18,7 @@ BuildStream requires the following base system requirements:
 * python3 >= 3.4
 * ruamel.yaml python library
 * PyGObject introspection bindings
-* OSTree >= v2016.8 (preferrably >= v2017.6 -- see below)
-* OStree introspection data
+* OSTree >= v2017.8 with introspection data
 
 Note that ``ruamel.yaml`` is a pure python library which is normally
 obtainable via pip, however there seems to be some problems with installing
@@ -31,10 +30,6 @@ you will additionally need:
 * pip for python3 (only required for setup)
 * Python 3 development libraries and headers
 * git (to checkout buildstream)
-
-If you use an OSTree version older than v2017.6, you may encounter a 10 second
-delay when loading BuildStream pipelines that include signed OSTree repos. For
-more information see: https://github.com/ostreedev/ostree/issues/883
 
 Here are some examples of how to prepare the base requirements on
 some distros.
