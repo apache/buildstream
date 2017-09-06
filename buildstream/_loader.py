@@ -211,6 +211,15 @@ class LoadElement():
         # These are shared with the owning Loader object
         self.basedir = basedir
 
+        # Ensure the root node is valid
+        _yaml.validate_node(self.data, [
+            'kind', 'depends', 'sources',
+            'variables', 'environment',
+            'config', 'public', 'description',
+            'arches', 'variants', 'host-arches',
+            'choice'
+        ])
+
         # Process arch conditionals
         resolve_arch(self.data, self.host_arch, self.target_arch)
 
