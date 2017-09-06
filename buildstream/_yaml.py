@@ -575,6 +575,19 @@ def node_sanitize(node):
     return node
 
 
+def validate_node(node, valid_keys):
+
+    # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
+    valid_keys = set(valid_keys)
+    valid_keys.add(PROVENANCE_KEY)
+    invalid = next((key for key in node if key not in valid_keys), None)
+
+    if invalid:
+        provenance = node_get_provenance(node, key=invalid)
+        raise LoadError(LoadErrorReason.INVALID_DATA,
+                        "[{}]: Unexpected key: {}".format(provenance, invalid))
+
+
 def node_chain_copy(source):
     copy = collections.ChainMap({}, source)
     for key, value in source.items():
