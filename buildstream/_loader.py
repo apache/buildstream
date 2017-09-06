@@ -211,6 +211,14 @@ class LoadElement():
         # These are shared with the owning Loader object
         self.basedir = basedir
 
+        # Ensure the root node is valid
+        _yaml.validate_node(self.data, [
+            'kind', 'depends', 'sources',
+            'variables', 'environment',
+            'config', 'public', 'description',
+            'arches', 'variants', 'host-arches'
+        ])
+
         # Process arch conditionals
         resolve_arch(self.data, self.host_arch, self.target_arch)
 
@@ -370,6 +378,8 @@ def extract_depends_from_node(owner, data):
             dependency = Dependency(owner, dep, filename=dep, provenance=dep_provenance)
 
         elif isinstance(dep, Mapping):
+            _yaml.validate_node(dep, ['filename', 'type', 'variant'])
+
             # Make variant optional, for this we set it to None after
             variant = _yaml.node_get(dep, str, Symbol.VARIANT, default_value="")
             if not variant:

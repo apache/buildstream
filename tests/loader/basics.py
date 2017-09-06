@@ -72,3 +72,15 @@ def test_fail_fullpath_target(datafiles):
         loader = Loader(basedir, fullpath, None, None, None, [])
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
+def test_invalid_key(datafiles):
+
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = Loader(basedir, 'elements/invalidkey.bst', None, None, None, [])
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load()
+
+    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
