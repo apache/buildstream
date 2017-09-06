@@ -11,19 +11,26 @@ DATA_DIR = os.path.join(
 )
 
 
+def strict_args(args, strict):
+    if strict != "strict":
+        return ['--no-strict'] + args
+    return args
+
+
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_checkout(datafiles, cli):
+@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
+def test_build_checkout(datafiles, cli, strict):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
 
     # First build it
-    result = cli.run(project=project, args=['build', 'target.bst'])
+    result = cli.run(project=project, args=strict_args(['build', 'target.bst'], strict))
     assert result.exit_code == 0
 
     # Now check it out
-    result = cli.run(project=project, args=[
+    result = cli.run(project=project, args=strict_args([
         'checkout', 'target.bst', checkout
-    ])
+    ], strict))
     assert result.exit_code == 0
 
     # Check that the executable hello file is found in the checkout
@@ -35,9 +42,14 @@ def test_build_checkout(datafiles, cli):
     assert os.path.exists(filename)
 
 
+fetch_build_checkout_combos = \
+    [("strict", kind) for kind in ALL_REPO_KINDS] + \
+    [("non-strict", kind) for kind in ALL_REPO_KINDS]
+
+
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
-def test_fetch_build_checkout(cli, tmpdir, datafiles, kind):
+@pytest.mark.parametrize("strict,kind", fetch_build_checkout_combos)
+def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
     checkout = os.path.join(cli.directory, 'checkout')
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
@@ -62,14 +74,14 @@ def test_fetch_build_checkout(cli, tmpdir, datafiles, kind):
                             element_name))
 
     assert cli.get_element_state(project, element_name) == 'fetch needed'
-    result = cli.run(project=project, args=['build', element_name])
+    result = cli.run(project=project, args=strict_args(['build', element_name], strict))
     assert result.exit_code == 0
     assert cli.get_element_state(project, element_name) == 'cached'
 
     # Now check it out
-    result = cli.run(project=project, args=[
+    result = cli.run(project=project, args=strict_args([
         'checkout', element_name, checkout
-    ])
+    ], strict))
     assert result.exit_code == 0
 
     # Check that the pony.h include from files/dev-files exists
