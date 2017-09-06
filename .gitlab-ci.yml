@@ -4,6 +4,11 @@ cache:
   paths:
     - cache/buildstream/sources/
 
+stages:
+  - test
+  - coverage
+  - docs
+
 before_script:
   # Diagnostics
   - mount
@@ -19,24 +24,58 @@ before_script:
 
 # Run premerge commits
 #
-tests:
+pytest:
+  stage: test
   script:
   - dnf install -y bzr
   - python3 setup.py test
+  - mkdir -p coverage-pytest/
+  - cp .coverage.* coverage-pytest/coverage.pytest
+  artifacts:
+    paths:
+    - coverage-pytest/
 
 # Run integration tests
 #
-integration_tests:
+integration:
+  stage: test
   script:
-    - dnf install -y findutils bzr
+    - dnf install -y findutils bzr which
+    - pip3 install coverage
     - pip3 install .
     - git clone https://gitlab.com/BuildStream/buildstream-tests.git
     - cd buildstream-tests
-    - ./run-test.sh --arg --colors test
+    - ./run-test.sh --arg --colors --cov ../.coveragerc test
+    - cd ..
+    - mkdir -p coverage-integration/
+    - cp buildstream-tests/.coverage coverage-integration/coverage.integration
+    - cp -a cache/buildstream/logs logs-integration
+  artifacts:
+    paths:
+    - coverage-integration/
+    - logs-integration/
+
+# Collate coverage reports
+#
+coverage:
+  stage: coverage
+  script:
+    - pip3 install coverage
+    - pip3 install .
+    - mkdir report
+    - cp coverage-integration/coverage.integration report/.coverage
+    - cp coverage-pytest/coverage.pytest report
+    - cd report
+    - coverage combine --rcfile=../.coveragerc -a coverage.pytest
+    - coverage report -m
+  dependencies:
+  - pytest
+  - integration
 
 # Automatically build documentation, only for merges which land
 # on master branch.
 pages:
+  stage: docs
   script:
   - dnf install -y findutils python2
   - pip3 install sphinx
