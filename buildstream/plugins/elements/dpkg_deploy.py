@@ -141,6 +141,11 @@ class DpkgDeployElement(ScriptElement):
         prefixes = ["pre-", "", "post-"]
         groups = ["build-commands"]
 
+        self.node_validate(node, [
+            'pre-build-commands', 'build-commands', 'post-build-commands',
+            'base', 'input'
+        ])
+
         self.__input = self.node_subst_member(node, 'input')
         self.layout_add(self.node_subst_member(node, 'base'), "/")
         self.layout_add(None, '/buildstream')

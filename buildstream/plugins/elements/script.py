@@ -48,6 +48,12 @@ class ScriptElement(buildstream.ScriptElement):
 
         cmds = []
         prefixes = ["pre-", "", "post-"]
+
+        self.node_validate(node, [
+            'pre-commands', 'commands', 'post-commands',
+            'root-read-only', 'layout'
+        ])
+
         if "commands" not in node:
             raise ElementError("{}: Unexpectedly missing command group 'commands'"
                                .format(self))

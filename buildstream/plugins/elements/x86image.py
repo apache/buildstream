@@ -41,6 +41,9 @@ class X86ImageElement(ScriptElement):
             "partition-commands",
             "final-commands"
         ]
+
+        self.node_validate(node, (prefix + group for group in groups for prefix in prefixes))
+
         for group in groups:
             cmds = []
             if group not in node:

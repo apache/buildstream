@@ -207,6 +207,31 @@ class Plugin():
         """
         return _yaml.node_get(node, expected_type, member_name, default_value=default_value)
 
+    def node_validate(self, node, valid_keys):
+        """This should be used in :func:`~buildstream.plugin.Plugin.configure`
+        implementations to assert that users have only entered
+        valid configuration keys.
+
+        Args:
+            node (dict): A dictionary loaded from YAML
+            valid_keys (iterable): A list of valid keys for the node
+
+        Raises:
+            :class:`.LoadError`: When an invalid key is found
+
+        **Example:**
+
+        .. code:: python
+
+          # Ensure our node only contains valid autotools config keys
+          self.node_validate(node, [
+              'configure-commands', 'build-commands',
+              'install-commands', 'strip-commands'
+          ])
+
+        """
+        _yaml.validate_node(node, valid_keys)
+
     def node_get_list_element(self, node, expected_type, member_name, indices):
         """Fetch the value of a list element from a node member, raising an error if the
         value is incorrectly typed.
