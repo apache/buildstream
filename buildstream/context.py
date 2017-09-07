@@ -153,10 +153,18 @@ class Context():
         # Load default config
         #
         defaults = _yaml.load(_site.default_user_config)
+
         if config:
             self.config_origin = os.path.abspath(config)
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config, typesafe=True)
+
+        _yaml.validate_node(defaults, [
+            'strict', 'sourcedir',
+            'builddir', 'artifactdir',
+            'logdir', 'scheduler',
+            'artifacts', 'logging'
+        ])
 
         self.strict_build_plan = _yaml.node_get(defaults, bool, 'strict')
 
@@ -171,12 +179,18 @@ class Context():
 
         # Load artifact share configuration
         artifacts = _yaml.node_get(defaults, Mapping, 'artifacts')
+        _yaml.validate_node(artifacts, ['pull-url', 'push-url', 'push-port'])
         self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
         self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
         self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')
+        _yaml.validate_node(logging, [
+            'key-length', 'verbose',
+            'error-lines', 'message-lines',
+            'debug', 'element-format'
+        ])
         self.log_key_length = _yaml.node_get(logging, int, 'key-length')
         self.log_debug = _yaml.node_get(logging, bool, 'debug')
         self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
@@ -186,6 +200,10 @@ class Context():
 
         # Load scheduler config
         scheduler = _yaml.node_get(defaults, Mapping, 'scheduler')
+        _yaml.validate_node(scheduler, [
+            'on-error', 'fetchers', 'builders',
+            'pushers', 'network-retries'
+        ])
         self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
