@@ -29,7 +29,7 @@ def test_missing_project_name(datafiles):
         project = Project(directory, 'x86_64')
         project._resolve(None)
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+    assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
