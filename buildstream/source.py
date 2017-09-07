@@ -76,6 +76,13 @@ class Source(Plugin):
 
         self.configure(meta.config)
 
+    COMMON_CONFIG_KEYS = ['kind', 'directory']
+    """Common source config keys
+
+    Source config keys that must not be accessed in configure(), and
+    should be checked for using node_validate().
+    """
+
     def get_mirror_directory(self):
         """Fetches the directory where this source should store things
 

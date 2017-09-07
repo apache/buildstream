@@ -61,6 +61,8 @@ class TarSource(Source):
     def configure(self, node):
         project = self.get_project()
 
+        self.node_validate(node, ['url', 'ref', 'base-dir'] + Source.COMMON_CONFIG_KEYS)
+
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', '') or None
         self.base_dir = self.node_get_member(node, str, 'base-dir', '*') or None

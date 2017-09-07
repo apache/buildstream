@@ -214,6 +214,8 @@ class GitSource(Source):
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', '') or None
 
+        self.node_validate(node, ['url', 'track', 'ref', 'submodules'] + Source.COMMON_CONFIG_KEYS)
+
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
         self.tracking = self.node_get_member(node, str, 'track', '') or None

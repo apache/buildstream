@@ -23,7 +23,7 @@ class Tar(Repo):
         config = {
             'kind': 'tar',
             'url': 'file://' + tarball,
-            'track': 'master',
+            # 'track': 'master',                 ## Not a thing according to TVB
             'directory': ''
         }
         if ref is not None:
