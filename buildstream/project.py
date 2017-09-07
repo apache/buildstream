@@ -158,6 +158,13 @@ class Project():
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf, typesafe=True)
+        _yaml.validate_node(config, [
+            'required-versions',
+            'element-path', 'variables',
+            'environment', 'environment-nocache',
+            'split-rules', 'elements', 'plugins',
+            'aliases', 'name'
+        ])
 
         # Resolve arches keyword, project may have arch conditionals
         _loader.resolve_arch(config, self._host_arch, self._target_arch)
@@ -233,6 +240,7 @@ class Project():
 
         # Version requirements
         versions = _yaml.node_get(self._unresolved_config, Mapping, 'required-versions')
+        _yaml.validate_node(versions, ['project', 'elements', 'sources'])
 
         # Assert project version first
         format_version = _yaml.node_get(versions, int, 'project')
@@ -259,6 +267,7 @@ class Project():
 
         # Load the plugin paths
         plugins = _yaml.node_get(self._unresolved_config, Mapping, 'plugins', default_value={})
+        _yaml.validate_node(plugins, ['elements', 'sources'])
         self._plugin_source_paths = [os.path.join(self.directory, path)
                                      for path in self._extract_plugin_paths(plugins, 'sources')]
         self._plugin_element_paths = [os.path.join(self.directory, path)
