@@ -45,6 +45,8 @@ class LocalSource(Source):
     def configure(self, node):
         project = self.get_project()
 
+        self.node_validate(node, ['path', 'kind', 'directory'])
+
         self.path = self.node_get_member(node, str, 'path')
         self.fullpath = os.path.join(project.directory, self.path)
 
