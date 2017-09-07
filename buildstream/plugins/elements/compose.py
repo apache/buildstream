@@ -48,6 +48,10 @@ class ComposeElement(Element):
     BST_STRICT_REBUILD = True
 
     def configure(self, node):
+        self.node_validate(node, [
+            'integrate', 'include', 'exclude', 'include-orphans'
+        ])
+
         # We name this variable 'integration' only to avoid
         # collision with the Element.integrate() method.
         self.integration = self.node_get_member(node, bool, 'integrate')

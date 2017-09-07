@@ -114,11 +114,12 @@ class BuildElement(Element):
     def configure(self, node):
 
         self.commands = {}
+        command_names = [prefix + step for step in _command_steps for prefix in _command_prefixes]
 
-        for step in _command_steps:
-            for prefix in _command_prefixes:
-                command_name = prefix + step
-                self.commands[command_name] = self._get_commands(node, command_name)
+        self.node_validate(node, command_names)
+
+        for command_name in command_names:
+            self.commands[command_name] = self._get_commands(node, command_name)
 
     def preflight(self):
         pass
