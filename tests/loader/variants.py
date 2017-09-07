@@ -346,7 +346,7 @@ def test_engine_resolve_agreement(datafiles):
 def test_engine_disagreement(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/disagreement.bst', None, None, None, [])
+    loader = Loader(basedir, 'elements/disagreement-no-choice.bst', None, None, None, [])
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()

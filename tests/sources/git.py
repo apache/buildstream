@@ -80,9 +80,9 @@ class GitSubmoduleSetup(GitSetup):
         if url:
             template += "  ref: {ref}\n"
 
-        template += "submodules:\n" + \
-                    "  subrepo:\n" + \
-                    "    url: {subrepo}\n"
+        template += "  submodules:\n" + \
+                    "    subrepo:\n" + \
+                    "      url: {subrepo}\n"
 
         final = template.format(url=url, ref=ref, track=track, subrepo=self.subrepo_url)
 
