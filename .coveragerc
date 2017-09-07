@@ -1,6 +1,14 @@
 [run]
-omit = buildstream/_profile.py
-branch = True
+concurrency = multiprocessing
+source = buildstream
+omit =
+  # Omit profiling helper module
+  buildstream/_profile.py
+
+  # Omit stuff from the system which might accidentally creep in
+  /usr/*
+  /home/*
+  /root/*
 
 [report]
 show_missing = True
