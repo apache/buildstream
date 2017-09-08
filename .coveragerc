@@ -1,14 +1,18 @@
 [run]
 concurrency = multiprocessing
-source = buildstream
+include =
+  */buildstream/*
+
 omit =
   # Omit profiling helper module
-  buildstream/_profile.py
-
-  # Omit stuff from the system which might accidentally creep in
-  /usr/*
-  /home/*
-  /root/*
+  */buildstream/_profile.py
 
 [report]
 show_missing = True
+precision = 2
+
+[paths]
+source =
+    buildstream/
+    */site-packages/buildstream/
+    */buildstream/buildstream/
