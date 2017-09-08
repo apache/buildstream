@@ -155,22 +155,6 @@ class ArtifactCache():
 
         return self.remote_contains_key(element, key)
 
-    # remove():
-    #
-    # Removes the artifact for the specified Element from the local artifact
-    # cache.
-    #
-    # Args:
-    #     element (Element): The Element to remove
-    #
-    def remove(self, element):
-        key = element._get_cache_key()
-        if not key:
-            return
-
-        ref = buildref(element, key)
-        _ostree.remove(self.repo, ref)
-
     # extract():
     #
     # Extract cached artifact for the specified Element if it hasn't
