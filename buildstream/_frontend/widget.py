@@ -441,6 +441,10 @@ class LogLine(Widget):
         text += self.format_values(values)
         text += '\n'
 
+        # Plugins
+        text += self.format_plugins(pipeline.element_factory.loaded_dependencies,
+                                    pipeline.source_factory.loaded_dependencies)
+
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)
         if deps is None:
@@ -504,6 +508,28 @@ class LogLine(Widget):
         click.echo(text, color=styling, nl=False)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
+
+    def format_plugins(self, element_plugins, source_plugins):
+        text = ""
+
+        if not (element_plugins or source_plugins):
+            return text
+
+        text += self.content_profile.fmt("Loaded Plugins\n", bold=True)
+
+        if element_plugins:
+            text += self.format_profile.fmt("  Element Plugins\n")
+            for plugin in element_plugins:
+                text += self.content_profile.fmt("    - {}\n".format(plugin))
+
+        if source_plugins:
+            text += self.format_profile.fmt("  Source Plugins\n")
+            for plugin in source_plugins:
+                text += self.content_profile.fmt("    - {}\n".format(plugin))
+
+        text += '\n'
+
+        return text
 
     def format_values(self, values, style_value=True):
         text = ''

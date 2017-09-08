@@ -42,11 +42,13 @@ from . import utils
 #
 class PluginContext():
 
-    def __init__(self, plugin_base, base_type, searchpath=None):
+    def __init__(self, plugin_base, base_type, searchpath=None, dependencies=None):
 
         if not searchpath:
             raise PluginError("Cannot create plugin context without any searchpath")
 
+        self.dependencies = dependencies
+        self.loaded_dependencies = []
         self.base_type = base_type  # The base class plugins derive from
         self.types = {}             # Plugin type lookup table by kind
 
@@ -106,6 +108,9 @@ class PluginContext():
                 raise PluginError("No {} type registered for kind '{}'"
                                   .format(self.base_type.__name__, kind))
             self.types[kind] = self.load_plugin(source, package, defaults)
+
+            if dist:
+                self.loaded_dependencies.append(kind)
 
         return self.types[kind]
 
