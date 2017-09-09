@@ -71,7 +71,6 @@ def complete_target(ctx, args, incomplete):
     # Now parse the project.conf just to find the element path,
     # this is unfortunately a bit heavy.
     project_file = os.path.join(base_directory, 'project.conf')
-    element_directory = None
     try:
         project = _yaml.load(project_file)
     except LoadError:
@@ -80,10 +79,7 @@ def complete_target(ctx, args, incomplete):
         return []
 
     # The project is not required to have an element-path
-    try:
-        element_directory = project['element-path']
-    except KeyError:
-        pass
+    element_directory = project.get('element-path')
 
     # If a project was loaded, use it's element-path to
     # adjust our completion's base directory
