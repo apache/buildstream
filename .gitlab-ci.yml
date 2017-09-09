@@ -67,7 +67,7 @@ coverage:
     - cp coverage-pytest/coverage.pytest report
     - cd report
     - coverage combine --rcfile=../.coveragerc -a coverage.pytest
-    - coverage report -m
+    - coverage report --rcfile=../.coveragerc -m
   dependencies:
   - pytest
   - integration
