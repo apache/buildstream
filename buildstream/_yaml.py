@@ -180,9 +180,6 @@ class CompositePolicy(Enum):
     # Arrays from the overriding dict are appended to arrays in the target dict
     ARRAY_APPEND = 2
 
-    # Dictionary memebers may never replace existing members
-    STRICT = 3
-
 
 # Loads a dictionary from some YAML
 #
@@ -519,17 +516,8 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
                     target[key] = source_value
                     target_provenance.members[key] = source_provenance.members[key].clone()
 
-            elif policy == CompositePolicy.STRICT:
-
-                if target_value is None:
-                    target[key] = source_value
-                    target_provenance.members[key] = source_provenance.members[key]
-                else:
-                    raise CompositeOverrideError(thispath)
-
-            else:
-                # Explicitly unhandled: Indicates a clear programming error
-                raise Exception("Unhandled CompositePolicy in switch case")
+            else:  # pragma: no cover
+                raise ValueError("Unhandled CompositePolicy in switch case")
 
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
