@@ -77,6 +77,7 @@ The following source types are provided with BuildStream:
 * :mod:`git <sources.git>` - A Source implementation for git
 * :mod:`bzr <sources.bzr>` - A Source implementation for bazaar
 * :mod:`ostree <sources.ostree>` - A Source implementation for ostree
+* :mod:`patch <sources.patch>` - A Source implementation for applying local patches
 
 
 Core Framework
