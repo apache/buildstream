@@ -229,6 +229,22 @@ split-rules:
   - |
     %{datadir}/zoneinfo/**
 
+#
+#    Artifacts
+#
+artifacts:
+
+  # A url from which to download prebuilt artifacts
+  pull-url: ''
+
+  # A url to upload built artifacts to
+  # (must point to the same repository as pull-url)
+  push-url: ''
+
+  # Specify the port number for pushing artifacts, if it's
+  # not the default port 22
+  push-port: 22
+
 # Element Overrides
 #
 # Base attributes declared by element default yaml files

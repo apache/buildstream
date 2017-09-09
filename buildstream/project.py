@@ -165,6 +165,7 @@ class Project():
             'split-rules', 'elements', 'plugins',
             'aliases', 'name',
             'arches', 'host-arches',
+            'artifacts',
         ])
 
         # Resolve arches keyword, project may have arch conditionals
@@ -194,6 +195,13 @@ class Project():
 
         # Workspace configurations
         self.__workspaces = self._load_workspace_config()
+
+        # Load artifacts pull/push configuration for this project
+        artifacts = _yaml.node_get(config, Mapping, 'artifacts')
+        _yaml.validate_node(artifacts, ['pull-url', 'push-url', 'push-port'])
+        self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
+        self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
+        self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
 
         return config
 

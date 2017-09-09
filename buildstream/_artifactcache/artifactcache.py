@@ -52,9 +52,10 @@ def buildref(element, key):
 #
 # Args:
 #     context (Context): The BuildStream context
+#     project (Project): The BuildStream project
 #
 class ArtifactCache():
-    def __init__(self, context):
+    def __init__(self, context, project):
 
         self.context = context
 
@@ -66,9 +67,15 @@ class ArtifactCache():
         self.__pull_local = False
         self.__push_local = False
 
-        self.artifact_pull = context.artifact_pull
-        self.artifact_push = context.artifact_push
-        self.artifact_push_port = context.artifact_push_port
+        if any((project.artifact_pull, project.artifact_push)):
+            self.artifact_pull = project.artifact_pull
+            self.artifact_push = project.artifact_push
+            self.artifact_push_port = project.artifact_push_port
+
+        else:
+            self.artifact_pull = context.artifact_pull
+            self.artifact_push = context.artifact_push
+            self.artifact_push_port = context.artifact_push_port
 
         if self.artifact_push:
             if self.artifact_push.startswith("/") or \

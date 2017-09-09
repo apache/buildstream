@@ -133,7 +133,7 @@ class Pipeline():
                  cache_ticker=None):
         self.context = context
         self.project = project
-        self.artifacts = ArtifactCache(self.context)
+        self.artifacts = ArtifactCache(self.context, self.project)
         self.session_elements = 0
         self.total_elements = 0
         self.unused_workspaces = []
