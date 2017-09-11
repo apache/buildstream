@@ -286,20 +286,23 @@ class Pipeline():
 
         return element
 
-    # Internal: If a remote artifact cache is configured for pushing, check that it
-    # actually works.
-    def assert_remote_artifact_cache(self):
+    # Internal: If a remote artifact cache is configured for pushing, check
+    # that it actually works. Returns True if it works, False otherwise.
+    def can_push_remote_artifact_cache(self):
         if self.artifacts.can_push():
             starttime = datetime.datetime.now()
             self.message(self.target, MessageType.START, "Checking connectivity to remote artifact cache")
             try:
                 self.artifacts.preflight()
             except _ArtifactError as e:
-                self.message(self.target, MessageType.FAIL, str(e),
+                self.message(self.target, MessageType.WARN, str(e),
                              elapsed=datetime.datetime.now() - starttime)
-                raise PipelineError()
+                return False
             self.message(self.target, MessageType.SUCCESS, "Connectivity OK",
                          elapsed=datetime.datetime.now() - starttime)
+            return True
+        else:
+            return False
 
     #############################################################
     #                         Commands                          #
@@ -410,8 +413,6 @@ class Pipeline():
                          detail="\n".join([el + "-" + str(src) for el, src, _
                                            in self.unused_workspaces]))
 
-        self.assert_remote_artifact_cache()
-
         if build_all or track_first:
             plan = list(self.dependencies(Scope.ALL))
         else:
@@ -436,7 +437,7 @@ class Pipeline():
             queues.append(pull)
         queues.append(fetch)
         queues.append(build)
-        if self.artifacts.can_push():
+        if self.can_push_remote_artifact_cache():
             push = PushQueue()
             queues.append(push)
         queues[0].enqueue(plan)
