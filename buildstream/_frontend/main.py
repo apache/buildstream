@@ -456,37 +456,38 @@ def show(app, target, variant, deps, except_, order, format):
 #                          Shell Command                         #
 ##################################################################
 @cli.command(short_help="Shell into an element's sandbox environment")
-@click.option('--builddir', '-b', default=None,
+@click.option('--build', '-b', is_flag=True, default=False,
+              help='Create a build sandbox')
+@click.option('--sysroot', '-s', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
-              help="Existing build directory")
-@click.option('--scope', '-s', default=None,
-              type=click.Choice(['build', 'run']),
-              help='Specify element scope to stage')
-@click.option('--command', '-c', metavar='COMMAND', default=None, type=click.STRING,
-              help='Specify command to execute')
+              help="An existing sysroot")
 @click.option('--variant',
               help='A variant of the specified target')
 @click.argument('target',
                 type=click.Path(dir_okay=False, readable=True))
+@click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, target, variant, builddir, scope, command):
-    """Shell into an element's sandbox environment
+def shell(app, target, variant, sysroot, build, command):
+    """Run a command in the target element's sandbox environment
 
-    This can be used either to debug building or to launch
-    test and debug successful build results.
+    This will first stage a temporary sysroot for running
+    the target element, assuming it has already been built
+    and all required artifacts are in the local cache.
 
-    Use the --builddir option with an existing build directory
-    or use the --scope option instead to create a new staging
-    area automatically.
+    Use the --build option to create a temporary sysroot for
+    building the element instead.
+
+    Use the --sysroot option with an existing failed build
+    directory or with a checkout of the given target, in order
+    to use a specific sysroot.
+
+    If no COMMAND is specified, the default is to attempt
+    to run an interactive shell with `sh -i`.
     """
-    if builddir is None and scope is None:
-        click.echo("Must specify either --builddir or --scope")
-        sys.exit(1)
-
-    if scope == "run":
-        scope = Scope.RUN
-    elif scope == "build":
+    if build:
         scope = Scope.BUILD
+    else:
+        scope = Scope.RUN
 
     app.initialize(target, variant)
 
@@ -507,7 +508,7 @@ def shell(app, target, variant, builddir, scope, command):
         sys.exit(-1)
 
     try:
-        exitcode = app.pipeline.target._shell(scope, builddir, command=command)
+        exitcode = app.pipeline.target._shell(scope, sysroot, command=command)
         sys.exit(exitcode)
     except _BstError as e:
         click.echo("")
