@@ -1,0 +1,21 @@
+.TH "BST PULL" "1" "10-Sep-2017" "" "bst pull Manual"
+.SH NAME
+bst\-pull \- Pull a built artifact
+.SH SYNOPSIS
+.B bst pull
+[OPTIONS] TARGET
+.SH DESCRIPTION
+Pull a built artifact from the configured remote artifact cache.
+
+Specify `--deps` to control which artifacts to pull:
+
+
+    none:  No dependencies, just the element itself
+    all:   All dependencies
+.SH OPTIONS
+.TP
+\fB\-\-variant\fP TEXT
+A variant of the specified target
+.TP
+\fB\-d,\fP \-\-deps [none|all]
+The dependency artifacts to pull (default: none)

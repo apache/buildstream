@@ -1,18 +1,11 @@
-.TH "BST SOURCE-BUNDLE" "1" "27-Jul-2017" "" "bst source-bundle Manual"
+.TH "BST SOURCE-BUNDLE" "1" "10-Sep-2017" "" "bst source-bundle Manual"
 .SH NAME
 bst\-source-bundle \- Produce a build bundle to be manually executed
 .SH SYNOPSIS
 .B bst source-bundle
 [OPTIONS] TARGET
 .SH DESCRIPTION
-Produce a build bundle to be manually executed
-
-Specify `--deps` to control which elements to show:
-
-
-    none:  No dependencies, just the element itself
-    run:   Runtime dependencies, including the element itself
-    build: Build time dependencies, excluding the element itself
+Produce a source bundle to be manually executed
 .SH OPTIONS
 .TP
 \fB\-\-except\fP TEXT
@@ -20,9 +13,6 @@ Elements to except from the tarball
 .TP
 \fB\-\-compression\fP [none|gz|bz2|xz]
 Compress the tar file using the given algorithm.
-.TP
-\fB\-d,\fP \-\-deps [none|run|build]
-The elements to bundle (default: build)
 .TP
 \fB\-\-track\fP
 Track new source references before building

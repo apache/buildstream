@@ -1,25 +1,32 @@
-.TH "BST SHELL" "1" "27-Jul-2017" "" "bst shell Manual"
+.TH "BST SHELL" "1" "10-Sep-2017" "" "bst shell Manual"
 .SH NAME
 bst\-shell \- Shell into an element's sandbox environment
 .SH SYNOPSIS
 .B bst shell
-[OPTIONS] TARGET
+[OPTIONS] TARGET [COMMAND]...
 .SH DESCRIPTION
-Shell into an element's sandbox environment
+Run a command in the target element's sandbox environment
 
-This can be used either to debug building or to launch
-test and debug successful build results.
+This will first stage a temporary sysroot for running
+the target element, assuming it has already been built
+and all required artifacts are in the local cache.
 
-Use the --builddir option with an existing build directory
-or use the --scope option instead to create a new staging
-area automatically.
+Use the --build option to create a temporary sysroot for
+building the element instead.
+
+Use the --sysroot option with an existing failed build
+directory or with a checkout of the given target, in order
+to use a specific sysroot.
+
+If no COMMAND is specified, the default is to attempt
+to run an interactive shell with `sh -i`.
 .SH OPTIONS
 .TP
-\fB\-b,\fP \-\-builddir DIRECTORY
-Existing build directory
+\fB\-b,\fP \-\-build
+Create a build sandbox
 .TP
-\fB\-s,\fP \-\-scope [build|run]
-Specify element scope to stage
+\fB\-s,\fP \-\-sysroot DIRECTORY
+An existing sysroot
 .TP
 \fB\-\-variant\fP TEXT
 A variant of the specified target
