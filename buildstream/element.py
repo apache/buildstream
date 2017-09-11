@@ -1347,6 +1347,7 @@ class Element(Plugin):
     # Args:
     #    scope (Scope): Either BUILD or RUN scopes are valid, or None
     #    directory (str): A directory to an existing sandbox, or None
+    #    command (list): An argv to launch in the sandbox
     #
     # Returns: Exit code
     #
@@ -1366,13 +1367,14 @@ class Element(Plugin):
                 if os.environ.get(override) is not None:
                     environment[override] = os.environ.get(override)
 
-            argv = ['sh']
-            flags = SandboxFlags.NETWORK_ENABLED
+            flags = SandboxFlags.NETWORK_ENABLED | SandboxFlags.INTERACTIVE
+
             if command:
-                argv += ['-c', command]
+                argv = [arg for arg in command]
             else:
-                argv += ['-i']
-                flags |= SandboxFlags.INTERACTIVE
+                argv = ['sh', '-i']
+
+            self.status("Running command", detail=" ".join(argv))
 
             # Run shells with network enabled and readonly root.
             return sandbox.run(argv, flags, env=environment)
