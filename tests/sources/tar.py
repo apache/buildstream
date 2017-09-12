@@ -3,6 +3,7 @@ import pytest
 import tarfile
 
 from buildstream import SourceError, Consistency
+from buildstream import utils
 
 from .fixture import Setup
 
@@ -43,7 +44,7 @@ def test_fetch(tmpdir, datafiles):
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
     _assemble_tar(str(datafiles), "a", src_tar)
-    setup.source.ref = setup.source._sha256sum(src_tar)
+    setup.source.ref = utils.sha256sum(src_tar)
 
     # Fetch the source
     setup.source.fetch()
@@ -90,7 +91,7 @@ def test_track(tmpdir, datafiles):
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
     _assemble_tar(str(datafiles), "a", src_tar)
-    tar_sha = setup.source._sha256sum(src_tar)
+    tar_sha = utils.sha256sum(src_tar)
 
     assert(tar_sha == setup.source.track())
 
@@ -125,7 +126,7 @@ def test_stage_default_basedir(tmpdir, datafiles):
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
     _assemble_tar(str(datafiles), "a", src_tar)
-    setup.source.ref = setup.source._sha256sum(src_tar)
+    setup.source.ref = utils.sha256sum(src_tar)
 
     # Fetch the source
     setup.source.fetch()
@@ -147,7 +148,7 @@ def test_stage_no_basedir(tmpdir, datafiles):
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
     _assemble_tar(str(datafiles), "a", src_tar)
-    setup.source.ref = setup.source._sha256sum(src_tar)
+    setup.source.ref = utils.sha256sum(src_tar)
 
     # Fetch the source
     setup.source.fetch()
