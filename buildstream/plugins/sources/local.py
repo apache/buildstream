@@ -35,7 +35,6 @@
 """
 
 import os
-import hashlib
 from buildstream import Source, SourceError, Consistency
 from buildstream import utils
 
@@ -63,7 +62,7 @@ class LocalSource(Source):
 
         # Return a list of (relative filename, sha256 digest) tuples, a sorted list
         # has already been returned by list_relative_paths()
-        return [(relpath, sha256sum(fullpath)) for relpath, fullpath in filelist]
+        return [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
 
     def get_consistency(self):
         return Consistency.CACHED
@@ -91,20 +90,17 @@ class LocalSource(Source):
                 utils.safe_copy(self.fullpath, destfile)
 
 
-# Get the sha256 sum for the content of a file
-def sha256sum(filename):
+# Create a unique key for a file
+def unique_key(filename):
 
-    # If it's a directory, just return 0 string
+    # Return some hard coded things for files which
+    # have no content to calculate a key for
     if os.path.isdir(filename):
         return "0"
     elif os.path.islink(filename):
         return "1"
 
-    h = hashlib.sha256()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    return utils.sha256sum(filename)
 
 
 # Plugin entry point
