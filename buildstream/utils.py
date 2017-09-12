@@ -159,6 +159,27 @@ def glob(paths, pattern):
             yield filename
 
 
+def sha256sum(filename):
+    """Calculate the sha256sum of a file
+
+    Args:
+       filename (str): A path to a file on disk
+
+    Returns:
+       (str): An sha256 checksum string
+
+    Raises:
+       OSError: In the case there was an issue opening
+                or reading `filename`
+    """
+    h = hashlib.sha256()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            h.update(chunk)
+
+    return h.hexdigest()
+
+
 def safe_copy(src, dest, result=None):
     """Copy a file while preserving attributes
 
