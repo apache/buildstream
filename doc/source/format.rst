@@ -152,6 +152,12 @@ The ``kind`` attribute specifies which plugin will be operating on the element's
 produce its output. Plugins define element types and each of them can be referred to by
 name with the ``kind`` attribute.
 
+To refer to a third party plugin, prefix the plugin with its package, for example:
+
+.. code:: yaml
+
+   kind: buildstream-plugins:dpkg_build
+
 
 Depends
 ~~~~~~~

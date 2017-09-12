@@ -79,6 +79,7 @@ The following source types are provided with BuildStream:
 * :mod:`ostree <sources.ostree>` - A Source implementation for ostree
 * :mod:`patch <sources.patch>` - A Source implementation for applying local patches
 
+.. _core_framework:
 
 Core Framework
 --------------

@@ -19,7 +19,52 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 """
 Plugin
-======
+=======
+BuildStream supports third party plugins to define additional kinds of
+elements and sources.
+
+Plugin Structure
+----------------
+A plugin should consist of a `setuptools package
+<http://setuptools.readthedocs.io/en/latest/setuptools.html>`_ that
+advertises contained plugins using `entry points
+<http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+
+A plugin entry point must be a module that extends a class in the
+:ref:`core_framework` to be discovered by BuildStream. A YAML file
+defining plugin default settings with the same name as the module can
+also be defined in the same directory as the plugin module.
+
+.. note::
+
+    BuildStream does not support function/class entry points.
+
+A sample plugin could be structured as such:
+
+.. code-block:: text
+
+    .
+    ├── elements
+    │   ├── autotools.py
+    │   ├── autotools.yaml
+    │   └── __init__.py
+    ├── MANIFEST.in
+    └── setup.py
+
+The setuptools configuration should then contain at least:
+
+setup.py:
+
+.. literalinclude:: ../source/sample_plugin/setup.py
+   :language: python
+
+MANIFEST.in:
+
+.. literalinclude:: ../source/sample_plugin/setup.py
+   :language: text
+
+Class Reference
+---------------
 """
 
 import os
@@ -44,6 +89,7 @@ class Plugin():
 
     Some common features to both Sources and Elements are found
     in this class.
+
     """
 
     BST_REQUIRED_VERSION_MAJOR = 0
