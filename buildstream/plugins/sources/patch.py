@@ -39,7 +39,6 @@
 """
 
 import os
-import hashlib
 from buildstream import Source, SourceError, Consistency
 from buildstream import utils
 
@@ -64,7 +63,7 @@ class PatchSource(Source):
         self.host_patch = utils.get_host_tool("patch")
 
     def get_unique_key(self):
-        return [self.path, _sha256sum(self.fullpath), self.strip_level]
+        return [self.path, utils.sha256sum(self.fullpath), self.strip_level]
 
     def get_consistency(self):
         return Consistency.CACHED
@@ -90,15 +89,6 @@ class PatchSource(Source):
             strip_level_option = "-p{}".format(self.strip_level)
             self.call([self.host_patch, strip_level_option, "-i", self.fullpath, "-d", directory],
                       fail="Failed to apply patch {}".format(self.path))
-
-
-# Get the sha256 sum for the content of a file
-def _sha256sum(filename):
-    h = hashlib.sha256()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 # Plugin entry point
