@@ -75,6 +75,7 @@ class PluginContext():
 
         if kind not in self.types:
             source = None
+            defaults = None
             dist, package = self.split_name(kind)
 
             if dist:
@@ -88,6 +89,13 @@ class PluginContext():
                     plugin.module_name.replace('.', os.sep) + '.py'
                 )
 
+                # Also load the defaults - required since setuptools
+                # may need to extract the file.
+                defaults = plugin.dist.get_resource_filename(
+                    pkg_resources._manager,
+                    plugin.module_name.replace('.', os.sep) + '.yaml'
+                )
+
                 # Set the plugin-base source to the setuptools directory
                 source = self.plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
 
@@ -97,14 +105,20 @@ class PluginContext():
             if not source:
                 raise PluginError("No {} type registered for kind '{}'"
                                   .format(self.base_type.__name__, kind))
-            self.types[kind] = self.load_plugin(source, package)
+            self.types[kind] = self.load_plugin(source, package, defaults)
 
         return self.types[kind]
 
-    def load_plugin(self, source, kind):
+    def load_plugin(self, source, kind, defaults):
 
         try:
             plugin = source.load_plugin(kind)
+
+            if not defaults:
+                plugin_file = inspect.getfile(plugin)
+                plugin_dir = os.path.dirname(plugin_file)
+                plugin_conf_name = "{}.yaml".format(kind)
+                defaults = os.path.join(plugin_dir, plugin_conf_name)
 
         except ImportError as e:
             raise PluginError("Failed to load {} plugin '{}': {}"
@@ -121,7 +135,7 @@ class PluginContext():
 
         self.assert_plugin(kind, plugin_type)
         self.assert_version(kind, plugin_type)
-        return plugin_type
+        return (plugin_type, defaults)
 
     def split_name(self, name):
         if name.count(':') > 1:

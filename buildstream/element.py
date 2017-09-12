@@ -108,7 +108,7 @@ class Element(Plugin):
     any of the dependencies have changed.
     """
 
-    def __init__(self, context, project, artifacts, meta):
+    def __init__(self, context, project, artifacts, meta, plugin_conf):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
@@ -141,7 +141,7 @@ class Element(Plugin):
         self.__splits = None
 
         # Ensure we have loaded this class's defaults
-        self.__init_defaults()
+        self.__init_defaults(plugin_conf)
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(meta)
@@ -1442,22 +1442,16 @@ class Element(Plugin):
         element_public['bst'] = element_bst
         defaults['public'] = element_public
 
-    def __init_defaults(self):
+    def __init_defaults(self, plugin_conf):
 
         # Defaults are loaded once per class and then reused
         #
         if not self.__defaults_set:
 
-            # Get the yaml file in the same directory as the plugin
-            plugin_file = inspect.getfile(type(self))
-            plugin_dir = os.path.dirname(plugin_file)
-            plugin_conf_name = "{}.yaml".format(self.get_kind())
-            plugin_conf = os.path.join(plugin_dir, plugin_conf_name)
-
             # Load the plugin's accompanying .yaml file if one was provided
             defaults = {}
             try:
-                defaults = _yaml.load(plugin_conf, plugin_conf_name)
+                defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
             except LoadError as e:
                 if e.reason != LoadErrorReason.MISSING_FILE:
                     raise e
