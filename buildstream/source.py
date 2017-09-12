@@ -23,7 +23,6 @@ Source
 """
 
 import os
-import hashlib
 import tempfile
 import shutil
 from contextlib import contextmanager
@@ -339,23 +338,20 @@ class Source(Plugin):
 
         # Return a list of (relative filename, sha256 digest) tuples, a sorted list
         # has already been returned by list_relative_paths()
-        return [(relpath, _sha256sum(fullpath)) for relpath, fullpath in filelist]
+        return [(relpath, _unique_key(fullpath)) for relpath, fullpath in filelist]
 
 
 # Get the sha256 sum for the content of a file
-def _sha256sum(filename):
+def _unique_key(filename):
 
-    # If it's a directory or symlink, just return 0 string
-    if os.path.isdir(filename) or os.path.islink(filename):
+    # If it's a directory, just return 0 string
+    if os.path.isdir(filename):
         return "0"
+    elif os.path.islink(filename):
+        return "1"
 
-    h = hashlib.sha256()
     try:
-        with open(filename, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                h.update(chunk)
+        return utils.sha256sum(filename)
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Failed loading workspace. Did you remove the workspace directory? {}".format(e))
-
-    return h.hexdigest()
