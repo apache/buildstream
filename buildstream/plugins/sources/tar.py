@@ -50,7 +50,6 @@ import os
 import urllib.request
 import urllib.error
 import tarfile
-import hashlib
 import tempfile
 
 from buildstream import Source, SourceError, Consistency
@@ -148,7 +147,7 @@ class TarSource(Source):
                     os.makedirs(self._get_mirror_dir())
 
                 # Store by sha256sum
-                sha256 = self._sha256sum(local_file)
+                sha256 = utils.sha256sum(local_file)
                 # Even if the file already exists, move the new file over.
                 # In case the old file was corrupted somehow.
                 os.rename(local_file, self._get_mirror_file(sha256))
@@ -164,13 +163,6 @@ class TarSource(Source):
 
     def _get_mirror_file(self, sha=None):
         return os.path.join(self._get_mirror_dir(), sha or self.ref)
-
-    def _sha256sum(self, filename):
-        h = hashlib.sha256()
-        with open(filename, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                h.update(chunk)
-        return h.hexdigest()
 
     # Override and translate which filenames to extract
     def _extract_members(self, tar, base_dir):
