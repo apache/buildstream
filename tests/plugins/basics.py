@@ -48,7 +48,7 @@ def test_custom_source(plugin_fixture, datafiles):
                                           datafiles.basename)])
     assert(isinstance(factory, SourceFactory))
 
-    foo_type = factory.lookup('foo')
+    foo_type, _ = factory.lookup('foo')
     assert(foo_type.__name__ == 'FooSource')
 
 
@@ -59,7 +59,7 @@ def test_custom_element(plugin_fixture, datafiles):
                                            datafiles.basename)])
     assert(isinstance(factory, ElementFactory))
 
-    foo_type = factory.lookup('foo')
+    foo_type, _ = factory.lookup('foo')
     assert(foo_type.__name__ == 'FooElement')
 
 
@@ -237,8 +237,8 @@ def test_source_multicontext(plugin_fixture, datafiles):
     assert(isinstance(factory1, SourceFactory))
     assert(isinstance(factory2, SourceFactory))
 
-    foo_type1 = factory1.lookup('foo')
-    foo_type2 = factory2.lookup('foo')
+    foo_type1, _ = factory1.lookup('foo')
+    foo_type2, _ = factory2.lookup('foo')
     assert(foo_type1.__name__ == 'FooSource')
     assert(foo_type2.__name__ == 'AnotherFooSource')
 
@@ -258,7 +258,7 @@ def test_element_multicontext(plugin_fixture, datafiles):
     assert(isinstance(factory1, ElementFactory))
     assert(isinstance(factory2, ElementFactory))
 
-    foo_type1 = factory1.lookup('foo')
-    foo_type2 = factory2.lookup('foo')
+    foo_type1, _ = factory1.lookup('foo')
+    foo_type2, _ = factory2.lookup('foo')
     assert(foo_type1.__name__ == 'FooElement')
     assert(foo_type2.__name__ == 'AnotherFooElement')
