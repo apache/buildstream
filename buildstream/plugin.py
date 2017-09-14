@@ -60,7 +60,7 @@ setup.py:
 
 MANIFEST.in:
 
-.. literalinclude:: ../source/sample_plugin/setup.py
+.. literalinclude:: ../source/sample_plugin/MANIFEST.in
    :language: text
 
 Class Reference
