@@ -26,9 +26,13 @@ mkdir -p '{install_root}'
 cp -a "$SRCDIR/{name}/." '{build_root}'
 cd '{build_root}'
 
+# dodgy hack because /usr/bin is a symlink to /tools/bin
+export GCC_EXEC_PREFIX='/usr/lib/gcc/'
+
 export PREFIX='{install_root}'
 
 export {variables}
+
 
 # Build the module
 {commands}
