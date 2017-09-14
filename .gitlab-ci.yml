@@ -39,6 +39,7 @@ pytest:
 #
 integration:
   stage: test
+
   script:
     - dnf install -y findutils bzr which
     - pip3 install coverage
@@ -50,10 +51,34 @@ integration:
     - mkdir -p coverage-integration/
     - cp buildstream-tests/.coverage coverage-integration/coverage.integration
     - cp -a cache/buildstream/logs logs-integration
+
   artifacts:
     paths:
     - coverage-integration/
     - logs-integration/
+
+fallback_platform_integration:
+  stage: test
+
+  variables:
+    BST_FORCE_BACKEND: "unix"
+
+  script:
+    - dnf install -y findutils bzr which
+    - pip3 install coverage
+    - pip3 install .
+    - git clone https://gitlab.com/BuildStream/buildstream-tests.git
+    - cd buildstream-tests
+    - ./run-test.sh --arg --colors --cov ../.coveragerc test
+    - cd ..
+    - mkdir -p coverage-fallback/
+    - cp buildstream-tests/.coverage coverage-fallback/coverage.fallback
+    - cp -a cache/buildstream/logs logs-fallback
+
+  artifacts:
+    paths:
+    - coverage-fallback/
+    - logs-fallback/
 
 # Collate coverage reports
 #
@@ -63,7 +88,8 @@ coverage:
     - pip3 install coverage
     - pip3 install .
     - mkdir report
-    - cp coverage-integration/coverage.integration report/.coverage
+    - coverage combine coverage-integration/coverage.integration coverage-fallback/coverage.fallback
+    - cp .coverage report/.coverage
     - cp coverage-pytest/coverage.pytest report
     - cd report
     - coverage combine --rcfile=../.coveragerc -a coverage.pytest
@@ -71,6 +97,7 @@ coverage:
   dependencies:
   - pytest
   - integration
+  - fallback_platform_integration
 
 # Automatically build documentation, only for merges which land
 # on master branch.
