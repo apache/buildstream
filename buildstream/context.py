@@ -118,6 +118,9 @@ class Context():
         self.sched_error_action = 'continue'
         """What to do when a build fails in non interactive mode"""
 
+        self.project_overrides = {}
+        """Per-project overrides of project configurations"""
+
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
 
@@ -163,7 +166,8 @@ class Context():
             'strict', 'sourcedir',
             'builddir', 'artifactdir',
             'logdir', 'scheduler',
-            'artifacts', 'logging'
+            'artifacts', 'logging',
+            'projects',
         ])
 
         self.strict_build_plan = _yaml.node_get(defaults, bool, 'strict')
@@ -209,6 +213,9 @@ class Context():
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
+
+        # Load per-projects overrides
+        self.project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 

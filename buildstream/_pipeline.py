@@ -133,7 +133,6 @@ class Pipeline():
                  cache_ticker=None):
         self.context = context
         self.project = project
-        self.artifacts = ArtifactCache(self.context, self.project)
         self.session_elements = 0
         self.total_elements = 0
         self.unused_workspaces = []
@@ -147,6 +146,8 @@ class Pipeline():
 
         # Resolve project variant now that we've decided on one
         project._resolve(loader.project_variant)
+
+        self.artifacts = ArtifactCache(self.context, self.project)
 
         # Create the factories after resolving the project
         pluginbase = PluginBase(package='buildstream.plugins')

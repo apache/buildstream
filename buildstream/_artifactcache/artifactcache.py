@@ -67,7 +67,14 @@ class ArtifactCache():
         self.__pull_local = False
         self.__push_local = False
 
-        if any((project.artifact_pull, project.artifact_push)):
+        project_overrides = context.project_overrides.get(project.name, {}).get('artifacts', {})
+
+        if any((project_overrides.get('pull-url'), project_overrides.get('push-url'))):
+            self.artifact_pull = project_overrides.get('pull-url', '')
+            self.artifact_push = project_overrides.get('push-url', '')
+            self.artifact_push_port = project_overrides.get('push-port', 22)
+
+        elif any((project.artifact_pull, project.artifact_push)):
             self.artifact_pull = project.artifact_pull
             self.artifact_push = project.artifact_push
             self.artifact_push_port = project.artifact_push_port
