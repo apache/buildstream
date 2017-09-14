@@ -37,8 +37,9 @@ pytest:
 
 # Run integration tests
 #
-integration:
+integration_linux:
   stage: test
+
   script:
     - dnf install -y findutils bzr which
     - pip3 install coverage
@@ -47,13 +48,49 @@ integration:
     - cd buildstream-tests
     - ./run-test.sh --arg --colors --cov ../.coveragerc test
     - cd ..
-    - mkdir -p coverage-integration/
-    - cp buildstream-tests/.coverage coverage-integration/coverage.integration
-    - cp -a cache/buildstream/logs logs-integration
+    - mkdir -p coverage-linux/
+    - cp buildstream-tests/.coverage coverage-linux/coverage.linux
+    - cp -a cache/buildstream/logs logs-linux
+
   artifacts:
     paths:
-    - coverage-integration/
-    - logs-integration/
+    - coverage-linux/
+    - logs-linux/
+
+pytest_unix:
+  stage: test
+  variables:
+    BST_FORCE_BACKEND: "unix"
+  script:
+    - dnf erase -y bubblewrap ostree
+    - dnf install -y bzr patch
+    - python3 setup.py test
+    - mkdir -p coverage-pytest-unix
+    - cp .coverage.* coverage-pytest-unix/coverage.pytest-unix
+  artifacts:
+    paths:
+      - coverage-pytest-unix/
+
+integration_unix:
+  stage: test
+  variables:
+    BST_FORCE_BACKEND: "unix"
+  script:
+    - dnf install -y findutils bzr which
+    - pip3 install coverage
+    - pip3 install .
+    - git clone https://gitlab.com/BuildStream/buildstream-tests.git
+    - cd buildstream-tests
+    - ./run-test.sh --arg --colors --cov ../.coveragerc test
+    - cd ..
+    - mkdir -p coverage-unix/
+    - cp buildstream-tests/.coverage coverage-unix/coverage.unix
+    - cp -a cache/buildstream/logs logs-unix
+
+  artifacts:
+    paths:
+    - coverage-unix/
+    - logs-unix/
 
 # Collate coverage reports
 #
@@ -63,14 +100,20 @@ coverage:
     - pip3 install coverage
     - pip3 install .
     - mkdir report
-    - cp coverage-integration/coverage.integration report/.coverage
-    - cp coverage-pytest/coverage.pytest report
     - cd report
+    - cp ../coverage-linux/coverage.linux .coverage
+    - cp ../coverage-unix/coverage.unix .
+    - coverage combine --rcfile=../coveragerc -a ../coverage-unix/coverage.unix
+    - cp ../coverage-pytest/coverage.pytest .
     - coverage combine --rcfile=../.coveragerc -a coverage.pytest
+    - cp ../coverage-pytest-unix/coverage.pytest-unix .
+    - coverage combine --rcfile=../.coveragerc -a coverage.pytest-unix
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
   - pytest
-  - integration
+  - integration_linux
+  - pytest_unix
+  - integration_unix
 
 # Automatically build documentation, only for merges which land
 # on master branch.
