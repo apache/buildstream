@@ -44,6 +44,15 @@ class Plugin():
 
     Some common features to both Sources and Elements are found
     in this class.
+
+    .. note::
+
+        Extending plugins outside of :mod:`Source
+        <buildstream.source>`, :mod:`Element <buildstream.element>`,
+        :mod:`BuildElement <buildstream.buildelement>` and
+        :mod:`ScriptElement <buildstream.scriptelement>` is currently
+        not supported.
+
     """
 
     BST_REQUIRED_VERSION_MAJOR = 0
