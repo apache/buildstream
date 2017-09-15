@@ -28,7 +28,7 @@ import shutil
 from contextlib import contextmanager
 
 from . import _yaml, _signals, utils
-from . import ImplError, LoadError, LoadErrorReason
+from . import ImplError, LoadError, LoadErrorReason, SourceError
 from . import Plugin
 
 
@@ -251,6 +251,9 @@ class Source(Plugin):
         if self.__directory is not None:
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
         os.makedirs(directory, exist_ok=True)
+
+        if os.listdir(directory):
+            raise SourceError("Staging directory in '{}' not empty".format(directory))
 
         if self._has_workspace():
             self._stage_workspace(directory)
