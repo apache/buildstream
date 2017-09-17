@@ -163,7 +163,8 @@ class Project():
             'element-path', 'variables',
             'environment', 'environment-nocache',
             'split-rules', 'elements', 'plugins',
-            'aliases', 'name'
+            'aliases', 'name',
+            'arches', 'host-arches',
         ])
 
         # Resolve arches keyword, project may have arch conditionals
