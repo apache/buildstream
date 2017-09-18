@@ -62,13 +62,24 @@ class SandboxFlags():
 
 
 class Sandbox():
+
+    # Minimal set of devices for the sandbox
+    DEVICES = [
+        '/dev/urandom',
+        '/dev/random',
+        '/dev/zero',
+        '/dev/null'
+    ]
+
     """Sandbox()
 
     Sandbox programming interface for :class:`.Element` plugins.
     """
-    def __init__(self, context, project, directory, stdout=None, stderr=None):
+    def __init__(self, context, project, element, directory,
+                 stdout=None, stderr=None):
         self.__context = context
         self.__project = project
+        self.__element = element
         self.__stdout = stdout
         self.__stderr = stderr
         self.__directories = []
@@ -230,3 +241,47 @@ class Sandbox():
     #    (file): The stderr, or None to inherit
     def _get_output(self):
         return (self.__stdout, self.__stderr)
+
+    # _warn()
+    #
+    # Print a warning message
+    #
+    # Args:
+    #    brief (str): The brief message
+    #    detail (str): An optional detailed message, can be multiline output
+    #
+    def _warn(self, brief, detail=None):
+        self.__element.warn(brief, detail=detail)
+
+    # _info()
+    #
+    # Print an info message
+    #
+    # Args:
+    #    brief (str): The brief message
+    #    detail (str): An optional detailed message, can be multiline output
+    #
+    def _info(self, brief, detail=None):
+        self.__element.info(brief, detail=detail)
+
+    # _error()
+    #
+    # Print an error message
+    #
+    # Args:
+    #    brief (str): The brief message
+    #    detail (str): An optional detailed message, can be multiline output
+    #
+    def _error(self, brief, detail=None):
+        self.__element.error(brief, detail=detail)
+
+    # _status()
+    #
+    # Print a status message
+    #
+    # Args:
+    #    brief (str): The brief message
+    #    detail (str): An optional detailed message, can be multiline output
+    #
+    def _status(self, brief, detail=None):
+        self.__element.status(brief, detail=detail)
