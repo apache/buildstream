@@ -623,6 +623,19 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # _runs_integration():
+    #
+    # Returns whether this element wants to run integration commands.
+    #
+    def _runs_integration(self):
+        bstdata = self.get_public_data('bst')
+
+        if bstdata is None:
+            return False
+
+        commands = self.node_get_member(bstdata, list, 'integration-commands', default_value=[])
+        return commands == []
+
     # _write_script():
     #
     # Writes a script to the given directory.
