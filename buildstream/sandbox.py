@@ -93,6 +93,8 @@ class Sandbox():
         for directory in [self.__root, self.__scratch]:
             os.makedirs(directory, exist_ok=True)
 
+        self._always_ro = False
+
     def get_directory(self):
         """Fetches the sandbox root directory
 
@@ -241,6 +243,19 @@ class Sandbox():
     #    (file): The stderr, or None to inherit
     def _get_output(self):
         return (self.__stdout, self.__stderr)
+
+    # always_ro
+    #
+    # Whether this sandbox will be RO for the entirety of its
+    # lifetime.
+    #
+    @property
+    def always_ro(self):
+        return self._always_ro
+
+    @always_ro.setter
+    def always_ro(self, value):
+        self._always_ro = bool(value)
 
     # _warn()
     #
