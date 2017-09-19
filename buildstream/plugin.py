@@ -90,6 +90,13 @@ class Plugin():
     Some common features to both Sources and Elements are found
     in this class.
 
+    .. note::
+
+        Derivation of plugins is not supported. Plugins may only
+        derive from the base :mod:`Source <buildstream.source>` and
+        :mod:`Element <buildstream.element>` types, and any convenience
+        subclasses (like :mod:`BuildElement <buildstream.buildelement>`)
+        which are included in the buildstream namespace.
     """
 
     BST_REQUIRED_VERSION_MAJOR = 0
