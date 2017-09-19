@@ -24,8 +24,15 @@ def assert_shared(cli, share, project, element_name):
                              .format(share.repo, element_name))
 
 
+@pytest.mark.parametrize(
+    'user_url, project_url, override_url',
+    [
+        pytest.param('share.repo', '', '', id='user-config'),
+        pytest.param('/tmp/share/user', 'share.repo', '', id='project-config'),
+        pytest.param('/tmp/share/user', '/tmp/share/project', 'share.repo', id='project-override-in-user-config'),
+    ])
 @pytest.mark.datafiles(DATA_DIR)
-def test_push_pull(cli, tmpdir, datafiles):
+def test_push_pull(cli, tmpdir, datafiles, user_url, project_url, override_url):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
 
@@ -37,13 +44,36 @@ def test_push_pull(cli, tmpdir, datafiles):
     state = cli.get_element_state(project, 'import-bin.bst')
     assert state == 'cached'
 
+    user_url = share.repo if user_url == 'share.repo' else user_url
+    project_url = share.repo if project_url == 'share.repo' else project_url
+    override_url = share.repo if override_url == 'share.repo' else override_url
+
     # Configure artifact share
     cli.configure({
         'artifacts': {
-            'pull-url': share.repo,
-            'push-url': share.repo,
+            'pull-url': user_url,
+            'push-url': user_url,
+        },
+        'projects': {
+            'test': {
+                'artifacts': {
+                    'pull-url': override_url,
+                    'push-url': override_url,
+                }
+            }
         }
     })
+
+    if project_url:
+        project_conf_file = str(datafiles.join('project.conf'))
+        project_config = _yaml.load(project_conf_file)
+        project_config.update({
+            'artifacts': {
+                'pull-url': project_url,
+                'push-url': project_url,
+            }
+        })
+        _yaml.dump(_yaml.node_sanitize(project_config), filename=project_conf_file)
 
     # Now try bst push
     result = cli.run(project=project, args=['push', 'import-bin.bst'])
