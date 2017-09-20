@@ -23,7 +23,7 @@ import signal
 import time
 import sys
 
-from fuse import FUSE
+from .fuse import FUSE
 from contextlib import contextmanager
 from multiprocessing import Process
 from .. import _signals

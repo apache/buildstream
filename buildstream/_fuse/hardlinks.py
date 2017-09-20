@@ -31,7 +31,7 @@ import signal
 import tempfile
 
 from multiprocessing import Process
-from fuse import FuseOSError, Operations
+from .fuse import FuseOSError, Operations
 
 from .mount import Mount
 
