@@ -214,7 +214,7 @@ class LoadElement():
         # Ensure the root node is valid
         _yaml.validate_node(self.data, [
             'kind', 'depends', 'sources',
-            'variables', 'environment',
+            'variables', 'environment', 'environment-nocache',
             'config', 'public', 'description',
             'arches', 'variants', 'host-arches'
         ])
