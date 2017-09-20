@@ -305,6 +305,12 @@ class SandboxChroot(Sandbox):
                 location = os.path.join(self.get_directory(), device.lstrip(os.sep))
                 os.makedirs(os.path.dirname(location), exist_ok=True)
                 try:
+                    # If the image already contains a device, remove
+                    # it, since the device numbers may be different on
+                    # different systems.
+                    if os.path.exists(location):
+                        os.remove(location)
+
                     devices.append(self.mknod(device, location))
                 except OSError as err:
                     if err.errno == 1:
@@ -410,7 +416,13 @@ class SandboxChroot(Sandbox):
         # Move back mark mounts
         for src, point in marked_locations:
             shutil.rmtree(point)
-            shutil.move(src, point)
+            # Since a directory may be contained in a subtree of
+            # another directory (e.g. for dpkg elements), copy and
+            # remove the full set of scratch files later.
+            shutil.copytree(src, point)
+
+        for mark in os.listdir(self._get_scratch_directory()):
+            shutil.rmtree(os.path.join(self._get_scratch_directory(), mark))
 
     # get_mount_location()
     #
