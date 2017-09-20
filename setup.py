@@ -146,5 +146,5 @@ setup(name='BuildStream',
                      'pytest-env',
                      'pytest-pep8',
                      'pytest-cov',
-                     'pytest'],
+                     'pytest >= 3.1.0'],
       zip_safe=False)
