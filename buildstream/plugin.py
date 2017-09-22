@@ -208,10 +208,7 @@ class Plugin():
         This convenience function should be used instead of the dict.items()
         builtin function provided by python.
         """
-        for key, value in node.items():
-            if key == _yaml.PROVENANCE_KEY:
-                continue
-            yield (key, value)
+        yield from _yaml.node_items(node)
 
     def node_provenance(self, node, member_name=None):
         """Gets the provenance for `node` and `member_name`
