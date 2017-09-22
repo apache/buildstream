@@ -100,7 +100,6 @@ class Planner():
 #    context (Context): The Context object
 #    project (Project): The Project object
 #    target (str): A bst filename relative to the project directory
-#    target_variant (str): The selected variant of 'target', or None for the default
 #    inconsistent (bool): Whether to load the pipeline in a forcefully inconsistent state,
 #                         this is appropriate when source tracking will run and the
 #                         current source refs will not be the effective refs.
@@ -124,7 +123,7 @@ class Planner():
 #
 class Pipeline():
 
-    def __init__(self, context, project, target, target_variant,
+    def __init__(self, context, project, target,
                  inconsistent=False,
                  rewritable=False,
                  load_ticker=None,
@@ -137,15 +136,13 @@ class Pipeline():
         self.total_elements = 0
         self.unused_workspaces = []
 
-        loader = Loader(self.project.element_path, target, target_variant,
-                        context.host_arch, context.target_arch,
-                        list(project._list_variants()))
+        loader = Loader(self.project.element_path, target,
+                        context.host_arch, context.target_arch)
         meta_element = loader.load(rewritable, load_ticker)
         if load_ticker:
             load_ticker(None)
 
-        # Resolve project variant now that we've decided on one
-        project._resolve(loader.project_variant)
+        # Load selected platform
         self.platform = Platform.get_platform(context, project)
         self.artifacts = self.platform.artifactcache
 
