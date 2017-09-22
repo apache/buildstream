@@ -41,7 +41,6 @@ initialized = False
 #
 # The special 'all' value will enable all profiles
 class Topics():
-    VARIANTS = 'variants'
     CIRCULAR_CHECK = 'circ-dep-check'
     SORT_DEPENDENCIES = 'sort-deps'
     LOAD_LOADER = 'load-loader'
