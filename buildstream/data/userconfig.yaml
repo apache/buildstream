@@ -95,7 +95,7 @@ logging:
   # also determines the default display format for `bst show`
   element-format: |
 
-    %{state: >12} %{key} %{name} %{variant} %{workspace-dirs}
+    %{state: >12} %{key} %{name} %{workspace-dirs}
 
 #
 #    Per project overrides
