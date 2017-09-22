@@ -66,31 +66,22 @@ class LoadErrorReason(Enum):
     """Data was malformed, a value was not of the expected type, etc"""
 
     ILLEGAL_COMPOSITE = 4
-    """Something from a variant or include or user configuration file was
-    incorrect. Either by overriding a value with a new differently typed
-    value or by overwriting some named value when that was not allowed.
+    """An error occurred during YAML dictionary composition.
+
+    This can happen by overriding a value with a new differently typed
+    value, or by overwriting some named value when that was not allowed.
     """
 
-    VARIANT_DISAGREEMENT = 5
-    """Two elements in the project depend on the same element but disagree
-    on their variant. No alternative combination of element variants was found
-    when loading the project.
-    """
-
-    INVALID_VARIANT = 6
-    """A nonexistent variant was requested.
-    """
-
-    CIRCULAR_DEPENDENCY = 7
+    CIRCULAR_DEPENDENCY = 5
     """An circular dependency chain was detected"""
 
-    UNRESOLVED_VARIABLE = 8
+    UNRESOLVED_VARIABLE = 6
     """A variable could not be resolved. This can happen if your project
     has cyclic dependencies in variable declarations, or, when substituting
     a string which refers to an undefined variable.
     """
 
-    UNSUPPORTED_PROJECT = 9
+    UNSUPPORTED_PROJECT = 7
     """BuildStream does not support the required project format version"""
 
 
