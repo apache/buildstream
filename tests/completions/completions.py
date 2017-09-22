@@ -99,7 +99,7 @@ def test_commands(cli, cmd, word_idx, expected):
     ('bst --l', 1, ['--log-file ']),
 
     # Test that options of subcommands also complete
-    ('bst --no-colors build -', 3, ['--all ', '--track ', '--variant ']),
+    ('bst --no-colors build -', 3, ['--all ', '--track ']),
 
     # Test the behavior of completing after an option that has a
     # parameter that cannot be completed, vs an option that has

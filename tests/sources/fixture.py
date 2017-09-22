@@ -35,9 +35,8 @@ class Setup():
         if not os.path.exists(self.context.builddir):
             os.mkdir(self.context.builddir)
 
-        loader = Loader(directory, target, None, None, None, [])
+        loader = Loader(directory, target, None, None)
         element = loader.load()
-        self.project._resolve(loader.project_variant)
 
         # Allow repo aliases to access files in the directories using tmpdir and datafiles
         self.project._aliases['tmpdir'] = "file:///" + str(tmpdir)

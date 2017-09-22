@@ -13,7 +13,7 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_pipeline(tmpdir, basedir, target, variant):
+def create_pipeline(tmpdir, basedir, target):
     context = Context('x86_64')
     project = Project(basedir, 'x86_64')
 
@@ -21,7 +21,7 @@ def create_pipeline(tmpdir, basedir, target, variant):
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform(context, project)
 
-    return Pipeline(context, project, target, variant)
+    return Pipeline(context, project, target)
 
 
 @pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
@@ -29,7 +29,7 @@ def create_pipeline(tmpdir, basedir, target, variant):
 def test_load_simple(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'simple.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
 
     assert(pipeline.target.get_kind() == "autotools")
 
@@ -47,7 +47,7 @@ def test_load_simple(datafiles, tmpdir):
 def test_iterate_scope_all(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'target.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'target.bst')
 
     assert(pipeline.target.get_kind() == "autotools")
 
@@ -74,7 +74,7 @@ def test_iterate_scope_all(datafiles, tmpdir):
 def test_iterate_scope_run(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'target.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'target.bst')
 
     assert(pipeline.target.get_kind() == "autotools")
 
@@ -98,7 +98,7 @@ def test_iterate_scope_run(datafiles, tmpdir):
 def test_iterate_scope_build(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'target.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'target.bst')
 
     assert(pipeline.target.get_kind() == "autotools")
 
@@ -122,7 +122,7 @@ def test_iterate_scope_build(datafiles, tmpdir):
 def test_iterate_scope_build_of_child(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'target.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'target.bst')
 
     assert(pipeline.target.get_kind() == "autotools")
 
@@ -154,7 +154,7 @@ def test_iterate_scope_build_of_child(datafiles, tmpdir):
 def test_remove_elements(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'build.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'build.bst')
 
     # Remove second-level-2 and check that the correct dependencies
     # are removed.

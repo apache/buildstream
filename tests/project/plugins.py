@@ -13,13 +13,13 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_pipeline(tmpdir, basedir, target, variant):
+def create_pipeline(tmpdir, basedir, target):
     context = Context('x86_64')
     project = Project(basedir, 'x86_64')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform(context, project)
 
-    return Pipeline(context, project, target, variant)
+    return Pipeline(context, project, target)
 
 
 # We've already validated that the plugin system works in
@@ -33,7 +33,7 @@ def create_pipeline(tmpdir, basedir, target, variant):
 def test_custom_element(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'custom.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'custom.bst')
 
     element = pipeline.target
     assert(len(element._Element__sources) > 0)

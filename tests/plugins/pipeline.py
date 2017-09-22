@@ -13,7 +13,7 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_pipeline(tmpdir, basedir, target, variant):
+def create_pipeline(tmpdir, basedir, target):
     context = Context('x86_64')
     project = Project(basedir, 'x86_64')
 
@@ -21,7 +21,7 @@ def create_pipeline(tmpdir, basedir, target, variant):
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform(context, project)
 
-    return Pipeline(context, project, target, variant)
+    return Pipeline(context, project, target)
 
 
 @pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
@@ -29,7 +29,7 @@ def create_pipeline(tmpdir, basedir, target, variant):
 def test_customsource(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'simple.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
     assert(pipeline.target.get_kind() == "autotools")
 
 
@@ -38,7 +38,7 @@ def test_customsource(datafiles, tmpdir):
 def test_customelement(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'simple.bst', None)
+    pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
     assert(pipeline.target.get_kind() == "foo")
 
 
@@ -48,7 +48,7 @@ def test_badversionsource(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
     with pytest.raises(PluginError) as exc:
-        pipeline = create_pipeline(tmpdir, basedir, 'simple.bst', None)
+        pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
 
 
 @pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
@@ -57,4 +57,4 @@ def test_badversionelement(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
     with pytest.raises(PluginError) as exc:
-        pipeline = create_pipeline(tmpdir, basedir, 'simple.bst', None)
+        pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')

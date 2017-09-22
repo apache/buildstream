@@ -12,18 +12,18 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_pipeline(tmpdir, basedir, target, variant):
+def create_pipeline(tmpdir, basedir, target):
     context = Context('x86_64')
     project = Project(basedir, 'x86_64')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform(context, project)
 
-    return Pipeline(context, project, target, variant)
+    return Pipeline(context, project, target)
 
 
 def assert_command(datafiles, tmpdir, target, command, expected):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, target, None)
+    pipeline = create_pipeline(tmpdir, basedir, target)
     assert(isinstance(pipeline.target, BuildElement))
 
     commands = pipeline.target.commands
