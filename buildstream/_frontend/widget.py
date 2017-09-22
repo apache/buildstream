@@ -418,11 +418,10 @@ class LogLine(Widget):
     # Args:
     #    pipeline (Pipeline): The pipeline to print the heading of
     #    log_file (file): An optional file handle for additional logging
-    #    variant (str): The selected variant for the pipeline target
     #    deps (list): Optional list of elements, default is to use the whole pipeline
     #    styling (bool): Whether to enable ansi escape codes in the output
     #
-    def print_heading(self, pipeline, variant, log_file, deps=None, styling=False):
+    def print_heading(self, pipeline, log_file, deps=None, styling=False):
         context = pipeline.context
         project = pipeline.project
         starttime = datetime.datetime.now()
@@ -438,7 +437,6 @@ class LogLine(Widget):
         values["Target"] = pipeline.target.name
         values["Host Architecture"] = context.host_arch
         values["Target Architecture"] = context.target_arch
-        values["Variant"] = variant
         text += self.format_values(values)
 
         # User configurations
@@ -591,9 +589,6 @@ class LogLine(Widget):
                     line = p.fmt_subst(line, 'state', "buildable", fg='green')
                 else:
                     line = p.fmt_subst(line, 'state', "waiting", fg='blue')
-
-            # The variant
-            line = p.fmt_subst(line, 'variant', element.variant or "", fg='yellow', bold=True, dim=True)
 
             # Element configuration
             if "%{config" in format:
