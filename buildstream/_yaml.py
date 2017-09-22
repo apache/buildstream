@@ -385,6 +385,25 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
     return value
 
 
+# node_items()
+#
+# A convenience generator for iterating over loaded key/value
+# tuples in a dictionary loaded from project YAML.
+#
+# Args:
+#    node (dict): The dictionary node
+#
+# Yields:
+#    (str): The key name
+#    (anything): The value for the key
+#
+def node_items(node):
+    for key, value in node.items():
+        if key == PROVENANCE_KEY:
+            continue
+        yield (key, value)
+
+
 # Gives a node a dummy provenance, in case of compositing dictionaries
 # where the target is an empty {}
 def ensure_provenance(node):
