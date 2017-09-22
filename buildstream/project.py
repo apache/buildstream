@@ -59,15 +59,6 @@ the same.
 _ALIAS_SEPARATOR = ':'
 
 
-# Private object for dealing with project variants
-#
-class _ProjectVariant():
-    def __init__(self, data):
-        self.name = _yaml.node_get(data, str, 'variant')
-        self.data = data
-        del self.data['variant']
-
-
 class Project():
     """Project Configuration
 
@@ -98,14 +89,13 @@ class Project():
         self._plugin_source_paths = []   # Paths to custom sources
         self._plugin_element_paths = []  # Paths to custom plugins
         self._cache_key = None
-        self._variants = []
         self._host_arch = host_arch
         self._target_arch = target_arch or host_arch
         self._source_format_versions = {}
         self._element_format_versions = {}
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
-        self._unresolved_config = self._load_first_half()
+        self._load()
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
     def translate_url(self, url):
@@ -130,14 +120,13 @@ class Project():
 
         return url
 
-    # _load_first_half():
+    # _load():
     #
-    # Loads the project configuration file in the project directory
-    # and extracts some things.
+    # Loads the project configuration file in the project directory.
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load_first_half(self):
+    def _load(self):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, "project.conf")
@@ -171,30 +160,16 @@ class Project():
         # Resolve arches keyword, project may have arch conditionals
         _loader.resolve_arch(config, self._host_arch, self._target_arch)
 
-        # Resolve element base path
-        elt_path = _yaml.node_get(config, str, 'element-path')
-        self.element_path = os.path.join(self.directory, elt_path)
+        #
+        # Now all YAML composition is done, from here on we just load
+        # the values from our loaded configuration dictionary.
+        #
 
-        # Load variants
-        variants_node = _yaml.node_get(config, list, 'variants', default_value=[])
-        for variant_node in variants_node:
-            index = variants_node.index(variant_node)
-            variant_node = _yaml.node_get(config, Mapping, 'variants', indices=[index])
-            variant = _ProjectVariant(variant_node)
-
-            # Process arch conditionals on individual variants
-            _loader.resolve_arch(variant.data, self._host_arch, self._target_arch)
-            self._variants.append(variant)
-
-        if len(self._variants) == 1:
-            provenance = _yaml.node_get_provenance(config, key='variants')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Only one variant declared, a project "
-                            "declaring variants must declare at least two"
-                            .format(provenance))
-
-        # Workspace configurations
-        self.__workspaces = self._load_workspace_config()
+        self.name = _yaml.node_get(config, str, 'name')
+        self.element_path = os.path.join(
+            self.directory,
+            _yaml.node_get(config, str, 'element-path')
+        )
 
         # Load artifacts pull/push configuration for this project
         artifacts = _yaml.node_get(config, Mapping, 'artifacts')
@@ -203,52 +178,11 @@ class Project():
         self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
         self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
 
-        return config
-
-    # _resolve():
-    #
-    # First resolves the project variant and then resolves the remaining
-    # properties of the project based on the final composition
-    #
-    # Raises: LoadError if there was a problem with the project.conf
-    #
-    def _resolve(self, variant_name):
-
-        # Apply the selected variant
-        #
-        variant = None
-        if variant_name:
-            variant = self._lookup_variant(variant_name)
-        elif self._variants:
-            variant = self._variants[0]
-
-        if variant:
-            provenance = _yaml.node_get_provenance(variant.data)
-
-            # Composite anything from the variant data into the element data
-            #
-            # Possibly this should not be typesafe, since branch names can
-            # possibly be strings or interpreted by YAML as integers (for
-            # numeric branch names)
-            #
-            try:
-                _yaml.composite_dict(self._unresolved_config, variant.data,
-                                     policy=CompositePolicy.ARRAY_APPEND,
-                                     typesafe=True)
-            except CompositeTypeError as e:
-                raise LoadError(
-                    LoadErrorReason.ILLEGAL_COMPOSITE,
-                    "%s: Variant '%s' specifies type '%s' for path '%s', expected '%s'" %
-                    (str(provenance),
-                     variant.name,
-                     e.actual_type.__name__, e.path,
-                     e.expected_type.__name__)) from e
-
-        # The project name
-        self.name = _yaml.node_get(self._unresolved_config, str, 'name')
+        # Workspace configurations
+        self.__workspaces = self._load_workspace_config()
 
         # Version requirements
-        versions = _yaml.node_get(self._unresolved_config, Mapping, 'required-versions')
+        versions = _yaml.node_get(config, Mapping, 'required-versions')
         _yaml.node_validate(versions, ['project', 'elements', 'sources'])
 
         # Assert project version first
@@ -271,7 +205,7 @@ class Project():
             self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
 
         # Load the plugin paths
-        plugins = _yaml.node_get(self._unresolved_config, Mapping, 'plugins', default_value={})
+        plugins = _yaml.node_get(config, Mapping, 'plugins', default_value={})
         _yaml.node_validate(plugins, ['elements', 'sources'])
         self._plugin_source_paths = [os.path.join(self.directory, path)
                                      for path in self._extract_plugin_paths(plugins, 'sources')]
@@ -279,29 +213,20 @@ class Project():
                                       for path in self._extract_plugin_paths(plugins, 'elements')]
 
         # Source url aliases
-        self._aliases = _yaml.node_get(self._unresolved_config, Mapping, 'aliases', default_value={})
+        self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
 
         # Load base variables
-        self._variables = _yaml.node_get(self._unresolved_config, Mapping, 'variables')
+        self._variables = _yaml.node_get(config, Mapping, 'variables')
 
         # Load sandbox configuration
-        self._environment = _yaml.node_get(self._unresolved_config, Mapping, 'environment')
-        self._env_nocache = _yaml.node_get(self._unresolved_config, list, 'environment-nocache')
+        self._environment = _yaml.node_get(config, Mapping, 'environment')
+        self._env_nocache = _yaml.node_get(config, list, 'environment-nocache')
 
         # Load project split rules
-        self._splits = _yaml.node_get(self._unresolved_config, Mapping, 'split-rules')
+        self._splits = _yaml.node_get(config, Mapping, 'split-rules')
 
         # Element configurations
-        self._elements = _yaml.node_get(self._unresolved_config, Mapping, 'elements', default_value={})
-
-    def _lookup_variant(self, variant_name):
-        for variant in self._variants:
-            if variant.name == variant_name:
-                return variant
-
-    def _list_variants(self):
-        for variant in self._variants:
-            yield variant.name
+        self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
 
     # _workspaces()
     #
