@@ -23,7 +23,9 @@ fi
 mkdir -p '{build_root}'
 mkdir -p '{install_root}'
 
-cp -a "$SRCDIR/{name}/." '{build_root}'
+if [ -d "$SRCDIR/{name}/" ]; then
+    cp -a "$SRCDIR/{name}/." '{build_root}'
+fi
 cd '{build_root}'
 
 export PREFIX='{install_root}'
