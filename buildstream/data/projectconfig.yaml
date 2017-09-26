@@ -120,6 +120,11 @@ variables:
        strip --remove-section=.comment --remove-section=.note --strip-unneeded "$1"
        objcopy --add-gnu-debuglink "$debugfile" "$1"' - {} ';'
 
+  fix-pyc-timestamps: |
+
+    find "%{install-root}" -name '*.pyc' \
+      -exec dd if=/dev/zero of={} bs=1 count=4 seek=4 conv=notrunc ';'
+
 
 # Base sandbox environment, can be overridden by plugins
 environment:

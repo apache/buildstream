@@ -45,3 +45,5 @@ config:
   strip-commands:
   - |
     %{strip-binaries}
+  - |
+    %{fix-pyc-timestamps}
