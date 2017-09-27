@@ -103,7 +103,7 @@ coverage:
     - cd report
     - cp ../coverage-linux/coverage.linux .coverage
     - cp ../coverage-unix/coverage.unix .
-    - coverage combine --rcfile=../coveragerc -a ../coverage-unix/coverage.unix
+    - coverage combine --rcfile=../.coveragerc -a ../coverage-unix/coverage.unix
     - cp ../coverage-pytest/coverage.pytest .
     - coverage combine --rcfile=../.coveragerc -a coverage.pytest
     - cp ../coverage-pytest-unix/coverage.pytest-unix .
