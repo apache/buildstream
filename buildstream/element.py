@@ -1040,7 +1040,7 @@ class Element(Plugin):
 
             # Cleanup the build directory on explicit SIGTERM
             def cleanup_rootdir():
-                shutil.rmtree(rootdir)
+                utils._force_rmtree(rootdir)
 
             with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(rootdir, output_file, output_file) as sandbox:  # nopep8
@@ -1116,7 +1116,7 @@ class Element(Plugin):
                         self.__artifacts.commit(self, assembledir)
 
             # Finally cleanup the build dir
-            shutil.rmtree(rootdir)
+            cleanup_rootdir()
 
     # _pull():
     #
@@ -1415,7 +1415,7 @@ class Element(Plugin):
                 yield sandbox
 
             # Cleanup the build dir
-            shutil.rmtree(rootdir)
+            utils._force_rmtree(rootdir)
 
     def __compose_default_splits(self, defaults):
         project = self.get_project()
