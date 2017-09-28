@@ -38,7 +38,7 @@ import shutil
 from . import _yaml
 from ._yaml import CompositePolicy
 from ._variables import Variables
-from .exceptions import _BstError
+from .exceptions import _BstError, _ArtifactError, _ArtifactErrorReason
 from . import LoadError, LoadErrorReason, ElementError, ImplError
 from . import Plugin, Consistency
 from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
@@ -1040,7 +1040,7 @@ class Element(Plugin):
 
             # Cleanup the build directory on explicit SIGTERM
             def cleanup_rootdir():
-                shutil.rmtree(rootdir)
+                utils._force_rmtree(rootdir)
 
             with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(rootdir, output_file, output_file) as sandbox:  # nopep8
@@ -1112,11 +1112,22 @@ class Element(Plugin):
                     }
                     _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
-                    with self.timed_activity("Caching Artifact"):
-                        self.__artifacts.commit(self, assembledir)
+                    try:
+                        with self.timed_activity("Caching Artifact"):
+                            self.__artifacts.commit(self, assembledir)
+                    except _ArtifactError as e:
+                        if e.reason == _ArtifactErrorReason.PERMISSION_DENIED:
+                            raise ElementError("Permission denied while trying "
+                                               "to commit artifact: {}".format(e)) from e
+                        else:
+                            raise
+
+                    finally:
+                        # Ensure that the assembledir can be removed
+                        utils._force_rmtree(assembledir)
 
             # Finally cleanup the build dir
-            shutil.rmtree(rootdir)
+            cleanup_rootdir()
 
     # _pull():
     #
@@ -1415,7 +1426,7 @@ class Element(Plugin):
                 yield sandbox
 
             # Cleanup the build dir
-            shutil.rmtree(rootdir)
+            utils._force_rmtree(rootdir)
 
     def __compose_default_splits(self, defaults):
         project = self.get_project()

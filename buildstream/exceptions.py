@@ -157,5 +157,13 @@ class PlatformError(_BstError):
     pass
 
 
+class _ArtifactErrorReason(Enum):
+    MISC = 0
+    PERMISSION_DENIED = 1
+
+
 class _ArtifactError(_BstError):
-    pass
+    def __init__(self, message, reason=_ArtifactErrorReason.MISC):
+        super(_ArtifactError, self).__init__(message)
+
+        self.reason = reason

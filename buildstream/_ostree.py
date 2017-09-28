@@ -26,7 +26,7 @@ import os
 import subprocess
 from . import _site
 from . import utils
-from .exceptions import _BstError
+from .exceptions import _BstError, _ArtifactError, _ArtifactErrorReason
 
 import gi
 gi.require_version('OSTree', '1.0')
@@ -153,6 +153,13 @@ def commit(repo, dir, ref, branch=None):
 
         # complete repo transaction
         repo.commit_transaction(None)
+    except GLib.IOError as e:
+        repo.abort_transaction()
+
+        if e.code == Gio.IOErrorEnum.PERMISSION_DENIED:
+            raise _ArtifactError(e.message, _ArtifactErrorReason.PERMISSION_DENIED) from e
+        else:
+            raise
     except:
         repo.abort_transaction()
         raise

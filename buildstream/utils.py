@@ -465,14 +465,26 @@ def get_bst_version():
     return (int(versions[0]), int(versions[1]))
 
 
-# Recursively make directories in target area and copy permissions
+# Recursively remove directories, ignoring file permissions as much as
+# possible.
+def _force_rmtree(path, **kwargs):
+    for root, dirs, _ in os.walk(path):
+        for d in dirs:
+            path = os.path.join(root, d.lstrip('/'))
+            if os.path.exists(path) and not os.path.islink(path):
+                os.chmod(path, 0o755)
+
+    shutil.rmtree(path, **kwargs)
+
+
+# Recursively make directories in target area
 def _copy_directories(srcdir, destdir, target):
     this_dir = os.path.dirname(target)
     new_dir = os.path.join(destdir, this_dir)
 
     if not os.path.lexists(new_dir):
         if this_dir:
-            _copy_directories(srcdir, destdir, this_dir)
+            yield from _copy_directories(srcdir, destdir, this_dir)
 
         old_dir = os.path.join(srcdir, this_dir)
         if os.path.lexists(old_dir):
@@ -481,7 +493,7 @@ def _copy_directories(srcdir, destdir, target):
 
             if stat.S_ISDIR(mode) or stat.S_ISLNK(mode):
                 os.makedirs(new_dir)
-                shutil.copystat(old_dir, new_dir)
+                yield (new_dir, mode)
             else:
                 raise OSError('Source directory tree has file where '
                               'directory expected: %s' % dir)
@@ -533,6 +545,10 @@ def _ensure_real_directory(root, destpath):
 #
 def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=False):
 
+    # Keep track of directory permissions, since these need to be set
+    # *after* files have been written.
+    permissions = []
+
     # Note we consume the filelist (which is a generator and not a list)
     # by sorting it, this is necessary to ensure that we processes symbolic
     # links which lead to directories before processing files inside those
@@ -547,7 +563,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
             result.overwritten.append(path)
 
         # The destination directory may not have been created separately
-        _copy_directories(srcdir, destdir, path)
+        permissions.extend(_copy_directories(srcdir, destdir, path))
 
         # Ensure that broken symlinks to directories have their targets
         # created before attempting to stage files across broken
@@ -557,6 +573,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
         try:
             file_stat = os.lstat(srcpath)
             mode = file_stat.st_mode
+
         except FileNotFoundError:
             # Skip this missing file
             if ignore_missing:
@@ -573,7 +590,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
             if not stat.S_ISDIR(dest_stat.st_mode):
                 raise OSError('Destination not a directory. source has %s'
                               ' destination has %s' % (srcpath, destpath))
-            shutil.copystat(srcpath, destpath)
+            permissions.append((destpath, os.stat(srcpath).st_mode))
 
         elif stat.S_ISLNK(mode):
             if not safe_remove(destpath):
@@ -606,6 +623,10 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
         else:
             # Unsupported type.
             raise OSError('Cannot extract %s into staging-area. Unsupported type.' % srcpath)
+
+    # Write directory permissions now that all files have been written
+    for d, perms in permissions:
+        os.chmod(d, perms)
 
 
 # _relative_symlink_target()
