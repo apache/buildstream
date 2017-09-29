@@ -21,19 +21,12 @@
 import os
 import shutil
 import sys
+from setuptools import setup
+from setuptools.command.install import install
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 4:
     print("BuildStream requires Python >= 3.4")
     sys.exit(1)
-
-platform = os.environ.get('BST_FORCE_BACKEND', '') or sys.platform
-if platform.startswith('linux'):
-    bwrap_path = shutil.which('bwrap')
-    if not bwrap_path:
-        print("Bubblewrap not found: BuildStream requires Bubblewrap (bwrap) for"
-              " sandboxing the build environment. Install it using your package manager"
-              " (usually bwrap or bubblewrap)")
-        sys.exit(1)
 
 try:
     from setuptools import setup, find_packages
@@ -42,6 +35,20 @@ except ImportError:
           " your package manager (usually python3-setuptools) or via pip (pip3"
           " install setuptools).")
     sys.exit(1)
+
+
+##################################################################
+# Bubblewrap requirements
+##################################################################
+def assert_bwrap():
+    platform = os.environ.get('BST_FORCE_BACKEND', '') or sys.platform
+    if platform.startswith('linux'):
+        bwrap_path = shutil.which('bwrap')
+        if not bwrap_path:
+            print("Bubblewrap not found: BuildStream requires Bubblewrap (bwrap) for"
+                  " sandboxing the build environment. Install it using your package manager"
+                  " (usually bwrap or bubblewrap)")
+            sys.exit(1)
 
 
 ##################################################################
@@ -58,29 +65,31 @@ def exit_ostree(reason):
           "Install it using your package manager (usually ostree or gir1.2-ostree-1.0).")
     sys.exit(1)
 
-if platform.startswith('linux'):
-    try:
-        import gi
-    except ImportError:
-        print("BuildStream requires PyGObject (aka PyGI). Install it using"
-              " your package manager (usually pygobject3 or python-gi).")
-        sys.exit(1)
 
-if platform.startswith('linux'):
-    try:
-        gi.require_version('OSTree', '1.0')
-        from gi.repository import OSTree
-    except:
-        exit_ostree("OSTree not found")
+def assert_ostree_version():
+    platform = os.environ.get('BST_FORCE_BACKEND', '') or sys.platform
+    if platform.startswith('linux'):
+        try:
+            import gi
+        except ImportError:
+            print("BuildStream requires PyGObject (aka PyGI). Install it using"
+                  " your package manager (usually pygobject3 or python-gi).")
+            sys.exit(1)
 
-    try:
-        if OSTree.YEAR_VERSION < REQUIRED_OSTREE_YEAR or \
-           (OSTree.YEAR_VERSION == REQUIRED_OSTREE_YEAR and
-            OSTree.RELEASE_VERSION < REQUIRED_OSTREE_RELEASE):
-            exit_ostree("OSTree v{}.{} is too old."
-                        .format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
-    except AttributeError:
-        exit_ostree("OSTree is too old.")
+        try:
+            gi.require_version('OSTree', '1.0')
+            from gi.repository import OSTree
+        except:
+            exit_ostree("OSTree not found")
+
+        try:
+            if OSTree.YEAR_VERSION < REQUIRED_OSTREE_YEAR or \
+               (OSTree.YEAR_VERSION == REQUIRED_OSTREE_YEAR and
+                OSTree.RELEASE_VERSION < REQUIRED_OSTREE_RELEASE):
+                exit_ostree("OSTree v{}.{} is too old."
+                            .format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
+        except AttributeError:
+            exit_ostree("OSTree is too old.")
 
 
 ###########################################
@@ -104,11 +113,52 @@ def list_man_pages():
     return [os.path.join('man', page) for page in man_pages]
 
 
+#####################################################
+#             Custom Install Command                #
+#####################################################
+bst_install_entry_points = {
+    'console_scripts': [
+        'bst-artifact-receive = buildstream._artifactcache.pushreceive:receive_main'
+    ],
+}
+
+
+class BstInstallCommand(install):
+    user_options = install.user_options + [
+        ('artifact-receiver-only', None, "Only install the artifact receiver"),
+    ]
+    boolean_options = install.boolean_options + [
+        'artifact-receiver-only'
+    ]
+
+    def initialize_options(self):
+        install.initialize_options(self)
+        self.artifact_receiver_only = None
+
+    def run(self):
+        if not self.artifact_receiver_only:
+
+            assert_bwrap()
+            assert_ostree_version()
+
+            bst_install_entry_points['console_scripts'] += [
+                'bst = buildstream._frontend:cli'
+            ]
+
+        install.run(self)
+
+
+#####################################################
+#             Main setup() Invocation               #
+#####################################################
 setup(name='BuildStream',
       version='0.1',
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
       use_scm_version=True,
+      cmdclass={
+          'install': BstInstallCommand,
+      },
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
                                     'data/*.yaml', 'data/*.sh.in']},
@@ -137,11 +187,7 @@ setup(name='BuildStream',
           'Click',
           'blessings'
       ],
-      entry_points='''
-      [console_scripts]
-      bst=buildstream._frontend:cli
-      bst-artifact-receive=buildstream._artifactcache.pushreceive:receive_main
-      ''',
+      entry_points=bst_install_entry_points,
       setup_requires=['pytest-runner', 'setuptools_scm'],
       tests_require=['pep8',
                      'coverage',
