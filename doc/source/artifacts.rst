@@ -25,19 +25,28 @@ user to own the artifact cache.
 
    useradd artifacts
 
+
+Installing the receiver
+-----------------------
 You will also need to install BuildStream on the artifact server in order
 to receive uploaded artifacts over ssh. Follow the instructions for installing
 BuildStream :ref:`here <installing>`
 
-.. note::
+When installing BuildStream on the artifact server, it must be installed
+in a system wide location, with ``pip3 install .`` in the BuildStream
+checkout directory.
 
-   When installing BuildStream on the artifact server, it must be installed
-   in a system wide location, with ``pip3 install .`` in the BuildStream
-   checkout directory.
+Otherwise, some tinkering is required to ensure BuildStream is available
+in ``PATH`` when it's companion ``bst-artifact-receive`` program is run
+remotely.
 
-   Otherwise, some tinkering is required to ensure BuildStream is available
-   in ``PATH`` when it's companion ``bst-artifact-receive`` program is run
-   remotely.
+You can install only the artifact receiver companion program without
+requiring BuildStream's dependencies by passing the ``--artifact-receiver-only``
+install option, like so:
+
+.. code::
+
+    pip3 install . --install-option="--artifact-receiver-only"
 
 
 Initializing the cache
