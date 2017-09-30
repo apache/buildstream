@@ -145,7 +145,7 @@ class ArtifactCache():
     #
     def can_push(self):
         return (not self._offline or self._push_local) and \
-            self.context.artifact_push is not None
+            self.artifact_push is not None
 
     # remote_contains_key():
     #
