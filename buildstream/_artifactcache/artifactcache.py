@@ -19,8 +19,10 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+from collections import Mapping
 
 from .. import utils, ImplError
+from .. import _yaml
 
 
 # An ArtifactCache manages artifacts
@@ -40,12 +42,18 @@ class ArtifactCache():
         self._pull_local = False
         self._push_local = False
 
-        project_overrides = context.project_overrides.get(project.name, {}).get('artifacts', {})
+        project_overrides = context._get_overrides(project)
+        artifact_overrides = _yaml.node_get(project_overrides, Mapping, 'artifacts', default_value={})
+        override_pull = _yaml.node_get(artifact_overrides, str, 'pull-url', default_value='') or None
+        override_push = _yaml.node_get(artifact_overrides, str, 'push-url', default_value='') or None
+        override_push_port = _yaml.node_get(artifact_overrides, int, 'push-port', default_value=22)
 
-        if any((project_overrides.get('pull-url'), project_overrides.get('push-url'))):
-            self.artifact_pull = project_overrides.get('pull-url', '')
-            self.artifact_push = project_overrides.get('push-url', '')
-            self.artifact_push_port = project_overrides.get('push-port', 22)
+        _yaml.validate_node(artifact_overrides, ['pull-url', 'push-url', 'push-port'])
+
+        if override_pull or override_push:
+            self.artifact_pull = override_pull
+            self.artifact_push = override_push
+            self.artifact_push_port = override_push_port
 
         elif any((project.artifact_pull, project.artifact_push)):
             self.artifact_pull = project.artifact_pull
