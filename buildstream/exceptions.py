@@ -84,6 +84,9 @@ class LoadErrorReason(Enum):
     UNSUPPORTED_PROJECT = 7
     """BuildStream does not support the required project format version"""
 
+    EXPRESSION_FAILED = 8
+    """A conditional expression failed to resolve"""
+
 
 class LoadError(_BstError):
     """Raised while loading some YAML.
