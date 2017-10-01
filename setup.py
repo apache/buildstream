@@ -114,38 +114,25 @@ def list_man_pages():
 
 
 #####################################################
-#             Custom Install Command                #
+#                Conditional Checks                 #
 #####################################################
+#
+# Because setuptools... there is no way to pass an option to
+# the setup.py explicitly at install time.
+#
+# So screw it, lets just use an env var.
 bst_install_entry_points = {
     'console_scripts': [
         'bst-artifact-receive = buildstream._artifactcache.pushreceive:receive_main'
     ],
 }
 
-
-class BstInstallCommand(install):
-    user_options = install.user_options + [
-        ('artifact-receiver-only', None, "Only install the artifact receiver"),
+if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
+    assert_bwrap()
+    assert_ostree_version()
+    bst_install_entry_points['console_scripts'] += [
+        'bst = buildstream._frontend:cli'
     ]
-    boolean_options = install.boolean_options + [
-        'artifact-receiver-only'
-    ]
-
-    def initialize_options(self):
-        install.initialize_options(self)
-        self.artifact_receiver_only = None
-
-    def run(self):
-        if not self.artifact_receiver_only:
-
-            assert_bwrap()
-            assert_ostree_version()
-
-            bst_install_entry_points['console_scripts'] += [
-                'bst = buildstream._frontend:cli'
-            ]
-
-        install.run(self)
 
 
 #####################################################
@@ -156,9 +143,6 @@ setup(name='BuildStream',
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
       use_scm_version=True,
-      cmdclass={
-          'install': BstInstallCommand,
-      },
       packages=find_packages(),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
                                     'data/*.yaml', 'data/*.sh.in']},
