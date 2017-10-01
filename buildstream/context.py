@@ -118,9 +118,6 @@ class Context():
         self.sched_error_action = 'continue'
         """What to do when a build fails in non interactive mode"""
 
-        self.project_overrides = {}
-        """Per-project overrides of project configurations"""
-
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
 
@@ -129,6 +126,7 @@ class Context():
         self._message_handler = None
         self._message_depth = deque()
         self._platform = None
+        self._project_overrides = {}
 
     def load(self, config=None):
         """Loads the configuration files
@@ -216,7 +214,12 @@ class Context():
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
 
         # Load per-projects overrides
-        self.project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
+        self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
+
+        # Shallow validation of overrides, parts of buildstream which rely
+        # on the overrides are expected to validate elsewhere.
+        for project_name, overrides in _yaml.node_items(self._project_overrides):
+            _yaml.validate_node(overrides, ['artifacts'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 
@@ -231,15 +234,20 @@ class Context():
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # _set_message_handler()
+    # _get_overrides():
     #
-    # Sets the handler for any status messages propagated through
-    # the context.
+    # Fetch the override dictionary for the active project. This returns
+    # a node loaded from YAML and as such, values loaded from the returned
+    # node should be loaded using the _yaml.node_get() family of functions.
     #
-    # The message handler should have the same signature as
-    # the _message() method
-    def _set_message_handler(self, handler):
-        self._message_handler = handler
+    # Args:
+    #    project: The Project
+    #
+    # Returns:
+    #    (Mapping): The overrides dictionary for the specified project
+    #
+    def _get_overrides(self, project):
+        return _yaml.node_get(self._project_overrides, Mapping, project.name, default_value={})
 
     # _get_cache_key():
     #
@@ -258,6 +266,16 @@ class Context():
             })
 
         return self._cache_key
+
+    # _set_message_handler()
+    #
+    # Sets the handler for any status messages propagated through
+    # the context.
+    #
+    # The message handler should have the same signature as
+    # the _message() method
+    def _set_message_handler(self, handler):
+        self._message_handler = handler
 
     # _push_message_depth() / _pop_message_depth()
     #
