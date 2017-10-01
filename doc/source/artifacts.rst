@@ -41,12 +41,12 @@ in ``PATH`` when it's companion ``bst-artifact-receive`` program is run
 remotely.
 
 You can install only the artifact receiver companion program without
-requiring BuildStream's dependencies by passing the ``--artifact-receiver-only``
-install option, like so:
+requiring BuildStream's more exigent dependencies by setting the
+``BST_ARTIFACTS_ONLY`` environment variable at install time, like so:
 
 .. code::
 
-    pip3 install . --install-option="--artifact-receiver-only"
+    BST_ARTIFACTS_ONLY=1 pip3 install .
 
 
 Initializing the cache
