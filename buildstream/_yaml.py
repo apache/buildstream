@@ -269,10 +269,7 @@ def node_decorate_dict(filename, target, source, toplevel):
     provenance = DictProvenance(filename, source, toplevel)
     target[PROVENANCE_KEY] = provenance
 
-    for key, value in source.items():
-        if key == PROVENANCE_KEY:
-            continue
-
+    for key, value in node_items(source):
         member = MemberProvenance(filename, source, key, toplevel)
         provenance.members[key] = member
 
@@ -459,11 +456,7 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
     target_provenance = ensure_provenance(target)
     source_provenance = ensure_provenance(source)
 
-    for key, source_value in source.items():
-
-        # Handle the provenance keys specially
-        if key == PROVENANCE_KEY:
-            continue
+    for key, source_value in node_items(source):
 
         # Track the full path of keys, only for raising CompositeError
         if path:
@@ -581,9 +574,8 @@ def node_sanitize(node):
 
         result = SanitizedDict()
 
-        for key in sorted(node, key=lambda s: (s == PROVENANCE_KEY, s)):
-            if key == PROVENANCE_KEY:
-                continue
+        key_list = [key for key, _ in node_items(node)]
+        for key in sorted(key_list):
             result[key] = node_sanitize(node[key])
 
         return result

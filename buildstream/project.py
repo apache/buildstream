@@ -262,16 +262,12 @@ class Project():
 
         # The source versions
         source_versions = _yaml.node_get(versions, Mapping, 'sources', default_value={})
-        for key, _ in source_versions.items():
-            if key == _yaml.PROVENANCE_KEY:
-                continue
+        for key, _ in _yaml.node_items(source_versions):
             self._source_format_versions[key] = _yaml.node_get(source_versions, int, key)
 
         # The element versions
         element_versions = _yaml.node_get(versions, Mapping, 'elements', default_value={})
-        for key, _ in element_versions.items():
-            if key == _yaml.PROVENANCE_KEY:
-                continue
+        for key, _ in _yaml.node_items(element_versions):
             self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
 
         # Load the plugin paths
@@ -314,12 +310,8 @@ class Project():
     # Yields:
     #    A tuple in the following format: (element, source, path).
     def _workspaces(self):
-        for element in self.__workspaces:
-            if element == _yaml.PROVENANCE_KEY:
-                continue
-            for source in self.__workspaces[element]:
-                if source == _yaml.PROVENANCE_KEY:
-                    continue
+        for element, _ in _yaml.node_items(self.__workspaces):
+            for source, _ in _yaml.node_items(self.__workspaces[element]):
                 yield (element, int(source), self.__workspaces[element][source])
 
     # _get_workspace()

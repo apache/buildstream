@@ -810,9 +810,10 @@ class Element(Plugin):
             workspaced = self._workspaced_artifact()
 
             # Whether this artifact's dependencies are tainted
-            workspaced_dependencies = any(val for key, val in
-                                          self._workspaced_dependencies_artifact().items()
-                                          if key != _yaml.PROVENANCE_KEY)
+            workspaced_dependencies = any(
+                val for key, val in
+                _yaml.node_items(self._workspaced_dependencies_artifact())
+            )
 
             # Other conditions should be or-ed
             self.__tainted = workspaced or workspaced_dependencies

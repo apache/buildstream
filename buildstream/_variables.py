@@ -125,9 +125,8 @@ class Variables():
         def resolve_one(variables):
             unmatched = []
             resolved = {}
-            for key, value in variables.items():
-                if key == _yaml.PROVENANCE_KEY:
-                    continue
+
+            for key, value in _yaml.node_items(variables):
 
                 # Ensure stringness of the value before substitution
                 value = _yaml.node_get(variables, str, key)
@@ -170,10 +169,7 @@ class Variables():
     #
     def find_references(self, varname):
         fullname = '%{' + varname + '}'
-        for key, value in self.original.items():
-            if key == _yaml.PROVENANCE_KEY:
-                continue
-
+        for key, value in _yaml.node_items(self.original):
             if fullname in value:
                 provenance = _yaml.node_get_provenance(self.original, key)
                 yield (key, provenance)
