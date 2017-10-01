@@ -212,7 +212,7 @@ class LoadElement():
         self.basedir = basedir
 
         # Ensure the root node is valid
-        _yaml.validate_node(self.data, [
+        _yaml.node_validate(self.data, [
             'kind', 'depends', 'sources',
             'variables', 'environment', 'environment-nocache',
             'config', 'public', 'description',
@@ -378,7 +378,7 @@ def extract_depends_from_node(owner, data):
             dependency = Dependency(owner, dep, filename=dep, provenance=dep_provenance)
 
         elif isinstance(dep, Mapping):
-            _yaml.validate_node(dep, ['filename', 'type', 'variant'])
+            _yaml.node_validate(dep, ['filename', 'type', 'variant'])
 
             # Make variant optional, for this we set it to None after
             variant = _yaml.node_get(dep, str, Symbol.VARIANT, default_value="")

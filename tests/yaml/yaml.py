@@ -163,7 +163,7 @@ def test_composited_array_append_provenance(datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-def test_validate_node(datafiles):
+def test_node_validate(datafiles):
 
     valid = os.path.join(datafiles.dirname,
                          datafiles.basename,
@@ -174,12 +174,12 @@ def test_validate_node(datafiles):
 
     base = _yaml.load(valid)
 
-    _yaml.validate_node(base, ['kind', 'description', 'moods', 'children', 'extra'])
+    _yaml.node_validate(base, ['kind', 'description', 'moods', 'children', 'extra'])
 
     base = _yaml.load(invalid)
 
     with pytest.raises(LoadError) as exc:
-        _yaml.validate_node(base, ['kind', 'description', 'moods', 'children', 'extra'])
+        _yaml.node_validate(base, ['kind', 'description', 'moods', 'children', 'extra'])
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 

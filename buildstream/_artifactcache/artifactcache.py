@@ -48,7 +48,7 @@ class ArtifactCache():
         override_push = _yaml.node_get(artifact_overrides, str, 'push-url', default_value='') or None
         override_push_port = _yaml.node_get(artifact_overrides, int, 'push-port', default_value=22)
 
-        _yaml.validate_node(artifact_overrides, ['pull-url', 'push-url', 'push-port'])
+        _yaml.node_validate(artifact_overrides, ['pull-url', 'push-url', 'push-port'])
 
         if override_pull or override_push:
             self.artifact_pull = override_pull

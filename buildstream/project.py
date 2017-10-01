@@ -158,7 +158,7 @@ class Project():
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf, typesafe=True)
-        _yaml.validate_node(config, [
+        _yaml.node_validate(config, [
             'required-versions',
             'element-path', 'variables',
             'environment', 'environment-nocache',
@@ -198,7 +198,7 @@ class Project():
 
         # Load artifacts pull/push configuration for this project
         artifacts = _yaml.node_get(config, Mapping, 'artifacts')
-        _yaml.validate_node(artifacts, ['pull-url', 'push-url', 'push-port'])
+        _yaml.node_validate(artifacts, ['pull-url', 'push-url', 'push-port'])
         self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
         self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
         self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
@@ -249,7 +249,7 @@ class Project():
 
         # Version requirements
         versions = _yaml.node_get(self._unresolved_config, Mapping, 'required-versions')
-        _yaml.validate_node(versions, ['project', 'elements', 'sources'])
+        _yaml.node_validate(versions, ['project', 'elements', 'sources'])
 
         # Assert project version first
         format_version = _yaml.node_get(versions, int, 'project')
@@ -276,7 +276,7 @@ class Project():
 
         # Load the plugin paths
         plugins = _yaml.node_get(self._unresolved_config, Mapping, 'plugins', default_value={})
-        _yaml.validate_node(plugins, ['elements', 'sources'])
+        _yaml.node_validate(plugins, ['elements', 'sources'])
         self._plugin_source_paths = [os.path.join(self.directory, path)
                                      for path in self._extract_plugin_paths(plugins, 'sources')]
         self._plugin_element_paths = [os.path.join(self.directory, path)

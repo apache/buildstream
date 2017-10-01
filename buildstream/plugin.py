@@ -280,7 +280,7 @@ class Plugin():
           ])
 
         """
-        _yaml.validate_node(node, valid_keys)
+        _yaml.node_validate(node, valid_keys)
 
     def node_get_list_element(self, node, expected_type, member_name, indices):
         """Fetch the value of a list element from a node member, raising an error if the

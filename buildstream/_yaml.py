@@ -594,7 +594,21 @@ def node_sanitize(node):
     return node
 
 
-def validate_node(node, valid_keys):
+# node_validate()
+#
+# Validate the node so as to ensure the user has not specified
+# any keys which are unrecognized by buildstream (usually this
+# means a typo which would otherwise not trigger an error).
+#
+# Args:
+#    node (dict): A dictionary loaded from YAML
+#    valid_keys (list): A list of valid keys for the specified node
+#
+# Raises:
+#    LoadError: In the case that the specified node contained
+#               one or more invalid keys
+#
+def node_validate(node, valid_keys):
 
     # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
     valid_keys = set(valid_keys)

@@ -161,7 +161,7 @@ class Context():
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config, typesafe=True)
 
-        _yaml.validate_node(defaults, [
+        _yaml.node_validate(defaults, [
             'strict', 'sourcedir',
             'builddir', 'artifactdir',
             'logdir', 'scheduler',
@@ -182,14 +182,14 @@ class Context():
 
         # Load artifact share configuration
         artifacts = _yaml.node_get(defaults, Mapping, 'artifacts')
-        _yaml.validate_node(artifacts, ['pull-url', 'push-url', 'push-port'])
+        _yaml.node_validate(artifacts, ['pull-url', 'push-url', 'push-port'])
         self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
         self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
         self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')
-        _yaml.validate_node(logging, [
+        _yaml.node_validate(logging, [
             'key-length', 'verbose',
             'error-lines', 'message-lines',
             'debug', 'element-format'
@@ -203,7 +203,7 @@ class Context():
 
         # Load scheduler config
         scheduler = _yaml.node_get(defaults, Mapping, 'scheduler')
-        _yaml.validate_node(scheduler, [
+        _yaml.node_validate(scheduler, [
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
         ])
@@ -219,7 +219,7 @@ class Context():
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
         for project_name, overrides in _yaml.node_items(self._project_overrides):
-            _yaml.validate_node(overrides, ['artifacts'])
+            _yaml.node_validate(overrides, ['artifacts'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 
