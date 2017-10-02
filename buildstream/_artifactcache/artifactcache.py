@@ -42,7 +42,7 @@ class ArtifactCache():
         self._pull_local = False
         self._push_local = False
 
-        project_overrides = context._get_overrides(project)
+        project_overrides = context._get_overrides(project.name)
         artifact_overrides = _yaml.node_get(project_overrides, Mapping, 'artifacts', default_value={})
         override_pull = _yaml.node_get(artifact_overrides, str, 'pull-url', default_value='') or None
         override_push = _yaml.node_get(artifact_overrides, str, 'push-url', default_value='') or None

@@ -241,13 +241,13 @@ class Context():
     # node should be loaded using the _yaml.node_get() family of functions.
     #
     # Args:
-    #    project: The Project
+    #    project_name (str): The project name
     #
     # Returns:
     #    (Mapping): The overrides dictionary for the specified project
     #
-    def _get_overrides(self, project):
-        return _yaml.node_get(self._project_overrides, Mapping, project.name, default_value={})
+    def _get_overrides(self, project_name):
+        return _yaml.node_get(self._project_overrides, Mapping, project_name, default_value={})
 
     # _get_cache_key():
     #
