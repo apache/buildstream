@@ -167,6 +167,10 @@ class MountMap():
 
 
 class Sandbox():
+    """Sandbox()
+
+    Sandbox programming interface for :class:`.Element` plugins.
+    """
 
     # Minimal set of devices for the sandbox
     DEVICES = [
@@ -176,10 +180,6 @@ class Sandbox():
         '/dev/null'
     ]
 
-    """Sandbox()
-
-    Sandbox programming interface for :class:`.Element` plugins.
-    """
     def __init__(self, context, project, directory, **kwargs):
         self.__context = context
         self.__project = project
