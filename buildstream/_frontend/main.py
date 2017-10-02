@@ -668,7 +668,7 @@ def workspace_list(app):
         sys.exit(1)
 
     workspaces = []
-    for element_name, source_index, directory in project._workspaces():
+    for element_name, source_index, directory in project._list_workspaces():
         workspace = {
             'element': element_name,
             'directory': directory,

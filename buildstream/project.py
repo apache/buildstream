@@ -85,7 +85,7 @@ class Project():
         self._environment = {}  # The base sandbox environment
         self._elements = {}     # Element specific configurations
         self._aliases = {}      # Aliases dictionary
-        self.__workspaces = {}   # Workspaces
+        self._workspaces = {}   # Workspaces
         self._plugin_source_paths = []   # Paths to custom sources
         self._plugin_element_paths = []  # Paths to custom plugins
         self._cache_key = None
@@ -179,7 +179,7 @@ class Project():
         self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
 
         # Workspace configurations
-        self.__workspaces = self._load_workspace_config()
+        self._workspaces = self._load_workspace_config()
 
         # Version requirements
         versions = _yaml.node_get(config, Mapping, 'required-versions')
@@ -228,16 +228,16 @@ class Project():
         # Element configurations
         self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
 
-    # _workspaces()
+    # _list_workspaces()
     #
     # Generator function to enumerate workspaces.
     #
     # Yields:
     #    A tuple in the following format: (element, source, path).
-    def _workspaces(self):
-        for element, _ in _yaml.node_items(self.__workspaces):
-            for source, _ in _yaml.node_items(self.__workspaces[element]):
-                yield (element, int(source), self.__workspaces[element][source])
+    def _list_workspaces(self):
+        for element, _ in _yaml.node_items(self._workspaces):
+            for source, _ in _yaml.node_items(self._workspaces[element]):
+                yield (element, int(source), self._workspaces[element][source])
 
     # _get_workspace()
     #
@@ -254,7 +254,7 @@ class Project():
     #
     def _get_workspace(self, element, index):
         try:
-            return self.__workspaces[element][index]
+            return self._workspaces[element][index]
         except KeyError:
             return None
 
@@ -269,10 +269,10 @@ class Project():
     #    path (str) - The path to set the workspace to
     #
     def _set_workspace(self, element, index, path):
-        if element.name not in self.__workspaces:
-            self.__workspaces[element.name] = {}
+        if element.name not in self._workspaces:
+            self._workspaces[element.name] = {}
 
-        self.__workspaces[element.name][index] = path
+        self._workspaces[element.name][index] = path
         element._set_source_workspace(index, path)
 
     # _delete_workspace()
@@ -286,11 +286,11 @@ class Project():
     #    index (int) - The source index
     #
     def _delete_workspace(self, element, index):
-        del self.__workspaces[element][index]
+        del self._workspaces[element][index]
 
         # Contains a provenance object
-        if len(self.__workspaces[element]) == 1:
-            del self.__workspaces[element]
+        if len(self._workspaces[element]) == 1:
+            del self._workspaces[element]
 
     # _load_workspace_config()
     #
@@ -325,7 +325,7 @@ class Project():
     # _set_workspace permanent
     #
     def _save_workspace_config(self):
-        _yaml.dump(_yaml.node_sanitize(self.__workspaces),
+        _yaml.dump(_yaml.node_sanitize(self._workspaces),
                    os.path.join(self.directory, ".bst", "workspaces.yml"))
 
     def _extract_plugin_paths(self, node, name):

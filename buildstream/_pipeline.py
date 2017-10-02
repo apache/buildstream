@@ -163,7 +163,7 @@ class Pipeline():
 
         self.total_elements = len(list(self.dependencies(Scope.ALL)))
 
-        for element_name, source, workspace in project._workspaces():
+        for element_name, source, workspace in project._list_workspaces():
             element = self.target.search(Scope.ALL, element_name)
 
             if element is None:
