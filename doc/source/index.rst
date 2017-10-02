@@ -94,7 +94,7 @@ implement custom :mod:`Element <buildstream.element>` or
 * :mod:`ScriptElement <buildstream.scriptelement>` - Script Element Class
 * :mod:`Context <buildstream.context>` - Invocation Context
 * :mod:`Project <buildstream.project>` - Loaded Project
-* :mod:`Sandbox <buildstream.sandbox>` - Build Sandbox
+* :mod:`Sandbox <buildstream.sandbox.sandbox>` - Build Sandbox
 * :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
 
 
