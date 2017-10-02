@@ -62,6 +62,8 @@ pytest_unix:
   variables:
     BST_FORCE_BACKEND: "unix"
   script:
+    # We remove the Bubblewrap and OSTree packages here so that we catch any
+    # codepaths that try to use them
     - dnf erase -y bubblewrap ostree
     - dnf install -y bzr patch
     - python3 setup.py test
