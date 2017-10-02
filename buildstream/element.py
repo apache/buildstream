@@ -615,24 +615,36 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # _write_script():
+    # _generate_script():
     #
-    # Writes a script to the given directory.
-    def _write_script(self, directory):
-        with open(_site.build_module_template, "r") as f:
+    # Create a build script by substituting
+    # _site.build_module_template with the correct values for this
+    # element.
+    #
+    # Returns:
+    #     (str): The build script.
+    #
+    def _generate_script(self):
+        with open(_site.build_module_template, 'r') as f:
             script_template = f.read()
 
         variable_string = ""
         for var, val in self.get_environment().items():
             variable_string += "{0}={1} ".format(var, val)
 
-        script = script_template.format(
+        return script_template.format(
             name=self.normal_name,
             build_root=self.get_variable('build-root'),
             install_root=self.get_variable('install-root'),
             variables=variable_string,
             commands=self.generate_script()
         )
+
+    # _write_script():
+    #
+    # Writes a script to the given directory.
+    def _write_script(self, directory):
+        script = self._generate_script()
 
         os.makedirs(directory, exist_ok=True)
         script_path = os.path.join(directory, "build-" + self.normal_name)

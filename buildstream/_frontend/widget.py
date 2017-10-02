@@ -644,6 +644,15 @@ class LogLine(Widget):
                     line = p.fmt_subst(
                         line, 'workspace-dirs', '')
 
+            # Script
+            if "%{script" in format:
+                try:
+                    script = element._generate_script()
+                except ImplError:
+                    script = ""
+
+                line = p.fmt_subst(line, 'script', script)
+
             report += line + '\n'
 
         return report.rstrip('\n')

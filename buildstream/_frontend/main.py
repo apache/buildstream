@@ -405,6 +405,7 @@ def show(app, target, deps, except_, order, format):
         %{public}         Public domain data
         %{workspaced}     If the element is workspaced
         %{workspace-dirs} A list of workspace directories
+        %{script}         The script executed by the element
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
