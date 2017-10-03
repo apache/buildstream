@@ -15,15 +15,19 @@ before_script:
   - df -h
 
   # Store cache in the project directory
-  - mkdir -p "$(pwd)/cache"
+  - if [ -d "$(pwd)/cache" ]; then chmod -R a+rw "$(pwd)/cache"; fi
   - export XDG_CACHE_HOME="$(pwd)/cache"
+  - adduser -m buildstream
+  - chown -R buildstream:buildstream .
 
 # Run premerge commits
 #
 pytest:
   stage: test
   script:
-  - python3 setup.py test --index-url invalid://uri
+  # We run as a simple user to test for permission issues
+  - su buildstream -c 'python3 setup.py test --index-url invalid://uri'
+
   - mkdir -p coverage-pytest/
   - cp .coverage.* coverage-pytest/coverage.pytest
   artifacts:
@@ -38,7 +42,10 @@ integration_linux:
   script:
     - pip3 install --no-index .
     - cd integration-tests
-    - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
+
+    # We run as a simple user to test for permission issues
+    - su buildstream -c './run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test'
+
     - cd ..
     - mkdir -p coverage-linux/
     - cp integration-tests/.coverage coverage-linux/coverage.linux
@@ -59,7 +66,10 @@ pytest_unix:
     # disappear unless we mark it as user-installed.
     - dnf mark install fuse-libs
     - dnf erase -y bubblewrap ostree
+
+    # Since the unix platform is required to run as root, no user change required
     - python3 setup.py test --index-url invalid://uri
+
     - mkdir -p coverage-pytest-unix
     - cp .coverage.* coverage-pytest-unix/coverage.pytest-unix
   artifacts:
@@ -73,7 +83,10 @@ integration_unix:
   script:
     - pip3 install --no-index .
     - cd integration-tests
+
+    # Since the unix platform is required to run as root, no user change required
     - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
+
     - cd ..
     - mkdir -p coverage-unix/
     - cp integration-tests/.coverage coverage-unix/coverage.unix
