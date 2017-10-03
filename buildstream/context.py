@@ -44,13 +44,11 @@ from ._profile import Topics, profile_start, profile_end
 
 
 class Context():
-    """Context of how BuildStream was invoked
+    """Context()
 
-    Args:
-       host_arch (string): The desired architecture on which to run the build
-       target_arch (string): The machine on which the results of the build should execute
+    Context of how BuildStream was invoked
     """
-    def __init__(self, host_arch, target_arch=None):
+    def __init__(self, cli_options, host_arch, target_arch=None):
 
         self.config_origin = None
         """Filename indicating which configuration file was used, or None for the defaults"""
@@ -127,6 +125,7 @@ class Context():
         self._message_depth = deque()
         self._platform = None
         self._project_overrides = {}
+        self._cli_options = cli_options
 
     def load(self, config=None):
         """Loads the configuration files
@@ -219,7 +218,7 @@ class Context():
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
         for project_name, overrides in _yaml.node_items(self._project_overrides):
-            _yaml.node_validate(overrides, ['artifacts'])
+            _yaml.node_validate(overrides, ['artifacts', 'options'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 
