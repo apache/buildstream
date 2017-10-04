@@ -9,6 +9,19 @@ import pytest
 from buildstream._frontend.main import cli as bst_cli
 from buildstream import _yaml
 
+# Special private exception accessor, for test case purposes
+from buildstream.exceptions import _get_last_exception
+
+
+# Wrapper for the click.testing result
+class Result():
+
+    def __init__(self, result):
+        self.exit_code = result.exit_code
+        self.output = result.output
+        self.exception = _get_last_exception()
+        self.result = result
+
 
 class Cli():
 
@@ -87,7 +100,7 @@ class Cli():
         if result.exc_info and result.exc_info[0] != SystemExit:
             traceback.print_exception(*result.exc_info)
 
-        return result
+        return Result(result)
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
