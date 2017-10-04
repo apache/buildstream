@@ -39,6 +39,8 @@ MAIN_OPTIONS = [
     "--no-interactive ",
     "--no-strict ",
     "--no-verbose ",
+    "-o ",
+    "--option ",
     "--on-error ",
     "--pushers ",
     "--strict ",

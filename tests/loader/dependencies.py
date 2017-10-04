@@ -4,6 +4,7 @@ import pytest
 from buildstream import LoadError, LoadErrorReason
 from buildstream._loader import Loader
 from buildstream._metaelement import MetaElement
+from . import make_options
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -18,7 +19,7 @@ DATA_DIR = os.path.join(
 def test_two_files(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/target.bst', None, None)
+    loader = Loader(basedir, 'elements/target.bst', make_options(basedir), None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -34,7 +35,7 @@ def test_two_files(datafiles):
 def test_shared_dependency(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/shareddeptarget.bst', None, None)
+    loader = Loader(basedir, 'elements/shareddeptarget.bst', make_options(basedir), None, None)
     element = loader.load()
 
     # Toplevel is 'pony' with 2 dependencies
@@ -77,7 +78,7 @@ def test_shared_dependency(datafiles):
 def test_dependency_dict(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/target-depdict.bst', None, None)
+    loader = Loader(basedir, 'elements/target-depdict.bst', make_options(basedir), None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -92,7 +93,7 @@ def test_dependency_dict(datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_dependency_declaration(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/invaliddep.bst', None, None)
+    loader = Loader(basedir, 'elements/invaliddep.bst', make_options(basedir), None, None)
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -103,7 +104,7 @@ def test_invalid_dependency_declaration(datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_circular_dependency(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/circulartarget.bst', None, None)
+    loader = Loader(basedir, 'elements/circulartarget.bst', make_options(basedir), None, None)
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -114,7 +115,7 @@ def test_circular_dependency(datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_dependency_type(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/invaliddeptype.bst', None, None)
+    loader = Loader(basedir, 'elements/invaliddeptype.bst', make_options(basedir), None, None)
 
     with pytest.raises(LoadError) as exc:
         element = loader.load()
@@ -125,7 +126,7 @@ def test_invalid_dependency_type(datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_dependency(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/builddep.bst', None, None)
+    loader = Loader(basedir, 'elements/builddep.bst', make_options(basedir), None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -141,7 +142,7 @@ def test_build_dependency(datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_runtime_dependency(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/runtimedep.bst', None, None)
+    loader = Loader(basedir, 'elements/runtimedep.bst', make_options(basedir), None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -157,7 +158,7 @@ def test_runtime_dependency(datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_runtime_dependency(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/target.bst', None, None)
+    loader = Loader(basedir, 'elements/target.bst', make_options(basedir), None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))
@@ -174,7 +175,7 @@ def test_build_runtime_dependency(datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_all_dependency(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/alldep.bst', None, None)
+    loader = Loader(basedir, 'elements/alldep.bst', make_options(basedir), None, None)
     element = loader.load()
 
     assert(isinstance(element, MetaElement))

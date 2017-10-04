@@ -22,7 +22,7 @@ def context_fixture():
 
     return {
         'xdg-cache': cache_home,
-        'context': Context('x86_64')
+        'context': Context([], 'x86_64')
     }
 
 

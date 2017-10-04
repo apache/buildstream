@@ -21,8 +21,8 @@ class Setup():
     def __init__(self, datafiles, target, tmpdir):
         directory = os.path.join(datafiles.dirname, datafiles.basename)
 
-        self.context = Context('x86_64')
-        self.project = Project(directory, 'x86_64')
+        self.context = Context([], 'x86_64')
+        self.project = Project(directory, self.context)
 
         # A message handler is required
         self.context._set_message_handler(message_handler)
@@ -35,7 +35,7 @@ class Setup():
         if not os.path.exists(self.context.builddir):
             os.mkdir(self.context.builddir)
 
-        loader = Loader(directory, target, None, None)
+        loader = Loader(directory, target, self.project._options, None, None)
         element = loader.load()
 
         # Allow repo aliases to access files in the directories using tmpdir and datafiles

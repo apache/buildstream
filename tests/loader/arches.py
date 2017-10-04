@@ -4,6 +4,7 @@ import pytest
 from buildstream import LoadError, LoadErrorReason
 from buildstream._loader import Loader
 from buildstream._metaelement import MetaElement
+from . import make_options
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -19,7 +20,7 @@ def test_simple_conditional_nomatch(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-conditional.bst', 'arm', None)
+        basedir, 'elements/simple-conditional.bst', make_options(basedir), 'arm', None)
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -34,7 +35,7 @@ def test_simple_conditional_x86_64(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-conditional.bst', 'x86_64', None)
+        basedir, 'elements/simple-conditional.bst', make_options(basedir), 'x86_64', None)
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -49,7 +50,7 @@ def test_simple_conditional_x86_32(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-conditional.bst', 'x86_32', None)
+        basedir, 'elements/simple-conditional.bst', make_options(basedir), 'x86_32', None)
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -69,7 +70,7 @@ def test_host_arch_conditional_armv8(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/host-arch-conditional.bst', 'armv8', None)
+        basedir, 'elements/host-arch-conditional.bst', make_options(basedir), 'armv8', None)
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -84,7 +85,7 @@ def test_host_arch_conditional_ignores_target_arch(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/host-arch-conditional.bst', 'armv8', 'x86_32')
+        basedir, 'elements/host-arch-conditional.bst', make_options(basedir), 'armv8', 'x86_32')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
@@ -100,7 +101,7 @@ def test_host_arch_conditional_overridden(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/host-arch-conditional.bst', 'armv8', 'x86_64')
+        basedir, 'elements/host-arch-conditional.bst', make_options(basedir), 'armv8', 'x86_64')
 
     element = loader.load()
     assert(isinstance(element, MetaElement))
