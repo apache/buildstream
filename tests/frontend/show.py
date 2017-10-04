@@ -1,5 +1,7 @@
 import os
+import io
 import pytest
+import difflib
 from tests.testutils.runcli import cli
 
 # Project directory
@@ -9,11 +11,16 @@ DATA_DIR = os.path.join(
 )
 
 
+with open(os.path.join(DATA_DIR, 'elements', 'manual-build-output.txt'), 'r') as f:
+    MANUAL_OUTPUT = f.read()
+
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("target,format,expected", [
     ('import-bin.bst', '%{name}', 'import-bin.bst'),
     ('import-bin.bst', '%{state}', 'buildable'),
-    ('compose-all.bst', '%{state}', 'waiting')
+    ('compose-all.bst', '%{state}', 'waiting'),
+    ('manual-build.bst', '%{script}', MANUAL_OUTPUT)
 ])
 def test_show(cli, datafiles, target, format, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -26,8 +33,12 @@ def test_show(cli, datafiles, target, format, expected):
     assert result.exit_code == 0
 
     if result.output.strip() != expected:
-        raise AssertionError("Expected output:\n{}\nInstead received output:\n{}"
-                             .format(expected, result.output))
+        diff = difflib.context_diff(result.output.strip().splitlines(True),
+                                    expected.splitlines(True),
+                                    fromfile='output', tofile='expected')
+
+        raise AssertionError("Received unexpected output:\n{}\n"
+                             .format(''.join(diff)))
 
 
 @pytest.mark.datafiles(DATA_DIR)
