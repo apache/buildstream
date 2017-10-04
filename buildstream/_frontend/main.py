@@ -175,6 +175,8 @@ click.BaseCommand.main = override_main
               help="Machine architecture for build output (defaults to --arch)")
 @click.option('--strict/--no-strict', default=None, is_flag=True,
               help="Elements must be rebuilt when their dependencies have changed")
+@click.option('--option', '-o', type=click.Tuple([str, str]), multiple=True,
+              help="Specify a project option")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
@@ -659,12 +661,20 @@ def workspace_reset(app, source, track, no_checkout, element):
 def workspace_list(app):
     """List open workspaces"""
 
+    directory = app.main_options['directory']
+    config = app.main_options['config']
+
     try:
-        project = Project(app.main_options['directory'],
-                          app.host_arch,
-                          app.target_arch)
+        context = Context(app.main_options['option'], app.host_arch, app.target_arch)
+        context.load(config)
     except _BstError as e:
-        click.echo("Error loading project: %s" % str(e))
+        click.echo("Error loading user configuration: {}".format(e))
+        sys.exit(1)
+
+    try:
+        project = Project(directory, context)
+    except _BstError as e:
+        click.echo("Error loading project: {}".format(e))
         sys.exit(1)
 
     workspaces = []
@@ -758,7 +768,7 @@ class App():
         config = self.main_options['config']
 
         try:
-            self.context = Context(self.host_arch, self.target_arch)
+            self.context = Context(self.main_options['option'], self.host_arch, self.target_arch)
             self.context.load(config)
         except _BstError as e:
             click.echo("Error loading user configuration: %s" % str(e))
@@ -817,7 +827,7 @@ class App():
         self.context._set_message_handler(self.message_handler)
 
         try:
-            self.project = Project(directory, self.host_arch, self.target_arch)
+            self.project = Project(directory, self.context)
         except _BstError as e:
             click.echo("Error loading project: %s" % str(e))
             sys.exit(1)
