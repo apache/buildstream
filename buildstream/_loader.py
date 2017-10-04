@@ -232,7 +232,7 @@ def extract_depends_from_node(owner, data):
 #
 class Loader():
 
-    def __init__(self, basedir, filename, host_arch, target_arch):
+    def __init__(self, basedir, filename, options, host_arch, target_arch):
 
         # Ensure we have an absolute path for the base directory
         #
@@ -247,12 +247,9 @@ class Loader():
                             "path to the base project directory: %s" %
                             (filename, basedir))
 
-        # Base project directory
-        self.basedir = basedir
-
-        # Target bst filename
-        self.target_filename = filename
-        self.target = filename
+        self.options = options   # Project options (OptionPool)
+        self.basedir = basedir   # Base project directory
+        self.target = filename   # Target bst element
 
         self.host_arch = host_arch
         self.target_arch = target_arch
@@ -280,23 +277,23 @@ class Loader():
 
         # First pass, recursively load files and populate our table of LoadElements
         #
-        profile_start(Topics.LOAD_PROJECT, self.target_filename)
-        target = self.load_file(self.target_filename, rewritable, ticker)
-        profile_end(Topics.LOAD_PROJECT, self.target_filename)
+        profile_start(Topics.LOAD_PROJECT, self.target)
+        target = self.load_file(self.target, rewritable, ticker)
+        profile_end(Topics.LOAD_PROJECT, self.target)
 
         #
         # Now that we've resolve the dependencies, scan them for circular dependencies
         #
-        profile_start(Topics.CIRCULAR_CHECK, self.target_filename)
+        profile_start(Topics.CIRCULAR_CHECK, self.target)
         self.check_circular_deps(self.target)
-        profile_end(Topics.CIRCULAR_CHECK, self.target_filename)
+        profile_end(Topics.CIRCULAR_CHECK, self.target)
 
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
-        profile_start(Topics.SORT_DEPENDENCIES, self.target_filename)
+        profile_start(Topics.SORT_DEPENDENCIES, self.target)
         self.sort_dependencies(self.target)
-        profile_end(Topics.SORT_DEPENDENCIES, self.target_filename)
+        profile_end(Topics.SORT_DEPENDENCIES, self.target)
 
         # Finally, wrap what we have into LoadElements and return the target
         #
@@ -318,10 +315,11 @@ class Loader():
         if ticker:
             ticker(filename)
 
+        # Load the data and process any conditional statements therein
         fullpath = os.path.join(self.basedir, filename)
-
-        # Load the element and track it in our elements table
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
+        self.options.process_node(data)
+
         element = LoadElement(data, filename, self.basedir,
                               self.host_arch, self.target_arch,
                               self.elements)
