@@ -25,6 +25,14 @@ Exceptions
 from enum import Enum
 
 
+# The last raised exception, this is used in test cases only
+_last_exception = None
+
+
+def _get_last_exception():
+    return _last_exception
+
+
 # BstError is an internal base exception class for BuildSream
 # exceptions.
 #
@@ -35,12 +43,17 @@ from enum import Enum
 class _BstError(Exception):
 
     def __init__(self, message):
+        global _last_exception
+
         super(_BstError, self).__init__(message)
 
         # The build sandbox in which the error occurred, if the
         # error occurred at element assembly time.
         #
         self.sandbox = None
+
+        # Hold on to the last raised exception for testing purposes
+        _last_exception = self
 
 
 class PluginError(_BstError):
