@@ -137,6 +137,7 @@ class Pipeline():
         self.unused_workspaces = []
 
         loader = Loader(self.project.element_path, target,
+                        self.project._options,
                         context.host_arch, context.target_arch)
         meta_element = loader.load(rewritable, load_ticker)
         if load_ticker:
