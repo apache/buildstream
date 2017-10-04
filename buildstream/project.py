@@ -37,6 +37,7 @@ from . import _yaml
 from . import _loader  # For resolve_arch()
 from ._profile import Topics, profile_start, profile_end
 from . import LoadError, LoadErrorReason
+from ._options import OptionPool
 
 BST_FORMAT_VERSION = 0
 """The base BuildStream format version
@@ -60,17 +61,11 @@ _ALIAS_SEPARATOR = ':'
 
 
 class Project():
-    """Project Configuration
+    """Project()
 
-    Args:
-       directory (str): The project directory
-       host_arch (str): Symbolic host machine architecture name
-       target_arch (str): Symbolic target machine architecture name
-
-    Raises:
-       :class:`.LoadError`
+    The Project Configuration
     """
-    def __init__(self, directory, host_arch, target_arch=None):
+    def __init__(self, directory, context):
 
         self.name = None
         """str: The project name"""
@@ -81,16 +76,16 @@ class Project():
         self.element_path = None
         """str: Absolute path to where elements are loaded from within the project"""
 
-        self._variables = {}    # The default variables overridden with project wide overrides
-        self._environment = {}  # The base sandbox environment
-        self._elements = {}     # Element specific configurations
-        self._aliases = {}      # Aliases dictionary
-        self._workspaces = {}   # Workspaces
+        self._context = context  # The invocation Context
+        self._variables = {}     # The default variables overridden with project wide overrides
+        self._environment = {}   # The base sandbox environment
+        self._elements = {}      # Element specific configurations
+        self._aliases = {}       # Aliases dictionary
+        self._workspaces = {}    # Workspaces
         self._plugin_source_paths = []   # Paths to custom sources
         self._plugin_element_paths = []  # Paths to custom plugins
+        self._options = None    # Project options, the OptionPool
         self._cache_key = None
-        self._host_arch = host_arch
-        self._target_arch = target_arch or host_arch
         self._source_format_versions = {}
         self._element_format_versions = {}
 
@@ -137,12 +132,12 @@ class Project():
         variables = _yaml.node_get(config, Mapping, 'variables')
         variables['max-jobs'] = multiprocessing.cpu_count()
 
-        variables['bst-host-arch'] = self._host_arch
-        variables['bst-target-arch'] = self._target_arch
+        variables['bst-host-arch'] = self._context.host_arch
+        variables['bst-target-arch'] = self._context.target_arch
 
         # This is kept around for compatibility with existing definitions,
         # but we should probably remove it due to being ambiguous.
-        variables['bst-arch'] = self._host_arch
+        variables['bst-arch'] = self._context.host_arch
 
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
@@ -154,25 +149,47 @@ class Project():
             'split-rules', 'elements', 'plugins',
             'aliases', 'name',
             'arches', 'host-arches',
-            'artifacts',
+            'artifacts', 'options',
         ])
 
+        # The project name, element path and option declarations
+        # are constant and cannot be overridden by option conditional statements
+        self.name = _yaml.node_get(config, str, 'name')
+        self.element_path = os.path.join(
+            self.directory,
+            _yaml.node_get(config, str, 'element-path', default_value='.')
+        )
+
+        # Load project options
+        options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
+        self._options = OptionPool(self.element_path)
+        self._options.load(options_node)
+
+        # Collect option values specified in the user configuration
+        overrides = self._context._get_overrides(self.name)
+        override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
+        self._options.load_values(override_options, self._context._cli_options)
+
+        # We're done modifying options, now we can use them for substitutions
+        self._options.resolve()
+
+        #
+        # Now resolve any conditionals in the remaining configuration,
+        # any conditionals specified for project option declarations,
+        # or conditionally specifying the project name; will be ignored.
+        #
+        self._options.process_node(config)
+
         # Resolve arches keyword, project may have arch conditionals
-        _loader.resolve_arch(config, self._host_arch, self._target_arch)
+        _loader.resolve_arch(config, self._context.host_arch, self._context.target_arch)
 
         #
         # Now all YAML composition is done, from here on we just load
         # the values from our loaded configuration dictionary.
         #
 
-        self.name = _yaml.node_get(config, str, 'name')
-        self.element_path = os.path.join(
-            self.directory,
-            _yaml.node_get(config, str, 'element-path')
-        )
-
         # Load artifacts pull/push configuration for this project
-        artifacts = _yaml.node_get(config, Mapping, 'artifacts')
+        artifacts = _yaml.node_get(config, Mapping, 'artifacts', default_value={})
         _yaml.node_validate(artifacts, ['pull-url', 'push-url', 'push-port'])
         self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
         self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
@@ -182,11 +199,11 @@ class Project():
         self._workspaces = self._load_workspace_config()
 
         # Version requirements
-        versions = _yaml.node_get(config, Mapping, 'required-versions')
+        versions = _yaml.node_get(config, Mapping, 'required-versions', default_value={})
         _yaml.node_validate(versions, ['project', 'elements', 'sources'])
 
         # Assert project version first
-        format_version = _yaml.node_get(versions, int, 'project')
+        format_version = _yaml.node_get(versions, int, 'project', default_value=0)
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(

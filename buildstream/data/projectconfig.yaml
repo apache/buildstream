@@ -1,69 +1,7 @@
 # Default BuildStream project configuration.
 
-# Project name
-#
-# name: myproject
-
-# Format version requirements
-#
-# Indicates the minimum required format version the
-# project requires.
-#
-required-versions:
-
-  # The minimum base BuildStream format
-  project: 0
-
-  # A minimum plugin format version for each individual
-  # plugin (as advertized by the plugin BST_FORMAT_VERSION
-  # class attributes), may be asserted here.
-  #
-  # E.g., to require version 3 of the the autotools
-  # element format:
-  #
-  #   elements:
-  #     autotools: 3
-  #
-  elements: {}
-  sources: {}
-
-# Base project relative element path, elements will be loaded
-# from this base.
-
-element-path: .
-
-# Alias configuration
-#
-# Aliases are entirely project specific, they are
-# configured as a simple dictionary, example:
-#
-# aliases:
-#   baserock: git://git.baserock.org/baserock/
-#   freedesktop: git://anongit.freedesktop.org/
-
-
-# Plugin path configuration
-#
-# You may specify one or more project relative paths to
-# subdirectories where plugins should be loaded from.
-#
-# plugins:
-#
-#   elements:
-#   - plugins/local-elements
-#   - plugins/shared-elements
-#
-#   sources:
-#   - plugins/local-sources
-
 
 # Variable Configuration
-#
-# You may override the defaults of variables on a project wide
-# basis by specifying the 'variables' attribute.
-#
-# The defaults for this version of buildstream are listed
-# below.
 #
 variables:
 
@@ -147,18 +85,6 @@ environment-nocache: []
 # Defaults for the 'split-rules' public data found on elements
 # in the 'bst' domain.
 #
-# These define patterns for categorizing the output of build
-# elements so that selective composition can be performed by
-# plugins later on.
-#
-# Elements may extend these rules by adding entries to the
-# various split domains either in a plugin definition or
-# in a project element declaration.
-#
-# Note that the split rules reported by
-# Element.get_public_data('bst') will have any variables for
-# the given element already expanded.
-#
 split-rules:
 
   # The runtime domain includes whatever is needed for the
@@ -233,41 +159,3 @@ split-rules:
     %{datadir}/zoneinfo
   - |
     %{datadir}/zoneinfo/**
-
-#
-#    Artifacts
-#
-artifacts:
-
-  # A url from which to download prebuilt artifacts
-  pull-url: ''
-
-  # A url to upload built artifacts to
-  # (must point to the same repository as pull-url)
-  push-url: ''
-
-  # Specify the port number for pushing artifacts, if it's
-  # not the default port 22
-  push-port: 22
-
-# Element Overrides
-#
-# Base attributes declared by element default yaml files
-# can be overridden on a project wide basis. The elements
-# dictionary can be used to override variables, environments
-# or plugin specific configuration data as shown below.
-#
-#
-# elements:
-#
-#   autotools:
-#
-#     variables:
-#       bindir: "%{prefix}/bin"
-#
-#     config:
-#       configure-commands: ...
-#
-#     environment:
-#       PKG_CONFIG_PATH=%{libdir}/pkgconfig
-#
