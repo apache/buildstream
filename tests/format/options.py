@@ -1,0 +1,228 @@
+import os
+import pytest
+from buildstream import _yaml
+from buildstream import LoadError, LoadErrorReason
+from tests.testutils.runcli import cli
+
+# Project directory
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    'options'
+)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_option_type(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'invalid-type')
+
+    # Test with the opt option set
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'opt', 'funny',
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code != 0
+    assert result.exception
+    assert isinstance(result.exception, LoadError)
+    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_option_cli(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'simple-condition')
+
+    # Test with the opt option set
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'fart', 'funny',
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code != 0
+    assert result.exception
+    assert isinstance(result.exception, LoadError)
+    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_option_config(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'simple-condition')
+    cli.configure({
+        'projects': {
+            'test': {
+                'options': {
+                    'fart': 'Hello'
+                }
+            }
+        }
+    })
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code != 0
+    assert result.exception
+    assert isinstance(result.exception, LoadError)
+    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_expression(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'invalid-expression')
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code != 0
+    assert result.exception
+    assert isinstance(result.exception, LoadError)
+    assert result.exception.reason == LoadErrorReason.EXPRESSION_FAILED
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_condition(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'invalid-condition')
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code != 0
+    assert result.exception
+    assert isinstance(result.exception, LoadError)
+    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("opt_option,expected_prefix", [
+    ('False', '/usr'),
+    ('True', '/opt'),
+])
+def test_simple_conditional(cli, datafiles, opt_option, expected_prefix):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'simple-condition')
+
+    # Test with the opt option set
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'opt', opt_option,
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code == 0
+    loaded = _yaml.load_data(result.output)
+    assert loaded['prefix'] == expected_prefix
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("debug,logging,expected", [
+    ('False', 'False', 'False'),
+    ('True', 'False', 'False'),
+    ('False', 'True', 'False'),
+    ('True', 'True', 'True'),
+])
+def test_nested_conditional(cli, datafiles, debug, logging, expected):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'nested-condition')
+
+    # Test with the opt option set
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'debug', debug,
+        '--option', 'logging', logging,
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code == 0
+    loaded = _yaml.load_data(result.output)
+    assert loaded['debug'] == expected
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("debug,logging,expected", [
+    ('False', 'False', 'False'),
+    ('True', 'False', 'False'),
+    ('False', 'True', 'False'),
+    ('True', 'True', 'True'),
+])
+def test_compound_and_conditional(cli, datafiles, debug, logging, expected):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'compound-and-condition')
+
+    # Test with the opt option set
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'debug', debug,
+        '--option', 'logging', logging,
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code == 0
+    loaded = _yaml.load_data(result.output)
+    assert loaded['debug'] == expected
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("debug,logging,expected", [
+    ('False', 'False', 'False'),
+    ('True', 'False', 'True'),
+    ('False', 'True', 'True'),
+    ('True', 'True', 'True'),
+])
+def test_compound_or_conditional(cli, datafiles, debug, logging, expected):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'compound-or-condition')
+
+    # Test with the opt option set
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'debug', debug,
+        '--option', 'logging', logging,
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    assert result.exit_code == 0
+    loaded = _yaml.load_data(result.output)
+    assert loaded['logging'] == expected
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("option,expected", [
+    ('False', 'horsy'),
+    ('True', 'pony'),
+])
+def test_deep_nesting_level1(cli, datafiles, option, expected):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'deep-nesting')
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'pony', option,
+        'show',
+        '--deps', 'none',
+        '--format', '%{public}',
+        'element.bst'])
+    assert result.exit_code == 0
+    loaded = _yaml.load_data(result.output)
+    shallow_list = loaded['shallow-nest']
+    first_dict = shallow_list[0]
+
+    assert first_dict['animal'] == expected
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("option,expected", [
+    ('False', 'horsy'),
+    ('True', 'pony'),
+])
+def test_deep_nesting_level2(cli, datafiles, option, expected):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'deep-nesting')
+    result = cli.run(project=project, silent=True, args=[
+        '--option', 'pony', option,
+        'show',
+        '--deps', 'none',
+        '--format', '%{public}',
+        'element-deeper.bst'])
+    assert result.exit_code == 0
+    loaded = _yaml.load_data(result.output)
+    shallow_list = loaded['deep-nest']
+    deeper_list = shallow_list[0]
+    first_dict = deeper_list[0]
+
+    assert first_dict['animal'] == expected
