@@ -362,10 +362,18 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
         # be able to specify numeric values and convert them to strings,
         # but we dont want to try converting dicts/lists
         try:
-            if not (expected_type == list or
-                    expected_type == dict or
-                    isinstance(value, list) or
-                    isinstance(value, dict)):
+            if (expected_type == bool and isinstance(value, str)):
+                # Dont coerce booleans to string, this makes "False" strings evaluate to True
+                if value == 'true' or value == 'True':
+                    value = True
+                elif value == 'false' or value == 'False':
+                    value = False
+                else:
+                    raise ValueError()
+            elif not (expected_type == list or
+                      expected_type == dict or
+                      isinstance(value, list) or
+                      isinstance(value, dict)):
                 value = expected_type(value)
             else:
                 raise ValueError()
