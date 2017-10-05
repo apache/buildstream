@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+#  Copyright 2017 Bloomberg Finance LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Charles Bailey <cbailey32@bloomberg.net>
+#        Sam Thursfield <sam.thursfield@codethink.co.uk>
+
+# This is a helper script for using BuildStream via Docker. See
+# docs/source/install.rst for documentation.
+
+is_tty=
+
+if test -t 0
+then
+    is_tty=y
+fi
+
+while getopts tT arg
+do
+    case $arg in
+    T)
+        is_tty=
+        ;;
+    t)
+        is_tty=y
+        ;;
+    esac
+done
+
+test "$OPTIND" -gt 1 &&
+    shift $(( OPTIND - 1 ))
+
+create_volume_if_not_exists () {
+    if ! docker volume inspect "$1" >/dev/null 2>&1
+    then
+        docker volume create --name "$1"
+    fi
+}
+
+for vol in buildstream-cache buildstream-config
+do
+    create_volume_if_not_exists "$vol"
+done
+
+exec docker run --rm -i${is_tty:+ -t} \
+                --cap-add SYS_ADMIN \
+                --device /dev/fuse \
+                --security-opt seccomp=unconfined \
+                --volume buildstream-cache:/root/.cache/buildstream \
+                --volume buildstream-config:/root/.config \
+                --volume "$PWD":/src \
+                --workdir /src \
+                buildstream/buildstream-fedora:latest \
+                "$@"
