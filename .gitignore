@@ -7,8 +7,29 @@
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
 .eggs
+*.egg
 
 # Some testing related things
 tmp
 .coverage
 .cache
+
+# Built documentation
+doc/build
+doc/source/sources
+doc/source/modules
+doc/source/elements
+doc/source/buildstream.buildelement.rst
+doc/source/buildstream.context.rst
+doc/source/buildstream.element.rst
+doc/source/buildstream.exceptions.rst
+doc/source/buildstream.plugin.rst
+doc/source/buildstream.project.rst
+doc/source/buildstream.rst
+doc/source/buildstream.sandbox.rst
+doc/source/buildstream.sandbox.sandbox.rst
+doc/source/buildstream.scriptelement.rst
+doc/source/buildstream.source.rst
+doc/source/buildstream.utils.rst
+doc/source/modules.rst
+
