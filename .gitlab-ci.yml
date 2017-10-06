@@ -1,4 +1,4 @@
-image: samthursfield/buildstream:0.1-20170621.1
+image: buildstream/buildstream-fedora:latest
 
 cache:
   paths:
@@ -14,10 +14,6 @@ before_script:
   - mount
   - df -h
 
-  # Work around https://github.com/fedora-cloud/docker-brew-fedora/issues/14
-  - export LANG="C.UTF-8"
-  - export LC_ALL="C.UTF-8"
-
   # Store cache in the project directory
   - mkdir -p "$(pwd)/cache"
   - export XDG_CACHE_HOME="$(pwd)/cache"
@@ -27,7 +23,6 @@ before_script:
 pytest:
   stage: test
   script:
-  - dnf install -y bzr patch
   - python3 setup.py test
   - mkdir -p coverage-pytest/
   - cp .coverage.* coverage-pytest/coverage.pytest
@@ -41,8 +36,6 @@ integration_linux:
   stage: test
 
   script:
-    - dnf install -y findutils bzr which
-    - pip3 install coverage
     - pip3 install .
     - git clone https://gitlab.com/BuildStream/buildstream-tests.git
     - cd buildstream-tests
@@ -63,9 +56,10 @@ pytest_unix:
     BST_FORCE_BACKEND: "unix"
   script:
     # We remove the Bubblewrap and OSTree packages here so that we catch any
-    # codepaths that try to use them
+    # codepaths that try to use them. Removing OSTree causes fuse-libs to
+    # disappear unless we mark it as user-installed.
+    - dnf mark install fuse-libs
     - dnf erase -y bubblewrap ostree
-    - dnf install -y bzr patch
     - python3 setup.py test
     - mkdir -p coverage-pytest-unix
     - cp .coverage.* coverage-pytest-unix/coverage.pytest-unix
@@ -78,8 +72,6 @@ integration_unix:
   variables:
     BST_FORCE_BACKEND: "unix"
   script:
-    - dnf install -y findutils bzr which
-    - pip3 install coverage
     - pip3 install .
     - git clone https://gitlab.com/BuildStream/buildstream-tests.git
     - cd buildstream-tests
@@ -122,7 +114,7 @@ coverage:
 pages:
   stage: docs
   script:
-  - dnf install -y findutils python2
+  - dnf install -y python2
   - pip3 install sphinx
   - pip3 install sphinx-click
   - pip3 install --user -e .
