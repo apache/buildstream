@@ -37,6 +37,7 @@ off the ground installing it on a new host.
 * :ref:`format`
 * :ref:`public`
 * :ref:`artifacts`
+* :ref:`project_from_scratch`
 
 
 Elements
