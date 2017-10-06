@@ -87,7 +87,7 @@ the given element's default.
 
 5. Element Declarations
 ~~~~~~~~~~~~~~~~~~~~~~~
-Finally, after having resolved any `Architecture Conditionals`_ or `Variant Conditionals`_
+Finally, after having resolved any `Architecture Conditionals`_
 in the parsing phase of loading element declarations; the configurations specified in a
 ``.bst`` file have the last word on any configuration in the data model.
 
@@ -330,11 +330,9 @@ Dependency dictionary:
    # Fully specified dependency
    depends:
    - filename: elements/foo.bst
-     variant: bar
      type: build
 
-The ``variant`` attribute is explained below in `Variant Conditionals`_, and
-the ``type`` attribute can be used to express the dependency type.
+The ``type`` attribute can be used to express the dependency type.
 
 
 Dependency Types
@@ -492,81 +490,3 @@ expand to the following YAML:
    depends:
    - elements/foo.bst
    - elements/bar.bst
-
-
-Variant Conditionals
---------------------
-Variants are a way for a single element to provide multiple features. In contrast
-with the architecture conditionals described above, which are resolved once for
-the entirety of a pipeline; variant conditionals are selected by way of dependency.
-
-
-Declaring Variants
-~~~~~~~~~~~~~~~~~~
-If an element declares any variants, it must declare at least two variants.
-One of the variant declarations may be left empty so that they do not override
-or effect the base element declaration, but at least two variant names must be
-declared.
-
-The first declared variant is the default. It may have whatever name you decide
-to give it, but the default variant is what will be selected if all dependencies
-on the given element are *ambivalent* of the variant.
-
-Here is an example of how an element declares multiple variants:
-
-.. code:: yaml
-
-   # Unconditionally depend on foo.bst
-   kind: autotools
-   depends:
-   - elements/foo.bst
-
-   variants:
-
-   # The default variant needs to disable flying ponies, or else
-   # our configure script bails out if the ponies are not found
-   - variant: default
-     config:
-       configure-commands:
-       - "%{configure} --without-flying-ponies"
-
-   # For the flying-ponies variant, we want to pull in the extra
-   # ponies so they will be available for flying
-   - variant: flying-ponies
-     depends:
-     - elements/ponies.bst
-
-
-Depending on Variants
-~~~~~~~~~~~~~~~~~~~~~
-To depend on a specific variant of a given element, one must simply use
-the ``variant`` attribute in a dependency that is expressed as a dictionary:
-
-.. code:: yaml
-
-   # Depend on the flying-ponies variant of the foo element
-   depends:
-   - filename: elements/foo.bst
-     variant: flying-ponies
-
-When depending on an element which advertizes variants without specifying
-any particular variant, the dependency is said to be *ambivalent*.
-
-
-Variant Resolution
-~~~~~~~~~~~~~~~~~~
-Variants of an element may augment the given element's dependencies, as
-such there may be many possible ways in which a pipeline can be constructed.
-
-As a rule, every variant of a given element should be buildable without
-presenting any conflict when building the element as your pipeline *target*.
-
-When resolving variants in a complex pipeline however, it is possible that
-sibling elements depend on specific variants of common dependencies. BuildStream
-will resolve which variants to build deterministically by traversing an
-element's variants in the order of declaration, always choosing the first
-buildable variant for any *ambivalent* dependency.
-
-If there is no suitable build plan found for the selected variant of the
-pipeline *target*, then it is considered a variant disagreement error and
-the build will be aborted during the parse phase.
