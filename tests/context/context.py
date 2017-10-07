@@ -22,7 +22,7 @@ def context_fixture():
 
     return {
         'xdg-cache': cache_home,
-        'context': Context([], 'x86_64')
+        'context': Context([])
     }
 
 
@@ -32,7 +32,6 @@ def context_fixture():
 def test_context_create(context_fixture):
     context = context_fixture['context']
     assert(isinstance(context, Context))
-    assert(context.host_arch == 'x86_64')
 
 
 #######################################

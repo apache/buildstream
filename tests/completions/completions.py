@@ -19,8 +19,6 @@ MAIN_COMMANDS = [
 ]
 
 MAIN_OPTIONS = [
-    "-a ",
-    "--arch ",
     "--builders ",
     "-c ",
     "-C ",
@@ -30,7 +28,6 @@ MAIN_OPTIONS = [
     "--directory ",
     "--error-lines ",
     "--fetchers ",
-    "--host-arch ",
     "--log-file ",
     "--message-lines ",
     "--network-retries ",
@@ -44,7 +41,6 @@ MAIN_OPTIONS = [
     "--on-error ",
     "--pushers ",
     "--strict ",
-    "--target-arch ",
     "--verbose ",
     "--version ",
 ]
