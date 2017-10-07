@@ -48,16 +48,10 @@ class Context():
 
     Context of how BuildStream was invoked
     """
-    def __init__(self, cli_options, host_arch, target_arch=None):
+    def __init__(self, cli_options):
 
         self.config_origin = None
         """Filename indicating which configuration file was used, or None for the defaults"""
-
-        self.host_arch = host_arch
-        """The desired architecture on which to run the build"""
-
-        self.target_arch = target_arch or host_arch
-        """The machine on which the results of the build should execute"""
 
         self.strict_build_plan = None
         """Whether elements must be rebuilt when their dependencies have changed"""
@@ -273,10 +267,7 @@ class Context():
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
-            self._cache_key = utils._generate_key({
-                'host-arch': self.host_arch,
-                'target-arch': self.target_arch
-            })
+            self._cache_key = utils._generate_key({})
 
         return self._cache_key
 
