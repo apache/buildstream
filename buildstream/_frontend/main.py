@@ -41,7 +41,6 @@ from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
 # Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version
-_, _, _, _, host_machine = os.uname()
 
 
 ##################################################################
@@ -168,12 +167,6 @@ click.BaseCommand.main = override_main
               help="A file to store the main log (allows storing the main log while in interactive mode)")
 @click.option('--colors/--no-colors', default=None,
               help="Force enable/disable ANSI color codes in output")
-@click.option('--arch', '-a', default=host_machine,
-              help="Machine architecture (default: %s)" % host_machine)
-@click.option('--host-arch',
-              help="Machine architecture for the sandbox (defaults to --arch)")
-@click.option('--target-arch',
-              help="Machine architecture for build output (defaults to --arch)")
 @click.option('--strict/--no-strict', default=None, is_flag=True,
               help="Elements must be rebuilt when their dependencies have changed")
 @click.option('--option', '-o', type=click.Tuple([str, str]), multiple=True,
@@ -508,16 +501,18 @@ def shell(app, element, sysroot, build, command):
 @cli.command(short_help="Checkout a built artifact")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
+@click.option('--integrate/--no-integrate', default=True, is_flag=True,
+              help="Whether to run integration commands")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def checkout(app, element, directory, force):
+def checkout(app, element, directory, force, integrate):
     """Checkout a built artifact to the specified directory
     """
     app.initialize([element])
     try:
-        app.pipeline.checkout(directory, force)
+        app.pipeline.checkout(directory, force, integrate)
         click.echo("")
     except _BstError as e:
         click.echo("")
@@ -668,7 +663,7 @@ def workspace_list(app):
     config = app.main_options['config']
 
     try:
-        context = Context(app.main_options['option'], app.host_arch, app.target_arch)
+        context = Context(app.main_options['option'])
         context.load(config)
     except _BstError as e:
         click.echo("Error loading user configuration: {}".format(e))
@@ -709,8 +704,6 @@ class App():
         self.logger = None
         self.status = None
         self.target = None
-        self.host_arch = main_options['host_arch'] or main_options['arch']
-        self.target_arch = main_options['target_arch'] or main_options['arch']
 
         # Main asset handles
         self.context = None
@@ -764,14 +757,13 @@ class App():
     #
     def initialize(self, elements, rewritable=False, inconsistent=False, fetch_remote_refs=False):
 
-        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements) + '-' +
-                      self.host_arch + '-' + self.target_arch)
+        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
         directory = self.main_options['directory']
         config = self.main_options['config']
 
         try:
-            self.context = Context(self.main_options['option'], self.host_arch, self.target_arch)
+            self.context = Context(self.main_options['option'])
             self.context.load(config)
         except _BstError as e:
             click.echo("Error loading user configuration: %s" % str(e))
@@ -858,8 +850,7 @@ class App():
         self.logger.size_request(self.pipeline)
         self.messaging_enabled = True
 
-        profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements) + '-' +
-                    self.host_arch + '-' + self.target_arch)
+        profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
     #
     # Render the status area, conditional on some internal state
