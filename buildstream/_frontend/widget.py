@@ -456,6 +456,15 @@ class LogLine(Widget):
         text += self.format_values(values)
         text += '\n'
 
+        # Project Options
+        if len(project._options.variables) > 0:
+            text += self.content_profile.fmt("Project Options\n", bold=True)
+            values = OrderedDict()
+            for key in sorted(project._options.variables):
+                values[key] = project._options.variables[key]
+            text += self.format_values(values)
+            text += '\n'
+
         # Plugins
         text += self.format_plugins(pipeline.element_factory.loaded_dependencies,
                                     pipeline.source_factory.loaded_dependencies)
