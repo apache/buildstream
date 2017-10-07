@@ -437,8 +437,6 @@ class LogLine(Widget):
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)
         values["Targets"] = ", ".join([t.name for t in pipeline.targets])
-        values["Host Architecture"] = context.host_arch
-        values["Target Architecture"] = context.target_arch
         text += self.format_values(values)
 
         # User configurations
