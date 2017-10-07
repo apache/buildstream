@@ -142,8 +142,7 @@ class Pipeline():
         self._resolved_elements = {}
 
         loader = Loader(self.project.element_path, targets,
-                        self.project._options,
-                        context.host_arch, context.target_arch)
+                        self.project._options)
         meta_elements = loader.load(rewritable, load_ticker)
         if load_ticker:
             load_ticker(None)
@@ -476,8 +475,9 @@ class Pipeline():
     # Args:
     #    directory (str): The directory to checkout the artifact to
     #    force (bool): Force overwrite files which exist in `directory`
+    #    integrate (bool): Whether to run integration commands
     #
-    def checkout(self, directory, force):
+    def checkout(self, directory, force, integrate):
         # We only have one target in a checkout command
         target = self.targets[0]
 
@@ -493,16 +493,8 @@ class Pipeline():
             raise PipelineError("Checkout directory is not empty: {}"
                                 .format(directory))
 
-        # BuildStream will one day be able to run host-incompatible binaries
-        # by using a QEMU sandbox, but for now we need to disable integration
-        # commands for cross-build artifacts.
-        can_integrate = (self.context.host_arch == self.context.target_arch)
-        if not can_integrate:
-            self.message(MessageType.WARN,
-                         "Host-incompatible checkout -- no integration commands can be run")
-
         # Stage deps into a temporary sandbox first
-        with target._prepare_sandbox(Scope.RUN, None, integrate=can_integrate) as sandbox:
+        with target._prepare_sandbox(Scope.RUN, None, integrate=integrate) as sandbox:
 
             # Make copies from the sandbox into to the desired directory
             sandbox_root = sandbox.get_directory()
