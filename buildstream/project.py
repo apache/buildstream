@@ -33,7 +33,6 @@ from collections import Mapping
 from . import utils
 from . import _site
 from . import _yaml
-from . import _loader  # For resolve_arch()
 from ._profile import Topics, profile_start, profile_end
 from . import LoadError, LoadErrorReason
 from ._options import OptionPool
@@ -141,7 +140,6 @@ class Project():
             'environment', 'environment-nocache',
             'split-rules', 'elements', 'plugins',
             'aliases', 'name',
-            'arches', 'host-arches',
             'artifacts', 'options',
         ])
 
@@ -172,9 +170,6 @@ class Project():
         # or conditionally specifying the project name; will be ignored.
         #
         self._options.process_node(config)
-
-        # Resolve arches keyword, project may have arch conditionals
-        _loader.resolve_arch(config, self._context.host_arch, self._context.target_arch)
 
         #
         # Now all YAML composition is done, from here on we just load
@@ -235,11 +230,6 @@ class Project():
         for _, option in self._options.options.items():
             if option.variable:
                 self._variables[option.variable] = option.get_value()
-
-        # This is to be removed with arches
-        self._variables['bst-host-arch'] = self._context.host_arch
-        self._variables['bst-target-arch'] = self._context.target_arch
-        self._variables['bst-arch'] = self._context.host_arch
 
         # Load sandbox configuration
         self._environment = _yaml.node_get(config, Mapping, 'environment')
