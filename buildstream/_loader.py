@@ -42,8 +42,6 @@ class Symbol():
     FILENAME = "filename"
     KIND = "kind"
     DEPENDS = "depends"
-    ARCHES = "arches"
-    HOST_ARCHES = "host-arches"
     SOURCES = "sources"
     CONFIG = "config"
     VARIABLES = "variables"
@@ -69,54 +67,16 @@ class Dependency():
         self.provenance = provenance
 
 
-# resolve_arch()
-#
-# Composites the data node with the active arch dict and discards
-# the arches dict from the data node afterwards, this is shared
-# with project.py
-#
-def resolve_arch(data, host_arch, target_arch=None):
-
-    def resolve_single_arch_conditional(symbol, active_arch):
-        arches = _yaml.node_get(data, Mapping, symbol, default_value={})
-
-        arch = {}
-        if arches:
-            arch = _yaml.node_get(arches, Mapping, active_arch, default_value={})
-
-        if arch:
-            try:
-                _yaml.composite_dict(data, arch)
-            except CompositeTypeError as e:
-                provenance = _yaml.node_get_provenance(arch, key=active_arch)
-                raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                                "%s: Arch %s specifies type '%s' for path '%s', expected '%s'" %
-                                (str(provenance),
-                                 active_arch,
-                                 e.actual_type.__name__,
-                                 e.path,
-                                 e.expected_type.__name__)) from e
-
-        del data[symbol]
-
-    resolve_single_arch_conditional(Symbol.HOST_ARCHES, active_arch=host_arch)
-    resolve_single_arch_conditional(Symbol.ARCHES, active_arch=target_arch or host_arch)
-
-
 # A transient object breaking down what is loaded
 # allowing us to do complex operations in multiple
 # passes
 #
 class LoadElement():
 
-    def __init__(self, data, filename, basedir,
-                 host_arch, target_arch,
-                 elements):
+    def __init__(self, data, filename, basedir, elements):
 
         self.filename = filename
         self.data = data
-        self.host_arch = host_arch
-        self.target_arch = target_arch
         self.name = filename
         self.elements = elements
 
@@ -128,11 +88,7 @@ class LoadElement():
             'kind', 'depends', 'sources',
             'variables', 'environment', 'environment-nocache',
             'config', 'public', 'description',
-            'arches', 'host-arches'
         ])
-
-        # Process arch conditionals
-        resolve_arch(self.data, self.host_arch, self.target_arch)
 
         # Cache dependency tree to detect circular dependencies
         self.dep_cache = None
@@ -230,7 +186,7 @@ def extract_depends_from_node(owner, data):
 #
 class Loader():
 
-    def __init__(self, basedir, filenames, options, host_arch, target_arch):
+    def __init__(self, basedir, filenames, options):
 
         # Ensure we have an absolute path for the base directory
         #
@@ -249,9 +205,6 @@ class Loader():
         self.options = options   # Project options (OptionPool)
         self.basedir = basedir   # Base project directory
         self.targets = filenames   # Target bst elements
-
-        self.host_arch = host_arch
-        self.target_arch = target_arch
 
         self.meta_elements = {}  # Dict of resolved meta elements by name
         self.elements = {}       # Dict of elements
@@ -329,9 +282,7 @@ class Loader():
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
         self.options.process_node(data)
 
-        element = LoadElement(data, filename, self.basedir,
-                              self.host_arch, self.target_arch,
-                              self.elements)
+        element = LoadElement(data, filename, self.basedir, self.elements)
 
         self.elements[filename] = element
 
