@@ -156,7 +156,7 @@ Using BuildStream inside Docker
 ===============================
 
 The BuildStream project provides
-`Docker images <https://hub.docker.com/r/buildstream/buildstream-fedora/>`
+`Docker images <https://hub.docker.com/r/buildstream/buildstream-fedora/>`_
 containing BuildStream and its dependencies.
 This gives you an easy way to get started using BuildStream on any Unix-like
 platform where Docker is available, including Mac OS X.
