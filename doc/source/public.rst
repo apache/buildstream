@@ -1,8 +1,8 @@
 .. _public:
 
 
-Public Data
-===========
+Builtin Public Data
+===================
 
 Elements can provide public data which can be read by other elements
 later in the pipeline, the format for exposing public data on a given
@@ -14,6 +14,8 @@ completely in the ``bst`` domain.
 
 In this section we will describe the public data in the ``bst`` domain.
 
+
+.. _public_integration:
 
 Integration Commands
 --------------------
@@ -41,6 +43,8 @@ Notably the :mod:`BuildElement <buildstream.buildelement>` derived classes
 will always integrate the build dependencies after staging and before running
 any build commands.
 
+
+.. _public_split_rules:
 
 Split Rules
 -----------

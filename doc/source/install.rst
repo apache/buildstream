@@ -1,8 +1,8 @@
 .. _installing:
 
 
-Installing BuildStream
-======================
+BuildStream on your host
+========================
 Until BuildStream is available in your distro, there are a few hoops to jump
 through to get started.
 
@@ -11,8 +11,8 @@ then we have some instructions below which can get you started using BuildStream
 within a Docker container.
 
 
-Installing base system requirements
------------------------------------
+System requirements
+-------------------
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
@@ -90,6 +90,21 @@ A regular way to do this is to add the following line to the end of your ``~/.ba
   export PATH=${PATH}:~/.local/bin
 
 
+Bash Completions
+~~~~~~~~~~~~~~~~
+Bash completions are supported by sourcing the ``buildstream/data/bst``
+script found in the BuildStream repository. On many systems this script
+can be installed into a completions directory but when installing BuildStream
+without a package manager this is not an option.
+
+To enable completions for an installation of BuildStream you
+installed yourself from git, just append the script verbatim
+to your ``~/.bash_completion``:
+
+.. literalinclude:: ../../buildstream/data/bst
+   :language: yaml
+
+
 Upgrading with pip
 ~~~~~~~~~~~~~~~~~~
 To upgrade a previously install BuildStream, you will need to pull the latest
@@ -99,86 +114,3 @@ changes and reinstall as such::
   cd buildstream
   git pull --rebase
   pip3 install --user .
-
-
-Using virtualenv
-----------------
-If you want to install BuildStream in such a way that ``pip`` does not add
-any files to your home directory, you can use virtualenv. This is a bit less
-convenient because it requires you enter a special environment every time you
-want to use BuildStream.
-
-To use virtualenv, you will first need to install virtualenv with your
-package manager, in addition to the base requirements listed above.
-
-E.g. with debian systems::
-
-  sudo apt-get install python3-virtualenv
-
-At this point the following instructions will get you a virtual python
-environment that is completely encapsulated and does not interfere with
-your system or home directory::
-
-  # Clone the repository
-  git clone https://gitlab.com/BuildStream/buildstream.git
-  cd buildstream
-
-  # Create a virtualenv sandbox for the installation, you need to
-  # enable the system site packages in order to have access to the
-  # ostree python bindings which unfortunately cannot be installed
-  # with pip into your sandbox
-  virtualenv --system-site-packages -p python3 sandbox
-
-  # Install into the virtualenv using pip inside the virtualenv
-  ./sandbox/bin/pip3 install .
-
-Once you have done the above, you have a completely disposable
-``sandbox`` directory which provides an environment you can enter
-at anytime to use BuildStream. BuildStream man pages should also
-be available when in the virtualenv environment.
-
-To enter the environment, source it's activation script::
-
-  source sandbox/bin/activate
-
-From here, the ``bst`` command is available, run ``bst --help`` or ``man bst``.
-
-The activation script adds a bash function to your environment which you
-can use to exit the sandbox environment, just type ``deactivate`` in the
-shell to deactivate the virtualenv sandbox.
-
-To upgrade to a new version of BuildStream when using virtualenv, just
-remove the ``sandbox`` directory completely and recreate it with a new
-version of BuildStream.
-
-
-Using BuildStream inside Docker
-===============================
-
-The BuildStream project provides
-`Docker images <https://hub.docker.com/r/buildstream/buildstream-fedora/>`_
-containing BuildStream and its dependencies.
-This gives you an easy way to get started using BuildStream on any Unix-like
-platform where Docker is available, including Mac OS X.
-
-To use BuildStream build tool you will need to spawn a container from that image
-and mount your workspace directory as a volume. You will want a second volume
-to store the cache, which we can create from empty like this:
-
-::
-
-    docker volume create buildstream-cache
-
-You can now run the following command to fetch the latest official Docker image
-build, and spawn a container running an interactive shell. This assumes that the
-path to all the source code you need is available in ``~/src``.
-
-::
-
-    docker run -it \
-          --cap-add SYS_ADMIN \
-          --device /dev/fuse \
-          --security-opt seccomp=unconfined \
-          --volume ~/src:/src \
-          --volume buildstream-cache:/root/.cache \
-          buildstream/buildstream-fedora:latest /bin/bash

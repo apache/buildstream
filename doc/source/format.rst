@@ -1,96 +1,10 @@
 .. _format:
 
-The BuildStream Format
-======================
-At the core of BuildStream is a data model of :mod:`Elements <buildstream.element>` which
-are parsed from ``.bst`` files in a project directory and configured from a few different
-sources.
-
-This page should tell you everything you need to know about the base YAML format
-which BuildStream uses.
-
-This will not cover the configurations needed for various plugins, plugin configurations
-are documented in the plugins themselves.
+Element Constructs
+==================
 
 
-The Project Directory
----------------------
-A BuildStream project is a directory consisting of:
-
-* A project configuration file
-* BuildStream element files
-* User defined Plugins
-
-A typical project structure may look like this::
-
-  myproject/project.conf
-  myproject/elements/element1.bst
-  myproject/elements/element2.bst
-  myproject/elements/...
-  myproject/plugins/customelement.py
-  myproject/plugins/customelement.yaml
-  myproject/plugins/...
-
-
-Except for the project configuration file, the user is allowed to structure
-their project directory in any way. For documentation on the format of the project
-configuration file, refer to the :ref:`projectconf` documentation.
-
-Simpler projects may choose to place all element definition files at the
-root of the project directory while more complex projects may decide to
-put stacks in one directory and other floating elements into other directories,
-perhaps placing deployment elements in another directory, this is all fine.
-
-The important part to remember is that when you declare dependency relationships,
-a project relative path to the element one depends on must be provided.
-
-
-Element Composition
--------------------
-Below are the various sources of configuration which go into an element in the order
-in which they are applied. Configurations which are applied later have a higher priority
-and override configurations which precede them.
-
-
-1. Builtin Defaults
-~~~~~~~~~~~~~~~~~~~
-The :ref:`projectconf` provides a set of default values for *variables*
-and the *environment* which are all documented with your copy of BuildStream. 
-
-
-2. Project Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
-The project wide defaults are now applied on top of builtin defaults. If you specify
-anything in the *variables* or *environment* sections in your ``project.conf`` then it
-will override the builtin defaults.
-
-
-3. Element Defaults
-~~~~~~~~~~~~~~~~~~~
-Elements are all implemented as plugins. Each plugin installs a ``.yaml`` file along side
-their plugin to define the default *variables*, *environment* and *config*. The *config*
-is element specific and as such this is the first place where defaults can be set on the
-*config* section.
-
-The *variables* and *environment* specified in the declaring plugin's defaults here override
-the project configuration defaults for the given element ``kind``.
-
-
-4. Project Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
-The ``project.conf`` now gives you another opportunity to override *variables*, *environment*
-and *config* sections on a per element basis.
-
-Configurations specified in the *elements* section of the ``project.conf`` will override
-the given element's default.
-
-
-5. Element Declarations
-~~~~~~~~~~~~~~~~~~~~~~~
-Finally, after having resolved any `Architecture Conditionals`_
-in the parsing phase of loading element declarations; the configurations specified in a
-``.bst`` file have the last word on any configuration in the data model.
-
+.. _format_basics:
 
 Element Basics
 --------------
@@ -409,8 +323,8 @@ dependency and that all referenced variables are declared, the following is fine
 
 .. note::
 
-   It should be noted that variable resolution only happens after all `Element Composition`_
-   has already taken place.
+   It should be noted that variable resolution only happens after all
+   :ref:`Element Composition <format_composition>` has already taken place.
 
    This is to say that overriding ``%{version}`` at a higher priority will effect
    the final result of ``%{release-text}``.
@@ -432,61 +346,3 @@ dependency and that all referenced variables are declared, the following is fine
      install-commands:
      - |
        %{make-install} RELEASE_TEXT="%{release-text}"
-
-
-Architecture Conditionals
--------------------------
-To BuildStream, an architecture is simply an arbitrary name that is associated with
-the target architecture and compiler tuning. Conditional YAML segments can be applied
-for a given target architecture, like so:
-
-.. code:: yaml
-
-   kind: autotools
-   config:
-     something: 5
-   arches:
-     x86_64:
-       config:
-         something: 6
-     x86_32:
-       config:
-         something: 7
-
-The ``arches`` attribute, if provided, overrides the element for a given architecture
-name. It is not considered an error if the element does not provide an architecture
-clause for the specific architecture BuildStream was launched to build for.
-
-There is also a ``host-arches`` attribute, which operates in the same manner but
-follows the *host* architecture rather than the *target* architecture.
-
-In the above example we demonstrate that a given ``config`` attribute can be overridden
-by an architecture conditional, this can however be done for any segment of the
-element such as ``depends``, ``sources`` and ``public`` as well. It is however illegal
-to override the element ``kind`` in any conditional.
-
-Further, it should be noted that when applying elements to a list in the element YAML,
-the conditional segments are *appended* to the parent list and do not replace the list
-entirely.
-
-Consider for example:
-
-.. code:: yaml
-
-   kind: autotools
-   depends:
-   - elements/foo.bst
-   arches:
-     x86_64:
-       depends:
-       - elements/bar.bst
-
-When targetting the ``x86_64`` architecture name, the above element YAML will
-expand to the following YAML:
-
-.. code:: yaml
-
-   kind: autotools
-   depends:
-   - elements/foo.bst
-   - elements/bar.bst

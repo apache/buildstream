@@ -18,84 +18,57 @@ These pipelines are composed of abstract elements which perform mutations on
 on *filesystem data* as input and output, and are related to eachother by their
 dependencies.
 
-Basic element types for importing SDKs in the form of tarballs or ostree checkouts,
-building software components and exporting SDKs or deploying bootable filesystem images
-will be included in BuildStream, but it is expected that projects forge their own custom
-elements for doing more elaborate things such as deploying software in special ways.
 
-
-Using BuildStream
-=================
-Here are some resources to help understand the BuildStream format and also to get
-off the ground installing it on a new host.
-
+Installing
+----------
 * :ref:`installing`
-* :ref:`invoking`
-* :ref:`completion`
-* :ref:`config`
-* :ref:`projectconf`
-* :ref:`format`
-* :ref:`public`
+* :ref:`docker`
 * :ref:`artifacts`
 
 
-Elements
---------
+Running
+-------
+* :ref:`invoking`
+* :ref:`config`
 
 
-General Elements
-~~~~~~~~~~~~~~~~
-
-* :mod:`stack <elements.stack>` - Symbolic Element for dependency grouping
-* :mod:`import <elements.import>` - Import sources directly
-* :mod:`compose <elements.compose>` - Compose the output of multiple elements
-* :mod:`script <elements.script>` - Run scripts to create output
-* :mod:`x86image <elements.x86image>` - Create x86 bootable disk images
-* :mod:`dpkg_deploy <elements.dpkg_deploy>` - Create debian packages
-
-Build Elements
-~~~~~~~~~~~~~~
-
-* :mod:`manual <elements.manual>` - Manual Build Element
-* :mod:`autotools <elements.autotools>` - Autotools Build Element
-* :mod:`cmake <elements.cmake>` - CMake Build Element
-* :mod:`qmake <elements.qmake>` - QMake Build Element
-* :mod:`distutils <elements.distutils>` - Python Distutils Build Element
-* :mod:`makemaker <elements.makemaker>` - Perl MakeMaker Build Element
-* :mod:`modulebuild <elements.modulebuild>` - Perl Module::Build Build Element
-* :mod:`meson <elements.meson>` - Meson Build Element
-* :mod:`dpkg_build <elements.dpkg_build>` - Dpkg-based build element
-* :mod:`pip <elements.pip>` - Pip build element
-
-
-Sources
---------
-The following source types are provided with BuildStream:
-
-* :mod:`local <sources.local>` - A Source implementation for local files and directories
-* :mod:`tar <sources.tar>` - A Source implementation for tarballs
-* :mod:`git <sources.git>` - A Source implementation for git
-* :mod:`bzr <sources.bzr>` - A Source implementation for bazaar
-* :mod:`ostree <sources.ostree>` - A Source implementation for ostree
-* :mod:`patch <sources.patch>` - A Source implementation for applying local patches
-
-.. _core_framework:
-
-Core Framework
+Project format
 --------------
-The core public APIs are of interest to anyone who wishes to
-implement custom :mod:`Element <buildstream.element>` or
-:mod:`Source <buildstream.source>` plugins.
+* :ref:`formatintro`
 
-* :mod:`Plugin <buildstream.plugin>` - Base Class for all plugins
-* :mod:`Source <buildstream.source>` - Base Source Class
-* :mod:`Element <buildstream.element>` - Base Element Class
-* :mod:`BuildElement <buildstream.buildelement>` - Build Element Class
-* :mod:`ScriptElement <buildstream.scriptelement>` - Script Element Class
-* :mod:`Context <buildstream.context>` - Invocation Context
-* :mod:`Project <buildstream.project>` - Loaded Project
-* :mod:`Sandbox <buildstream.sandbox.sandbox>` - Build Sandbox
-* :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
+  * :ref:`format_structure`
+  * :ref:`format_directives`
+  * :ref:`format_composition`
+
+* :ref:`projectconf`
+
+  * :ref:`project_essentials`
+  * :ref:`project_options`
+  * :ref:`project_defaults`
+  * :ref:`project_builtin_defaults`
+
+* :ref:`format`
+
+  * :ref:`format_basics`
+  * :ref:`format_dependencies`
+  * :ref:`format_variables`
+
+* :ref:`public`
+
+
+Builtin Plugins
+---------------
+* :ref:`plugins`
+
+  * :ref:`plugins_elements`
+  * :ref:`plugins_sources`
+
+
+Creating Plugins
+----------------
+* :ref:`pluginauthoring`
+
+  * :ref:`core_framework`
 
 
 Indices and tables
