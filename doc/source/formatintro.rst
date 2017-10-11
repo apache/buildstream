@@ -122,6 +122,29 @@ Compound conditionals are also allowed.
          enable-debug: True
 
 
+(!) Assertions
+~~~~~~~~~~~~~~
+Assertions allow the project author to abort processing and present
+a custom error message to the user building their project.
+
+This is only useful when used with conditionals, allowing the project
+author to assert some invalid configurations.
+
+
+**Example:**
+
+.. code:: yaml
+
+   variables:
+     (?):
+     - (logging == False and debugging == True):
+
+         (!): |
+
+           Impossible to print any debugging information when
+	   logging is disabled.
+
+
 .. _format_composition:
 
 Composition
