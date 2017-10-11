@@ -22,11 +22,14 @@
 import os
 import sys
 import stat
+import psutil
+import signal
 import subprocess
 from contextlib import contextmanager, ExitStack
 
 from .. import ElementError
 from .. import utils
+from .. import _signals
 from ._mount import Mount
 from . import Sandbox, SandboxFlags, MountMap
 
@@ -107,22 +110,70 @@ class SandboxChroot(Sandbox):
     #    (int): The exit code of the executed command
     #
     def chroot(self, rootfs, command, stdin, stdout, stderr, cwd, env, flags):
+        def kill_proc():
+            if process:
+                # First attempt to gracefully terminate
+                proc = psutil.Process(process.pid)
+                proc.terminate()
+
+                try:
+                    proc.wait(20)
+                except psutil.TimeoutExpired:
+                    utils._kill_process_tree(process.pid)
+
+        def suspend_proc():
+            group_id = os.getpgid(process.pid)
+            os.killpg(group_id, signal.SIGSTOP)
+
+        def resume_proc():
+            group_id = os.getpgid(process.pid)
+            os.killpg(group_id, signal.SIGCONT)
 
         try:
-            code, _ = utils._call(
-                command,
-                terminate=True,
-                close_fds=True,
-                cwd=os.path.join(rootfs, cwd.lstrip(os.sep)),
-                env=env,
-                stdin=stdin,
-                stdout=stdout,
-                stderr=stderr,
-                # If you try to put gtk dialogs here Tristan (either)
-                # will personally scald you
-                preexec_fn=lambda: (os.chroot(rootfs), os.chdir(cwd)),
-                start_new_session=flags & SandboxFlags.INTERACTIVE
-            )
+            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
+                process = subprocess.Popen(
+                    command,
+                    close_fds=True,
+                    cwd=os.path.join(rootfs, cwd.lstrip(os.sep)),
+                    env=env,
+                    stdin=stdin,
+                    stdout=stdout,
+                    stderr=stderr,
+                    # If you try to put gtk dialogs here Tristan (either)
+                    # will personally scald you
+                    preexec_fn=lambda: (os.chroot(rootfs), os.chdir(cwd)),
+                    start_new_session=flags & SandboxFlags.INTERACTIVE
+                )
+
+                # Wait for the child process to finish, ensuring that
+                # a SIGINT has exactly the effect the user probably
+                # expects (i.e. let the child process handle it).
+                try:
+                    while True:
+                        try:
+                            _, status = os.waitpid(process.pid, 0)
+                            # If the process exits due to a signal, we
+                            # brutally murder it to avoid zombies
+                            if not os.WIFEXITED(status):
+                                utils._kill_process_tree(process.pid)
+
+                        # Unlike in the bwrap case, here only the main
+                        # process seems to receive the SIGINT. We pass
+                        # on the signal to the child and then continue
+                        # to wait.
+                        except KeyboardInterrupt:
+                            process.send_signal(signal.SIGINT)
+                            continue
+
+                        break
+                # If we can't find the process, it has already died of
+                # its own accord, and therefore we don't need to check
+                # or kill anything.
+                except psutil.NoSuchProcess:
+                    pass
+
+                code = process.poll()
+
         except subprocess.SubprocessError as e:
             # Exceptions in preexec_fn are simply reported as
             # 'Exception occurred in preexec_fn', turn these into
@@ -133,9 +184,6 @@ class SandboxChroot(Sandbox):
                                    .format(rootfs, cwd)) from e
             else:
                 raise ElementError('Could not run command {}: {}'.format(command, e)) from e
-
-        if code != 0:
-            raise ElementError("{} failed with exit code {}".format(command, code))
 
         return code
 

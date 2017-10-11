@@ -275,7 +275,35 @@ class SandboxBwrap(Sandbox):
                 stderr=stderr,
                 start_new_session=new_session
             )
-            process.communicate()
+
+            # Wait for the child process to finish, ensuring that
+            # a SIGINT has exactly the effect the user probably
+            # expects (i.e. let the child process handle it).
+            try:
+                while True:
+                    try:
+                        _, status = os.waitpid(process.pid, 0)
+                        # If the process exits due to a signal, we
+                        # brutally murder it to avoid zombies
+                        if not os.WIFEXITED(status):
+                            user_proc = get_user_proc(process.pid)
+                            if user_proc:
+                                utils._kill_process_tree(user_proc.pid)
+
+                    # If we receive a KeyboardInterrupt we continue
+                    # waiting for the process since we are in the same
+                    # process group and it should also have received
+                    # the SIGINT.
+                    except KeyboardInterrupt:
+                        continue
+
+                    break
+            # If we can't find the process, it has already died of its
+            # own accord, and therefore we don't need to check or kill
+            # anything.
+            except psutil.NoSuchProcess:
+                pass
+
             exit_code = process.poll()
 
             if interactive and stdin.isatty():
