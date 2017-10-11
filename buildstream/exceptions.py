@@ -100,6 +100,9 @@ class LoadErrorReason(Enum):
     EXPRESSION_FAILED = 8
     """A conditional expression failed to resolve"""
 
+    USER_ASSERTION = 9
+    """An assertion was intentionally encoded into project YAML"""
+
 
 class LoadError(_BstError):
     """Raised while loading some YAML.
