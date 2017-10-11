@@ -57,6 +57,8 @@ a project relative path to the element one depends on must be provided.
 Directives
 ----------
 
+.. _format_directives_conditional:
+
 (?) Conditionals
 ~~~~~~~~~~~~~~~~
 The ``(?)`` directive allows expression of conditional statements which
@@ -121,6 +123,8 @@ Compound conditionals are also allowed.
      - (logging == True and debugging == True):
          enable-debug: True
 
+
+.. _format_directives_assertion:
 
 (!) Assertions
 ~~~~~~~~~~~~~~
@@ -189,6 +193,6 @@ the given element's default.
 
 5. Element Declarations
 ~~~~~~~~~~~~~~~~~~~~~~~
-Finally, after having resolved any `Architecture Conditionals`_
+Finally, after having resolved any :ref:`conditionals <format_directives_conditional>`
 in the parsing phase of loading element declarations; the configurations specified in a
 ``.bst`` file have the last word on any configuration in the data model.
