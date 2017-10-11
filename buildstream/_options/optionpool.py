@@ -170,7 +170,7 @@ class OptionPool():
         # Keep processing conditionals on the root node until
         # all directly nested conditionals are resolved.
         #
-        while self.process_conditional(node):
+        while self.process_one_node(node):
             pass
 
         # Now recurse into nested dictionaries and lists
@@ -197,8 +197,17 @@ class OptionPool():
     #
     # Return true if a conditional was processed.
     #
-    def process_conditional(self, node):
+    def process_one_node(self, node):
         conditions = _yaml.node_get(node, list, '(?)', default_value=[]) or None
+        assertion = _yaml.node_get(node, str, '(!)', default_value='') or None
+
+        # Process assersions first, we want to abort on the first encountered
+        # assertion in a given dictionary, and not lose an assertion due to
+        # it being overwritten by a later assertion which might also trigger.
+        if assertion is not None:
+            p = _yaml.node_get_provenance(node, '(!)')
+            raise LoadError(LoadErrorReason.USER_ASSERTION,
+                            "{}: {}".format(p, assertion.strip()))
 
         if conditions is not None:
 
