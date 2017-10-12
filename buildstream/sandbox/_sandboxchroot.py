@@ -172,7 +172,12 @@ class SandboxChroot(Sandbox):
                 except psutil.NoSuchProcess:
                     pass
 
-                code = process.poll()
+                # Return the exit code - see the documentation for
+                # os.WEXITSTATUS to see why this is required.
+                if os.WIFEXITED(status):
+                    code = os.WEXITSTATUS(status)
+                else:
+                    code = -1
 
         except subprocess.SubprocessError as e:
             # Exceptions in preexec_fn are simply reported as

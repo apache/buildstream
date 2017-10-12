@@ -304,7 +304,12 @@ class SandboxBwrap(Sandbox):
             except psutil.NoSuchProcess:
                 pass
 
-            exit_code = process.poll()
+            # Return the exit code - see the documentation for
+            # os.WEXITSTATUS to see why this is required.
+            if os.WIFEXITED(status):
+                exit_code = os.WEXITSTATUS(status)
+            else:
+                exit_code = -1
 
             if interactive and stdin.isatty():
                 # Make this process the foreground process again, otherwise the

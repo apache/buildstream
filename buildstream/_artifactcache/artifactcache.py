@@ -168,3 +168,6 @@ class ArtifactCache():
     #
     def remote_contains(self, element, strength=None):
         return False
+
+    def fetch_remote_refs(self):
+        pass
