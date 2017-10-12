@@ -58,6 +58,7 @@ class PluginContext():
         # The PluginSource object
         self.plugin_base = plugin_base
         self.source = plugin_base.make_plugin_source(searchpath=searchpath)
+        self.alternate_sources = []
 
     # lookup():
     #
@@ -85,21 +86,33 @@ class PluginContext():
                 # potentially unpacks the file and puts it in a
                 # temporary directory, but it is otherwise guaranteed
                 # to exist.
-                plugin = pkg_resources.get_entry_info(dist, 'buildstream.plugins', package)
-                location = plugin.dist.get_resource_filename(
-                    pkg_resources._manager,
-                    plugin.module_name.replace('.', os.sep) + '.py'
-                )
+                try:
+                    plugin = pkg_resources.get_entry_info(dist, 'buildstream.plugins', package)
+                except pkg_resources.DistributionNotFound as e:
+                    raise PluginError("Failed to load {} plugin '{}': {}"
+                                      .format(self.base_type.__name__, kind, e)) from e
 
-                # Also load the defaults - required since setuptools
-                # may need to extract the file.
-                defaults = plugin.dist.get_resource_filename(
-                    pkg_resources._manager,
-                    plugin.module_name.replace('.', os.sep) + '.yaml'
-                )
+                # Missing plugins will return as 'None'
+                if plugin is not None:
+                    location = plugin.dist.get_resource_filename(
+                        pkg_resources._manager,
+                        plugin.module_name.replace('.', os.sep) + '.py'
+                    )
 
-                # Set the plugin-base source to the setuptools directory
-                source = self.plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
+                    # Also load the defaults - required since setuptools
+                    # may need to extract the file.
+                    defaults = plugin.dist.get_resource_filename(
+                        pkg_resources._manager,
+                        plugin.module_name.replace('.', os.sep) + '.yaml'
+                    )
+
+                    # Set the plugin-base source to the setuptools directory
+                    source = self.plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
+                    # Ensure the plugin sources aren't garbage
+                    # collected - if they are, they take any loaded
+                    # plugins with them, regardless of whether those
+                    # have remaining references or not.
+                    self.alternate_sources.append(source)
 
             elif package in self.source.list_plugins():
                 source = self.source
