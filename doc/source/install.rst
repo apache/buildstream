@@ -34,6 +34,12 @@ you will additionally need:
 Here are some examples of how to prepare the base requirements on
 some distros.
 
+Arch
+~~~~
+Install the dependencies with:
+
+  sudo pacman -S python python-pip python-gobject git \
+                 ostree bubblewrap python-ruamel-yaml
 
 Debian Jessie
 ~~~~~~~~~~~~~
