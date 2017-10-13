@@ -38,7 +38,7 @@ import shutil
 from . import _yaml
 from ._yaml import CompositePolicy
 from ._variables import Variables
-from .exceptions import _BstError
+from .exceptions import _BstError, _ArtifactError
 from . import LoadError, LoadErrorReason, ElementError, ImplError
 from . import Plugin, Consistency
 from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
@@ -1113,7 +1113,15 @@ class Element(Plugin):
                     _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
                     with self.timed_activity("Caching Artifact"):
-                        self.__artifacts.commit(self, assembledir)
+                        try:
+                            self.__artifacts.commit(self, assembledir)
+                        except _ArtifactError:
+                            # If we failed to commit, there is a good chance it is because
+                            # of some permission error, we force remove it now because
+                            # it may cause some annoyance to the user who might not be able
+                            # to easily remove the directory without changing permissions.
+                            utils._force_rmtree(assembledir)
+                            raise
 
             # Finally cleanup the build dir
             cleanup_rootdir()
