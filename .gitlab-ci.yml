@@ -36,7 +36,7 @@ integration_linux:
   stage: test
 
   script:
-    - pip3 install .
+    - pip3 install --no-index .
     - cd integration-tests
     - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
     - cd ..
@@ -71,7 +71,7 @@ integration_unix:
   variables:
     BST_FORCE_BACKEND: "unix"
   script:
-    - pip3 install .
+    - pip3 install --no-index .
     - cd integration-tests
     - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
     - cd ..
@@ -89,8 +89,7 @@ integration_unix:
 coverage:
   stage: coverage
   script:
-    - pip3 install coverage
-    - pip3 install .
+    - pip3 install --no-index .
     - mkdir report
     - cd report
     - cp ../coverage-linux/coverage.linux .coverage
@@ -109,13 +108,17 @@ coverage:
 
 # Automatically build documentation, only for merges which land
 # on master branch.
+#
+# Note: We still do not enforce a consistent installation of python2
+#       or sphinx, as python2 will significantly grow the backing image.
+#
 pages:
   stage: docs
   script:
   - dnf install -y python2
   - pip3 install sphinx
   - pip3 install sphinx-click
-  - pip3 install --user -e .
+  - pip3 install --user -e --no-index .
   - make -C doc
   - mv doc/build/html public
   artifacts:
