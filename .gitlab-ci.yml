@@ -36,7 +36,7 @@ integration_linux:
   stage: test
 
   script:
-    - pip3 install .
+    - pip3 install --no-index .
     - git clone https://gitlab.com/BuildStream/buildstream-tests.git
     - cd buildstream-tests
     - ./run-test.sh --arg --colors --cov ../.coveragerc test
@@ -72,7 +72,7 @@ integration_unix:
   variables:
     BST_FORCE_BACKEND: "unix"
   script:
-    - pip3 install .
+    - pip3 install --no-index .
     - git clone https://gitlab.com/BuildStream/buildstream-tests.git
     - cd buildstream-tests
     - ./run-test.sh --arg --colors --cov ../.coveragerc test
@@ -91,8 +91,7 @@ integration_unix:
 coverage:
   stage: coverage
   script:
-    - pip3 install coverage
-    - pip3 install .
+    - pip3 install --no-index .
     - mkdir report
     - cd report
     - cp ../coverage-linux/coverage.linux .coverage
@@ -117,7 +116,7 @@ pages:
   - dnf install -y python2
   - pip3 install sphinx
   - pip3 install sphinx-click
-  - pip3 install --user -e .
+  - pip3 install --user -e --no-index .
   - make -C doc
   - mv doc/build/html public
   artifacts:
