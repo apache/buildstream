@@ -1448,13 +1448,8 @@ class Element(Plugin):
         #
         if not self.__defaults_set:
 
-            # Load the plugin's accompanying .yaml file if one was provided
-            defaults = {}
-            try:
-                defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
-            except LoadError as e:
-                if e.reason != LoadErrorReason.MISSING_FILE:
-                    raise e
+            # Load the plugin's accompanying .yaml file. Plugins must have a .yaml file.
+            defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
 
             # Special case; compose any element-wide split-rules declarations
             self.__compose_default_splits(defaults)
