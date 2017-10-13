@@ -1075,53 +1075,46 @@ class Element(Plugin):
                 # At this point, we expect an exception was raised leading to
                 # an error message, or we have good output to collect.
 
-                with tempfile.TemporaryDirectory(prefix='tmp', dir=sandbox_root) as assembledir:
-                    # Create artifact directory structure
-                    filesdir = os.path.join(assembledir, 'files')
-                    logsdir = os.path.join(assembledir, 'logs')
-                    metadir = os.path.join(assembledir, 'meta')
-                    os.mkdir(filesdir)
-                    os.mkdir(logsdir)
-                    os.mkdir(metadir)
+                # Create artifact directory structure
+                assembledir = os.path.join(rootdir, 'artifact')
+                filesdir = os.path.join(assembledir, 'files')
+                logsdir = os.path.join(assembledir, 'logs')
+                metadir = os.path.join(assembledir, 'meta')
+                os.mkdir(assembledir)
+                os.mkdir(filesdir)
+                os.mkdir(logsdir)
+                os.mkdir(metadir)
 
-                    # Hard link files from collect dir to files directory
-                    utils.link_files(collectdir, filesdir)
+                # Hard link files from collect dir to files directory
+                utils.link_files(collectdir, filesdir)
 
-                    # Copy build log
-                    if self.__log_path:
-                        shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
+                # Copy build log
+                if self.__log_path:
+                    shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
 
-                    # Store public data
-                    _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+                # Store public data
+                _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
-                    # Store artifact metadata
-                    dependencies = {
-                        e.name: e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
-                    }
-                    workspaced_dependencies = {
-                        e.name: e._workspaced() for e in self.dependencies(Scope.BUILD)
-                    }
-                    meta = {
-                        'keys': {
-                            'strong': self._get_cache_key_for_build(),
-                            'weak': self._get_cache_key(_KeyStrength.WEAK),
-                            'dependencies': dependencies
-                        },
-                        'workspaced': self._workspaced(),
-                        'workspaced_dependencies': workspaced_dependencies
-                    }
-                    _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
+                # Store artifact metadata
+                dependencies = {
+                    e.name: e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
+                }
+                workspaced_dependencies = {
+                    e.name: e._workspaced() for e in self.dependencies(Scope.BUILD)
+                }
+                meta = {
+                    'keys': {
+                        'strong': self._get_cache_key_for_build(),
+                        'weak': self._get_cache_key(_KeyStrength.WEAK),
+                        'dependencies': dependencies
+                    },
+                    'workspaced': self._workspaced(),
+                    'workspaced_dependencies': workspaced_dependencies
+                }
+                _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
-                    with self.timed_activity("Caching Artifact"):
-                        try:
-                            self.__artifacts.commit(self, assembledir)
-                        except _ArtifactError:
-                            # If we failed to commit, there is a good chance it is because
-                            # of some permission error, we force remove it now because
-                            # it may cause some annoyance to the user who might not be able
-                            # to easily remove the directory without changing permissions.
-                            utils._force_rmtree(assembledir)
-                            raise
+                with self.timed_activity("Caching Artifact"):
+                    self.__artifacts.commit(self, assembledir)
 
             # Finally cleanup the build dir
             cleanup_rootdir()
