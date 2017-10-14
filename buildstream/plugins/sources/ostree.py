@@ -82,7 +82,7 @@ class OSTreeSource(Source):
         self.repo = None
 
         if not (self.ref or self.tracking):
-            raise SourceError("Must specify either 'ref' or 'track' parameters")
+            raise SourceError("{}: Must specify either 'ref' or 'track' parameters".format(self))
 
     def preflight(self):
         return
