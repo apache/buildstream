@@ -144,10 +144,36 @@ dictionary.
        default: False
 
 
+Common Properties
+~~~~~~~~~~~~~~~~~
+All option types accept the following common attributes
+
+* ``type``
+
+  Indicates the type of option to declare
+
+* ``description``
+
+  A description of the meaning of the option
+
+* ``variable``
+
+  Optionally indicate a :ref:`variable <format_variables>` name to
+  export the option to. A string form of the selected option will
+  be used to set the exported value.
+
+  If used, this value will override any existing value for the
+  variable declared in ``project.conf``, and will be overridden in
+  the regular :ref:`composition order <format_composition>`.
+
+
 Boolean
 ~~~~~~~
 The ``bool`` option type allows specifying boolean values which
 can be cased in conditional expressions.
+
+
+**Declaring**
 
 .. code:: yaml
 
@@ -156,6 +182,9 @@ can be cased in conditional expressions.
        type: bool
        description: Whether to enable debugging
        default: False
+
+
+**Evaluating**
 
 Boolean options can be tested in expressions with equality tests:
 
@@ -177,10 +206,20 @@ Or simply treated as truthy values:
      - debug:
          enable-debug: True
 
+
+**Exporting**
+
+When exporting boolean options as variables, a ``True`` option value
+will be exported as ``1`` and a ``False`` option as ``0``
+
+
 Enumeration
 ~~~~~~~~~~~
 The ``enum`` option type allows specifying a string value
 with a restricted set of possible values.
+
+
+**Declaring**
 
 .. code:: yaml
 
@@ -194,6 +233,9 @@ with a restricted set of possible values.
        - warning
        default: info
 
+
+**Evaluating**
+
 Enumeration options must be tested as strings in conditional
 expressions:
 
@@ -206,6 +248,12 @@ expressions:
          enable-debug: True
 
 
+**Exporting**
+
+When exporting enumeration options as variables, the value is
+exported as a variable directly, as it is a simple string.
+
+
 Flags
 ~~~~~
 The ``flags`` option type allows specifying a list of string
@@ -213,6 +261,9 @@ values with a restricted set of possible values.
 
 In contrast with the ``enum`` option type, the *default* value
 need not be specified and will default to an empty set.
+
+
+**Declaring**
 
 .. code:: yaml
 
@@ -227,6 +278,9 @@ need not be specified and will default to an empty set.
        default:
        - info
 
+
+**Evaluating**
+
 Flags type options can be tested in conditional expressions using
 a pythonic *in* syntax to test if an element is present in a set:
 
@@ -237,6 +291,12 @@ a pythonic *in* syntax to test if an element is present in a set:
      (?):
      - ("debug" in logmask):
          enable-debug: True
+
+
+**Exporting**
+
+When exporting flags options as variables, the value is
+exported as a comma separated list of selected value strings.
 
 
 Architecture
