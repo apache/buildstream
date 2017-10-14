@@ -13,3 +13,6 @@ tests/**/*.pyc
 tmp
 .coverage
 .cache
+
+# Integration test results
+/integration-tests/*results/

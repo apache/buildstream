@@ -37,13 +37,12 @@ integration_linux:
 
   script:
     - pip3 install .
-    - git clone https://gitlab.com/BuildStream/buildstream-tests.git
-    - cd buildstream-tests
-    - ./run-test.sh --arg --colors --cov ../.coveragerc test
+    - cd integration-tests
+    - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
     - cd ..
     - mkdir -p coverage-linux/
-    - cp buildstream-tests/.coverage coverage-linux/coverage.linux
-    - cp -a cache/buildstream/logs logs-linux
+    - cp integration-tests/.coverage coverage-linux/coverage.linux
+    - cp -a integration-tests/tmp/logs logs-linux
 
   artifacts:
     paths:
@@ -73,13 +72,12 @@ integration_unix:
     BST_FORCE_BACKEND: "unix"
   script:
     - pip3 install .
-    - git clone https://gitlab.com/BuildStream/buildstream-tests.git
-    - cd buildstream-tests
-    - ./run-test.sh --arg --colors --cov ../.coveragerc test
+    - cd integration-tests
+    - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
     - cd ..
     - mkdir -p coverage-unix/
-    - cp buildstream-tests/.coverage coverage-unix/coverage.unix
-    - cp -a cache/buildstream/logs logs-unix
+    - cp integration-tests/.coverage coverage-unix/coverage.unix
+    - cp -a integration-tests/tmp/logs logs-unix
 
   artifacts:
     paths:

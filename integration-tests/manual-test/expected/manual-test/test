@@ -1,0 +1,4 @@
+./configure
+make
+make install
+strip
