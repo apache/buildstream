@@ -20,8 +20,6 @@ Commands:
                 suite is run, otherwise the given arguments will be run
 	run	Run the test suite.  (Does not clean)
 	clean	Clean temporary test files
-	omit	Omit the given test from test runs
-	include	Include the given test in test runs
 
 Options:
 	--help  	Display this help message and exit
@@ -56,14 +54,6 @@ main () {
 			"clean")
 				shift
 				clean "$@"
-				break ;;
-			"omit")
-				shift
-				omit "$@"
-				break ;;
-			"include")
-				shift
-				include "$@"
 				break ;;
 			--sources)
 				export BST_SOURCE_CACHE=$(realpath "${2}")
@@ -113,7 +103,6 @@ EOF
 # Run all tests in the current directory.
 run () {
 	local succeeded=0
-	local omitted=0
 	local failed=0
 	local state
 	local tests
@@ -135,9 +124,6 @@ run () {
 			if [ $state == 0 ]
 			then
 				((succeeded++))
-			elif [ $state == 2 ]
-			then
-				((omitted++))
 			else
 				((failed++))
 			fi
@@ -157,7 +143,6 @@ run () {
 
 	echo
 	printf "%4s test%.*s ${GREEN}succeeded${END}.\n" $succeeded $((succeeded != 1)) "s"
-	printf "%4s test%.*s ${YELLOW}omitted${END}.\n" $omitted $((omitted != 1)) "s"
 	printf "%4s test%.*s ${RED}failed${END}.\n" $failed $((failed != 1)) "s"
 
 	if [ $failed != 0 ]
@@ -194,13 +179,6 @@ clean () {
 run-test () {
 	local test="$1"
 
-	touch .omit
-	if grep -q "$test" .omit
-	then
-		echo -e "${YELLOW}Omitting${END} test $test."
-		return 2
-	fi
-
 	echo "============================================================"
 	echo "Running tests for test case '$test'"
 	echo "============================================================"
@@ -213,61 +191,6 @@ run-test () {
 		echo -e "Tests for '$test' ${RED}failed${END}.\n" 2>&1
 		return 1
 	fi
-}
-
-# omit
-#
-# Ignore the given test during future test runs
-#
-# Args:
-#    test ($1) - The test to ignore
-#
-omit() {
-	local test="$1"
-
-	# Tell the user if we don't need to omit the file
-	touch .omit
-	if grep -q "$test" .omit
-	then
-		echo "Test $test is already omitted." 2>&1
-		exit 1
-	fi
-
-	if [ -d "$test" ]
-	then
-		echo "$test" >> .omit
-	else
-		echo "No such test." 2>&1
-		exit 1
-	fi
-}
-
-# include
-#
-# After a test has been omitted, re-include it
-#
-# Args:
-#    test ($1) - The test to include
-#
-include() {
-	local test="$1"
-
-	local temp
-
-	touch .omit
-
-	# Make a temporary file to inverse grep to
-	temp=$(mktemp)
-
-	# Tell the user if we don't need to include the file
-	if ! grep -q "$test" .omit
-	then
-		echo "Test $test is already included." 2>&1
-		exit 1
-	fi
-
-	# Remove the line containing the test string
-	grep -v "$test" .omit > "$temp"; mv "$temp" .omit
 }
 
 main "$@"
