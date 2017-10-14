@@ -25,7 +25,8 @@ from .. import _yaml
 #
 OPTION_SYMBOLS = [
     'type',
-    'description'
+    'description',
+    'variable'
 ]
 
 
@@ -46,6 +47,7 @@ class Option():
     def __init__(self, name, definition, pool):
         self.name = name
         self.description = None
+        self.variable = None
         self.value = None
         self.pool = pool
         self.load(definition)
@@ -60,6 +62,7 @@ class Option():
     #                 the option
     def load(self, node):
         self.description = _yaml.node_get(node, str, 'description')
+        self.variable = _yaml.node_get(node, str, 'variable', default_value='') or None
 
     # load_value()
     #
@@ -81,6 +84,18 @@ class Option():
     #    value (str): The value in string form
     #
     def set_value(self, value):
+        pass  # pragma: nocover
+
+    # get_value()
+    #
+    # Gets the value of an option in string form, this
+    # is for the purpose of exporting option values to
+    # variables which must be in string form.
+    #
+    # Returns:
+    #    (str): The value in string form
+    #
+    def get_value(self):
         pass  # pragma: nocover
 
     # resolve()

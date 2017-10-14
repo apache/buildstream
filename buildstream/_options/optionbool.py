@@ -48,3 +48,9 @@ class OptionBool(Option):
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Invalid value for boolean option {}: {}".format(self.name, value))
+
+    def get_value(self):
+        if self.value:
+            return "1"
+        else:
+            return "0"

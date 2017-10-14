@@ -57,6 +57,9 @@ class OptionEnum(Option):
         self.validate(value)
         self.value = value
 
+    def get_value(self):
+        return self.value
+
     def validate(self, value, provenance=None):
         if value not in self.values:
             prefix = ""

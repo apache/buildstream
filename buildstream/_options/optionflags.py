@@ -65,6 +65,9 @@ class OptionFlags(Option):
         self.validate(list_value)
         self.value = sorted(list_value)
 
+    def get_value(self):
+        return ",".join(self.value)
+
     def validate(self, value, provenance=None):
         for flag in value:
             if flag not in self.values:
