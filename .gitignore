@@ -1,5 +1,6 @@
 # Compiled python modules.
-*.pyc
+buildstream/**/*.pyc
+tests/**/*.pyc
 
 # Setuptools distribution folder.
 /dist/
