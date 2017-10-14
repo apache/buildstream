@@ -127,18 +127,6 @@ class Project():
         projectfile = os.path.join(self.directory, "project.conf")
         config = _yaml.load(_site.default_project_config)
 
-        # Special variables which have a computed default value must
-        # be processed here before compositing any overrides
-        variables = _yaml.node_get(config, Mapping, 'variables')
-        variables['max-jobs'] = multiprocessing.cpu_count()
-
-        variables['bst-host-arch'] = self._context.host_arch
-        variables['bst-target-arch'] = self._context.target_arch
-
-        # This is kept around for compatibility with existing definitions,
-        # but we should probably remove it due to being ambiguous.
-        variables['bst-arch'] = self._context.host_arch
-
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf, typesafe=True)
@@ -234,6 +222,19 @@ class Project():
 
         # Load base variables
         self._variables = _yaml.node_get(config, Mapping, 'variables')
+
+        # Extend variables with automatic variables and option exports
+        self._variables['max-jobs'] = multiprocessing.cpu_count()
+
+        # Export options into variables, if that was requested
+        for _, option in self._options.options.items():
+            if option.variable:
+                self._variables[option.variable] = option.get_value()
+
+        # This is to be removed with arches
+        self._variables['bst-host-arch'] = self._context.host_arch
+        self._variables['bst-target-arch'] = self._context.target_arch
+        self._variables['bst-arch'] = self._context.host_arch
 
         # Load sandbox configuration
         self._environment = _yaml.node_get(config, Mapping, 'environment')
