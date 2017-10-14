@@ -229,7 +229,7 @@ class GitSource(Source):
             self.submodule_overrides[path] = self.node_get_member(submodule, str, 'url')
 
         if not (ref or self.tracking):
-            raise SourceError("Must specify either 'ref' or 'track' parameters")
+            raise SourceError("{}: Must specify either 'ref' or 'track' parameters".format(self))
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
