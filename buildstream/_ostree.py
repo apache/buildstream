@@ -153,15 +153,11 @@ def commit(repo, dir, ref, branch=None):
 
         # complete repo transaction
         repo.commit_transaction(None)
-    except GLib.IOError as e:
+    except GLib.GError as e:
 
         # Reraise any error as a buildstream error
         repo.abort_transaction()
         raise OSTreeError(e.message) from e
-
-    except:
-        repo.abort_transaction()
-        raise
 
 
 # set_ref():
