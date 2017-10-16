@@ -27,7 +27,7 @@ run_test () {
 	local total=0
 	local exit
 
-	source ../lib.sh
+	source ../../../lib.sh
 
 	mkdir -p "$TEST_DIR"
 	elements="$(find "$TEST_DIR" -maxdepth 1 -type f)"

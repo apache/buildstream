@@ -24,7 +24,7 @@ run_test () {
 	local total=2
 	local exit
 
-	source ../lib.sh
+	source ../../../lib.sh
 
 	###############################################################
 	### Setup

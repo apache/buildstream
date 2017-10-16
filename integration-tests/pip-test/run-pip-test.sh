@@ -29,7 +29,7 @@ run_test () {
 	local total=0
 	local exit
 
-	source ../lib.sh
+	source ../../../lib.sh
 
 	tar_file="$(dirname "$(readlink -f "$0")")/src/hello.tar.xz"
 	bst_file="$(dirname "$(readlink -f "$0")")/elements/hello.bst"

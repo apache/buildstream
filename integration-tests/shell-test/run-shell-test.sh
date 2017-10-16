@@ -5,7 +5,7 @@
 ECHO_TEST_KEY="1234567890abcdefghijklmnopqrstuvwzyz"
 
 set -eu
-source ../lib.sh
+source ../../../lib.sh
 
 assert_expected_key () {
 

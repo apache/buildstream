@@ -42,8 +42,8 @@ main () {
 		case "${1:-}" in
 			"test")
 				shift
-				configure
 				clean "$@"
+				configure
 				run "$@"
 				break ;;
 			"run")
@@ -94,6 +94,7 @@ artifactdir: "$(pwd)/tmp/artifacts"
 logdir: "$(pwd)/tmp/logs"
 EOF
         CONFIG_LOCATION="$(pwd)/buildstream.conf"
+
         export CONFIG_LOCATION
 }
 
@@ -157,14 +158,16 @@ run () {
 clean () {
 	local dir
 
+	rm -f "buildstream.conf"
+	rm -rf "tmp"
+
 	for dir in *;
 	do
 		if [ -d "$dir" ]
 		then
 			(cd "$dir" || exit 1
 			 rm -rf "results/"*
-			 rm -rf ".bst/"
-			 rm -rf "$(pwd)/tmp/")
+			 rm -rf ".bst/")
 		fi
 	done
 }
@@ -178,12 +181,14 @@ clean () {
 #
 run-test () {
 	local test="$1"
+	mkdir -p "$(pwd)/tmp/tests/"
+	cp -r "$test" "$(pwd)/tmp/tests/"
 
 	echo "============================================================"
 	echo "Running tests for test case '$test'"
 	echo "============================================================"
 
-	(cd "$test" || exit 1
+	(cd "$(pwd)/tmp/tests/$test" || exit 1
 	 bash "run-$(basename "$test").sh")
 
 	if [ ! "$?" -eq 0 ]
