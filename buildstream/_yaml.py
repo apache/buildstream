@@ -148,14 +148,6 @@ class CompositeError(Exception):
         self.path = path
 
 
-class CompositeOverrideError(CompositeError):
-    def __init__(self, path):
-        super(CompositeOverrideError, self).__init__(
-            path,
-            "Error compositing dictionary, not allowed to override key '%s'" %
-            path)
-
-
 class CompositeTypeError(CompositeError):
     def __init__(self, path, expected_type, actual_type):
         super(CompositeTypeError, self).__init__(
@@ -165,20 +157,6 @@ class CompositeTypeError(CompositeError):
             (path, expected_type.__name__, actual_type.__name__))
         self.expected_type = expected_type
         self.actual_type = actual_type
-
-
-# CompositePolicy
-#
-# An enumeration defining the behavior of the dictionary_composite()
-# and dictionary_composite_inline() functions.
-#
-class CompositePolicy(Enum):
-
-    # Every dict member overwrites members in the target dict
-    OVERWRITE = 1
-
-    # Arrays from the overriding dict are appended to arrays in the target dict
-    ARRAY_APPEND = 2
 
 
 # Loads a dictionary from some YAML
@@ -310,13 +288,14 @@ def node_decorate_list(filename, target, source, toplevel):
 #
 # Returns: The Provenance of the dict, member or list element
 #
-def node_get_provenance(node, key=None, indices=[]):
+def node_get_provenance(node, key=None, indices=None):
 
     provenance = node.get(PROVENANCE_KEY)
     if provenance and key:
         provenance = provenance.members.get(key)
-        for index in indices:
-            provenance = provenance.elements[index]
+        if provenance and indices is not None:
+            for index in indices:
+                provenance = provenance.elements[index]
 
     return provenance
 
@@ -440,6 +419,256 @@ def is_ruamel_str(value):
     return False
 
 
+# is_composite_list
+#
+# Checks if the given node is a Mapping with array composition
+# directives.
+#
+# Args:
+#    node (value): Any node
+#
+# Returns:
+#    (bool): True if node was a Mapping containing only
+#            list composition directives
+#
+# Raises:
+#    (LoadError): If node was a mapping and contained a mix of
+#                 list composition directives and other keys
+#
+def is_composite_list(node):
+
+    if isinstance(node, collections.Mapping):
+        has_directives = False
+        has_keys = False
+
+        for key, _ in node_items(node):
+            if key in ['(>)', '(<)', '(=)']:
+                has_directives = True
+            else:
+                has_keys = True
+
+            if has_keys and has_directives:
+                provenance = node_get_provenance(node)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Dictionary contains array composition directives and arbitrary keys"
+                                .format(provenance))
+        return has_directives
+
+    return False
+
+
+# composite_list_prepend
+#
+# Internal helper for list composition
+#
+# Args:
+#    target_node (dict): A simple dictionary
+#    target_key (dict): The key indicating a literal array to prepend to
+#    source_node (dict): Another simple dictionary
+#    source_key (str): The key indicating an array to prepend to the target
+#
+# Returns:
+#    (bool): True if a source list was found and compositing occurred
+#
+def composite_list_prepend(target_node, target_key, source_node, source_key):
+
+    source_list = node_get(source_node, list, source_key, default_value=[])
+    if not source_list:
+        return False
+
+    target_provenance = node_get_provenance(target_node)
+    source_provenance = node_get_provenance(source_node)
+
+    if target_node.get(target_key) is None:
+        target_node[target_key] = []
+
+    source_list = list_chain_copy(source_list)
+    target_list = target_node[target_key]
+
+    for element in reversed(source_list):
+        target_list.insert(0, element)
+
+    if not target_provenance.members.get(target_key):
+        target_provenance.members[target_key] = source_provenance.members[source_key].clone()
+    else:
+        for p in reversed(source_provenance.members[source_key].elements):
+            target_provenance.members[target_key].elements.insert(0, p.clone())
+
+    return True
+
+
+# composite_list_append
+#
+# Internal helper for list composition
+#
+# Args:
+#    target_node (dict): A simple dictionary
+#    target_key (dict): The key indicating a literal array to append to
+#    source_node (dict): Another simple dictionary
+#    source_key (str): The key indicating an array to append to the target
+#
+# Returns:
+#    (bool): True if a source list was found and compositing occurred
+#
+def composite_list_append(target_node, target_key, source_node, source_key):
+
+    source_list = node_get(source_node, list, source_key, default_value=[])
+    if not source_list:
+        return False
+
+    target_provenance = node_get_provenance(target_node)
+    source_provenance = node_get_provenance(source_node)
+
+    if target_node.get(target_key) is None:
+        target_node[target_key] = []
+
+    source_list = list_chain_copy(source_list)
+    target_list = target_node[target_key]
+
+    target_list.extend(source_list)
+
+    if not target_provenance.members.get(target_key):
+        target_provenance.members[target_key] = source_provenance.members[source_key].clone()
+    else:
+        target_provenance.members[target_key].elements.extend([
+            p.clone() for p in source_provenance.members[source_key].elements
+        ])
+
+    return True
+
+
+# composite_list_overwrite
+#
+# Internal helper for list composition
+#
+# Args:
+#    target_node (dict): A simple dictionary
+#    target_key (dict): The key indicating a literal array to overwrite
+#    source_node (dict): Another simple dictionary
+#    source_key (str): The key indicating an array to overwrite the target with
+#
+# Returns:
+#    (bool): True if a source list was found and compositing occurred
+#
+def composite_list_overwrite(target_node, target_key, source_node, source_key):
+
+    source_list = node_get(source_node, list, source_key, default_value=[])
+    if not source_list:
+        return False
+
+    target_provenance = node_get_provenance(target_node)
+    source_provenance = node_get_provenance(source_node)
+
+    target_node[target_key] = list_chain_copy(source_list)
+    target_provenance.members[target_key] = source_provenance.members[source_key].clone()
+
+    return True
+
+
+# composite_list():
+#
+# Composite the source value onto the target value, if either
+# sides are lists, or dictionaries containing list compositing directives
+#
+# Args:
+#    target_node (dict): A simple dictionary
+#    source_node (dict): Another simple dictionary
+#    key (str): The key to compose on
+#
+# Returns:
+#    (bool): True if both sides were logical lists
+#
+# Raises:
+#    (LoadError): If one side was a logical list and the other was not
+#
+def composite_list(target_node, source_node, key):
+    target_value = target_node.get(key)
+    source_value = source_node[key]
+
+    target_key_provenance = node_get_provenance(target_node, key)
+    source_key_provenance = node_get_provenance(source_node, key)
+
+    # Whenever a literal list is encountered in the source, it
+    # overwrites the target values and provenance completely.
+    #
+    if isinstance(source_value, list):
+
+        source_provenance = node_get_provenance(source_node)
+        target_provenance = node_get_provenance(target_node)
+
+        # Assert target type
+        if not (target_value is None or
+                isinstance(target_value, list) or
+                is_composite_list(target_value)):
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: List cannot overwrite value at: {}"
+                            .format(source_key_provenance, target_key_provenance))
+
+        composite_list_overwrite(target_node, key, source_node, key)
+        return True
+
+    # When a composite list is encountered in the source, then
+    # multiple outcomes can occur...
+    #
+    elif is_composite_list(source_value):
+
+        # If there is nothing there, then the composite list
+        # is copied in it's entirety as is, and preserved
+        # for later composition
+        #
+        if target_value is None:
+            source_provenance = node_get_provenance(source_node)
+            target_provenance = node_get_provenance(target_node)
+
+            target_node[key] = node_chain_copy(source_value)
+            target_provenance.members[key] = source_provenance.members[key].clone()
+
+        # If the target is a literal list, then composition
+        # occurs directly onto that target, leaving the target
+        # as a literal list to overwrite anything in later composition
+        #
+        elif isinstance(target_value, list):
+            composite_list_overwrite(target_node, key, source_value, '(=)')
+            composite_list_prepend(target_node, key, source_value, '(<)')
+            composite_list_append(target_node, key, source_value, '(>)')
+
+        # If the target is a composite list, then composition
+        # occurs in the target composite list, and the composite
+        # target list is preserved in dictionary form for further
+        # composition.
+        #
+        elif is_composite_list(target_value):
+
+            if composite_list_overwrite(target_value, '(=)', source_value, '(=)'):
+
+                # When overwriting a target with composition directives, remove any
+                # existing prepend/append directives in the target before adding our own
+                target_provenance = node_get_provenance(target_value)
+
+                for directive in ['(<)', '(>)']:
+                    try:
+                        del target_value[directive]
+                        del target_provenance.members[directive]
+                    except KeyError:
+                        # Ignore errors from deletion of non-existing keys
+                        pass
+
+            # Prepend to the target prepend array, and append to the append array
+            composite_list_prepend(target_value, '(<)', source_value, '(<)')
+            composite_list_append(target_value, '(>)', source_value, '(>)')
+
+        else:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: List cannot overwrite value at: {}"
+                            .format(source_key_provenance, target_key_provenance))
+
+        # We handled list composition in some way
+        return True
+
+    # Source value was not a logical list
+    return False
+
+
 # composite_dict():
 #
 # Composites values in target with values from source
@@ -447,9 +676,6 @@ def is_ruamel_str(value):
 # Args:
 #    target (dict): A simple dictionary
 #    source (dict): Another simple dictionary
-#    policy (CompositePolicy): Defines compositing behavior
-#    typesafe (bool): If True, then raise errors when overriding members
-#                     with differing types
 #
 # Raises: CompositeError
 #
@@ -460,7 +686,7 @@ def is_ruamel_str(value):
 # This is useful for overriding configuration files and element
 # configurations.
 #
-def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False, path=None):
+def composite_dict(target, source, path=None):
     target_provenance = ensure_provenance(target)
     source_provenance = ensure_provenance(source)
 
@@ -471,6 +697,10 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
             thispath = path + '.' + key
         else:
             thispath = key
+
+        # Handle list composition separately
+        if composite_list(target, source, key):
+            continue
 
         target_value = target.get(key)
 
@@ -493,12 +723,11 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
                 raise CompositeTypeError(thispath, type(target_value), type(source_value))
 
             # Recurse into matching dictionary
-            composite_dict(target_value, source_value, policy=policy, typesafe=typesafe, path=thispath)
+            composite_dict(target_value, source_value, path=thispath)
 
         else:
 
-            # Optionally enforce typesafe copy
-            if typesafe and target_value is not None:
+            if target_value is not None:
 
                 # Exception here: depending on how strings were declared ruamel may
                 # use a different type, but for our purposes, any stringish type will do.
@@ -506,46 +735,17 @@ def composite_dict(target, source, policy=CompositePolicy.OVERWRITE, typesafe=Fa
                    and not isinstance(source_value, type(target_value)):
                     raise CompositeTypeError(thispath, type(target_value), type(source_value))
 
-            if policy == CompositePolicy.OVERWRITE:
-
-                # Provenance and value is overwritten
-                target_provenance.members[key] = source_provenance.members[key]
-
-                # Ensure target has only copies of mutable source values
-                if (isinstance(target_value, list) and
-                    isinstance(source_value, list)):
-                    target[key] = list_chain_copy(source_value)
-                else:
-                    target[key] = source_value
-
-            elif policy == CompositePolicy.ARRAY_APPEND:
-
-                if (isinstance(target_value, list) and
-                    isinstance(source_value, list)):
-
-                    # Ensure target has only copies of mutable source values
-                    target[key] += list_chain_copy(source_value)
-
-                    # Append element provenances from source list to target
-                    target_list_provenance = target_provenance.members[key]
-                    source_list_provenance = source_provenance.members[key]
-                    for item in source_list_provenance.elements:
-                        target_list_provenance.elements.append(item.clone())
-                else:
-                    # Provenance is overwritten
-                    target[key] = source_value
-                    target_provenance.members[key] = source_provenance.members[key].clone()
-
-            else:  # pragma: no cover
-                raise ValueError("Unhandled CompositePolicy in switch case")
+            # Overwrite simple values, lists and mappings have already been handled
+            target_provenance.members[key] = source_provenance.members[key].clone()
+            target[key] = source_value
 
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
-def composite(target, source, policy=CompositePolicy.OVERWRITE, typesafe=False):
+def composite(target, source):
     provenance = node_get_provenance(source)
     try:
-        composite_dict(target, source, policy=policy, typesafe=typesafe)
+        composite_dict(target, source)
     except CompositeTypeError as e:
         error_prefix = ""
         if provenance:
@@ -679,3 +879,40 @@ def list_copy(source):
             copy.append(item)
 
     return copy
+
+
+# node_final_assertions()
+#
+# This must be called on a fully loaded and composited node,
+# after all composition has completed.
+#
+# Args:
+#    node (Mapping): The final composited node
+#
+# Raises:
+#    (LoadError): If any assertions fail
+#
+def node_final_assertions(node):
+    for key, value in node_items(node):
+
+        # Assert that list composition directives dont remain, this
+        # indicates that the user intended to override a list which
+        # never existed in the underlying data
+        #
+        if key in ['(>)', '(<)', '(=)']:
+            provenance = node_get_provenance(node, key)
+            raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
+                            "{}: Attempt to override non-existing list".format(provenance))
+
+        if isinstance(value, collections.Mapping):
+            node_final_assertions(value)
+        elif isinstance(value, list):
+            list_final_assertions(value)
+
+
+def list_final_assertions(values):
+    for value in values:
+        if isinstance(value, collections.Mapping):
+            node_final_assertions(value)
+        elif isinstance(value, list):
+            list_final_assertions(value)
