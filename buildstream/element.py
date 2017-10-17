@@ -36,7 +36,6 @@ import tempfile
 import shutil
 
 from . import _yaml
-from ._yaml import CompositePolicy
 from ._variables import Variables
 from .exceptions import _BstError, _ArtifactError
 from . import LoadError, LoadErrorReason, ElementError, ImplError
@@ -1427,9 +1426,7 @@ class Element(Plugin):
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 
         # Extend project wide split rules with any split rules defined by the element
-        _yaml.composite(project_splits, element_splits,
-                        policy=CompositePolicy.ARRAY_APPEND,
-                        typesafe=True)
+        _yaml.composite(project_splits, element_splits)
 
         element_bst['split-rules'] = project_splits
         element_public['bst'] = element_bst
@@ -1458,7 +1455,7 @@ class Element(Plugin):
             elements = project._elements
             overrides = elements.get(self.get_kind())
             if overrides:
-                _yaml.composite(defaults, overrides, typesafe=True)
+                _yaml.composite(defaults, overrides)
 
             # Set the data class wide
             type(self).__defaults = defaults
@@ -1472,8 +1469,9 @@ class Element(Plugin):
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
         environment = _yaml.node_chain_copy(project._environment)
-        _yaml.composite(environment, default_env, typesafe=True)
-        _yaml.composite(environment, meta.environment, typesafe=True)
+        _yaml.composite(environment, default_env)
+        _yaml.composite(environment, meta.environment)
+        _yaml.node_final_assertions(environment)
 
         # Resolve variables in environment value strings
         final_env = {}
@@ -1503,8 +1501,9 @@ class Element(Plugin):
         default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
 
         variables = _yaml.node_chain_copy(project._variables)
-        _yaml.composite(variables, default_vars, typesafe=True)
-        _yaml.composite(variables, meta.variables, typesafe=True)
+        _yaml.composite(variables, default_vars)
+        _yaml.composite(variables, meta.variables)
+        _yaml.node_final_assertions(variables)
 
         return variables
 
@@ -1517,7 +1516,8 @@ class Element(Plugin):
         config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
         config = _yaml.node_chain_copy(config)
 
-        _yaml.composite(config, meta.config, typesafe=True)
+        _yaml.composite(config, meta.config)
+        _yaml.node_final_assertions(config)
 
         return config
 
@@ -1537,12 +1537,12 @@ class Element(Plugin):
 
         # Allow elements to extend the default splits defined in their project or
         # element specific defaults
-        _yaml.composite(base_splits, element_splits,
-                        policy=CompositePolicy.ARRAY_APPEND,
-                        typesafe=True)
+        _yaml.composite(base_splits, element_splits)
 
         element_bst['split-rules'] = base_splits
         element_public['bst'] = element_bst
+
+        _yaml.node_final_assertions(element_public)
 
         # Also, resolve any variables in the public split rules directly
         for domain, splits in self.node_items(base_splits):
