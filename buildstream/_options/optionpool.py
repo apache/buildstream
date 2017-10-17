@@ -227,7 +227,7 @@ class OptionPool():
 
                 expression, value = tuples[0]
                 if self.evaluate(expression):
-                    _yaml.composite_dict(node, value)
+                    _yaml.composite(node, value)
 
             return True
 
