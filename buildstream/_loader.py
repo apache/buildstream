@@ -25,7 +25,7 @@ from collections import Mapping
 
 from . import LoadError, LoadErrorReason
 from . import _yaml
-from ._yaml import CompositePolicy, CompositeTypeError, CompositeOverrideError
+from ._yaml import CompositeTypeError
 
 from ._metaelement import MetaElement
 from ._metasource import MetaSource
@@ -86,9 +86,7 @@ def resolve_arch(data, host_arch, target_arch=None):
 
         if arch:
             try:
-                _yaml.composite_dict(data, arch,
-                                     policy=CompositePolicy.ARRAY_APPEND,
-                                     typesafe=True)
+                _yaml.composite_dict(data, arch)
             except CompositeTypeError as e:
                 provenance = _yaml.node_get_provenance(arch, key=active_arch)
                 raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
