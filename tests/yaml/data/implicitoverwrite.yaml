@@ -1,0 +1,6 @@
+# Composited on top of basics.yaml, overwriting it's children list
+children:
+- name: overwrite1
+  mood: overwrite1
+- name: overwrite2
+  mood: overwrite2

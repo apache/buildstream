@@ -1,0 +1,7 @@
+# Composited on top of listprepend.yaml, prepending to it's children list
+children:
+  (<):
+  - name: secondprepend1
+    mood: secondprepend1
+  - name: secondprepend2
+    mood: secondprepend2

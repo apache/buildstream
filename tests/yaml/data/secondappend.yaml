@@ -1,0 +1,7 @@
+# Composited on top of listappend.yaml, appending to it's children list
+children:
+  (>):
+  - name: secondappend1
+    mood: secondappend1
+  - name: secondappend2
+    mood: secondappend2

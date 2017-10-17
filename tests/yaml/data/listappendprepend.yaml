@@ -1,0 +1,12 @@
+# Composited on top of basics.yaml, prepending and appending to it's children list
+children:
+  (<):
+  - name: prepended1
+    mood: prepended1
+  - name: prepended2
+    mood: prepended2
+  (>):
+  - name: appended1
+    mood: appended1
+  - name: appended2
+    mood: appended2
