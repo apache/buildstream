@@ -158,7 +158,7 @@ class Context():
         if config:
             self.config_origin = os.path.abspath(config)
             user_config = _yaml.load(config)
-            _yaml.composite(defaults, user_config, typesafe=True)
+            _yaml.composite(defaults, user_config)
 
         _yaml.node_validate(defaults, [
             'strict', 'sourcedir',
