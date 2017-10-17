@@ -52,6 +52,55 @@ The important part to remember is that when you declare dependency relationships
 a project relative path to the element one depends on must be provided.
 
 
+.. _format_composition:
+
+Composition
+-----------
+Below are the various sources of configuration which go into an element in the order
+in which they are applied. Configurations which are applied later have a higher priority
+and override configurations which precede them.
+
+
+1. Builtin Defaults
+~~~~~~~~~~~~~~~~~~~
+The :ref:`projectconf` provides a set of default values for *variables*
+and the *environment* which are all documented with your copy of BuildStream. 
+
+
+2. Project Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+The project wide defaults are now applied on top of builtin defaults. If you specify
+anything in the *variables* or *environment* sections in your ``project.conf`` then it
+will override the builtin defaults.
+
+
+3. Element Defaults
+~~~~~~~~~~~~~~~~~~~
+Elements are all implemented as plugins. Each plugin installs a ``.yaml`` file along side
+their plugin to define the default *variables*, *environment* and *config*. The *config*
+is element specific and as such this is the first place where defaults can be set on the
+*config* section.
+
+The *variables* and *environment* specified in the declaring plugin's defaults here override
+the project configuration defaults for the given element ``kind``.
+
+
+4. Project Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+The ``project.conf`` now gives you another opportunity to override *variables*, *environment*
+and *config* sections on a per element basis.
+
+Configurations specified in the *elements* section of the ``project.conf`` will override
+the given element's default.
+
+
+5. Element Declarations
+~~~~~~~~~~~~~~~~~~~~~~~
+Finally, after having resolved any :ref:`conditionals <format_directives_conditional>`
+in the parsing phase of loading element declarations; the configurations specified in a
+``.bst`` file have the last word on any configuration in the data model.
+
+
 .. _format_directives:
 
 Directives
@@ -65,7 +114,7 @@ The ``(?)`` directive allows expression of conditional statements which
 test :ref:`project option <project_options>` values.
 
 The ``(?)`` directive may appear as a key in any dictionary expressed
-in YAML, and it's value is a list of conditional expressions. Each conditional
+in YAML, and its value is a list of conditional expressions. Each conditional
 expression must be a single key dictionary, where the key is the conditional
 expression itself, and the value is a dictionary to be composited into the
 parent dictionary containing the ``(?)`` directive if the expression evaluates
@@ -86,7 +135,7 @@ to a truthy value.
 
 
 Expressions are evaluated in the specified order, and each time an expression
-evaluates to a truthy value, it's value will be composited to the parent dictionary
+evaluates to a truthy value, its value will be composited to the parent dictionary
 in advance of processing other elements, allowing for logically overriding previous
 decisions in the condition list.
 
@@ -149,50 +198,72 @@ author to assert some invalid configurations.
 	   logging is disabled.
 
 
-.. _format_composition:
+.. _format_directives_list_prepend:
 
-Composition
------------
-Below are the various sources of configuration which go into an element in the order
-in which they are applied. Configurations which are applied later have a higher priority
-and override configurations which precede them.
+(<) List Prepend
+~~~~~~~~~~~~~~~~
+Indicates that the list should be prepended to the target list,
+instead of the default behavior which is to replace the target list.
 
+**Example:**
 
-1. Builtin Defaults
-~~~~~~~~~~~~~~~~~~~
-The :ref:`projectconf` provides a set of default values for *variables*
-and the *environment* which are all documented with your copy of BuildStream. 
+.. code:: yaml
 
-
-2. Project Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
-The project wide defaults are now applied on top of builtin defaults. If you specify
-anything in the *variables* or *environment* sections in your ``project.conf`` then it
-will override the builtin defaults.
+   config:
+     configure-commands:
+       # Before configuring, lets make sure we're using
+       # the latest config.sub & config.guess
+       (<):
+       - cp %{datadir}/automake-*/config.{sub,guess} .
 
 
-3. Element Defaults
-~~~~~~~~~~~~~~~~~~~
-Elements are all implemented as plugins. Each plugin installs a ``.yaml`` file along side
-their plugin to define the default *variables*, *environment* and *config*. The *config*
-is element specific and as such this is the first place where defaults can be set on the
-*config* section.
+.. _format_directives_list_append:
 
-The *variables* and *environment* specified in the declaring plugin's defaults here override
-the project configuration defaults for the given element ``kind``.
+(>) List Append
+~~~~~~~~~~~~~~~
+Indicates that the list should be appended to the target list, instead
+of the default behavior which is to replace the target list.
+
+**Example:**
+
+.. code:: yaml
+
+   public:
+     bst:
+       split-rules:
+         devel:
+	   # This element also adds some extra stubs which
+	   # need to be included in the devel domain
+	   (>):
+           - "%{libdir}/*.stub"
 
 
-4. Project Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
-The ``project.conf`` now gives you another opportunity to override *variables*, *environment*
-and *config* sections on a per element basis.
+.. _format_directives_list_prepend:
 
-Configurations specified in the *elements* section of the ``project.conf`` will override
-the given element's default.
+(=) List Overwrite
+~~~~~~~~~~~~~~~~~~
+Indicates that the list should be overwritten completely.
+
+This exists mostly for completeness, and we recommend using literal
+lists most of the time instead of list overwrite directives when the
+intent is to overwrite a list.
+
+This has the same behavior as a literal list, except that an
+error will be triggered in the case that there is no underlying
+list to overwrite; whereas a literal list will simply create a new
+list.
+
+The added error protection can be useful when intentionally
+overwriting a list in an element's *public data*, which is mostly
+free form and not validated.
 
 
-5. Element Declarations
-~~~~~~~~~~~~~~~~~~~~~~~
-Finally, after having resolved any :ref:`conditionals <format_directives_conditional>`
-in the parsing phase of loading element declarations; the configurations specified in a
-``.bst`` file have the last word on any configuration in the data model.
+**Example:**
+
+.. code:: yaml
+
+   config:
+     install-commands:
+       # This element's `make install` is broken, replace it.
+       (=):
+       - cp src/program %{bindir}

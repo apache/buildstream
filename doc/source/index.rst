@@ -37,8 +37,8 @@ Project format
 * :ref:`formatintro`
 
   * :ref:`format_structure`
-  * :ref:`format_directives`
   * :ref:`format_composition`
+  * :ref:`format_directives`
 
 * :ref:`projectconf`
 
