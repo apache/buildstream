@@ -103,6 +103,9 @@ class LoadErrorReason(Enum):
     USER_ASSERTION = 9
     """An assertion was intentionally encoded into project YAML"""
 
+    TRAILING_LIST_DIRECTIVE = 10
+    """A list composition directive did not apply to any underlying list"""
+
 
 class LoadError(_BstError):
     """Raised while loading some YAML.
