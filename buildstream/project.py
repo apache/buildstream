@@ -30,7 +30,6 @@ was loaded from.
 import os
 import multiprocessing  # for cpu_count()
 from collections import Mapping
-from ._yaml import CompositePolicy, CompositeTypeError, CompositeOverrideError
 from . import utils
 from . import _site
 from . import _yaml
@@ -129,7 +128,8 @@ class Project():
 
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
-        _yaml.composite(config, project_conf, typesafe=True)
+        _yaml.composite(config, project_conf)
+        _yaml.node_final_assertions(config)
         _yaml.node_validate(config, [
             'required-versions',
             'element-path', 'variables',
