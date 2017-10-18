@@ -23,7 +23,7 @@ before_script:
 pytest:
   stage: test
   script:
-  - python3 setup.py test
+  - python3 setup.py test --allow-hosts NONE
   - mkdir -p coverage-pytest/
   - cp .coverage.* coverage-pytest/coverage.pytest
   artifacts:
@@ -59,7 +59,7 @@ pytest_unix:
     # disappear unless we mark it as user-installed.
     - dnf mark install fuse-libs
     - dnf erase -y bubblewrap ostree
-    - python3 setup.py test
+    - python3 setup.py test --allow-hosts NONE
     - mkdir -p coverage-pytest-unix
     - cp .coverage.* coverage-pytest-unix/coverage.pytest-unix
   artifacts:
