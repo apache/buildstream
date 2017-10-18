@@ -21,18 +21,19 @@ Check if ``~/.local/bin`` appears in your PATH environment variable -- if it
 doesn't, you should
 `edit your ~/.profile so that it does <https://stackoverflow.com/questions/14637979/>`_.
 
-Once ``bst-here`` is available in your PATH, you just prefix every BuildStream
-command you need to run with ``bst-here`` so that it executes through the
-wrapper. The latest version of the buildstream-fedora Docker image is
-automatically pulled if needed. The contents of your working directory will be
-made available at ``/src`` inside the container.
+Once the script is available in your PATH, you can run ``bst-here`` to open a
+shell session inside a new container based off the latest version of the
+buildstream-fedora Docker image. The current working directory will be mounted
+inside the container at ``/src``.
 
-Two other volumes are set up by the ``bst-here`` script:
+You can also run individual BuildStream commands as ``bst-here COMMAND``. For
+example: ``bst-here show systems/my-system.bst``. Note that BuildStream won't
+be able to integrate with Bash tab-completion if you invoke it in this way.
+
+Two Docker volumes are set up by the ``bst-here`` script:
 
  * buildstream-cache -- mounted at ``~/.cache/buildstream``
  * buildstream-config -- mounted at ``~/.config/``
 
 These are necessary so that your BuildStream cache and configuration files
-persist between invocations of ``bst-here``. You can open a shell inside the
-container by running ``bst-here -t /bin/bash``, which is useful if for example
-you need to add something custom to ``~/.config/buildstream.conf``.
+persist between invocations of ``bst-here``.

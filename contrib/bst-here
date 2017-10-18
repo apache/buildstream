@@ -58,6 +58,12 @@ done
 
 BST_HERE_PS1="\[\033[01;34m\]\w\[\033[00m\]> "
 
+if [ "$#" -eq 0 ]; then
+    command="/bin/bash -i"
+else
+    command="/usr/bin/bst $@"
+fi
+
 exec docker run --rm -i${is_tty:+ -t} \
                 --cap-add SYS_ADMIN \
                 --env PS1="$BST_HERE_PS1" \
@@ -68,4 +74,4 @@ exec docker run --rm -i${is_tty:+ -t} \
                 --volume "$PWD":/src \
                 --workdir /src \
                 buildstream/buildstream-fedora:latest \
-                "$@"
+                $command
