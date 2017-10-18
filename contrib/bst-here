@@ -56,8 +56,11 @@ do
     create_volume_if_not_exists "$vol"
 done
 
+BST_HERE_PS1="\[\033[01;34m\]\w\[\033[00m\]> "
+
 exec docker run --rm -i${is_tty:+ -t} \
                 --cap-add SYS_ADMIN \
+                --env PS1="$BST_HERE_PS1" \
                 --device /dev/fuse \
                 --security-opt seccomp=unconfined \
                 --volume buildstream-cache:/root/.cache/buildstream \
