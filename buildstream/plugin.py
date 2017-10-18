@@ -615,6 +615,13 @@ class Plugin():
         output.flush()
         self.status('Running host command', detail=command)
 
+    def _get_full_name(self):
+        project = self.__project
+        if project._junction:
+            return '{}:{}'.format(project._junction.name, self.name)
+        else:
+            return self.name
+
 
 # Hold on to a lookup table by counter of all instantiated plugins.
 # We use this to send the id back from child processes so we can lookup

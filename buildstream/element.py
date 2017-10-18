@@ -218,17 +218,19 @@ class Element(Plugin):
         if visited is None:
             visited = {}
 
+        full_name = self._get_full_name()
+
         scope_set = set((Scope.BUILD, Scope.RUN)) if scope == Scope.ALL else set((scope,))
 
-        if self.name in visited and scope_set.issubset(visited[self.name]):
+        if full_name in visited and scope_set.issubset(visited[full_name]):
             return
 
         should_yield = False
-        if self.name not in visited:
-            visited[self.name] = scope_set
+        if full_name not in visited:
+            visited[full_name] = scope_set
             should_yield = True
         else:
-            visited[self.name] |= scope_set
+            visited[full_name] |= scope_set
 
         if recurse or not recursed:
             if scope == Scope.ALL:
@@ -1825,6 +1827,9 @@ class Element(Plugin):
         # Load the public data from the artifact
         metadir = os.path.join(self.__artifacts.extract(self), 'meta')
         self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
+
+    def _subst_string(self, value):
+        return self.__variables.subst(value)
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):

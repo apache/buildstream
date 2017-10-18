@@ -121,10 +121,10 @@ class Pipeline():
         self.platform = Platform.get_platform()
         self.artifacts = self.platform.artifactcache
 
-        loader = Loader(self.project, targets + except_)
+        self.loader = Loader(self.project, targets + except_)
 
         with self.timed_activity("Loading pipeline", silent_nested=True):
-            meta_elements = loader.load(rewritable, None)
+            meta_elements = self.loader.load(rewritable, None)
 
         # Resolve the real elements now that we've resolved the project
         with self.timed_activity("Resolving pipeline"):
@@ -938,3 +938,7 @@ class Pipeline():
 
             with tarfile.open(tar_name, permissions) as tar:
                 tar.add(directory, arcname=element_name)
+
+    def cleanup(self):
+        if self.loader:
+            self.loader.cleanup()

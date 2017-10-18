@@ -198,6 +198,7 @@ def cli(context, **kwargs):
 
     # Create the App, giving it the main arguments
     context.obj = App(dict(kwargs))
+    context.call_on_close(context.obj.cleanup)
 
 
 ##################################################################
@@ -227,7 +228,8 @@ def build(app, elements, all, track, track_save, track_all, track_except):
         track = elements
 
     app.initialize(elements, except_=track_except, rewritable=track_save,
-                   use_configured_remote_caches=True, track_elements=track)
+                   use_configured_remote_caches=True, track_elements=track,
+                   fetch_subprojects=True)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track, track_save)
@@ -270,7 +272,8 @@ def fetch(app, elements, deps, track, except_):
     """
 
     app.initialize(elements, except_=except_, rewritable=track,
-                   track_elements=elements if track else None)
+                   track_elements=elements if track else None,
+                   fetch_subprojects=True)
     try:
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
@@ -308,7 +311,8 @@ def track(app, elements, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, except_=except_, rewritable=True, track_elements=elements)
+    app.initialize(elements, except_=except_, rewritable=True, track_elements=elements,
+                   fetch_subprojects=True)
     try:
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
@@ -346,7 +350,7 @@ def pull(app, elements, deps, remote):
         all:   All dependencies
     """
     app.initialize(elements, use_configured_remote_caches=(remote is None),
-                   add_remote_cache=remote)
+                   add_remote_cache=remote, fetch_subprojects=True)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -382,7 +386,7 @@ def push(app, elements, deps, remote):
         all:   All dependencies
     """
     app.initialize(elements, use_configured_remote_caches=(remote is None),
-                   add_remote_cache=remote)
+                   add_remote_cache=remote, fetch_subprojects=True)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -792,7 +796,7 @@ class App():
     #
     def initialize(self, elements, except_=tuple(), rewritable=False,
                    use_configured_remote_caches=False, add_remote_cache=None,
-                   track_elements=None):
+                   track_elements=None, fetch_subprojects=False):
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
@@ -800,7 +804,7 @@ class App():
         config = self.main_options['config']
 
         try:
-            self.context = Context()
+            self.context = Context(fetch_subprojects=fetch_subprojects)
             self.context.load(config)
         except BstError as e:
             click.echo("Error loading user configuration: {}".format(e), err=True)
@@ -1122,6 +1126,10 @@ class App():
         self.maybe_render_status()
         self.scheduler.resume_jobs()
         self.scheduler.connect_signals()
+
+    def cleanup(self):
+        if self.pipeline:
+            self.pipeline.cleanup()
 
 
 #

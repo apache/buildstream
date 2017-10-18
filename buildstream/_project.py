@@ -51,7 +51,7 @@ _ALIAS_SEPARATOR = ':'
 #
 class Project():
 
-    def __init__(self, directory, context, *, cli_options=None):
+    def __init__(self, directory, context, *, junction=None, cli_options=None):
 
         # The project name
         self.name = None
@@ -71,6 +71,7 @@ class Project():
         self._plugin_source_origins = []   # Origins of custom sources
         self._plugin_element_origins = []  # Origins of custom elements
         self._options = None    # Project options, the OptionPool
+        self._junction = junction   # The junction element, if this is a subproject
         self._cli_options = cli_options
         self._cache_key = None
         self._source_format_versions = {}
@@ -147,6 +148,9 @@ class Project():
         options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
         self._options = OptionPool(self.element_path)
         self._options.load(options_node)
+        if self._junction:
+            # load before user configuration
+            self._options.load_yaml_values(self._junction.options, transform=self._junction._subst_string)
 
         # Collect option values specified in the user configuration
         overrides = self._context._get_overrides(self.name)

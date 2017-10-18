@@ -182,7 +182,7 @@ class ElementName(Widget):
             return ""
 
         plugin = _plugin_lookup(element_id)
-        name = plugin.name
+        name = plugin._get_full_name()
 
         # Sneak the action name in with the element name
         action_name = message.action_name
@@ -584,7 +584,7 @@ class LogLine(Widget):
 
             full_key, cache_key, dim_keys = element._get_full_display_key()
 
-            line = p.fmt_subst(line, 'name', element.name, fg='blue', bold=True)
+            line = p.fmt_subst(line, 'name', element._get_full_name(), fg='blue', bold=True)
             line = p.fmt_subst(line, 'key', cache_key, fg='yellow', dim=dim_keys)
             line = p.fmt_subst(line, 'full-key', full_key, fg='yellow', dim=dim_keys)
 

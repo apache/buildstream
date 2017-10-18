@@ -156,6 +156,9 @@ class LoadErrorReason(Enum):
     # A list composition directive did not apply to any underlying list
     TRAILING_LIST_DIRECTIVE = 10
 
+    # Conflicting junctions in subprojects
+    CONFLICTING_JUNCTION = 11
+
 
 # LoadError
 #

@@ -251,8 +251,12 @@ Dependency dictionary:
    depends:
    - filename: elements/foo.bst
      type: build
+     junction: elements/baseproject.bst
 
 The ``type`` attribute can be used to express the dependency type.
+
+The ``junction`` attribute can be used to depend on elements in other projects.
+See :mod:`junction <elements.junction>`.
 
 
 Dependency Types

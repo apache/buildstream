@@ -45,7 +45,7 @@ from ._artifactcache import artifact_cache_specs_from_config_node
 #
 class Context():
 
-    def __init__(self):
+    def __init__(self, *, fetch_subprojects=False):
 
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
@@ -110,6 +110,7 @@ class Context():
         self._message_depth = deque()
         self._platform = None
         self._project_overrides = {}
+        self._fetch_subprojects = fetch_subprojects
 
     # load()
     #
