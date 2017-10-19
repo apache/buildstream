@@ -46,20 +46,15 @@ class ScriptElement(buildstream.ScriptElement):
             elm = self.node_subst_member(n, 'element', default_value='') or None
             self.layout_add(elm, dst)
 
-        cmds = []
-        prefixes = ["pre-", "", "post-"]
-
         self.node_validate(node, [
-            'pre-commands', 'commands', 'post-commands',
-            'root-read-only', 'layout'
+            'commands', 'root-read-only', 'layout'
         ])
 
         if "commands" not in node:
             raise ElementError("{}: Unexpectedly missing command group 'commands'"
                                .format(self))
-        for prefix in prefixes:
-            if prefix + "commands" in node:
-                cmds += self.node_subst_list(node, prefix + "commands")
+
+        cmds = self.node_subst_list(node, "commands")
         self.add_commands("commands", cmds)
 
         self.set_work_dir()
