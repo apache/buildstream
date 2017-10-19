@@ -118,7 +118,7 @@ pages:
   - dnf install -y python2
   - pip3 install sphinx
   - pip3 install sphinx-click
-  - pip3 install --user -e --no-index .
+  - pip3 install --user .
   - make -C doc
   - mv doc/build/html public
   artifacts:
