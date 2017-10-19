@@ -57,18 +57,19 @@ Commands are run in the following order:
 * ``install-commands``: Commands to install the results into ``%{install-root}``
 * ``strip-commands``: Commands to strip debugging symbols installed binaries
 
-In addition to the above command domains, each command list is checked
-for a ``pre-`` and ``post-`` command domain. So for instance, an element
-declaration can append or prepend commands without overriding the existing
-defaults provided by the element type
+Sometimes it is interesting to append or prepend commands to an existing
+command list without replacing it entirely, for this; array composition
+:ref:`prepend <format_directives_list_prepend>` and
+:ref:`prepend <format_directives_list_append>` directives can be used.
 
 **Example**
 
 .. code:: yaml
 
   config:
-    pre-configure-commands:
-    - echo "Do something before default configure-commands"
+    configure-commands:
+      (<):
+      - echo "Do something before default configure-commands"
 
 **Working Directory**
 
@@ -106,7 +107,6 @@ _command_steps = ['bootstrap-commands',
                   'test-commands',
                   'install-commands',
                   'strip-commands']
-_command_prefixes = ['pre-', '', 'post-']
 
 
 class BuildElement(Element):
@@ -114,14 +114,13 @@ class BuildElement(Element):
     def configure(self, node):
 
         self.commands = {}
-        command_names = [prefix + step for step in _command_steps for prefix in _command_prefixes]
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
         #        extend the configuration
-        self.node_validate(node, command_names)
+        self.node_validate(node, _command_steps)
 
-        for command_name in command_names:
+        for command_name in _command_steps:
             self.commands[command_name] = self._get_commands(node, command_name)
 
     def preflight(self):
@@ -180,24 +179,22 @@ class BuildElement(Element):
     def assemble(self, sandbox):
 
         # Run commands
-        for step in _command_steps:
-            for prefix in _command_prefixes:
-                command_name = prefix + step
-                commands = self.commands[command_name]
-                if not commands:
-                    continue
+        for command_name in _command_steps:
+            commands = self.commands[command_name]
+            if not commands:
+                continue
 
-                with self.timed_activity("Running %s" % command_name):
-                    for cmd in commands:
-                        self.status("Running %s" % command_name, detail=cmd)
+            with self.timed_activity("Running %s" % command_name):
+                for cmd in commands:
+                    self.status("Running %s" % command_name, detail=cmd)
 
-                        # Note the -e switch to 'sh' means to exit with an error
-                        # if any untested command fails.
-                        #
-                        exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                               SandboxFlags.ROOT_READ_ONLY)
-                        if exitcode != 0:
-                            raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+                    # Note the -e switch to 'sh' means to exit with an error
+                    # if any untested command fails.
+                    #
+                    exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+                                           SandboxFlags.ROOT_READ_ONLY)
+                    if exitcode != 0:
+                        raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
         # %{install-root}/%{build-root} should normally not be written
         # to - if an element later attempts to stage to a location
@@ -228,12 +225,10 @@ class BuildElement(Element):
 
     def generate_script(self):
         script = ""
-        for step in _command_steps:
-            for prefix in _command_prefixes:
-                command_name = prefix + step
-                commands = self.commands[command_name]
+        for command_name in _command_steps:
+            commands = self.commands[command_name]
 
-                for cmd in commands:
-                    script += "(set -ex; {}\n) || exit 1\n".format(cmd)
+            for cmd in commands:
+                script += "(set -ex; {}\n) || exit 1\n".format(cmd)
 
         return script
