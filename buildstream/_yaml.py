@@ -821,8 +821,100 @@ def node_validate(node, valid_keys):
                         "[{}]: Unexpected key: {}".format(provenance, invalid))
 
 
+# ChainMap
+#
+# This is a derivative of collections.ChainMap(), but supports
+# explicit deletions of keys.
+#
+# The purpose of this is to create a virtual copy-on-write
+# copy of a dictionary, so that mutating it in any way does
+# not effect the underlying dictionaries.
+#
+# collections.ChainMap covers this already mostly, but fails
+# to record internal state so as to hide keys which have been
+# explicitly deleted.
+#
+class ChainMap(collections.ChainMap):
+
+    def __init__(self, *maps):
+        super().__init__(*maps)
+        self.__deletions = set()
+
+    def __getitem__(self, key):
+
+        # Honor deletion state of 'key'
+        if key in self.__deletions:
+            return self.__missing__(key)
+
+        return super().__getitem__(key)
+
+    def __len__(self):
+        return len(set().union(*self.maps) - self.__deletions)
+
+    def __iter__(self):
+        return iter(set().union(*self.maps) - self.__deletions)
+
+    def __contains__(self, key):
+        if key in self.__deletions:
+            return False
+        return any(key in m for m in self.maps)
+
+    def __bool__(self):
+        # Attempt to preserve 'any' optimization
+        any_keys = any(self.maps)
+
+        # Something existed, try again with deletions subtracted
+        if any_keys:
+            return any(set().union(*self.maps) - self.__deletions)
+
+        return False
+
+    def __setitem__(self, key, value):
+        self.__deletions.discard(key)
+        super().__setitem__(key, value)
+
+    def __delitem__(self, key):
+        if key in self.__deletions:
+            raise KeyError('Key was already deleted from this mapping: {!r}'.format(key))
+
+        # Ignore KeyError if it's not in the first map, just save the deletion state
+        try:
+            super().__delitem__(key)
+        except KeyError:
+            pass
+
+        # Store deleted state
+        self.__deletions.add(key)
+
+    def popitem(self):
+        poppable = set().union(*self.maps) - self.__deletions
+        for key in poppable:
+            return self.pop(key)
+
+        raise KeyError('No keys found.')
+
+    __marker = object()
+
+    def pop(self, key, default=__marker):
+        # Reimplement MutableMapping's behavior here
+        try:
+            value = self[key]
+        except KeyError:
+            if default is self.__marker:
+                raise
+            return default
+        else:
+            del self[key]
+            return value
+
+    def clear(self):
+        clearable = set().union(*self.maps) - self.__deletions
+        for key in clearable:
+            del self[key]
+
+
 def node_chain_copy(source):
-    copy = collections.ChainMap({}, source)
+    copy = ChainMap({}, source)
     for key, value in source.items():
         if isinstance(value, collections.Mapping):
             copy[key] = node_chain_copy(value)
