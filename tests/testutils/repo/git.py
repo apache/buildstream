@@ -32,6 +32,11 @@ class Git(Repo):
         subprocess.call(['git', 'commit', '-m', 'Initial commit'], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
+    def add_commit(self):
+        subprocess.call(['git', 'commit', '--allow-empty', '-m', 'Additional commit'],
+                        env=GIT_ENV, cwd=self.repo)
+        return self.latest_commit()
+
     def add_submodule(self, subdir, url):
         self.submodules[subdir] = url
         subprocess.call(['git', 'submodule', 'add', url, subdir], env=GIT_ENV, cwd=self.repo)

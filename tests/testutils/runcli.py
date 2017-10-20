@@ -1,11 +1,15 @@
 import os
+import re
 import sys
+import shutil
 import itertools
 import traceback
 from contextlib import contextmanager, ExitStack
 from click.testing import CliRunner
 from ruamel import yaml
 import pytest
+
+from tests.testutils.site import IS_LINUX
 
 # Import the main cli entrypoint
 from buildstream._frontend.main import cli as bst_cli
@@ -23,6 +27,17 @@ class Result():
         self.output = result.output
         self.exception = _get_last_exception()
         self.result = result
+
+    ##################################################################
+    #                         Result parsers                         #
+    ##################################################################
+    def get_tracked_elements(self):
+        tracked = re.findall(r'\[track:(\S+)\s*]',
+                             self.result.output)
+        if tracked is None:
+            return []
+
+        return list(tracked)
 
 
 class Cli():
@@ -43,6 +58,17 @@ class Cli():
     #
     def configure(self, config):
         self.config = config
+
+    def remove_artifact_from_cache(self, project, element_name):
+        cache_dir = os.path.join(project, 'cache', 'artifacts')
+
+        if IS_LINUX:
+            cache_dir = os.path.join(cache_dir, 'ostree', 'refs', 'heads')
+        else:
+            cache_dir = os.path.join(cache_dir, 'tar')
+
+        cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', element_name))[0]
+        shutil.rmtree(cache_dir)
 
     # run():
     #
