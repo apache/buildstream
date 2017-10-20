@@ -120,6 +120,8 @@ def test_iterate_no_recurse(cli, datafiles, tmpdir):
         'third-level-1.bst',
         'fourth-level-2.bst',
         'third-level-2.bst',
+        'fourth-level-3.bst',
+        'third-level-3.bst',
         'second-level-1.bst',
         'first-level-1.bst',
         'first-level-2.bst',
@@ -131,6 +133,8 @@ def test_iterate_no_recurse(cli, datafiles, tmpdir):
     (['build.bst'], ['third-level-1.bst'], [
         'fourth-level-2.bst',
         'third-level-2.bst',
+        'fourth-level-3.bst',
+        'third-level-3.bst',
         'second-level-1.bst',
         'first-level-1.bst',
         'first-level-2.bst',
