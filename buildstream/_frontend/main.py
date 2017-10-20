@@ -99,7 +99,8 @@ def override_completions(cmd_param, ctx, args, incomplete):
     if isinstance(cmd_param.type, click.Path) and \
        (cmd_param.name == 'elements' or
         cmd_param.name == 'element' or
-        cmd_param.name == 'except_'):
+        cmd_param.name == 'except_' or
+        cmd_param.opts == ['--track']):
         return complete_target(ctx, args, incomplete)
 
     raise CompleteUnhandled()
@@ -193,23 +194,23 @@ def cli(context, **kwargs):
 @cli.command(short_help="Build elements in a pipeline")
 @click.option('--all', default=False, is_flag=True,
               help="Build elements that would not be needed for the current build plan")
-@click.option('--track', default=False, is_flag=True,
-              help="Track new source references before building (implies --all)")
+@click.option('--track', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
+              help="Specify elements to track during the build. Can be used "
+                   "repeatedly to specify multiple elements")
 @click.option('--track-save', default=False, is_flag=True,
-              help="Track new source references before building, updating their "
-                   "corresponding element files")
+              help="Write out the tracked references to their element files")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def build(app, elements, all, track, track_save):
     """Build elements in a pipeline"""
 
-    track_first = track or track_save
-
-    app.initialize(elements, rewritable=track_save, inconsistent=track_first, use_remote_cache=True)
+    app.initialize(elements, rewritable=track_save)
+    app.pipeline.initialize(use_remote_cache=True, inconsistent=track)
     app.print_heading()
     try:
-        app.pipeline.build(app.scheduler, all, track_first, track_save)
+        app.pipeline.build(app.scheduler, all, track, track_save)
         click.echo("")
         app.print_summary()
     except PipelineError:
@@ -248,8 +249,9 @@ def fetch(app, elements, deps, track, except_):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    app.initialize(elements, except_=except_,
-                   rewritable=track, inconsistent=track)
+
+    app.initialize(elements, except_=except_, rewritable=track)
+    app.pipeline.initialize(inconsistent=elements if track else None)
     try:
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
@@ -288,8 +290,8 @@ def track(app, elements, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, except_=except_,
-                   rewritable=True, inconsistent=True)
+    app.initialize(elements, except_=except_, rewritable=True)
+    app.pipeline.initialize(inconsistent=elements)
     try:
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
@@ -321,7 +323,8 @@ def pull(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, use_remote_cache=True)
+    app.initialize(elements)
+    app.pipeline.initialize(use_remote_cache=True)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -351,7 +354,8 @@ def push(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, use_remote_cache=True)
+    app.initialize(elements)
+    app.pipeline.initialize(use_remote_cache=True)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -430,7 +434,8 @@ def show(app, elements, deps, except_, order, format, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(elements, except_=except_, use_remote_cache=downloadable)
+    app.initialize(elements, except_=except_)
+    app.pipeline.initialize(use_remote_cache=downloadable)
     try:
         dependencies = app.pipeline.deps_elements(deps)
     except PipelineError as e:
@@ -483,6 +488,7 @@ def shell(app, element, sysroot, build, command):
         scope = Scope.RUN
 
     app.initialize((element,))
+    app.pipeline.initialize()
 
     # Assert we have everything we need built.
     missing_deps = []
@@ -525,6 +531,7 @@ def checkout(app, element, directory, force, integrate):
     """Checkout a built artifact to the specified directory
     """
     app.initialize((element,))
+    app.pipeline.initialize()
     try:
         app.pipeline.checkout(directory, force, integrate)
         click.echo("")
@@ -556,7 +563,8 @@ def checkout(app, element, directory, force, integrate):
 def source_bundle(app, target, force, directory,
                   track, compression, except_):
     """Produce a source bundle to be manually executed"""
-    app.initialize((target,), rewritable=track, inconsistent=track)
+    app.initialize((target,), rewritable=track)
+    app.pipeline.initialize(inconsistent=[target])
     try:
         dependencies = app.pipeline.deps_elements('all')
         app.print_heading(dependencies)
@@ -597,7 +605,8 @@ def workspace():
 def workspace_open(app, no_checkout, force, source, track, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize((element,), rewritable=track, inconsistent=track)
+    app.initialize((element,), rewritable=track)
+    app.pipeline.initialize(inconsistent=[element])
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
         click.echo("")
@@ -622,6 +631,7 @@ def workspace_close(app, source, remove_dir, element):
     """Close a workspace"""
 
     app.initialize((element,))
+    app.pipeline.initialize()
     if app.interactive and remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
@@ -652,6 +662,7 @@ def workspace_close(app, source, remove_dir, element):
 def workspace_reset(app, source, track, no_checkout, element):
     """Reset a workspace to its original state"""
     app.initialize((element,))
+    app.pipeline.initialize()
     if app.interactive:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
@@ -845,9 +856,7 @@ class App():
 
         try:
             self.pipeline = Pipeline(self.context, self.project, elements, except_,
-                                     inconsistent=inconsistent,
                                      rewritable=rewritable,
-                                     use_remote_cache=use_remote_cache,
                                      load_ticker=self.load_ticker,
                                      resolve_ticker=self.resolve_ticker,
                                      remote_ticker=self.remote_ticker,
