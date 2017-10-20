@@ -75,6 +75,8 @@ environment:
   LC_ALL: C
   HOME: /tmp
   TZ: UTC
+  # For reproducible builds, lets use 2011-11-11 as a constant
+  SOURCE_DATE_EPOCH: 1320937200
 
 # List of environment variables which should not be taken into
 # account when calculating a cache key for a given element.
