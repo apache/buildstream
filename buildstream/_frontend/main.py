@@ -195,16 +195,21 @@ def cli(context, **kwargs):
               help="Build elements that would not be needed for the current build plan")
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before building (implies --all)")
+@click.option('--track-save', default=False, is_flag=True,
+              help="Track new source references before building, updating their "
+                   "corresponding element files")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, elements, all, track):
+def build(app, elements, all, track, track_save):
     """Build elements in a pipeline"""
 
-    app.initialize(elements, rewritable=track, inconsistent=track, use_remote_cache=True)
+    track_first = track or track_save
+
+    app.initialize(elements, rewritable=track_save, inconsistent=track_first, use_remote_cache=True)
     app.print_heading()
     try:
-        app.pipeline.build(app.scheduler, all, track)
+        app.pipeline.build(app.scheduler, all, track_first, track_save)
         click.echo("")
         app.print_summary()
     except PipelineError:

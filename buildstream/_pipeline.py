@@ -384,9 +384,12 @@ class Pipeline():
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    build_all (bool): Whether to build all elements, or only those
     #                      which are required to build the target.
-    #    track_first (bool): Track sources before fetching and building (implies build_all)
+    #    track_first (list): Elements whose sources to track prior to
+    #                        building
+    #    save (bool): Whether to save the tracking results in the
+    #                 elements
     #
-    def build(self, scheduler, build_all, track_first):
+    def build(self, scheduler, build_all, track_first, save):
         if len(self.unused_workspaces) > 0:
             self.message(MessageType.WARN, "Unused workspaces",
                          detail="\n".join([el + "-" + str(src) for el, src, _
@@ -409,7 +412,7 @@ class Pipeline():
         push = None
         queues = []
         if track_first:
-            track = TrackQueue()
+            track = TrackQueue(save=save)
             queues.append(track)
         if self.artifacts.can_fetch():
             pull = PullQueue()
