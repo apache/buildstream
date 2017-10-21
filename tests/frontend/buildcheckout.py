@@ -28,6 +28,11 @@ def test_build_checkout(datafiles, cli, strict):
     result = cli.run(project=project, args=strict_args(['build', 'target.bst'], strict))
     assert result.exit_code == 0
 
+    # Assert that after a successful build, the builddir is empty
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
     # Now check it out
     result = cli.run(project=project, args=strict_args([
         'checkout', 'target.bst', checkout
