@@ -467,14 +467,14 @@ def get_bst_version():
 
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
-def _force_rmtree(path, **kwargs):
-    for root, dirs, _ in os.walk(path):
+def _force_rmtree(rootpath, **kwargs):
+    for root, dirs, _ in os.walk(rootpath):
         for d in dirs:
             path = os.path.join(root, d.lstrip('/'))
             if os.path.exists(path) and not os.path.islink(path):
                 os.chmod(path, 0o755)
 
-    shutil.rmtree(path, **kwargs)
+    shutil.rmtree(rootpath, **kwargs)
 
 
 # Recursively make directories in target area
