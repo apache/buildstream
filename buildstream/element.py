@@ -1382,6 +1382,10 @@ class Element(Plugin):
     #
     def _stage_sources_at(self, directory):
         with self.timed_activity("Staging sources", silent_nested=True):
+
+            if os.path.isdir(directory) and os.listdir(directory):
+                raise ElementError("Staging directory '{}' is not empty".format(directory))
+
             for source in self.__sources:
                 source._stage(directory)
 
