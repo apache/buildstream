@@ -252,9 +252,6 @@ class Source(Plugin):
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
         os.makedirs(directory, exist_ok=True)
 
-        if os.listdir(directory):
-            raise SourceError("Staging directory in '{}' not empty".format(directory))
-
         if self._has_workspace():
             self._stage_workspace(directory)
         else:
