@@ -82,7 +82,7 @@ def parse_output_keys(output):
 # Returns an OrderedDict of element names
 # and their cache keys
 #
-def load_expected_keys(project_dir, actual_keys):
+def load_expected_keys(project_dir, actual_keys, raise_error=True):
 
     expected_keys = OrderedDict()
     for element_name in actual_keys:
@@ -92,11 +92,12 @@ def load_expected_keys(project_dir, actual_keys):
                 expected_key = f.read()
                 expected_key = expected_key.strip()
         except FileNotFoundError as e:
-            raise Exception("Cache key test needs update, " +
-                            "expected file {} not found.\n".format(expected) +
-                            "Hint: Actual key for element {} is: {}".format(
-                                element_name,
-                                actual_keys[element_name]))
+            expected_key = None
+            if raise_error:
+                raise Exception("Cache key test needs update, " +
+                                "expected file {} not found.\n\n".format(expected) +
+                                "Use tests/cachekey/update.py to automatically " +
+                                "update this test case")
 
         expected_keys[element_name] = expected_key
 
@@ -123,16 +124,9 @@ def assert_cache_keys(project_dir, output):
                     "    Expected: {}\n".format(expected_keys[element_name]) + \
                     "    Actual: {}\n".format(actual_keys[element_name])
 
-            # Write out the keys into files beside the project
-            # in the temp directory so that we can easily update
-            # the test when the artifact version changes.
-            filename = element_filename(project_dir, element_name, "actual")
-            with open(filename, "w") as f:
-                f.write(actual_keys[element_name])
-
         raise AssertionError("Cache key mismatches occurred:\n{}\n".format(info) +
-                             "New cache keys have been stored beside the " +
-                             "expected ones at: {}".format(project_dir))
+                             "Use tests/cachekey/update.py to automatically " +
+                             "update this test case")
 
 
 ##############################################
