@@ -39,8 +39,17 @@ variables:
   # Indicates the build installation directory in the sandbox
   install-root: /buildstream/install
 
-  # Define some patterns which might be used in multiple
-  # elements
+  # Arguments for tooling used when stripping debug symbols
+  objcopy-link-args: --add-gnu-debuglink
+  objcopy-extract-args: |
+
+    --only-keep-debug --compress-debug-sections
+
+  strip-args: |
+
+    --remove-section=.comment --remove-section=.note --strip-unneeded
+
+  # Generic implementation for stripping debugging symbols
   strip-binaries: |
 
     find "%{install-root}" -type f \
@@ -53,15 +62,16 @@ variables:
        fi
        debugfile="%{install-root}%{debugdir}/$(basename "$1")"
        mkdir -p "$(dirname "$debugfile")"
-       objcopy --only-keep-debug "$1" "$debugfile"
+       objcopy %{objcopy-extract-args} "$1" "$debugfile"
        chmod 644 "$debugfile"
-       strip --remove-section=.comment --remove-section=.note --strip-unneeded "$1"
-       objcopy --add-gnu-debuglink "$debugfile" "$1"' - {} ';'
+       strip %{strip-args} "$1"
+       objcopy %{objcopy-link-args} "$debugfile" "$1"' - {} ';'
 
+  # Generic implementation for reproducible python builds
   fix-pyc-timestamps: |
 
-    find "%{install-root}" -name '*.pyc' \
-      -exec dd if=/dev/zero of={} bs=1 count=4 seek=4 conv=notrunc ';'
+    find "%{install-root}" -name '*.pyc' -exec \
+      dd if=/dev/zero of={} bs=1 count=4 seek=4 conv=notrunc ';'
 
 
 # Base sandbox environment, can be overridden by plugins
@@ -75,7 +85,8 @@ environment:
   LC_ALL: C
   HOME: /tmp
   TZ: UTC
-  # For reproducible builds, lets use 2011-11-11 as a constant
+
+  # For reproducible builds we use 2011-11-11 as a constant
   SOURCE_DATE_EPOCH: 1320937200
 
 # List of environment variables which should not be taken into
