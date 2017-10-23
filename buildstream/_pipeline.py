@@ -176,7 +176,7 @@ class Pipeline():
         if self.artifacts.can_fetch():
             try:
                 if remote_ticker:
-                    remote_ticker(context.artifact_pull)
+                    remote_ticker(self.artifacts.artifact_pull)
                 self.artifacts.fetch_remote_refs()
             except _ArtifactError:
                 self.message(self.target, MessageType.WARN, "Failed to fetch remote refs")
