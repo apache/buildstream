@@ -30,7 +30,11 @@ _last_exception = None
 
 
 def _get_last_exception():
-    return _last_exception
+    global _last_exception
+
+    le = _last_exception
+    _last_exception = None
+    return le
 
 
 # BstError is an internal base exception class for BuildSream
