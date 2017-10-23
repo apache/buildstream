@@ -25,10 +25,11 @@ class Result():
 
 class Cli():
 
-    def __init__(self, directory):
+    def __init__(self, directory, verbose=True):
         self.directory = directory
         self.config = None
         self.cli_runner = CliRunner()
+        self.verbose = verbose
 
     # configure():
     #
@@ -92,13 +93,14 @@ class Cli():
             result = self.cli_runner.invoke(bst_cli, bst_args)
 
         # Some informative stdout we can observe when anything fails
-        command = "bst " + " ".join(bst_args)
-        print("BuildStream exited with code {} for invocation:\n\t{}"
-              .format(result.exit_code, command))
-        print("Program output was:\n{}".format(result.output))
+        if self.verbose:
+            command = "bst " + " ".join(bst_args)
+            print("BuildStream exited with code {} for invocation:\n\t{}"
+                  .format(result.exit_code, command))
+            print("Program output was:\n{}".format(result.output))
 
-        if result.exc_info and result.exc_info[0] != SystemExit:
-            traceback.print_exception(*result.exc_info)
+            if result.exc_info and result.exc_info[0] != SystemExit:
+                traceback.print_exception(*result.exc_info)
 
         return Result(result)
 
