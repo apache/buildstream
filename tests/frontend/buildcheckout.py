@@ -4,6 +4,7 @@ from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 from tests.testutils.site import HAVE_OSTREE
 
 from buildstream import _yaml
+from buildstream._pipeline import PipelineError
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -93,3 +94,21 @@ def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
     # Check that the pony.h include from files/dev-files exists
     filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
     assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_install_to_build(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element = 'installed-to-build.bst'
+
+    # Attempt building the element
+    # We expect this to throw an ElementError, since the element will
+    # attempt to stage into /buildstream/build, which is not allowed.
+    result = cli.run(project=project, args=strict_args(['build', element], True))
+    assert result.exit_code != 0
+
+    # While the error thrown is an ElementError, the pipeline picks up
+    # the error and raises it as a PipelineError. Since we are testing
+    # through the cli runner, we can't be more specific.
+    assert result.exception
+    assert isinstance(result.exception, PipelineError)
