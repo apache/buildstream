@@ -669,13 +669,13 @@ def workspace_list(app):
         context.load(config)
     except _BstError as e:
         click.echo("Error loading user configuration: {}".format(e))
-        sys.exit(1)
+        sys.exit(-1)
 
     try:
         project = Project(directory, context)
     except _BstError as e:
         click.echo("Error loading project: {}".format(e))
-        sys.exit(1)
+        sys.exit(-1)
 
     workspaces = []
     for element_name, source_index, directory in project._list_workspaces():
@@ -772,7 +772,7 @@ class App():
             self.context.load(config)
         except _BstError as e:
             click.echo("Error loading user configuration: %s" % str(e))
-            sys.exit(1)
+            sys.exit(-1)
 
         # Override things in the context from our command line options,
         # the command line when used, trumps the config files.
@@ -830,7 +830,7 @@ class App():
             self.project = Project(directory, self.context)
         except _BstError as e:
             click.echo("Error loading project: %s" % str(e))
-            sys.exit(1)
+            sys.exit(-1)
 
         try:
             self.pipeline = Pipeline(self.context, self.project, target,
@@ -842,7 +842,7 @@ class App():
                                      cache_ticker=self.cache_ticker)
         except _BstError as e:
             click.echo("Error loading pipeline: %s" % str(e))
-            sys.exit(1)
+            sys.exit(-1)
 
         # Create our status printer, only available in interactive
         self.status = Status(self.content_profile, self.format_profile,
