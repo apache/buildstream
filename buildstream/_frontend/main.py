@@ -704,14 +704,14 @@ def workspace_list(app):
     config = app.main_options['config']
 
     try:
-        context = Context(app.main_options['option'])
+        context = Context()
         context.load(config)
     except BstError as e:
         click.echo("Error loading user configuration: {}".format(e), err=True)
         sys.exit(-1)
 
     try:
-        project = Project(directory, context)
+        project = Project(directory, context, cli_options=app.main_options['option'])
     except BstError as e:
         click.echo("Error loading project: {}".format(e), err=True)
         sys.exit(-1)
@@ -800,7 +800,7 @@ class App():
         config = self.main_options['config']
 
         try:
-            self.context = Context(self.main_options['option'])
+            self.context = Context()
             self.context.load(config)
         except BstError as e:
             click.echo("Error loading user configuration: {}".format(e), err=True)
@@ -859,7 +859,7 @@ class App():
         self.context._set_message_handler(self.message_handler)
 
         try:
-            self.project = Project(directory, self.context)
+            self.project = Project(directory, self.context, cli_options=self.main_options['option'])
         except BstError as e:
             click.echo("Error loading project: {}".format(e), err=True)
             sys.exit(-1)

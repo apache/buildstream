@@ -57,7 +57,7 @@ _ALIAS_SEPARATOR = ':'
 #
 class Project():
 
-    def __init__(self, directory, context):
+    def __init__(self, directory, context, *, cli_options=None):
 
         # The project name
         self.name = None
@@ -77,6 +77,7 @@ class Project():
         self._plugin_source_origins = []   # Origins of custom sources
         self._plugin_element_origins = []  # Origins of custom elements
         self._options = None    # Project options, the OptionPool
+        self._cli_options = cli_options
         self._cache_key = None
         self._source_format_versions = {}
         self._element_format_versions = {}
@@ -157,7 +158,8 @@ class Project():
         overrides = self._context._get_overrides(self.name)
         override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
         self._options.load_yaml_values(override_options)
-        self._options.load_cli_values(self._context._cli_options)
+        if self._cli_options:
+            self._options.load_cli_values(self._cli_options)
 
         # We're done modifying options, now we can use them for substitutions
         self._options.resolve()

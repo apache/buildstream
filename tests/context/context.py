@@ -20,7 +20,7 @@ def context_fixture():
 
     return {
         'xdg-cache': cache_home,
-        'context': Context([])
+        'context': Context()
     }
 
 
