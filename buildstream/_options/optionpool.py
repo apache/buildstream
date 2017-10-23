@@ -50,7 +50,7 @@ class OptionPool():
         self.element_path = element_path
 
         # jinja2 environment, with default globals cleared out of the way
-        self.environment = jinja2.Environment()
+        self.environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
         self.environment.globals = []
 
     # load()
@@ -226,8 +226,12 @@ class OptionPool():
                                     "{}: Conditional statement has more than one key".format(p))
 
                 expression, value = tuples[0]
-                if self.evaluate(expression):
-                    _yaml.composite(node, value)
+                try:
+                    if self.evaluate(expression):
+                        _yaml.composite(node, value)
+                except LoadError as e:
+                    # Prepend the provenance of the error
+                    raise LoadError(e.reason, "{}: {}".format(p, e)) from e
 
             return True
 
