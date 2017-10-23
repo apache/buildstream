@@ -83,6 +83,21 @@ def test_invalid_expression(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_undefined(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'undefined-variable')
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+
+    assert result.exit_code != 0
+    assert result.exception
+    assert isinstance(result.exception, LoadError)
+    assert result.exception.reason == LoadErrorReason.EXPRESSION_FAILED
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_invalid_condition(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, 'invalid-condition')
     result = cli.run(project=project, silent=True, args=[
