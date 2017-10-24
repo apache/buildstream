@@ -100,7 +100,8 @@ def override_completions(cmd_param, ctx, args, incomplete):
        (cmd_param.name == 'elements' or
         cmd_param.name == 'element' or
         cmd_param.name == 'except_' or
-        cmd_param.opts == ['--track']):
+        cmd_param.opts == ['--track'] or
+        cmd_param.opts == ['--track-except']):
         return complete_target(ctx, args, incomplete)
 
     raise CompleteUnhandled()
@@ -198,15 +199,18 @@ def cli(context, **kwargs):
               type=click.Path(dir_okay=False, readable=True),
               help="Specify elements to track during the build. Can be used "
                    "repeatedly to specify multiple elements")
+@click.option('--track-except', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
+              help="Except certain dependencies from tracking")
 @click.option('--track-save', default=False, is_flag=True,
               help="Write out the tracked references to their element files")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, elements, all, track, track_save):
+def build(app, elements, all, track, track_save, track_except):
     """Build elements in a pipeline"""
 
-    app.initialize(elements, rewritable=track_save)
+    app.initialize(elements, except_=track_except, rewritable=track_save)
     app.pipeline.initialize(use_remote_cache=True, inconsistent=track)
     app.print_heading()
     try:
