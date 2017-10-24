@@ -434,7 +434,7 @@ class Pipeline():
         if build_all:
             plan = self.dependencies(Scope.ALL)
         else:
-            plan = self.plan()
+            plan = self.plan(except_=False)
 
         # We want to start the build queue with any elements that are
         # not being tracked first
