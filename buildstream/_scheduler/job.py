@@ -114,7 +114,6 @@ class Job():
 
         # Wait for it to complete
         self.watcher = asyncio.get_child_watcher()
-        self.watcher.attach_loop(self.scheduler.loop)
         self.watcher.add_child_handler(self.pid, self.child_complete, self.element)
 
     # shutdown()

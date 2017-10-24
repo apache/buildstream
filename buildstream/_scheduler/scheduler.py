@@ -112,7 +112,10 @@ class Scheduler():
         for queue in queues:
             queue.attach(self)
 
+        # Ensure that we have a fresh new event loop, in case we want
+        # to run another test in this thread.
         self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
 
         # Add timeouts
         if self.ticker_callback:
