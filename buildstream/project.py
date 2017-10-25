@@ -129,6 +129,11 @@ class Project():
         # Load project local config and override the builtin
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf)
+
+        # Element type configurations will be composited later onto element types,
+        # so we delete it from here and run our final assertion after.
+        self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
+        config.pop('elements', None)
         _yaml.node_final_assertions(config)
         _yaml.node_validate(config, [
             'required-versions',
@@ -242,9 +247,6 @@ class Project():
 
         # Load project split rules
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
-
-        # Element configurations
-        self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
 
     # _list_workspaces()
     #
