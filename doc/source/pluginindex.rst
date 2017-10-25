@@ -18,8 +18,6 @@ General Elements
 * :mod:`import <elements.import>` - Import sources directly
 * :mod:`compose <elements.compose>` - Compose the output of multiple elements
 * :mod:`script <elements.script>` - Run scripts to create output
-* :mod:`x86image <elements.x86image>` - Create x86 bootable disk images
-* :mod:`dpkg_deploy <elements.dpkg_deploy>` - Create debian packages
 
 Build Elements
 ~~~~~~~~~~~~~~
@@ -32,7 +30,6 @@ Build Elements
 * :mod:`makemaker <elements.makemaker>` - Perl MakeMaker Build Element
 * :mod:`modulebuild <elements.modulebuild>` - Perl Module::Build Build Element
 * :mod:`meson <elements.meson>` - Meson Build Element
-* :mod:`dpkg_build <elements.dpkg_build>` - Dpkg-based build element
 * :mod:`pip <elements.pip>` - Pip build element
 
 

@@ -63,6 +63,11 @@ Builtin Plugins
   * :ref:`plugins_elements`
   * :ref:`plugins_sources`
 
+External Plugins
+----------------
+
+* `bst-external <http://buildstream.gitlab.io/bst-external/>`_
+
 
 Creating Plugins
 ----------------
