@@ -82,6 +82,7 @@ class Sandbox():
         self.__directories = []
         self.__cwd = None
         self.__env = None
+        self.__mount_sources = {}
 
         # Setup the directories
         self.__directory = directory
@@ -194,6 +195,25 @@ class Sandbox():
     #
     def _get_marked_directories(self):
         return self.__directories
+
+    # _get_mount_source()
+    #
+    # Fetches the list of mount sources
+    #
+    # Returns:
+    #    (dict): A dictionary where keys are mount points and values are the mount sources
+    def _get_mount_sources(self):
+        return self.__mount_sources
+
+    # _set_mount_source()
+    #
+    # Sets the mount source for a given mountpoint
+    #
+    # Args:
+    #    mountpoint (str): The absolute mountpoint path inside the sandbox
+    #    mount_source (str): the host path to be mounted at the mount point
+    def _set_mount_source(self, mountpoint, mount_source):
+        self.__mount_sources[mountpoint] = mount_source
 
     # _get_environment()
     #

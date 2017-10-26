@@ -64,7 +64,8 @@ class ImportElement(BuildElement):
     def assemble(self, sandbox):
 
         # Stage sources into the input directory
-        self.stage_sources(sandbox, 'input')
+        # Do not mount workspaces as the files are copied from outside the sandbox
+        self._stage_sources_in_sandbox(sandbox, 'input', mount_workspaces=False)
 
         rootdir = sandbox.get_directory()
         inputdir = os.path.join(rootdir, 'input')

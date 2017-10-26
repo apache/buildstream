@@ -516,10 +516,7 @@ class Element(Plugin):
            directory (str): An absolute path within the sandbox to stage the sources at
         """
 
-        sandbox_root = sandbox.get_directory()
-        host_directory = os.path.join(sandbox_root, directory.lstrip(os.sep))
-
-        self._stage_sources_at(host_directory)
+        self._stage_sources_in_sandbox(sandbox, directory)
 
     def get_public_data(self, domain):
         """Fetch public data on this element
@@ -746,6 +743,28 @@ class Element(Plugin):
     def _schedule_tracking(self):
         for source in self.__sources:
             source._schedule_tracking()
+
+        self._update_state()
+
+    # _schedule_assemble():
+    #
+    # This is called in the main process before the element is assembled
+    # in a subprocess.
+    #
+    def _schedule_assemble(self):
+        for source in self.__sources:
+            source._schedule_assemble()
+
+        self._update_state()
+
+    # _assemble_done():
+    #
+    # This is called in the main process after the element has been assembled
+    # in a subprocess.
+    #
+    def _assemble_done(self):
+        for source in self.__sources:
+            source._assemble_done()
 
         self._update_state()
 
@@ -1051,7 +1070,7 @@ class Element(Plugin):
                 _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
                 # ensure we have cache keys
-                self._update_state()
+                self._assemble_done()
 
                 # Store artifact metadata
                 dependencies = {
@@ -1331,20 +1350,53 @@ class Element(Plugin):
             # Run shells with network enabled and readonly root.
             return sandbox.run(argv, flags, env=environment)
 
+    # _stage_sources_in_sandbox():
+    #
+    # Stage this element's sources to a directory inside sandbox
+    #
+    # Args:
+    #     sandbox (:class:`.Sandbox`): The build sandbox
+    #     directory (str): An absolute path to stage the sources at
+    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
+    #
+    def _stage_sources_in_sandbox(self, sandbox, directory, mount_workspaces=True):
+
+        if mount_workspaces:
+            # First, mount sources that have an open workspace
+            sources_to_mount = [source for source in self.sources() if source._has_workspace()]
+            for source in sources_to_mount:
+                mount_point = source._get_staging_path(directory)
+                mount_source = source._get_workspace_path()
+                sandbox.mark_directory(mount_point)
+                sandbox._set_mount_source(mount_point, mount_source)
+
+        # Stage all sources that need to be copied
+        sandbox_root = sandbox.get_directory()
+        host_directory = os.path.join(sandbox_root, directory.lstrip(os.sep))
+        self._stage_sources_at(host_directory, mount_workspaces=mount_workspaces)
+
     # _stage_sources_at():
     #
     # Stage this element's sources to a directory
     #
     # Args:
     #     directory (str): An absolute path to stage the sources at
+    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
     #
-    def _stage_sources_at(self, directory):
+    def _stage_sources_at(self, directory, mount_workspaces=True):
         with self.timed_activity("Staging sources", silent_nested=True):
 
             if os.path.isdir(directory) and os.listdir(directory):
                 raise ElementError("Staging directory '{}' is not empty".format(directory))
 
-            for source in self.__sources:
+            # If mount_workspaces is set, sources with workspace are mounted
+            # directly inside the sandbox so no need to stage them here.
+            if mount_workspaces:
+                sources = [source for source in self.sources() if not source._has_workspace()]
+            else:
+                sources = self.sources()
+
+            for source in sources:
                 source._stage(directory)
 
         # Ensure deterministic mtime of sources at build time
@@ -1409,6 +1461,18 @@ class Element(Plugin):
 
         if self._consistency() == Consistency.INCONSISTENT:
             # Tracking is still pending
+            return
+
+        if any([not source._stable() for source in self.__sources]):
+            # If any source is not stable, discard current cache key values
+            # as their correct values can only be calculated once the build is complete
+            self.__cache_key_dict = None
+            self.__cache_key = None
+            self.__weak_cache_key = None
+            self.__strict_cache_key = None
+            self.__strong_cached = None
+            self.__remotely_cached = None
+            self.__remotely_strong_cached = None
             return
 
         if self.__weak_cache_key is None:

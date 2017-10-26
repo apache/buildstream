@@ -117,6 +117,16 @@ class Queue():
     def status(self, element):
         return QueueStatus.READY
 
+    # prepare()
+    #
+    # Abstract method for handling job preparation in the main process.
+    #
+    # Args:
+    #    element (Element): The element which is scheduled
+    #
+    def prepare(self, element):
+        pass
+
     # done()
     #
     # Abstract method for handling a successful job completion.
@@ -177,6 +187,8 @@ class Queue():
                 self.done_queue.append(element)
                 self.skipped_elements.append(element)
                 continue
+
+            self.prepare(element)
 
             job = Job(scheduler, element, self.action_name)
             scheduler.job_starting(job)

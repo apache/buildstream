@@ -84,6 +84,7 @@ class Source(Plugin):
         self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
         self.__tracking = False                         # Source is scheduled to be tracked
+        self.__assemble_scheduled = False               # Source is scheduled to be assembled
         self.__workspace = None                         # Directory of the currently active workspace
         self.__workspace_key = None                     # Cached directory content hashes for workspaced source
 
@@ -301,16 +302,50 @@ class Source(Plugin):
     def _schedule_tracking(self):
         self.__tracking = True
 
+    # _schedule_assemble():
+    #
+    # This is called in the main process before the element is assembled
+    # in a subprocess.
+    #
+    def _schedule_assemble(self):
+        assert(not self.__assemble_scheduled)
+        self.__assemble_scheduled = True
+
+        # Invalidate workspace key as the build modifies the workspace directory
+        self.__workspace_key = None
+
+    # _assemble_done():
+    #
+    # This is called in the main process after the element has been assembled
+    # in a subprocess.
+    #
+    def _assemble_done(self):
+        assert(self.__assemble_scheduled)
+        self.__assemble_scheduled = False
+
+    # _stable():
+    #
+    # Unstable sources are mounted read/write and thus cannot produce a
+    # (stable) cache key before the build is complete.
+    #
+    def _stable(self):
+        # Source directory is modified by workspace build process
+        return not (self._has_workspace() and self.__assemble_scheduled)
+
     # Wrapper function around plugin provided fetch method
     #
     def _fetch(self):
         self.fetch()
 
-    # Ensures a fully constructed path and returns it
-    def _ensure_directory(self, directory):
+    # Return the path where this source should be staged under given dierctory
+    def _get_staging_path(self, directory):
         if self.__directory is not None:
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
+        return directory
 
+    # Ensures a fully constructed path and returns it
+    def _ensure_directory(self, directory):
+        directory = self._get_staging_path(directory)
         try:
             os.makedirs(directory, exist_ok=True)
         except OSError as e:
@@ -324,12 +359,12 @@ class Source(Plugin):
     # 'directory' option
     #
     def _stage(self, directory):
-        directory = self._ensure_directory(directory)
+        staging_directory = self._ensure_directory(directory)
 
         if self._has_workspace():
-            self._stage_workspace(directory)
+            self._stage_workspace(staging_directory)
         else:
-            self.stage(directory)
+            self.stage(staging_directory)
 
     # Wrapper for init_workspace()
     def _init_workspace(self, directory):
@@ -429,6 +464,8 @@ class Source(Plugin):
     # new calculation to happen by setting the 'recalculate' flag.
     #
     def _get_workspace_key(self, recalculate=False):
+        assert(not self.__assemble_scheduled)
+
         if recalculate or self.__workspace_key is None:
             fullpath = self._get_workspace_path()
 

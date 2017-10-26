@@ -30,6 +30,10 @@ class BuildQueue(Queue):
     complete_name = "Built"
     queue_type = QueueType.BUILD
 
+    def prepare(self, element):
+        # Inform element in main process that it is scheduled for assembly
+        element._schedule_assemble()
+
     def process(self, element):
         element._assemble()
         return element._get_unique_id()
@@ -47,8 +51,9 @@ class BuildQueue(Queue):
         return QueueStatus.READY
 
     def done(self, element, result, returncode):
-        # Elements are cached after they are successfully assembled
-        if returncode == 0:
-            element._update_state()
+        # Inform element in main process that assembly is done
+        element._assemble_done()
+
+        element._update_state()
 
         return True
