@@ -739,7 +739,7 @@ class Pipeline():
         for element_name in removed:
             element = search_tree(element_name)
             if element is None:
-                raise PipelineError("No element named {}".format(element_name))
+                raise PipelineError("No element named {} in the loaded pipeline".format(element_name))
 
             to_remove.update(element.dependencies(Scope.ALL))
 
