@@ -79,6 +79,13 @@ def list_relative_paths(directory):
        Relative filenames in `directory`
     """
     for (dirpath, dirnames, filenames) in os.walk(directory):
+
+        relpath = os.path.relpath(dirpath, directory)
+
+        # We don't want "./" pre-pended to all the entries in the root of
+        # `directory`, prefer to have no prefix in that case.
+        basepath = relpath if relpath != '.' and dirpath != directory else ''
+
         # os.walk does not decend into symlink directories, which
         # makes sense because otherwise we might have redundant
         # directories, or end up descending into directories outside
@@ -91,21 +98,17 @@ def list_relative_paths(directory):
         for d in dirnames:
             fullpath = os.path.join(dirpath, d)
             if os.path.islink(fullpath):
-                relpath = os.path.relpath(fullpath, directory)
-                yield relpath
+                yield os.path.join(basepath, d)
 
         # We've decended into an empty directory, in this case we
         # want to include the directory itself, but not in any other
         # case.
         if not filenames:
-            relpath = os.path.relpath(dirpath, directory)
             yield relpath
 
         # List the filenames in the walked directory
         for f in filenames:
-            fullpath = os.path.join(dirpath, f)
-            relpath = os.path.relpath(fullpath, directory)
-            yield relpath
+            yield os.path.join(basepath, f)
 
 
 def glob(paths, pattern):
