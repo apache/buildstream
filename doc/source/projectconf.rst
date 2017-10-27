@@ -60,6 +60,8 @@ URLs which are to be used in the individual ``.bst`` files.
      bar: http://bar.com/downloads/
 
 
+.. _project_essentials_artifacts:
+
 Artifact Server
 ~~~~~~~~~~~~~~~
 If you have setup an :ref:`artifact server <artifacts>` for your
