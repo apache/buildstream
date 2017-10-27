@@ -87,12 +87,12 @@ class Planner():
         self.depth_map[element] = depth
         self.visiting_elements.remove(element)
 
-    def plan(self, root):
-        self.plan_element(root, 0)
+    def plan(self, roots):
+        for root in roots:
+            self.plan_element(root, 0)
 
         depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
         return [item[0] for item in depth_sorted if not item[0]._cached()]
-
 
 # Pipeline()
 #
