@@ -251,7 +251,7 @@ class TarCache(ArtifactCache):
     #
     def contains(self, element, strength=None):
         if strength is None:
-            strength = _KeyStrength.STRONG if self.context.strict_build_plan else _KeyStrength.WEAK
+            strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
 
         key = element._get_cache_key(strength)
 

@@ -88,7 +88,7 @@ class OSTreeCache(ArtifactCache):
     #
     def contains(self, element, strength=None):
         if strength is None:
-            strength = _KeyStrength.STRONG if self.context.strict_build_plan else _KeyStrength.WEAK
+            strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
 
         key = element._get_cache_key(strength)
         if not key:
@@ -128,7 +128,7 @@ class OSTreeCache(ArtifactCache):
     #
     def remote_contains(self, element, strength=None):
         if strength is None:
-            strength = _KeyStrength.STRONG if self.context.strict_build_plan else _KeyStrength.WEAK
+            strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
 
         key = element._get_cache_key(strength)
         if not key:
@@ -160,7 +160,7 @@ class OSTreeCache(ArtifactCache):
 
         # resolve weak cache key, if artifact is missing for strong cache key
         # and the context allows use of weak cache keys
-        if not rev and not self.context.strict_build_plan:
+        if not rev and not element._get_strict():
             ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
             rev = _ostree.checksum(self.repo, ref)
 
