@@ -743,13 +743,17 @@ def composite_dict(target, source, path=None):
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
 def composite(target, source):
-    provenance = node_get_provenance(source)
+    if not hasattr(source, 'get'):
+        raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                        "Only values of type 'dict' can be composed.")
+
+    source_provenance = node_get_provenance(source)
     try:
         composite_dict(target, source)
     except CompositeTypeError as e:
         error_prefix = ""
-        if provenance:
-            error_prefix = "[%s]: " % str(provenance)
+        if source_provenance:
+            error_prefix = "[%s]: " % str(source_provenance)
         raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                         "%sExpected '%s' type for configuration '%s', instead received '%s'" %
                         (error_prefix,

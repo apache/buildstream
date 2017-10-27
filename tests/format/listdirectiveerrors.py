@@ -39,3 +39,18 @@ def test_element_error(cli, datafiles, target):
     assert result.exception
     assert isinstance(result.exception, LoadError)
     assert result.exception.reason == LoadErrorReason.TRAILING_LIST_DIRECTIVE
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_project_error(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'list-directive-type-error')
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+
+    assert result.exit_code != 0
+    assert result.exception
+    assert isinstance(result.exception, LoadError)
+    assert result.exception.reason == LoadErrorReason.ILLEGAL_COMPOSITE
