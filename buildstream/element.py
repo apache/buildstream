@@ -718,7 +718,7 @@ class Element(Plugin):
             self.__strong_cached = None
 
         if strength is None:
-            strength = _KeyStrength.STRONG if self.get_context().strict_build_plan else _KeyStrength.WEAK
+            strength = _KeyStrength.STRONG if self._get_strict() else _KeyStrength.WEAK
 
         if recalculate is not False:
             if self.__cached is None and self._get_cache_key() is not None:
@@ -766,7 +766,7 @@ class Element(Plugin):
             self.__remotely_strong_cached = None
 
         if strength is None:
-            strength = _KeyStrength.STRONG if self.get_context().strict_build_plan else _KeyStrength.WEAK
+            strength = _KeyStrength.STRONG if self._get_strict() else _KeyStrength.WEAK
 
         if recalculate is not False:
             if self.__remotely_cached is None and self._get_cache_key() is not None:
@@ -967,7 +967,7 @@ class Element(Plugin):
 
         if self._consistency() == Consistency.INCONSISTENT:
             cache_key = None
-        elif context.strict_build_plan or self._cached(strength=_KeyStrength.STRONG):
+        elif self._get_strict() or self._cached(strength=_KeyStrength.STRONG):
             cache_key = self._get_cache_key()
         elif self._cached():
             cache_key = self._get_cache_key_from_artifact()
@@ -1393,6 +1393,19 @@ class Element(Plugin):
         utils._set_deterministic_mtime(directory)
         # Ensure deterministic owners of sources at build time
         utils._set_deterministic_user(directory)
+
+    # _get_strict()
+    #
+    # Convenience method to check strict build plan, since
+    # the element carries it's project reference
+    #
+    # Returns:
+    #   (bool): Whether the build plan is strict for this element
+    #
+    def _get_strict(self):
+        project = self.get_project()
+        context = self.get_context()
+        return context._get_strict(project.name)
 
     #############################################################
     #                   Private Local Methods                   #
