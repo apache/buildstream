@@ -67,7 +67,8 @@ def list_relative_paths(directory):
     This generator is useful for checking the full manifest of
     a directory.
 
-    Note that only empty directories will be yielded.
+    Note that directories will be yielded only if they are
+    empty.
 
     Symbolic links will not be followed, but will be included
     in the manifest.
