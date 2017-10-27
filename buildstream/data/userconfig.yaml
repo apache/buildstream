@@ -10,9 +10,6 @@
 # paths.
 #
 
-# Whether elements must be rebuilt when their dependencies have changed
-strict: True
-
 # Location to store sources
 sourcedir: ${XDG_CACHE_HOME}/buildstream/sources
 
@@ -97,19 +94,3 @@ logging:
 
     %{state: >12} %{key} %{name} %{workspace-dirs}
 
-#
-#    Per project overrides
-#
-# Some settings defined in the project configuration can be overridden by
-# the user configuration.
-#
-# projects:
-#
-#   project1:
-#     artifacts:
-#       pull-url: https://artifacts.com
-#       push-url: artifacts@artifacts.com:artifacts
-#       push-port: 443
-#
-#   project2:
-#     ...

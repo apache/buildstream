@@ -59,7 +59,7 @@ class Context():
         self.target_arch = target_arch or host_arch
         """The machine on which the results of the build should execute"""
 
-        self.strict_build_plan = True
+        self.strict_build_plan = None
         """Whether elements must be rebuilt when their dependencies have changed"""
 
         self.sourcedir = None
@@ -161,14 +161,9 @@ class Context():
             _yaml.composite(defaults, user_config)
 
         _yaml.node_validate(defaults, [
-            'strict', 'sourcedir',
-            'builddir', 'artifactdir',
-            'logdir', 'scheduler',
-            'artifacts', 'logging',
-            'projects',
+            'sourcedir', 'builddir', 'artifactdir', 'logdir',
+            'scheduler', 'artifacts', 'logging', 'projects',
         ])
-
-        self.strict_build_plan = _yaml.node_get(defaults, bool, 'strict')
 
         for dir in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
             # Allow the ~ tilde expansion and any environment variables in
@@ -247,6 +242,25 @@ class Context():
     #
     def _get_overrides(self, project_name):
         return _yaml.node_get(self._project_overrides, Mapping, project_name, default_value={})
+
+    # _get_strict():
+    #
+    # Fetch whether we are strict or not
+    #
+    # Args:
+    #    project_name (str): The project name
+    #
+    # Returns:
+    #    (bool): Whether or not to use strict build plan
+    #
+    def _get_strict(self, project_name):
+
+        # If it was set by the CLI, it overrides any config
+        if self.strict_build_plan is not None:
+            return self.strict_build_plan
+
+        overrides = self._get_overrides(project_name)
+        return _yaml.node_get(overrides, bool, 'strict', default_value=True)
 
     # _get_cache_key():
     #
