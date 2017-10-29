@@ -105,6 +105,7 @@ class Planner():
 #                         current source refs will not be the effective refs.
 #    rewritable (bool): Whether the loaded files should be rewritable
 #                       this is a bit more expensive due to deep copies
+#    fetch_remote_refs (bool): Whether to attempt to check remote artifact server for new refs
 #    load_ticker (callable): A function which will be called for each loaded element
 #    resolve_ticker (callable): A function which will be called for each resolved element
 #    cache_ticker (callable): A function which will be called for each element
@@ -126,6 +127,7 @@ class Pipeline():
     def __init__(self, context, project, target,
                  inconsistent=False,
                  rewritable=False,
+                 fetch_remote_refs=False,
                  load_ticker=None,
                  resolve_ticker=None,
                  remote_ticker=None,
@@ -173,7 +175,7 @@ class Pipeline():
 
             self.project._set_workspace(element, source, workspace)
 
-        if self.artifacts.can_fetch():
+        if fetch_remote_refs and self.artifacts.can_fetch():
             try:
                 if remote_ticker:
                     remote_ticker(self.artifacts.artifact_pull)
