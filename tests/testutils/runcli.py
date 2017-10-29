@@ -112,6 +112,7 @@ class Cli():
             'show',
             '--deps', 'none',
             '--format', '%{state}',
+            '--downloadable',
             element_name
         ])
         assert result.exit_code == 0
