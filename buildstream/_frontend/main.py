@@ -203,7 +203,7 @@ def cli(context, **kwargs):
 def build(app, target, all, track):
     """Build elements in a pipeline"""
 
-    app.initialize(target, rewritable=track, inconsistent=track)
+    app.initialize(target, rewritable=track, inconsistent=track, fetch_remote_refs=True)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track)
@@ -314,7 +314,7 @@ def pull(app, target, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(target)
+    app.initialize(target, fetch_remote_refs=True)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -344,7 +344,7 @@ def push(app, target, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(target)
+    app.initialize(target, fetch_remote_refs=True)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -370,10 +370,12 @@ def push(app, target, deps):
 @click.option('--format', '-f', metavar='FORMAT', default=None,
               type=click.STRING,
               help='Format string for each element')
+@click.option('--downloadable', default=False, is_flag=True,
+              help="Refresh downloadable state")
 @click.argument('target',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def show(app, target, deps, except_, order, format):
+def show(app, target, deps, except_, order, format, downloadable):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -420,7 +422,7 @@ def show(app, target, deps, except_, order, format):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(target)
+    app.initialize(target, fetch_remote_refs=downloadable)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
     except PipelineError as e:
@@ -758,7 +760,7 @@ class App():
     #
     # Initialize the main pipeline
     #
-    def initialize(self, target, rewritable=False, inconsistent=False):
+    def initialize(self, target, rewritable=False, inconsistent=False, fetch_remote_refs=False):
         self.target = target
 
         profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' +
@@ -836,6 +838,7 @@ class App():
             self.pipeline = Pipeline(self.context, self.project, target,
                                      inconsistent=inconsistent,
                                      rewritable=rewritable,
+                                     fetch_remote_refs=fetch_remote_refs,
                                      load_ticker=self.load_ticker,
                                      resolve_ticker=self.resolve_ticker,
                                      remote_ticker=self.remote_ticker,
