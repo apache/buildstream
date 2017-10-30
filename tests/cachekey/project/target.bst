@@ -15,6 +15,8 @@ depends:
 - sources/patch3.bst
 - sources/tar1.bst
 - sources/tar2.bst
+- sources/zip1.bst
+- sources/zip2.bst
 - elements/build1.bst
 - elements/compose1.bst
 - elements/compose2.bst

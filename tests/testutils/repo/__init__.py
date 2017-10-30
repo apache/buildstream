@@ -6,12 +6,14 @@ from .git import Git
 from .bzr import Bzr
 from .ostree import OSTree
 from .tar import Tar
+from .zip import Zip
 
 ALL_REPO_KINDS = OrderedDict()
 ALL_REPO_KINDS['git'] = Git
 ALL_REPO_KINDS['bzr'] = Bzr
 ALL_REPO_KINDS['ostree'] = OSTree
 ALL_REPO_KINDS['tar'] = Tar
+ALL_REPO_KINDS['zip'] = Zip
 
 
 # create_repo()
