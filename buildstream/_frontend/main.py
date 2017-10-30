@@ -550,7 +550,7 @@ def source_bundle(app, target, force, directory,
         dependencies = app.pipeline.deps_elements('all', except_)
         app.print_heading(dependencies)
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
-                                   compression, except_, directory)
+                                   compression, directory)
         click.echo("")
     except _BstError as e:
         click.echo("")

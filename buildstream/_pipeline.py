@@ -314,7 +314,6 @@ class Pipeline():
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to track
-    #    except_ (list): List of elements to except from tracking
     #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
@@ -351,7 +350,6 @@ class Pipeline():
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to fetch
     #    track_first (bool): Track new source references before fetching
-    #    except_ (list): List of elements to except from fetching
     #
     def fetch(self, scheduler, dependencies, track_first):
 
@@ -800,7 +798,7 @@ class Pipeline():
     #    directory (str): The directory to checkout the artifact to
     #
     def source_bundle(self, scheduler, dependencies, force,
-                      track_first, compression, except_, directory):
+                      track_first, compression, directory):
 
         # Find the correct filename for the compression algorithm
         tar_location = os.path.join(directory, self.target.normal_name + ".tar")
