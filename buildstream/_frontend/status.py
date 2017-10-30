@@ -281,9 +281,9 @@ class StatusHeader():
         # Format and calculate size for pipeline target and overall time code
         size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
         size += 8  # Size of time code
-        size += len(self.pipeline.target.name) + 1
+        size += len(self.pipeline.project.name) + 1
         text += self.time_code.render_time(elapsed)
-        text += ' ' + self.content_profile.fmt(self.pipeline.target.name)
+        text += ' ' + self.content_profile.fmt(self.pipeline.project.name)
         text += ' ' + self.format_profile.fmt('(') + \
                 self.content_profile.fmt(session) + \
                 self.format_profile.fmt('/') + \

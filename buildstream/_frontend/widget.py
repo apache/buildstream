@@ -436,7 +436,7 @@ class LogLine(Widget):
         values = OrderedDict()
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)
-        values["Target"] = pipeline.target.name
+        values["Targets"] = ", ".join([t.name for t in pipeline.targets])
         values["Host Architecture"] = context.host_arch
         values["Target Architecture"] = context.target_arch
         text += self.format_values(values)
