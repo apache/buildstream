@@ -179,11 +179,11 @@ class ElementName(Widget):
 
     def render(self, message):
         element_id = message.task_id or message.unique_id
-        if element_id is not None:
-            plugin = _plugin_lookup(element_id)
-            name = plugin.name
-        else:
-            name = ''
+        if element_id is None:
+            return ""
+
+        plugin = _plugin_lookup(element_id)
+        name = plugin.name
 
         # Sneak the action name in with the element name
         action_name = message.action_name
@@ -226,10 +226,12 @@ class CacheKey(Widget):
         missing = False
         key = ' ' * self.key_length
         element_id = message.task_id or message.unique_id
-        if element_id is not None:
-            plugin = _plugin_lookup(element_id)
-            if isinstance(plugin, Element):
-                _, key, missing = plugin._get_full_display_key()
+        if element_id is None:
+            return ""
+
+        plugin = _plugin_lookup(element_id)
+        if isinstance(plugin, Element):
+            _, key, missing = plugin._get_full_display_key()
 
         if message.message_type in [MessageType.FAIL, MessageType.BUG]:
             text = self.err_profile.fmt(key)
