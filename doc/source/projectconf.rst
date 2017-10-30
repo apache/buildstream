@@ -145,6 +145,11 @@ dictionary.
        description: Whether to enable debugging
        default: False
 
+Users can configure those options when invoking BuildStream with the
+``--option`` argument::
+
+    $ bst --option debug True ...
+
 
 Common Properties
 ~~~~~~~~~~~~~~~~~
