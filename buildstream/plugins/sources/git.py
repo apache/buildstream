@@ -142,8 +142,22 @@ class GitMirror():
         # We need to pass '--no-hardlinks' because there's nothing to
         # stop the build from overwriting the files in the .git directory
         # inside the sandbox.
-        self.source.call([self.source.host_git, 'clone', '--no-hardlinks', self.mirror, fullpath],
+        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--no-hardlinks', self.mirror, fullpath],
                          fail="Failed to checkout git mirror {} in directory: {}".format(self.mirror, fullpath))
+
+        self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
+                         fail="Failed to checkout git ref {}".format(self.ref),
+                         cwd=fullpath)
+
+    def init_workspace(self, directory):
+        fullpath = os.path.join(directory, self.path)
+
+        self.source.call([self.source.host_git, 'clone', '--no-checkout', self.mirror, fullpath],
+                         fail="Failed to clone git mirror {} in directory: {}".format(self.mirror, fullpath))
+
+        self.source.call([self.source.host_git, 'remote', 'set-url', 'origin', self.url],
+                         fail='Failed to add remote origin "{}"'.format(self.url),
+                         cwd=fullpath)
 
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
                          fail="Failed to checkout git ref {}".format(self.ref),
@@ -294,6 +308,15 @@ class GitSource(Source):
             #
             self.refresh_submodules()
             self.fetch_submodules()
+
+    def init_workspace(self, directory):
+        # XXX: may wish to refactor this as some code dupe with stage()
+        self.refresh_submodules()
+
+        with self.timed_activity('Initing workspace "{}"'.format(directory), silent_nested=True):
+            self.mirror.init_workspace(directory)
+            for mirror in self.submodules:
+                mirror.init_workspace(directory)
 
     def stage(self, directory):
 
