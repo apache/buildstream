@@ -21,7 +21,7 @@ def create_pipeline(tmpdir, basedir, target):
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform()
 
-    return Pipeline(context, project, target)
+    return Pipeline(context, project, [target])
 
 
 @pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
@@ -30,7 +30,7 @@ def test_customsource(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
-    assert(pipeline.target.get_kind() == "autotools")
+    assert(pipeline.targets[0].get_kind() == "autotools")
 
 
 @pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
@@ -39,7 +39,7 @@ def test_customelement(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
-    assert(pipeline.target.get_kind() == "foo")
+    assert(pipeline.targets[0].get_kind() == "foo")
 
 
 @pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")

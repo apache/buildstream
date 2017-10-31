@@ -19,9 +19,9 @@ DATA_DIR = os.path.join(
 def test_one_file(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/onefile.bst', make_options(basedir), None, None)
+    loader = Loader(basedir, ['elements/onefile.bst'], make_options(basedir), None, None)
 
-    element = loader.load()
+    element = loader.load()[0]
 
     assert(isinstance(element, MetaElement))
     assert(element.kind == 'pony')
@@ -31,10 +31,10 @@ def test_one_file(datafiles):
 def test_missing_file(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/missing.bst', make_options(basedir), None, None)
+    loader = Loader(basedir, ['elements/missing.bst'], make_options(basedir), None, None)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load()
+        element = loader.load()[0]
 
     assert (exc.value.reason == LoadErrorReason.MISSING_FILE)
 
@@ -43,10 +43,10 @@ def test_missing_file(datafiles):
 def test_invalid_reference(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/badreference.bst', make_options(basedir), None, None)
+    loader = Loader(basedir, ['elements/badreference.bst'], make_options(basedir), None, None)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load()
+        element = loader.load()[0]
 
     assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
 
@@ -55,10 +55,10 @@ def test_invalid_reference(datafiles):
 def test_invalid_yaml(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/badfile.bst', make_options(basedir), None, None)
+    loader = Loader(basedir, ['elements/badfile.bst'], make_options(basedir), None, None)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load()
+        element = loader.load()[0]
 
     assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
 
@@ -70,7 +70,7 @@ def test_fail_fullpath_target(datafiles):
     fullpath = os.path.join(basedir, 'elements', 'onefile.bst')
 
     with pytest.raises(LoadError) as exc:
-        loader = Loader(basedir, fullpath, make_options(basedir), None, None)
+        loader = Loader(basedir, [fullpath], make_options(basedir), None, None)
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
@@ -79,9 +79,9 @@ def test_fail_fullpath_target(datafiles):
 def test_invalid_key(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    loader = Loader(basedir, 'elements/invalidkey.bst', make_options(basedir), None, None)
+    loader = Loader(basedir, ['elements/invalidkey.bst'], make_options(basedir), None, None)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load()
+        element = loader.load()[0]
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)

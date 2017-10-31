@@ -20,9 +20,9 @@ def test_simple_conditional_nomatch(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-conditional.bst', make_options(basedir), 'arm', None)
+        basedir, ['elements/simple-conditional.bst'], make_options(basedir), 'arm', None)
 
-    element = loader.load()
+    element = loader.load()[0]
     assert(isinstance(element, MetaElement))
     number = element.config.get('number')
 
@@ -35,9 +35,9 @@ def test_simple_conditional_x86_64(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-conditional.bst', make_options(basedir), 'x86_64', None)
+        basedir, ['elements/simple-conditional.bst'], make_options(basedir), 'x86_64', None)
 
-    element = loader.load()
+    element = loader.load()[0]
     assert(isinstance(element, MetaElement))
     number = element.config.get('number')
 
@@ -50,9 +50,9 @@ def test_simple_conditional_x86_32(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/simple-conditional.bst', make_options(basedir), 'x86_32', None)
+        basedir, ['elements/simple-conditional.bst'], make_options(basedir), 'x86_32', None)
 
-    element = loader.load()
+    element = loader.load()[0]
     assert(isinstance(element, MetaElement))
     number = element.config.get('number')
 
@@ -70,9 +70,9 @@ def test_host_arch_conditional_armv8(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/host-arch-conditional.bst', make_options(basedir), 'armv8', None)
+        basedir, ['elements/host-arch-conditional.bst'], make_options(basedir), 'armv8', None)
 
-    element = loader.load()
+    element = loader.load()[0]
     assert(isinstance(element, MetaElement))
     number = element.config.get('number')
 
@@ -85,9 +85,9 @@ def test_host_arch_conditional_ignores_target_arch(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/host-arch-conditional.bst', make_options(basedir), 'armv8', 'x86_32')
+        basedir, ['elements/host-arch-conditional.bst'], make_options(basedir), 'armv8', 'x86_32')
 
-    element = loader.load()
+    element = loader.load()[0]
     assert(isinstance(element, MetaElement))
     number = element.config.get('number')
 
@@ -101,9 +101,9 @@ def test_host_arch_conditional_overridden(datafiles):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = Loader(
-        basedir, 'elements/host-arch-conditional.bst', make_options(basedir), 'armv8', 'x86_64')
+        basedir, ['elements/host-arch-conditional.bst'], make_options(basedir), 'armv8', 'x86_64')
 
-    element = loader.load()
+    element = loader.load()[0]
     assert(isinstance(element, MetaElement))
     number = element.config.get('number')
 

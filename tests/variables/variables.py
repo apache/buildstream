@@ -18,15 +18,15 @@ def create_pipeline(tmpdir, basedir, target):
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform()
 
-    return Pipeline(context, project, target)
+    return Pipeline(context, project, [target])
 
 
 def assert_command(datafiles, tmpdir, target, command, expected):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     pipeline = create_pipeline(tmpdir, basedir, target)
-    assert(isinstance(pipeline.target, BuildElement))
+    assert(isinstance(pipeline.targets[0], BuildElement))
 
-    commands = pipeline.target.commands
+    commands = pipeline.targets[0].commands
     assert(commands.get(command) is not None)
     assert(len(commands[command]) > 0)
 
