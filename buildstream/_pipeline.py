@@ -95,6 +95,7 @@ class Planner():
         depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
         return [item[0] for item in depth_sorted if not item[0]._cached()]
 
+
 # Pipeline()
 #
 # Args:
@@ -477,6 +478,9 @@ class Pipeline():
     #    force (bool): Force overwrite files which exist in `directory`
     #
     def checkout(self, directory, force):
+        # We only have one target in a checkout command
+        target = self.targets[0]
+
         try:
             os.makedirs(directory, exist_ok=True)
         except OSError as e:
@@ -498,11 +502,11 @@ class Pipeline():
                          "Host-incompatible checkout -- no integration commands can be run")
 
         # Stage deps into a temporary sandbox first
-        with self.target._prepare_sandbox(Scope.RUN, None, integrate=can_integrate) as sandbox:
+        with target._prepare_sandbox(Scope.RUN, None, integrate=can_integrate) as sandbox:
 
             # Make copies from the sandbox into to the desired directory
             sandbox_root = sandbox.get_directory()
-            with self.target.timed_activity("Copying files to {}".format(directory)):
+            with target.timed_activity("Copying files to {}".format(directory)):
                 try:
                     utils.copy_files(sandbox_root, directory)
                 except OSError as e:
@@ -520,8 +524,10 @@ class Pipeline():
     #    force (bool): Whether to ignore contents in an existing directory
     #
     def open_workspace(self, scheduler, directory, source_index, no_checkout, track_first, force):
+        # When working on workspaces we only have one target
+        target = self.targets[0]
         workdir = os.path.abspath(directory)
-        sources = list(self.target.sources())
+        sources = list(target.sources())
         source_index = self.validate_workspace_index(source_index)
 
         # Check directory
@@ -534,11 +540,11 @@ class Pipeline():
             raise PipelineError("Checkout directory is not empty: {}".format(directory))
 
         # Check for workspace config
-        if self.project._get_workspace(self.target.name, source_index):
+        if self.project._get_workspace(target.name, source_index):
             raise PipelineError("Workspace '{}' is already defined."
-                                .format(self.target.name + " - " + str(source_index)))
+                                .format(target.name + " - " + str(source_index)))
 
-        plan = [self.target]
+        plan = [target]
 
         # Track/fetch if required
         queues = []
@@ -571,7 +577,7 @@ class Pipeline():
 
         if not no_checkout:
             source = sources[source_index]
-            with self.target.timed_activity("Staging source to {}".format(directory)):
+            with target.timed_activity("Staging source to {}".format(directory)):
                 if source.get_consistency() != Consistency.CACHED:
                     raise PipelineError("Could not stage uncached source. " +
                                         "Use `--track` to track and " +
@@ -579,9 +585,9 @@ class Pipeline():
                                         "source.")
                 source._stage(directory)
 
-        self.project._set_workspace(self.target, source_index, workdir)
+        self.project._set_workspace(target, source_index, workdir)
 
-        with self.target.timed_activity("Saving workspace configuration"):
+        with target.timed_activity("Saving workspace configuration"):
             self.project._save_workspace_config()
 
     # close_workspace
@@ -593,14 +599,16 @@ class Pipeline():
     #    remove_dir (bool) - Whether to remove the associated directory
     #
     def close_workspace(self, source_index, remove_dir):
+        # When working on workspaces we only have one target
+        target = self.targets[0]
         source_index = self.validate_workspace_index(source_index)
 
         # Remove workspace directory if prompted
         if remove_dir:
-            path = self.project._get_workspace(self.target.name, source_index)
+            path = self.project._get_workspace(target.name, source_index)
             if path is not None:
-                with self.target.timed_activity("Removing workspace directory {}"
-                                                .format(path)):
+                with target.timed_activity("Removing workspace directory {}"
+                                           .format(path)):
                     try:
                         shutil.rmtree(path)
                     except OSError as e:
@@ -608,18 +616,18 @@ class Pipeline():
                                             .format(path, e)) from e
 
         # Delete the workspace config entry
-        with self.target.timed_activity("Removing workspace"):
+        with target.timed_activity("Removing workspace"):
             try:
-                self.project._delete_workspace(self.target.name, source_index)
+                self.project._delete_workspace(target.name, source_index)
             except KeyError:
                 raise PipelineError("Workspace '{}' is currently not defined"
-                                    .format(self.target.name + " - " + str(source_index)))
+                                    .format(target.name + " - " + str(source_index)))
 
         # Update workspace config
         self.project._save_workspace_config()
 
         # Reset source to avoid checking out the (now empty) workspace
-        source = list(self.target.sources())[source_index]
+        source = list(target.sources())[source_index]
         source._del_workspace()
 
     # reset_workspace
@@ -634,12 +642,14 @@ class Pipeline():
     #    no_checkout (bool): Whether to check out the source (at all)
     #
     def reset_workspace(self, scheduler, source_index, track, no_checkout):
+        # When working on workspaces we only have one target
+        target = self.targets[0]
         source_index = self.validate_workspace_index(source_index)
-        workspace_dir = self.project._get_workspace(self.target.name, source_index)
+        workspace_dir = self.project._get_workspace(target.name, source_index)
 
         if workspace_dir is None:
             raise PipelineError("Workspace '{}' is currently not defined"
-                                .format(self.target.name + " - " + str(source_index)))
+                                .format(target.name + " - " + str(source_index)))
 
         self.close_workspace(source_index, True)
 
@@ -770,7 +780,7 @@ class Pipeline():
         return [element for element in tree if element not in to_remove]
 
     def validate_workspace_index(self, source_index):
-        sources = list(self.target.sources())
+        sources = list(self.targets[0].sources())
 
         # Validate source_index
         if len(sources) < 1:
@@ -815,8 +825,11 @@ class Pipeline():
     def source_bundle(self, scheduler, dependencies, force,
                       track_first, compression, directory):
 
+        # source-bundle only supports one target
+        target = self.targets[0]
+
         # Find the correct filename for the compression algorithm
-        tar_location = os.path.join(directory, self.target.normal_name + ".tar")
+        tar_location = os.path.join(directory, target.normal_name + ".tar")
         if compression != "none":
             tar_location += "." + compression
 
@@ -838,8 +851,8 @@ class Pipeline():
         # bound.
 
         # Create a temporary directory to build the source tree in
-        builddir = self.target.get_context().builddir
-        prefix = "{}-".format(self.target.normal_name)
+        builddir = target.get_context().builddir
+        prefix = "{}-".format(target.normal_name)
 
         with TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:
             source_directory = os.path.join(tempdir, 'source')
@@ -857,7 +870,7 @@ class Pipeline():
             self._write_element_sources(tempdir, plan)
             self._write_build_script(tempdir, plan)
             self._collect_sources(tempdir, tar_location,
-                                  self.target.normal_name, compression)
+                                  target.normal_name, compression)
 
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
@@ -894,7 +907,7 @@ class Pipeline():
 
     # Collect the sources in the given sandbox into a tarfile
     def _collect_sources(self, directory, tar_name, element_name, compression):
-        with self.target.timed_activity("Creating tarball {}".format(tar_name)):
+        with self.targets[0].timed_activity("Creating tarball {}".format(tar_name)):
             if compression == "none":
                 permissions = "w:"
             else:
