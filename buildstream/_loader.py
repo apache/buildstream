@@ -21,7 +21,7 @@
 import os
 import copy
 from functools import cmp_to_key
-from collections import Mapping
+from collections import Mapping, namedtuple
 
 from . import LoadError, LoadErrorReason
 from . import _yaml
@@ -230,24 +230,25 @@ def extract_depends_from_node(owner, data):
 #
 class Loader():
 
-    def __init__(self, basedir, filename, options, host_arch, target_arch):
+    def __init__(self, basedir, filenames, options, host_arch, target_arch):
 
         # Ensure we have an absolute path for the base directory
         #
         if not os.path.isabs(basedir):
             basedir = os.path.abspath(basedir)
 
-        if os.path.isabs(filename):
-            # XXX Should this just be an assertion ?
-            # Expect that the caller gives us the right thing at least ?
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Target '%s' was not specified as a relative "
-                            "path to the base project directory: %s" %
-                            (filename, basedir))
+        for filename in filenames:
+            if os.path.isabs(filename):
+                # XXX Should this just be an assertion ?
+                # Expect that the caller gives us the right thing at least ?
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "Target '%s' was not specified as a relative "
+                                "path to the base project directory: %s" %
+                                (filename, basedir))
 
         self.options = options   # Project options (OptionPool)
         self.basedir = basedir   # Base project directory
-        self.target = filename   # Target bst element
+        self.targets = filenames   # Target bst elements
 
         self.host_arch = host_arch
         self.target_arch = target_arch
@@ -275,27 +276,37 @@ class Loader():
 
         # First pass, recursively load files and populate our table of LoadElements
         #
-        profile_start(Topics.LOAD_PROJECT, self.target)
-        target = self.load_file(self.target, rewritable, ticker)
-        profile_end(Topics.LOAD_PROJECT, self.target)
+        for target in self.targets:
+            profile_start(Topics.LOAD_PROJECT, target)
+            self.load_file(target, rewritable, ticker)
+            profile_end(Topics.LOAD_PROJECT, target)
 
         #
         # Now that we've resolve the dependencies, scan them for circular dependencies
         #
-        profile_start(Topics.CIRCULAR_CHECK, self.target)
-        self.check_circular_deps(self.target)
-        profile_end(Topics.CIRCULAR_CHECK, self.target)
+
+        # Set up a dummy element that depends on all top-level targets
+        # to resolve potential circular dependencies between them
+        DummyTarget = namedtuple('DummyTarget', ['name', 'deps'])
+        dummy = DummyTarget(name='', deps=[self.elements[e] for e in self.targets])
+        self.elements[''] = dummy
+
+        profile_key = "_".join(t for t in self.targets)
+        profile_start(Topics.CIRCULAR_CHECK, profile_key)
+        self.check_circular_deps('')
+        profile_end(Topics.CIRCULAR_CHECK, profile_key)
 
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
-        profile_start(Topics.SORT_DEPENDENCIES, self.target)
-        self.sort_dependencies(self.target)
-        profile_end(Topics.SORT_DEPENDENCIES, self.target)
+        for target in self.targets:
+            profile_start(Topics.SORT_DEPENDENCIES, target)
+            self.sort_dependencies(target)
+            profile_end(Topics.SORT_DEPENDENCIES, target)
 
         # Finally, wrap what we have into LoadElements and return the target
         #
-        return self.collect_element(self.target)
+        return [self.collect_element(target) for target in self.targets]
 
     ########################################
     #             Loading Files            #
