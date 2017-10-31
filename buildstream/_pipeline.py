@@ -39,6 +39,7 @@ from . import Scope
 from . import _site
 from . import _yaml, utils
 from ._platform import Platform
+from .element import Element
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 
@@ -170,13 +171,14 @@ class Pipeline():
         self.total_elements = len(list(self.dependencies(Scope.ALL)))
 
         for element_name, source, workspace in project._list_workspaces():
-            element = self.target.search(Scope.ALL, element_name)
+            for target in self.targets:
+                element = target.search(Scope.ALL, element_name)
 
-            if element is None:
-                self.unused_workspaces.append((element_name, source, workspace))
-                continue
+                if element is None:
+                    self.unused_workspaces.append((element_name, source, workspace))
+                    continue
 
-            self.project._set_workspace(element, source, workspace)
+                self.project._set_workspace(element, source, workspace)
 
         if fetch_remote_refs and self.artifacts.can_fetch():
             try:
@@ -207,7 +209,20 @@ class Pipeline():
     # also iterate over sources.
     #
     def dependencies(self, scope, include_sources=False):
-        for element in self.target.dependencies(scope):
+        # Create a dummy element (can't use namedtuple because of the
+        # '__' prefix).
+        class DummyElement(object):
+            def __init__(self, build_dependencies, runtime_dependencies):
+                self.name = ''
+                self._Element__build_dependencies = build_dependencies
+                self._Element__runtime_dependencies = runtime_dependencies
+        dummy = DummyElement(self.targets, self.targets)
+
+        for element in Element.dependencies(dummy, scope):
+            # We don't actually want to find the dummy element
+            if isinstance(element, DummyElement):
+                continue
+
             if include_sources:
                 for source in element.sources():
                     yield source
@@ -775,7 +790,7 @@ class Pipeline():
 
         elements = None
         if mode == 'none':
-            elements = [self.target]
+            elements = self.targets
         elif mode == 'plan':
             elements = list(self.plan())
         else:
