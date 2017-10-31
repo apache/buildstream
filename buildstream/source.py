@@ -229,6 +229,26 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '%s' does not implement stage()" % self.get_kind())
 
+    def init_workspace(self, directory):
+        """Initialises a new workspace
+
+        Args:
+           directory (str): Path of the workspace to init
+
+        Raises:
+           :class:`.SourceError`
+
+        Default implementation is to call
+        :func:`~buildstream.source.Source.stage`.
+
+        Implementors overriding this method should assume that *directory*
+        already exists.
+
+        Implementors should raise :class:`.SourceError` when encountering
+        some system error.
+        """
+        self.stage(directory)
+
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
@@ -276,19 +296,30 @@ class Source(Plugin):
     def _fetch(self):
         self.fetch()
 
+    # Ensures a fully constructed path and returns it
+    def _ensure_directory(self, directory):
+        if self.__directory is not None:
+            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
+        os.makedirs(directory, exist_ok=True)
+        return directory
+
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
     # 'directory' option
     #
     def _stage(self, directory):
-        if self.__directory is not None:
-            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
-        os.makedirs(directory, exist_ok=True)
+        directory = self._ensure_directory(directory)
 
         if self._has_workspace():
             self._stage_workspace(directory)
         else:
             self.stage(directory)
+
+    # Wrapper for init_workspace()
+    def _init_workspace(self, directory):
+        directory = self._ensure_directory(directory)
+
+        self.init_workspace(directory)
 
     # Wrapper for get_unique_key() api
     #

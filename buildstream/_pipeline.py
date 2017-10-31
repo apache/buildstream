@@ -553,7 +553,7 @@ class Pipeline():
                                         "Use `--track` to track and " +
                                         "fetch the latest version of the " +
                                         "source.")
-                source._stage(directory)
+                source._init_workspace(directory)
 
         self.project._set_workspace(target, source_index, workdir)
 
