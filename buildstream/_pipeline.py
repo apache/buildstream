@@ -146,7 +146,8 @@ class Pipeline():
             load_ticker(None)
 
         # Load selected platform
-        self.platform = Platform.get_platform(context, project)
+        Platform._create_instance(context, project)
+        self.platform = Platform.get_platform()
         self.artifacts = self.platform.artifactcache
 
         # Create the factories after resolving the project

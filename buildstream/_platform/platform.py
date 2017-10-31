@@ -27,6 +27,7 @@ from .. import PlatformError, ProgramNotFoundError, ImplError
 
 
 class Platform():
+    _instance = None
 
     # Platform()
     #
@@ -42,8 +43,7 @@ class Platform():
         self.project = project
 
     @classmethod
-    def get_platform(cls, *args, **kwargs):
-
+    def _create_instance(cls, *args, **kwargs):
         if sys.platform.startswith('linux'):
             backend = 'linux'
         else:
@@ -62,7 +62,13 @@ class Platform():
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
 
-        return PlatformImpl(*args, **kwargs)
+        cls._instance = PlatformImpl(*args, **kwargs)
+
+    @classmethod
+    def get_platform(cls, *args, **kwargs):
+        if not cls._instance:
+            raise PlatformError("Platform needs to be initialized first")
+        return cls._instance
 
     ##################################################################
     #                       Platform properties                      #
