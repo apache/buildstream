@@ -20,8 +20,11 @@
 
 import os
 import sys
+import subprocess
 
 from .. import utils
+from .. import PlatformError
+from .._message import Message, MessageType
 from ..sandbox import SandboxBwrap
 from .._artifactcache.ostreecache import OSTreeCache
 
@@ -33,11 +36,47 @@ class Linux(Platform):
     def __init__(self, context, project):
 
         super().__init__(context, project)
-        self._artifact_cache = OSTreeCache(context, project)
+
+        self._user_ns_available = False
+        self.check_user_ns_available(context)
+        self._artifact_cache = OSTreeCache(context, project, self._user_ns_available)
+
+    def check_user_ns_available(self, context):
+
+        # Here, lets check if bwrap is able to create user namespaces,
+        # issue a warning if it's not available, and save the state
+        # locally so that we can inform the sandbox to not try it
+        # later on.
+        bwrap = utils.get_host_tool('bwrap')
+        whoami = utils.get_host_tool('whoami')
+        try:
+            output = subprocess.check_output([
+                bwrap,
+                '--ro-bind', '/', '/',
+                '--unshare-user',
+                '--uid', '0', '--gid', '0',
+                whoami,
+            ])
+            output = output.decode('UTF-8').strip()
+        except subprocess.CalledProcessError:
+            output = ''
+
+        if output == 'root':
+            self._user_ns_available = True
+
+        # Issue a warning
+        if not self._user_ns_available:
+            context._message(
+                Message(None, MessageType.WARN,
+                        "Unable to create user namespaces with bubblewrap, resorting to fallback",
+                        detail="Some builds may not function due to lack of uid / gid 0, " +
+                        "artifacts created will not be trusted for push purposes."))
 
     @property
     def artifactcache(self):
         return self._artifact_cache
 
     def create_sandbox(self, *args, **kwargs):
+        # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
+        kwargs['user_ns_available'] = self._user_ns_available
         return SandboxBwrap(*args, **kwargs)
