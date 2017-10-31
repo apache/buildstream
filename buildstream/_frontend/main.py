@@ -704,6 +704,7 @@ class App():
     def __init__(self, main_options):
         self.main_options = main_options
         self.messaging_enabled = False
+        self.startup_messages = []
         self.logger = None
         self.status = None
         self.target = None
@@ -1023,6 +1024,11 @@ class App():
                                   styling=self.colors,
                                   deps=deps)
 
+        # Print any held messages from startup after printing the heading
+        for message in self.startup_messages:
+            self.message_handler(message, self.context)
+        self.startup_messages = []
+
     #
     # Print a summary of the queues
     #
@@ -1039,6 +1045,8 @@ class App():
         # Drop messages by default in the beginning while
         # loading the pipeline, unless debug is specified.
         if not self.messaging_enabled:
+            if message.message_type in unconditional_messages:
+                self.startup_messages.append(message)
             return
 
         # Drop status messages from the UI if not verbose, we'll still see
