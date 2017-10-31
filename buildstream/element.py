@@ -1414,7 +1414,7 @@ class Element(Plugin):
     def __sandbox(self, directory, stdout=None, stderr=None):
         context = self.get_context()
         project = self.get_project()
-        platform = Platform.get_platform(context, project)
+        platform = Platform.get_platform()
 
         if directory is not None and os.path.exists(directory):
             sandbox = platform.create_sandbox(context, project,

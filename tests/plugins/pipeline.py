@@ -19,7 +19,7 @@ def create_pipeline(tmpdir, basedir, target):
 
     context.deploydir = os.path.join(str(tmpdir), 'deploy')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
-    context._platform = Platform.get_platform(context, project)
+    context._platform = Platform.get_platform()
 
     return Pipeline(context, project, target)
 

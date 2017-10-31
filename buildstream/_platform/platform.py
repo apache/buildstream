@@ -65,7 +65,7 @@ class Platform():
         cls._instance = PlatformImpl(*args, **kwargs)
 
     @classmethod
-    def get_platform(cls, *args, **kwargs):
+    def get_platform(cls):
         if not cls._instance:
             raise PlatformError("Platform needs to be initialized first")
         return cls._instance
