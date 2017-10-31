@@ -19,7 +19,7 @@ def create_pipeline(tmpdir, basedir, target):
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform()
 
-    return Pipeline(context, project, target)
+    return Pipeline(context, project, [target])
 
 
 # We've already validated that the plugin system works in
@@ -35,7 +35,7 @@ def test_custom_element(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     pipeline = create_pipeline(tmpdir, basedir, 'custom.bst')
 
-    element = pipeline.target
+    element = pipeline.targets[0]
     assert(len(element._Element__sources) > 0)
     source = element._Element__sources[0]
 
