@@ -137,6 +137,7 @@ class Pipeline():
         self.session_elements = 0
         self.total_elements = 0
         self.unused_workspaces = []
+        self._resolved_elements = {}
 
         loader = Loader(self.project.element_path, targets,
                         self.project._options,
@@ -251,12 +252,9 @@ class Pipeline():
     # Internal: Instantiates plugin-provided Element and Source instances
     # from MetaElement and MetaSource objects
     #
-    def resolve(self, meta_element, resolved=None, ticker=None):
-        if resolved is None:
-            resolved = {}
-
-        if meta_element in resolved:
-            return resolved[meta_element]
+    def resolve(self, meta_element, ticker=None):
+        if meta_element in self._resolved_elements:
+            return self._resolved_elements[meta_element]
 
         if ticker:
             ticker(meta_element.name)
@@ -267,13 +265,13 @@ class Pipeline():
                                               self.artifacts,
                                               meta_element)
 
-        resolved[meta_element] = element
+        self._resolved_elements[meta_element] = element
 
         # resolve dependencies
         for dep in meta_element.dependencies:
-            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.RUN)
+            element._add_dependency(self.resolve(dep, ticker=ticker), Scope.RUN)
         for dep in meta_element.build_dependencies:
-            element._add_dependency(self.resolve(dep, resolved=resolved, ticker=ticker), Scope.BUILD)
+            element._add_dependency(self.resolve(dep, ticker=ticker), Scope.BUILD)
 
         # resolve sources
         for meta_source in meta_element.sources:
