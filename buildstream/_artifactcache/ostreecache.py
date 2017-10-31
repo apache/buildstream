@@ -53,10 +53,18 @@ def buildref(element, key):
 # Args:
 #     context (Context): The BuildStream context
 #     project (Project): The BuildStream project
+#     enable_push (bool): Whether pushing is allowed
+#
+# Pushing is explicitly disabled by the platform in some cases,
+# like when we are falling back to functioning without using
+# user namespaces.
 #
 class OSTreeCache(ArtifactCache):
-    def __init__(self, context, project):
+
+    def __init__(self, context, project, enable_push):
         super().__init__(context, project)
+
+        self.enable_push = enable_push
 
         ostreedir = os.path.join(context.artifactdir, 'ostree')
         self.repo = _ostree.ensure(ostreedir, False)
@@ -65,6 +73,11 @@ class OSTreeCache(ArtifactCache):
             _ostree.configure_remote(self.repo, self.remote, self.artifact_pull)
 
         self._remote_refs = None
+
+    def can_push(self):
+        if self.enable_push:
+            return super().can_push()
+        return False
 
     def preflight(self):
         if self.can_push() and not self.artifact_push.startswith("/"):
