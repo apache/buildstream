@@ -197,13 +197,13 @@ def cli(context, **kwargs):
               help="Build elements that would not be needed for the current build plan")
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before building (implies --all)")
-@click.argument('target',
+@click.argument('targets', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, target, all, track):
+def build(app, targets, all, track):
     """Build elements in a pipeline"""
 
-    app.initialize(target, rewritable=track, inconsistent=track, fetch_remote_refs=True)
+    app.initialize(targets, rewritable=track, inconsistent=track, fetch_remote_refs=True)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track)
@@ -226,10 +226,10 @@ def build(app, target, all, track):
               help='The dependencies to fetch (default: plan)')
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before fetching")
-@click.argument('target',
+@click.argument('targets', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def fetch(app, target, deps, track, except_):
+def fetch(app, targets, deps, track, except_):
     """Fetch sources required to build the pipeline
 
     By default this will only try to fetch sources which are
@@ -244,7 +244,7 @@ def fetch(app, target, deps, track, except_):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    app.initialize(target, rewritable=track, inconsistent=track)
+    app.initialize(targets, rewritable=track, inconsistent=track)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(deps=dependencies)
@@ -266,10 +266,10 @@ def fetch(app, target, deps, track, except_):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to track (default: none)')
-@click.argument('target',
+@click.argument('targets', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def track(app, target, deps, except_):
+def track(app, targets, deps, except_):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
@@ -282,7 +282,7 @@ def track(app, target, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(target, rewritable=True, inconsistent=True)
+    app.initialize(targets, rewritable=True, inconsistent=True)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(deps=dependencies)
@@ -302,10 +302,10 @@ def track(app, target, deps, except_):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependency artifacts to pull (default: none)')
-@click.argument('target',
+@click.argument('targets', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def pull(app, target, deps):
+def pull(app, targets, deps):
     """Pull a built artifact from the configured remote artifact cache.
 
     Specify `--deps` to control which artifacts to pull:
@@ -314,7 +314,7 @@ def pull(app, target, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(target, fetch_remote_refs=True)
+    app.initialize(targets, fetch_remote_refs=True)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -332,10 +332,10 @@ def pull(app, target, deps):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to push (default: none)')
-@click.argument('target',
+@click.argument('targets', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def push(app, target, deps):
+def push(app, targets, deps):
     """Push a built artifact to the configured remote artifact cache.
 
     Specify `--deps` to control which artifacts to push:
@@ -344,7 +344,7 @@ def push(app, target, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(target, fetch_remote_refs=True)
+    app.initialize(targets, fetch_remote_refs=True)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -372,10 +372,10 @@ def push(app, target, deps):
               help='Format string for each element')
 @click.option('--downloadable', default=False, is_flag=True,
               help="Refresh downloadable state")
-@click.argument('target',
+@click.argument('targets', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def show(app, target, deps, except_, order, format, downloadable):
+def show(app, targets, deps, except_, order, format, downloadable):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -422,7 +422,7 @@ def show(app, target, deps, except_, order, format, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(target, fetch_remote_refs=downloadable)
+    app.initialize(targets, fetch_remote_refs=downloadable)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
     except PipelineError as e:
@@ -474,7 +474,7 @@ def shell(app, target, sysroot, build, command):
     else:
         scope = Scope.RUN
 
-    app.initialize(target)
+    app.initialize([target])
 
     # Assert we have everything we need built.
     missing_deps = []
@@ -493,7 +493,7 @@ def shell(app, target, sysroot, build, command):
         sys.exit(-1)
 
     try:
-        exitcode = app.pipeline.target._shell(scope, sysroot, command=command)
+        exitcode = app.pipeline.targets[0]._shell(scope, sysroot, command=command)
         sys.exit(exitcode)
     except _BstError as e:
         click.echo("")
@@ -514,7 +514,7 @@ def shell(app, target, sysroot, build, command):
 def checkout(app, target, directory, force):
     """Checkout a built artifact to the specified directory
     """
-    app.initialize(target)
+    app.initialize([target])
     try:
         app.pipeline.checkout(directory, force)
         click.echo("")
@@ -545,7 +545,7 @@ def checkout(app, target, directory, force):
 def source_bundle(app, target, force, directory,
                   track, compression, except_):
     """Produce a source bundle to be manually executed"""
-    app.initialize(target, rewritable=track, inconsistent=track)
+    app.initialize([target], rewritable=track, inconsistent=track)
     try:
         dependencies = app.pipeline.deps_elements('all', except_)
         app.print_heading(dependencies)
@@ -586,7 +586,7 @@ def workspace():
 def workspace_open(app, no_checkout, force, source, track, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize(element, rewritable=track, inconsistent=track)
+    app.initialize([element], rewritable=track, inconsistent=track)
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
         click.echo("")
@@ -610,7 +610,7 @@ def workspace_open(app, no_checkout, force, source, track, element, directory):
 def workspace_close(app, source, remove_dir, element):
     """Close a workspace"""
 
-    app.initialize(element)
+    app.initialize([element])
     if app.interactive and remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
@@ -640,7 +640,7 @@ def workspace_close(app, source, remove_dir, element):
 @click.pass_obj
 def workspace_reset(app, source, track, no_checkout, element):
     """Reset a workspace to its original state"""
-    app.initialize(element)
+    app.initialize([element])
     if app.interactive:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
@@ -761,10 +761,9 @@ class App():
     #
     # Initialize the main pipeline
     #
-    def initialize(self, target, rewritable=False, inconsistent=False, fetch_remote_refs=False):
-        self.target = target
+    def initialize(self, targets, rewritable=False, inconsistent=False, fetch_remote_refs=False):
 
-        profile_start(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' +
+        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets) + '-' +
                       self.host_arch + '-' + self.target_arch)
 
         directory = self.main_options['directory']
@@ -836,7 +835,7 @@ class App():
             sys.exit(-1)
 
         try:
-            self.pipeline = Pipeline(self.context, self.project, target,
+            self.pipeline = Pipeline(self.context, self.project, targets,
                                      inconsistent=inconsistent,
                                      rewritable=rewritable,
                                      fetch_remote_refs=fetch_remote_refs,
@@ -858,7 +857,8 @@ class App():
         self.logger.size_request(self.pipeline)
         self.messaging_enabled = True
 
-        profile_end(Topics.LOAD_PIPELINE, target.replace(os.sep, '-') + '-' + self.host_arch + '-' + self.target_arch)
+        profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets) + '-' +
+                    self.host_arch + '-' + self.target_arch)
 
     #
     # Render the status area, conditional on some internal state
