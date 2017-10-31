@@ -344,11 +344,14 @@ class Job():
             output.flush()
 
     def child_message_handler(self, message, context):
-        plugin = _plugin_lookup(message.unique_id)
 
         # Tag them on the way out the door...
         message.action_name = self.action_name
         message.task_id = self.element._get_unique_id()
+
+        # Use the plugin for the task for the output, not a plugin
+        # which might be acting on behalf of the task
+        plugin = _plugin_lookup(message.task_id)
 
         # Log first
         self.child_log(plugin, message, context)
