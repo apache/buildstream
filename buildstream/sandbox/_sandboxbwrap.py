@@ -47,6 +47,10 @@ class SandboxBwrap(Sandbox):
         '/dev/zero'
     ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user_ns_available = kwargs['user_ns_available']
+
     def run(self, command, flags, cwd=None, env=None):
         stdout, stderr = self._get_output()
         root_directory = self.get_directory()
@@ -122,7 +126,8 @@ class SandboxBwrap(Sandbox):
             bwrap_command += ["--remount-ro", "/"]
 
         # Set UID and GUI
-        bwrap_command += ['--unshare-user', '--uid', '0', '--gid', '0']
+        if self.user_ns_available:
+            bwrap_command += ['--unshare-user', '--uid', '0', '--gid', '0']
 
         # Add the command
         bwrap_command += command
