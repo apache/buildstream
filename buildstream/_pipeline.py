@@ -124,7 +124,7 @@ class Planner():
 #
 class Pipeline():
 
-    def __init__(self, context, project, target,
+    def __init__(self, context, project, targets,
                  inconsistent=False,
                  rewritable=False,
                  fetch_remote_refs=False,
@@ -138,10 +138,10 @@ class Pipeline():
         self.total_elements = 0
         self.unused_workspaces = []
 
-        loader = Loader(self.project.element_path, target,
+        loader = Loader(self.project.element_path, targets,
                         self.project._options,
                         context.host_arch, context.target_arch)
-        meta_element = loader.load(rewritable, load_ticker)
+        meta_elements = loader.load(rewritable, load_ticker)
         if load_ticker:
             load_ticker(None)
 
@@ -156,7 +156,8 @@ class Pipeline():
         self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
 
         # Resolve the real elements now that we've resolved the project
-        self.target = self.resolve(meta_element, ticker=resolve_ticker)
+        self.targets = [self.resolve(meta_element, ticker=resolve_ticker)
+                        for meta_element in meta_elements]
         if resolve_ticker:
             resolve_ticker(None)
 
@@ -236,7 +237,7 @@ class Pipeline():
     # cached elements. The elements are yielded in a depth sorted
     # ordering for optimal build plans
     def plan(self):
-        build_plan = Planner().plan(self.target)
+        build_plan = Planner().plan(self.targets)
         for element in build_plan:
             yield element
 
