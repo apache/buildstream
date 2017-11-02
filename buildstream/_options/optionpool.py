@@ -233,11 +233,18 @@ class OptionPool():
 
                 expression, value = tuples[0]
                 try:
-                    if self.evaluate(expression):
-                        _yaml.composite(node, value)
+                    apply_fragment = self.evaluate(expression)
                 except LoadError as e:
                     # Prepend the provenance of the error
                     raise LoadError(e.reason, "{}: {}".format(p, e)) from e
+
+                if not hasattr(value, 'get'):
+                    raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                                    "{}: Only values of type 'dict' can be composed.".format(p))
+
+                # Apply the yaml fragment if its condition evaluates to true
+                if apply_fragment:
+                    _yaml.composite(node, value)
 
             return True
 
