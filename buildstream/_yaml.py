@@ -745,9 +745,7 @@ def composite_dict(target, source, path=None):
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
 def composite(target, source):
-    if not hasattr(source, 'get'):
-        raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                        "Only values of type 'dict' can be composed.")
+    assert hasattr(source, 'get')
 
     source_provenance = node_get_provenance(source)
     try:
