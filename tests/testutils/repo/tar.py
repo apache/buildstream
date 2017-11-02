@@ -2,6 +2,8 @@ import os
 import tarfile
 import hashlib
 
+from buildstream.utils import sha256sum
+
 from .repo import Repo
 
 
@@ -30,11 +32,3 @@ class Tar(Repo):
             config['ref'] = ref
 
         return config
-
-
-def sha256sum(filename):
-    h = hashlib.sha256()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
-    return h.hexdigest()
