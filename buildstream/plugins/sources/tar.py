@@ -89,6 +89,12 @@ class TarSource(DownloadableFileSource):
 
         l = len(base_dir)
         for member in tar.getmembers():
+
+            # First, ensure that a member never starts with `./`
+            if member.path.startswith('./'):
+                member.path = member.path[2:]
+
+            # Now extract only the paths which match the normalized path
             if member.path.startswith(base_dir):
                 member.path = member.path[l:]
                 yield member
@@ -96,16 +102,21 @@ class TarSource(DownloadableFileSource):
     # We want to iterate over all paths of a tarball, but getmembers()
     # is not enough because some tarballs simply do not contain the leading
     # directory paths for the archived files.
-    def _list_tar_paths(self, tar, dirs_only=False):
+    def _list_tar_paths(self, tar):
 
         visited = {}
         for member in tar.getmembers():
+
+            # Remove any possible leading './', offer more consistent behavior
+            # across tarballs encoded with or without a leading '.'
+            member_name = member.name.lstrip('./')
+
             if not member.isdir():
 
                 # Loop over the components of a path, for a path of a/b/c/d
                 # we will first visit 'a', then 'a/b' and then 'a/b/c', excluding
                 # the final component
-                components = member.name.split('/')
+                components = member_name.split('/')
                 for i in range(len(components) - 1):
                     dir_component = '/'.join([components[j] for j in range(i + 1)])
                     if dir_component not in visited:
@@ -115,23 +126,21 @@ class TarSource(DownloadableFileSource):
                             # exist in the archive
                             _ = tar.getmember(dir_component)
                         except KeyError:
-                            yield dir_component
+                            if dir_component != '.':
+                                yield dir_component
 
                 continue
 
             # Avoid considering the '.' directory, if any is included in the archive
             # this is to avoid the default 'base-dir: *' value behaving differently
             # depending on whether the tarball was encoded with a leading '.' or not
-            elif member.name == '.':
+            elif member_name == '.':
                 continue
 
-            if dirs_only and not member.isdir():
-                continue
-
-            yield member.name
+            yield member_name
 
     def _find_base_dir(self, tar, pattern):
-        paths = self._list_tar_paths(tar, dirs_only=True)
+        paths = self._list_tar_paths(tar)
         matches = sorted(list(utils.glob(paths, pattern)))
         if not matches:
             raise SourceError("{}: Could not find base directory matching pattern: {}".format(self, pattern))
