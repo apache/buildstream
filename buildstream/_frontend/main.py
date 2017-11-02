@@ -95,7 +95,8 @@ def override_completions(cmd_param, ctx, args, incomplete):
     # modifying click itself, so just do some weak special casing
     # right here and select which parameters we want to handle specially.
     if isinstance(cmd_param.type, click.Path) and \
-       (cmd_param.name == 'target' or cmd_param.name == 'element'):
+       (cmd_param.name == 'elements' or
+        cmd_param.name == 'element'):
         return complete_target(ctx, args, incomplete)
 
     raise CompleteUnhandled()
@@ -197,13 +198,13 @@ def cli(context, **kwargs):
               help="Build elements that would not be needed for the current build plan")
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before building (implies --all)")
-@click.argument('targets', nargs=-1,
+@click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, targets, all, track):
+def build(app, elements, all, track):
     """Build elements in a pipeline"""
 
-    app.initialize(targets, rewritable=track, inconsistent=track, fetch_remote_refs=True)
+    app.initialize(elements, rewritable=track, inconsistent=track, fetch_remote_refs=True)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track)
@@ -226,10 +227,10 @@ def build(app, targets, all, track):
               help='The dependencies to fetch (default: plan)')
 @click.option('--track', default=False, is_flag=True,
               help="Track new source references before fetching")
-@click.argument('targets', nargs=-1,
+@click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def fetch(app, targets, deps, track, except_):
+def fetch(app, elements, deps, track, except_):
     """Fetch sources required to build the pipeline
 
     By default this will only try to fetch sources which are
@@ -244,7 +245,7 @@ def fetch(app, targets, deps, track, except_):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    app.initialize(targets, rewritable=track, inconsistent=track)
+    app.initialize(elements, rewritable=track, inconsistent=track)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(deps=dependencies)
@@ -266,10 +267,10 @@ def fetch(app, targets, deps, track, except_):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to track (default: none)')
-@click.argument('targets', nargs=-1,
+@click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def track(app, targets, deps, except_):
+def track(app, elements, deps, except_):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
@@ -282,7 +283,7 @@ def track(app, targets, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(targets, rewritable=True, inconsistent=True)
+    app.initialize(elements, rewritable=True, inconsistent=True)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
         app.print_heading(deps=dependencies)
@@ -302,10 +303,10 @@ def track(app, targets, deps, except_):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependency artifacts to pull (default: none)')
-@click.argument('targets', nargs=-1,
+@click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def pull(app, targets, deps):
+def pull(app, elements, deps):
     """Pull a built artifact from the configured remote artifact cache.
 
     Specify `--deps` to control which artifacts to pull:
@@ -314,7 +315,7 @@ def pull(app, targets, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(targets, fetch_remote_refs=True)
+    app.initialize(elements, fetch_remote_refs=True)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -332,10 +333,10 @@ def pull(app, targets, deps):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to push (default: none)')
-@click.argument('targets', nargs=-1,
+@click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def push(app, targets, deps):
+def push(app, elements, deps):
     """Push a built artifact to the configured remote artifact cache.
 
     Specify `--deps` to control which artifacts to push:
@@ -344,7 +345,7 @@ def push(app, targets, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(targets, fetch_remote_refs=True)
+    app.initialize(elements, fetch_remote_refs=True)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -372,10 +373,10 @@ def push(app, targets, deps):
               help='Format string for each element')
 @click.option('--downloadable', default=False, is_flag=True,
               help="Refresh downloadable state")
-@click.argument('targets', nargs=-1,
+@click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def show(app, targets, deps, except_, order, format, downloadable):
+def show(app, elements, deps, except_, order, format, downloadable):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -422,7 +423,7 @@ def show(app, targets, deps, except_, order, format, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(targets, fetch_remote_refs=downloadable)
+    app.initialize(elements, fetch_remote_refs=downloadable)
     try:
         dependencies = app.pipeline.deps_elements(deps, except_)
     except PipelineError as e:
@@ -448,11 +449,11 @@ def show(app, targets, deps, except_, order, format, downloadable):
 @click.option('--sysroot', '-s', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="An existing sysroot")
-@click.argument('target',
+@click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, target, sysroot, build, command):
+def shell(app, element, sysroot, build, command):
     """Run a command in the target element's sandbox environment
 
     This will first stage a temporary sysroot for running
@@ -474,7 +475,7 @@ def shell(app, target, sysroot, build, command):
     else:
         scope = Scope.RUN
 
-    app.initialize([target])
+    app.initialize([element])
 
     # Assert we have everything we need built.
     missing_deps = []
@@ -507,14 +508,14 @@ def shell(app, target, sysroot, build, command):
 @cli.command(short_help="Checkout a built artifact")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
-@click.argument('target',
+@click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def checkout(app, target, directory, force):
+def checkout(app, element, directory, force):
     """Checkout a built artifact to the specified directory
     """
-    app.initialize([target])
+    app.initialize([element])
     try:
         app.pipeline.checkout(directory, force)
         click.echo("")
@@ -761,9 +762,9 @@ class App():
     #
     # Initialize the main pipeline
     #
-    def initialize(self, targets, rewritable=False, inconsistent=False, fetch_remote_refs=False):
+    def initialize(self, elements, rewritable=False, inconsistent=False, fetch_remote_refs=False):
 
-        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets) + '-' +
+        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements) + '-' +
                       self.host_arch + '-' + self.target_arch)
 
         directory = self.main_options['directory']
@@ -835,7 +836,7 @@ class App():
             sys.exit(-1)
 
         try:
-            self.pipeline = Pipeline(self.context, self.project, targets,
+            self.pipeline = Pipeline(self.context, self.project, elements,
                                      inconsistent=inconsistent,
                                      rewritable=rewritable,
                                      fetch_remote_refs=fetch_remote_refs,
@@ -857,7 +858,7 @@ class App():
         self.logger.size_request(self.pipeline)
         self.messaging_enabled = True
 
-        profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets) + '-' +
+        profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements) + '-' +
                     self.host_arch + '-' + self.target_arch)
 
     #
