@@ -203,6 +203,12 @@ class TarSource(Source):
 
                 continue
 
+            # Avoid considering the '.' directory, if any is included in the archive
+            # this is to avoid the default 'base-dir: *' value behaving differently
+            # depending on whether the tarball was encoded with a leading '.' or not
+            elif member.name == '.':
+                continue
+
             if dirs_only and not member.isdir():
                 continue
 
