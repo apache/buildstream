@@ -733,8 +733,12 @@ class App():
         self.error_profile = Profile(fg='red', dim=True)
         self.detail_profile = Profile(dim=True)
 
-        # Check if we are connected to a tty
-        self.is_a_tty = Terminal().is_a_tty
+        # Check if we are connected to a tty, ensuring that tests are
+        # always treated the same regardless of environment.
+        if 'BST_TEST_SUITE' not in os.environ:
+            self.is_a_tty = Terminal().is_a_tty
+        else:
+            self.is_a_tty = False
 
         # Figure out interactive mode
         if self.main_options['no_interactive']:
