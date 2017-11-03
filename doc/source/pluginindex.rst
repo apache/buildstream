@@ -42,6 +42,7 @@ The following source types are provided with BuildStream:
 
 * :mod:`local <sources.local>` - A Source implementation for local files and directories
 * :mod:`tar <sources.tar>` - A Source implementation for tarballs
+* :mod:`zip <sources.zip>` - A Source implementation for zip archives
 * :mod:`git <sources.git>` - A Source implementation for git
 * :mod:`bzr <sources.bzr>` - A Source implementation for bazaar
 * :mod:`ostree <sources.ostree>` - A Source implementation for ostree
