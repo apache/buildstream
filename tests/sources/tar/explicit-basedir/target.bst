@@ -4,4 +4,4 @@ sources:
 - kind: tar
   url: tmpdir:/a.tar.gz
   ref: foo
-  base-dir: ''
+  base-dir: 'a'
