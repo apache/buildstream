@@ -1,5 +1,6 @@
 import os
 import pytest
+import itertools
 from tests.testutils.runcli import cli
 
 # Project directory
@@ -53,3 +54,55 @@ def test_show_except(cli, datafiles, target, except_, expected):
     if results != expected:
         raise AssertionError("Expected elements:\n{}\nInstead received elements:\n{}"
                              .format(expected, results))
+
+
+###############################################################
+#                   Testing multiple targets                  #
+###############################################################
+@pytest.mark.datafiles(DATA_DIR)
+def test_parallel_order(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    elements = ['multiple_targets/order/0.bst',
+                'multiple_targets/order/1.bst']
+
+    args = ['show', '-d', 'plan', '-f', '%{name}'] + elements
+    result = cli.run(project=project, args=args)
+
+    assert result.exit_code == 0
+
+    # Get the planned order, excepting the 'Loading' messages before
+    # the pipeline is printed
+    names = result.output.splitlines()[3:]
+    names = [name[len('multiple_targets/order/'):] for name in names]
+
+    # Create all possible 'correct' topological orderings
+    orderings = itertools.product(
+        [('5.bst', '6.bst')],
+        itertools.permutations(['4.bst', '7.bst']),
+        itertools.permutations(['3.bst', '8.bst']),
+        itertools.permutations(['2.bst', '9.bst']),
+        itertools.permutations(['0.bst', '1.bst', 'run.bst'])
+    )
+    orderings = [list(itertools.chain.from_iterable(perm)) for perm in orderings]
+
+    # Ensure that our order is among the correct orderings
+    assert names in orderings, "We got: {}".format(", ".join(names))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_target_is_dependency(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    elements = ['multiple_targets/dependency/zebry.bst',
+                'multiple_targets/dependency/horsey.bst']
+
+    args = ['show', '-d', 'plan', '-f', '%{name}'] + elements
+    result = cli.run(project=project, args=args)
+
+    assert result.exit_code == 0
+
+    # Get the planned order, excepting the 'Loading' messages before
+    # the pipeline is printed
+    names = result.output.splitlines()[3:]
+    names = [name[len('multiple_targets/dependency/'):] for name in names]
+
+    assert names == ['pony.bst', 'horsey.bst', 'zebry.bst']
