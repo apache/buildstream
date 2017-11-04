@@ -31,11 +31,7 @@ def test_stage_file(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
-    # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
-    assert result.exit_code == 0
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
-    assert result.exit_code == 0
+    # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     assert result.exit_code == 0
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
@@ -50,11 +46,7 @@ def test_stage_directory(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
-    # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
-    assert result.exit_code == 0
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
-    assert result.exit_code == 0
+    # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     assert result.exit_code == 0
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
