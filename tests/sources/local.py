@@ -1,7 +1,6 @@
 import os
 import pytest
 
-from buildstream._pipeline import PipelineError
 from buildstream import SourceError
 from tests.testutils import cli
 
