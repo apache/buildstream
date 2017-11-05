@@ -13,10 +13,10 @@ BZR_ENV = {
 
 class Bzr(Repo):
 
-    def __init__(self, directory):
+    def __init__(self, directory, subdir):
         if not HAVE_BZR:
             pytest.skip("bzr is not available")
-        super(Bzr, self).__init__(directory)
+        super(Bzr, self).__init__(directory, subdir)
 
     def create(self, directory):
         branch_dir = os.path.join(self.repo, 'trunk')

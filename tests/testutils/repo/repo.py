@@ -9,17 +9,18 @@ import shutil
 #
 # Args:
 #    directory (str): The base temp directory for the test
+#    subdir (str): The subdir for the repo, in case there is more than one
 #
 class Repo():
 
-    def __init__(self, directory):
+    def __init__(self, directory, subdir='repo'):
 
         # The working directory for the repo object
         #
         self.directory = os.path.abspath(directory)
 
         # The directory the actual repo will be stored in
-        self.repo = os.path.join(self.directory, 'repo')
+        self.repo = os.path.join(self.directory, subdir)
 
         os.makedirs(self.repo)
 

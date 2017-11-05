@@ -7,11 +7,11 @@ from ..site import HAVE_OSTREE_CLI, HAVE_OSTREE
 
 class OSTree(Repo):
 
-    def __init__(self, directory):
+    def __init__(self, directory, subdir):
         if not HAVE_OSTREE_CLI or not HAVE_OSTREE:
             pytest.skip("ostree cli is not available")
 
-        super(OSTree, self).__init__(directory)
+        super(OSTree, self).__init__(directory, subdir)
 
     def create(self, directory):
         subprocess.call(['ostree', 'init',

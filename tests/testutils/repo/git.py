@@ -17,16 +17,25 @@ GIT_ENV = {
 
 class Git(Repo):
 
-    def __init__(self, directory):
+    def __init__(self, directory, subdir):
         if not HAVE_GIT:
             pytest.skip("git is not available")
-        super(Git, self).__init__(directory)
+
+        self.submodules = {}
+
+        super(Git, self).__init__(directory, subdir)
 
     def create(self, directory):
         self.copy_directory(directory, self.repo)
         subprocess.call(['git', 'init', '.'], env=GIT_ENV, cwd=self.repo)
         subprocess.call(['git', 'add', '.'], env=GIT_ENV, cwd=self.repo)
         subprocess.call(['git', 'commit', '-m', 'Initial commit'], env=GIT_ENV, cwd=self.repo)
+        return self.latest_commit()
+
+    def add_submodule(self, subdir, url):
+        self.submodules[subdir] = url
+        subprocess.call(['git', 'submodule', 'add', url, subdir], env=GIT_ENV, cwd=self.repo)
+        subprocess.call(['git', 'commit', '-m', 'Added the submodule'], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
     def source_config(self, ref=None):
@@ -37,6 +46,11 @@ class Git(Repo):
         }
         if ref is not None:
             config['ref'] = ref
+
+        if self.submodules:
+            config['submodules'] = {}
+            for subdir, url in self.submodules.items():
+                config['submodules'][subdir] = {'url': url}
 
         return config
 
