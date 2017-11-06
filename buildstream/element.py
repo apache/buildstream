@@ -543,6 +543,24 @@ class Element(Plugin):
 
         return None
 
+    def metadata_dirs(self):
+        """Return a map of the paths that contain the artifact's metadata.
+
+        The paths will point inside the artifact cache and must be treated
+        as read-only.
+
+        Returns:
+           (dict): A dictionary mapping each type of metadata to the
+           location where it is stored.
+        """
+
+        self._assert_cached()
+        artifact_base = self.__artifacts.extract(self)
+        return {
+            'logs': os.path.join(artifact_base, 'logs'),
+            'meta': os.path.join(artifact_base, 'meta'),
+        }
+
     #############################################################
     #                  Abstract Element Methods                 #
     #############################################################

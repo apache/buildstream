@@ -504,16 +504,21 @@ def shell(app, element, sysroot, build, command):
               help="Overwrite files existing in checkout directory")
 @click.option('--integrate/--no-integrate', default=True, is_flag=True,
               help="Whether to run integration commands")
+@click.option('--metadata', '-m', default=False, is_flag=True,
+              help="Check out the artifact's metadata, instead of the contents")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def checkout(app, element, directory, force, integrate):
+def checkout(app, element, directory, force, integrate, metadata):
     """Checkout a built artifact to the specified directory
     """
     app.initialize([element])
     try:
-        app.pipeline.checkout(directory, force, integrate)
+        if metadata:
+            app.pipeline.checkout_metadata(directory, force)
+        else:
+            app.pipeline.checkout(directory, force, integrate)
         click.echo("")
     except BstError as e:
         click.echo("")

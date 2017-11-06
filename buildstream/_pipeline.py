@@ -490,6 +490,38 @@ class Pipeline():
                 except OSError as e:
                     raise PipelineError("Failed to copy files: {}".format(e)) from e
 
+    # checkout_metadata()
+    #
+    # Checkout the metadata from the pipeline target artifact to the specified directory
+    #
+    # Args:
+    #    directory (str): The directory to checkout the artifact to
+    #    force (bool): Force overwrite files which exist in `directory`
+    #
+    def checkout_metadata(self, directory, force):
+        # We only have one target in a checkout command
+        target = self.targets[0]
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as e:
+            raise PipelineError("Failed to create metadata checkout directory: {}".format(e)) from e
+
+        if not os.access(directory, os.W_OK):
+            raise PipelineError("Directory {} not writable".format(directory))
+
+        if not force and os.listdir(directory):
+            raise PipelineError("Checkout directory is not empty: {}"
+                                .format(directory))
+
+        metadata_dirs = target.metadata_dirs()
+        with target.timed_activity("Copying metadata files to {}".format(directory)):
+            for metadata_type, metadata_dir in metadata_dirs.items():
+                try:
+                    utils.copy_files(metadata_dir, os.path.join(directory, metadata_type))
+                except OSError as e:
+                    raise PipelineError("Failed to copy files: {}".format(e)) from e
+
     # open_workspace
     #
     # Open a project workspace.
