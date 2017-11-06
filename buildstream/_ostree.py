@@ -26,7 +26,7 @@ import os
 import subprocess
 from . import _site
 from . import utils
-from ._exceptions import _BstError
+from ._exceptions import BstError
 
 import gi
 gi.require_version('OSTree', '1.0')
@@ -35,7 +35,7 @@ from gi.repository.GLib import Variant, VariantDict  # nopep8
 
 
 # For users of this file, they must expect (except) it.
-class OSTreeError(_BstError):
+class OSTreeError(BstError):
     pass
 
 

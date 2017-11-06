@@ -30,7 +30,7 @@ import multiprocessing
 from ruamel import yaml
 
 # BuildStream toplevel imports
-from .._exceptions import _BstError
+from .._exceptions import BstError
 from .._message import Message, MessageType, unconditional_messages
 from ..plugin import _plugin_lookup
 from .. import _yaml, _signals, utils
@@ -267,7 +267,7 @@ class Job():
                     envelope = Envelope('result', result)
                     self.queue.put(envelope)
 
-            except _BstError as e:
+            except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
 
                 if self.tries <= self.max_retries:
@@ -281,7 +281,7 @@ class Job():
                 self.child_shutdown(1)
 
             except Exception as e:
-                # If an unhandled (not normalized to _BstError) occurs, that's a bug,
+                # If an unhandled (not normalized to BstError) occurs, that's a bug,
                 # send the traceback and formatted exception back to the frontend
                 # and print it to the log file.
                 #

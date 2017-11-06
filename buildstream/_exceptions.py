@@ -40,12 +40,12 @@ def _get_last_exception():
 # context to exceptions raised by plugins in child tasks, this
 # context can then be communicated back to the main process.
 #
-class _BstError(Exception):
+class BstError(Exception):
 
     def __init__(self, message):
         global _last_exception
 
-        super(_BstError, self).__init__(message)
+        super(BstError, self).__init__(message)
 
         # The build sandbox in which the error occurred, if the
         # error occurred at element assembly time.
@@ -63,7 +63,7 @@ class _BstError(Exception):
 # This exception is raised either by the plugin loading process,
 # or by the base :class:`.Plugin` element itself.
 #
-class PluginError(_BstError):
+class PluginError(BstError):
     pass
 
 
@@ -116,7 +116,7 @@ class LoadErrorReason(Enum):
 # This exception is raised when loading or parsing YAML, or when
 # interpreting project YAML
 #
-class LoadError(_BstError):
+class LoadError(BstError):
     def __init__(self, reason, message):
         super(LoadError, self).__init__(message)
 
@@ -130,7 +130,7 @@ class LoadError(_BstError):
 # Raised when a :class:`.Source` or :class:`.Element` plugin fails to
 # implement a mandatory method
 #
-class ImplError(_BstError):
+class ImplError(BstError):
     pass
 
 
@@ -143,14 +143,14 @@ class ImplError(_BstError):
 # can not be found. E.g. The :class:`.Sandbox` class expects that
 # bubblewrap is installed for it to work.
 #
-class ProgramNotFoundError(_BstError):
+class ProgramNotFoundError(BstError):
     pass
 
 
 # PlatformError
 #
 # Raised if the current platform is not supported.
-class PlatformError(_BstError):
+class PlatformError(BstError):
     pass
 
 
@@ -158,7 +158,7 @@ class PlatformError(_BstError):
 #
 # Raised when errors are encountered by the sandbox implementation
 #
-class SandboxError(_BstError):
+class SandboxError(BstError):
     pass
 
 
@@ -166,5 +166,21 @@ class SandboxError(_BstError):
 #
 # Raised when errors are encountered in the artifact caches
 #
-class ArtifactError(_BstError):
+class ArtifactError(BstError):
     pass
+
+
+# PipelineError
+#
+# Raised when a pipeline fails
+#
+class PipelineError(BstError):
+
+    def __init__(self, message=None):
+
+        # The empty string should never appear to a user,
+        # this only allows us to treat this internal error as
+        # a BstError from the frontend.
+        if message is None:
+            message = ""
+        super(PipelineError, self).__init__(message)

@@ -29,7 +29,7 @@ from operator import itemgetter
 from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
 
-from ._exceptions import _BstError, ArtifactError, ImplError, LoadError
+from ._exceptions import PipelineError, ArtifactError, ImplError
 from ._message import Message, MessageType
 from ._elementfactory import ElementFactory
 from ._loader import Loader
@@ -42,20 +42,6 @@ from ._platform import Platform
 from .element import Element
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
-
-
-# Internal exception raised when a pipeline fails
-#
-class PipelineError(_BstError):
-
-    def __init__(self, message=None):
-
-        # The empty string should never appear to a user,
-        # this only allows us to treat this internal error as
-        # a _BstError from the frontend.
-        if message is None:
-            message = ""
-        super(PipelineError, self).__init__(message)
 
 
 class Planner():

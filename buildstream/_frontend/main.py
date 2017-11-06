@@ -28,7 +28,7 @@ from blessings import Terminal
 from .. import Context, Project, Scope, Consistency
 
 # Import various buildstream internals
-from .._exceptions import _BstError, LoadError
+from .._exceptions import BstError, LoadError
 from .._message import MessageType, unconditional_messages
 from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
@@ -313,7 +313,7 @@ def pull(app, elements, deps):
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
         click.echo("")
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
@@ -343,7 +343,7 @@ def push(app, elements, deps):
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
         click.echo("")
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
@@ -489,7 +489,7 @@ def shell(app, element, sysroot, build, command):
     try:
         exitcode = app.pipeline.targets[0]._shell(scope, sysroot, command=command)
         sys.exit(exitcode)
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("Errors shelling into this pipeline: %s" % str(e))
         sys.exit(-1)
@@ -514,7 +514,7 @@ def checkout(app, element, directory, force, integrate):
     try:
         app.pipeline.checkout(directory, force, integrate)
         click.echo("")
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
@@ -548,7 +548,7 @@ def source_bundle(app, target, force, directory,
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
                                    compression, directory)
         click.echo("")
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
@@ -586,7 +586,7 @@ def workspace_open(app, no_checkout, force, source, track, element, directory):
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
         click.echo("")
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
@@ -615,7 +615,7 @@ def workspace_close(app, source, remove_dir, element):
     try:
         app.pipeline.close_workspace(source, remove_dir)
         click.echo("")
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
@@ -645,7 +645,7 @@ def workspace_reset(app, source, track, no_checkout, element):
     try:
         app.pipeline.reset_workspace(app.scheduler, source, track, no_checkout)
         click.echo("")
-    except _BstError as e:
+    except BstError as e:
         click.echo("")
         click.echo("ERROR: {}".format(e))
         sys.exit(-1)
@@ -665,13 +665,13 @@ def workspace_list(app):
     try:
         context = Context(app.main_options['option'])
         context.load(config)
-    except _BstError as e:
+    except BstError as e:
         click.echo("Error loading user configuration: {}".format(e))
         sys.exit(-1)
 
     try:
         project = Project(directory, context)
-    except _BstError as e:
+    except BstError as e:
         click.echo("Error loading project: {}".format(e))
         sys.exit(-1)
 
@@ -765,7 +765,7 @@ class App():
         try:
             self.context = Context(self.main_options['option'])
             self.context.load(config)
-        except _BstError as e:
+        except BstError as e:
             click.echo("Error loading user configuration: %s" % str(e))
             sys.exit(-1)
 
@@ -823,7 +823,7 @@ class App():
 
         try:
             self.project = Project(directory, self.context)
-        except _BstError as e:
+        except BstError as e:
             click.echo("Error loading project: %s" % str(e))
             sys.exit(-1)
 
@@ -836,7 +836,7 @@ class App():
                                      resolve_ticker=self.resolve_ticker,
                                      remote_ticker=self.remote_ticker,
                                      cache_ticker=self.cache_ticker)
-        except _BstError as e:
+        except BstError as e:
             click.echo("Error loading pipeline: %s" % str(e))
             sys.exit(-1)
 

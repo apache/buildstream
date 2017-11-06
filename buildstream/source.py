@@ -28,7 +28,7 @@ import shutil
 from contextlib import contextmanager
 
 from . import _yaml, _signals, utils
-from ._exceptions import _BstError, ImplError, LoadError, LoadErrorReason
+from ._exceptions import BstError, ImplError, LoadError, LoadErrorReason
 from . import Plugin
 
 
@@ -55,7 +55,7 @@ class Consistency():
     """
 
 
-class SourceError(_BstError):
+class SourceError(BstError):
     """Raised by Source implementations.
 
     This exception is raised when a :class:`.Source` encounters an error.

@@ -37,7 +37,7 @@ import shutil
 
 from . import _yaml
 from ._variables import Variables
-from ._exceptions import _BstError, LoadError, LoadErrorReason, ImplError
+from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError
 from . import Plugin, Consistency
 from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import SandboxFlags
@@ -81,7 +81,7 @@ class Scope(Enum):
     """
 
 
-class ElementError(_BstError):
+class ElementError(BstError):
     """Raised by Element implementations.
 
     This exception is raised when an :class:`.Element` encounters an error.
@@ -1066,7 +1066,7 @@ class Element(Plugin):
                     self.stage(sandbox)
                     # Step 3 - Assemble
                     collect = self.assemble(sandbox)
-                except _BstError as e:
+                except BstError as e:
                     # If an error occurred assembling an element in a sandbox,
                     # then tack on the sandbox directory to the error
                     e.sandbox = rootdir
