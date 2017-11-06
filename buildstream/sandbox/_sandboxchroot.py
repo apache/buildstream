@@ -30,7 +30,7 @@ from contextlib import contextmanager, ExitStack
 from .._exceptions import SandboxError
 from .. import utils
 from .. import _signals
-from ._mount import Mount
+from ._mounter import Mounter
 from . import Sandbox, SandboxFlags, MountMap
 
 

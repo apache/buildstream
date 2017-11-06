@@ -5,8 +5,8 @@ from .._exceptions import SandboxError
 from .. import utils, _signals
 
 
-# A class to wrap the `mount` and `umount` commands
-class Mount(object):
+# A class to wrap the `mount` and `umount` system commands
+class Mounter(object):
     @classmethod
     def _mount(cls, dest, src=None, mount_type=None,
                stdout=sys.stdout, stderr=sys.stderr, options=None,
