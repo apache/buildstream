@@ -18,6 +18,6 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-from .sandbox import Sandbox, SandboxFlags, Mount, MountMap
+from .sandbox import Sandbox, SandboxFlags
 from ._sandboxchroot import SandboxChroot
 from ._sandboxbwrap import SandboxBwrap

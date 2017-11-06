@@ -29,7 +29,8 @@ from contextlib import ExitStack
 import psutil
 
 from .. import utils, _signals
-from . import Sandbox, SandboxFlags, MountMap
+from ._mount import MountMap
+from . import Sandbox, SandboxFlags
 
 
 # SandboxBwrap()

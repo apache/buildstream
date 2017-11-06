@@ -31,7 +31,8 @@ from .._exceptions import SandboxError
 from .. import utils
 from .. import _signals
 from ._mounter import Mounter
-from . import Sandbox, SandboxFlags, MountMap
+from ._mount import MountMap
+from . import Sandbox, SandboxFlags
 
 
 class SandboxChroot(Sandbox):
@@ -250,7 +251,7 @@ class SandboxChroot(Sandbox):
             mount_source = self.mount_map.get_mount_source(point)
             mount_point = os.path.join(rootfs, point.lstrip(os.sep))
 
-            with Mount.bind_mount(mount_point, src=mount_source, stdout=stdout, stderr=stderr, **kwargs):
+            with Mounter.bind_mount(mount_point, src=mount_source, stdout=stdout, stderr=stderr, **kwargs):
                 yield
 
         @contextmanager
@@ -258,7 +259,7 @@ class SandboxChroot(Sandbox):
             mount_point = os.path.join(rootfs, src.lstrip(os.sep))
             os.makedirs(mount_point, exist_ok=True)
 
-            with Mount.bind_mount(mount_point, src=src, stdout=stdout, stderr=stderr, **kwargs):
+            with Mounter.bind_mount(mount_point, src=src, stdout=stdout, stderr=stderr, **kwargs):
                 yield
 
         with ExitStack() as stack:
@@ -277,7 +278,7 @@ class SandboxChroot(Sandbox):
 
             # Remount root RO if necessary
             if flags & flags & SandboxFlags.ROOT_READ_ONLY:
-                root_mount = Mount.mount(rootfs, stdout=stdout, stderr=stderr, remount=True, ro=True, bind=True)
+                root_mount = Mounter.mount(rootfs, stdout=stdout, stderr=stderr, remount=True, ro=True, bind=True)
                 # Since the exit stack has already registered a mount
                 # for this path, we do not need to register another
                 # umount call.
