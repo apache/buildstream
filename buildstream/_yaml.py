@@ -26,7 +26,7 @@ from contextlib import ExitStack
 
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
-from . import ImplError, LoadError, LoadErrorReason
+from ._exceptions import LoadError, LoadErrorReason
 
 
 # We store information in the loaded yaml on a DictProvenance
@@ -57,7 +57,7 @@ class Provenance():
 
     # Abstract method
     def clone(self):
-        raise ImplError("Unimplemented clone() in Provenance")
+        pass  # pragma: nocover
 
 
 # A Provenance for dictionaries, these are stored in the copy of the

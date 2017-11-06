@@ -17,10 +17,6 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-"""
-Exceptions
-==========
-"""
 
 from enum import Enum
 
@@ -60,98 +56,115 @@ class _BstError(Exception):
         _last_exception = self
 
 
+# PluginError
+#
+# Raised on plugin related errors.
+#
+# This exception is raised either by the plugin loading process,
+# or by the base :class:`.Plugin` element itself.
+#
 class PluginError(_BstError):
-    """Raised on plugin related errors.
-
-    This exception is raised either by the plugin loading process,
-    or by the base :class:`.Plugin` element itself.
-    """
     pass
 
 
+# LoadErrorReason
+#
+# Describes the reason why a :class:`.LoadError` was raised.
+#
 class LoadErrorReason(Enum):
-    """Describes the reason why a :class:`.LoadError` was raised.
-    """
 
+    # A file was not found.
     MISSING_FILE = 1
-    """A file was not found."""
 
+    # The parsed data was not valid YAML.
     INVALID_YAML = 2
-    """The parsed data was not valid YAML."""
 
+    # Data was malformed, a value was not of the expected type, etc
     INVALID_DATA = 3
-    """Data was malformed, a value was not of the expected type, etc"""
 
+    # An error occurred during YAML dictionary composition.
+    #
+    # This can happen by overriding a value with a new differently typed
+    # value, or by overwriting some named value when that was not allowed.
     ILLEGAL_COMPOSITE = 4
-    """An error occurred during YAML dictionary composition.
 
-    This can happen by overriding a value with a new differently typed
-    value, or by overwriting some named value when that was not allowed.
-    """
-
+    # An circular dependency chain was detected
     CIRCULAR_DEPENDENCY = 5
-    """An circular dependency chain was detected"""
 
+    # A variable could not be resolved. This can happen if your project
+    # has cyclic dependencies in variable declarations, or, when substituting
+    # a string which refers to an undefined variable.
     UNRESOLVED_VARIABLE = 6
-    """A variable could not be resolved. This can happen if your project
-    has cyclic dependencies in variable declarations, or, when substituting
-    a string which refers to an undefined variable.
-    """
 
+    # BuildStream does not support the required project format version
     UNSUPPORTED_PROJECT = 7
-    """BuildStream does not support the required project format version"""
 
+    # A conditional expression failed to resolve
     EXPRESSION_FAILED = 8
-    """A conditional expression failed to resolve"""
 
+    # An assertion was intentionally encoded into project YAML
     USER_ASSERTION = 9
-    """An assertion was intentionally encoded into project YAML"""
 
+    # A list composition directive did not apply to any underlying list
     TRAILING_LIST_DIRECTIVE = 10
-    """A list composition directive did not apply to any underlying list"""
 
 
+# LoadError
+#
+# Raised while loading some YAML.
+#
+# This exception is raised when loading or parsing YAML, or when
+# interpreting project YAML
+#
 class LoadError(_BstError):
-    """Raised while loading some YAML.
-
-    This exception is raised when loading or parsing YAML, or when
-    interpreting project YAML
-    """
     def __init__(self, reason, message):
         super(LoadError, self).__init__(message)
 
+        # The :class:`.LoadErrorReason` for which this exception was raised
+        #
         self.reason = reason
-        """The :class:`.LoadErrorReason` for which this exception was raised
-        """
 
 
+# ImplError
+#
+# Raised when a :class:`.Source` or :class:`.Element` plugin fails to
+# implement a mandatory method
+#
 class ImplError(_BstError):
-    """Raised when a :class:`.Source` or :class:`.Element` plugin fails to
-    implement a mandatory method"""
     pass
 
 
+# ProgramNotFoundError
+#
+# Raised if a required program is not found
+#
+# BuildStream requires various software to exist on the host for
+# it to work correctly. This exception is thrown if that software
+# can not be found. E.g. The :class:`.Sandbox` class expects that
+# bubblewrap is installed for it to work.
+#
 class ProgramNotFoundError(_BstError):
-    """Raised if a required program is not found
-
-    BuildSource requires various software to exist on the host for
-    it to work correctly. This exception is thrown if that software
-    can not be found. E.g. The :class:`.Sandbox` class expects that
-    bubblewrap is installed for it to work.
-    """
     pass
 
 
+# PlatformError
+#
+# Raised if the current platform is not supported.
 class PlatformError(_BstError):
-    """Raised if the current platform is not supported.
-    """
     pass
 
 
+# SandboxError
+#
+# Raised when errors are encountered by the sandbox implementation
+#
 class SandboxError(_BstError):
-    """Raised when errors are encountered by the sandbox implementation"""
     pass
 
 
+# ArtifactError
+#
+# Raised when errors are encountered in the artifact caches
+#
 class _ArtifactError(_BstError):
     pass

@@ -27,7 +27,7 @@ import signal
 import subprocess
 from contextlib import contextmanager, ExitStack
 
-from .. import SandboxError
+from .._exceptions import SandboxError
 from .. import utils
 from .. import _signals
 from ._mount import Mount

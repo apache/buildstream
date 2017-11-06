@@ -3,7 +3,7 @@ import pytest
 from collections import Mapping
 
 from buildstream import _yaml
-from buildstream import LoadError, LoadErrorReason
+from buildstream._exceptions import LoadError, LoadErrorReason
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

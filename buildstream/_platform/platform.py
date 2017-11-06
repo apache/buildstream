@@ -23,7 +23,7 @@ import sys
 import platform
 
 from .. import utils
-from .. import PlatformError, ProgramNotFoundError, ImplError
+from .._exceptions import PlatformError, ProgramNotFoundError, ImplError
 
 
 class Platform():

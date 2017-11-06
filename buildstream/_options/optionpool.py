@@ -23,7 +23,7 @@ import jinja2
 from collections import Mapping
 
 from .. import _yaml
-from .. import LoadError, LoadErrorReason
+from .._exceptions import LoadError, LoadErrorReason
 from .optionbool import OptionBool
 from .optionenum import OptionEnum
 from .optionflags import OptionFlags

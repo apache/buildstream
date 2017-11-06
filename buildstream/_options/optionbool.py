@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .. import _yaml
-from .. import LoadError, LoadErrorReason
+from .._exceptions import LoadError, LoadErrorReason
 from .option import Option, OPTION_SYMBOLS
 
 

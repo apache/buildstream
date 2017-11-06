@@ -23,7 +23,7 @@ import sys
 import subprocess
 
 from .. import utils
-from .. import PlatformError
+from .._exceptions import PlatformError
 from .._message import Message, MessageType
 from ..sandbox import SandboxBwrap
 from .._artifactcache.ostreecache import OSTreeCache

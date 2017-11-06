@@ -30,7 +30,7 @@ from mmap import mmap
 from .. import utils, _yaml
 from ..plugin import _plugin_lookup
 from .._message import MessageType
-from .. import ImplError
+from .._exceptions import ImplError
 from .. import Element, Scope, Consistency
 from . import Profile
 

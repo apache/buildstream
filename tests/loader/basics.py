@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream import LoadError, LoadErrorReason
+from buildstream._exceptions import LoadError, LoadErrorReason
 from buildstream._loader import Loader
 from buildstream._metaelement import MetaElement
 from . import make_options

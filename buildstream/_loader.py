@@ -23,7 +23,7 @@ import copy
 from functools import cmp_to_key
 from collections import Mapping, namedtuple
 
-from . import LoadError, LoadErrorReason
+from ._exceptions import LoadError, LoadErrorReason
 from . import _yaml
 from ._yaml import CompositeTypeError
 

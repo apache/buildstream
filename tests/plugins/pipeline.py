@@ -1,7 +1,8 @@
 import os
 import pytest
 
-from buildstream import Context, Project, Scope, PluginError
+from buildstream import Context, Project, Scope
+from buildstream._exceptions import PluginError
 from buildstream._pipeline import Pipeline
 from buildstream._platform import Platform
 

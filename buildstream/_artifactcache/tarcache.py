@@ -26,7 +26,7 @@ import subprocess
 from .. import utils
 from ..element import _KeyStrength
 from .._message import Message, MessageType
-from ..exceptions import _ArtifactError, ProgramNotFoundError
+from .._exceptions import _ArtifactError, ProgramNotFoundError
 
 from . import ArtifactCache
 

@@ -7,7 +7,7 @@ import pytest
 
 from buildstream._artifactcache.tarcache import Tar
 from buildstream.utils import get_host_tool
-from buildstream.exceptions import ProgramNotFoundError
+from buildstream._exceptions import ProgramNotFoundError
 
 
 # Test that it 'works' - this may be equivalent to test_archive_no_tar()

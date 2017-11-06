@@ -23,7 +23,7 @@ import sys
 import pathlib
 
 from .. import utils
-from .. import PlatformError
+from .._exceptions import PlatformError
 from ..sandbox import SandboxChroot
 from .._artifactcache.tarcache import TarCache
 

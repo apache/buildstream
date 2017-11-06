@@ -34,7 +34,7 @@ from . import utils
 from . import _site
 from . import _yaml
 from ._profile import Topics, profile_start, profile_end
-from . import LoadError, LoadErrorReason
+from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 
 BST_FORMAT_VERSION = 0

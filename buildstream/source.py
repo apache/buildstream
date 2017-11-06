@@ -28,8 +28,7 @@ import shutil
 from contextlib import contextmanager
 
 from . import _yaml, _signals, utils
-from .exceptions import _BstError
-from . import ImplError, LoadError, LoadErrorReason
+from ._exceptions import _BstError, ImplError, LoadError, LoadErrorReason
 from . import Plugin
 
 

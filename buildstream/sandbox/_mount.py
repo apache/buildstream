@@ -1,7 +1,7 @@
 import sys
 from contextlib import contextmanager
 
-from .. import SandboxError
+from .._exceptions import SandboxError
 from .. import utils, _signals
 
 

@@ -77,8 +77,7 @@ from weakref import WeakValueDictionary
 
 from . import _yaml, _signals
 from . import utils
-from . import PluginError, ImplError
-from .exceptions import _BstError
+from ._exceptions import PluginError, ImplError, _BstError
 from ._message import Message, MessageType
 
 

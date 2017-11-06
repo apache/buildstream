@@ -2,7 +2,7 @@ import os
 import pytest
 from contextlib import contextmanager
 from buildstream import _yaml
-from buildstream import LoadError, LoadErrorReason
+from buildstream._exceptions import LoadError, LoadErrorReason
 from tests.testutils.runcli import cli
 
 # Project directory

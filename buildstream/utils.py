@@ -38,7 +38,7 @@ import re
 import tempfile
 import pkg_resources
 from contextlib import contextmanager
-from . import ProgramNotFoundError
+from ._exceptions import ProgramNotFoundError
 from . import _yaml
 from . import _signals
 

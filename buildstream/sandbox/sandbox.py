@@ -33,7 +33,7 @@ from collections import OrderedDict
 from contextlib import contextmanager, ExitStack
 
 from .. import utils
-from .. import ImplError
+from .._exceptions import ImplError
 from .._fuse import SafeHardlinks
 
 

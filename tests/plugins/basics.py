@@ -4,7 +4,7 @@ import pytest
 from pluginbase import PluginBase
 from buildstream._elementfactory import ElementFactory
 from buildstream._sourcefactory import SourceFactory
-from buildstream import PluginError
+from buildstream._exceptions import PluginError
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

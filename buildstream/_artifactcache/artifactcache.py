@@ -21,7 +21,8 @@
 import os
 from collections import Mapping
 
-from .. import utils, ImplError
+from .._exceptions import ImplError
+from .. import utils
 from .. import _yaml
 
 

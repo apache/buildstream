@@ -29,12 +29,12 @@ from operator import itemgetter
 from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
 
-from .exceptions import _BstError, _ArtifactError
+from ._exceptions import _BstError, _ArtifactError, ImplError, LoadError
 from ._message import Message, MessageType
 from ._elementfactory import ElementFactory
 from ._loader import Loader
 from ._sourcefactory import SourceFactory
-from . import Consistency, ImplError, LoadError
+from . import Consistency
 from . import Scope
 from . import _site
 from . import _yaml, utils

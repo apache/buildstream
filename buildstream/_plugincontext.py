@@ -22,7 +22,7 @@ import os
 import inspect
 import pkg_resources
 
-from .exceptions import PluginError
+from ._exceptions import PluginError
 from . import utils
 
 

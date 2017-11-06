@@ -39,7 +39,7 @@ from collections import deque, Mapping
 from . import _site
 from . import _yaml
 from . import utils
-from . import LoadError, LoadErrorReason
+from ._exceptions import LoadError, LoadErrorReason
 from ._profile import Topics, profile_start, profile_end
 
 

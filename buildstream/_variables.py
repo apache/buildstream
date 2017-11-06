@@ -20,7 +20,7 @@
 
 import re
 
-from . import LoadError, LoadErrorReason
+from ._exceptions import LoadError, LoadErrorReason
 from . import _yaml
 
 # Variables are allowed to have dashes here

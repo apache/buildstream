@@ -10,7 +10,7 @@ from buildstream._frontend.main import cli as bst_cli
 from buildstream import _yaml
 
 # Special private exception accessor, for test case purposes
-from buildstream.exceptions import _get_last_exception
+from buildstream._exceptions import _get_last_exception
 
 
 # Wrapper for the click.testing result

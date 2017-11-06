@@ -18,10 +18,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-# Exceptions and utilities first
-from .exceptions import PluginError, LoadError, LoadErrorReason, \
-    ImplError, ProgramNotFoundError, PlatformError, SandboxError
-
 # Core components
 from .context import Context
 from .project import Project

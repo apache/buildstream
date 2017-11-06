@@ -26,7 +26,7 @@ import os
 import subprocess
 from . import _site
 from . import utils
-from .exceptions import _BstError
+from ._exceptions import _BstError
 
 import gi
 gi.require_version('OSTree', '1.0')

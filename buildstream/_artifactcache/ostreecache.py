@@ -24,7 +24,7 @@ import string
 import tempfile
 
 from .. import _ostree, utils
-from ..exceptions import _ArtifactError
+from .._exceptions import _ArtifactError
 from ..element import _KeyStrength
 from .._ostree import OSTreeError
 

@@ -4,24 +4,25 @@
 import os
 import sys
 
-from buildstream import exceptions, utils
+from buildstream import utils
+from buildstream._exceptions import ProgramNotFoundError
 
 try:
     utils.get_host_tool('bzr')
     HAVE_BZR = True
-except exceptions.ProgramNotFoundError:
+except ProgramNotFoundError:
     HAVE_BZR = False
 
 try:
     utils.get_host_tool('git')
     HAVE_GIT = True
-except exceptions.ProgramNotFoundError:
+except ProgramNotFoundError:
     HAVE_GIT = False
 
 try:
     utils.get_host_tool('ostree')
     HAVE_OSTREE_CLI = True
-except exceptions.ProgramNotFoundError:
+except ProgramNotFoundError:
     HAVE_OSTREE_CLI = False
 
 try:
@@ -33,7 +34,7 @@ except (ImportError, ValueError):
 try:
     utils.get_host_tool('bwrap')
     HAVE_BWRAP = True
-except exceptions.ProgramNotFoundError:
+except ProgramNotFoundError:
     HAVE_BWRAP = False
 
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
