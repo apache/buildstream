@@ -1,7 +1,7 @@
 import sys
 from contextlib import contextmanager
 
-from .. import ElementError
+from .. import SandboxError
 from .. import utils, _signals
 
 
@@ -32,7 +32,7 @@ class Mount(object):
         )
 
         if status != 0:
-            raise ElementError('`{}` failed with exit code {}'
+            raise SandboxError('`{}` failed with exit code {}'
                                .format(' '.join(argv), status))
 
         return dest
@@ -49,7 +49,7 @@ class Mount(object):
         )
 
         if status != 0:
-            raise ElementError('`{}` failed with exit code {}'
+            raise SandboxError('`{}` failed with exit code {}'
                                .format(' '.join(cmd), status))
 
     # mount()

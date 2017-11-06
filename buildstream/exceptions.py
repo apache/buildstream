@@ -125,22 +125,6 @@ class LoadError(_BstError):
         """
 
 
-class SourceError(_BstError):
-    """Raised by Source implementations.
-
-    This exception is raised when a :class:`.Source` encounters an error.
-    """
-    pass
-
-
-class ElementError(_BstError):
-    """Raised by Element implementations.
-
-    This exception is raised when an :class:`.Element` encounters an error.
-    """
-    pass
-
-
 class ImplError(_BstError):
     """Raised when a :class:`.Source` or :class:`.Element` plugin fails to
     implement a mandatory method"""
@@ -161,6 +145,11 @@ class ProgramNotFoundError(_BstError):
 class PlatformError(_BstError):
     """Raised if the current platform is not supported.
     """
+    pass
+
+
+class SandboxError(_BstError):
+    """Raised when errors are encountered by the sandbox implementation"""
     pass
 
 

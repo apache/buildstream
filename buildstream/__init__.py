@@ -20,7 +20,7 @@
 
 # Exceptions and utilities first
 from .exceptions import PluginError, LoadError, LoadErrorReason, \
-    SourceError, ElementError, ImplError, ProgramNotFoundError, PlatformError
+    ImplError, ProgramNotFoundError, PlatformError, SandboxError
 
 # Core components
 from .context import Context
@@ -29,7 +29,7 @@ from .sandbox import Sandbox, SandboxFlags
 
 # Plugin auther facing APIs
 from .plugin import Plugin
-from .source import Source, Consistency
-from .element import Element, Scope
+from .source import Source, SourceError, Consistency
+from .element import Element, ElementError, Scope
 from .buildelement import BuildElement
 from .scriptelement import ScriptElement

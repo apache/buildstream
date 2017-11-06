@@ -38,7 +38,7 @@ import shutil
 from . import _yaml
 from ._variables import Variables
 from .exceptions import _BstError, _ArtifactError
-from . import LoadError, LoadErrorReason, ElementError, ImplError
+from . import LoadError, LoadErrorReason, ImplError
 from . import Plugin, Consistency
 from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import SandboxFlags
@@ -46,6 +46,21 @@ from . import utils
 from . import _signals
 from . import _site
 from ._platform import Platform
+
+
+# _KeyStrength():
+#
+# Strength of cache key
+#
+class _KeyStrength(Enum):
+
+    # Includes strong cache keys of all build dependencies and their
+    # runtime dependencies.
+    STRONG = 1
+
+    # Includes names of direct build dependencies but does not include
+    # cache keys of dependencies.
+    WEAK = 2
 
 
 class Scope(Enum):
@@ -67,18 +82,12 @@ class Scope(Enum):
     """
 
 
-class _KeyStrength(Enum):
-    """Strength of cache key"""
+class ElementError(_BstError):
+    """Raised by Element implementations.
 
-    STRONG = 1
-    """Includes strong cache keys of all build dependencies and their
-    runtime dependencies.
+    This exception is raised when an :class:`.Element` encounters an error.
     """
-
-    WEAK = 2
-    """Includes names of direct build dependencies but does not include
-    cache keys of dependencies.
-    """
+    pass
 
 
 class Element(Plugin):

@@ -28,7 +28,8 @@ import shutil
 from contextlib import contextmanager
 
 from . import _yaml, _signals, utils
-from . import ImplError, LoadError, LoadErrorReason, SourceError
+from .exceptions import _BstError
+from . import ImplError, LoadError, LoadErrorReason
 from . import Plugin
 
 
@@ -53,6 +54,14 @@ class Consistency():
     Cached sources have a reference which is present in the local
     source cache. Only cached sources can be staged.
     """
+
+
+class SourceError(_BstError):
+    """Raised by Source implementations.
+
+    This exception is raised when a :class:`.Source` encounters an error.
+    """
+    pass
 
 
 class Source(Plugin):

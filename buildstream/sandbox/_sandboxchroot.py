@@ -27,7 +27,7 @@ import signal
 import subprocess
 from contextlib import contextmanager, ExitStack
 
-from .. import ElementError
+from .. import SandboxError
 from .. import utils
 from .. import _signals
 from ._mount import Mount
@@ -184,11 +184,11 @@ class SandboxChroot(Sandbox):
             # 'Exception occurred in preexec_fn', turn these into
             # a more readable message.
             if '{}'.format(e) == 'Exception occurred in preexec_fn.':
-                raise ElementError('Could not chroot into {} or chdir into {}. '
+                raise SandboxError('Could not chroot into {} or chdir into {}. '
                                    'Ensure you are root and that the relevant directory exists.'
                                    .format(rootfs, cwd)) from e
             else:
-                raise ElementError('Could not run command {}: {}'.format(command, e)) from e
+                raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
 
         return code
 
@@ -219,7 +219,7 @@ class SandboxChroot(Sandbox):
                     devices.append(self.mknod(device, location))
                 except OSError as err:
                     if err.errno == 1:
-                        raise ElementError("Permission denied while creating device node: {}.".format(err) +
+                        raise SandboxError("Permission denied while creating device node: {}.".format(err) +
                                            "BuildStream reqiures root permissions for these setttings.")
                     else:
                         raise
@@ -307,10 +307,10 @@ class SandboxChroot(Sandbox):
             os.mknod(target, mode=stat.S_IFCHR | dev.st_mode, device=target_dev)
 
         except PermissionError as e:
-            raise ElementError('Could not create device {}, ensure that you have root permissions: {}')
+            raise SandboxError('Could not create device {}, ensure that you have root permissions: {}')
 
         except OSError as e:
-            raise ElementError('Could not create device {}: {}'
+            raise SandboxError('Could not create device {}: {}'
                                .format(target, e)) from e
 
         return target
