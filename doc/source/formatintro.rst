@@ -238,7 +238,7 @@ of the default behavior which is to replace the target list.
            - "%{libdir}/*.stub"
 
 
-.. _format_directives_list_prepend:
+.. _format_directives_list_overwrite:
 
 (=) List Overwrite
 ~~~~~~~~~~~~~~~~~~
