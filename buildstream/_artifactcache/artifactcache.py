@@ -108,7 +108,7 @@ class ArtifactCache():
     #     element (Element): The Element to extract
     #
     # Raises:
-    #     _ArtifactError: In cases there was an OSError, or if the artifact
+    #     ArtifactError: In cases there was an OSError, or if the artifact
     #                    did not exist.
     #
     # Returns: path to extracted artifact

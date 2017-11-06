@@ -166,5 +166,5 @@ class SandboxError(_BstError):
 #
 # Raised when errors are encountered in the artifact caches
 #
-class _ArtifactError(_BstError):
+class ArtifactError(_BstError):
     pass

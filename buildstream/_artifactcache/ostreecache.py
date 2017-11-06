@@ -24,7 +24,7 @@ import string
 import tempfile
 
 from .. import _ostree, utils
-from .._exceptions import _ArtifactError
+from .._exceptions import ArtifactError
 from ..element import _KeyStrength
 from .._ostree import OSTreeError
 
@@ -85,8 +85,8 @@ class OSTreeCache(ArtifactCache):
                 check_push_connection(self.artifact_push,
                                       self.artifact_push_port)
             except PushException as e:
-                raise _ArtifactError("BuildStream will be unable to push artifacts "
-                                     "to the shared cache: {}".format(e))
+                raise ArtifactError("BuildStream will be unable to push artifacts "
+                                    "to the shared cache: {}".format(e))
 
     # contains():
     #
@@ -160,7 +160,7 @@ class OSTreeCache(ArtifactCache):
     #     element (Element): The Element to extract
     #
     # Raises:
-    #     _ArtifactError: In cases there was an OSError, or if the artifact
+    #     ArtifactError: In cases there was an OSError, or if the artifact
     #                    did not exist.
     #
     # Returns: path to extracted artifact
@@ -178,7 +178,7 @@ class OSTreeCache(ArtifactCache):
             rev = _ostree.checksum(self.repo, ref)
 
         if not rev:
-            raise _ArtifactError("Artifact missing for {}".format(ref))
+            raise ArtifactError("Artifact missing for {}".format(ref))
 
         dest = os.path.join(self.extractdir, element.get_project().name, element.normal_name, rev)
         if os.path.isdir(dest):
@@ -202,8 +202,8 @@ class OSTreeCache(ArtifactCache):
                 # If rename fails with these errors, another process beat
                 # us to it so just ignore.
                 if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
-                    raise _ArtifactError("Failed to extract artifact for ref '{}': {}"
-                                         .format(ref, e)) from e
+                    raise ArtifactError("Failed to extract artifact for ref '{}': {}"
+                                        .format(ref, e)) from e
 
         return dest
 
@@ -225,7 +225,7 @@ class OSTreeCache(ArtifactCache):
         try:
             _ostree.commit(self.repo, content, ref, weak_ref)
         except OSTreeError as e:
-            raise _ArtifactError("Failed to commit artifact: {}".format(e)) from e
+            raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 
     # pull():
     #
@@ -238,14 +238,14 @@ class OSTreeCache(ArtifactCache):
     def pull(self, element, progress=None):
 
         if self._offline and not self._pull_local:
-            raise _ArtifactError("Attempt to pull artifact while offline")
+            raise ArtifactError("Attempt to pull artifact while offline")
 
         if self.artifact_pull.startswith("/"):
             remote = "file://" + self.artifact_pull
         elif self.remote is not None:
             remote = self.remote
         else:
-            raise _ArtifactError("Attempt to pull artifact without any pull URL")
+            raise ArtifactError("Attempt to pull artifact without any pull URL")
 
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
@@ -276,11 +276,11 @@ class OSTreeCache(ArtifactCache):
                 # create tag for strong cache key
                 _ostree.set_ref(self.repo, ref, rev)
             else:
-                raise _ArtifactError("Attempt to pull unavailable artifact for element {}"
-                                     .format(element.name))
+                raise ArtifactError("Attempt to pull unavailable artifact for element {}"
+                                    .format(element.name))
         except OSTreeError as e:
-            raise _ArtifactError("Failed to pull artifact for element {}: {}"
-                                 .format(element.name, e)) from e
+            raise ArtifactError("Failed to pull artifact for element {}: {}"
+                                .format(element.name, e)) from e
 
     # fetch_remote_refs():
     #
@@ -292,7 +292,7 @@ class OSTreeCache(ArtifactCache):
         elif self.remote is not None:
             remote = self.remote
         else:
-            raise _ArtifactError("Attempt to fetch remote refs without any pull URL")
+            raise ArtifactError("Attempt to fetch remote refs without any pull URL")
 
         def child_action(repo, remote, q):
             try:
@@ -309,7 +309,7 @@ class OSTreeCache(ArtifactCache):
         if ret:
             self._remote_refs = res
         else:
-            raise _ArtifactError("Failed to fetch remote refs") from res
+            raise ArtifactError("Failed to fetch remote refs") from res
 
     # push():
     #
@@ -323,14 +323,14 @@ class OSTreeCache(ArtifactCache):
     #           and no updated was required
     #
     # Raises:
-    #   _ArtifactError if there was an error
+    #   (ArtifactError): if there was an error
     def push(self, element):
 
         if self._offline and not self._push_local:
-            raise _ArtifactError("Attempt to push artifact while offline")
+            raise ArtifactError("Attempt to push artifact while offline")
 
         if self.artifact_push is None:
-            raise _ArtifactError("Attempt to push artifact without any push URL")
+            raise ArtifactError("Attempt to push artifact without any push URL")
 
         ref = buildref(element, element._get_cache_key_from_artifact())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
@@ -364,7 +364,7 @@ class OSTreeCache(ArtifactCache):
                                                self.artifact_push_port,
                                                [ref, weak_ref], output_file)
                     except PushException as e:
-                        raise _ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
+                        raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
 
                 return pushed
 

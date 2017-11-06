@@ -37,7 +37,7 @@ import shutil
 
 from . import _yaml
 from ._variables import Variables
-from ._exceptions import _BstError, _ArtifactError, LoadError, LoadErrorReason, ImplError
+from ._exceptions import _BstError, LoadError, LoadErrorReason, ImplError
 from . import Plugin, Consistency
 from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import SandboxFlags

@@ -26,7 +26,7 @@ import subprocess
 from .. import utils
 from ..element import _KeyStrength
 from .._message import Message, MessageType
-from .._exceptions import _ArtifactError, ProgramNotFoundError
+from .._exceptions import ArtifactError, ProgramNotFoundError
 
 from . import ArtifactCache
 
@@ -80,8 +80,8 @@ class Tar():
         try:
             cls._archive_with_python(location, content, cwd)
         except tarfile.TarError as e:
-            raise _ArtifactError("Failed to archive {}: {}"
-                                 .format(location, e)) from e
+            raise ArtifactError("Failed to archive {}: {}"
+                                .format(location, e)) from e
 
     # extract()
     #
@@ -109,8 +109,8 @@ class Tar():
         try:
             cls._extract_with_python(location, dest)
         except tarfile.TarError as e:
-            raise _ArtifactError("Failed to extract {}: {}"
-                                 .format(location, e)) from e
+            raise ArtifactError("Failed to extract {}: {}"
+                                .format(location, e)) from e
 
     # _get_host_tar()
     #
@@ -318,7 +318,7 @@ class TarCache(ArtifactCache):
             path = tarpath(element, key)
 
         if not os.path.isfile(os.path.join(self.tardir, path)):
-            raise _ArtifactError("Artifact missing for {}".format(ref))
+            raise ArtifactError("Artifact missing for {}".format(ref))
 
         # If the destination already exists, the artifact has been extracted
         dest = os.path.join(self.extractdir, ref)
@@ -341,7 +341,7 @@ class TarCache(ArtifactCache):
                 # If rename fails with these errors, another process beat
                 # us to it so just ignore.
                 if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
-                    raise _ArtifactError("Failed to extract artifact for ref '{}': {}"
-                                         .format(ref, e)) from e
+                    raise ArtifactError("Failed to extract artifact for ref '{}': {}"
+                                        .format(ref, e)) from e
 
         return dest

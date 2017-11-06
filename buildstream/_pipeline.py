@@ -29,7 +29,7 @@ from operator import itemgetter
 from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
 
-from ._exceptions import _BstError, _ArtifactError, ImplError, LoadError
+from ._exceptions import _BstError, ArtifactError, ImplError, LoadError
 from ._message import Message, MessageType
 from ._elementfactory import ElementFactory
 from ._loader import Loader
@@ -185,7 +185,7 @@ class Pipeline():
                 if remote_ticker:
                     remote_ticker(self.artifacts.artifact_pull)
                 self.artifacts.fetch_remote_refs()
-            except _ArtifactError:
+            except ArtifactError:
                 self.message(MessageType.WARN, "Failed to fetch remote refs")
                 self.artifacts.set_offline()
 
@@ -307,7 +307,7 @@ class Pipeline():
             self.message(MessageType.START, "Checking connectivity to remote artifact cache")
             try:
                 self.artifacts.preflight()
-            except _ArtifactError as e:
+            except ArtifactError as e:
                 self.message(MessageType.WARN, str(e),
                              elapsed=datetime.datetime.now() - starttime)
                 return False
