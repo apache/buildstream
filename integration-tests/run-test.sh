@@ -56,10 +56,10 @@ main () {
 				clean "$@"
 				break ;;
 			--sources)
-				export BST_SOURCE_CACHE=$(realpath "${2}")
+				export BST_SOURCE_CACHE=$(realpath -m "${2}")
 				shift 2 ;;
 			-c|--cov)
-				export BST_COVERAGE=$(realpath "${2}")
+				export BST_COVERAGE=$(realpath -m "${2}")
 				shift 2 ;;
 			-a|--arg)
 				export BST_FLAGS="${BST_FLAGS:-} $2"
