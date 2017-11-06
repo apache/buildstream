@@ -60,7 +60,7 @@ Commands are run in the following order:
 Sometimes it is interesting to append or prepend commands to an existing
 command list without replacing it entirely, for this; array composition
 :ref:`prepend <format_directives_list_prepend>` and
-:ref:`prepend <format_directives_list_append>` directives can be used.
+:ref:`append <format_directives_list_append>` directives can be used.
 
 **Example**
 
