@@ -13,11 +13,9 @@ class DownloadableFileSource(Source):
     COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref']
 
     def configure(self, node):
-        project = self.get_project()
-
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.url = project.translate_url(self.original_url)
+        self.url = self.translate_url(self.original_url)
 
     def preflight(self):
         return

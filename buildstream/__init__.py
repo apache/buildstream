@@ -20,7 +20,6 @@
 
 # Core components
 from .context import Context
-from .project import Project
 from .sandbox import Sandbox, SandboxFlags
 
 # Plugin auther facing APIs

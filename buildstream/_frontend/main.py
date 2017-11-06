@@ -25,9 +25,10 @@ from contextlib import contextmanager
 from blessings import Terminal
 
 # Import buildstream public symbols
-from .. import Context, Project, Scope, Consistency
+from .. import Context, Scope, Consistency
 
 # Import various buildstream internals
+from .._project import Project
 from .._exceptions import BstError, LoadError
 from .._message import MessageType, unconditional_messages
 from .._pipeline import Pipeline, PipelineError

@@ -1,7 +1,8 @@
 import os
 import pytest
 
-from buildstream import Context, Project, BuildElement
+from buildstream import Context, BuildElement
+from buildstream._project import Project
 from buildstream._pipeline import Pipeline
 from buildstream._platform import Platform
 

@@ -32,7 +32,7 @@ from . import ArtifactCache
 
 
 def buildref(element, key):
-    project = element.get_project()
+    project = element._get_project()
 
     # Normalize ostree ref unsupported chars
     element_name = element.normal_name.replace('+', 'X')
@@ -42,7 +42,7 @@ def buildref(element, key):
 
 
 def tarpath(element, key):
-    project = element.get_project()
+    project = element._get_project()
     return os.path.join(project.name, element.normal_name, key + '.tar.bz2')
 
 
@@ -283,7 +283,7 @@ class TarCache(ArtifactCache):
         ref = tarpath(element, element._get_cache_key_for_build())
         weak_ref = tarpath(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
-        os.makedirs(os.path.join(self.tardir, element.get_project().name, element.normal_name), exist_ok=True)
+        os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
 
         with utils._tempdir() as temp:
             refdir = os.path.join(temp, element._get_cache_key_for_build())
@@ -330,7 +330,7 @@ class TarCache(ArtifactCache):
         with utils._tempdir(dir=self.extractdir) as tmpdir:
             Tar.extract(os.path.join(self.tardir, path), tmpdir)
 
-            os.makedirs(os.path.join(self.extractdir, element.get_project().name, element.normal_name),
+            os.makedirs(os.path.join(self.extractdir, element._get_project().name, element.normal_name),
                         exist_ok=True)
             try:
                 os.rename(os.path.join(tmpdir, key), dest)

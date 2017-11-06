@@ -184,14 +184,6 @@ class Plugin():
         """
         return self.__context
 
-    def get_project(self):
-        """Fetches the project
-
-        Returns:
-           (object): The :class:`.Project`
-        """
-        return self.__project
-
     def node_items(self, node):
         """Iterate over a dictionary loaded from YAML
 
@@ -569,6 +561,13 @@ class Plugin():
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
+
+    # _get_project()
+    #
+    # Fetches the project object associated with this plugin
+    #
+    def _get_project(self):
+        return self.__project
 
     # _get_unique_id():
     #

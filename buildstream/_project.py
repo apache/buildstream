@@ -18,15 +18,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""
-Project
-=======
-
-The :class:`.Project` object holds all of the project settings from
-the project configuration file including the project directory it
-was loaded from.
-"""
-
 import os
 import multiprocessing  # for cpu_count()
 from collections import Mapping
@@ -37,42 +28,43 @@ from ._profile import Topics, profile_start, profile_end
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 
+
+# The base BuildStream format version
+#
+# This version is bumped whenever enhancements are made
+# to the ``project.conf`` format or the format in general.
+#
 BST_FORMAT_VERSION = 0
-"""The base BuildStream format version
 
-This version is bumped whenever enhancements are made
-to the ``project.conf`` format or the format in general.
-"""
-
+# The base BuildStream artifact version
+#
+# The artifact version changes whenever the cache key
+# calculation algorithm changes in an incompatible way
+# or if buildstream was changed in a way which can cause
+# the same cache key to produce something that is no longer
+# the same.
 BST_ARTIFACT_VERSION = 0
-"""The base BuildStream artifact version
-
-The artifact version changes whenever the cache key
-calculation algorithm changes in an incompatible way
-or if buildstream was changed in a way which can cause
-the same cache key to produce something that is no longer
-the same.
-"""
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
 
 
+# Project()
+#
+# The Project Configuration
+#
 class Project():
-    """Project()
 
-    The Project Configuration
-    """
     def __init__(self, directory, context):
 
+        # The project name
         self.name = None
-        """str: The project name"""
 
+        # The project directory
         self.directory = os.path.abspath(directory)
-        """str: The project directory"""
 
+        # Absolute path to where elements are loaded from within the project
         self.element_path = None
-        """str: Absolute path to where elements are loaded from within the project"""
 
         self._context = context  # The invocation Context
         self._variables = {}     # The default variables overridden with project wide overrides
@@ -91,20 +83,21 @@ class Project():
         self._load()
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
+    # translate_url():
+    #
+    # Translates the given url which may be specified with an alias
+    # into a fully qualified url.
+    #
+    # Args:
+    #    url (str): A url, which may be using an alias
+    #
+    # Returns:
+    #    str: The fully qualified url, with aliases resolved
+    #
+    # This method is provided for :class:`.Source` objects to resolve
+    # fully qualified urls based on the shorthand which is allowed
+    # to be specified in the YAML
     def translate_url(self, url):
-        """Translates the given url which may be specified with an alias
-        into a fully qualified url.
-
-        Args:
-           url (str): A url, which may be using an alias
-
-        Returns:
-           str: The fully qualified url, with aliases resolved
-
-        This method is provided for :class:`.Source` objects to resolve
-        fully qualified urls based on the shorthand which is allowed
-        to be specified in the YAML
-        """
         if url and _ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(_ALIAS_SEPARATOR, 1)
             alias_url = self._aliases.get(url_alias)

@@ -1,7 +1,8 @@
 import os
 import pytest
 
-from buildstream import Project, Context
+from buildstream import Context
+from buildstream._project import Project
 from buildstream._exceptions import LoadError, LoadErrorReason
 
 DATA_DIR = os.path.join(

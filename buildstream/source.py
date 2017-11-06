@@ -104,6 +104,31 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
+    def translate_url(self, url):
+        """Translates the given url which may be specified with an alias
+        into a fully qualified url.
+
+        Args:
+           url (str): A url, which may be using an alias
+
+        Returns:
+           str: The fully qualified url, with aliases resolved
+        """
+        project = self._get_project()
+        return project.translate_url(url)
+
+    def get_project_directory(self):
+        """Fetch the project base directory
+
+        This is useful for sources which need to load resources
+        stored somewhere inside the project.
+
+        Returns:
+           str: The project base directory
+        """
+        project = self._get_project()
+        return project.directory
+
     @contextmanager
     def tempdir(self):
         """Context manager for working in a temporary directory
@@ -220,7 +245,7 @@ class Source(Plugin):
                 # A workspace is considered inconsistent in the case
                 # that it's directory went missing
                 #
-                fullpath = os.path.join(self.get_project().directory, self.__workspace)
+                fullpath = os.path.join(self.get_project_directory(), self.__workspace)
                 if not os.path.exists(fullpath):
                     self.__consistency = Consistency.INCONSISTENT
 
@@ -331,7 +356,7 @@ class Source(Plugin):
     # Stage the workspace
     #
     def _stage_workspace(self, directory):
-        fullpath = os.path.join(self.get_project().directory, self.__workspace)
+        fullpath = os.path.join(self.get_project_directory(), self.__workspace)
 
         with self.timed_activity("Staging local files at {}".format(self.__workspace)):
             if os.path.isdir(fullpath):
@@ -342,7 +367,7 @@ class Source(Plugin):
 
     # Get a unique key for the workspace
     def _get_workspace_key(self):
-        fullpath = os.path.join(self.get_project().directory, self.__workspace)
+        fullpath = os.path.join(self.get_project_directory(), self.__workspace)
 
         # Get a list of tuples of the the project relative paths and fullpaths
         if os.path.isdir(fullpath):

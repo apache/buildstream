@@ -61,12 +61,11 @@ from buildstream._ostree import OSTreeError
 class OSTreeSource(Source):
 
     def configure(self, node):
-        project = self.get_project()
 
         self.node_validate(node, ['url', 'ref', 'track', 'gpg-key'] + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
-        self.url = project.translate_url(self.original_url)
+        self.url = self.translate_url(self.original_url)
         self.ref = self.node_get_member(node, str, 'ref', '') or None
         self.tracking = self.node_get_member(node, str, 'track', '') or None
         self.mirror = os.path.join(self.get_mirror_directory(),
@@ -76,7 +75,7 @@ class OSTreeSource(Source):
         self.gpg_key = self.node_get_member(node, str, 'gpg-key', '') or None
         self.gpg_key_path = None
         if self.gpg_key is not None:
-            self.gpg_key_path = os.path.join(project.directory, self.gpg_key)
+            self.gpg_key_path = os.path.join(self.get_project_directory(), self.gpg_key)
 
         # Our OSTree repo handle
         self.repo = None

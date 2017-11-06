@@ -62,7 +62,7 @@ class TrackQueue(Queue):
             if source._set_ref(new_ref, source._Source__origin_node):
 
                 changed = True
-                project = source.get_project()
+                project = source._get_project()
                 toplevel = source._Source__origin_toplevel
                 filename = source._Source__origin_filename
                 fullname = os.path.join(project.element_path, filename)

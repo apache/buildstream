@@ -63,7 +63,7 @@ class BzrSource(Source):
         self.original_url = self.node_get_member(node, str, 'url')
         self.tracking = self.node_get_member(node, str, 'track')
         self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.url = self.get_project().translate_url(self.original_url)
+        self.url = self.translate_url(self.original_url)
 
     def preflight(self):
         # Check if bzr is installed, get the binary at the same time.

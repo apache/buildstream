@@ -46,11 +46,9 @@ from buildstream import utils
 class PatchSource(Source):
 
     def configure(self, node):
-        project = self.get_project()
-
         self.path = self.node_get_member(node, str, "path")
         self.strip_level = self.node_get_member(node, int, "strip-level", 1)
-        self.fullpath = os.path.join(project.directory, self.path)
+        self.fullpath = os.path.join(self.get_project_directory(), self.path)
 
     def preflight(self):
         # Check if the configured file really exists

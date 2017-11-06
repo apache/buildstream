@@ -35,7 +35,7 @@ from .pushreceive import PushException
 
 
 def buildref(element, key):
-    project = element.get_project()
+    project = element._get_project()
 
     # Normalize ostree ref unsupported chars
     valid_chars = string.digits + string.ascii_letters + '-._'
@@ -180,7 +180,7 @@ class OSTreeCache(ArtifactCache):
         if not rev:
             raise ArtifactError("Artifact missing for {}".format(ref))
 
-        dest = os.path.join(self.extractdir, element.get_project().name, element.normal_name, rev)
+        dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, rev)
         if os.path.isdir(dest):
             # artifact has already been extracted
             return dest

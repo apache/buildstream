@@ -39,7 +39,7 @@ from . import _yaml
 from ._variables import Variables
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError
 from . import Plugin, Consistency
-from .project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
+from ._project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import SandboxFlags
 from . import utils
 from . import _signals
@@ -856,7 +856,7 @@ class Element(Plugin):
         }
 
         context = self.get_context()
-        project = self.get_project()
+        project = self._get_project()
         return utils._generate_key({
             'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
                                                self.BST_ARTIFACT_VERSION),
@@ -1202,7 +1202,7 @@ class Element(Plugin):
     # This matches the order in which things are stored in the artifact cache
     #
     def _logfile(self, action_name, pid=None):
-        project = self.get_project()
+        project = self._get_project()
         context = self.get_context()
         key = self._get_display_key()
         if pid is None:
@@ -1411,7 +1411,7 @@ class Element(Plugin):
     #   (bool): Whether the build plan is strict for this element
     #
     def _get_strict(self):
-        project = self.get_project()
+        project = self._get_project()
         context = self.get_context()
         return context._get_strict(project.name)
 
@@ -1421,7 +1421,7 @@ class Element(Plugin):
     @contextmanager
     def __sandbox(self, directory, stdout=None, stderr=None):
         context = self.get_context()
-        project = self.get_project()
+        project = self._get_project()
         platform = Platform.get_platform()
 
         if directory is not None and os.path.exists(directory):
@@ -1443,7 +1443,7 @@ class Element(Plugin):
             utils._force_rmtree(rootdir)
 
     def __compose_default_splits(self, defaults):
-        project = self.get_project()
+        project = self._get_project()
         project_splits = _yaml.node_chain_copy(project._splits)
 
         element_public = _yaml.node_get(defaults, Mapping, 'public', default_value={})
@@ -1476,7 +1476,7 @@ class Element(Plugin):
 
             # Override the element's defaults with element specific
             # overrides from the project.conf
-            project = self.get_project()
+            project = self._get_project()
             elements = project._elements
             overrides = elements.get(self.get_kind())
             if overrides:
@@ -1490,7 +1490,7 @@ class Element(Plugin):
     # creating sandboxes for this element
     #
     def __extract_environment(self, meta):
-        project = self.get_project()
+        project = self._get_project()
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
         environment = _yaml.node_chain_copy(project._environment)
@@ -1506,7 +1506,7 @@ class Element(Plugin):
         return final_env
 
     def __extract_env_nocache(self, meta):
-        project = self.get_project()
+        project = self._get_project()
         project_nocache = project._env_nocache
         default_nocache = _yaml.node_get(self.__defaults, list, 'environment-nocache', default_value=[])
         element_nocache = meta.env_nocache
@@ -1522,7 +1522,7 @@ class Element(Plugin):
     # substituting command strings to be run in the sandbox
     #
     def __extract_variables(self, meta):
-        project = self.get_project()
+        project = self._get_project()
         default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
 
         variables = _yaml.node_chain_copy(project._variables)

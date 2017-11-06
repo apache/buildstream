@@ -78,10 +78,9 @@ class GitMirror():
 
     def __init__(self, source, path, url, ref):
 
-        project = source.get_project()
         self.source = source
         self.path = path
-        self.url = project.translate_url(url)
+        self.url = source.translate_url(url)
         self.ref = ref
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(self.url))
 
