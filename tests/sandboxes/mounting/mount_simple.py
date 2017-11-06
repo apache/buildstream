@@ -4,7 +4,7 @@ from contextlib import ExitStack
 
 import pytest
 
-from buildstream.sandbox._mount import Mount
+from buildstream.sandbox._mounter import Mounter
 
 
 @pytest.mark.skipif(not os.geteuid() == 0, reason="requires root permissions")
@@ -16,7 +16,7 @@ def test_bind_mount():
         with open(os.path.join(src, 'test'), 'a') as test:
             test.write('Test')
 
-        with Mount.bind_mount(target, src) as dest:
+        with Mounter.bind_mount(target, src) as dest:
             # Ensure we get the correct path back
             assert dest == target
 
@@ -41,7 +41,7 @@ def test_mount_proc():
         src = '/proc'
         target = stack.enter_context(tempfile.TemporaryDirectory())
 
-        with Mount.mount(target, src, mount_type='proc', ro=True) as dest:
+        with Mounter.mount(target, src, mount_type='proc', ro=True) as dest:
             # Ensure we get the correct path back
             assert dest == target
 
