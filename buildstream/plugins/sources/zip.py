@@ -100,11 +100,15 @@ class ZipSource(DownloadableFileSource):
     # We want to iterate over all paths of an archive, but namelist()
     # is not enough because some archives simply do not contain the leading
     # directory paths for the archived files.
-    def _list_archive_paths(self, archive, dirs_only=False):
+    def _list_archive_paths(self, archive):
 
         visited = {}
         for member in archive.infolist():
-            if not member.is_dir():
+
+            # ZipInfo.is_dir() is only available in python >= 3.6, but all
+            # it does is check for a trailing '/' in the name
+            #
+            if not member.filename.endswith('/'):
 
                 # Loop over the components of a path, for a path of a/b/c/d
                 # we will first visit 'a', then 'a/b' and then 'a/b/c', excluding
@@ -119,23 +123,21 @@ class ZipSource(DownloadableFileSource):
                             # exist in the archive
                             _ = archive.getinfo(dir_component)
                         except KeyError:
-                            yield dir_component
+                            if dir_component != '.':
+                                yield dir_component
 
                 continue
 
             # Avoid considering the '.' directory, if any is included in the archive
             # this is to avoid the default 'base-dir: *' value behaving differently
             # depending on whether the archive was encoded with a leading '.' or not
-            elif member.filename == './':
-                continue
-
-            if dirs_only and not member.is_dir():
+            elif member.filename == '.' or member.filename == './':
                 continue
 
             yield member.filename
 
     def _find_base_dir(self, archive, pattern):
-        paths = self._list_archive_paths(archive, dirs_only=True)
+        paths = self._list_archive_paths(archive)
         matches = sorted(list(utils.glob(paths, pattern)))
         if not matches:
             raise SourceError("{}: Could not find base directory matching pattern: {}".format(self, pattern))
