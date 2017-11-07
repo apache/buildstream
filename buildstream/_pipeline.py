@@ -126,7 +126,7 @@ class Planner():
 #
 class Pipeline():
 
-    def __init__(self, context, project, targets,
+    def __init__(self, context, project, targets, except_,
                  inconsistent=False,
                  rewritable=False,
                  fetch_remote_refs=False,
@@ -141,7 +141,7 @@ class Pipeline():
         self.unused_workspaces = []
         self._resolved_elements = {}
 
-        loader = Loader(self.project.element_path, targets,
+        loader = Loader(self.project.element_path, targets + except_,
                         self.project._options,
                         context.host_arch, context.target_arch)
         meta_elements = loader.load(rewritable, load_ticker)
@@ -159,8 +159,12 @@ class Pipeline():
         self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
 
         # Resolve the real elements now that we've resolved the project
-        self.targets = [self.resolve(meta_element, ticker=resolve_ticker)
-                        for meta_element in meta_elements]
+        resolved_elements = [self.resolve(meta_element, ticker=resolve_ticker)
+                             for meta_element in meta_elements]
+
+        self.targets = resolved_elements[:len(targets)]
+        self.exceptions = resolved_elements[len(targets):]
+
         if resolve_ticker:
             resolve_ticker(None)
 

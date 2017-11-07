@@ -245,9 +245,10 @@ def fetch(app, elements, deps, track, except_):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    app.initialize(elements, rewritable=track, inconsistent=track)
+    app.initialize(elements, except_=except_,
+                   rewritable=track, inconsistent=track)
     try:
-        dependencies = app.pipeline.deps_elements(deps, except_)
+        dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
         app.pipeline.fetch(app.scheduler, dependencies, track)
         click.echo("")
@@ -283,9 +284,10 @@ def track(app, elements, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, rewritable=True, inconsistent=True)
+    app.initialize(elements, except_=except_,
+                   rewritable=True, inconsistent=True)
     try:
-        dependencies = app.pipeline.deps_elements(deps, except_)
+        dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
         app.pipeline.track(app.scheduler, dependencies)
         click.echo("")
@@ -423,9 +425,9 @@ def show(app, elements, deps, except_, order, format, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(elements, fetch_remote_refs=downloadable)
+    app.initialize(elements, except_=except_, fetch_remote_refs=downloadable)
     try:
-        dependencies = app.pipeline.deps_elements(deps, except_)
+        dependencies = app.pipeline.deps_elements(deps)
     except PipelineError as e:
         click.echo("{}".format(e))
         sys.exit(-1)
@@ -548,7 +550,7 @@ def source_bundle(app, target, force, directory,
     """Produce a source bundle to be manually executed"""
     app.initialize((target,), rewritable=track, inconsistent=track)
     try:
-        dependencies = app.pipeline.deps_elements('all', except_)
+        dependencies = app.pipeline.deps_elements('all')
         app.print_heading(dependencies)
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
                                    compression, directory)
@@ -766,7 +768,8 @@ class App():
     #
     # Initialize the main pipeline
     #
-    def initialize(self, elements, rewritable=False, inconsistent=False, fetch_remote_refs=False):
+    def initialize(self, elements, except_=tuple(), rewritable=False,
+                   inconsistent=False, fetch_remote_refs=False):
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements) + '-' +
                       self.host_arch + '-' + self.target_arch)
@@ -840,7 +843,7 @@ class App():
             sys.exit(-1)
 
         try:
-            self.pipeline = Pipeline(self.context, self.project, elements,
+            self.pipeline = Pipeline(self.context, self.project, elements, except_,
                                      inconsistent=inconsistent,
                                      rewritable=rewritable,
                                      fetch_remote_refs=fetch_remote_refs,
