@@ -1,0 +1,3 @@
+# Composited on top of basics.yaml, effectively deleting its children list
+children:
+  (=): []

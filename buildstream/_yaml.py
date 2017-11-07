@@ -552,8 +552,10 @@ def composite_list_append(target_node, target_key, source_node, source_key):
 #
 def composite_list_overwrite(target_node, target_key, source_node, source_key):
 
-    source_list = node_get(source_node, list, source_key, default_value=[])
-    if not source_list:
+    # We need to handle the legitimate case of overwriting a list with an empty
+    # list, hence the slightly odd default_value of [None] rather than [].
+    source_list = node_get(source_node, list, source_key, default_value=[None])
+    if source_list == [None]:
         return False
 
     target_provenance = node_get_provenance(target_node)

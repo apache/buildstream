@@ -213,6 +213,20 @@ def test_list_composition(datafiles, filename,
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
 
 
+# Test that overwriting a list with an empty list works as expected.
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_list_deletion(datafiles):
+    base = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
+    overlay = os.path.join(datafiles.dirname, datafiles.basename, 'listoverwriteempty.yaml')
+
+    base = _yaml.load(base, shortname='basics.yaml')
+    overlay = _yaml.load(overlay, shortname='listoverwriteempty.yaml')
+    _yaml.composite_dict(base, overlay)
+
+    children = _yaml.node_get(base, list, 'children')
+    assert len(children) == 0
+
+
 # Tests for deep list composition
 #
 # Same as test_list_composition(), but adds an additional file
