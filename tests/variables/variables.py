@@ -20,7 +20,7 @@ def create_pipeline(tmpdir, basedir, target):
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     context._platform = Platform.get_platform()
 
-    return Pipeline(context, project, [target])
+    return Pipeline(context, project, [target], [])
 
 
 def assert_command(datafiles, tmpdir, target, command, expected):
