@@ -338,6 +338,34 @@ class Element(Plugin):
         value = self.node_get_list_element(node, str, member_name, indices)
         return self.__variables.subst(value)
 
+    def compute_manifest(self, *, include=None, exclude=None, orphans=True):
+        """Compute and return this element's manifest
+
+        The manifest consists on the list of file paths in the
+        artifact.  The files in the manifest are selected according to
+        `include`, `exclude` and `orphans` parameters. If `include` is
+        not specified then all files spoken for by any domain are
+        included unless explicitly excluded with an `exclude` domain.
+
+        The main use is to stage all files of the artifact, then
+        execute integration commands, and finally keep only files from
+        the manifest. This is useful if integration commands are
+        expected to run on all files. In that case, call to
+        :meth:`stage_artifact` should not have any `include`,
+        `exclude` and `orphans` parameters. Those should be passed to
+        `compute_manifest` instead.
+
+        Args:
+           include (list): An optional list of domains to include files from
+           exclude (list): An optional list of domains to exclude files from
+           orphans (bool): Whether to include files not spoken for by split domains
+
+        Yields:
+           (str): The paths of the files in manifest
+        """
+        self._assert_cached()
+        return self.__compute_splits(include, exclude, orphans)
+
     def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True):
         """Stage this element's output artifact in the sandbox
 

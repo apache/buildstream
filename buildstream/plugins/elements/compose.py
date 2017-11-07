@@ -91,9 +91,20 @@ class ComposeElement(Element):
 
     def assemble(self, sandbox):
 
+        require_split = self.include or self.exclude or not self.include_orphans
+
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
             self.stage_dependency_artifacts(sandbox, Scope.BUILD)
+
+        split = set()
+        if require_split:
+            with self.timed_activity("Computing split", silent_nested=True):
+                for dep in self.dependencies(Scope.BUILD):
+                    files = dep.compute_manifest(self.include,
+                                                 self.exclude,
+                                                 self.include_orphans)
+                    split.update(files)
 
         # Make a snapshot of all the files.
         basedir = sandbox.get_directory()
@@ -101,8 +112,8 @@ class ComposeElement(Element):
             f: getmtime(os.path.join(basedir, f))
             for f in utils.list_relative_paths(basedir)
         }
-        manifest = []
         integration_files = []
+        removed_files = []
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
@@ -111,26 +122,32 @@ class ComposeElement(Element):
                 for dep in self.dependencies(Scope.BUILD):
                     dep.integrate(sandbox)
 
-                integration_files = [
-                    path for path in utils.list_relative_paths(basedir)
-                    if (snapshot.get(path) is None or
-                        snapshot[path] != getmtime(os.path.join(basedir, path)))
-                ]
-                self.info("Integration effected {} files".format(len(integration_files)))
-
-        manifest += integration_files
+                if require_split:
+                    integration_files = [
+                        path for path in utils.list_relative_paths(basedir)
+                        if (snapshot.get(path) is None or
+                            snapshot[path] != getmtime(os.path.join(basedir, path)))
+                    ]
+                    removed_files = [
+                        path for path in split
+                        if not os.path.lexists(os.path.join(basedir, path))
+                    ]
+                    self.info("Integration effected {} files and removed {} files"
+                              .format(len(integration_files), len(removed_files)))
 
         # The remainder of this is expensive, make an early exit if
         # we're not being selective about what is to be included.
-        if not (self.include or self.exclude) and self.include_orphans:
+        if not require_split:
             return '/'
+
+        split.update(integration_files)
+        split.difference_update(removed_files)
 
         # XXX We should be moving things outside of the build sandbox
         # instead of into a subdir. The element assemble() method should
         # support this in some way.
         #
         installdir = os.path.join(basedir, 'buildstream', 'install')
-        stagedir = os.path.join(os.sep, 'buildstream', 'install')
         os.makedirs(installdir, exist_ok=True)
 
         # We already saved the manifest for created files in the integration phase,
@@ -154,15 +171,8 @@ class ComposeElement(Element):
         detail = "\n".join(lines)
 
         with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
-            self.stage_dependency_artifacts(sandbox, Scope.BUILD,
-                                            path=stagedir,
-                                            include=self.include,
-                                            exclude=self.exclude,
-                                            orphans=self.include_orphans)
-
-            if self.integration:
-                self.status("Moving {} integration files".format(len(integration_files)))
-                utils.move_files(basedir, installdir, files=integration_files)
+            self.info("Composing {} files".format(len(split)))
+            utils.link_files(basedir, installdir, split)
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
