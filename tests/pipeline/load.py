@@ -13,15 +13,19 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_pipeline(tmpdir, basedir, target):
+def create_pipeline(tmpdir, basedir, target, except_=[]):
     context = Context([], 'x86_64')
     project = Project(basedir, context)
 
     context.deploydir = os.path.join(str(tmpdir), 'deploy')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
+    Platform._create_instance(context, project)
     context._platform = Platform.get_platform()
 
-    return Pipeline(context, project, [target])
+    # target = list(target)
+    # except_ = list(except_)
+
+    return Pipeline(context, project, [target], except_)
 
 
 @pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
@@ -154,12 +158,12 @@ def test_iterate_scope_build_of_child(datafiles, tmpdir):
 def test_remove_elements(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    pipeline = create_pipeline(tmpdir, basedir, 'build.bst')
+    pipeline = create_pipeline(tmpdir, basedir, 'build.bst', ['second-level-1.bst'])
 
     # Remove second-level-2 and check that the correct dependencies
     # are removed.
     element_list = pipeline.targets[0].dependencies(Scope.ALL)
-    element_list = pipeline.remove_elements(element_list, ['second-level-1.bst'])
+    element_list = pipeline.remove_elements(element_list)
 
     assert(set(e.name for e in element_list) ==
            set(['build.bst', 'third-level-2.bst', 'fourth-level-2.bst',
