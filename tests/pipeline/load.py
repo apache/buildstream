@@ -14,17 +14,6 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_pipeline(tmpdir, basedir, target):
-    context = Context([])
-    project = Project(basedir, context)
-
-    context.deploydir = os.path.join(str(tmpdir), 'deploy')
-    context.artifactdir = os.path.join(str(tmpdir), 'artifact')
-    context._platform = Platform.get_platform()
-
-    return Pipeline(context, project, [target])
-
-
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'simple'))
 def test_load_simple(cli, datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
