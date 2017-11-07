@@ -338,7 +338,7 @@ class Element(Plugin):
         value = self.node_get_list_element(node, str, member_name, indices)
         return self.__variables.subst(value)
 
-    def stage_artifact(self, sandbox, path=None, include=None, exclude=None, orphans=True):
+    def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True):
         """Stage this element's output artifact in the sandbox
 
         This will stage the files from the artifact to the sandbox at specified location.
@@ -393,7 +393,7 @@ class Element(Plugin):
 
         return result
 
-    def stage_dependency_artifacts(self, sandbox, scope, path=None,
+    def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
                                    include=None, exclude=None, orphans=True):
         """Stage element dependencies in scope
 
