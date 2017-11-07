@@ -102,6 +102,20 @@ class ElementError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason)
 
 
+class StagingResult():
+    """Result of a staging operation."""
+
+    def __init__(self, file_list_result=None, manifest=None):
+        if file_list_result:
+            # This class extends utils.FileListResult; but Python has no magic
+            # way of casting an object to a subclass, so we make a new object
+            # and copy all the attributes across from the old one.
+            self.__dict__.update(file_list_result.__dict__)
+
+        self.manifest = manifest or {}
+        """Map from each file to the artifact and split rule which staged it."""
+
+
 class Element(Plugin):
     """Element()
 
@@ -430,9 +444,10 @@ class Element(Plugin):
                 if path is None \
                 else os.path.join(basedir, path.lstrip(os.sep))
 
-            files = self.__compute_splits(include, exclude, orphans)
-            result = utils.link_files(artifact, stagedir, files=files,
+            manifest = self.__compute_splits(include, exclude, orphans)
+            result = utils.link_files(artifact, stagedir, files=manifest.keys(),
                                       report_written=True)
+            result = StagingResult(result, manifest)
 
         return result
 
@@ -453,6 +468,10 @@ class Element(Plugin):
            exclude (list): An optional list of domains to exclude files from
            orphans (bool): Whether to include files not spoken for by split domains
 
+        Returns:
+           (dict): A mapping from each file to the artifact and split-rules domain
+                   that produced it.
+
         Raises:
            (:class:`.ElementError`): If any of the dependencies in `scope` have not
                                      yet produced artifacts, or if forbidden overlaps
@@ -461,7 +480,7 @@ class Element(Plugin):
         ignored = {}
         overlaps = OrderedDict()
         files_written = {}
-
+        manifest = {}
         for dep in self.dependencies(scope):
             result = dep.stage_artifact(sandbox,
                                         path=path,
@@ -483,6 +502,10 @@ class Element(Plugin):
 
             if result.ignored:
                 ignored[dep.name] = result.ignored
+                for f in result.ignored:
+                    del result.manifest[f]
+
+            manifest.update(result.manifest)
 
         if overlaps:
             overlap_error = overlap_warning = False
@@ -512,12 +535,21 @@ class Element(Plugin):
                 raise ElementError("Non-whitelisted overlaps detected and fail-on-overlaps is set",
                                    detail=error_detail, reason="overlap-error")
 
+        if overwrites:
+            detail = "Staged files overwrite existing files in staging area:\n"
+            for key, value in overwrites.items():
+                detail += "\nFrom {}:\n".format(key)
+                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
+            self.warn("Overlapping files", detail=detail)
+
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
             for key, value in ignored.items():
                 detail += "\nFrom {}:\n".format(key)
                 detail += "  " + "  ".join(["/" + f + "\n" for f in value])
             self.warn("Ignored files", detail=detail)
+
+        return manifest
 
     def integrate(self, sandbox):
         """Integrate currently staged filesystem against this artifact.
@@ -1782,12 +1814,13 @@ class Element(Plugin):
 
     def __compute_splits(self, include=None, exclude=None, orphans=True):
         basedir = os.path.join(self.__artifacts.extract(self), 'files')
+        manifest = {}
 
         # No splitting requested, just report complete artifact
         if orphans and not (include or exclude):
             for filename in utils.list_relative_paths(basedir):
-                yield filename
-            return
+                manifest[filename] = {'artifact': self}
+            return manifest
 
         if not self.__splits:
             self.__init_splits()
@@ -1816,12 +1849,14 @@ class Element(Plugin):
             include_file = False
             exclude_file = False
             claimed_file = False
+            included_by_domains = []
 
             for domain in element_domains:
                 if self.__splits[domain].match(filename):
                     claimed_file = True
                     if domain in include:
                         include_file = True
+                        included_by_domains.append(domain)
                     if domain in exclude:
                         exclude_file = True
 
@@ -1829,7 +1864,10 @@ class Element(Plugin):
                 include_file = True
 
             if include_file and not exclude_file:
-                yield filename.lstrip(os.sep)
+                manifest_entry = {'artifact': self}
+                manifest_entry['domains'] = included_by_domains
+                manifest[filename.lstrip(os.sep)] = manifest_entry
+        return manifest
 
     def _load_public_data(self):
         self._assert_cached()

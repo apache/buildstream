@@ -33,6 +33,7 @@ The default configuration and possible options are as such:
      :language: yaml
 """
 
+import collections
 import os
 from buildstream import utils
 from buildstream import Element, ElementError, Scope
@@ -112,6 +113,7 @@ class ComposeElement(Element):
             f: getmtime(os.path.join(basedir, f))
             for f in utils.list_relative_paths(basedir)
         }
+
         modified_files = []
         removed_files = []
         added_files = []
@@ -181,11 +183,57 @@ class ComposeElement(Element):
         detail = "\n".join(lines)
 
         with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
-            self.info("Composing {} files".format(len(manifest)))
-            utils.link_files(basedir, installdir, files=manifest)
+            manifest = self.stage_dependency_artifacts(sandbox, Scope.BUILD,
+                                                       path=stagedir,
+                                                       include=self.include,
+                                                       exclude=self.exclude,
+                                                       orphans=self.include_orphans)
+
+            if self.integration:
+                self.status("Moving {} integration files".format(len(integration_files)))
+                utils.move_files(basedir, installdir, integration_files)
+
+                for filename in integration_files:
+                    manifest[filename] = manifest.get(filename, {})
+                    manifest[filename]['integration'] = True
+
+        total_files = len(manifest)
+        detail = self._readable_manifest(manifest)
+        self.log("Composed {} files".format(total_files), detail=detail)
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
+
+    # Show a list of files that made it into the artifact, grouped by the
+    # artifact and split-rules domains that resulted in each one being there.
+    def _readable_manifest(self, manifest):
+        domains = collections.defaultdict(list)
+
+        # Convert the filename->domain mapping into a domain->filename mapping.
+        for filename, entry in manifest.items():
+            if filename == '.':
+                continue
+
+            if 'artifact' in entry:
+                domains_for_file = entry.get('domains') or ["(no domain)"]
+                for domain in domains_for_file:
+                    full_domain_name = entry['artifact'].name + " " + domain
+                    if entry.get('integration', False) is True:
+                        full_domain_name += " (modified during integration)"
+
+                    domains[full_domain_name].append(filename)
+            else:
+                domains["Integration"].append(filename)
+
+        # Display the mapping neatly for the user.
+        lines = []
+        for domain in sorted(domains):
+            lines.extend(["", domain])
+
+            contents = sorted(domains[domain])
+            lines.extend("  - " + filename for filename in contents)
+
+        return "\n".join(lines)
 
 
 # Like os.path.getmtime(), but doesnt explode on symlinks
