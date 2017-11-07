@@ -475,7 +475,7 @@ def shell(app, element, sysroot, build, command):
     else:
         scope = Scope.RUN
 
-    app.initialize([element])
+    app.initialize((element,))
 
     # Assert we have everything we need built.
     missing_deps = []
@@ -515,7 +515,7 @@ def shell(app, element, sysroot, build, command):
 def checkout(app, element, directory, force):
     """Checkout a built artifact to the specified directory
     """
-    app.initialize([element])
+    app.initialize((element,))
     try:
         app.pipeline.checkout(directory, force)
         click.echo("")
@@ -546,7 +546,7 @@ def checkout(app, element, directory, force):
 def source_bundle(app, target, force, directory,
                   track, compression, except_):
     """Produce a source bundle to be manually executed"""
-    app.initialize([target], rewritable=track, inconsistent=track)
+    app.initialize((target,), rewritable=track, inconsistent=track)
     try:
         dependencies = app.pipeline.deps_elements('all', except_)
         app.print_heading(dependencies)
@@ -587,7 +587,7 @@ def workspace():
 def workspace_open(app, no_checkout, force, source, track, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize([element], rewritable=track, inconsistent=track)
+    app.initialize((element,), rewritable=track, inconsistent=track)
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
         click.echo("")
@@ -611,7 +611,7 @@ def workspace_open(app, no_checkout, force, source, track, element, directory):
 def workspace_close(app, source, remove_dir, element):
     """Close a workspace"""
 
-    app.initialize([element])
+    app.initialize((element,))
     if app.interactive and remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
@@ -641,7 +641,7 @@ def workspace_close(app, source, remove_dir, element):
 @click.pass_obj
 def workspace_reset(app, source, track, no_checkout, element):
     """Reset a workspace to its original state"""
-    app.initialize([element])
+    app.initialize((element,))
     if app.interactive:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting')
