@@ -25,6 +25,7 @@ import stat
 import shlex
 import shutil
 import tarfile
+import itertools
 from operator import itemgetter
 from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
@@ -236,6 +237,8 @@ class Pipeline():
     # ordering for optimal build plans
     def plan(self):
         build_plan = Planner().plan(self.targets)
+        self.remove_elements(build_plan)
+
         for element in build_plan:
             yield element
 
@@ -710,48 +713,59 @@ class Pipeline():
     #
     # Internal function
     #
-    # Returns all elements to be removed from the given list of
-    # elements when the given removed elements and their unique
-    # dependencies are removed.
+    # Return what we are left with after the intersection between
+    # excepted and target elements and their unique dependencies is
+    # gone.
     #
     # Args:
-    #    elements (list of elements): The graph to sever elements from.
-    #    removed (list of strings): Names of the elements to remove.
-    def remove_elements(self, tree, removed):
+    #    elements (list of elements): The list to remove elements from.
+    def remove_elements(self, elements):
+        targeted = list(self.dependencies(Scope.ALL))
 
-        if removed is None:
-            removed = []
+        visited = []
 
-        to_remove = set()
-        tree = list(tree)
+        def find_intersection(element):
+            if element in visited:
+                return
+            visited.append(element)
 
-        # Find all elements that might need to be removed.
-        def search_tree(element_name):
-            for element in tree:
-                if element.name == element_name:
-                    return element
-            return None
+            # Intersection elements are those that are also in
+            # 'targeted', as long as we don't recurse into them.
+            if element in targeted:
+                yield element
+            else:
+                for dep in element.dependencies(Scope.ALL, recurse=False):
+                    yield from find_intersection(dep)
 
-        for element_name in removed:
-            element = search_tree(element_name)
-            if element is None:
-                raise PipelineError("No element named {} in the loaded pipeline".format(element_name))
+        # Build a list of 'intersection' elements, i.e. the set of
+        # elements that lie on the border closest to excepted elements
+        # between excepted and target elements.
+        intersection = list(itertools.chain.from_iterable(
+            find_intersection(element) for element in self.exceptions
+        ))
 
-            to_remove.update(element.dependencies(Scope.ALL))
+        # Now use this set of elements to traverse the targeted
+        # elements, except 'intersection' elements and their unique
+        # dependencies.
+        queue = self.targets
+        visited = []
 
-        old_to_remove = set()
-        while old_to_remove != to_remove:
-            old_to_remove = to_remove
+        while queue:
+            element = queue.pop()
+            if element in visited or element in intersection:
+                continue
+            visited.append(element)
 
-            # Of these, find all elements that are not a dependency of
-            # elements still in use.
-            for element in tree:
-                if element.name not in removed and element not in to_remove:
-                    to_remove = to_remove.difference(element.dependencies(Scope.ALL, recurse=False))
+            queue.extend(element.dependencies(Scope.ALL, recurse=False))
 
-            to_remove = to_remove.union([e for e in tree if e.name in removed])
+        # That looks like a lot, but overall we only traverse (part
+        # of) the graph twice. This could be reduced to once if we
+        # kept track of parent elements, but is probably not
+        # significant.
 
-        return [element for element in tree if element not in to_remove]
+        # Ensure that we return elements in the same order they were
+        # in before.
+        return [element for element in elements if element in visited]
 
     def validate_workspace_index(self, source_index):
         sources = list(self.targets[0].sources())
@@ -787,7 +801,7 @@ class Pipeline():
 
             elements = list(self.dependencies(scope))
 
-        return self.remove_elements(elements, except_)
+        return self.remove_elements(elements)
 
     # source_bundle()
     #
