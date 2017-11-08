@@ -179,7 +179,7 @@ class Element(Plugin):
         for source in self.__sources:
             yield source
 
-    def dependencies(self, scope, recurse=True, visited=None):
+    def dependencies(self, scope, recurse=True, visited=None, recursed=False):
         """dependencies(scope, recurse=True)
 
         A generator function which yields the dependencies of the given element.
@@ -197,36 +197,44 @@ class Element(Plugin):
         Yields:
            (:class:`.Element`): The dependencies in `scope`, in deterministic staging order
         """
-        did_recurse = False
         if visited is None:
-            visited = []
-        else:
-            did_recurse = True
+            visited = {}
 
-        if self.name in visited:
+        scope_set = set((Scope.BUILD, Scope.RUN)) if scope == Scope.ALL else set((scope,))
+
+        if self.name in visited and scope_set.issubset(visited[self.name]):
             return
-        visited.append(self.name)
 
-        if recurse or not did_recurse:
+        should_yield = False
+        if self.name not in visited:
+            visited[self.name] = scope_set
+            should_yield = True
+        else:
+            visited[self.name] |= scope_set
+
+        if recurse or not recursed:
             if scope == Scope.ALL:
                 for dep in self.__build_dependencies:
-                    for elt in dep.dependencies(Scope.ALL, recurse=recurse, visited=visited):
-                        yield elt
+                    yield from dep.dependencies(Scope.ALL, recurse=recurse,
+                                                visited=visited, recursed=True)
+
                 for dep in self.__runtime_dependencies:
                     if dep not in self.__build_dependencies:
-                        for elt in dep.dependencies(Scope.ALL, recurse=recurse, visited=visited):
-                            yield elt
+                        yield from dep.dependencies(Scope.ALL, recurse=recurse,
+                                                    visited=visited, recursed=True)
+
             elif scope == Scope.BUILD:
                 for dep in self.__build_dependencies:
-                    for elt in dep.dependencies(Scope.RUN, recurse=recurse, visited=visited):
-                        yield elt
+                    yield from dep.dependencies(Scope.RUN, recurse=recurse,
+                                                visited=visited, recursed=True)
+
             elif scope == Scope.RUN:
                 for dep in self.__runtime_dependencies:
-                    for elt in dep.dependencies(Scope.RUN, recurse=recurse, visited=visited):
-                        yield elt
+                    yield from dep.dependencies(Scope.RUN, recurse=recurse,
+                                                visited=visited, recursed=True)
 
         # Yeild self only at the end, after anything needed has been traversed
-        if (recurse or did_recurse) and (scope == Scope.ALL or scope == Scope.RUN):
+        if should_yield and (recurse or recursed) and (scope == Scope.ALL or scope == Scope.RUN):
             yield self
 
     def search(self, scope, name):
