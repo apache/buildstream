@@ -108,7 +108,7 @@ class GitMirror():
                                       (str(self.source), self.url, tmpdir, self.mirror)) from e
 
     def fetch(self):
-        self.source.call([self.source.host_git, 'fetch', 'origin'],
+        self.source.call([self.source.host_git, 'fetch', 'origin', '--prune'],
                          fail="Failed to fetch from remote git repository: {}".format(self.url),
                          cwd=self.mirror)
 
