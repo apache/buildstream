@@ -416,6 +416,18 @@ class Plugin():
         """
         self.__message(MessageType.ERROR, brief, detail=detail)
 
+    def log(self, brief, *, detail=None):
+        """Log a message into the plugin's log file
+
+        The message will not be shown in the master log at all (so it will not
+        be displayed to the user on the console).
+
+        Args:
+           brief (str): The brief message
+           detail (str): An optional detailed message, can be multiline output
+        """
+        self.__message(MessageType.LOG, brief, detail=detail)
+
     @contextmanager
     def timed_activity(self, activity_name, *, detail=None, silent_nested=False):
         """Context manager for performing timed activities in plugins
