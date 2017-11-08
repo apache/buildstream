@@ -96,7 +96,8 @@ def override_completions(cmd_param, ctx, args, incomplete):
     # right here and select which parameters we want to handle specially.
     if isinstance(cmd_param.type, click.Path) and \
        (cmd_param.name == 'elements' or
-        cmd_param.name == 'element'):
+        cmd_param.name == 'element' or
+        cmd_param.name == 'except_'):
         return complete_target(ctx, args, incomplete)
 
     raise CompleteUnhandled()
@@ -215,6 +216,7 @@ def build(app, elements, all, track):
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
 @click.option('--except', 'except_', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
               help="Except certain dependencies from fetching")
 @click.option('--deps', '-d', default='plan',
               type=click.Choice(['none', 'plan', 'all']),
@@ -257,6 +259,7 @@ def fetch(app, elements, deps, track, except_):
 ##################################################################
 @cli.command(short_help="Track new source references")
 @click.option('--except', 'except_', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
               help="Except certain dependencies from tracking")
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
@@ -355,6 +358,7 @@ def push(app, elements, deps):
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
 @click.option('--except', 'except_', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
               help="Except certain dependencies")
 @click.option('--deps', '-d', default='all',
               type=click.Choice(['none', 'plan', 'run', 'build', 'all']),
@@ -526,6 +530,7 @@ def checkout(app, element, directory, force, integrate):
 ##################################################################
 @cli.command(name="source-bundle", short_help="Produce a build bundle to be manually executed")
 @click.option('--except', 'except_', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
               help="Elements to except from the tarball")
 @click.option('--compression', default='gz',
               type=click.Choice(['none', 'gz', 'bz2', 'xz']),
