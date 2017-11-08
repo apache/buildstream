@@ -128,16 +128,16 @@ class Pipeline():
         self.unused_workspaces = []
         self._resolved_elements = {}
 
+        # Load selected platform
+        Platform._create_instance(context, project)
+        self.platform = Platform.get_platform()
+        self.artifacts = self.platform.artifactcache
+
         loader = Loader(self.project.element_path, targets + except_,
                         self.project._options)
         meta_elements = loader.load(rewritable, load_ticker)
         if load_ticker:
             load_ticker(None)
-
-        # Load selected platform
-        Platform._create_instance(context, project)
-        self.platform = Platform.get_platform()
-        self.artifacts = self.platform.artifactcache
 
         # Create the factories after resolving the project
         pluginbase = PluginBase(package='buildstream.plugins')
