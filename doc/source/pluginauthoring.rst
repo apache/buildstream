@@ -20,6 +20,5 @@ implement custom :mod:`Element <buildstream.element>` or
 * :mod:`Element <buildstream.element>` - Base Element Class
 * :mod:`BuildElement <buildstream.buildelement>` - Build Element Class
 * :mod:`ScriptElement <buildstream.scriptelement>` - Script Element Class
-* :mod:`Context <buildstream.context>` - Invocation Context
 * :mod:`Sandbox <buildstream.sandbox.sandbox>` - Build Sandbox
 * :mod:`Utilities <buildstream.utils>` - Utilities for Plugins

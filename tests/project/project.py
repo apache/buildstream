@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream import Context
+from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._exceptions import LoadError, LoadErrorReason
 

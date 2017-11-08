@@ -38,8 +38,6 @@ from . import Sandbox, SandboxFlags
 class SandboxChroot(Sandbox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.platform = self._get_context()._platform
         self.mount_map = None
 
     def run(self, command, flags, cwd=None, env=None):

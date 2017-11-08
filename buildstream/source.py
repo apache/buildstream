@@ -99,7 +99,7 @@ class Source(Plugin):
         """
 
         # Create the directory if it doesnt exist
-        context = self.get_context()
+        context = self._get_context()
         directory = os.path.join(context.sourcedir, self.get_kind())
         os.makedirs(directory, exist_ok=True)
         return directory

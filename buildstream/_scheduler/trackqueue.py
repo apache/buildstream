@@ -80,7 +80,7 @@ class TrackQueue(Queue):
         # tracking, this is avoid a following fetch queue operating on the sources
         # if the tracked ref is cached as a result.
         #
-        context = element.get_context()
+        context = element._get_context()
         context._push_message_depth(True)
         element._consistency(recalculate=True)
         context._pop_message_depth()

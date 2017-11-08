@@ -829,7 +829,7 @@ class Pipeline():
         # bound.
 
         # Create a temporary directory to build the source tree in
-        builddir = target.get_context().builddir
+        builddir = target._get_context().builddir
         prefix = "{}-".format(target.normal_name)
 
         with TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:

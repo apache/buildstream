@@ -855,7 +855,7 @@ class Element(Plugin):
             if key not in self.__env_nocache
         }
 
-        context = self.get_context()
+        context = self._get_context()
         project = self._get_project()
         return utils._generate_key({
             'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
@@ -969,7 +969,7 @@ class Element(Plugin):
     # Question marks are returned if information for the cache key is missing.
     #
     def _get_full_display_key(self):
-        context = self.get_context()
+        context = self._get_context()
         cache_key = None
         dim_key = True
 
@@ -1038,7 +1038,7 @@ class Element(Plugin):
         # Assert call ordering
         assert(not self._cached())
 
-        context = self.get_context()
+        context = self._get_context()
         with self._output_file() as output_file:
 
             # Explicitly clean it up, keep the build dir around if exceptions are raised
@@ -1203,7 +1203,7 @@ class Element(Plugin):
     #
     def _logfile(self, action_name, pid=None):
         project = self._get_project()
-        context = self.get_context()
+        context = self._get_context()
         key = self._get_display_key()
         if pid is None:
             pid = os.getpid()
@@ -1412,7 +1412,7 @@ class Element(Plugin):
     #
     def _get_strict(self):
         project = self._get_project()
-        context = self.get_context()
+        context = self._get_context()
         return context._get_strict(project.name)
 
     #############################################################
@@ -1420,7 +1420,7 @@ class Element(Plugin):
     #############################################################
     @contextmanager
     def __sandbox(self, directory, stdout=None, stderr=None):
-        context = self.get_context()
+        context = self._get_context()
         project = self._get_project()
         platform = Platform.get_platform()
 

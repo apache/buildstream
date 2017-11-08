@@ -176,14 +176,6 @@ class Plugin():
         """
         return self.__kind
 
-    def get_context(self):
-        """Fetches the context
-
-        Returns:
-           (object): The :class:`.Context`
-        """
-        return self.__context
-
     def node_items(self, node):
         """Iterate over a dictionary loaded from YAML
 
@@ -561,6 +553,13 @@ class Plugin():
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
+
+    # _get_context()
+    #
+    # Fetches the invocation context
+    #
+    def _get_context(self):
+        return self.__context
 
     # _get_project()
     #

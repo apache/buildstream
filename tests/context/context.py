@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream import Context
+from buildstream._context import Context
 from buildstream._exceptions import LoadError, LoadErrorReason
 
 from tests.testutils.site import HAVE_ROOT

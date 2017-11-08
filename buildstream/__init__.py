@@ -18,11 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-# Core components
-from .context import Context
-from .sandbox import Sandbox, SandboxFlags
-
 # Plugin auther facing APIs
+from .sandbox import Sandbox, SandboxFlags
 from .plugin import Plugin
 from .source import Source, SourceError, Consistency
 from .element import Element, ElementError, Scope

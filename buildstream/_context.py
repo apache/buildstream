@@ -18,20 +18,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""
-Context
-=======
-
-The :class:`.Context` object holds all of the user preferences
-and context for a given invocation of BuildStream.
-
-This is a collection of data from configuration files and command
-line arguments and consists of information such as where to store
-logs and artifacts, where to perform builds and cache downloaded sources,
-verbosity levels and basically anything pertaining to the context
-in which BuildStream was invoked.
-"""
-
 import os
 import hashlib
 import pickle
@@ -43,72 +29,80 @@ from ._exceptions import LoadError, LoadErrorReason
 from ._profile import Topics, profile_start, profile_end
 
 
+# Context()
+#
+# The Context object holds all of the user preferences
+# and context for a given invocation of BuildStream.
+#
+# This is a collection of data from configuration files and command
+# line arguments and consists of information such as where to store
+# logs and artifacts, where to perform builds and cache downloaded sources,
+# verbosity levels and basically anything pertaining to the context
+# in which BuildStream was invoked.
+#
 class Context():
-    """Context()
 
-    Context of how BuildStream was invoked
-    """
     def __init__(self, cli_options):
 
+        # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
-        """Filename indicating which configuration file was used, or None for the defaults"""
 
+        # Whether elements must be rebuilt when their dependencies have changed
         self.strict_build_plan = None
-        """Whether elements must be rebuilt when their dependencies have changed"""
 
+        # The directory where various sources are stored
         self.sourcedir = None
-        """The directory where various sources are stored"""
 
+        # The directory where build sandboxes will be created
         self.builddir = None
-        """The directory where build sandboxes will be created"""
 
+        # The local binary artifact cache directory
         self.artifactdir = None
-        """The local binary artifact cache directory"""
 
+        # The URL from which to download prebuilt artifacts
         self.artifact_pull = None
-        """The URL from which to download prebuilt artifacts"""
 
+        # The URL to upload built artifacts to
         self.artifact_push = None
-        """The URL to upload built artifacts to"""
 
+        # The port number for pushing artifacts over ssh
         self.artifact_push_port = 22
-        """The port number for pushing artifacts over ssh"""
 
+        # The directory to store build logs
         self.logdir = None
-        """The directory to store build logs"""
 
+        # The abbreviated cache key length to display in the UI
         self.log_key_length = 0
-        """The abbreviated cache key length to display in the UI"""
 
+        # Whether debug mode is enabled
         self.log_debug = False
-        """Whether debug mode is enabled"""
 
+        # Whether verbose mode is enabled
         self.log_verbose = False
-        """Whether verbose mode is enabled"""
 
+        # Maximum number of lines to print from build logs
         self.log_error_lines = 0
-        """Maximum number of lines to print from build logs"""
 
+        # Maximum number of lines to print in the master log for a detailed message
         self.log_message_lines = 0
-        """Maximum number of lines to print in the master log for a detailed message"""
 
+        # Format string for printing the pipeline at startup time
         self.log_element_format = None
-        """Format string for printing the pipeline at startup time"""
 
+        # Maximum number of fetch or refresh tasks
         self.sched_fetchers = 4
-        """Maximum number of fetch or refresh tasks"""
 
+        # Maximum number of build tasks
         self.sched_builders = 4
-        """Maximum number of build tasks"""
 
+        # Maximum number of push tasks
         self.sched_pushers = 4
-        """Maximum number of push tasks"""
 
+        # Maximum number of retries for network tasks
         self.sched_network_retries = 2
-        """Maximum number of retries for network tasks"""
 
+        # What to do when a build fails in non interactive mode
         self.sched_error_action = 'continue'
-        """What to do when a build fails in non interactive mode"""
 
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
@@ -121,19 +115,21 @@ class Context():
         self._project_overrides = {}
         self._cli_options = cli_options
 
+    # load()
+    #
+    # Loads the configuration files
+    #
+    # Args:
+    #    config (filename): The user specified configuration file, if any
+    #
+    # Raises:
+    #   LoadError
+    #
+    # This will first load the BuildStream default configuration and then
+    # override that configuration with the configuration file indicated
+    # by *config*, if any was specified.
+    #
     def load(self, config=None):
-        """Loads the configuration files
-
-        Args:
-           config (filename): The user specified configuration file, if any
-
-        Raises:
-           :class:`.LoadError`
-
-        This will first load the BuildStream default configuration and then
-        override that configuration with the configuration file indicated
-        by *config*, if any was specified.
-        """
         profile_start(Topics.LOAD_CONTEXT, 'load')
 
         # If a specific config file is not specified, default to trying
@@ -217,10 +213,6 @@ class Context():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: on-error should be one of: {}".format(
                                 provenance, ", ".join(valid_actions)))
-
-    #############################################################
-    #            Private Methods used in BuildStream            #
-    #############################################################
 
     # _get_overrides():
     #
