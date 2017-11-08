@@ -121,8 +121,7 @@ class Pipeline():
         self.platform = Platform.get_platform()
         self.artifacts = self.platform.artifactcache
 
-        loader = Loader(self.project.element_path, targets + except_,
-                        self.project._options)
+        loader = Loader(self.project, targets + except_)
 
         with self.timed_activity("Loading pipeline", silent_nested=True):
             meta_elements = loader.load(rewritable, None)

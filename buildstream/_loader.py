@@ -178,7 +178,9 @@ def extract_depends_from_node(data):
 #
 class Loader():
 
-    def __init__(self, basedir, filenames, options):
+    def __init__(self, project, filenames):
+
+        basedir = project.element_path
 
         # Ensure we have an absolute path for the base directory
         #
@@ -194,9 +196,9 @@ class Loader():
                                 "path to the base project directory: {}"
                                 .format(filename, basedir))
 
-        self.options = options   # Project options (OptionPool)
-        self.basedir = basedir   # Base project directory
-        self.targets = filenames   # Target bst elements
+        self.options = project._options     # Project options (OptionPool)
+        self.basedir = basedir              # Base project directory
+        self.targets = filenames            # Target bst elements
 
         self.meta_elements = {}  # Dict of resolved meta elements by name
         self.elements = {}       # Dict of elements
