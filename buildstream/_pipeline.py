@@ -25,6 +25,7 @@ import stat
 import shlex
 import shutil
 import tarfile
+import itertools
 from operator import itemgetter
 from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
@@ -195,24 +196,16 @@ class Pipeline():
     # also iterate over sources.
     #
     def dependencies(self, scope, include_sources=False):
-        # Create a dummy element (can't use namedtuple because of the
-        # '__' prefix).
-        class DummyElement(object):
-            def __init__(self, build_dependencies, runtime_dependencies):
-                self.name = ''
-                self._Element__build_dependencies = build_dependencies
-                self._Element__runtime_dependencies = runtime_dependencies
-        dummy = DummyElement(self.targets, self.targets)
+        # Keep track of 'visited' in this scope, so that all targets
+        # share the same context.
+        visited = []
 
-        for element in Element.dependencies(dummy, scope):
-            # We don't actually want to find the dummy element
-            if isinstance(element, DummyElement):
-                continue
-
-            if include_sources:
-                for source in element.sources():
-                    yield source
-            yield element
+        for target in self.targets:
+            for element in target.dependencies(scope, visited=visited):
+                if include_sources:
+                    for source in element.sources():
+                        yield source
+                yield element
 
     # Asserts that the pipeline is in a consistent state, that
     # is to say that all sources are consistent and can at least
