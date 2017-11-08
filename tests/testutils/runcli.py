@@ -1,8 +1,10 @@
 import os
 import sys
+import itertools
 import traceback
 from contextlib import contextmanager, ExitStack
 from click.testing import CliRunner
+from ruamel import yaml
 import pytest
 
 # Import the main cli entrypoint
@@ -130,6 +132,30 @@ class Cli():
         ])
         assert result.exit_code == 0
         return result.output.strip()
+
+    # Get the decoded config of an element.
+    #
+    def get_element_config(self, project, element_name):
+        result = self.run(project=project, silent=True, args=[
+            'show',
+            '--deps', 'none',
+            '--format', '%{config}',
+            element_name
+        ])
+
+        assert result.exit_code == 0
+        return yaml.safe_load(result.output)
+
+    # Fetch the elements that would be in the pipeline with the given
+    # arguments.
+    #
+    def get_pipeline(self, project, elements, except_=[], scope='plan'):
+        args = ['show', '--deps', scope, '--format', '%{name}']
+        args += list(itertools.chain.from_iterable(zip(itertools.repeat('--except'), except_)))
+
+        result = self.run(project=project, silent=True, args=args + elements)
+        assert result.exit_code == 0
+        return result.output.splitlines()
 
 
 # Main fixture
