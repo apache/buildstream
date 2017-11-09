@@ -34,6 +34,7 @@ from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
 from .. import _yaml
+from .. import utils
 
 # Import frontend assets
 from . import Profile, LogLine, Status
@@ -885,16 +886,16 @@ class App():
             click.echo("\nUser interrupted with ^C\n" +
                        "\n"
                        "Choose one of the following options:\n" +
-                       "  continue  - Continue queueing jobs as much as possible\n" +
-                       "  quit      - Exit after all ongoing jobs complete\n" +
-                       "  terminate - Terminate any ongoing jobs and exit\n" +
+                       "  (c)ontinue  - Continue queueing jobs as much as possible\n" +
+                       "  (q)uit      - Exit after all ongoing jobs complete\n" +
+                       "  (t)erminate - Terminate any ongoing jobs and exit\n" +
                        "\n" +
                        "Pressing ^C again will terminate jobs and exit\n",
                        err=True)
 
             try:
                 choice = click.prompt("Choice:",
-                                      type=click.Choice(['continue', 'quit', 'terminate']),
+                                      value_proc=utils.prefix_choice_value_proc(['continue', 'quit', 'terminate']),
                                       default='continue', err=True)
             except click.Abort:
                 # Ensure a newline after automatically printed '^C'
@@ -955,14 +956,14 @@ class App():
             summary = ("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
                        "\n" +
                        "Choose one of the following options:\n" +
-                       "  continue  - Continue queueing jobs as much as possible\n" +
-                       "  quit      - Exit after all ongoing jobs complete\n" +
-                       "  terminate - Terminate any ongoing jobs and exit\n" +
-                       "  retry     - Retry this job\n")
+                       "  (c)ontinue  - Continue queueing jobs as much as possible\n" +
+                       "  (q)uit      - Exit after all ongoing jobs complete\n" +
+                       "  (t)erminate - Terminate any ongoing jobs and exit\n" +
+                       "  (r)etry     - Retry this job\n")
             if failure.logfile:
-                summary += "  log       - View the full log file\n"
+                summary += "  (l)og       - View the full log file\n"
             if failure.sandbox:
-                summary += "  shell     - Drop into a shell in the failed build sandbox\n"
+                summary += "  (s)hell     - Drop into a shell in the failed build sandbox\n"
             summary += "\nPressing ^C will terminate jobs and exit\n"
 
             choices = ['continue', 'quit', 'terminate', 'retry']
@@ -976,8 +977,8 @@ class App():
                 click.echo(summary, err=True)
 
                 try:
-                    choice = click.prompt("Choice:", type=click.Choice(choices),
-                                          default='continue', err=True)
+                    choice = click.prompt("Choice:", default='continue', err=True,
+                                          value_proc=utils.prefix_choice_value_proc(choices))
                 except click.Abort:
                     # Ensure a newline after automatically printed '^C'
                     click.echo("", err=True)
