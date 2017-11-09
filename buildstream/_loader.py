@@ -241,7 +241,7 @@ class Loader():
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         DummyTarget = namedtuple('DummyTarget', ['name', 'deps'])
-        dummy = DummyTarget(name='', deps=[self.elements[e] for e in self.targets])
+        dummy = DummyTarget(name='', deps=[Dependency('', e, filename=e) for e in self.targets])
         self.elements[''] = dummy
 
         profile_key = "_".join(t for t in self.targets)
