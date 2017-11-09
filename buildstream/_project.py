@@ -152,7 +152,8 @@ class Project():
         # Collect option values specified in the user configuration
         overrides = self._context._get_overrides(self.name)
         override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
-        self._options.load_values(override_options, self._context._cli_options)
+        self._options.load_yaml_values(override_options)
+        self._options.load_cli_values(self._context._cli_options)
 
         # We're done modifying options, now we can use them for substitutions
         self._options.resolve()
