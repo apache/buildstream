@@ -365,7 +365,7 @@ class Plugin():
         raise ImplError("{tag} plugin '{kind}' does not implement get_unique_key()".format(
             tag=self.__type_tag, kind=self.get_kind()))
 
-    def debug(self, brief, detail=None):
+    def debug(self, brief, *, detail=None):
         """Print a debugging message
 
         Args:
@@ -375,7 +375,7 @@ class Plugin():
         if self.__context.log_debug:
             self.__message(MessageType.DEBUG, brief, detail=detail)
 
-    def status(self, brief, detail=None):
+    def status(self, brief, *, detail=None):
         """Print a status message
 
         Args:
@@ -386,7 +386,7 @@ class Plugin():
         """
         self.__message(MessageType.STATUS, brief, detail=detail)
 
-    def info(self, brief, detail=None):
+    def info(self, brief, *, detail=None):
         """Print an informative message
 
         Args:
@@ -398,7 +398,7 @@ class Plugin():
         """
         self.__message(MessageType.INFO, brief, detail=detail)
 
-    def warn(self, brief, detail=None):
+    def warn(self, brief, *, detail=None):
         """Print a warning message
 
         Args:
@@ -407,7 +407,7 @@ class Plugin():
         """
         self.__message(MessageType.WARN, brief, detail=detail)
 
-    def error(self, brief, detail=None):
+    def error(self, brief, *, detail=None):
         """Print an error message
 
         Args:
