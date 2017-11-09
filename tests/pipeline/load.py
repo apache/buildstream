@@ -130,3 +130,23 @@ def test_remove_elements(cli, datafiles, tmpdir):
     assert(element_list[2] == 'first-level-1.bst')
     assert(element_list[3] == 'first-level-2.bst')
     assert(element_list[4] == 'build.bst')
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'remove'))
+def test_remove_unrelated_element(cli, datafiles, tmpdir):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    elements = ['build.bst']
+    except_ = ['unrelated.bst']
+
+    # Ensure that we don't just except the given element, but the
+    # first row of intersection elements, while still including things
+    # that are accessible through another route.
+    element_list = cli.get_pipeline(basedir, elements, except_=except_, scope='all')
+
+    assert(len(element_list) == 5)
+
+    assert(element_list[0] == 'fourth-level-2.bst')
+    assert(element_list[1] == 'third-level-2.bst')
+    assert(element_list[2] == 'first-level-1.bst')
+    assert(element_list[3] == 'first-level-2.bst')
+    assert(element_list[4] == 'build.bst')
