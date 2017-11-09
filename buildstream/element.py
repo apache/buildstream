@@ -251,20 +251,20 @@ class Element(Plugin):
 
         return None
 
-    def node_subst_member(self, node, member_name, default_value=None):
+    def node_subst_member(self, node, member_name, default=None):
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
 
         Args:
            node (dict): A dictionary loaded from YAML
            member_name (str): The name of the member to fetch
-           default_value (str): A value to return when *member_name* is not specified in *node*
+           default (str): A value to return when *member_name* is not specified in *node*
 
         Returns:
-           The value of *member_name* in *node*, otherwise *default_value*
+           The value of *member_name* in *node*, otherwise *default*
 
         Raises:
-           :class:`.LoadError`: When *member_name* is not found and no *default_value* was provided
+           :class:`.LoadError`: When *member_name* is not found and no *default* was provided
 
         This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_member`
         except that it assumes the expected type is a string and will also perform variable
@@ -278,7 +278,7 @@ class Element(Plugin):
           # variables in the returned string
           name = self.node_subst_member(node, 'name')
         """
-        value = self.node_get_member(node, str, member_name, default_value)
+        value = self.node_get_member(node, str, member_name, default)
         return self.__variables.subst(value)
 
     def node_subst_list(self, node, member_name):
