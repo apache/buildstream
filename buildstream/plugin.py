@@ -417,7 +417,7 @@ class Plugin():
         self.__message(MessageType.ERROR, brief, detail=detail)
 
     @contextmanager
-    def timed_activity(self, activity_name, detail=None, silent_nested=False):
+    def timed_activity(self, activity_name, *, detail=None, silent_nested=False):
         """Context manager for performing timed activities in plugins
 
         Args:
