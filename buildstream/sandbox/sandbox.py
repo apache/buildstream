@@ -117,7 +117,7 @@ class Sandbox():
         """
         self.__cwd = directory
 
-    def mark_directory(self, directory, artifact=False):
+    def mark_directory(self, directory, *, artifact=False):
         """Marks a sandbox directory and ensures it will exist
 
         Args:
