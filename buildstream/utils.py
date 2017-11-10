@@ -184,7 +184,7 @@ def sha256sum(filename):
     return h.hexdigest()
 
 
-def safe_copy(src, dest, result=None):
+def safe_copy(src, dest, *, result=None):
     """Copy a file while preserving attributes
 
     Args:
@@ -222,7 +222,7 @@ def safe_copy(src, dest, result=None):
         pass
 
 
-def safe_move(src, dest, result=None):
+def safe_move(src, dest, *, result=None):
     """Move a file while preserving attributes
 
     Args:
@@ -255,7 +255,7 @@ def safe_move(src, dest, result=None):
             raise
 
 
-def safe_link(src, dest, result=None):
+def safe_link(src, dest, *, result=None):
     """Try to create a hardlink, but resort to copying in the case of cross device links.
 
     Args:
