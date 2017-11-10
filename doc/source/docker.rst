@@ -13,9 +13,11 @@ We recommend using the
 which automates the necessary container setup. You can download it and make
 it executable like this:
 
-    mkdir -p ~/.local/bin
-    curl --get https://gitlab.com/BuildStream/buildstream/raw/master/contrib/bst-here > ~/.local/bin/bst-here
-    chmod +x ~/.local/bin/bst-here
+.. code:: bash
+
+  mkdir -p ~/.local/bin
+  curl --get https://gitlab.com/BuildStream/buildstream/raw/master/contrib/bst-here > ~/.local/bin/bst-here
+  chmod +x ~/.local/bin/bst-here
 
 Check if ``~/.local/bin`` appears in your PATH environment variable -- if it
 doesn't, you should
