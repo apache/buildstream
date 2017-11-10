@@ -322,7 +322,7 @@ def safe_remove(path):
     return True
 
 
-def copy_files(src, dest, files=None, ignore_missing=False):
+def copy_files(src, dest, *, files=None, ignore_missing=False):
     """Copy files from source to destination.
 
     Args:
@@ -352,7 +352,7 @@ def copy_files(src, dest, files=None, ignore_missing=False):
     return result
 
 
-def move_files(src, dest, files=None, ignore_missing=False):
+def move_files(src, dest, *, files=None, ignore_missing=False):
     """Move files from source to destination.
 
     Args:
@@ -382,7 +382,7 @@ def move_files(src, dest, files=None, ignore_missing=False):
     return result
 
 
-def link_files(src, dest, files=None, ignore_missing=False):
+def link_files(src, dest, *, files=None, ignore_missing=False):
     """Hardlink files from source to destination.
 
     Args:
