@@ -134,7 +134,7 @@ class Sandbox():
             'artifact': artifact
         })
 
-    def run(self, command, flags, cwd=None, env=None):
+    def run(self, command, flags, *, cwd=None, env=None):
         """Run a command in the sandbox.
 
         Args:

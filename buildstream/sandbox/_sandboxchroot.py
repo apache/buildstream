@@ -40,7 +40,7 @@ class SandboxChroot(Sandbox):
         super().__init__(*args, **kwargs)
         self.mount_map = None
 
-    def run(self, command, flags, cwd=None, env=None):
+    def run(self, command, flags, *, cwd=None, env=None):
 
         # Default settings
         if cwd is None:

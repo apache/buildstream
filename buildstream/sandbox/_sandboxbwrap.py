@@ -52,7 +52,7 @@ class SandboxBwrap(Sandbox):
         super().__init__(*args, **kwargs)
         self.user_ns_available = kwargs['user_ns_available']
 
-    def run(self, command, flags, cwd=None, env=None):
+    def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
         root_directory = self.get_directory()
         scratch_directory = self._get_scratch_directory()
