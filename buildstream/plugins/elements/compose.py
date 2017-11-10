@@ -162,7 +162,7 @@ class ComposeElement(Element):
 
             if self.integration:
                 self.status("Moving {} integration files".format(len(integration_files)))
-                utils.move_files(basedir, installdir, integration_files)
+                utils.move_files(basedir, installdir, files=integration_files)
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
