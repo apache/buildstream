@@ -8,7 +8,7 @@ variables:
     elif [ -e autogen.sh ]; then ./autogen.sh;
     elif [ -e bootstrap ]; then ./bootstrap;
     elif [ -e bootstrap.sh ]; then ./bootstrap.sh;
-    elif [ ! -e ./configure ]; then autoreconf -ivf;
+    else autoreconf -ivf;
     fi
 
   conf-cmd: ./configure
