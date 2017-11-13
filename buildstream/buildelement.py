@@ -137,7 +137,7 @@ class BuildElement(Element):
         # which is normally automatically resolved and does not effect
         # the cache key.
         variables = self._get_variables()
-        if self.node_get_member(variables.variables, bool, 'notparallel', default_value=False):
+        if self.node_get_member(variables.variables, bool, 'notparallel', False):
             dictionary['notparallel'] = True
 
         return dictionary
@@ -214,7 +214,7 @@ class BuildElement(Element):
         return self.get_variable('install-root')
 
     def _get_commands(self, node, name):
-        list_node = self.node_get_member(node, list, name, default_value=[])
+        list_node = self.node_get_member(node, list, name, [])
         commands = []
 
         for i in range(len(list_node)):

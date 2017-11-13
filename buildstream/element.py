@@ -278,7 +278,7 @@ class Element(Plugin):
           # variables in the returned string
           name = self.node_subst_member(node, 'name')
         """
-        value = self.node_get_member(node, str, member_name, default_value=default_value)
+        value = self.node_get_member(node, str, member_name, default_value)
         return self.__variables.subst(value)
 
     def node_subst_list(self, node, member_name):
@@ -457,7 +457,7 @@ class Element(Plugin):
         environment = self.get_environment()
 
         if bstdata is not None:
-            commands = self.node_get_member(bstdata, list, 'integration-commands', default_value=[])
+            commands = self.node_get_member(bstdata, list, 'integration-commands', [])
             for i in range(len(commands)):
                 cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
                 self.status("Running integration command", detail=cmd)
