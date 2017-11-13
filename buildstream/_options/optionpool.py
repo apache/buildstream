@@ -18,7 +18,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #
-import ast
 import jinja2
 from collections import Mapping
 

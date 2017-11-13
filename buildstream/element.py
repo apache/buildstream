@@ -24,11 +24,9 @@ Element
 """
 
 import os
-import sys
 import re
 import stat
 import copy
-import inspect
 from collections import Mapping
 from contextlib import contextmanager
 from enum import Enum

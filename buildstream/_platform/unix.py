@@ -19,8 +19,6 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
-import sys
-import pathlib
 
 from .. import utils
 from .._exceptions import PlatformError
