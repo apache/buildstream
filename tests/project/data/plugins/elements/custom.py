@@ -6,7 +6,7 @@ class CustomElement(Element):
     def configure(self, node):
         print("Element Data: %s" % node)
         self.node_validate(node, ['configuration'])
-        self.configuration = self.node_subst_member(node, "configuration", default_value='')
+        self.configuration = self.node_subst_member(node, "configuration", '')
 
     def preflight(self):
         pass
