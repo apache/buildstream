@@ -50,7 +50,7 @@ class LocalSource(Source):
     def preflight(self):
         # Check if the configured file or directory really exists
         if not os.path.exists(self.fullpath):
-            raise SourceError("Specified path '%s' does not exist" % self.path)
+            raise SourceError("Specified path '{}' does not exist".format(self.path))
 
     def get_unique_key(self):
         # Get a list of tuples of the the project relative paths and fullpaths

@@ -32,8 +32,8 @@ def assert_command(datafiles, tmpdir, target, command, expected):
     assert(commands.get(command) is not None)
     assert(len(commands[command]) > 0)
 
-    print("Commands:\n%s" % commands[command][0])
-    print("Expected:\n%s" % expected)
+    print("Commands:\n{}".format(commands[command][0]))
+    print("Expected:\n{}".format(expected))
 
     assert(commands[command][0] == expected)
 

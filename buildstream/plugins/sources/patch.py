@@ -53,9 +53,9 @@ class PatchSource(Source):
     def preflight(self):
         # Check if the configured file really exists
         if not os.path.exists(self.fullpath):
-            raise SourceError("Specified path '%s' does not exist" % self.path)
+            raise SourceError("Specified path '{}' does not exist".format(self.path))
         elif not os.path.isfile(self.fullpath):
-            raise SourceError("Specified path '%s' must be a file" % self.path)
+            raise SourceError("Specified path '{}' must be a file".format(self.path))
 
         # Check if patch is installed, get the binary at the same time
         self.host_patch = utils.get_host_tool("patch")

@@ -53,7 +53,7 @@ class Provenance():
 
     # Convert a Provenance to a string for error reporting
     def __str__(self):
-        return "%s [line %d column %d]" % (self.filename, self.line, self.col)
+        return "{} [line {:d} column {:d}]".format(self.filename, self.line, self.col)
 
     # Abstract method
     def clone(self):
@@ -152,9 +152,9 @@ class CompositeTypeError(CompositeError):
     def __init__(self, path, expected_type, actual_type):
         super(CompositeTypeError, self).__init__(
             path,
-            "Error compositing dictionary key '%s', expected source type '%s' "
-            "but received type '%s'" %
-            (path, expected_type.__name__, actual_type.__name__))
+            "Error compositing dictionary key '{}', expected source type '{}' "
+            "but received type '{}'"
+            .format(path, expected_type.__name__, actual_type.__name__))
         self.expected_type = expected_type
         self.actual_type = actual_type
 
@@ -180,7 +180,7 @@ def load(filename, shortname=None, copy_tree=False):
             return load_data(f, shortname=shortname, copy_tree=copy_tree)
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
-                        "Could not find file at %s" % filename) from e
+                        "Could not find file at {}".format(filename)) from e
 
 
 # Like load(), but doesnt require the data to be in a file
@@ -191,7 +191,7 @@ def load_data(data, shortname=None, copy_tree=False):
         contents = yaml.load(data, yaml.loader.RoundTripLoader)
     except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
         raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Malformed YAML:\n\n%s\n\n%s\n" % (e.problem, e.problem_mark)) from e
+                        "Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark)) from e
 
     if not isinstance(contents, dict):
         # Special case allowance for None, when the loaded file has only comments in it.
@@ -199,8 +199,8 @@ def load_data(data, shortname=None, copy_tree=False):
             contents = {}
         else:
             raise LoadError(LoadErrorReason.INVALID_YAML,
-                            "YAML file has content of type '%s' instead of expected type 'dict': %s" %
-                            (type(contents).__name__, shortname))
+                            "YAML file has content of type '{}' instead of expected type 'dict': {}"
+                            .format(type(contents).__name__, shortname))
 
     return node_decorated_copy(shortname, contents, copy_tree=copy_tree)
 
@@ -326,7 +326,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
     provenance = node_get_provenance(node)
     if value is None:
         raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "%s: Dictionary did not contain expected key '%s'" % (str(provenance), key))
+                        "{}: Dictionary did not contain expected key '{}'".format(str(provenance), key))
 
     path = key
     if indices:
@@ -334,7 +334,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
         value = node_get(node, list, key)
         for index in indices:
             value = value[index]
-            path += '[%d]' % index
+            path += '[{:d}]'.format(index)
 
     if not isinstance(value, expected_type):
         # Attempt basic conversions if possible, typically we want to
@@ -359,8 +359,8 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
         except (ValueError, TypeError):
             provenance = node_get_provenance(node, key=key, indices=indices)
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "%s: Value of '%s' is not of the expected type '%s'" %
-                            (str(provenance), path, expected_type.__name__))
+                            "{}: Value of '{}' is not of the expected type '{}'"
+                            .format(str(provenance), path, expected_type.__name__))
 
     # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
     if isinstance(value, str):
@@ -757,11 +757,11 @@ def composite(target, source):
         if source_provenance:
             error_prefix = "{}: ".format(str(source_provenance))
         raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                        "%sExpected '%s' type for configuration '%s', instead received '%s'" %
-                        (error_prefix,
-                         e.expected_type.__name__,
-                         e.path,
-                         e.actual_type.__name__)) from e
+                        "{}Expected '{}' type for configuration '{}', instead received '{}'"
+                        .format(error_prefix,
+                                e.expected_type.__name__,
+                                e.path,
+                                e.actual_type.__name__)) from e
 
 
 # SanitizedDict is an OrderedDict that is dumped as unordered mapping.

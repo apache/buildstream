@@ -67,8 +67,8 @@ def msg_byteorder(sys_byteorder=sys.byteorder):
     elif sys_byteorder == 'big':
         return 'B'
     else:
-        raise PushException('Unrecognized system byteorder %s'
-                            % sys_byteorder)
+        raise PushException('Unrecognized system byteorder {}'
+                            .format(sys_byteorder))
 
 
 def sys_byteorder(msg_byteorder):
@@ -77,8 +77,8 @@ def sys_byteorder(msg_byteorder):
     elif msg_byteorder == 'B':
         return 'big'
     else:
-        raise PushException('Unrecognized message byteorder %s'
-                            % msg_byteorder)
+        raise PushException('Unrecognized message byteorder {}'
+                            .format(msg_byteorder))
 
 
 def ostree_object_path(repo, obj):
@@ -220,18 +220,18 @@ class PushMessageReader(object):
 
     def decode_header(self, header):
         if len(header) != HEADER_SIZE:
-            raise Exception('Header is %d bytes, not %d' % (len(header), HEADER_SIZE))
+            raise Exception('Header is {:d} bytes, not {:d}'.format(len(header), HEADER_SIZE))
         order = sys_byteorder(chr(header[0]))
         version = int(header[1])
         if version != PROTO_VERSION:
-            raise Exception('Unsupported protocol version %d' % version)
+            raise Exception('Unsupported protocol version {:d}'.format(version))
         cmdtype = PushCommandType(int(header[2]))
         vlen = int.from_bytes(header[3:], order)
         return order, version, cmdtype, vlen
 
     def decode_message(self, message, size, order):
         if len(message) != size:
-            raise Exception('Expected %d bytes, but got %d' % (size, len(message)))
+            raise Exception('Expected {:d} bytes, but got {:d}'.format(size, len(message)))
         data = GLib.Bytes.new(message)
         variant = GLib.Variant.new_from_bytes(GLib.VariantType.new('a{sv}'),
                                               data, False)
@@ -317,7 +317,7 @@ def parse_remote_location(remotepath, remote_port):
     if url.netloc:
         if url.scheme != 'ssh':
             raise PushException('Only URL scheme ssh is allowed, '
-                                'not "%s"' % url.scheme)
+                                'not "{}"'.format(url.scheme))
         remote_host = url.hostname
         remote_user = url.username
         remote_repo = url.path
@@ -333,9 +333,9 @@ def parse_remote_location(remotepath, remote_port):
             remainder = parts[0]
         parts = remainder.split(':', 1)
         if len(parts) != 2:
-            raise PushException('Remote repository "%s" does not '
+            raise PushException('Remote repository "{}" does not '
                                 'contain a hostname and path separated '
-                                'by ":"' % remotepath)
+                                'by ":"'.format(remotepath))
         remote_host, remote_repo = parts
 
     return remote_host, remote_user, remote_repo, remote_port
@@ -407,15 +407,15 @@ class OSTreePusher(object):
             _, commit = self.repo.load_variant_if_exists(OSTree.ObjectType.COMMIT,
                                                          parent)
             if commit is None:
-                raise PushException('Shallow history from commit %s does '
-                                    'not contain remote commit %s' % (local, remote))
+                raise PushException('Shallow history from commit {} does '
+                                    'not contain remote commit {}'.format(local, remote))
             parent = OSTree.commit_get_parent(commit)
             if parent is None:
                 break
         if remote is not None and parent != remote:
             self.writer.send_done()
-            raise PushExistsException('Remote commit %s not descendent of '
-                                      'commit %s' % (remote, local))
+            raise PushExistsException('Remote commit {} not descendent of '
+                                      'commit {}'.format(remote, local))
 
     def needed_objects(self, commits):
         objects = set()

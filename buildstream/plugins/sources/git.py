@@ -104,8 +104,8 @@ class GitMirror():
                 try:
                     shutil.move(tmpdir, self.mirror)
                 except (shutil.Error, OSError) as e:
-                    raise SourceError("%s: Failed to move cloned git repository %s from '%s' to '%s'" %
-                                      (str(self.source), self.url, tmpdir, self.mirror)) from e
+                    raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}'"
+                                      .format(str(self.source), self.url, tmpdir, self.mirror)) from e
 
     def fetch(self):
         self.source.call([self.source.host_git, 'fetch', 'origin', '--prune'],
@@ -126,8 +126,8 @@ class GitMirror():
 
     def assert_ref(self):
         if not self.has_ref():
-            raise SourceError("%s: expected ref '%s' was not found in git repository: '%s'" %
-                              (str(self.source), self.ref, self.url))
+            raise SourceError("{}: expected ref '{}' was not found in git repository: '{}'"
+                              .format(str(self.source), self.ref, self.url))
 
     def latest_commit(self, tracking):
         _, output = self.source.check_output(
@@ -212,14 +212,14 @@ class GitMirror():
 
             # fail if the commit hash is invalid
             if len(submodule_commit) != 40:
-                raise SourceError("%s: Error reading commit information for submodule '%s'" %
-                                  (str(self.source), submodule))
+                raise SourceError("{}: Error reading commit information for submodule '{}'"
+                                  .format(str(self.source), submodule))
 
             return submodule_commit
 
         else:
-            raise SourceError("%s: Failed to read commit information for submodule '%s'" %
-                              (str(self.source), submodule))
+            raise SourceError("{}: Failed to read commit information for submodule '{}'"
+                              .format(str(self.source), submodule))
 
 
 class GitSource(Source):

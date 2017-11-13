@@ -268,7 +268,7 @@ elif _system == 'Linux':
             ('st_ctimespec', c_timespec),
             ('st_ino', c_ulonglong)]
 else:
-    raise NotImplementedError('%s is not supported.' % _system)
+    raise NotImplementedError('{} is not supported.'.format(_system))
 
 
 class c_statvfs(Structure):
@@ -507,7 +507,7 @@ class FUSE(object):
             if isinstance(value, bool):
                 if value is True: yield key
             else:
-                yield '%s=%s' % (key, value)
+                yield '{}={}'.format(key, value)
 
     @staticmethod
     def _wrapper(func, *args, **kwargs):
@@ -608,7 +608,7 @@ class FUSE(object):
 
         retsize = len(ret)
         assert retsize <= size, \
-            'actual amount read %d greater than expected %d' % (retsize, size)
+            'actual amount read {:d} greater than expected {:d}'.format(retsize, size)
 
         data = create_string_buffer(ret, retsize)
         memmove(buf, data, retsize)

@@ -150,7 +150,7 @@ class Source(Plugin):
         Returns:
            (:class:`.Consistency`): The source consistency
         """
-        raise ImplError("Source plugin '%s' does not implement get_consistency()" % self.get_kind())
+        raise ImplError("Source plugin '{}' does not implement get_consistency()".format(self.get_kind()))
 
     def get_ref(self):
         """Fetch the internal ref, however it is represented
@@ -164,7 +164,7 @@ class Source(Plugin):
            in a VCS or a tarball's checksum. Usually the reference is a string,
            but the plugin may choose to represent it with a tuple or such.
         """
-        raise ImplError("Source plugin '%s' does not implement get_ref()" % self.get_kind())
+        raise ImplError("Source plugin '{}' does not implement get_ref()".format(self.get_kind()))
 
     def set_ref(self, ref, node):
         """Applies the internal ref, however it is represented
@@ -177,7 +177,7 @@ class Source(Plugin):
         See :func:`~buildstream.source.Source.get_ref` for a discussion on
         the *ref* parameter.
         """
-        raise ImplError("Source plugin '%s' does not implement set_ref()" % self.get_kind())
+        raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
     def track(self):
         """Resolve a new ref from the plugin's track option
@@ -210,7 +210,7 @@ class Source(Plugin):
         Implementors should raise :class:`.SourceError` if the there is some
         network error or if the source reference could not be matched.
         """
-        raise ImplError("Source plugin '%s' does not implement fetch()" % self.get_kind())
+        raise ImplError("Source plugin '{}' does not implement fetch()".format(self.get_kind()))
 
     def stage(self, directory):
         """Stage the sources to a directory
@@ -227,7 +227,7 @@ class Source(Plugin):
         Implementors should raise :class:`.SourceError` when encountering
         some system error.
         """
-        raise ImplError("Source plugin '%s' does not implement stage()" % self.get_kind())
+        raise ImplError("Source plugin '{}' does not implement stage()".format(self.get_kind()))
 
     def init_workspace(self, directory):
         """Initialises a new workspace

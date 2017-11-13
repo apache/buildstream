@@ -4,7 +4,7 @@ from buildstream import Source, Consistency
 class CustomSource(Source):
 
     def configure(self, node):
-        print("Source Data: %s" % node)
+        print("Source Data: {}".format(node))
         self.node_validate(node, ['configuration'] + Source.COMMON_CONFIG_KEYS)
         self.configuration = self.node_get_member(node, str, "configuration")
 

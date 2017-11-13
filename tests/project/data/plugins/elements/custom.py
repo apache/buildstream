@@ -4,7 +4,7 @@ from buildstream import Element
 class CustomElement(Element):
 
     def configure(self, node):
-        print("Element Data: %s" % node)
+        print("Element Data: {}".format(node))
         self.node_validate(node, ['configuration'])
         self.configuration = self.node_subst_member(node, "configuration", '')
 

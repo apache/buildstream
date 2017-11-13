@@ -138,7 +138,7 @@ class OptionPool():
         # Variables must be resolved at this point.
         #
         try:
-            template_string = "{%% if %s %%} True {%% else %%} False {%% endif %%}" % expression
+            template_string = "{{% if {} %}} True {{% else %}} False {{% endif %}}".format(expression)
             template = self.environment.from_string(template_string)
             context = template.new_context(self.variables, shared=True)
             result = template.root_render_func(context)

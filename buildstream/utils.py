@@ -433,7 +433,7 @@ def get_host_tool(name):
     program_path = shutil.which(name, path=search_path)
 
     if not program_path:
-        raise ProgramNotFoundError("Did not find '%s' in PATH: %s" % (name, search_path))
+        raise ProgramNotFoundError("Did not find '{}' in PATH: {}".format(name, search_path))
 
     return program_path
 
@@ -500,7 +500,7 @@ def _copy_directories(srcdir, destdir, target):
                 yield (new_dir, mode)
             else:
                 raise OSError('Source directory tree has file where '
-                              'directory expected: %s' % dir)
+                              'directory expected: {}'.format(dir))
 
 
 def _ensure_real_directory(root, destpath):
@@ -515,8 +515,8 @@ def _ensure_real_directory(root, destpath):
     if not realpath.startswith(os.path.realpath(root)):
         raise IOError('Destination path resolves to a path outside ' +
                       'of the staging area\n\n' +
-                      '  Destination path: %s\n' % destpath +
-                      '  Real path: %s' % realpath)
+                      '  Destination path: {}\n'.format(destpath) +
+                      '  Real path: {}'.format(realpath))
 
     # Ensure the real destination path exists before trying to get the mode
     # of the real destination path.
@@ -592,8 +592,8 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
 
             dest_stat = os.lstat(os.path.realpath(destpath))
             if not stat.S_ISDIR(dest_stat.st_mode):
-                raise OSError('Destination not a directory. source has %s'
-                              ' destination has %s' % (srcpath, destpath))
+                raise OSError('Destination not a directory. source has {}'
+                              ' destination has {}'.format(srcpath, destpath))
             permissions.append((destpath, os.stat(srcpath).st_mode))
 
         elif stat.S_ISLNK(mode):
@@ -626,7 +626,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
 
         else:
             # Unsupported type.
-            raise OSError('Cannot extract %s into staging-area. Unsupported type.' % srcpath)
+            raise OSError('Cannot extract {} into staging-area. Unsupported type.'.format(srcpath))
 
     # Write directory permissions now that all files have been written
     for d, perms in permissions:
@@ -939,7 +939,7 @@ def _glob2re(pat):
                     stuff = '^' + stuff[1:]
                 elif stuff[0] == '^':
                     stuff = '\\' + stuff
-                res = '%s[%s]' % (res, stuff)
+                res = '{}[{}]'.format(res, stuff)
         else:
             res = res + re.escape(c)
     return res + '\Z(?ms)'

@@ -184,9 +184,9 @@ class BuildElement(Element):
             if not commands:
                 continue
 
-            with self.timed_activity("Running %s" % command_name):
+            with self.timed_activity("Running {}".format(command_name)):
                 for cmd in commands:
-                    self.status("Running %s" % command_name, detail=cmd)
+                    self.status("Running {}".format(command_name), detail=cmd)
 
                     # Note the -e switch to 'sh' means to exit with an error
                     # if any untested command fails.

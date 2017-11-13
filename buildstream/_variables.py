@@ -159,7 +159,7 @@ class Variables():
                         summary += line.format(unmatched=unmatch, variable=var, provenance=provenance)
 
                 raise LoadError(LoadErrorReason.UNRESOLVED_VARIABLE,
-                                "Failed to resolve one or more variable:\n%s" % summary)
+                                "Failed to resolve one or more variable:\n{}".format(summary))
 
             last_unmatched = unmatched
 

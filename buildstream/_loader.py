@@ -154,8 +154,8 @@ def extract_depends_from_node(owner, data):
             elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
                 provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "%s: Dependency type '%s' is not 'build', 'runtime' or 'all'" %
-                                (str(provenance), dep_type))
+                                "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
+                                .format(str(provenance), dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
             dependency = Dependency(owner, filename, filename=filename,
@@ -166,8 +166,8 @@ def extract_depends_from_node(owner, data):
             provenance = _yaml.node_get_provenance(data, key=Symbol.DEPENDS, indices=[index])
 
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "%s: List '%s' element %d is not a list or dict" %
-                            (str(provenance), Symbol.DEPENDS, index))
+                            "{}: List '{}' element {:d} is not a list or dict"
+                            .format(str(provenance), Symbol.DEPENDS, index))
 
         output_deps.append(dependency)
 
@@ -198,9 +198,9 @@ class Loader():
                 # XXX Should this just be an assertion ?
                 # Expect that the caller gives us the right thing at least ?
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Target '%s' was not specified as a relative "
-                                "path to the base project directory: %s" %
-                                (filename, basedir))
+                                "Target '{}' was not specified as a relative "
+                                "path to the base project directory: {}"
+                                .format(filename, basedir))
 
         self.options = options   # Project options (OptionPool)
         self.basedir = basedir   # Base project directory
@@ -314,8 +314,8 @@ class Loader():
 
         if check_elements.get(element_name) is not None:
             raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                            "Circular dependency detected for element: %s" %
-                            element.filename)
+                            "Circular dependency detected for element: {}"
+                            .format(element.filename))
 
         # Push / Check each dependency / Pop
         check_elements[element_name] = True
