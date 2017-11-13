@@ -500,7 +500,7 @@ def _copy_directories(srcdir, destdir, target):
                 yield (new_dir, mode)
             else:
                 raise OSError('Source directory tree has file where '
-                              'directory expected: {}'.format(dir))
+                              'directory expected: {}'.format(old_dir))
 
 
 def _ensure_real_directory(root, destpath):
