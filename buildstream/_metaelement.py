@@ -26,6 +26,7 @@ class MetaElement():
     # An abstract object holding data suitable for constructing an Element
     #
     # Args:
+    #    project: The project that contains the element
     #    name: The resolved element name
     #    kind: The element kind
     #    provenance: The provenance of the element
@@ -36,7 +37,8 @@ class MetaElement():
     #    env_nocache: List of environment vars which should not be considered in cache keys
     #    public: Public domain data dictionary
     #
-    def __init__(self, name, kind, provenance, sources, config, variables, environment, env_nocache, public):
+    def __init__(self, project, name, kind, provenance, sources, config, variables, environment, env_nocache, public):
+        self.project = project
         self.name = name
         self.kind = kind
         self.provenance = provenance

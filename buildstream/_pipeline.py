@@ -273,9 +273,9 @@ class Pipeline():
         if meta_element in self._resolved_elements:
             return self._resolved_elements[meta_element]
 
-        element = self.project._create_element(meta_element.kind,
-                                               self.artifacts,
-                                               meta_element)
+        element = meta_element.project._create_element(meta_element.kind,
+                                                       self.artifacts,
+                                                       meta_element)
 
         self._resolved_elements[meta_element] = element
 
@@ -288,8 +288,8 @@ class Pipeline():
         # resolve sources
         for meta_source in meta_element.sources:
             element._add_source(
-                self.project._create_source(meta_source.kind,
-                                            meta_source)
+                meta_element.project._create_source(meta_source.kind,
+                                                    meta_source)
             )
 
         return element

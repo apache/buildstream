@@ -196,6 +196,7 @@ class Loader():
                                 "path to the base project directory: {}"
                                 .format(filename, basedir))
 
+        self.project = project
         self.options = project._options     # Project options (OptionPool)
         self.basedir = basedir              # Base project directory
         self.targets = filenames            # Target bst elements
@@ -421,7 +422,7 @@ class Loader():
             meta_sources.append(meta_source)
 
         kind = _yaml.node_get(data, str, Symbol.KIND)
-        meta_element = MetaElement(element_name, kind,
+        meta_element = MetaElement(self.project, element_name, kind,
                                    elt_provenance, meta_sources,
                                    _yaml.node_get(data, Mapping, Symbol.CONFIG, default_value={}),
                                    _yaml.node_get(data, Mapping, Symbol.VARIABLES, default_value={}),
