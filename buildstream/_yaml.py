@@ -755,7 +755,7 @@ def composite(target, source):
     except CompositeTypeError as e:
         error_prefix = ""
         if source_provenance:
-            error_prefix = "[%s]: " % str(source_provenance)
+            error_prefix = "{}: ".format(str(source_provenance))
         raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                         "%sExpected '%s' type for configuration '%s', instead received '%s'" %
                         (error_prefix,
@@ -824,7 +824,7 @@ def node_validate(node, valid_keys):
     if invalid:
         provenance = node_get_provenance(node, key=invalid)
         raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "[{}]: Unexpected key: {}".format(provenance, invalid))
+                        "{}: Unexpected key: {}".format(provenance, invalid))
 
 
 # ChainMap
