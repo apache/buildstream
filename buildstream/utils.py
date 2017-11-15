@@ -41,7 +41,6 @@ from contextlib import contextmanager
 from . import ProgramNotFoundError
 from . import _yaml
 from . import _signals
-from click.exceptions import UsageError
 
 
 class FileListResult():
@@ -464,34 +463,6 @@ def get_bst_version():
     versions = package.version.split('.')[:2]
 
     return (int(versions[0]), int(versions[1]))
-
-
-def prefix_choice_value_proc(choices):
-    """Return a value processor for partial choice matching.
-
-    Args:
-       choices (list): All the candidate elements. This list must contains strings only.
-
-    Returns:
-       (function): The value processor function
-
-    The returned values processor will test the passed value with all the item
-    in the 'choices' list. If the value is a prefix of one of the 'choices'
-    element, the element is returned. If no element or several elements match
-    the same input, a 'click.UsageError' exception is raised with a description
-    of the error.
-    """
-    def value_proc(user_input):
-        remaining_candidate = [choice for choice in choices if choice.startswith(user_input)]
-
-        if len(remaining_candidate) == 0:
-            raise UsageError("Expected one of {}, got {}".format(choices, user_input))
-        elif len(remaining_candidate) == 1:
-            return remaining_candidate[0]
-        else:
-            raise UsageError("Ambiguous input. '{}' can refer to one of {}".format(user_input, remaining_candidate))
-
-    return value_proc
 
 
 # Recursively remove directories, ignoring file permissions as much as

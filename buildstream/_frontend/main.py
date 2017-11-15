@@ -23,6 +23,7 @@ import click
 import pkg_resources  # From setuptools
 from contextlib import contextmanager
 from blessings import Terminal
+from click import UsageError
 
 # Import buildstream public symbols
 from .. import Context, Project, Scope, Consistency, LoadError
@@ -34,7 +35,6 @@ from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
 from .. import _yaml
-from .. import utils
 
 # Import frontend assets
 from . import Profile, LogLine, Status
@@ -895,7 +895,7 @@ class App():
 
             try:
                 choice = click.prompt("Choice:",
-                                      value_proc=utils.prefix_choice_value_proc(['continue', 'quit', 'terminate']),
+                                      value_proc=prefix_choice_value_proc(['continue', 'quit', 'terminate']),
                                       default='continue', err=True)
             except click.Abort:
                 # Ensure a newline after automatically printed '^C'
@@ -978,7 +978,7 @@ class App():
 
                 try:
                     choice = click.prompt("Choice:", default='continue', err=True,
-                                          value_proc=utils.prefix_choice_value_proc(choices))
+                                          value_proc=prefix_choice_value_proc(choices))
                 except click.Abort:
                     # Ensure a newline after automatically printed '^C'
                     click.echo("", err=True)
@@ -1140,3 +1140,30 @@ class App():
         self.maybe_render_status()
         self.scheduler.resume_jobs()
         self.scheduler.connect_signals()
+
+
+#
+# Return a value processor for partial choice matching.
+# The returned values processor will test the passed value with all the item
+# in the 'choices' list. If the value is a prefix of one of the 'choices'
+# element, the element is returned. If no element or several elements match
+# the same input, a 'click.UsageError' exception is raised with a description
+# of the error.
+#
+# Note that Click expect user input errors to be signaled by raising a
+# 'click.UsageError' exception. That way, Click display an error message and
+# ask for a new input.
+#
+def prefix_choice_value_proc(choices):
+
+    def value_proc(user_input):
+        remaining_candidate = [choice for choice in choices if choice.startswith(user_input)]
+
+        if len(remaining_candidate) == 0:
+            raise UsageError("Expected one of {}, got {}".format(choices, user_input))
+        elif len(remaining_candidate) == 1:
+            return remaining_candidate[0]
+        else:
+            raise UsageError("Ambiguous input. '{}' can refer to one of {}".format(user_input, remaining_candidate))
+
+    return value_proc

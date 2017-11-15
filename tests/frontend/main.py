@@ -1,4 +1,4 @@
-from buildstream.utils import prefix_choice_value_proc
+from buildstream._frontend.main import prefix_choice_value_proc
 
 import pytest
 import click
