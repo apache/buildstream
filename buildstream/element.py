@@ -178,7 +178,7 @@ class Element(Plugin):
             yield source
 
     def dependencies(self, scope, *, recurse=True, visited=None, recursed=False):
-        """dependencies(scope, recurse=True)
+        """dependencies(scope, *, recurse=True)
 
         A generator function which yields the dependencies of the given element.
 
