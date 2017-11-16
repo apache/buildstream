@@ -683,6 +683,8 @@ class Pipeline():
 
         if not self.artifacts.can_push():
             raise PipelineError("Not configured for pushing artifacts")
+        if not self.can_push_remote_artifact_cache():
+            raise PipelineError("Unable to push to the configured remote cache")
 
         plan = elements
         self.assert_consistent(plan)
