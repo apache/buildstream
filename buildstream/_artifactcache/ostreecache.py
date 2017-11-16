@@ -82,8 +82,7 @@ class OSTreeCache(ArtifactCache):
     def preflight(self):
         if self.can_push() and not self.artifact_push.startswith("/"):
             try:
-                pull_url = initialize_push_connection(self.artifact_push,
-                                                      self.artifact_push_port)
+                pull_url = initialize_push_connection(self.artifact_push)
                 if pull_url != self.artifact_pull:
                     raise ArtifactError(
                         "This cache reports its pull URL as {}, but user "
@@ -365,7 +364,6 @@ class OSTreeCache(ArtifactCache):
                     try:
                         pushed = push_artifact(temp_repo.get_path().get_path(),
                                                self.artifact_push,
-                                               self.artifact_push_port,
                                                [ref, weak_ref], output_file)
                     except PushException as e:
                         raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e

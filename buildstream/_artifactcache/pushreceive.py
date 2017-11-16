@@ -315,7 +315,7 @@ class PushMessageReader(object):
         return args
 
 
-def parse_remote_location(remotepath, remote_port):
+def parse_remote_location(remotepath):
     """Parse remote artifact cache URL that's been specified in our config."""
     remote_host = remote_user = remote_repo = None
 
@@ -327,7 +327,7 @@ def parse_remote_location(remotepath, remote_port):
         remote_host = url.hostname
         remote_user = url.username
         remote_repo = url.path
-        remote_port = url.port
+        remote_port = url.port or 22
     else:
         # Scp/git style remote (user@hostname:path)
         parts = remotepath.split('@', 1)
@@ -343,6 +343,8 @@ def parse_remote_location(remotepath, remote_port):
                                 'contain a hostname and path separated '
                                 'by ":"'.format(remotepath))
         remote_host, remote_repo = parts
+        # This form doesn't make it possible to specify a non-standard port.
+        remote_port = 22
 
     return remote_host, remote_user, remote_repo, remote_port
 
@@ -634,15 +636,14 @@ class OSTreeReceiver(object):
 #
 # Args:
 #   remote: The ssh remote url to push to
-#   remote_port: The ssh port at the remote url
 #
 # Returns:
 #   (str): The URL that should be used for pushing to this cache.
 #
 # Raises:
 #   PushException if there was an issue connecting to the remote.
-def initialize_push_connection(remote, remote_port):
-    remote_host, remote_user, remote_repo, remote_port = parse_remote_location(remote, remote_port)
+def initialize_push_connection(remote):
+    remote_host, remote_user, remote_repo, remote_port = parse_remote_location(remote)
     ssh_cmd = ssh_commandline(remote_host, remote_user, remote_port)
 
     # We need a short timeout here because if 'remote' isn't reachable at
@@ -684,7 +685,6 @@ def initialize_push_connection(remote, remote_port):
 # Args:
 #   repo: The local repository path
 #   remote: The ssh remote url to push to
-#   remote_port: The ssh port at the remote url
 #   branches: The refs to push
 #   output: The output where logging should go
 #
@@ -695,12 +695,12 @@ def initialize_push_connection(remote, remote_port):
 # Raises:
 #   PushException if there was an error
 #
-def push(repo, remote, remote_port, branches, output):
+def push(repo, remote, branches, output):
 
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=logging.INFO, stream=output)
 
-    pusher = OSTreePusher(repo, remote, remote_port, branches, True, False, output=output)
+    pusher = OSTreePusher(repo, remote, branches, True, False, output=output)
 
     def terminate_push():
         pusher.close()

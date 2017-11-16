@@ -162,12 +162,8 @@ then a user can use the following user configuration:
      # A url from which to download prebuilt artifacts
      pull-url: https://artifacts.com
 
-     # A url to upload built artifacts to
-     push-url: artifacts@artifacts.com:artifacts
-
-     # If the artifact server uses a custom port for sshd
-     # then you can specify it here
-     push-port: 666
+     # A url to upload built artifacts to. Note we specify a custom port.
+     push-url: ssh://artifacts@artifacts.com:22200/artifacts
 
 
 Authenticating Users

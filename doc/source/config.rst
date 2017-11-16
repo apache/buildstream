@@ -42,8 +42,7 @@ it can be overridden on a per project basis using the same format
      project-name:
        artifacts:
          pull-url: https://artifacts.com
-         push-url: artifacts@artifacts.com:artifacts
-         push-port: 443
+         push-url: ssh://artifacts@artifacts.com:22200/artifacts
 
 
 Strict Build Plan

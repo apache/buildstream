@@ -47,24 +47,20 @@ class ArtifactCache():
         artifact_overrides = _yaml.node_get(project_overrides, Mapping, 'artifacts', default_value={})
         override_pull = _yaml.node_get(artifact_overrides, str, 'pull-url', default_value='') or None
         override_push = _yaml.node_get(artifact_overrides, str, 'push-url', default_value='') or None
-        override_push_port = _yaml.node_get(artifact_overrides, int, 'push-port', default_value=22)
 
-        _yaml.node_validate(artifact_overrides, ['pull-url', 'push-url', 'push-port'])
+        _yaml.node_validate(artifact_overrides, ['pull-url', 'push-url'])
 
         if override_pull or override_push:
             self.artifact_pull = override_pull
             self.artifact_push = override_push
-            self.artifact_push_port = override_push_port
 
         elif any((project.artifact_pull, project.artifact_push)):
             self.artifact_pull = project.artifact_pull
             self.artifact_push = project.artifact_push
-            self.artifact_push_port = project.artifact_push_port
 
         else:
             self.artifact_pull = context.artifact_pull
             self.artifact_push = context.artifact_push
-            self.artifact_push_port = context.artifact_push_port
 
         if self.artifact_push:
             if self.artifact_push.startswith("/") or \

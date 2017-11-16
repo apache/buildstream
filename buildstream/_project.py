@@ -171,10 +171,9 @@ class Project():
 
         # Load artifacts pull/push configuration for this project
         artifacts = _yaml.node_get(config, Mapping, 'artifacts', default_value={})
-        _yaml.node_validate(artifacts, ['pull-url', 'push-url', 'push-port'])
+        _yaml.node_validate(artifacts, ['pull-url', 'push-url'])
         self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
         self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
-        self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
 
         # Workspace configurations
         self._workspaces = self._load_workspace_config()

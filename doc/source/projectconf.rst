@@ -78,11 +78,7 @@ with an artifact share.
 
     # A url to upload built artifacts to
     # (must point to the same repository as pull-url)
-    push-url: artifacts@foo.com:artifacts
-
-    # Specify the port number for pushing artifacts, if it's
-    # not the default port 22
-    push-port: 10000
+    push-url: ssh://artifacts@foo.com:22200/artifacts
 
 
 Plugin Paths
