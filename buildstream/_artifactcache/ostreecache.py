@@ -29,7 +29,7 @@ from ..element import _KeyStrength
 from .._ostree import OSTreeError
 
 from . import ArtifactCache
-from .pushreceive import check_push_connection
+from .pushreceive import initialize_push_connection
 from .pushreceive import push as push_artifact
 from .pushreceive import PushException
 
@@ -82,8 +82,12 @@ class OSTreeCache(ArtifactCache):
     def preflight(self):
         if self.can_push() and not self.artifact_push.startswith("/"):
             try:
-                check_push_connection(self.artifact_push,
-                                      self.artifact_push_port)
+                pull_url = initialize_push_connection(self.artifact_push,
+                                                      self.artifact_push_port)
+                if pull_url != self.artifact_pull:
+                    raise ArtifactError(
+                        "This cache reports its pull URL as {}, but user "
+                        "configuration specifies {}.".format(pull_url, self.artifact_pull))
             except PushException as e:
                 raise ArtifactError("BuildStream will be unable to push artifacts "
                                     "to the shared cache: {}".format(e))

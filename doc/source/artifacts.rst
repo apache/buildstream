@@ -122,8 +122,8 @@ For this you will want something like the following in your ``/etc/ssh/sshd_conf
 	# bst-artifact-receive program, note that the full
 	# command must be specified here; 'artifacts' is
 	# the HOME relative path to the artifact cache.
-	#
-        ForceCommand bst-artifact-receive --verbose artifacts
+	# The exact pull URL must also be specified.
+        ForceCommand bst-artifact-receive --pull-url https://example.com/artifacts --verbose artifacts
 
 
 Summary file updates
