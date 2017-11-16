@@ -40,39 +40,26 @@ class ArtifactCache():
         os.makedirs(context.artifactdir, exist_ok=True)
         self.extractdir = os.path.join(context.artifactdir, 'extract')
 
-        self._pull_local = False
-        self._push_local = False
+        self._local = False
 
         project_overrides = context._get_overrides(project.name)
         artifact_overrides = _yaml.node_get(project_overrides, Mapping, 'artifacts', default_value={})
-        override_pull = _yaml.node_get(artifact_overrides, str, 'pull-url', default_value='') or None
-        override_push = _yaml.node_get(artifact_overrides, str, 'push-url', default_value='') or None
+        override_url = _yaml.node_get(artifact_overrides, str, 'url', default_value='') or None
 
-        _yaml.node_validate(artifact_overrides, ['pull-url', 'push-url'])
+        _yaml.node_validate(artifact_overrides, ['url'])
 
-        if override_pull or override_push:
-            self.artifact_pull = override_pull
-            self.artifact_push = override_push
-
-        elif any((project.artifact_pull, project.artifact_push)):
-            self.artifact_pull = project.artifact_pull
-            self.artifact_push = project.artifact_push
-
+        if override_url:
+            self.url = override_url
+        elif project.artifact_url:
+            self.url = project.artifact_url
         else:
-            self.artifact_pull = context.artifact_pull
-            self.artifact_push = context.artifact_push
+            self.url = context.artifact_url
 
-        if self.artifact_push:
-            if self.artifact_push.startswith("/") or \
-               self.artifact_push.startswith("file://"):
-                self._push_local = True
+        if self.url:
+            if self.url.startswith('/') or self.url.startswith('file://'):
+                self._local = True
 
-        if self.artifact_pull:
-            if self.artifact_pull.startswith("/") or \
-               self.artifact_pull.startswith("file://"):
-                self._pull_local = True
-
-            self.remote = utils.url_directory_name(self.artifact_pull)
+            self.remote = utils.url_directory_name(self.url)
         else:
             self.remote = None
 
@@ -139,7 +126,7 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_fetch(self):
-        return (not self._offline or self._pull_local) and \
+        return (not self._offline or self._local) and \
             self.remote is not None
 
     # can_push():
@@ -149,8 +136,8 @@ class ArtifactCache():
     # Returns: True if remote repository is available, False otherwise
     #
     def can_push(self):
-        return (not self._offline or self._push_local) and \
-            self.artifact_push is not None
+        return (not self._offline or self._local) and \
+            self.url is not None
 
     # remote_contains_key():
     #

@@ -69,27 +69,34 @@ class OSTreeCache(ArtifactCache):
         ostreedir = os.path.join(context.artifactdir, 'ostree')
         self.repo = _ostree.ensure(ostreedir, False)
 
-        if self.artifact_pull:
-            _ostree.configure_remote(self.repo, self.remote, self.artifact_pull)
+        if self.url is None:
+            self.push_url = None
+            self.pull_url = None
+        else:
+            if self.url.startswith('ssh://'):
+                self.push_url = self.url
+                try:
+                    self.pull_url = initialize_push_connection(self.push_url)
+                except PushException as e:
+                    raise ArtifactError("BuildStream did not connect succesfully "
+                                        "to the shared cache: {}".format(e))
+            elif self.url.startswith('http://') or self.url.startswith('https://'):
+                self.push_url = None
+                self.pull_url = self.url
+            elif self._local:
+                self.push_url = self.url
+                self.pull_url = self.url
+            else:
+                raise ArtifactError("Unsupported URL scheme: {}".format(self.url))
+
+            _ostree.configure_remote(self.repo, self.remote, self.pull_url)
 
         self._remote_refs = None
 
     def can_push(self):
         if self.enable_push:
-            return super().can_push()
+            return (not self._offline or self._local) and self.push_url is not None
         return False
-
-    def preflight(self):
-        if self.can_push() and not self.artifact_push.startswith("/"):
-            try:
-                pull_url = initialize_push_connection(self.artifact_push)
-                if pull_url != self.artifact_pull:
-                    raise ArtifactError(
-                        "This cache reports its pull URL as {}, but user "
-                        "configuration specifies {}.".format(pull_url, self.artifact_pull))
-            except PushException as e:
-                raise ArtifactError("BuildStream will be unable to push artifacts "
-                                    "to the shared cache: {}".format(e))
 
     # contains():
     #
@@ -240,15 +247,13 @@ class OSTreeCache(ArtifactCache):
     #
     def pull(self, element, progress=None):
 
-        if self._offline and not self._pull_local:
+        if self._offline and not self._local:
             raise ArtifactError("Attempt to pull artifact while offline")
 
-        if self.artifact_pull.startswith("/"):
-            remote = "file://" + self.artifact_pull
-        elif self.remote is not None:
-            remote = self.remote
+        if self.pull_url.startswith("/"):
+            remote = "file://" + self.pull_url
         else:
-            raise ArtifactError("Attempt to pull artifact without any pull URL")
+            remote = self.remote
 
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
@@ -290,8 +295,8 @@ class OSTreeCache(ArtifactCache):
     # Fetch list of artifacts from remote repository.
     #
     def fetch_remote_refs(self):
-        if self.artifact_pull.startswith("/"):
-            remote = "file://" + self.artifact_pull
+        if self.pull_url.startswith("/"):
+            remote = "file://" + self.pull_url
         elif self.remote is not None:
             remote = self.remote
         else:
@@ -329,17 +334,17 @@ class OSTreeCache(ArtifactCache):
     #   (ArtifactError): if there was an error
     def push(self, element):
 
-        if self._offline and not self._push_local:
+        if self._offline and not self._local:
             raise ArtifactError("Attempt to push artifact while offline")
 
-        if self.artifact_push is None:
-            raise ArtifactError("Attempt to push artifact without any push URL")
+        if self.push_url is None:
+            raise ArtifactError("The protocol in use does not support pushing.")
 
         ref = buildref(element, element._get_cache_key_from_artifact())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
-        if self.artifact_push.startswith("/"):
+        if self.push_url.startswith("/"):
             # local repository
-            push_repo = _ostree.ensure(self.artifact_push, True)
+            push_repo = _ostree.ensure(self.push_url, True)
             _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=ref)
             _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
 
@@ -363,7 +368,7 @@ class OSTreeCache(ArtifactCache):
                     element._output_file() as output_file:
                     try:
                         pushed = push_artifact(temp_repo.get_path().get_path(),
-                                               self.artifact_push,
+                                               self.push_url,
                                                [ref, weak_ref], output_file)
                     except PushException as e:
                         raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e

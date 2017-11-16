@@ -174,7 +174,7 @@ class Pipeline():
         if fetch_remote_refs and self.artifacts.can_fetch():
             try:
                 if remote_ticker:
-                    remote_ticker(self.artifacts.artifact_pull)
+                    remote_ticker(self.artifacts.url)
                 self.artifacts.fetch_remote_refs()
             except ArtifactError:
                 self.message(MessageType.WARN, "Failed to fetch remote refs")
@@ -283,24 +283,6 @@ class Pipeline():
             )
 
         return element
-
-    # Internal: If a remote artifact cache is configured for pushing, check
-    # that it actually works. Returns True if it works, False otherwise.
-    def can_push_remote_artifact_cache(self):
-        if self.artifacts.can_push():
-            starttime = datetime.datetime.now()
-            self.message(MessageType.START, "Checking connectivity to remote artifact cache")
-            try:
-                self.artifacts.preflight()
-            except ArtifactError as e:
-                self.message(MessageType.WARN, str(e),
-                             elapsed=datetime.datetime.now() - starttime)
-                return False
-            self.message(MessageType.SUCCESS, "Connectivity OK",
-                         elapsed=datetime.datetime.now() - starttime)
-            return True
-        else:
-            return False
 
     #############################################################
     #                         Commands                          #
@@ -433,7 +415,7 @@ class Pipeline():
             queues.append(pull)
         queues.append(fetch)
         queues.append(build)
-        if self.can_push_remote_artifact_cache():
+        if self.artifacts.can_push():
             push = PushQueue()
             queues.append(push)
         queues[0].enqueue(plan)
@@ -683,8 +665,6 @@ class Pipeline():
 
         if not self.artifacts.can_push():
             raise PipelineError("Not configured for pushing artifacts")
-        if not self.can_push_remote_artifact_cache():
-            raise PipelineError("Unable to push to the configured remote cache")
 
         plan = elements
         self.assert_consistent(plan)

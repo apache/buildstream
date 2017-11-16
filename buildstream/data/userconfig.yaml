@@ -53,12 +53,9 @@ scheduler:
 #
 artifacts:
 
-  # A url from which to download prebuilt artifacts
-  pull-url: ''
-
-  # A url to upload built artifacts to
-  # (must point to the same repository as pull-url)
-  push-url: ''
+  # A url from which to push and pull prebuilt artifacts.
+  # Some protocols only support pushing.
+  url: ''
 
 #
 #    Logging

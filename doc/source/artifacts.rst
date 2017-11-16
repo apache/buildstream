@@ -159,11 +159,10 @@ then a user can use the following user configuration:
    #
    artifacts:
 
-     # A url from which to download prebuilt artifacts
-     pull-url: https://artifacts.com
+     url: https://artifacts.com/artifacts
 
-     # A url to upload built artifacts to. Note we specify a custom port.
-     push-url: ssh://artifacts@artifacts.com:22200/artifacts
+     # Alternative form if you have push access to the cache
+     #url: ssh://artifacts@artifacts.com:22200/artifacts
 
 
 Authenticating Users
