@@ -185,3 +185,39 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
     original_contents = _list_dir_contents(original_dir)
     checkout_contents = _list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
+
+
+# Test that we succeed to extract tarballs with hardlinks when stripping the
+# leading paths
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'contains-links'))
+def test_stage_contains_links(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    generate_project(project, tmpdir)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Create a local tar
+    src_tar = os.path.join(str(tmpdir), "a.tar.gz")
+
+    # Create a hardlink, we wont trust git to store that info for us
+    os.makedirs(os.path.join(str(datafiles), "content", "base-directory", "subdir2"), exist_ok=True)
+    file1 = os.path.join(str(datafiles), "content", "base-directory", "subdir1", "file.txt")
+    file2 = os.path.join(str(datafiles), "content", "base-directory", "subdir2", "file.txt")
+    os.link(file1, file2)
+
+    _assemble_tar(os.path.join(str(datafiles), "content"), "base-directory", src_tar)
+
+    # Track, fetch, build, checkout
+    result = cli.run(project=project, args=['track', 'target.bst'])
+    assert result.exit_code == 0
+    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    assert result.exit_code == 0
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    assert result.exit_code == 0
+    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    assert result.exit_code == 0
+
+    # Check that the content of the first directory is checked out (base-dir: '*')
+    original_dir = os.path.join(str(datafiles), "content", "base-directory")
+    original_contents = _list_dir_contents(original_dir)
+    checkout_contents = _list_dir_contents(checkoutdir)
+    assert(checkout_contents == original_contents)
