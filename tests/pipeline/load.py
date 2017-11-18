@@ -112,41 +112,76 @@ def test_iterate_no_recurse(cli, datafiles, tmpdir):
     assert(element_list[6] == 'target.bst')
 
 
-###############################################################
-#                   Testing element removal                   #
-###############################################################
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'remove'))
-def test_remove_elements(cli, datafiles, tmpdir):
+# This test checks various constructions of a pipeline
+# with one or more targets and 0 or more exception elements,
+# each data set provides the targets, exceptions and expected
+# result list.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'exceptions'))
+@pytest.mark.parametrize("elements,exceptions,results", [
+
+    # Test without exceptions, lets just see the whole list here
+    (['build.bst'], None, [
+        'fourth-level-1.bst',
+        'third-level-1.bst',
+        'fourth-level-2.bst',
+        'third-level-2.bst',
+        'second-level-1.bst',
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # Test one target and excepting a part of the pipeline, this
+    # removes forth-level-1 and third-level-1
+    (['build.bst'], ['third-level-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',
+        'second-level-1.bst',
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # Test one target and excepting a part of the pipeline, check that
+    # excepted dependencies remain in the pipeline if depended on from
+    # outside of the except element
+    (['build.bst'], ['second-level-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',  # first-level-2 depends on this, so not excepted
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # The same as the above test, but excluding the toplevel build.bst,
+    # instead only select the two toplevel dependencies as targets
+    (['first-level-1.bst', 'first-level-2.bst'], ['second-level-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',  # first-level-2 depends on this, so not excepted
+        'first-level-1.bst',
+        'first-level-2.bst',
+    ]),
+
+    # Test one target and excepting an element outisde the pipeline
+    (['build.bst'], ['unrelated-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',  # first-level-2 depends on this, so not excepted
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # Test one target and excepting two elements
+    (['build.bst'], ['unrelated-1.bst', 'unrelated-2.bst'], [
+        'first-level-1.bst',
+        'build.bst',
+    ]),
+])
+def test_except_elements(cli, datafiles, tmpdir, elements, exceptions, results):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    elements = ['build.bst']
-    except_ = ['second-level-1.bst']
 
     # Except second-level-2 and check that the correct dependencies
     # are removed.
-    element_list = cli.get_pipeline(basedir, elements, except_=except_, scope='all')
-
-    assert(element_list[0] == 'fourth-level-2.bst')
-    assert(element_list[1] == 'third-level-2.bst')
-    assert(element_list[2] == 'first-level-1.bst')
-    assert(element_list[3] == 'first-level-2.bst')
-    assert(element_list[4] == 'build.bst')
-
-
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'remove'))
-def test_remove_unrelated_element(cli, datafiles, tmpdir):
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
-    elements = ['build.bst']
-    except_ = ['unrelated.bst']
-
-    # Ensure that we don't just except the given element, but the
-    # first row of intersection elements, while still including things
-    # that are accessible through another route.
-    element_list = cli.get_pipeline(basedir, elements, except_=except_, scope='all')
-
-    assert(len(element_list) == 5)
-
-    assert(element_list[0] == 'fourth-level-2.bst')
-    assert(element_list[1] == 'third-level-2.bst')
-    assert(element_list[2] == 'first-level-1.bst')
-    assert(element_list[3] == 'first-level-2.bst')
-    assert(element_list[4] == 'build.bst')
+    element_list = cli.get_pipeline(basedir, elements, except_=exceptions, scope='all')
+    assert element_list == results
