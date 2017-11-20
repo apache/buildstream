@@ -97,14 +97,14 @@ class ComposeElement(Element):
         with self.timed_activity("Staging dependencies", silent_nested=True):
             self.stage_dependency_artifacts(sandbox, Scope.BUILD)
 
-        split = set()
+        manifest = set()
         if require_split:
             with self.timed_activity("Computing split", silent_nested=True):
                 for dep in self.dependencies(Scope.BUILD):
-                    files = dep.compute_manifest(self.include,
-                                                 self.exclude,
-                                                 self.include_orphans)
-                    split.update(files)
+                    files = dep.compute_manifest(include=self.include,
+                                                 exclude=self.exclude,
+                                                 orphans=self.include_orphans)
+                    manifest.update(files)
 
         # Make a snapshot of all the files.
         basedir = sandbox.get_directory()
@@ -112,36 +112,44 @@ class ComposeElement(Element):
             f: getmtime(os.path.join(basedir, f))
             for f in utils.list_relative_paths(basedir)
         }
-        integration_files = []
+        modified_files = []
         removed_files = []
+        added_files = []
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
         if self.integration:
-            with self.timed_activity("Integrating sandbox", silent_nested=True):
+            with self.timed_activity("Integrating sandbox"):
                 for dep in self.dependencies(Scope.BUILD):
                     dep.integrate(sandbox)
 
                 if require_split:
-                    integration_files = [
-                        path for path in utils.list_relative_paths(basedir)
-                        if (snapshot.get(path) is None or
-                            snapshot[path] != getmtime(os.path.join(basedir, path)))
-                    ]
+
+                    # Calculate added modified files
+                    for path in utils.list_relative_paths(basedir):
+                        if snapshot.get(path) is None:
+                            added_files.append(path)
+                        elif snapshot[path] != getmtime(os.path.join(basedir, path)):
+                            modified_files.append(path)
+
+                    # Calculate removed files
                     removed_files = [
-                        path for path in split
+                        path for path in manifest
                         if not os.path.lexists(os.path.join(basedir, path))
                     ]
-                    self.info("Integration effected {} files and removed {} files"
-                              .format(len(integration_files), len(removed_files)))
+                    self.info("Integration modified {}, added {} and removed {} files"
+                              .format(len(modified_files), len(added_files), len(removed_files)))
 
         # The remainder of this is expensive, make an early exit if
         # we're not being selective about what is to be included.
         if not require_split:
             return '/'
 
-        split.update(integration_files)
-        split.difference_update(removed_files)
+        # Do we want to force include files which were modified by
+        # the integration commands, even if they were not added ?
+        #
+        manifest.update(added_files)
+        manifest.difference_update(removed_files)
 
         # XXX We should be moving things outside of the build sandbox
         # instead of into a subdir. The element assemble() method should
@@ -171,8 +179,8 @@ class ComposeElement(Element):
         detail = "\n".join(lines)
 
         with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
-            self.info("Composing {} files".format(len(split)))
-            utils.link_files(basedir, installdir, split)
+            self.info("Composing {} files".format(len(manifest)))
+            utils.link_files(basedir, installdir, files=manifest)
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
