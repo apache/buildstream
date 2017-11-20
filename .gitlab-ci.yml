@@ -20,19 +20,19 @@ before_script:
   - adduser -m buildstream
   - chown -R buildstream:buildstream .
 
-# Run premerge commits
-#
-pytest:
-  stage: test
-  script:
-  # We run as a simple user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri'
+# # Run premerge commits
+# #
+# pytest:
+#   stage: test
+#   script:
+#   # We run as a simple user to test for permission issues
+#   - su buildstream -c 'python3 setup.py test --index-url invalid://uri'
 
-  - mkdir -p coverage-pytest/
-  - cp .coverage.* coverage-pytest/coverage.pytest
-  artifacts:
-    paths:
-    - coverage-pytest/
+#   - mkdir -p coverage-pytest/
+#   - cp .coverage.* coverage-pytest/coverage.pytest
+#   artifacts:
+#     paths:
+#     - coverage-pytest/
 
 # Run integration tests
 #
@@ -44,7 +44,7 @@ integration_linux:
     - cd integration-tests
 
     # We run as a simple user to test for permission issues
-    - su buildstream -c './run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test'
+    - su buildstream -c './run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test cmake-test'
 
     - cd ..
     - mkdir -p coverage-linux/
@@ -56,86 +56,86 @@ integration_linux:
     - coverage-linux/
     - logs-linux/
 
-pytest_unix:
-  stage: test
-  variables:
-    BST_FORCE_BACKEND: "unix"
-  script:
-    # We remove the Bubblewrap and OSTree packages here so that we catch any
-    # codepaths that try to use them. Removing OSTree causes fuse-libs to
-    # disappear unless we mark it as user-installed.
-    - dnf mark install fuse-libs
-    - dnf erase -y bubblewrap ostree
+# pytest_unix:
+#   stage: test
+#   variables:
+#     BST_FORCE_BACKEND: "unix"
+#   script:
+#     # We remove the Bubblewrap and OSTree packages here so that we catch any
+#     # codepaths that try to use them. Removing OSTree causes fuse-libs to
+#     # disappear unless we mark it as user-installed.
+#     - dnf mark install fuse-libs
+#     - dnf erase -y bubblewrap ostree
 
-    # Since the unix platform is required to run as root, no user change required
-    - python3 setup.py test --index-url invalid://uri
+#     # Since the unix platform is required to run as root, no user change required
+#     - python3 setup.py test --index-url invalid://uri
 
-    - mkdir -p coverage-pytest-unix
-    - cp .coverage.* coverage-pytest-unix/coverage.pytest-unix
-  artifacts:
-    paths:
-      - coverage-pytest-unix/
+#     - mkdir -p coverage-pytest-unix
+#     - cp .coverage.* coverage-pytest-unix/coverage.pytest-unix
+#   artifacts:
+#     paths:
+#       - coverage-pytest-unix/
 
-integration_unix:
-  stage: test
-  variables:
-    BST_FORCE_BACKEND: "unix"
-  script:
-    - pip3 install --no-index .
-    - cd integration-tests
+# integration_unix:
+#   stage: test
+#   variables:
+#     BST_FORCE_BACKEND: "unix"
+#   script:
+#     - pip3 install --no-index .
+#     - cd integration-tests
 
-    # Since the unix platform is required to run as root, no user change required
-    - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
+#     # Since the unix platform is required to run as root, no user change required
+#     - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
 
-    - cd ..
-    - mkdir -p coverage-unix/
-    - cp integration-tests/.coverage coverage-unix/coverage.unix
-    - cp -a integration-tests/tmp/logs logs-unix
+#     - cd ..
+#     - mkdir -p coverage-unix/
+#     - cp integration-tests/.coverage coverage-unix/coverage.unix
+#     - cp -a integration-tests/tmp/logs logs-unix
 
-  artifacts:
-    paths:
-    - coverage-unix/
-    - logs-unix/
+#   artifacts:
+#     paths:
+#     - coverage-unix/
+#     - logs-unix/
 
-# Collate coverage reports
-#
-coverage:
-  stage: coverage
-  script:
-    - pip3 install --no-index .
-    - mkdir report
-    - cd report
-    - cp ../coverage-linux/coverage.linux .coverage
-    - cp ../coverage-unix/coverage.unix .
-    - coverage combine --rcfile=../.coveragerc -a ../coverage-unix/coverage.unix
-    - cp ../coverage-pytest/coverage.pytest .
-    - coverage combine --rcfile=../.coveragerc -a coverage.pytest
-    - cp ../coverage-pytest-unix/coverage.pytest-unix .
-    - coverage combine --rcfile=../.coveragerc -a coverage.pytest-unix
-    - coverage report --rcfile=../.coveragerc -m
-  dependencies:
-  - pytest
-  - integration_linux
-  - pytest_unix
-  - integration_unix
+# # Collate coverage reports
+# #
+# coverage:
+#   stage: coverage
+#   script:
+#     - pip3 install --no-index .
+#     - mkdir report
+#     - cd report
+#     - cp ../coverage-linux/coverage.linux .coverage
+#     - cp ../coverage-unix/coverage.unix .
+#     - coverage combine --rcfile=../.coveragerc -a ../coverage-unix/coverage.unix
+#     - cp ../coverage-pytest/coverage.pytest .
+#     - coverage combine --rcfile=../.coveragerc -a coverage.pytest
+#     - cp ../coverage-pytest-unix/coverage.pytest-unix .
+#     - coverage combine --rcfile=../.coveragerc -a coverage.pytest-unix
+#     - coverage report --rcfile=../.coveragerc -m
+#   dependencies:
+#   - pytest
+#   - integration_linux
+#   - pytest_unix
+#   - integration_unix
 
-# Automatically build documentation, only for merges which land
-# on master branch.
-#
-# Note: We still do not enforce a consistent installation of python2
-#       or sphinx, as python2 will significantly grow the backing image.
-#
-pages:
-  stage: docs
-  script:
-  - dnf install -y python2
-  - pip3 install sphinx
-  - pip3 install sphinx-click
-  - pip3 install --user .
-  - make -C doc
-  - mv doc/build/html public
-  artifacts:
-    paths:
-    - public/
-  only:
-  - master
+# # Automatically build documentation, only for merges which land
+# # on master branch.
+# #
+# # Note: We still do not enforce a consistent installation of python2
+# #       or sphinx, as python2 will significantly grow the backing image.
+# #
+# pages:
+#   stage: docs
+#   script:
+#   - dnf install -y python2
+#   - pip3 install sphinx
+#   - pip3 install sphinx-click
+#   - pip3 install --user .
+#   - make -C doc
+#   - mv doc/build/html public
+#   artifacts:
+#     paths:
+#     - public/
+#   only:
+#   - master
