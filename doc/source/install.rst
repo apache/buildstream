@@ -73,6 +73,15 @@ to get the base system requirements installed::
       bubblewrap ruamel.yaml
 
 
+Fedora
+~~~~~~
+For recent fedora systems, the following line should get you the system
+requirements you need::
+
+  dnf install -y bubblewrap fuse git python3-gobject \
+                 python3-psutil ostree
+
+
 User installation with pip
 --------------------------
 Once you have the base system dependencies, you can clone the buildstream
