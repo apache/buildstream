@@ -309,18 +309,39 @@ class Pipeline():
         self.session_elements = len(dependencies)
 
         self.message(MessageType.START, "Starting track")
+        self.context._hooks.run_hook(
+            'track-start',
+            "Starting track",
+            self.project.name
+        )
         elapsed, status = scheduler.run([track])
         changed = len(track.processed_elements)
 
         if status == SchedStatus.ERROR:
+            self.context._hooks.run_hook(
+                'track-fail',
+                "Track failed",
+                self.project.name
+            )
             self.message(MessageType.FAIL, "Track failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
+            self.context._hooks.run_hook(
+                'track-fail',
+                "Terminated after updating {} source references".format(changed),
+                self.project.name
+            )
             self.message(MessageType.WARN,
                          "Terminated after updating {} source references".format(changed),
                          elapsed=elapsed)
             raise PipelineError()
         else:
+            self.context._hooks.run_hook(
+                'track-complete',
+                "Updated {} source references".format(changed),
+                self.project.name
+            )
+
             self.message(MessageType.SUCCESS,
                          "Updated {} source references".format(changed),
                          elapsed=elapsed)
