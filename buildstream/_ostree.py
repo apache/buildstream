@@ -272,7 +272,8 @@ def fetch(repo, remote="origin", ref=None, progress=None):
                 percent = (fetched * 1.0 / requested) * 100
 
             progress(percent,
-                     "Receiving objects: {:d}% ({:d}/{:d}) {}".format(percent, fetched, requested, formatted_bytes))
+                     "Receiving objects: {:d}% ({:d}/{:d}) {}".format(int(percent), fetched,
+                                                                      requested, formatted_bytes))
         else:
             progress(100.0, "Writing Objects")
 
