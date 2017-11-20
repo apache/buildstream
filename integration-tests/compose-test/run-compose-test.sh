@@ -22,7 +22,8 @@ run_test () {
 	local elements
 	local element_name
 	local test_dir
-	local bst_file
+	local bst_file1
+	local bst_file2
 	local tar_file
 
 	local successes=0
@@ -32,9 +33,11 @@ run_test () {
 	source ../lib.sh
 
 	tar_file="$(dirname "$(readlink -f "$0")")/src/amhello.tar.gz"
-	bst_file="$(dirname "$(readlink -f "$0")")/elements/dependencies/amhello.bst"
+	bst_file1="$(dirname "$(readlink -f "$0")")/elements/dependencies/amhello.bst"
+	bst_file2="$(dirname "$(readlink -f "$0")")/elements/dependencies/amhello-full.bst"
 
-	patch_file_location "$bst_file" "$tar_file"
+	patch_file_location "$bst_file1" "$tar_file"
+	patch_file_location "$bst_file2" "$tar_file"
 
 	# Get rid of .gitkeep files
 	find . -name ".gitkeep" -exec rm {} \;
@@ -56,8 +59,30 @@ run_test () {
 		bst_with_flags build "$element_name".bst
 		bst_with_flags checkout "$element_name".bst "$test_dir"
 
-		exit=0
-		compare_results "$element_name" "$RESULTS" "$EXPECTED" || exit=$?
+		# XXX Special case for compose-integration-remove, dont
+		#     use the automated compare_results for this because
+		#     we dont want to commit a huge result set to compare
+		#
+		#     Instead just check for the presence of some files
+		#     and assert that the result has properly removed some
+		#     files due to integration commands removing them.
+		#
+		if [ "${element_name}" == "compose-integration-remove" ]; then
+		    if [ -e "${test_dir}/usr/share/doc/amhello" ]; then
+			# This is a failure if the directory which was removed
+			# by the integration commands still exists
+			exit=1
+		    else
+			exit=0
+		    fi
+		    report_results "${element_name}" $exit
+		else
+		    # The rest of the tests here use the weird comparison
+		    # of exactness in the checkout results
+		    exit=0
+		    compare_results "$element_name" "$RESULTS" "$EXPECTED" || exit=$?
+		fi
+			 
 		if [ $exit == 0 ]
 		then
 		   successes=$((successes + 1))
