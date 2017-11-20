@@ -499,7 +499,7 @@ def shell(app, element, sysroot, build, command):
         sys.exit(exitcode)
     except BstError as e:
         click.echo("")
-        click.echo("Errors shelling into this pipeline: {}".format(str(e)))
+        click.echo("Errors shelling into this pipeline: {}".format(e))
         sys.exit(-1)
 
 
@@ -776,7 +776,7 @@ class App():
             self.context = Context(self.main_options['option'])
             self.context.load(config)
         except BstError as e:
-            click.echo("Error loading user configuration: {}".format(str(e)))
+            click.echo("Error loading user configuration: {}".format(e))
             sys.exit(-1)
 
         # Override things in the context from our command line options,
@@ -834,7 +834,7 @@ class App():
         try:
             self.project = Project(directory, self.context)
         except BstError as e:
-            click.echo("Error loading project: {}".format(str(e)))
+            click.echo("Error loading project: {}".format(e))
             sys.exit(-1)
 
         try:
@@ -847,7 +847,7 @@ class App():
                                      remote_ticker=self.remote_ticker,
                                      cache_ticker=self.cache_ticker)
         except BstError as e:
-            click.echo("Error loading pipeline: {}".format(str(e)))
+            click.echo("Error loading pipeline: {}".format(e))
             sys.exit(-1)
 
         # Create our status printer, only available in interactive

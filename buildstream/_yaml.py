@@ -326,7 +326,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
     provenance = node_get_provenance(node)
     if value is None:
         raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "{}: Dictionary did not contain expected key '{}'".format(str(provenance), key))
+                        "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 
     path = key
     if indices:
@@ -360,7 +360,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
             provenance = node_get_provenance(node, key=key, indices=indices)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
-                            .format(str(provenance), path, expected_type.__name__))
+                            .format(provenance, path, expected_type.__name__))
 
     # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
     if isinstance(value, str):
@@ -755,7 +755,7 @@ def composite(target, source):
     except CompositeTypeError as e:
         error_prefix = ""
         if source_provenance:
-            error_prefix = "{}: ".format(str(source_provenance))
+            error_prefix = "{}: ".format(source_provenance)
         raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                         "{}Expected '{}' type for configuration '{}', instead received '{}'"
                         .format(error_prefix,

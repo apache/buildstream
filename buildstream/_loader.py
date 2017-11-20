@@ -155,7 +155,7 @@ def extract_depends_from_node(owner, data):
                 provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
-                                .format(str(provenance), dep_type))
+                                .format(provenance, dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
             dependency = Dependency(owner, filename, filename=filename,
@@ -167,7 +167,7 @@ def extract_depends_from_node(owner, data):
 
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: List '{}' element {:d} is not a list or dict"
-                            .format(str(provenance), Symbol.DEPENDS, index))
+                            .format(provenance, Symbol.DEPENDS, index))
 
         output_deps.append(dependency)
 
