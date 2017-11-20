@@ -175,7 +175,9 @@ setup(name='BuildStream',
       entry_points=bst_install_entry_points,
       setup_requires=['pytest-runner', 'setuptools_scm'],
       tests_require=['pep8',
-                     'coverage',
+                     # Pin coverage to 4.2 for now, we're experiencing
+                     # random crashes with 4.4.2
+                     'coverage == 4.2',
                      'pytest-datafiles',
                      'pytest-env',
                      'pytest-pep8',
