@@ -37,13 +37,22 @@ from . import _yaml
 from ._variables import Variables
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
 from . import Plugin, Consistency
-from ._project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import SandboxFlags
 from . import utils
 from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
+
+
+# The base BuildStream artifact version
+#
+# The artifact version changes whenever the cache key
+# calculation algorithm changes in an incompatible way
+# or if buildstream was changed in a way which can cause
+# the same cache key to produce something that is no longer
+# the same.
+_BST_CORE_ARTIFACT_VERSION = 1
 
 
 # _KeyStrength():
@@ -911,7 +920,7 @@ class Element(Plugin):
             operating_system, _, _, _, machine_arch = os.uname()
 
             self.__cache_key_dict = {
-                'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
+                'artifact-version': "{}.{}".format(_BST_CORE_ARTIFACT_VERSION,
                                                    self.BST_ARTIFACT_VERSION),
                 'context': context._get_cache_key(),
                 'project': project._get_cache_key(),

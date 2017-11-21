@@ -21,6 +21,7 @@
 import os
 import multiprocessing  # for cpu_count()
 from collections import Mapping
+from pluginbase import PluginBase
 from . import utils
 from . import _cachekey
 from . import _site
@@ -29,6 +30,8 @@ from ._profile import Topics, profile_start, profile_end
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import artifact_cache_specs_from_config_node
+from ._elementfactory import ElementFactory
+from ._sourcefactory import SourceFactory
 
 
 # The base BuildStream format version
@@ -37,15 +40,6 @@ from ._artifactcache import artifact_cache_specs_from_config_node
 # to the ``project.conf`` format or the format in general.
 #
 BST_FORMAT_VERSION = 0
-
-# The base BuildStream artifact version
-#
-# The artifact version changes whenever the cache key
-# calculation algorithm changes in an incompatible way
-# or if buildstream was changed in a way which can cause
-# the same cache key to produce something that is no longer
-# the same.
-BST_ARTIFACT_VERSION = 1
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -231,6 +225,10 @@ class Project():
             if _yaml.node_get(origin, str, 'origin') != 'core':
                 self._store_origin(origin, 'sources', self._plugin_source_origins)
                 self._store_origin(origin, 'elements', self._plugin_element_origins)
+
+        pluginbase = PluginBase(package='buildstream.plugins')
+        self._element_factory = ElementFactory(pluginbase, self._plugin_element_origins)
+        self._source_factory = SourceFactory(pluginbase, self._plugin_source_origins)
 
         # Source url aliases
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
@@ -443,3 +441,9 @@ class Project():
             self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key
+
+    def _create_element(self, kind, artifacts, meta):
+        return self._element_factory.create(kind, self._context, self, artifacts, meta)
+
+    def _create_source(self, kind, meta):
+        return self._source_factory.create(kind, self._context, self, meta)

@@ -27,14 +27,11 @@ import tarfile
 import itertools
 from contextlib import contextmanager
 from operator import itemgetter
-from pluginbase import PluginBase
 from tempfile import TemporaryDirectory
 
 from ._exceptions import PipelineError, ArtifactError, ImplError, BstError
 from ._message import Message, MessageType
-from ._elementfactory import ElementFactory
 from ._loader import Loader
-from ._sourcefactory import SourceFactory
 from . import Consistency
 from . import Scope
 from . import _site
@@ -129,11 +126,6 @@ class Pipeline():
 
         with self.timed_activity("Loading pipeline", silent_nested=True):
             meta_elements = loader.load(rewritable, None)
-
-        # Create the factories after resolving the project
-        pluginbase = PluginBase(package='buildstream.plugins')
-        self.element_factory = ElementFactory(pluginbase, project._plugin_element_origins)
-        self.source_factory = SourceFactory(pluginbase, project._plugin_source_origins)
 
         # Resolve the real elements now that we've resolved the project
         with self.timed_activity("Resolving pipeline"):
@@ -282,11 +274,9 @@ class Pipeline():
         if meta_element in self._resolved_elements:
             return self._resolved_elements[meta_element]
 
-        element = self.element_factory.create(meta_element.kind,
-                                              self.context,
-                                              self.project,
-                                              self.artifacts,
-                                              meta_element)
+        element = self.project._create_element(meta_element.kind,
+                                               self.artifacts,
+                                               meta_element)
 
         self._resolved_elements[meta_element] = element
 
@@ -299,10 +289,8 @@ class Pipeline():
         # resolve sources
         for meta_source in meta_element.sources:
             element._add_source(
-                self.source_factory.create(meta_source.kind,
-                                           self.context,
-                                           self.project,
-                                           meta_source)
+                self.project._create_source(meta_source.kind,
+                                            meta_source)
             )
 
         return element
