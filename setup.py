@@ -182,5 +182,7 @@ setup(name='BuildStream',
                      'pytest-env',
                      'pytest-pep8',
                      'pytest-cov',
+                     # Provide option to run tests in parallel, less reliable
+                     'pytest-xdist',
                      'pytest >= 3.1.0'],
       zip_safe=False)
