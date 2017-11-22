@@ -141,8 +141,8 @@ class Pipeline():
 
         # Create the factories after resolving the project
         pluginbase = PluginBase(package='buildstream.plugins')
-        self.element_factory = ElementFactory(pluginbase, project._plugin_element_paths)
-        self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
+        self.element_factory = ElementFactory(pluginbase, project._plugin_element_origins)
+        self.source_factory = SourceFactory(pluginbase, project._plugin_source_origins)
 
         # Resolve the real elements now that we've resolved the project
         resolved_elements = [self.resolve(meta_element, ticker=resolve_ticker)
