@@ -69,11 +69,11 @@ class Dependency():
 #
 class LoadElement():
 
-    def __init__(self, data, filename, elements):
+    def __init__(self, data, filename, loader):
 
         self.data = data
         self.name = filename
-        self.elements = elements
+        self.loader = loader
 
         # Ensure the root node is valid
         _yaml.node_validate(self.data, [
@@ -107,7 +107,7 @@ class LoadElement():
 
         self.dep_cache = {}
         for dep in self.deps:
-            elt = self.elements[dep.name]
+            elt = self.loader.elements[dep.name]
 
             # Ensure the cache of the element we depend on
             elt.ensure_depends_cache()
@@ -277,7 +277,7 @@ class Loader():
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
         self.options.process_node(data)
 
-        element = LoadElement(data, filename, self.elements)
+        element = LoadElement(data, filename, self)
 
         self.elements[filename] = element
 
