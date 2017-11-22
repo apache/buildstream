@@ -40,6 +40,7 @@ from . import Scope
 from . import _site
 from . import utils
 from ._platform import Platform
+from ._artifactcache import configured_artifact_cache_urls
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 
@@ -145,8 +146,8 @@ class Pipeline():
 
         self.initialize_workspaces()
 
-        if use_remote_cache and self.artifacts.can_fetch():
-            self.fetch_remote_refs()
+        if use_remote_cache:
+            self.initialize_remote_caches()
 
         self.resolve_cache_keys(inconsistent)
 
@@ -174,14 +175,13 @@ class Pipeline():
 
                 self.project._set_workspace(element, source, workspace)
 
-    def fetch_remote_refs(self):
-        with self.timed_activity("Fetching remote refs", silent_nested=True):
-            try:
-                self.artifacts.initialize_remote()
-                self.artifacts.fetch_remote_refs()
-            except ArtifactError:
-                self.message(MessageType.WARN, "Failed to fetch remote refs")
-                self.artifacts.set_offline()
+    def initialize_remote_caches(self):
+        def remote_failed(url, error):
+            self.message(MessageType.WARN, "Failed to fetch remote refs from {}: {}\n".format(url, error))
+
+        with self.timed_activity("Initializing remote caches", silent_nested=True):
+            artifact_urls = configured_artifact_cache_urls(self.context, self.project)
+            self.artifacts.set_remotes(artifact_urls, on_failure=remote_failed)
 
     def resolve_cache_keys(self, inconsistent):
         if inconsistent:
@@ -446,12 +446,12 @@ class Pipeline():
         if track_plan:
             track = TrackQueue(save=save)
             queues.append(track)
-        if self.artifacts.can_fetch():
+        if self.artifacts.has_fetch_remotes():
             pull = PullQueue()
             queues.append(pull)
         queues.append(fetch)
         queues.append(build)
-        if self.artifacts.can_push():
+        if self.artifacts.has_push_remotes():
             push = PushQueue()
             queues.append(push)
 
@@ -689,8 +689,8 @@ class Pipeline():
     #
     def pull(self, scheduler, elements):
 
-        if not self.artifacts.can_fetch():
-            raise PipelineError("Not configured for pulling artifacts")
+        if not self.artifacts.has_fetch_remotes():
+            raise PipelineError("Not artifact caches available for pulling artifacts")
 
         plan = elements
         self.assert_consistent(plan)
@@ -727,8 +727,8 @@ class Pipeline():
     #
     def push(self, scheduler, elements):
 
-        if not self.artifacts.can_push():
-            raise PipelineError("Not configured for pushing artifacts")
+        if not self.artifacts.has_push_remotes():
+            raise PipelineError("No artifact caches available for pushing artifacts")
 
         plan = elements
         self.assert_consistent(plan)

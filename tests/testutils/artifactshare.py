@@ -3,6 +3,8 @@ import pytest
 import subprocess
 import os
 
+from buildstream import _yaml
+
 from .site import HAVE_OSTREE_CLI
 
 
@@ -106,3 +108,35 @@ class ArtifactShare():
 def create_artifact_share(directory):
 
     return ArtifactShare(directory)
+
+
+# Write out cache configuration into the user config and project config files.
+#
+# User config is set through a helper on the 'cli' object, while the
+# project.conf file is updated manually using the _yaml module.
+#
+def configure_remote_caches(cli, project_conf_file, override_url, project_url=None, user_url=None):
+    user_config = {}
+    if user_url is not None:
+        user_config['artifacts'] = {
+            'url': user_url
+        }
+
+    if override_url is not None:
+        user_config['projects'] = {
+            'test': {
+                'artifacts': {
+                    'url': override_url,
+                }
+            }
+        }
+    cli.configure(user_config)
+
+    if project_url is not None:
+        project_config = _yaml.load(project_conf_file)
+        project_config.update({
+            'artifacts': {
+                'url': project_url,
+            }
+        })
+        _yaml.dump(_yaml.node_sanitize(project_config), filename=project_conf_file)

@@ -18,4 +18,4 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .artifactcache import ArtifactCache
+from .artifactcache import ArtifactCache, artifact_cache_urls_from_config_node, configured_artifact_cache_urls
