@@ -72,15 +72,12 @@ class Dependency():
 #
 class LoadElement():
 
-    def __init__(self, data, filename, basedir, elements):
+    def __init__(self, data, filename, elements):
 
         self.filename = filename
         self.data = data
         self.name = filename
         self.elements = elements
-
-        # These are shared with the owning Loader object
-        self.basedir = basedir
 
         # Ensure the root node is valid
         _yaml.node_validate(self.data, [
@@ -281,7 +278,7 @@ class Loader():
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
         self.options.process_node(data)
 
-        element = LoadElement(data, filename, self.basedir, self.elements)
+        element = LoadElement(data, filename, self.elements)
 
         self.elements[filename] = element
 
