@@ -48,7 +48,7 @@ def buildref(element, key):
     return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
 
-# An ArtifactCache manages artifacts in an OSTree repository
+# An OSTreeCache manages artifacts in an OSTree repository
 #
 # Args:
 #     context (Context): The BuildStream context
@@ -70,35 +70,19 @@ class OSTreeCache(ArtifactCache):
         self.repo = _ostree.ensure(ostreedir, False)
 
         self.push_url = None
-        self.pull_url = None
+        self.pull_urls = []
+        self._remote_refs = {}
 
-        self._remote_refs = None
+    def set_remotes(self, urls, on_failure=None):
+        self.urls = urls
 
-    def initialize_remote(self):
-        if self.url is not None:
-            if self.url.startswith('ssh://'):
-                self.push_url = self.url
-                try:
-                    # Contact the remote cache.
-                    self.pull_url = initialize_push_connection(self.push_url)
-                except PushException as e:
-                    raise ArtifactError("BuildStream did not connect succesfully "
-                                        "to the shared cache: {}".format(e))
-            elif self.url.startswith('http://') or self.url.startswith('https://'):
-                self.push_url = None
-                self.pull_url = self.url
-            elif self._local:
-                self.push_url = self.url
-                self.pull_url = self.url
-            else:
-                raise ArtifactError("Unsupported URL scheme: {}".format(self.url))
+        self._initialize_remotes(on_failure)
 
-            _ostree.configure_remote(self.repo, self.remote, self.pull_url)
+    def has_fetch_remotes(self):
+        return (len(self.pull_urls) > 0)
 
-    def can_push(self):
-        if self.enable_push:
-            return (not self._offline or self._local) and self.push_url is not None
-        return False
+    def has_push_remotes(self):
+        return (self.push_url is not None)
 
     # contains():
     #
@@ -134,7 +118,7 @@ class OSTreeCache(ArtifactCache):
     # Returns: True if the artifact is in the cache, False otherwise
     #
     def remote_contains_key(self, element, key):
-        if not self._remote_refs:
+        if len(self._remote_refs) == 0:
             return False
 
         ref = buildref(element, key)
@@ -241,7 +225,7 @@ class OSTreeCache(ArtifactCache):
 
     # pull():
     #
-    # Pull artifact from remote repository.
+    # Pull artifact from one of the configured remote repositories.
     #
     # Args:
     #     element (Element): The Element whose artifact is to be fetched
@@ -249,21 +233,13 @@ class OSTreeCache(ArtifactCache):
     #
     def pull(self, element, progress=None):
 
-        if self._offline and not self._local:
-            raise ArtifactError("Attempt to pull artifact while offline")
-
-        if self.pull_url.startswith("/"):
-            remote = "file://" + self.pull_url
-        else:
-            remote = self.remote
-
+        ref = buildref(element, element._get_cache_key())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
         try:
-            if self.remote_contains(element, strength=_KeyStrength.STRONG):
+            if ref in self._remote_refs:
                 # fetch the artifact using the strong cache key
-                ref = buildref(element, element._get_cache_key())
-                _ostree.fetch(self.repo, remote=remote,
+                _ostree.fetch(self.repo, remote=self._remote_refs[ref],
                               ref=ref, progress=progress)
 
                 # resolve ref to checksum
@@ -271,9 +247,9 @@ class OSTreeCache(ArtifactCache):
 
                 # update weak ref by pointing it to this newly fetched artifact
                 _ostree.set_ref(self.repo, weak_ref, rev)
-            elif self.remote_contains(element):
+            elif weak_ref in self._remote_refs:
                 # fetch the artifact using the weak cache key
-                _ostree.fetch(self.repo, remote=remote,
+                _ostree.fetch(self.repo, remote=self._remote_refs[weak_ref],
                               ref=weak_ref, progress=progress)
 
                 # resolve weak_ref to checksum
@@ -292,35 +268,6 @@ class OSTreeCache(ArtifactCache):
             raise ArtifactError("Failed to pull artifact for element {}: {}"
                                 .format(element.name, e)) from e
 
-    # fetch_remote_refs():
-    #
-    # Fetch list of artifacts from remote repository.
-    #
-    def fetch_remote_refs(self):
-        if self.pull_url.startswith("/"):
-            remote = "file://" + self.pull_url
-        elif self.remote is not None:
-            remote = self.remote
-        else:
-            raise ArtifactError("Attempt to fetch remote refs without any pull URL")
-
-        def child_action(repo, remote, q):
-            try:
-                q.put((True, _ostree.list_remote_refs(self.repo, remote=remote)))
-            except OSTreeError as e:
-                q.put((False, e))
-
-        q = multiprocessing.Queue()
-        p = multiprocessing.Process(target=child_action, args=(self.repo, remote, q))
-        p.start()
-        ret, res = q.get()
-        p.join()
-
-        if ret:
-            self._remote_refs = res
-        else:
-            raise ArtifactError("Failed to fetch remote refs") from res
-
     # push():
     #
     # Push committed artifact to remote repository.
@@ -336,17 +283,14 @@ class OSTreeCache(ArtifactCache):
     #   (ArtifactError): if there was an error
     def push(self, element):
 
-        if self._offline and not self._local:
-            raise ArtifactError("Attempt to push artifact while offline")
-
         if self.push_url is None:
             raise ArtifactError("The protocol in use does not support pushing.")
 
         ref = buildref(element, element._get_cache_key_from_artifact())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
-        if self.push_url.startswith("/"):
+        if self.push_url.startswith("file://"):
             # local repository
-            push_repo = _ostree.ensure(self.push_url, True)
+            push_repo = _ostree.ensure(self.push_url[7:], True)
             _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=ref)
             _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
 
@@ -377,9 +321,117 @@ class OSTreeCache(ArtifactCache):
 
                 return pushed
 
-    # set_offline():
+    # _initialize_remote():
     #
-    # Do not attempt to pull or push artifacts.
+    # Do protocol-specific initialization necessary to use a given OSTree
+    # remote.
     #
-    def set_offline(self):
-        self._offline = True
+    # The SSH protocol that we use only supports pushing so initializing these
+    # involves contacting the remote to find out the corresponding pull URL.
+    #
+    # Args:
+    #     url (str): URL of the remote
+    #
+    # Returns:
+    #     (str, str): the pull URL and push URL for the remote
+    #
+    # Raises:
+    #     ArtifactError: if there was an error
+    def _initialize_remote(self, url):
+        if url.startswith('ssh://'):
+            try:
+                push_url = url
+                pull_url = initialize_push_connection(url)
+            except PushException as e:
+                raise ArtifactError("BuildStream did not connect successfully "
+                                    "to the shared cache {}: {}".format(url, e))
+        elif url.startswith('/'):
+            push_url = pull_url = 'file://' + url
+        elif url.startswith('file://'):
+            push_url = pull_url = url
+        elif url.startswith('http://') or url.startswith('https://'):
+            push_url = None
+            pull_url = url
+        else:
+            raise ArtifactError("Unsupported URL: {}".format(url))
+
+        return push_url, pull_url
+
+    # _ensure_remote():
+    #
+    # Ensure that our OSTree repo has a remote configured for the given URL.
+    # Note that SSH access to remotes is not handled by libostree itself.
+    #
+    # Args:
+    #     repo (OSTree.Repo): an OSTree repository
+    #     pull_url (str): the URL where libostree can pull from the remote
+    #
+    # Returns:
+    #     (str): the name of the remote, which can be passed to various other
+    #            operations implemented by the _ostree module.
+    #
+    # Raises:
+    #     OSTreeError: if there was a problem reported by libostree
+    def _ensure_remote(self, repo, pull_url):
+        remote_name = utils.url_directory_name(pull_url)
+        _ostree.configure_remote(repo, remote_name, pull_url)
+        return remote_name
+
+    def _initialize_remotes(self, on_failure=None):
+        self.push_url = None
+        self.pull_urls = []
+        self._remote_refs = {}
+
+        # Callback to initialize one remote in a 'multiprocessing' subprocess.
+        #
+        # We cannot do this in the main process because of the way the tasks
+        # run by the main scheduler calls into libostree using
+        # fork()-without-exec() subprocesses. OSTree fetch operations in
+        # subprocesses hang if fetch operations were previously done in the
+        # main process.
+        #
+        def child_action(url, q):
+            try:
+                push_url, pull_url = self._initialize_remote(url)
+                remote = self._ensure_remote(self.repo, pull_url)
+                remote_refs = _ostree.list_remote_refs(self.repo, remote=remote)
+                q.put((None, push_url, pull_url, remote_refs))
+            except Exception as e:
+                # Exceptions aren't automatically propagated by
+                # multiprocessing, so we catch everything here. Note that
+                # GLib.Error subclasses can't be returned (as they don't
+                # 'pickle') and so they'll be ignored.
+                q.put((e, None, None, None))
+
+        # Kick off all the initialization jobs one by one.
+        #
+        # Note that we cannot use multiprocessing.Pool here because it's not
+        # possible to pickle local functions such as child_action().
+        #
+        q = multiprocessing.Queue()
+        for url in self.urls:
+            p = multiprocessing.Process(target=child_action, args=(url, q))
+            p.start()
+            exception, push_url, pull_url, remote_refs = q.get()
+            p.join()
+
+            if exception and on_failure:
+                on_failure(url, exception)
+            elif exception:
+                raise ArtifactError() from exception
+            else:
+                # Use first pushable remote we find for pushing.
+                if push_url and not self.push_url:
+                    self.push_url = push_url
+
+                # Use all pullable remotes, in priority order
+                if pull_url and pull_url not in self.pull_urls:
+                    self.pull_urls.append(pull_url)
+
+                # Update our overall map of remote refs with any refs that are
+                # present in the new remote and were not already found in
+                # higher priority ones.
+                remote = self._ensure_remote(self.repo, pull_url)
+                for ref in remote_refs:
+                    if ref not in self._remote_refs:
+                        self._remote_refs[ref] = remote

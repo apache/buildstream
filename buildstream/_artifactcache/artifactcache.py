@@ -21,12 +21,72 @@
 import os
 from collections import Mapping
 
-from .._exceptions import ImplError
+from .._exceptions import ImplError, LoadError, LoadErrorReason
 from .. import utils
 from .. import _yaml
 
 
-# An ArtifactCache manages artifacts
+def artifact_cache_url_from_spec(spec):
+    _yaml.node_validate(spec, ['url'])
+    url = _yaml.node_get(spec, str, 'url')
+    if len(url) == 0:
+        provenance = _yaml.node_get_provenance(spec)
+        raise LoadError(LoadErrorReason.INVALID_DATA,
+                        "{}: empty artifact cache URL".format(provenance))
+    return url
+
+
+# artifact_cache_urls_from_config_node()
+#
+# Parses the configuration of remote artifact caches from a config block.
+#
+# Args:
+#   config_node (dict): The config block, which may contain the 'artifacts' key
+#
+# Returns:
+#   A list of URLs pointing to remote artifact caches.
+#
+# Raises:
+#   LoadError, if the config block contains invalid keys.
+#
+def artifact_cache_urls_from_config_node(config_node):
+    urls = []
+
+    artifacts = config_node.get('artifacts', [])
+    if isinstance(artifacts, Mapping):
+        urls.append(artifact_cache_url_from_spec(artifacts))
+    elif isinstance(artifacts, list):
+        for spec in artifacts:
+            urls.append(artifact_cache_url_from_spec(spec))
+    else:
+        provenance = _yaml.node_get_provenance(config_node, key='artifacts')
+        raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                              "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
+                              (str(provenance)))
+    return urls
+
+
+# configured_artifact_cache_urls():
+#
+# Return the list of configured artifact remotes for a given project, in priority
+# order. This takes into account the user and project configuration.
+#
+# Args:
+#     context (Context): The BuildStream context
+#     project (Project): The BuildStream project
+#
+# Returns:
+#   A list of URLs pointing to remote artifact caches.
+#
+def configured_artifact_cache_urls(context, project):
+    project_overrides = context._get_overrides(project.name)
+    project_extra_urls = artifact_cache_urls_from_config_node(project_overrides)
+
+    return list(utils.deduplicate(
+        project_extra_urls + project.artifact_urls + context.artifact_urls))
+
+
+# An ArtifactCache manages artifacts.
 #
 # Args:
 #     context (Context): The BuildStream context
@@ -36,42 +96,24 @@ class ArtifactCache():
     def __init__(self, context, project):
 
         self.context = context
+        self.project = project
 
         os.makedirs(context.artifactdir, exist_ok=True)
         self.extractdir = os.path.join(context.artifactdir, 'extract')
 
         self._local = False
+        self.urls = []
 
-        project_overrides = context._get_overrides(project.name)
-        artifact_overrides = _yaml.node_get(project_overrides, Mapping, 'artifacts', default_value={})
-        override_url = _yaml.node_get(artifact_overrides, str, 'url', default_value='') or None
-
-        _yaml.node_validate(artifact_overrides, ['url'])
-
-        if override_url:
-            self.url = override_url
-        elif project.artifact_url:
-            self.url = project.artifact_url
-        else:
-            self.url = context.artifact_url
-
-        if self.url:
-            if self.url.startswith('/') or self.url.startswith('file://'):
-                self._local = True
-
-            self.remote = utils.url_directory_name(self.url)
-        else:
-            self.remote = None
-
-        self._offline = False
-
-    # initialize_remote():
+    # set_remotes():
     #
-    # Initialize any remote artifact cache, if needed. This may require network
-    # access and could block for several seconds.
+    # Set the list of remote caches, which is initially empty. This will
+    # contact each remote cache.
     #
-    def initialize_remote(self):
-        pass
+    # Args:
+    #     urls (list): List of artifact remote URLs, in priority order.
+    #     on_failure (callable): Called if we fail to contact one of the caches.
+    def set_remotes(self, urls, on_failure=None):
+        self.urls = urls
 
     # contains():
     #
@@ -120,37 +162,28 @@ class ArtifactCache():
         raise ImplError("Cache '{kind}' does not implement commit()"
                         .format(kind=type(self).__name__))
 
-    # set_offline()
+    # has_fetch_remotes():
     #
-    # Do not attempt to pull or push artifacts.
+    # Check whether any remote repositories are available for fetching.
     #
-    def set_offline(self):
-        self._offline = True
+    # Returns: True if any remote repositories are configured, False otherwise
+    #
+    def has_fetch_remotes(self):
+        return (len(self.urls) > 0)
 
-    # can_fetch():
+    # has_push_remotes():
     #
-    # Check whether remote repository is available for fetching.
+    # Check whether any remote repositories are available for pushing.
     #
-    # Returns: True if remote repository is available, False otherwise
+    # Returns: True if any remote repository is configured, False otherwise
     #
-    def can_fetch(self):
-        return (not self._offline or self._local) and \
-            self.remote is not None
-
-    # can_push():
-    #
-    # Check whether remote repository is available for pushing.
-    #
-    # Returns: True if remote repository is available, False otherwise
-    #
-    def can_push(self):
-        return (not self._offline or self._local) and \
-            self.url is not None
+    def has_push_remotes(self):
+        return (len(self.urls) > 0)
 
     # remote_contains_key():
     #
     # Check whether the artifact for the specified Element is already available
-    # in the remote artifact cache.
+    # in any remote artifact cache.
     #
     # Args:
     #     element (Element): The Element to check
@@ -160,6 +193,3 @@ class ArtifactCache():
     #
     def remote_contains(self, element, strength=None):
         return False
-
-    def fetch_remote_refs(self):
-        pass

@@ -34,6 +34,7 @@ import stat
 import string
 import subprocess
 import tempfile
+import itertools
 from contextlib import contextmanager
 
 import pkg_resources
@@ -983,3 +984,32 @@ def _glob2re(pat):
         else:
             res = res + re.escape(c)
     return res + '\Z(?ms)'
+
+
+# deduplicate()
+#
+# Remove duplicate entries in a list or other iterable.
+#
+# Copied verbatim from the unique_everseen() example at
+# https://docs.python.org/3/library/itertools.html#itertools-recipes
+#
+# Args:
+#    iterable (iterable): What to deduplicate
+#    key (callable): Optional function to map from list entry to value
+#
+# Returns:
+#    (generator): Generator that produces a deduplicated version of 'iterable'
+#
+def deduplicate(iterable, key=None):
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in itertools.filterfalse(seen.__contains__, iterable):
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element

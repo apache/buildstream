@@ -29,6 +29,7 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
+from ._artifactcache import artifact_cache_urls_from_config_node
 
 
 # Context()
@@ -61,8 +62,8 @@ class Context():
         # The local binary artifact cache directory
         self.artifactdir = None
 
-        # The URL from which to push and pull prebuilt artifacts
-        self.artifact_url = None
+        # The URLs from which to push and pull prebuilt artifacts
+        self.artifact_urls = []
 
         # The directory to store build logs
         self.logdir = None
@@ -161,9 +162,7 @@ class Context():
             setattr(self, dir, path)
 
         # Load artifact share configuration
-        artifacts = _yaml.node_get(defaults, Mapping, 'artifacts')
-        _yaml.node_validate(artifacts, ['url'])
-        self.artifact_url = _yaml.node_get(artifacts, str, 'url', default_value='') or None
+        self.artifact_urls = artifact_cache_urls_from_config_node(defaults)
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

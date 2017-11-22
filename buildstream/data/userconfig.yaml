@@ -48,14 +48,6 @@ scheduler:
   #
   on-error: quit
 
-#
-#    Artifacts
-#
-artifacts:
-
-  # A url from which to push and pull prebuilt artifacts.
-  # Some protocols only support pushing.
-  url: ''
 
 #
 #    Logging
