@@ -31,7 +31,8 @@ from . import utils
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
 #     base_type (type):         A base object type for this context
-#     searchpath (list):        A list of paths to search for plugins
+#     site_plugin_path (str):   Path to where buildstream keeps plugins
+#     plugin_origins (list):    Data used to search for plugins
 #
 # Since multiple pipelines can be processed recursively
 # within the same interpretor, it's important that we have
@@ -42,23 +43,18 @@ from . import utils
 #
 class PluginContext():
 
-    def __init__(self, plugin_base, base_type, searchpath=None, dependencies=None):
-
-        if not searchpath:
-            raise PluginError("Cannot create plugin context without any searchpath")
+    def __init__(self, plugin_base, base_type, site_plugin_path, plugin_origins=None, dependencies=None):
 
         self.dependencies = dependencies
         self.loaded_dependencies = []
         self.base_type = base_type  # The base class plugins derive from
         self.types = {}             # Plugin type lookup table by kind
-
-        # Raise an error if we have more than one plugin with the same name
-        self.assert_searchpath(searchpath)
+        self.plugin_origins = plugin_origins or []
 
         # The PluginSource object
         self.plugin_base = plugin_base
-        self.source = plugin_base.make_plugin_source(searchpath=searchpath)
-        self.alternate_sources = []
+        self.site_source = plugin_base.make_plugin_source(searchpath=site_plugin_path)
+        self.alternate_sources = {}
 
     # lookup():
     #
@@ -74,59 +70,80 @@ class PluginContext():
     def lookup(self, kind):
         return self.ensure_plugin(kind)
 
+    def _get_local_plugin_source(self, path):
+        if ('local', path) not in self.alternate_sources:
+            # key by a tuple to avoid collision
+            source = self.plugin_base.make_plugin_source(searchpath=[path])
+            # Ensure that sources never get garbage collected,
+            # as they'll take the plugins with them.
+            self.alternate_sources[('local', path)] = source
+        else:
+            source = self.alternate_sources(('local', path))
+        return source
+
+    def _get_pip_plugin_source(self, package_name, kind):
+        defaults = None
+        if ('pip', package_name) not in self.alternate_sources:
+            # key by a tuple to avoid collision
+            try:
+                package = pkg_resources.get_entry_info(package_name,
+                                                       'buildstream.plugins',
+                                                       kind)
+            except pkg_resources.DistributionNotFound as e:
+                raise PluginError("Failed to load {} plugin '{}': {}"
+                                  .format(self.base_type.__name__, kind, e)) from e
+            location = package.dist.get_resource_filename(
+                pkg_resources._manager,
+                package.module_name.replace('.', os.sep) + '.py'
+            )
+
+            # Also load the defaults - required since setuptools
+            # may need to extract the file.
+            defaults = package.dist.get_resource_filename(
+                pkg_resources._manager,
+                package.module_name.replace('.', os.sep) + '.yaml'
+            )
+
+            source = self.plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
+            self.alternate_sources[('pip', package_name)] = source
+
+        else:
+            source = self.alternate_sources[('pip', package_name)]
+
+        return source, defaults
+
     def ensure_plugin(self, kind):
 
         if kind not in self.types:
+            # Check whether the plugin is specified in plugins
             source = None
             defaults = None
-            dist, package = self.split_name(kind)
+            loaded_dependency = False
+            for origin in self.plugin_origins:
+                if kind not in origin['plugins']:
+                    continue
 
-            if dist:
-                # Find the plugin on disk using setuptools - this
-                # potentially unpacks the file and puts it in a
-                # temporary directory, but it is otherwise guaranteed
-                # to exist.
-                try:
-                    plugin = pkg_resources.get_entry_info(dist, 'buildstream.plugins', package)
-                except pkg_resources.DistributionNotFound as e:
-                    raise PluginError("Failed to load {} plugin '{}': {}"
-                                      .format(self.base_type.__name__, kind, e)) from e
+                if origin['origin'] == 'local':
+                    source = self._get_local_plugin_source(origin['path'])
+                elif origin['origin'] == 'pip':
+                    source, defaults = self._get_pip_plugin_source(origin['package-name'], kind)
+                else:
+                    raise PluginError("Failed to load plugin '{}': "
+                                      "Unexpected plugin origin '{}'"
+                                      .format(kind, origin['origin']))
+                loaded_dependency = True
+                break
 
-                # Missing plugins will return as 'None'
-                if plugin is not None:
-                    location = plugin.dist.get_resource_filename(
-                        pkg_resources._manager,
-                        plugin.module_name.replace('.', os.sep) + '.py'
-                    )
-
-                    # Also load the defaults - required since setuptools
-                    # may need to extract the file.
-                    try:
-                        defaults = plugin.dist.get_resource_filename(
-                            pkg_resources._manager,
-                            plugin.module_name.replace('.', os.sep) + '.yaml'
-                        )
-                    except KeyError:
-                        # The plugin didn't have an accompanying YAML file
-                        defaults = None
-
-                    # Set the plugin-base source to the setuptools directory
-                    source = self.plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
-                    # Ensure the plugin sources aren't garbage
-                    # collected - if they are, they take any loaded
-                    # plugins with them, regardless of whether those
-                    # have remaining references or not.
-                    self.alternate_sources.append(source)
-
-            elif package in self.source.list_plugins():
-                source = self.source
-
+            # Fall back to getting the source from site
             if not source:
-                raise PluginError("No {} type registered for kind '{}'"
-                                  .format(self.base_type.__name__, kind))
-            self.types[kind] = self.load_plugin(source, package, defaults)
+                if kind not in self.site_source.list_plugins():
+                    raise PluginError("No {} type registered for kind '{}'"
+                                      .format(self.base_type.__name__, kind))
 
-            if dist:
+                source = self.site_source
+
+            self.types[kind] = self.load_plugin(source, kind, defaults)
+            if loaded_dependency:
                 self.loaded_dependencies.append(kind)
 
         return self.types[kind]
@@ -159,18 +176,6 @@ class PluginContext():
         self.assert_version(kind, plugin_type)
         return (plugin_type, defaults)
 
-    def split_name(self, name):
-        if name.count(':') > 1:
-            raise PluginError("Plugin and package names must not contain ':'")
-
-        try:
-            dist, kind = name.split(':', maxsplit=1)
-        except ValueError:
-            dist = None
-            kind = name
-
-        return dist, kind
-
     def assert_plugin(self, kind, plugin_type):
         if kind in self.types:
             raise PluginError("Tried to register {} plugin for existing kind '{}' "
@@ -201,25 +206,3 @@ class PluginContext():
                                   self.base_type.__name__, kind,
                                   plugin_type.BST_REQUIRED_VERSION_MAJOR,
                                   plugin_type.BST_REQUIRED_VERSION_MINOR))
-
-    # We want a PluginError when trying to create a context
-    # where more than one plugin has the same name
-    def assert_searchpath(self, searchpath):
-        names = []
-        fullnames = []
-        for path in searchpath:
-            for filename in os.listdir(path):
-                basename = os.path.basename(filename)
-                name, extension = os.path.splitext(basename)
-                if extension == '.py' and name != '__init__':
-                    fullname = os.path.join(path, filename)
-
-                    if name in names:
-                        idx = names.index(name)
-                        raise PluginError("Failed to register {} plugin '{}' from: {}\n"
-                                          "{} plugin '{}' is already registered by: {}"
-                                          .format(self.base_type.__name__, name, fullname,
-                                                  self.base_type.__name__, name, fullnames[idx]))
-
-                    names.append(name)
-                    fullnames.append(fullname)

@@ -72,8 +72,8 @@ class Project():
         self._elements = {}      # Element specific configurations
         self._aliases = {}       # Aliases dictionary
         self._workspaces = {}    # Workspaces
-        self._plugin_source_paths = []   # Paths to custom sources
-        self._plugin_element_paths = []  # Paths to custom plugins
+        self._plugin_source_origins = []   # Origins of custom sources
+        self._plugin_element_origins = []  # Origins of custom elements
         self._options = None    # Project options, the OptionPool
         self._cache_key = None
         self._source_format_versions = {}
@@ -128,7 +128,7 @@ class Project():
         config.pop('elements', None)
         _yaml.node_final_assertions(config)
         _yaml.node_validate(config, [
-            'required-versions',
+            'required-project-version',
             'element-path', 'variables',
             'environment', 'environment-nocache',
             'split-rules', 'elements', 'plugins',
@@ -178,12 +178,8 @@ class Project():
         # Workspace configurations
         self._workspaces = self._load_workspace_config()
 
-        # Version requirements
-        versions = _yaml.node_get(config, Mapping, 'required-versions', default_value={})
-        _yaml.node_validate(versions, ['project', 'elements', 'sources'])
-
-        # Assert project version first
-        format_version = _yaml.node_get(versions, int, 'project', default_value=0)
+        # Assert project version
+        format_version = _yaml.node_get(config, int, 'required-project-version', default_value=0)
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
@@ -191,23 +187,68 @@ class Project():
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
                 .format(format_version, major, minor, BST_FORMAT_VERSION))
 
-        # The source versions
-        source_versions = _yaml.node_get(versions, Mapping, 'sources', default_value={})
-        for key, _ in _yaml.node_items(source_versions):
-            self._source_format_versions[key] = _yaml.node_get(source_versions, int, key)
+        # Plugin origins and versions
+        origins = _yaml.node_get(config, list, 'plugins', default_value=[])
+        for origin in origins:
+            allowed_origin_fields = [
+                'origin', 'sources', 'elements',
+                'package-name', 'path',
+            ]
+            allowed_origins = ['core', 'local', 'pip']
+            _yaml.node_validate(origin, allowed_origin_fields)
 
-        # The element versions
-        element_versions = _yaml.node_get(versions, Mapping, 'elements', default_value={})
-        for key, _ in _yaml.node_items(element_versions):
-            self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
+            if origin['origin'] not in allowed_origins:
+                raise LoadError(
+                    LoadErrorReason.INVALID_YAML,
+                    "Origin '{}' is not one of the allowed types"
+                    .format(origin['origin']))
 
-        # Load the plugin paths
-        plugins = _yaml.node_get(config, Mapping, 'plugins', default_value={})
-        _yaml.node_validate(plugins, ['elements', 'sources'])
-        self._plugin_source_paths = [os.path.join(self.directory, path)
-                                     for path in self._extract_plugin_paths(plugins, 'sources')]
-        self._plugin_element_paths = [os.path.join(self.directory, path)
-                                      for path in self._extract_plugin_paths(plugins, 'elements')]
+            # Store source versions for checking later
+            source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
+            for key, _ in _yaml.node_items(source_versions):
+                if key in self._source_format_versions:
+                    raise LoadError(
+                        LoadErrorReason.INVALID_YAML,
+                        "Duplicate listing of source '{}'".format(key))
+                self._source_format_versions[key] = _yaml.node_get(source_versions, int, key)
+
+            # Store element versions for checking later
+            element_versions = _yaml.node_get(origin, Mapping, 'elements', default_value={})
+            for key, _ in _yaml.node_items(element_versions):
+                if key in self._element_format_versions:
+                    raise LoadError(
+                        LoadErrorReason.INVALID_YAML,
+                        "Duplicate listing of element '{}'".format(key))
+                self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
+
+            # Store the origins if they're not 'core'.
+            # core elements are loaded by default, so storing is unnecessary.
+            if _yaml.node_get(origin, str, 'origin') != 'core':
+                # Add origins for sources
+                if 'sources' in origin:
+                    source_dict = _yaml.node_copy(origin)
+                    sources = _yaml.node_get(origin, Mapping, 'sources', default_value={})
+                    source_dict['plugins'] = [k for k, _ in _yaml.node_items(sources)]
+                    del source_dict['sources']
+                    if 'elements' in source_dict:
+                        del source_dict['elements']
+                    # paths are passed in relative to the project, but must be absolute
+                    if source_dict['origin'] == 'local':
+                        source_dict['path'] = os.path.join(self.directory,
+                                                           source_dict['path'])
+                    self._plugin_source_origins.append(source_dict)
+                if 'elements' in origin:
+                    element_dict = _yaml.node_copy(origin)
+                    elements = _yaml.node_get(origin, Mapping, 'elements', default_value={})
+                    element_dict['plugins'] = [k for k, _ in _yaml.node_items(elements)]
+                    del element_dict['elements']
+                    if 'sources' in element_dict:
+                        del element_dict['sources']
+                    # paths are passed in relative to the project, but must be absolute
+                    if element_dict['origin'] == 'local':
+                        element_dict['path'] = os.path.join(self.directory,
+                                                            element_dict['path'])
+                    self._plugin_element_origins.append(element_dict)
 
         # Source url aliases
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})

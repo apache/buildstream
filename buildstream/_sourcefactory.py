@@ -28,17 +28,13 @@ from .source import Source
 #
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
-#     searchpath (list):        Search path for external Source plugins
+#     plugin_origins (list):    Data used to search for external Source plugins
 #
 class SourceFactory(PluginContext):
 
-    def __init__(self, plugin_base, searchpath=None):
+    def __init__(self, plugin_base, plugin_origins=None):
 
-        if searchpath is None:
-            searchpath = []
-
-        searchpath.insert(0, _site.source_plugins)
-        super().__init__(plugin_base, Source, searchpath)
+        super().__init__(plugin_base, Source, [_site.source_plugins], plugin_origins)
 
     # create():
     #

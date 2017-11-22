@@ -77,30 +77,85 @@ with an artifact share.
     url: https://foo.com/artifacts
 
 
-Plugin Paths
-~~~~~~~~~~~~
-If your project includes any custom *Elements* or *Sources*, then
-the project relative subdirectory where these plugins are stored
-must be specified.
+Plugin Origins and Versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code:: yaml
-
-   plugins:
-
-     elements:
-     - plugins/local-elements
-     - plugins/shared-elements
-
-     sources:
-     - plugins/local-sources
-
-
-Versioning
-~~~~~~~~~~
 The BuildStream format is guaranteed to be backwards compatible
 with any earlier releases. The core YAML format, the format supported
 by various plugins, and the overall BuildStream release version are
 revisioned separately.
+
+If your project includes any custom *Elements* or *Sources*, then
+the origins, names, and minimum version must be defined.
+If your project must use a minimum version of a core plugin, this is
+also specified here.
+
+Note that elements or plugins with the same name from different origins
+are not permitted.
+
+Plugin specification format
+'''''''''''''''''''''''''''
+
+.. code:: yaml
+
+   plugins:
+   
+   # Core is only listed here as a means to allow project.conf
+   # authors to specify API versioning requirements
+   - origin: core
+   
+     # Here we CAN specify minimal bound API version for each plugin,
+     # if we have such dependencies
+     sources:
+       git: 2
+       local: 1
+   
+     elements:
+       script: 2
+   
+   # Specify the "pony" plugins found by pip
+   - origin: pip
+     package-name: pony
+   
+     # Here we MUST specify a minimal bound API version for each
+     # plugin, in order to indicate which plugin is to be discovered
+     # from this particular "pip" origin
+     sources:
+       flying-pony: 0
+   
+   - origin: pip
+     package-name: potato
+   
+     # Here we have the rotten potato element loaded
+     # from the "potato" plugin package loaded via pip,
+     # this is a separate origin as the "flying-pony" source
+     elements:
+       rotten-potato: 0
+   
+   # Specify the plugins defined locally
+   - origin: local
+     path: plugins/sources
+   
+     # Here again we MUST define a minimal bound API version,
+     # even though it's immaterial since it's revisioned with
+     # the project itself, it informs BuildStream that this
+     # source must be loaded in this way
+     sources:
+       mysource: 0
+
+Project Version Format
+''''''''''''''''''''''
+
+The project's minimum required version of buildstream is specified in
+``project.conf`` with the ``required-project-version`` field, e.g.
+
+.. code:: yaml
+
+  # The minimum base BuildStream format
+  required-project-version: 0
+
+Versioning
+~~~~~~~~~~
 
 The ``project.conf`` allows asserting the minimal required core
 format version and the minimal required version for individual
@@ -110,7 +165,6 @@ plugins.
 
   required-versions:
 
-    # The minimum base BuildStream format
     project: 0
 
     # The minimum version of the autotools element
