@@ -201,7 +201,7 @@ def cli(context, **kwargs):
 def build(app, elements, all, track):
     """Build elements in a pipeline"""
 
-    app.initialize(elements, rewritable=track, inconsistent=track, fetch_remote_refs=True)
+    app.initialize(elements, rewritable=track, inconsistent=track, use_remote_cache=True)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track)
@@ -316,7 +316,7 @@ def pull(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, fetch_remote_refs=True)
+    app.initialize(elements, use_remote_cache=True)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -346,7 +346,7 @@ def push(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, fetch_remote_refs=True)
+    app.initialize(elements, use_remote_cache=True)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -425,7 +425,7 @@ def show(app, elements, deps, except_, order, format, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(elements, except_=except_, fetch_remote_refs=downloadable)
+    app.initialize(elements, except_=except_, use_remote_cache=downloadable)
     try:
         dependencies = app.pipeline.deps_elements(deps)
     except PipelineError as e:
@@ -766,7 +766,7 @@ class App():
     # Initialize the main pipeline
     #
     def initialize(self, elements, except_=tuple(), rewritable=False,
-                   inconsistent=False, fetch_remote_refs=False):
+                   inconsistent=False, use_remote_cache=False):
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
@@ -842,7 +842,7 @@ class App():
             self.pipeline = Pipeline(self.context, self.project, elements, except_,
                                      inconsistent=inconsistent,
                                      rewritable=rewritable,
-                                     fetch_remote_refs=fetch_remote_refs,
+                                     use_remote_cache=use_remote_cache,
                                      load_ticker=self.load_ticker,
                                      resolve_ticker=self.resolve_ticker,
                                      remote_ticker=self.remote_ticker,

@@ -69,13 +69,17 @@ class OSTreeCache(ArtifactCache):
         ostreedir = os.path.join(context.artifactdir, 'ostree')
         self.repo = _ostree.ensure(ostreedir, False)
 
-        if self.url is None:
-            self.push_url = None
-            self.pull_url = None
-        else:
+        self.push_url = None
+        self.pull_url = None
+
+        self._remote_refs = None
+
+    def initialize_remote(self):
+        if self.url is not None:
             if self.url.startswith('ssh://'):
                 self.push_url = self.url
                 try:
+                    # Contact the remote cache.
                     self.pull_url = initialize_push_connection(self.push_url)
                 except PushException as e:
                     raise ArtifactError("BuildStream did not connect succesfully "
@@ -90,8 +94,6 @@ class OSTreeCache(ArtifactCache):
                 raise ArtifactError("Unsupported URL scheme: {}".format(self.url))
 
             _ostree.configure_remote(self.repo, self.remote, self.pull_url)
-
-        self._remote_refs = None
 
     def can_push(self):
         if self.enable_push:

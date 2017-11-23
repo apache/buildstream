@@ -65,6 +65,14 @@ class ArtifactCache():
 
         self._offline = False
 
+    # initialize_remote():
+    #
+    # Initialize any remote artifact cache, if needed. This may require network
+    # access and could block for several seconds.
+    #
+    def initialize_remote(self):
+        pass
+
     # contains():
     #
     # Check whether the artifact for the specified Element is already available
