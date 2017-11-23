@@ -58,10 +58,9 @@ class Symbol():
 # A simple dependency object
 #
 class Dependency():
-    def __init__(self, name, filename=None,
+    def __init__(self, name,
                  dep_type=None, provenance=None):
         self.name = name
-        self.filename = filename
         self.dep_type = dep_type
         self.provenance = provenance
 
@@ -74,7 +73,6 @@ class LoadElement():
 
     def __init__(self, data, filename, elements):
 
-        self.filename = filename
         self.data = data
         self.name = filename
         self.elements = elements
@@ -138,7 +136,7 @@ def extract_depends_from_node(data):
         dep_provenance = _yaml.node_get_provenance(data, key=Symbol.DEPENDS, indices=[depends.index(dep)])
 
         if isinstance(dep, str):
-            dependency = Dependency(dep, filename=dep, provenance=dep_provenance)
+            dependency = Dependency(dep, provenance=dep_provenance)
 
         elif isinstance(dep, Mapping):
             _yaml.node_validate(dep, ['filename', 'type'])
@@ -154,7 +152,7 @@ def extract_depends_from_node(data):
                                 .format(provenance, dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
-            dependency = Dependency(filename, filename=filename,
+            dependency = Dependency(filename,
                                     dep_type=dep_type, provenance=dep_provenance)
 
         else:
@@ -237,7 +235,7 @@ class Loader():
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         DummyTarget = namedtuple('DummyTarget', ['name', 'deps'])
-        dummy = DummyTarget(name='', deps=[Dependency(e, filename=e) for e in self.targets])
+        dummy = DummyTarget(name='', deps=[Dependency(e) for e in self.targets])
         self.elements[''] = dummy
 
         profile_key = "_".join(t for t in self.targets)
@@ -284,7 +282,7 @@ class Loader():
 
         # Load all dependency files for the new LoadElement
         for dep in element.deps:
-            self.load_file(dep.filename, rewritable, ticker)
+            self.load_file(dep.name, rewritable, ticker)
 
         return element
 
@@ -311,7 +309,7 @@ class Loader():
         if check_elements.get(element_name) is not None:
             raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
                             "Circular dependency detected for element: {}"
-                            .format(element.filename))
+                            .format(element.name))
 
         # Push / Check each dependency / Pop
         check_elements[element_name] = True
