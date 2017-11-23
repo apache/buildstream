@@ -49,8 +49,10 @@ class OptionEnum(Option):
         # Allow subclass to define the default value
         self.value = self.load_default_value(node)
 
-    def load_value(self, node):
+    def load_value(self, node, *, transform=None):
         self.value = _yaml.node_get(node, str, self.name)
+        if transform:
+            self.value = transform(self.value)
         self.validate(self.value, _yaml.node_get_provenance(node, self.name))
 
     def set_value(self, value):
