@@ -58,9 +58,8 @@ class Symbol():
 # A simple dependency object
 #
 class Dependency():
-    def __init__(self, owner_name, name, filename=None,
+    def __init__(self, name, filename=None,
                  dep_type=None, provenance=None):
-        self.owner = owner_name
         self.name = name
         self.filename = filename
         self.dep_type = dep_type
@@ -94,7 +93,7 @@ class LoadElement():
         self.dep_cache = None
 
         # Dependencies
-        self.deps = extract_depends_from_node(self.name, self.data)
+        self.deps = extract_depends_from_node(self.data)
 
     #############################################
     #        Routines used by the Loader        #
@@ -134,7 +133,7 @@ class LoadElement():
 # After extracting depends, they are removed from the data node
 #
 # Returns a normalized array of Dependency objects
-def extract_depends_from_node(owner, data):
+def extract_depends_from_node(data):
     depends = _yaml.node_get(data, list, Symbol.DEPENDS, default_value=[])
     output_deps = []
 
@@ -142,7 +141,7 @@ def extract_depends_from_node(owner, data):
         dep_provenance = _yaml.node_get_provenance(data, key=Symbol.DEPENDS, indices=[depends.index(dep)])
 
         if isinstance(dep, str):
-            dependency = Dependency(owner, dep, filename=dep, provenance=dep_provenance)
+            dependency = Dependency(dep, filename=dep, provenance=dep_provenance)
 
         elif isinstance(dep, Mapping):
             _yaml.node_validate(dep, ['filename', 'type'])
@@ -158,7 +157,7 @@ def extract_depends_from_node(owner, data):
                                 .format(provenance, dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
-            dependency = Dependency(owner, filename, filename=filename,
+            dependency = Dependency(filename, filename=filename,
                                     dep_type=dep_type, provenance=dep_provenance)
 
         else:
@@ -241,7 +240,7 @@ class Loader():
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         DummyTarget = namedtuple('DummyTarget', ['name', 'deps'])
-        dummy = DummyTarget(name='', deps=[Dependency('', e, filename=e) for e in self.targets])
+        dummy = DummyTarget(name='', deps=[Dependency(e, filename=e) for e in self.targets])
         self.elements[''] = dummy
 
         profile_key = "_".join(t for t in self.targets)
