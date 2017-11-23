@@ -125,8 +125,10 @@ class ComposeElement(Element):
 
                 if require_split:
 
+                    seen = set()
                     # Calculate added modified files
                     for path in utils.list_relative_paths(basedir):
+                        seen.add(path)
                         if snapshot.get(path) is None:
                             added_files.append(path)
                         elif snapshot[path] != getmtime(os.path.join(basedir, path)):
@@ -135,7 +137,7 @@ class ComposeElement(Element):
                     # Calculate removed files
                     removed_files = [
                         path for path in manifest
-                        if not os.path.lexists(os.path.join(basedir, path))
+                        if path not in seen
                     ]
                     self.info("Integration modified {}, added {} and removed {} files"
                               .format(len(modified_files), len(added_files), len(removed_files)))
