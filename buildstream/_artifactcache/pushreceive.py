@@ -360,7 +360,7 @@ def ssh_commandline(remote_host, remote_user=None, remote_port=22):
 
 
 class OSTreePusher(object):
-    def __init__(self, repopath, remotepath, remote_port, branches=[], verbose=False,
+    def __init__(self, repopath, remotepath, branches=[], verbose=False,
                  debug=False, output=None):
         self.repopath = repopath
         self.remotepath = remotepath
@@ -369,7 +369,7 @@ class OSTreePusher(object):
         self.output = output
 
         self.remote_host, self.remote_user, self.remote_repo, self.remote_port = \
-            parse_remote_location(remotepath, remote_port)
+            parse_remote_location(remotepath)
 
         if self.repopath is None:
             self.repo = OSTree.Repo.new_default()
