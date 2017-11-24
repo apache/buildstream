@@ -87,3 +87,4 @@ logging:
 
     %{state: >12} %{key} %{name} %{workspace-dirs}
 
+hooks: []

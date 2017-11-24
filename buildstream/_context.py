@@ -27,6 +27,7 @@ from . import _yaml
 from . import utils
 from ._exceptions import LoadError, LoadErrorReason
 from ._profile import Topics, profile_start, profile_end
+from ._hooks import Hooks
 
 
 # Context()
@@ -106,6 +107,7 @@ class Context():
         self._message_handler = None
         self._message_depth = deque()
         self._platform = None
+        self._hooks = Hooks(self)
         self._project_overrides = {}
         self._cli_options = cli_options
 
@@ -147,6 +149,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
+            'hooks'
         ])
 
         for dir in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -188,6 +191,29 @@ class Context():
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
+
+        # Load hook config
+        hooks = _yaml.node_get(defaults, list, 'hooks', default_value=[])
+        for node in hooks:
+            _yaml.node_validate(node, [
+                'cause', 'project', 'element',
+                'commands'
+            ])
+            cause = _yaml.node_get(node, str, 'cause')
+            project = _yaml.node_get(node, str, 'project', default_value='')
+            element = _yaml.node_get(node, str, 'element', default_value='')
+
+            commands = _yaml.node_get(node, list, 'commands')
+
+            # Ensure that all commands are valid strings
+            for index, command in enumerate(commands):
+                if not isinstance(command, str):
+                    provenance = _yaml.node_get_provenance(node, 'commands', [index])
+                    raise LoadError(LoadErrorReason.INVALID_DATA,
+                                    "{}: Hook commands must be strings.".format(
+                                        provenance))
+
+            self._hooks.set_hook(cause, commands, project, element)
 
         # Load per-projects overrides
         self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
