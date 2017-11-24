@@ -48,6 +48,8 @@
 
 import os
 import tarfile
+from contextlib import contextmanager, ExitStack
+from tempfile import TemporaryFile
 
 from buildstream import Source, SourceError
 from buildstream import utils
@@ -64,12 +66,41 @@ class TarSource(DownloadableFileSource):
 
         self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
 
+    def preflight(self):
+        if self.url.endswith('.lz'):
+            try:
+                utils.get_host_tool('lzip')
+            except utils.ProgramNotFoundError:
+                raise SourceError('File "{}" requires "lzip" tool on host which is missing'.format(self.url))
+
     def get_unique_key(self):
         return super().get_unique_key() + [self.base_dir]
 
+    @contextmanager
+    def _run_lzip(self):
+        with TemporaryFile() as lzip_stdout:
+            with ExitStack() as context:
+                lzip_file = context.enter_context(open(self._get_mirror_file(), 'r'))
+                self.call(['lzip', '-d'],
+                          stdin=lzip_file,
+                          stdout=lzip_stdout)
+
+            lzip_stdout.seek(0, 0)
+            yield lzip_stdout
+
+    @contextmanager
+    def _get_tar(self):
+        if self.url.endswith('.lz'):
+            with self._run_lzip() as lzip_dec:
+                with tarfile.open(fileobj=lzip_dec, mode='r:') as tar:
+                    yield tar
+        else:
+            with tarfile.open(self._get_mirror_file()) as tar:
+                yield tar
+
     def stage(self, directory):
         try:
-            with tarfile.open(self._get_mirror_file()) as tar:
+            with self._get_tar() as tar:
                 base_dir = None
                 if self.base_dir:
                     base_dir = self._find_base_dir(tar, self.base_dir)
