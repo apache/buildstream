@@ -1,10 +1,13 @@
 import os
 import pytest
 import tarfile
+import tempfile
+import subprocess
 
 from buildstream._pipeline import PipelineError
 from buildstream import utils, _yaml
 from tests.testutils import cli
+from tests.testutils.site import HAVE_LZIP
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -17,6 +20,20 @@ def _assemble_tar(workingdir, srcdir, dstfile):
     os.chdir(workingdir)
     with tarfile.open(dstfile, "w:gz") as tar:
         tar.add(srcdir)
+    os.chdir(old_dir)
+
+
+def _assemble_tar_lz(workingdir, srcdir, dstfile):
+    old_dir = os.getcwd()
+    os.chdir(workingdir)
+    with tempfile.TemporaryFile() as uncompressed:
+        with tarfile.open(fileobj=uncompressed, mode="w:") as tar:
+            tar.add(srcdir)
+        uncompressed.seek(0, 0)
+        with open(dstfile, 'wb') as dst:
+            subprocess.call(['lzip'],
+                            stdin=uncompressed,
+                            stdout=dst)
     os.chdir(old_dir)
 
 
@@ -218,6 +235,35 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "base-directory")
+    original_contents = _list_dir_contents(original_dir)
+    checkout_contents = _list_dir_contents(checkoutdir)
+    assert(checkout_contents == original_contents)
+
+
+@pytest.mark.skipif(not HAVE_LZIP, reason='lzip is not available')
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+@pytest.mark.parametrize("srcdir", ["a", "./a"])
+def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    generate_project(project, tmpdir)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Create a local tar
+    src_tar = os.path.join(str(tmpdir), "a.tar.lz")
+    _assemble_tar_lz(os.path.join(str(datafiles), "content"), srcdir, src_tar)
+
+    # Track, fetch, build, checkout
+    result = cli.run(project=project, args=['track', 'target-lz.bst'])
+    assert result.exit_code == 0
+    result = cli.run(project=project, args=['fetch', 'target-lz.bst'])
+    assert result.exit_code == 0
+    result = cli.run(project=project, args=['build', 'target-lz.bst'])
+    assert result.exit_code == 0
+    result = cli.run(project=project, args=['checkout', 'target-lz.bst', checkoutdir])
+    assert result.exit_code == 0
+
+    # Check that the content of the first directory is checked out (base-dir: '*')
+    original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = _list_dir_contents(original_dir)
     checkout_contents = _list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
