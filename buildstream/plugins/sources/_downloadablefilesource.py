@@ -3,6 +3,8 @@
 import os
 import urllib.request
 import urllib.error
+import contextlib
+import shutil
 
 from buildstream import Source, SourceError, Consistency
 from buildstream import utils
@@ -72,14 +74,16 @@ class DownloadableFileSource(Source):
         # Downloads from the url and caches it according to its sha256sum.
         try:
             with self.tempdir() as td:
-                # Using basename because there needs to be a filename, and 'foo'
-                # would be too silly.
-                temp_dest = os.path.join(td, os.path.basename(self.url))
-
-                local_file, _ = urllib.request.urlretrieve(self.url, temp_dest)
-                if local_file != temp_dest:
-                    raise SourceError("Expected to download file to '{}', downloaded to '{}' instead!"
-                                      .format(temp_dest, local_file))
+                default_name = os.path.basename(self.url)
+                request = urllib.request.Request(self.url)
+                request.add_header('Accept', '*/*')
+                with contextlib.closing(urllib.request.urlopen(request)) as response:
+                    info = response.info()
+                    filename = info.get_filename(default_name)
+                    filename = os.path.basename(filename)
+                    local_file = os.path.join(td, filename)
+                    with open(local_file, 'wb') as dest:
+                        shutil.copyfileobj(response, dest)
 
                 # Make sure url-specific mirror dir exists.
                 if not os.path.isdir(self._get_mirror_dir()):
