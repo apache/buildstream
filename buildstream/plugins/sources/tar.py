@@ -104,9 +104,7 @@ class TarSource(DownloadableFileSource):
                 #       consider links which point outside of the chosen
                 #       base directory.
                 #
-                if member.linkname:
-                    if member.linkname.startswith('./'):
-                        member.linkname = member.linkname[2:]
+                if member.type == tarfile.LNKTYPE:
                     member.linkname = member.linkname[l:]
 
                 member.path = member.path[l:]
