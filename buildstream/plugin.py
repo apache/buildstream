@@ -624,12 +624,11 @@ class Plugin():
     #
     def __call(self, *popenargs, collect_stdout=False, fail=None, **kwargs):
 
-        if 'stdout' in kwargs or 'stderr' in kwargs:
-            raise ValueError('May not override destination output')
-
         with self._output_file() as output_file:
-            kwargs['stdout'] = output_file
-            kwargs['stderr'] = output_file
+            if 'stdout' not in kwargs:
+                kwargs['stdout'] = output_file
+            if 'stderr' not in kwargs:
+                kwargs['stderr'] = output_file
             if collect_stdout:
                 kwargs['stdout'] = subprocess.PIPE
 
