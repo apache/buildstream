@@ -177,7 +177,7 @@ setup(name='BuildStream',
       tests_require=['pep8',
                      # Pin coverage to 4.2 for now, we're experiencing
                      # random crashes with 4.4.2
-                     'coverage == 4.2',
+                     'coverage == 4.4.0',
                      'pytest-datafiles',
                      'pytest-env',
                      'pytest-pep8',
