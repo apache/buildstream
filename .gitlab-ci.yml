@@ -1,4 +1,4 @@
-image: buildstream/buildstream-fedora:latest
+image: buildstream/buildstream-fedora:master-26-3fd7fe1
 
 cache:
   paths:
