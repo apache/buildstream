@@ -19,15 +19,25 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import shlex
+import itertools
 import subprocess
 import multiprocessing
+
+import psutil
+
+from . import _signals
+from .utils import _kill_process_tree
+from ._message import Message, MessageType
+
 
 # Manages and executes hooks.
 #
 class Hooks():
     def __init__(self, context):
         self.context = context
+        self.running = {}
         self._hooks = {}
+        self.pool = None
 
     # Set a hook for a certain cause
     #
@@ -66,7 +76,68 @@ class Hooks():
         if not (hook.element is None or hook.element == element):
             return
 
-        hook.run(text)
+        # Execute all commands in a multiprocessing.Pool, so that we
+        # don't block the main thread.
+        self.pool = multiprocessing.Pool()
+        res = self.pool.imap_unordered(hook.run_command, zip(hook.commands, itertools.repeat(text)))
+        # We won't add more tasks to this pool, so close it.
+        self.pool.close()
+
+        # Accumulate running processes so that we can check and
+        # terminate them neatly later. We also need to keep a running
+        # tally of the processes we execute, since res repeats
+        # infinitely if processes don't halt.
+        #
+        # Therefore self.running[hook] = (tally, process_iterable)
+        if self.running.get(hook.cause, None):
+            self.running[hook] = (self.running[hook][0] + len(hook.commands),
+                                  itertools.chain(self.running[hook][1], res))
+        else:
+            self.running[hook] = (len(hook.commands), res)
+
+    # Terminate all launched hook processes. May block the main thread
+    # for a little while.
+    #
+    def finish(self):
+        for hook, processes in self.running.items():
+            length, processes = processes
+
+            # We need to keep track of how many elements we have
+            # processed - processes may repeat infinitely.
+            iterations = 0
+            while True:
+                iterations += 1
+
+                # Try and get the output for the next process, giving
+                # it a second to finish.
+                try:
+                    command, exit_code, out = processes.next(1)
+                except StopIteration:
+                    break
+                except multiprocessing.context.TimeoutError:
+                    message = Message(None, MessageType.ERROR,
+                                      "A command for hook '{}' is still "
+                                      "running and will be killed"
+                                      .format(hook.cause))
+                    self.context._message(message)
+
+                    if iterations >= length:
+                        break
+                    else:
+                        continue
+
+                # If the command failed, print something to help debug
+                if exit_code != 0:
+                    message = Message(None, MessageType.ERROR,
+                                      "Command '{}' failed for hook '{}'"
+                                      .format(command, hook.cause),
+                                      detail=out.decode('utf-8') or "No output")
+                    self.context._message(message)
+
+        # Terminate all remaining processes in the pool.
+        if self.pool is not None:
+            self.pool.terminate()
+            self.pool.join()
 
 
 # Accumulates hook data and helper functions
@@ -77,25 +148,42 @@ class Hook():
         self.element = element
         self.project = project
         self.commands = commands
+        self.running = []
 
-    def run_command(self, command, text):
-        process = subprocess.Popen(
-            shlex.split(command),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+    def run_command(self, args):
+        command, text = args
 
-        # FIXME: Processes launched this way may not be killed when
-        # buildstream finishes - should we add a timeout? What does
-        # the user expect?
-        out, err = process.communicate(input=bytes(text, 'utf-8'))
-        # Unfortunately, it appears to be impossible to use this data
-        # in our message functions without 'dill'.
-        return (process.poll(), out, err)
+        # Initialize variables that may not be initialized if we terminate early
+        out = ""
+        process = None
 
-    def run(self, text):
-        pool = multiprocessing.Pool()
+        # Ensure that the inner command is properly quoted
+        command = shlex.quote(command)
+        argv = shlex.split("/bin/bash -c {}".format(command))
 
-        for command in self.commands:
-            pool.apply_async(self.run_command, (command, text))
+        def kill_proc():
+            if process:
+                proc = psutil.Process(process.pid)
+                proc.terminate()
+
+                try:
+                    proc.wait(1)
+                    return
+                except psutil.TimeoutExpired:
+                    pass
+
+                _kill_process_tree(process.pid)
+
+        # Execute the command, ensuring it is killed if the parent
+        # process dies.
+        with _signals.terminator(kill_proc):
+            process = subprocess.Popen(
+                argv,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
+
+            out, _ = process.communicate(input=bytes(text, 'utf-8'))
+
+        return (command, process.returncode, out)

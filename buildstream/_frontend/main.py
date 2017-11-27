@@ -1036,6 +1036,7 @@ class App():
     # Print a summary of the queues
     #
     def print_summary(self):
+        self.context._hooks.finish()
         self.logger.print_summary(self.pipeline, self.scheduler,
                                   self.main_options['log_file'],
                                   styling=self.colors)
