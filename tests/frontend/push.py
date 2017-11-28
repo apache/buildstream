@@ -3,8 +3,6 @@ import pytest
 from tests.testutils import cli, create_artifact_share, configure_remote_caches
 from tests.testutils.site import IS_LINUX
 
-from buildstream import _yaml
-
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -26,14 +24,16 @@ def assert_shared(cli, share, project, element_name):
 
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.parametrize(
-    'override_url, project_url, user_url',
+    'override_urls, project_urls, user_urls',
     [
-        pytest.param(None, None, 'share.repo', id='user-config'),
-        pytest.param(None, 'share.repo', None, id='project-config'),
-        pytest.param('share.repo', None, None, id='project-override-in-user-config'),
+        # The leftmost cache is the highest priority one.
+        pytest.param([], [], ['share.repo', '/tmp/do-not-use/user'], id='user-config'),
+        pytest.param([], ['share.repo', '/tmp/do-not-use/project'], ['/tmp/do-not-use/user'], id='project-config'),
+        pytest.param(['share.repo'], ['/tmp/do-not-use/project'], ['/tmp/do-not-use/user'],
+                     id='project-override-in-user-config'),
     ])
 @pytest.mark.datafiles(DATA_DIR)
-def test_push(cli, tmpdir, datafiles, override_url, user_url, project_url):
+def test_push(cli, tmpdir, datafiles, user_urls, project_urls, override_urls):
     project = str(datafiles)
     share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
 
@@ -44,12 +44,13 @@ def test_push(cli, tmpdir, datafiles, override_url, user_url, project_url):
     # Assert that we are now cached locally
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
-    override_url = share.repo if override_url == 'share.repo' else override_url
-    project_url = share.repo if project_url == 'share.repo' else project_url
-    user_url = share.repo if user_url == 'share.repo' else user_url
+    override_urls = [share.repo if url == 'share.repo' else url for url in override_urls]
+    project_urls = [share.repo if url == 'share.repo' else url for url in project_urls]
+    user_urls = [share.repo if url == 'share.repo' else url for url in user_urls]
 
+    # Configure artifact share
     project_conf_file = str(datafiles.join('project.conf'))
-    configure_remote_caches(cli, project_conf_file, override_url, project_url, user_url)
+    configure_remote_caches(cli, project_conf_file, override_urls, project_urls, user_urls)
 
     # Now try bst push
     result = cli.run(project=project, args=['push', 'target.bst'])

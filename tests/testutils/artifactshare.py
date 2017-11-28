@@ -115,28 +115,47 @@ def create_artifact_share(directory):
 # User config is set through a helper on the 'cli' object, while the
 # project.conf file is updated manually using the _yaml module.
 #
-def configure_remote_caches(cli, project_conf_file, override_url, project_url=None, user_url=None):
+def configure_remote_caches(cli, project_conf_file, override_urls, project_urls=[], user_urls=[]):
     user_config = {}
-    if user_url is not None:
+    if len(user_urls) == 1:
         user_config['artifacts'] = {
-            'url': user_url
+            'url': user_urls[0]
         }
+    elif len(user_urls) > 1:
+        user_config['artifacts'] = [
+            {'url': url} for url in user_urls
+        ]
 
-    if override_url is not None:
+    if len(override_urls) == 1:
         user_config['projects'] = {
             'test': {
                 'artifacts': {
-                    'url': override_url,
+                    'url': override_urls[0],
                 }
+            }
+        }
+    elif len(override_urls) > 1:
+        user_config['projects'] = {
+            'test': {
+                'artifacts': [
+                    {'url': override_url} for url in override_urls
+                ]
             }
         }
     cli.configure(user_config)
 
-    if project_url is not None:
+    if len(project_urls) > 0:
         project_config = _yaml.load(project_conf_file)
-        project_config.update({
-            'artifacts': {
-                'url': project_url,
-            }
-        })
+        if len(project_urls) == 1:
+            project_config.update({
+                'artifacts': {
+                    'url': project_urls[0],
+                }
+            })
+        elif len(project_urls) > 1:
+            project_config.update({
+                'artifacts': [
+                    {'url': url} for url in project_urls
+                ]
+            })
         _yaml.dump(_yaml.node_sanitize(project_config), filename=project_conf_file)

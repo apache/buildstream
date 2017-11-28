@@ -290,6 +290,25 @@ class Cli():
         result.assert_success()
         return result.output.strip()
 
+        # Strip failure messages that result from pulling from invalid caches.
+        # These are harmless in some cases.
+        #
+        # There are two reasons for this ugly hack. Firstly, click.CliRunner
+        # makes it impossible for us to parse stdout independently of stderr.
+        # This is <https://github.com/pallets/click/issues/371>.
+        #
+        # Secondly, we can't use the normal BuildStream logging at the point
+        # that we need to record failure to contact a configured cache, so
+        # there's no easy way to hide the message. This will change soon and
+        # we should be able to remove this hack once we fix
+        # <https://gitlab.com/BuildStream/buildstream/issues/168>.
+        result_lines = []
+        for line in result.output.split('\n'):
+            if not line.startswith('Failed to fetch remote refs'):
+                result_lines.append(line)
+
+        return '\n'.join(result_lines).strip()
+
     # Fetch an element's cache key by invoking bst show
     # on the project with the CLI
     #
