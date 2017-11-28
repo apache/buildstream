@@ -1167,6 +1167,10 @@ class Element(Plugin):
     #   (bool): True if this element should not be pushed
     #
     def _skip_push(self):
+        if not self.__artifacts.has_push_remotes(element=self):
+            # No push remotes for this element's project
+            return True
+
         if not self._cached():
             return True
 

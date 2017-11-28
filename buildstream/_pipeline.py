@@ -146,13 +146,18 @@ class Pipeline():
 
         # Initialize remote artifact caches. We allow the commandline to override
         # the user config in some cases (for example `bst push --remote=...`).
-        artifact_caches = []
+        has_remote_caches = False
         if add_remote_cache:
-            artifact_caches += [ArtifactCacheSpec(add_remote_cache, push=True)]
+            self.artifacts.set_remotes([ArtifactCacheSpec(add_remote_cache, push=True)])
+            has_remote_caches = True
         if use_configured_remote_caches:
-            artifact_caches += configured_remote_artifact_cache_specs(self.context, self.project)
-        if len(artifact_caches) > 0:
-            self.initialize_remote_caches(artifact_caches)
+            for project in self.context._get_projects():
+                artifact_caches = configured_remote_artifact_cache_specs(self.context, project)
+                if len(artifact_caches) > 0:
+                    self.artifacts.set_remotes(artifact_caches, project=project)
+                    has_remote_caches = True
+        if has_remote_caches:
+            self.initialize_remote_caches()
 
         self.resolve_cache_keys(track_elements)
 
@@ -180,12 +185,12 @@ class Pipeline():
 
                 self.project._set_workspace(element, workspace)
 
-    def initialize_remote_caches(self, artifact_cache_specs):
+    def initialize_remote_caches(self):
         def remote_failed(url, error):
             self.message(MessageType.WARN, "Failed to fetch remote refs from {}: {}".format(url, error))
 
         with self.timed_activity("Initializing remote caches", silent_nested=True):
-            self.artifacts.set_remotes(artifact_cache_specs, on_failure=remote_failed)
+            self.artifacts.initialize_remotes(on_failure=remote_failed)
 
     def resolve_cache_keys(self, track_elements):
         if track_elements:

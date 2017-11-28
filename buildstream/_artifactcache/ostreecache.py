@@ -65,28 +65,33 @@ def buildref(element, key):
 #
 class OSTreeCache(ArtifactCache):
 
-    def __init__(self, context, project, enable_push):
-        super().__init__(context, project)
+    def __init__(self, context, enable_push):
+        super().__init__(context)
 
         self.enable_push = enable_push
 
         ostreedir = os.path.join(context.artifactdir, 'ostree')
         self.repo = _ostree.ensure(ostreedir, False)
 
-        self.push_urls = []
-        self.pull_urls = []
+        self.push_urls = {}
+        self.pull_urls = {}
         self._remote_refs = {}
-
-    def set_remotes(self, remote_specs, on_failure=None):
-        self.remote_specs = remote_specs
-
-        self._initialize_remotes(on_failure)
+        self._has_fetch_remotes = False
+        self._has_push_remotes = False
 
     def has_fetch_remotes(self):
-        return (len(self.pull_urls) > 0)
+        return self._has_fetch_remotes
 
-    def has_push_remotes(self):
-        return (len(self.push_urls) > 0)
+    def has_push_remotes(self, *, element=None):
+        if not self._has_push_remotes:
+            # No project has push remotes
+            return False
+        elif element is None:
+            # At least one (sub)project has push remotes
+            return True
+        else:
+            # Check whether the specified element's project has push remotes
+            return len(self.push_urls[element._get_project()]) > 0
 
     # contains():
     #
@@ -125,11 +130,15 @@ class OSTreeCache(ArtifactCache):
     # Returns: True if the artifact is in the cache, False otherwise
     #
     def remote_contains_key(self, element, key):
-        if len(self._remote_refs) == 0:
+        if not self._has_fetch_remotes:
+            return False
+
+        remote_refs = self._remote_refs[element._get_project()]
+        if len(remote_refs) == 0:
             return False
 
         ref = buildref(element, key)
-        return ref in self._remote_refs
+        return ref in remote_refs
 
     # remote_contains():
     #
@@ -242,14 +251,17 @@ class OSTreeCache(ArtifactCache):
     #     progress (callable): The progress callback, if any
     #
     def pull(self, element, progress=None):
+        project = element._get_project()
+
+        remote_refs = self._remote_refs[project]
 
         ref = buildref(element, element._get_strict_cache_key())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
         try:
-            if ref in self._remote_refs:
+            if ref in remote_refs:
                 # fetch the artifact using the strong cache key
-                _ostree.fetch(self.repo, remote=self._remote_refs[ref],
+                _ostree.fetch(self.repo, remote=remote_refs[ref],
                               ref=ref, progress=progress)
 
                 # resolve ref to checksum
@@ -257,9 +269,9 @@ class OSTreeCache(ArtifactCache):
 
                 # update weak ref by pointing it to this newly fetched artifact
                 _ostree.set_ref(self.repo, weak_ref, rev)
-            elif weak_ref in self._remote_refs:
+            elif weak_ref in remote_refs:
                 # fetch the artifact using the weak cache key
-                _ostree.fetch(self.repo, remote=self._remote_refs[weak_ref],
+                _ostree.fetch(self.repo, remote=remote_refs[weak_ref],
                               ref=weak_ref, progress=progress)
 
                 # resolve weak_ref to checksum
@@ -294,13 +306,17 @@ class OSTreeCache(ArtifactCache):
     def push(self, element):
         any_pushed = False
 
-        if len(self.push_urls) == 0:
+        project = element._get_project()
+
+        push_urls = self.push_urls[project]
+
+        if len(push_urls) == 0:
             raise ArtifactError("Push is not enabled for any of the configured remote artifact caches.")
 
         ref = buildref(element, element._get_cache_key())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
-        for push_url in self.push_urls:
+        for push_url in push_urls:
             any_pushed |= self._push_to_remote(push_url, element, ref, weak_ref)
 
         return any_pushed
@@ -360,10 +376,15 @@ class OSTreeCache(ArtifactCache):
         _ostree.configure_remote(repo, remote_name, pull_url)
         return remote_name
 
-    def _initialize_remotes(self, on_failure=None):
-        self.push_url = None
-        self.pull_urls = []
-        self._remote_refs = {}
+    def initialize_remotes(self, *, on_failure=None):
+        remote_specs = self.global_remote_specs
+
+        for project in self.project_remote_specs:
+            remote_specs += self.project_remote_specs[project]
+
+        remote_specs = list(utils._deduplicate(remote_specs))
+
+        remote_results = {}
 
         # Callback to initialize one remote in a 'multiprocessing' subprocess.
         #
@@ -388,7 +409,7 @@ class OSTreeCache(ArtifactCache):
         # possible to pickle local functions such as child_action().
         #
         q = multiprocessing.Queue()
-        for remote in self.remote_specs:
+        for remote in remote_specs:
             p = multiprocessing.Process(target=child_action, args=(remote.url, q))
 
             try:
@@ -408,25 +429,54 @@ class OSTreeCache(ArtifactCache):
             elif error:
                 raise ArtifactError(error)
             else:
+                if remote.push and push_url:
+                    self._has_push_remotes = True
+                if pull_url:
+                    self._has_fetch_remotes = True
+
+                remote_results[remote.url] = (push_url, pull_url, remote_refs)
+
+        # Prepare push_urls, pull_urls, and remote_refs for each project
+        for project in self.context._get_projects():
+            remote_specs = self.global_remote_specs
+            if project in self.project_remote_specs:
+                remote_specs = list(utils._deduplicate(remote_specs + self.project_remote_specs[project]))
+
+            push_urls = []
+            pull_urls = []
+            _remote_refs = {}
+
+            for remote in remote_specs:
+                # Errors are already handled in the loop above,
+                # skip unreachable remotes here.
+                if remote.url not in remote_results:
+                    continue
+
+                push_url, pull_url, remote_refs = remote_results[remote.url]
+
                 if remote.push:
                     if push_url:
-                        self.push_urls.append(push_url)
+                        push_urls.append(push_url)
                     else:
                         raise ArtifactError("Push enabled but not supported by repo at: {}".format(remote.url))
 
                 # The specs are deduplicated when reading the config, but since
                 # each push URL can supply an arbitrary pull URL we must dedup
                 # those again here.
-                if pull_url and pull_url not in self.pull_urls:
-                    self.pull_urls.append(pull_url)
+                if pull_url and pull_url not in pull_urls:
+                    pull_urls.append(pull_url)
 
                 # Update our overall map of remote refs with any refs that are
                 # present in the new remote and were not already found in
                 # higher priority ones.
                 remote = self._ensure_remote(self.repo, pull_url)
                 for ref in remote_refs:
-                    if ref not in self._remote_refs:
-                        self._remote_refs[ref] = remote
+                    if ref not in _remote_refs:
+                        _remote_refs[ref] = remote
+
+            self.push_urls[project] = push_urls
+            self.pull_urls[project] = pull_urls
+            self._remote_refs[project] = _remote_refs
 
     def _push_to_remote(self, push_url, element, ref, weak_ref):
         with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:

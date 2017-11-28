@@ -32,7 +32,7 @@ class Unix(Platform):
     def __init__(self, context, project):
 
         super().__init__(context, project)
-        self._artifact_cache = TarCache(context, project)
+        self._artifact_cache = TarCache(context)
 
         # Not necessarily 100% reliable, but we want to fail early.
         if os.geteuid() != 0:

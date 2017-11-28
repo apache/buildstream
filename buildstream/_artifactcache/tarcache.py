@@ -237,9 +237,9 @@ class Tar():
 
 class TarCache(ArtifactCache):
 
-    def __init__(self, context, project):
+    def __init__(self, context):
 
-        super().__init__(context, project)
+        super().__init__(context)
 
         self.tardir = os.path.join(context.artifactdir, 'tar')
         os.makedirs(self.tardir, exist_ok=True)

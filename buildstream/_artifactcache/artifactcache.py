@@ -101,30 +101,44 @@ def configured_remote_artifact_cache_specs(context, project):
 #
 # Args:
 #     context (Context): The BuildStream context
-#     project (Project): The BuildStream project
 #
 class ArtifactCache():
-    def __init__(self, context, project):
+    def __init__(self, context):
 
         self.context = context
-        self.project = project
 
         os.makedirs(context.artifactdir, exist_ok=True)
         self.extractdir = os.path.join(context.artifactdir, 'extract')
 
         self._local = False
-        self.remote_specs = []
+        self.global_remote_specs = []
+        self.project_remote_specs = {}
 
     # set_remotes():
     #
-    # Set the list of remote caches, which is initially empty. This will
-    # contact each remote cache.
+    # Set the list of remote caches. If project is None, the global list of
+    # remote caches will be set, which is used by all projects. If a project is
+    # specified, the per-project list of remote caches will be set.
     #
     # Args:
     #     remote_specs (list): List of ArtifactCacheSpec instances, in priority order.
+    #     project (Project): The Project instance for project-specific remotes
+    def set_remotes(self, remote_specs, *, project=None):
+        if project is None:
+            # global remotes
+            self.global_remote_specs = remote_specs
+        else:
+            self.project_remote_specs[project] = remote_specs
+
+    # initialize_remotes():
+    #
+    # This will contact each remote cache.
+    #
+    # Args:
     #     on_failure (callable): Called if we fail to contact one of the caches.
-    def set_remotes(self, remote_specs, on_failure=None):
-        self.remote_specs = remote_specs
+    #
+    def initialize_remotes(self, *, on_failure=None):
+        pass
 
     # contains():
     #
@@ -180,16 +194,19 @@ class ArtifactCache():
     # Returns: True if any remote repositories are configured, False otherwise
     #
     def has_fetch_remotes(self):
-        return (len(self.remote_specs) > 0)
+        return False
 
     # has_push_remotes():
     #
     # Check whether any remote repositories are available for pushing.
     #
+    # Args:
+    #     element (Element): The Element to check
+    #
     # Returns: True if any remote repository is configured, False otherwise
     #
-    def has_push_remotes(self):
-        return (any(spec for spec in self.remote_specs if spec.push) > 0)
+    def has_push_remotes(self, *, element=None):
+        return False
 
     # remote_contains_key():
     #
