@@ -27,7 +27,7 @@ import os
 import re
 import stat
 import copy
-from collections import Mapping
+from collections import Mapping, OrderedDict
 from contextlib import contextmanager
 from enum import Enum
 import tempfile
@@ -409,7 +409,8 @@ class Element(Plugin):
                 else os.path.join(basedir, path.lstrip(os.sep))
 
             files = self.__compute_splits(include, exclude, orphans)
-            result = utils.link_files(artifact, stagedir, files=files)
+            result = utils.link_files(artifact, stagedir, files=files,
+                                      report_written=True)
 
         return result
 
@@ -434,8 +435,10 @@ class Element(Plugin):
            (:class:`.ElementError`): If any of the dependencies in `scope` have not
                                      yet produced artifacts.
         """
-        overwrites = {}
         ignored = {}
+        overlaps = OrderedDict()
+        files_written = {}
+
         for dep in self.dependencies(scope):
             result = dep.stage_artifact(sandbox,
                                         path=path,
@@ -443,16 +446,27 @@ class Element(Plugin):
                                         exclude=exclude,
                                         orphans=orphans)
             if result.overwritten:
-                overwrites[dep.name] = result.overwritten
+                for overwrite in result.overwritten:
+                    # Completely new overwrite
+                    if overwrite not in overlaps:
+                        # Find the overwritten element by checking where we've
+                        # written the element before
+                        for elm, contents in files_written.items():
+                            if overwrite in contents:
+                                overlaps[overwrite] = [elm, dep.name]
+                    else:
+                        overlaps[overwrite].append(dep.name)
+            files_written[dep.name] = result.files_written
+
             if result.ignored:
                 ignored[dep.name] = result.ignored
 
-        if overwrites:
+        self.info("Total collected overlaps", detail=str(overlaps))
+        if overlaps:
             detail = "Staged files overwrite existing files in staging area:\n"
-            for key, value in overwrites.items():
-                detail += "\nFrom {}:\n".format(key)
-                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
-            self.warn("Overlapping files", detail=detail)
+            for f, elements in overlaps.items():
+                detail += "  /{}: ".format(f) + " above ".join(reversed(elements)) + "\n"
+            self.warn("Overlaps detected!", detail=detail)
 
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
