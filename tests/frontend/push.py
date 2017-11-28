@@ -1,9 +1,9 @@
 import os
+import shutil
 import pytest
-from tests.testutils import cli, create_artifact_share, configure_remote_caches
+from buildstream._exceptions import ErrorDomain
+from tests.testutils import cli, create_artifact_share
 from tests.testutils.site import IS_LINUX
-
-from buildstream import _yaml
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -24,39 +24,71 @@ def assert_shared(cli, share, project, element_name):
                              .format(share.repo, element_name))
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
-@pytest.mark.parametrize(
-    'override_url, project_url, user_url',
-    [
-        pytest.param(None, None, 'share.repo', id='user-config'),
-        pytest.param(None, 'share.repo', None, id='project-config'),
-        pytest.param('share.repo', None, None, id='project-override-in-user-config'),
-    ])
-@pytest.mark.datafiles(DATA_DIR)
-def test_push(cli, tmpdir, datafiles, override_url, user_url, project_url):
-    project = str(datafiles)
-    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+# Assert that a given artifact is NOT in the share
+#
+def assert_not_shared(cli, share, project, element_name):
+    # NOTE: 'test' here is the name of the project
+    # specified in the project.conf we are testing with.
+    #
+    cache_key = cli.get_element_key(project, element_name)
+    if share.has_artifact('test', element_name, cache_key):
+        raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
+                             .format(share.repo, element_name))
 
-    # First build it without the artifact cache configured
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_push(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    # First build the project without the artifact cache configured
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
 
     # Assert that we are now cached locally
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
-    override_url = share.repo if override_url == 'share.repo' else override_url
-    project_url = share.repo if project_url == 'share.repo' else project_url
-    user_url = share.repo if user_url == 'share.repo' else user_url
+    # Set up two artifact shares.
+    share1 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1'))
+    share2 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2'))
 
-    project_conf_file = str(datafiles.join('project.conf'))
-    configure_remote_caches(cli, project_conf_file, override_url, project_url, user_url)
-
-    # Now try bst push
+    # Try pushing with no remotes configured. This should fail.
     result = cli.run(project=project, args=['push', 'target.bst'])
-    result.assert_success()
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
 
-    # And finally assert that the artifact is in the share
-    assert_shared(cli, share, project, 'target.bst')
+    # Configure bst to pull but not push from a cache and run `bst push`.
+    # This should also fail.
+    cli.configure({
+        'artifacts': {'url': share1.repo, 'push': False},
+    })
+    result = cli.run(project=project, args=['push', 'target.bst'])
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+
+    # Configure bst to push to one of the caches and run `bst push`. This works.
+    cli.configure({
+        'artifacts': [
+            {'url': share1.repo, 'push': False},
+            {'url': share2.repo, 'push': True},
+        ]
+    })
+    result = cli.run(project=project, args=['push', 'target.bst'])
+
+    assert_not_shared(cli, share1, project, 'target.bst')
+    assert_shared(cli, share2, project, 'target.bst')
+
+    # Now try pushing to both (making sure to empty the cache we just pushed
+    # to).
+    shutil.rmtree(share2.directory)
+    share2 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2'))
+    cli.configure({
+        'artifacts': [
+            {'url': share1.repo, 'push': True},
+            {'url': share2.repo, 'push': True},
+        ]
+    })
+    result = cli.run(project=project, args=['push', 'target.bst'])
+
+    assert_shared(cli, share1, project, 'target.bst')
+    assert_shared(cli, share2, project, 'target.bst')
 
 
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
@@ -87,6 +119,7 @@ def test_push_all(cli, tmpdir, datafiles):
         },
         'artifacts': {
             'url': share.repo,
+            'push': True,
         }
     })
 
