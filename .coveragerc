@@ -6,6 +6,7 @@ include =
 omit =
   # Omit profiling helper module
   */buildstream/_profile.py
+  */.eggs/*
 
 [report]
 show_missing = True
