@@ -6,6 +6,8 @@ Invoking BuildStream
 .. click:: buildstream._frontend.main:cli
    :prog: bst
 
+.. _invoking_build:
+
 .. click:: buildstream._frontend.main:build
    :prog: build
 
