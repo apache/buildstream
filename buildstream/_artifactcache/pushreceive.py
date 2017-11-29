@@ -27,6 +27,7 @@ import sys
 import shutil
 import tarfile
 import tempfile
+import multiprocessing
 from enum import Enum
 from urllib.parse import urlparse
 
@@ -317,10 +318,10 @@ def parse_remote_location(remotepath):
     """Parse remote artifact cache URL that's been specified in our config."""
     remote_host = remote_user = remote_repo = None
 
-    url = urlparse(remotepath)
-    if url.netloc:
-        if url.scheme != 'ssh':
-            raise PushException('Only URL scheme ssh is allowed, '
+    url = urlparse(remotepath, scheme='file')
+    if url.scheme:
+        if url.scheme not in ['file', 'ssh']:
+            raise PushException('Only URL schemes file and ssh are allowed, '
                                 'not "{}"'.format(url.scheme))
         remote_host = url.hostname
         remote_user = url.username
@@ -348,6 +349,9 @@ def parse_remote_location(remotepath):
 
 
 def ssh_commandline(remote_host, remote_user=None, remote_port=22):
+    if remote_host is None:
+        return []
+
     ssh_cmd = ['ssh']
     if remote_user:
         ssh_cmd += ['-l', remote_user]
@@ -355,6 +359,36 @@ def ssh_commandline(remote_host, remote_user=None, remote_port=22):
         ssh_cmd += ['-p', str(remote_port)]
     ssh_cmd += [remote_host]
     return ssh_cmd
+
+
+def foo_run(func, args, stdin_fd, stdout_fd, stderr_fd):
+    sys.stdin = open(stdin_fd, 'r')
+    sys.stdout = open(stdout_fd, 'w')
+    sys.stderr = open(stderr_fd, 'w')
+    func(args)
+
+
+class ProcessWithPipes(object):
+    def __init__(self, func, args, *, stderr=None):
+        r0, w0 = os.pipe()
+        r1, w1 = os.pipe()
+        if stderr is None:
+            r2, w2 = os.pipe()
+        else:
+            w2 = stderr.fileno()
+        self.proc = multiprocessing.Process(target=foo_run, args=(func, args, r0, w1, w2))
+        self.proc.start()
+        self.stdin = open(w0, 'wb')
+        os.close(r0)
+        self.stdout = open(r1, 'rb')
+        os.close(w1)
+        if stderr is None:
+            self.stderr = open(r2, 'rb')
+            os.close(w2)
+
+    def wait(self):
+        self.proc.join()
+        self.returncode = self.proc.exitcode
 
 
 class OSTreePusher(object):
@@ -392,13 +426,19 @@ class OSTreePusher(object):
             ssh_cmd += ['--verbose']
         if self.debug:
             ssh_cmd += ['--debug']
+        if not self.remote_host:
+            ssh_cmd += ['--pull-url', self.remote_repo]
         ssh_cmd += [self.remote_repo]
 
         logging.info('Executing {}'.format(' '.join(ssh_cmd)))
-        self.ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    stderr=self.output,
-                                    start_new_session=True)
+
+        if self.remote_host:
+            self.ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        stderr=self.output,
+                                        start_new_session=True)
+        else:
+            self.ssh = ProcessWithPipes(receive_main, ssh_cmd[1:], stderr=self.output)
 
         self.writer = PushMessageWriter(self.ssh.stdin)
         self.reader = PushMessageReader(self.ssh.stdout)
@@ -644,14 +684,19 @@ def initialize_push_connection(remote):
     remote_host, remote_user, remote_repo, remote_port = parse_remote_location(remote)
     ssh_cmd = ssh_commandline(remote_host, remote_user, remote_port)
 
-    # We need a short timeout here because if 'remote' isn't reachable at
-    # all, the process will hang until the connection times out.
-    ssh_cmd += ['-oConnectTimeout=3']
+    if remote_host:
+        # We need a short timeout here because if 'remote' isn't reachable at
+        # all, the process will hang until the connection times out.
+        ssh_cmd += ['-oConnectTimeout=3']
 
     ssh_cmd += ['bst-artifact-receive', remote_repo]
 
-    ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if remote_host:
+        ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    else:
+        ssh_cmd += ['--pull-url', remote_repo]
+        ssh = ProcessWithPipes(receive_main, ssh_cmd[1:])
 
     writer = PushMessageWriter(ssh.stdin)
     reader = PushMessageReader(ssh.stdout)
