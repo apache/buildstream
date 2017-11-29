@@ -42,8 +42,7 @@ def test_push(cli, tmpdir, datafiles, override_url, user_url, project_url):
     result.assert_success()
 
     # Assert that we are now cached locally
-    state = cli.get_element_state(project, 'target.bst')
-    assert state == 'cached'
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     override_url = share.repo if override_url == 'share.repo' else override_url
     project_url = share.repo if project_url == 'share.repo' else project_url
@@ -92,8 +91,7 @@ def test_push_all(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Assert that we are now cached locally
-    state = cli.get_element_state(project, 'target.bst')
-    assert state == 'cached'
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Configure artifact share
     cli.configure({

@@ -43,8 +43,7 @@ def test_push_pull(cli, tmpdir, datafiles, override_url, project_url, user_url):
     result.assert_success()
 
     # Assert that we are now cached locally
-    state = cli.get_element_state(project, 'import-bin.bst')
-    assert state == 'cached'
+    assert cli.get_element_state(project, 'import-bin.bst') == 'cached'
 
     override_url = share.repo if override_url == 'share.repo' else override_url
     project_url = share.repo if project_url == 'share.repo' else project_url
@@ -94,16 +93,14 @@ def test_push_pull(cli, tmpdir, datafiles, override_url, project_url, user_url):
 
     # Assert that we are now in a downloadable state, nothing
     # is cached locally anymore
-    state = cli.get_element_state(project, 'import-bin.bst')
-    assert state == 'downloadable'
+    assert cli.get_element_state(project, 'import-bin.bst') == 'downloadable'
 
     # Now try bst pull
     result = cli.run(project=project, args=['pull', 'import-bin.bst'])
     result.assert_success()
 
     # And assert that it's again in the local cache, without having built
-    state = cli.get_element_state(project, 'import-bin.bst')
-    assert state == 'cached'
+    assert cli.get_element_state(project, 'import-bin.bst') == 'cached'
 
 
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
@@ -117,8 +114,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Assert that we are now cached locally
-    state = cli.get_element_state(project, 'target.bst')
-    assert state == 'cached'
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Configure artifact share
     cli.configure({
@@ -161,8 +157,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
     # Assert that we are now in a downloadable state, nothing
     # is cached locally anymore
     for element_name in all_elements:
-        state = cli.get_element_state(project, element_name)
-        assert state == 'downloadable'
+        assert cli.get_element_state(project, element_name) == 'downloadable'
 
     # Now try bst pull
     result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
@@ -170,5 +165,4 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 
     # And assert that it's again in the local cache, without having built
     for element_name in all_elements:
-        state = cli.get_element_state(project, element_name)
-        assert state == 'cached'
+        assert cli.get_element_state(project, element_name) == 'cached'
