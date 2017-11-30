@@ -5,6 +5,8 @@ variables:
   build-dir: _builddir
 
   meson-extra: ''
+  meson-global: ''
+  meson-local: ''
   meson-args: |
 
     --prefix=%{prefix} \
@@ -18,7 +20,7 @@ variables:
     --localstatedir=%{localstatedir} \
     --sharedstatedir=%{sharedstatedir} \
     --mandir=%{mandir} \
-    --infodir=%{infodir} %{meson-extra}
+    --infodir=%{infodir} %{meson-extra} %{meson-global} %{meson-local}
 
   meson: meson %{build-dir} %{meson-args}
 

@@ -4,10 +4,12 @@ variables:
 
   # FIXME: Get a more complete cmake invocation
   cmake-extra: ''
+  cmake-global: ''
+  cmake-local: ''
   cmake-args: |
 
     -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}" \
-    -DCMAKE_INSTALL_LIBDIR=%{lib} %{cmake-extra}
+    -DCMAKE_INSTALL_LIBDIR=%{lib} %{cmake-extra} %{cmake-global} %{cmake-local}
 
   cmake: |
 

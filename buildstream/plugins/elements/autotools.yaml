@@ -13,6 +13,8 @@ variables:
 
   conf-cmd: ./configure
   conf-extra: ''
+  conf-global: ''
+  conf-local: ''
   conf-args: |
 
     --prefix=%{prefix} \
@@ -27,7 +29,7 @@ variables:
     --localstatedir=%{localstatedir} \
     --sharedstatedir=%{sharedstatedir} \
     --mandir=%{mandir} \
-    --infodir=%{infodir} %{conf-extra}
+    --infodir=%{infodir} %{conf-extra} %{conf-global} %{conf-local}
 
   configure: |
 
