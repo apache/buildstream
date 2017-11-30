@@ -544,7 +544,7 @@ class OSTreeReceiver(object):
 
     def close(self):
         shutil.rmtree(self.tmpdir)
-        sys.stdout.close()
+        sys.stdout.flush()
         return 0
 
     def run(self):
