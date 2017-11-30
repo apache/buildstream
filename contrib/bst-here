@@ -64,11 +64,19 @@ else
     command="/usr/bin/bst $@"
 fi
 
+# FIXME: We run with --privileged to allow bwrap to mount system
+#        directories, but this is overkill. We should add the correct
+#        --cap-add calls, or seccomp settings, but we are not sure
+#        what those are yet.
+#
+#        Old settings:
+#          --cap-add SYS_ADMIN
+#          --security-opt seccomp=unconfined
+#
 exec docker run --rm -i${is_tty:+ -t} \
-                --cap-add SYS_ADMIN \
+                --privileged \
                 --env PS1="$BST_HERE_PS1" \
                 --device /dev/fuse \
-                --security-opt seccomp=unconfined \
                 --volume buildstream-cache:/root/.cache/buildstream \
                 --volume buildstream-config:/root/.config \
                 --volume "$PWD":/src \

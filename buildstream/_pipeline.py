@@ -94,7 +94,7 @@ class Planner():
 #                         current source refs will not be the effective refs.
 #    rewritable (bool): Whether the loaded files should be rewritable
 #                       this is a bit more expensive due to deep copies
-#    fetch_remote_refs (bool): Whether to attempt to check remote artifact server for new refs
+#    use_remote_cache (bool): Whether to connect with remote artifact cache
 #    load_ticker (callable): A function which will be called for each loaded element
 #    resolve_ticker (callable): A function which will be called for each resolved element
 #    cache_ticker (callable): A function which will be called for each element
@@ -116,7 +116,7 @@ class Pipeline():
     def __init__(self, context, project, targets, except_,
                  inconsistent=False,
                  rewritable=False,
-                 fetch_remote_refs=False,
+                 use_remote_cache=False,
                  load_ticker=None,
                  resolve_ticker=None,
                  remote_ticker=None,
@@ -128,16 +128,16 @@ class Pipeline():
         self.unused_workspaces = []
         self._resolved_elements = {}
 
+        # Load selected platform
+        Platform._create_instance(context, project)
+        self.platform = Platform.get_platform()
+        self.artifacts = self.platform.artifactcache
+
         loader = Loader(self.project.element_path, targets + except_,
                         self.project._options)
         meta_elements = loader.load(rewritable, load_ticker)
         if load_ticker:
             load_ticker(None)
-
-        # Load selected platform
-        Platform._create_instance(context, project)
-        self.platform = Platform.get_platform()
-        self.artifacts = self.platform.artifactcache
 
         # Create the factories after resolving the project
         pluginbase = PluginBase(package='buildstream.plugins')
@@ -171,10 +171,11 @@ class Pipeline():
 
                 self.project._set_workspace(element, source, workspace)
 
-        if fetch_remote_refs and self.artifacts.can_fetch():
+        if use_remote_cache and self.artifacts.can_fetch():
             try:
                 if remote_ticker:
-                    remote_ticker(self.artifacts.artifact_pull)
+                    remote_ticker(self.artifacts.url)
+                self.artifacts.initialize_remote()
                 self.artifacts.fetch_remote_refs()
             except ArtifactError:
                 self.message(MessageType.WARN, "Failed to fetch remote refs")
@@ -283,24 +284,6 @@ class Pipeline():
             )
 
         return element
-
-    # Internal: If a remote artifact cache is configured for pushing, check
-    # that it actually works. Returns True if it works, False otherwise.
-    def can_push_remote_artifact_cache(self):
-        if self.artifacts.can_push():
-            starttime = datetime.datetime.now()
-            self.message(MessageType.START, "Checking connectivity to remote artifact cache")
-            try:
-                self.artifacts.preflight()
-            except ArtifactError as e:
-                self.message(MessageType.WARN, str(e),
-                             elapsed=datetime.datetime.now() - starttime)
-                return False
-            self.message(MessageType.SUCCESS, "Connectivity OK",
-                         elapsed=datetime.datetime.now() - starttime)
-            return True
-        else:
-            return False
 
     #############################################################
     #                         Commands                          #
@@ -433,7 +416,7 @@ class Pipeline():
             queues.append(pull)
         queues.append(fetch)
         queues.append(build)
-        if self.can_push_remote_artifact_cache():
+        if self.artifacts.can_push():
             push = PushQueue()
             queues.append(push)
         queues[0].enqueue(plan)

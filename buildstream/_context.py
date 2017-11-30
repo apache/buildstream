@@ -59,14 +59,8 @@ class Context():
         # The local binary artifact cache directory
         self.artifactdir = None
 
-        # The URL from which to download prebuilt artifacts
-        self.artifact_pull = None
-
-        # The URL to upload built artifacts to
-        self.artifact_push = None
-
-        # The port number for pushing artifacts over ssh
-        self.artifact_push_port = 22
+        # The URL from which to push and pull prebuilt artifacts
+        self.artifact_url = None
 
         # The directory to store build logs
         self.logdir = None
@@ -166,10 +160,8 @@ class Context():
 
         # Load artifact share configuration
         artifacts = _yaml.node_get(defaults, Mapping, 'artifacts')
-        _yaml.node_validate(artifacts, ['pull-url', 'push-url', 'push-port'])
-        self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
-        self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
-        self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
+        _yaml.node_validate(artifacts, ['url'])
+        self.artifact_url = _yaml.node_get(artifacts, str, 'url', default_value='') or None
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

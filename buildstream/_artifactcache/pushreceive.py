@@ -136,8 +136,8 @@ class PushMessageWriter(object):
         self.file.flush()
 
     def send_hello(self):
-        # The 'hello' message is used to check connectivity, and is actually
-        # an empty info request in order to keep the receiver code simple.
+        # The 'hello' message is used to check connectivity and discover the
+        # cache's pull URL. It's actually transmitted as an empty info request.
         args = {
             'mode': GLib.Variant('i', 0),
             'refs': GLib.Variant('a{ss}', {})
@@ -145,7 +145,7 @@ class PushMessageWriter(object):
         command = PushCommand(PushCommandType.info, args)
         self.write(command)
 
-    def send_info(self, repo, refs):
+    def send_info(self, repo, refs, pull_url=None):
         cmdtype = PushCommandType.info
         mode = repo.get_mode()
 
@@ -161,6 +161,12 @@ class PushMessageWriter(object):
             'mode': GLib.Variant('i', mode),
             'refs': GLib.Variant('a{ss}', ref_map)
         }
+
+        # The server sends this so clients can discover the correct pull URL
+        # for this cache without requiring end-users to specify it.
+        if pull_url:
+            args['pull_url'] = GLib.Variant('s', pull_url)
+
         command = PushCommand(cmdtype, args)
         self.write(command)
 
@@ -309,7 +315,7 @@ class PushMessageReader(object):
         return args
 
 
-def parse_remote_location(remotepath, remote_port):
+def parse_remote_location(remotepath):
     """Parse remote artifact cache URL that's been specified in our config."""
     remote_host = remote_user = remote_repo = None
 
@@ -321,7 +327,7 @@ def parse_remote_location(remotepath, remote_port):
         remote_host = url.hostname
         remote_user = url.username
         remote_repo = url.path
-        remote_port = url.port
+        remote_port = url.port or 22
     else:
         # Scp/git style remote (user@hostname:path)
         parts = remotepath.split('@', 1)
@@ -337,6 +343,8 @@ def parse_remote_location(remotepath, remote_port):
                                 'contain a hostname and path separated '
                                 'by ":"'.format(remotepath))
         remote_host, remote_repo = parts
+        # This form doesn't make it possible to specify a non-standard port.
+        remote_port = 22
 
     return remote_host, remote_user, remote_repo, remote_port
 
@@ -352,7 +360,7 @@ def ssh_commandline(remote_host, remote_user=None, remote_port=22):
 
 
 class OSTreePusher(object):
-    def __init__(self, repopath, remotepath, remote_port, branches=[], verbose=False,
+    def __init__(self, repopath, remotepath, branches=[], verbose=False,
                  debug=False, output=None):
         self.repopath = repopath
         self.remotepath = remotepath
@@ -361,7 +369,7 @@ class OSTreePusher(object):
         self.output = output
 
         self.remote_host, self.remote_user, self.remote_repo, self.remote_port = \
-            parse_remote_location(remotepath, remote_port)
+            parse_remote_location(remotepath)
 
         if self.repopath is None:
             self.repo = OSTree.Repo.new_default()
@@ -511,9 +519,16 @@ class OSTreePusher(object):
         return self.close()
 
 
+# OSTreeReceiver is on the receiving end of an OSTree push.
+#
+# Args:
+#     repopath (str): On-disk location of the receiving repository.
+#     pull_url (str): Redirection for clients who want to pull, not push.
+#
 class OSTreeReceiver(object):
-    def __init__(self, repopath):
+    def __init__(self, repopath, pull_url):
         self.repopath = repopath
+        self.pull_url = pull_url
 
         if self.repopath is None:
             self.repo = OSTree.Repo.new_default()
@@ -552,7 +567,8 @@ class OSTreeReceiver(object):
         remote_refs = args['refs']
 
         # Send info back
-        self.writer.send_info(self.repo, list(remote_refs.keys()))
+        self.writer.send_info(self.repo, list(remote_refs.keys()),
+                              pull_url=self.pull_url)
 
         # Wait for update or done command
         cmdtype, args = self.reader.receive([PushCommandType.update,
@@ -606,20 +622,28 @@ class OSTreeReceiver(object):
         return 0
 
 
-# check_push_connection()
+# initialize_push_connection()
 #
-# Test that we can connect to the remote bst-artifact-receive program.
+# Test that we can connect to the remote bst-artifact-receive program, and
+# receive the pull URL for this artifact cache.
+#
 # We don't want to make the user wait until the first artifact has been built
-# to discover that they actually cannot push.
+# to discover that they actually cannot push, so this should be called early.
+#
+# The SSH push protocol doesn't allow pulling artifacts. We don't want to
+# require users to specify two URLs for a single cache, so we have the push
+# protocol return the corresponding pull URL as part of the 'hello' response.
 #
 # Args:
 #   remote: The ssh remote url to push to
-#   remote_port: The ssh port at the remote url
+#
+# Returns:
+#   (str): The URL that should be used for pushing to this cache.
 #
 # Raises:
 #   PushException if there was an issue connecting to the remote.
-def check_push_connection(remote, remote_port):
-    remote_host, remote_user, remote_repo, remote_port = parse_remote_location(remote, remote_port)
+def initialize_push_connection(remote):
+    remote_host, remote_user, remote_repo, remote_port = parse_remote_location(remote)
     ssh_cmd = ssh_commandline(remote_host, remote_user, remote_port)
 
     # We need a short timeout here because if 'remote' isn't reachable at
@@ -632,13 +656,26 @@ def check_push_connection(remote, remote_port):
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     writer = PushMessageWriter(ssh.stdin)
+    reader = PushMessageReader(ssh.stdout)
+
     writer.send_hello()
+    args = reader.receive_info()
+
+    if 'pull_url' in args:
+        pull_url = args['pull_url']
+    else:
+        raise PushException(
+            "Remote cache did not tell us its pull URL. This cache probably "
+            "requires updating to a newer version of `bst-artifact-receive`.")
+
     writer.send_done()
 
     ssh.wait()
     if ssh.returncode != 0:
         error = ssh.stderr.read().decode('unicode-escape')
         raise PushException(error)
+
+    return pull_url
 
 
 # push()
@@ -648,7 +685,6 @@ def check_push_connection(remote, remote_port):
 # Args:
 #   repo: The local repository path
 #   remote: The ssh remote url to push to
-#   remote_port: The ssh port at the remote url
 #   branches: The refs to push
 #   output: The output where logging should go
 #
@@ -659,12 +695,12 @@ def check_push_connection(remote, remote_port):
 # Raises:
 #   PushException if there was an error
 #
-def push(repo, remote, remote_port, branches, output):
+def push(repo, remote, branches, output):
 
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=logging.INFO, stream=output)
 
-    pusher = OSTreePusher(repo, remote, remote_port, branches, True, False, output=output)
+    pusher = OSTreePusher(repo, remote, branches, True, False, output=output)
 
     def terminate_push():
         pusher.close()
@@ -691,8 +727,10 @@ def push(repo, remote, remote_port, branches, output):
 @click.command(short_help="Receive pushed artifacts over ssh")
 @click.option('--verbose', '-v', is_flag=True, default=False, help="Verbose mode")
 @click.option('--debug', '-d', is_flag=True, default=False, help="Debug mode")
+@click.option('--pull-url', type=str, required=True,
+              help="Clients who try to pull over SSH will be redirected here")
 @click.argument('repo')
-def receive_main(verbose, debug, repo):
+def receive_main(verbose, debug, pull_url, repo):
     """A BuildStream sister program for receiving artifacts send to a shared artifact cache
     """
     loglevel = logging.WARNING
@@ -703,5 +741,5 @@ def receive_main(verbose, debug, repo):
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=loglevel, stream=sys.stderr)
 
-    receiver = OSTreeReceiver(repo)
+    receiver = OSTreeReceiver(repo, pull_url)
     return receiver.run()

@@ -58,11 +58,9 @@ class Symbol():
 # A simple dependency object
 #
 class Dependency():
-    def __init__(self, owner_name, name, filename=None,
+    def __init__(self, name,
                  dep_type=None, provenance=None):
-        self.owner = owner_name
         self.name = name
-        self.filename = filename
         self.dep_type = dep_type
         self.provenance = provenance
 
@@ -73,15 +71,11 @@ class Dependency():
 #
 class LoadElement():
 
-    def __init__(self, data, filename, basedir, elements):
+    def __init__(self, data, filename, elements):
 
-        self.filename = filename
         self.data = data
         self.name = filename
         self.elements = elements
-
-        # These are shared with the owning Loader object
-        self.basedir = basedir
 
         # Ensure the root node is valid
         _yaml.node_validate(self.data, [
@@ -94,7 +88,7 @@ class LoadElement():
         self.dep_cache = None
 
         # Dependencies
-        self.deps = extract_depends_from_node(self.name, self.data)
+        self.deps = extract_depends_from_node(self.data)
 
     #############################################
     #        Routines used by the Loader        #
@@ -134,7 +128,7 @@ class LoadElement():
 # After extracting depends, they are removed from the data node
 #
 # Returns a normalized array of Dependency objects
-def extract_depends_from_node(owner, data):
+def extract_depends_from_node(data):
     depends = _yaml.node_get(data, list, Symbol.DEPENDS, default_value=[])
     output_deps = []
 
@@ -142,7 +136,7 @@ def extract_depends_from_node(owner, data):
         dep_provenance = _yaml.node_get_provenance(data, key=Symbol.DEPENDS, indices=[depends.index(dep)])
 
         if isinstance(dep, str):
-            dependency = Dependency(owner, dep, filename=dep, provenance=dep_provenance)
+            dependency = Dependency(dep, provenance=dep_provenance)
 
         elif isinstance(dep, Mapping):
             _yaml.node_validate(dep, ['filename', 'type'])
@@ -158,7 +152,7 @@ def extract_depends_from_node(owner, data):
                                 .format(provenance, dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
-            dependency = Dependency(owner, filename, filename=filename,
+            dependency = Dependency(filename,
                                     dep_type=dep_type, provenance=dep_provenance)
 
         else:
@@ -241,7 +235,7 @@ class Loader():
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         DummyTarget = namedtuple('DummyTarget', ['name', 'deps'])
-        dummy = DummyTarget(name='', deps=[self.elements[e] for e in self.targets])
+        dummy = DummyTarget(name='', deps=[Dependency(e) for e in self.targets])
         self.elements[''] = dummy
 
         profile_key = "_".join(t for t in self.targets)
@@ -282,13 +276,13 @@ class Loader():
         data = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
         self.options.process_node(data)
 
-        element = LoadElement(data, filename, self.basedir, self.elements)
+        element = LoadElement(data, filename, self.elements)
 
         self.elements[filename] = element
 
         # Load all dependency files for the new LoadElement
         for dep in element.deps:
-            self.load_file(dep.filename, rewritable, ticker)
+            self.load_file(dep.name, rewritable, ticker)
 
         return element
 
@@ -315,7 +309,7 @@ class Loader():
         if check_elements.get(element_name) is not None:
             raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
                             "Circular dependency detected for element: {}"
-                            .format(element.filename))
+                            .format(element.name))
 
         # Push / Check each dependency / Pop
         check_elements[element_name] = True

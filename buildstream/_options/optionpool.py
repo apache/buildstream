@@ -74,17 +74,15 @@ class OptionPool():
             option = opt_type(option_name, option_definition, self)
             self.options[option_name] = option
 
-    # load_values()
+    # load_yaml_values()
     #
     # Loads the option values specified in a key/value
-    # dictionary loaded from YAML, and a list of tuples
-    # collected from the command line
+    # dictionary loaded from YAML
     #
     # Args:
     #    node (dict): The loaded YAML options
-    #    cli_options (list): A list of (str, str) tuples
     #
-    def load_values(self, node, cli_options):
+    def load_yaml_values(self, node):
         for option_name, _ in _yaml.node_items(node):
             try:
                 option = self.options[option_name]
@@ -94,6 +92,15 @@ class OptionPool():
                                 "{}: Unknown option '{}' specified".format(p, option_name))
             option.load_value(node)
 
+    # load_cli_values()
+    #
+    # Loads the option values specified in a list of tuples
+    # collected from the command line
+    #
+    # Args:
+    #    cli_options (list): A list of (str, str) tuples
+    #
+    def load_cli_values(self, cli_options):
         for option_name, option_value in cli_options:
             try:
                 option = self.options[option_name]

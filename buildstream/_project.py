@@ -152,7 +152,8 @@ class Project():
         # Collect option values specified in the user configuration
         overrides = self._context._get_overrides(self.name)
         override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
-        self._options.load_values(override_options, self._context._cli_options)
+        self._options.load_yaml_values(override_options)
+        self._options.load_cli_values(self._context._cli_options)
 
         # We're done modifying options, now we can use them for substitutions
         self._options.resolve()
@@ -171,10 +172,8 @@ class Project():
 
         # Load artifacts pull/push configuration for this project
         artifacts = _yaml.node_get(config, Mapping, 'artifacts', default_value={})
-        _yaml.node_validate(artifacts, ['pull-url', 'push-url', 'push-port'])
-        self.artifact_pull = _yaml.node_get(artifacts, str, 'pull-url', default_value='') or None
-        self.artifact_push = _yaml.node_get(artifacts, str, 'push-url', default_value='') or None
-        self.artifact_push_port = _yaml.node_get(artifacts, int, 'push-port', default_value=22)
+        _yaml.node_validate(artifacts, ['url'])
+        self.artifact_url = _yaml.node_get(artifacts, str, 'url', default_value='') or None
 
         # Workspace configurations
         self._workspaces = self._load_workspace_config()

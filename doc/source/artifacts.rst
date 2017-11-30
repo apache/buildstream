@@ -122,8 +122,8 @@ For this you will want something like the following in your ``/etc/ssh/sshd_conf
 	# bst-artifact-receive program, note that the full
 	# command must be specified here; 'artifacts' is
 	# the HOME relative path to the artifact cache.
-	#
-        ForceCommand bst-artifact-receive --verbose artifacts
+	# The exact pull URL must also be specified.
+        ForceCommand bst-artifact-receive --pull-url https://example.com/artifacts --verbose artifacts
 
 
 Summary file updates
@@ -159,15 +159,10 @@ then a user can use the following user configuration:
    #
    artifacts:
 
-     # A url from which to download prebuilt artifacts
-     pull-url: https://artifacts.com
+     url: https://artifacts.com/artifacts
 
-     # A url to upload built artifacts to
-     push-url: artifacts@artifacts.com:artifacts
-
-     # If the artifact server uses a custom port for sshd
-     # then you can specify it here
-     push-port: 666
+     # Alternative form if you have push access to the cache
+     #url: ssh://artifacts@artifacts.com:22200/artifacts
 
 
 Authenticating Users

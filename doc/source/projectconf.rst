@@ -74,15 +74,7 @@ with an artifact share.
   artifacts:
 
     # A url from which to download prebuilt artifacts
-    pull-url: https://foo.com/artifacts
-
-    # A url to upload built artifacts to
-    # (must point to the same repository as pull-url)
-    push-url: artifacts@foo.com:artifacts
-
-    # Specify the port number for pushing artifacts, if it's
-    # not the default port 22
-    push-port: 10000
+    url: https://foo.com/artifacts
 
 
 Plugin Paths

@@ -1,10 +1,11 @@
-image: buildstream/buildstream-fedora:latest
+image: buildstream/buildstream-fedora:master-26-3fd7fe1
 
 cache:
   paths:
     - cache/buildstream/sources/
 
 stages:
+  - dist
   - test
   - coverage
   - docs
@@ -20,19 +21,64 @@ before_script:
   - adduser -m buildstream
   - chown -R buildstream:buildstream .
 
-# Run premerge commits
+# Create a source distribution
 #
-pytest:
-  stage: test
+distcheck:
+  stage: dist
   script:
-  # We run as a simple user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri'
 
-  - mkdir -p coverage-pytest/
-  - cp .coverage.* coverage-pytest/coverage.pytest
+  # Generate the source distribution tarball
+  #
+  - python3 setup.py sdist
+  - tar -ztf dist/*
+  - tarball=$(cd dist && echo $(ls *))
+
+  # Create an installer script
+  - |
+    cat > dist/install.sh << EOF
+    #!/bin/sh
+    tar -zxf ${tarball}
+    cd ${tarball%.tar.gz}
+    pip3 install --no-index .
+    EOF
+
+  # unpack tarball as `dist/buildstream` directory
+  - |
+    cat > dist/unpack.sh << EOF
+    #!/bin/sh
+    tar -zxf ${tarball}
+    mv ${tarball%.tar.gz} buildstream
+    EOF
+
+  # Make our helpers executable
+  - chmod +x dist/install.sh
+  - chmod +x dist/unpack.sh
   artifacts:
     paths:
-    - coverage-pytest/
+    - dist/
+
+# Run premerge commits
+#
+pytest_linux:
+  stage: test
+  script:
+
+  # Unpack and get into dist/buildstream
+  - cd dist && ./unpack.sh
+  - chown -R buildstream:buildstream buildstream
+  - cd buildstream
+
+  # Run the tests from the source distribution, We run as a simple
+  # user to test for permission issues
+  - su buildstream -c 'python3 setup.py test --index-url invalid://uri'
+
+  # Go back to the toplevel and collect our reports
+  - cd ../..
+  - mkdir -p coverage-pytest-linux/
+  - cp dist/buildstream/.coverage.* coverage-pytest-linux/coverage.pytest-linux
+  artifacts:
+    paths:
+    - coverage-pytest-linux/
 
 # Run integration tests
 #
@@ -40,7 +86,7 @@ integration_linux:
   stage: test
 
   script:
-    - pip3 install --no-index .
+    - cd dist && ./install.sh && cd ..
     - cd integration-tests
 
     # We run as a simple user to test for permission issues
@@ -56,6 +102,9 @@ integration_linux:
     - coverage-linux/
     - logs-linux/
 
+  dependencies:
+  - distcheck
+
 pytest_unix:
   stage: test
   variables:
@@ -67,11 +116,16 @@ pytest_unix:
     - dnf mark install fuse-libs
     - dnf erase -y bubblewrap ostree
 
+    # Unpack and get into dist/buildstream
+    - cd dist && ./unpack.sh && cd buildstream
+
     # Since the unix platform is required to run as root, no user change required
     - python3 setup.py test --index-url invalid://uri
 
+    # Go back to the toplevel and collect our reports
+    - cd ../..
     - mkdir -p coverage-pytest-unix
-    - cp .coverage.* coverage-pytest-unix/coverage.pytest-unix
+    - cp dist/buildstream/.coverage.* coverage-pytest-unix/coverage.pytest-unix
   artifacts:
     paths:
       - coverage-pytest-unix/
@@ -81,7 +135,7 @@ integration_unix:
   variables:
     BST_FORCE_BACKEND: "unix"
   script:
-    - pip3 install --no-index .
+    - cd dist && ./install.sh && cd ..
     - cd integration-tests
 
     # Since the unix platform is required to run as root, no user change required
@@ -97,6 +151,9 @@ integration_unix:
     - coverage-unix/
     - logs-unix/
 
+  dependencies:
+  - distcheck
+
 # Collate coverage reports
 #
 coverage:
@@ -108,13 +165,13 @@ coverage:
     - cp ../coverage-linux/coverage.linux .coverage
     - cp ../coverage-unix/coverage.unix .
     - coverage combine --rcfile=../.coveragerc -a ../coverage-unix/coverage.unix
-    - cp ../coverage-pytest/coverage.pytest .
-    - coverage combine --rcfile=../.coveragerc -a coverage.pytest
+    - cp ../coverage-pytest-linux/coverage.pytest-linux .
+    - coverage combine --rcfile=../.coveragerc -a coverage.pytest-linux
     - cp ../coverage-pytest-unix/coverage.pytest-unix .
     - coverage combine --rcfile=../.coveragerc -a coverage.pytest-unix
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
-  - pytest
+  - pytest_linux
   - integration_linux
   - pytest_unix
   - integration_unix
@@ -131,11 +188,15 @@ pages:
   - dnf install -y python2
   - pip3 install sphinx
   - pip3 install sphinx-click
-  - pip3 install --user .
+  - cd dist && ./unpack.sh && cd buildstream
+  - pip3 install .
   - make -C doc
-  - mv doc/build/html public
+  - cd ../..
+  - mv dist/buildstream/doc/build/html public
   artifacts:
     paths:
     - public/
   only:
   - master
+  dependencies:
+  - distcheck

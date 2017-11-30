@@ -52,14 +52,12 @@ def test_push(cli, tmpdir, datafiles, user_url, project_url, override_url):
     # Configure artifact share
     cli.configure({
         'artifacts': {
-            'pull-url': user_url,
-            'push-url': user_url,
+            'url': user_url,
         },
         'projects': {
             'test': {
                 'artifacts': {
-                    'pull-url': override_url,
-                    'push-url': override_url,
+                    'url': override_url,
                 }
             }
         }
@@ -70,8 +68,7 @@ def test_push(cli, tmpdir, datafiles, user_url, project_url, override_url):
         project_config = _yaml.load(project_conf_file)
         project_config.update({
             'artifacts': {
-                'pull-url': project_url,
-                'push-url': project_url,
+                'url': project_url,
             }
         })
         _yaml.dump(_yaml.node_sanitize(project_config), filename=project_conf_file)
@@ -112,8 +109,7 @@ def test_push_all(cli, tmpdir, datafiles):
             'pushers': 1
         },
         'artifacts': {
-            'pull-url': share.repo,
-            'push-url': share.repo,
+            'url': share.repo,
         }
     })
 
