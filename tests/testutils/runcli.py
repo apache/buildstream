@@ -62,7 +62,7 @@ class Cli():
             args = []
 
         with ExitStack() as stack:
-            bst_args = []
+            bst_args = ['--no-colors']
 
             if silent:
                 bst_args += ['--no-verbose']
