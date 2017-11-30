@@ -223,7 +223,7 @@ If you want to run a specific test or a group of tests, you
 can specify a prefix to match. E.g. if you want to run all of
 the frontend tests you can do::
 
-  ./setup.py test --addopts -k --addopts 'tests/frontend/'
+  ./setup.py test --addopts '-k tests/frontend/'
 
 
 Adding Tests
