@@ -49,10 +49,11 @@ Project.conf
 
 In the root of the project directory create a file called project.conf containing::
 
-  name: Tim
-  element-path: elements
+  name: ProjectName  #The name you want to give to your project
+  element-path: elementsPath #The path to the "elements" directory
   aliases:
-    gnomesdk: https://sdk.gnome.org/
+    name:url #This is used so you can moderate the URLs/Repos used by your build. 
+             #This way, they can be modified in a single place instead of multiple
 
 step7.bst
 ~~~~
@@ -73,6 +74,14 @@ In the elements directory Create a file called step7.bst containing::
       url: file:/src/step7.tar.gz
       ref: 9591707afbae77751730b4af4c52a18b1cdc4378237bc64055f099bc95c330db
   
+:ref:`format_kind`
+
+:ref:`format_depends`
+
+:ref:`format_sources`
+
+.. this is done until i can find a better way of incorperating hyperlinks into sourcecode blocks
+
 base-sdk.bst
 ~~~~
 
@@ -89,6 +98,8 @@ In the elements/dependencies directory Create a file called base-sdk.bst contain
   config:
     source: files
     target: usr
+
+:ref:`format_config`
 
 base-platform.bst
 ~~~~
@@ -109,13 +120,13 @@ In the elements/dependencies directory Create a file called base-platform.bst co
     bst:
       integration-commands:
       - ldconfig
- 
+
+:ref:`format_public` 
+
 Building
 ----
 
-From the project root directory run::
+From the project root directory run:
 
-  bst build step7.bst
-
-bst :ref:`_invoking_build` step7.bst
+  ``bst`` :ref:`invoking_build` ``step7.bst``
 
