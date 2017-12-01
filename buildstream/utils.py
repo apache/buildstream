@@ -60,6 +60,9 @@ class FileListResult():
         self.failed_attributes = []
         """List of files for which attributes could not be copied over"""
 
+        self.files_written = []
+        """List of files that were written."""
+
 
 def list_relative_paths(directory):
     """A generator for walking directory relative paths
@@ -322,7 +325,7 @@ def safe_remove(path):
     return True
 
 
-def copy_files(src, dest, *, files=None, ignore_missing=False):
+def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=False):
     """Copy files from source to destination.
 
     Args:
@@ -330,6 +333,7 @@ def copy_files(src, dest, *, files=None, ignore_missing=False):
        dest (str): The destination directory
        files (list): Optional list of files in `src` to copy
        ignore_missing (bool): Dont raise any error if a source file is missing
+       report_written (bool): Add to the result object the full list of files written
 
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
@@ -348,11 +352,12 @@ def copy_files(src, dest, *, files=None, ignore_missing=False):
         files = list_relative_paths(src)
 
     result = FileListResult()
-    _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing)
+    _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing,
+                  report_written=report_written)
     return result
 
 
-def move_files(src, dest, *, files=None, ignore_missing=False):
+def move_files(src, dest, *, files=None, ignore_missing=False, report_written=False):
     """Move files from source to destination.
 
     Args:
@@ -360,6 +365,7 @@ def move_files(src, dest, *, files=None, ignore_missing=False):
        dest (str): The destination directory
        files (list): Optional list of files in `src` to move
        ignore_missing (bool): Dont raise any error if a source file is missing
+       report_written (bool): Add to the result object the full list of files written
 
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
@@ -378,11 +384,12 @@ def move_files(src, dest, *, files=None, ignore_missing=False):
         files = list_relative_paths(src)
 
     result = FileListResult()
-    _process_list(src, dest, files, safe_move, result, ignore_missing=ignore_missing)
+    _process_list(src, dest, files, safe_move, result, ignore_missing=ignore_missing,
+                  report_written=report_written)
     return result
 
 
-def link_files(src, dest, *, files=None, ignore_missing=False):
+def link_files(src, dest, *, files=None, ignore_missing=False, report_written=False):
     """Hardlink files from source to destination.
 
     Args:
@@ -390,6 +397,7 @@ def link_files(src, dest, *, files=None, ignore_missing=False):
        dest (str): The destination directory
        files (list): Optional list of files in `src` to link
        ignore_missing (bool): Dont raise any error if a source file is missing
+       report_written (bool): Add to the result object the full list of files written
 
     Returns:
        (:class:`~.FileListResult`): The result describing what happened during this file operation
@@ -413,7 +421,8 @@ def link_files(src, dest, *, files=None, ignore_missing=False):
         files = list_relative_paths(src)
 
     result = FileListResult()
-    _process_list(src, dest, files, safe_link, result, ignore_missing=ignore_missing)
+    _process_list(src, dest, files, safe_link, result, ignore_missing=ignore_missing,
+                  report_written=report_written)
     return result
 
 
@@ -547,11 +556,18 @@ def _ensure_real_directory(root, destpath):
 #    ignore_missing: Dont raise any error if a source file is missing
 #
 #
-def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=False):
+def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=False, report_written=False):
 
     # Keep track of directory permissions, since these need to be set
     # *after* files have been written.
     permissions = []
+
+    # filelist comes in as a generator, and we need to use it more than once.
+    filelist = list(filelist)
+
+    # Add to the results the list of files written
+    if report_written:
+        result.files_written += filelist
 
     # Note we consume the filelist (which is a generator and not a list)
     # by sorting it, this is necessary to ensure that we processes symbolic
