@@ -41,9 +41,9 @@ Install the dependencies with:
   sudo pacman -S python python-pip python-gobject git \
                  ostree bubblewrap python-ruamel-yaml
 
-Debian Jessie
+Debian Stretch
 ~~~~~~~~~~~~~
-With jessie, you first need to ensure that you have the backports repository
+With stretch, you first need to ensure that you have the backports repository
 setup as described `here <https://backports.debian.org/Instructions/>`_
 
 By adding the following line to your sources.list::
@@ -57,20 +57,21 @@ And then running::
 At this point you should be able to get the system requirements with::
 
   sudo apt-get install \
-      python3 python3-dev python3-pip git \
-      python3-gi gir1.2-ostree-1.0 ostree \
-      bubblewrap ruamel.yaml
+      python3-dev python3-pip git python3-gi \
+      python3-ruamel.yaml bubblewrap
+  sudo apt-get install -t stretch-backports \
+      gir1.2-ostree-1.0 ostree
 
 
-Debian Stretch or Sid
+Debian Buster or Sid
 ~~~~~~~~~~~~~~~~~~~~~
 For debian unstable or testing, only the following line should be enough
 to get the base system requirements installed::
 
   sudo apt-get install \
-      python3 python3-dev python3-pip git \
+      python3-dev python3-pip git \
       python3-gi gir1.2-ostree-1.0 ostree \
-      bubblewrap ruamel.yaml
+      bubblewrap python3-ruamel.yaml
 
 
 Fedora
