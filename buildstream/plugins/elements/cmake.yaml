@@ -2,6 +2,8 @@
 
 variables:
 
+  build-dir: _builddir
+
   # FIXME: Get a more complete cmake invocation
   cmake-extra: ''
   cmake-global: ''
@@ -13,10 +15,10 @@ variables:
 
   cmake: |
 
-    cmake %{cmake-args}
+    cmake -B%{build-dir} -H. %{cmake-args}
 
-  make: make
-  make-install: make -j1 DESTDIR="%{install-root}" install
+  make: make -C %{build-dir}
+  make-install: make -j1 -C %{build-dir} DESTDIR="%{install-root}" install
 
   # Set this if the sources cannot handle parallelization.
   #
