@@ -19,13 +19,11 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import copy
 from functools import cmp_to_key
 from collections import Mapping, namedtuple
 
 from ._exceptions import LoadError, LoadErrorReason
 from . import _yaml
-from ._yaml import CompositeTypeError
 
 from ._metaelement import MetaElement
 from ._metasource import MetaSource

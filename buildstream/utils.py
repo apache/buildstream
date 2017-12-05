@@ -22,25 +22,26 @@ Utilities
 =========
 """
 
-import os
-import errno
-import stat
-import shutil
-import string
-import collections
-import hashlib
-import pickle
 import calendar
-import psutil
-import subprocess
-import signal
+import errno
+import hashlib
+import os
+import pickle
 import re
+import shutil
+import signal
+import stat
+import string
+import subprocess
 import tempfile
-import pkg_resources
 from contextlib import contextmanager
-from ._exceptions import ProgramNotFoundError
-from . import _yaml
+
+import pkg_resources
+import psutil
+
 from . import _signals
+from . import _yaml
+from ._exceptions import ProgramNotFoundError
 
 
 class FileListResult():

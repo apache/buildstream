@@ -23,13 +23,11 @@ Source
 """
 
 import os
-import tempfile
-import shutil
 from contextlib import contextmanager
 
-from . import _yaml, _signals, utils
-from ._exceptions import BstError, ImplError, LoadError, LoadErrorReason
 from . import Plugin
+from . import _yaml, utils
+from ._exceptions import BstError, ImplError, LoadError, LoadErrorReason
 
 
 class Consistency():

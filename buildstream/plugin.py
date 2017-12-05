@@ -67,11 +67,9 @@ Class Reference
 ---------------
 """
 
-import os
 import datetime
+import os
 import subprocess
-import signal
-import sys
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 

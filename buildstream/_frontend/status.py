@@ -17,7 +17,6 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-import datetime
 import click
 from blessings import Terminal
 

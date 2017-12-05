@@ -19,7 +19,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-import datetime
 import os
 import stat
 import shlex
@@ -38,9 +37,8 @@ from ._sourcefactory import SourceFactory
 from . import Consistency
 from . import Scope
 from . import _site
-from . import _yaml, utils
+from . import utils
 from ._platform import Platform
-from .element import Element
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 

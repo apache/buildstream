@@ -20,10 +20,9 @@
 
 import os
 
-from .. import utils
+from .._artifactcache.tarcache import TarCache
 from .._exceptions import PlatformError
 from ..sandbox import SandboxChroot
-from .._artifactcache.tarcache import TarCache
 
 from . import Platform
 

@@ -19,7 +19,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .. import utils
-from .option import OPTION_SYMBOLS
 from .optionflags import OptionFlags
 
 

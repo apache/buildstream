@@ -20,10 +20,8 @@
 
 import os
 import sys
-import platform
 
-from .. import utils
-from .._exceptions import PlatformError, ProgramNotFoundError, ImplError
+from .._exceptions import PlatformError, ImplError
 
 
 class Platform():

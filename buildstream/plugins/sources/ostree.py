@@ -49,12 +49,11 @@
 """
 
 import os
-import tempfile
 import shutil
 
 from buildstream import Source, SourceError, Consistency
-from buildstream import utils
 from buildstream import _ostree
+from buildstream import utils
 from buildstream._ostree import OSTreeError
 
 

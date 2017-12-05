@@ -57,12 +57,12 @@
 """
 
 import os
-import tempfile
-import shutil
 import re
+import shutil
 from collections import Mapping
-from configparser import RawConfigParser
 from io import StringIO
+
+from configparser import RawConfigParser
 
 from buildstream import Source, SourceError, Consistency
 from buildstream import utils

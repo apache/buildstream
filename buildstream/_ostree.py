@@ -23,9 +23,6 @@
 # Code based on Jürg's artifact cache and Andrew's ostree plugin
 #
 import os
-import subprocess
-from . import _site
-from . import utils
 from ._exceptions import BstError
 
 import gi

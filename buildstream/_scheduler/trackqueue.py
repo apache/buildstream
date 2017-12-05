@@ -23,7 +23,6 @@
 import os
 
 # BuildStream toplevel imports
-from .. import Consistency
 from ..plugin import _plugin_lookup
 from .. import _yaml
 

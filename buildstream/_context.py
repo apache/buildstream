@@ -19,8 +19,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import hashlib
-import pickle
 from collections import deque, Mapping
 from . import _site
 from . import _yaml

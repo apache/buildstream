@@ -50,7 +50,7 @@
 import os
 import zipfile
 
-from buildstream import Source, SourceError
+from buildstream import SourceError
 from buildstream import utils
 
 from ._downloadablefilesource import DownloadableFileSource

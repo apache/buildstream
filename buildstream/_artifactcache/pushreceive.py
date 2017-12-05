@@ -24,10 +24,8 @@ import logging
 import os
 import subprocess
 import sys
-import tempfile
 import shutil
 import tarfile
-import signal
 import tempfile
 from enum import Enum
 from urllib.parse import urlparse

@@ -19,7 +19,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-from .option import OPTION_SYMBOLS
 from .optionenum import OptionEnum
 
 

@@ -26,7 +26,7 @@ from blessings import Terminal
 from click import UsageError
 
 # Import buildstream public symbols
-from .. import Scope, Consistency
+from .. import Scope
 
 # Import various buildstream internals
 from .._context import Context

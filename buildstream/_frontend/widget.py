@@ -17,22 +17,22 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-import os
-import click
-import subprocess
 import datetime
-import pkg_resources
+import os
 from collections import OrderedDict
 from contextlib import ExitStack
-from ruamel import yaml
 from mmap import mmap
 
-from .. import utils, _yaml
-from ..plugin import _plugin_lookup
-from .._message import MessageType
-from .._exceptions import ImplError
-from .. import Element, Scope, Consistency
+import click
+import pkg_resources
+from ruamel import yaml
+
 from . import Profile
+from .. import Element, Scope, Consistency
+from .. import _yaml
+from .._exceptions import ImplError
+from .._message import MessageType
+from ..plugin import _plugin_lookup
 
 
 # Widget()

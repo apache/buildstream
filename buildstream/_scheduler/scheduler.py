@@ -26,10 +26,7 @@ import signal
 import datetime
 
 # Local imports
-from .queue import Queue, QueueType
-
-# BuildStream toplevel imports
-from .. import _signals
+from .queue import QueueType
 
 
 # A decent return code for Scheduler.run()

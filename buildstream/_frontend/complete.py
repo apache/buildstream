@@ -20,13 +20,10 @@
 import collections
 import copy
 import os
-import sys
-import re
+
 import click
-
-from click.parser import split_arg_string
 from click.core import MultiCommand, Option, Argument
-
+from click.parser import split_arg_string
 
 WORDBREAK = '='
 

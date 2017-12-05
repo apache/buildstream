@@ -18,15 +18,12 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import os
-import sys
 import subprocess
 
 from .. import utils
-from .._exceptions import PlatformError
+from .._artifactcache.ostreecache import OSTreeCache
 from .._message import Message, MessageType
 from ..sandbox import SandboxBwrap
-from .._artifactcache.ostreecache import OSTreeCache
 
 from . import Platform
 

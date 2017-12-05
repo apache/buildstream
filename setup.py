@@ -21,8 +21,6 @@
 import os
 import shutil
 import sys
-from setuptools import setup
-from setuptools.command.install import install
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 4:
     print("BuildStream requires Python >= 3.4")

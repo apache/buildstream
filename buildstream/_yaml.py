@@ -21,7 +21,6 @@
 import sys
 import collections
 import copy
-from enum import Enum
 from contextlib import ExitStack
 
 from ruamel import yaml

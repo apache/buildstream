@@ -22,15 +22,12 @@
 #  The filesystem operations implementation here is based
 #  on some example code written by Stavros Korokithakis.
 
-import os
-import sys
-import stat
 import errno
+import os
 import shutil
-import signal
+import stat
 import tempfile
 
-from multiprocessing import Process
 from .fuse import FuseOSError, Operations
 
 from .mount import Mount
