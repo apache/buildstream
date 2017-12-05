@@ -461,7 +461,6 @@ class Element(Plugin):
             if result.ignored:
                 ignored[dep.name] = result.ignored
 
-        self.info("Total collected overlaps", detail=str(overlaps))
         if overlaps:
             detail = "Staged files overwrite existing files in staging area:\n"
             for f, elements in overlaps.items():
