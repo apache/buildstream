@@ -26,14 +26,14 @@ def assert_shared(cli, share, project, element_name):
 
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.parametrize(
-    'user_url, project_url, override_url',
+    'override_url, project_url, user_url',
     [
-        pytest.param('share.repo', '', '', id='user-config'),
-        pytest.param('/tmp/share/user', 'share.repo', '', id='project-config'),
-        pytest.param('/tmp/share/user', '/tmp/share/project', 'share.repo', id='project-override-in-user-config'),
+        pytest.param('', '', 'share.repo', id='user-config'),
+        pytest.param('', 'share.repo', '/tmp/share/user', id='project-config'),
+        pytest.param('share.repo', '/tmp/share/project', '/tmp/share/user', id='project-override-in-user-config'),
     ])
 @pytest.mark.datafiles(DATA_DIR)
-def test_push(cli, tmpdir, datafiles, user_url, project_url, override_url):
+def test_push(cli, tmpdir, datafiles, override_url, user_url, project_url):
     project = str(datafiles)
     share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
 
@@ -45,9 +45,9 @@ def test_push(cli, tmpdir, datafiles, user_url, project_url, override_url):
     state = cli.get_element_state(project, 'target.bst')
     assert state == 'cached'
 
-    user_url = share.repo if user_url == 'share.repo' else user_url
-    project_url = share.repo if project_url == 'share.repo' else project_url
     override_url = share.repo if override_url == 'share.repo' else override_url
+    project_url = share.repo if project_url == 'share.repo' else project_url
+    user_url = share.repo if user_url == 'share.repo' else user_url
 
     # Configure artifact share
     cli.configure({
