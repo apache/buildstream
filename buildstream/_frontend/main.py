@@ -219,7 +219,7 @@ def build(app, elements, all, track, track_save, track_all, track_except):
         track = elements
 
     app.initialize(elements, except_=track_except, rewritable=track_save,
-                   use_remote_cache=True, inconsistent=track)
+                   use_configured_remote_caches=True, inconsistent=track)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track, track_save)
@@ -319,11 +319,17 @@ def track(app, elements, deps, except_):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependency artifacts to pull (default: none)')
+@click.option('--remote', '-r',
+              help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def pull(app, elements, deps):
+def pull(app, elements, deps, remote):
     """Pull a built artifact from the configured remote artifact cache.
+
+    By default the artifact will be pulled one of the configured caches
+    if possible, following the usual priority order. If the `--remote` flag
+    is given, only the specified cache will be queried.
 
     Specify `--deps` to control which artifacts to pull:
 
@@ -331,7 +337,8 @@ def pull(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, use_remote_cache=True)
+    app.initialize(elements, use_configured_remote_caches=(remote is None),
+                   add_remote_cache=remote)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -349,11 +356,16 @@ def pull(app, elements, deps):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to push (default: none)')
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def push(app, elements, deps):
-    """Push a built artifact to the configured remote artifact cache.
+def push(app, elements, deps, remote):
+    """Push a built artifact to a remote artifact cache.
+
+    The default destination is the highest priority configured cache. You can
+    override this by passing a different cache URL with the `--remote` flag.
 
     Specify `--deps` to control which artifacts to push:
 
@@ -361,7 +373,8 @@ def push(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, use_remote_cache=True)
+    app.initialize(elements, use_configured_remote_caches=(remote is None),
+                   add_remote_cache=remote)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -440,7 +453,7 @@ def show(app, elements, deps, except_, order, format, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(elements, except_=except_, use_remote_cache=downloadable)
+    app.initialize(elements, except_=except_, use_configured_remote_caches=downloadable)
     try:
         dependencies = app.pipeline.deps_elements(deps)
     except PipelineError as e:
@@ -770,7 +783,8 @@ class App():
     # Initialize the main pipeline
     #
     def initialize(self, elements, except_=tuple(), rewritable=False,
-                   inconsistent=None, use_remote_cache=False):
+                   use_configured_remote_caches=False, add_remote_cache=None,
+                   inconsistent=None):
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
@@ -857,7 +871,9 @@ class App():
 
         # Initialize pipeline
         try:
-            self.pipeline.initialize(use_remote_cache=use_remote_cache, inconsistent=inconsistent)
+            self.pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
+                                     add_remote_cache=add_remote_cache,
+                                     inconsistent=inconsistent)
         except BstError as e:
             click.echo("Error initializing pipeline: {}".format(e), err=True)
             sys.exit(-1)

@@ -94,7 +94,13 @@ class Planner():
 #                         current source refs will not be the effective refs.
 #    rewritable (bool): Whether the loaded files should be rewritable
 #                       this is a bit more expensive due to deep copies
-#    use_remote_cache (bool): Whether to connect with remote artifact cache
+#    use_configured_remote_caches (bool): Whether to connect to configured artifact remotes.
+#    add_remote_cache (str): Adds an additional artifact remote URL, which is
+#                            prepended to the list of remotes (and thus given highest priority).
+#
+# The ticker methods will be called with an element name for each tick, a final
+# tick with None as the argument is passed to signal that processing of this
+# stage has terminated.
 #
 # Raises:
 #    LoadError
@@ -137,7 +143,8 @@ class Pipeline():
         self.targets = resolved_elements[:len(targets)]
         self.exceptions = resolved_elements[len(targets):]
 
-    def initialize(self, use_remote_cache=False, inconsistent=None):
+    def initialize(self, use_configured_remote_caches=False,
+                   add_remote_cache=None, inconsistent=None):
         # Preflight directly, before ever interrogating caches or
         # anything.
         self.preflight()
@@ -146,8 +153,15 @@ class Pipeline():
 
         self.initialize_workspaces()
 
-        if use_remote_cache:
-            self.initialize_remote_caches()
+        # Initialize remote artifact caches. We allow the commandline to override
+        # the user config in some cases (for example `bst push --remote=...`).
+        artifact_urls = []
+        if add_remote_cache:
+            artifact_urls += [add_remote_cache]
+        if use_configured_remote_caches:
+            artifact_urls += configured_artifact_cache_urls(self.context, self.project)
+        if len(artifact_urls) > 0:
+            self.initialize_remote_caches(artifact_urls)
 
         self.resolve_cache_keys(inconsistent)
 
@@ -175,12 +189,11 @@ class Pipeline():
 
                 self.project._set_workspace(element, source, workspace)
 
-    def initialize_remote_caches(self):
+    def initialize_remote_caches(self, artifact_urls):
         def remote_failed(url, error):
             self.message(MessageType.WARN, "Failed to fetch remote refs from {}: {}\n".format(url, error))
 
         with self.timed_activity("Initializing remote caches", silent_nested=True):
-            artifact_urls = configured_artifact_cache_urls(self.context, self.project)
             self.artifacts.set_remotes(artifact_urls, on_failure=remote_failed)
 
     def resolve_cache_keys(self, inconsistent):
