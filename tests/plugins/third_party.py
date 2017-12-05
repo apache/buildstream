@@ -1,6 +1,5 @@
 import os
 import pytest
-import pkg_resources
 
 from pluginbase import PluginBase
 from buildstream._elementfactory import ElementFactory

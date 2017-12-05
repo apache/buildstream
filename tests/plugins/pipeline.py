@@ -1,7 +1,6 @@
 import os
 import pytest
 
-from buildstream import Scope
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._exceptions import PluginError

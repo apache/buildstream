@@ -1,6 +1,5 @@
 import os
 import tarfile
-import hashlib
 
 from buildstream.utils import sha256sum
 

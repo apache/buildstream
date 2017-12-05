@@ -1,7 +1,6 @@
 import os
 import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
-from tests.testutils.site import HAVE_OSTREE
 
 from buildstream import _yaml
 

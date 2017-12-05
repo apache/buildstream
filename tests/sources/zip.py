@@ -3,7 +3,7 @@ import pytest
 import zipfile
 
 from buildstream._pipeline import PipelineError
-from buildstream import utils, _yaml
+from buildstream import _yaml
 from tests.testutils import cli
 
 DATA_DIR = os.path.join(

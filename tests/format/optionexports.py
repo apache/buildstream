@@ -1,7 +1,6 @@
 import os
 import pytest
 from buildstream import _yaml
-from buildstream._exceptions import LoadError, LoadErrorReason
 from tests.testutils.runcli import cli
 
 # Project directory

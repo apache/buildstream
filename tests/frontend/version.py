@@ -1,4 +1,3 @@
-import pytest
 from tests.testutils.runcli import cli
 
 # For utils.get_bst_version()

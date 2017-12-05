@@ -5,7 +5,7 @@ import tempfile
 import subprocess
 
 from buildstream._pipeline import PipelineError
-from buildstream import utils, _yaml
+from buildstream import _yaml
 from tests.testutils import cli
 from tests.testutils.site import HAVE_LZIP
 

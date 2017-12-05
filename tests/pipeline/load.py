@@ -2,12 +2,6 @@ import os
 import pytest
 from tests.testutils.runcli import cli
 
-from buildstream import Scope
-from buildstream._context import Context
-from buildstream._project import Project
-from buildstream._pipeline import Pipeline
-from buildstream._platform import Platform
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'load',
