@@ -20,8 +20,13 @@ def strict_args(args, strict):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
-def test_build_checkout(datafiles, cli, strict):
+@pytest.mark.parametrize("strict,hardlinks", [
+    ("strict", "copies"),
+    ("strict", "hardlinks"),
+    ("non-strict", "copies"),
+    ("non-strict", "hardlinks"),
+])
+def test_build_checkout(datafiles, cli, strict, hardlinks):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
 
@@ -34,11 +39,92 @@ def test_build_checkout(datafiles, cli, strict):
     assert os.path.isdir(builddir)
     assert not os.listdir(builddir)
 
+    # Prepare checkout args
+    checkout_args = strict_args(['checkout'], strict)
+    if hardlinks == "hardlinks":
+        checkout_args += ['--hardlinks']
+    checkout_args += ['target.bst', checkout]
+
     # Now check it out
-    result = cli.run(project=project, args=strict_args([
-        'checkout', 'target.bst', checkout
-    ], strict))
+    result = cli.run(project=project, args=checkout_args)
     assert result.exit_code == 0
+
+    # Check that the executable hello file is found in the checkout
+    filename = os.path.join(checkout, 'usr', 'bin', 'hello')
+    assert os.path.exists(filename)
+
+    # Check that the executable hello file is found in the checkout
+    filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
+    assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("hardlinks", [("copies"), ("hardlinks")])
+def test_build_checkout_nonempty(datafiles, cli, hardlinks):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+    filename = os.path.join(checkout, "file.txt")
+
+    # First build it
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    assert result.exit_code == 0
+
+    # Assert that after a successful build, the builddir is empty
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    # Create the checkout dir and add a file to it, should cause checkout to fail
+    os.makedirs(checkout, exist_ok=True)
+    with open(filename, "w") as f:
+        f.write("Hello")
+
+    # Prepare checkout args
+    checkout_args = ['checkout']
+    if hardlinks == "hardlinks":
+        checkout_args += ['--hardlinks']
+    checkout_args += ['target.bst', checkout]
+
+    # Now check it out
+    result = cli.run(project=project, args=checkout_args)
+    assert result.exit_code != 0
+    assert isinstance(result.exception, PipelineError)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("hardlinks", [("copies"), ("hardlinks")])
+def test_build_checkout_force(datafiles, cli, hardlinks):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+    filename = os.path.join(checkout, "file.txt")
+
+    # First build it
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    assert result.exit_code == 0
+
+    # Assert that after a successful build, the builddir is empty
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    # Create the checkout dir and add a file to it, should cause checkout to fail
+    os.makedirs(checkout, exist_ok=True)
+    with open(filename, "w") as f:
+        f.write("Hello")
+
+    # Prepare checkout args
+    checkout_args = ['checkout', '--force']
+    if hardlinks == "hardlinks":
+        checkout_args += ['--hardlinks']
+    checkout_args += ['target.bst', checkout]
+
+    # Now check it out
+    result = cli.run(project=project, args=checkout_args)
+    assert result.exit_code == 0
+
+    # Check that the file we added is still there
+    filename = os.path.join(checkout, 'file.txt')
+    assert os.path.exists(filename)
 
     # Check that the executable hello file is found in the checkout
     filename = os.path.join(checkout, 'usr', 'bin', 'hello')
