@@ -444,8 +444,10 @@ class Pipeline():
     #    directory (str): The directory to checkout the artifact to
     #    force (bool): Force overwrite files which exist in `directory`
     #    integrate (bool): Whether to run integration commands
+    #    hardlinks (bool): Whether checking out files hardlinked to
+    #                      their artifacts is acceptable
     #
-    def checkout(self, directory, force, integrate):
+    def checkout(self, directory, force, integrate, hardlinks):
         # We only have one target in a checkout command
         target = self.targets[0]
 
@@ -464,13 +466,35 @@ class Pipeline():
         # Stage deps into a temporary sandbox first
         with target._prepare_sandbox(Scope.RUN, None, integrate=integrate) as sandbox:
 
-            # Make copies from the sandbox into to the desired directory
+            # Copy or move the sandbox to the target directory
             sandbox_root = sandbox.get_directory()
-            with target.timed_activity("Copying files to {}".format(directory)):
+            with target.timed_activity("Checking out files in {}".format(directory)):
                 try:
-                    utils.copy_files(sandbox_root, directory)
+                    if hardlinks:
+                        self.checkout_hardlinks(sandbox_root, directory)
+                    else:
+                        utils.copy_files(sandbox_root, directory)
                 except OSError as e:
-                    raise PipelineError("Failed to copy files: {}".format(e)) from e
+                    raise PipelineError("Failed to checkout files: {}".format(e)) from e
+
+    # Helper function for checkout()
+    #
+    def checkout_hardlinks(self, sandbox_root, directory):
+        try:
+            removed = utils.safe_remove(directory)
+        except OSError as e:
+            raise PipelineError("Failed to remove checkout directory: {}".format(e)) from e
+
+        if removed:
+            # Try a simple rename of the sandbox root; if that
+            # doesnt cut it, then do the regular link files code path
+            try:
+                os.rename(sandbox_root, directory)
+            except OSError:
+                os.makedirs(directory, exist_ok=True)
+                utils.link_files(sandbox_root, directory)
+        else:
+            utils.link_files(sandbox_root, directory)
 
     # open_workspace
     #
