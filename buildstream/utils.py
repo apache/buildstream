@@ -225,39 +225,6 @@ def safe_copy(src, dest, *, result=None):
         pass
 
 
-def safe_move(src, dest, *, result=None):
-    """Move a file while preserving attributes
-
-    Args:
-       src (str): The source filename
-       dest (str): The destination filename
-       result (:class:`~.FileListResult`): An optional collective result
-
-    Raises:
-       OSError: In the case of unexpected system call failures
-       shutil.Error: In case of unexpected system call failures
-
-    This is almost the same as shutil.move(), except that
-    we unlink *dest* before overwriting it if it exists, just
-    incase *dest* is a hardlink to a different file.
-    """
-    # First unlink the target if it exists
-    try:
-        os.unlink(dest)
-    except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise
-
-    # Attempt rename, fallback to safe_copy()
-    try:
-        os.rename(src, dest)
-    except OSError as e:
-        if e.errno == errno.EXDEV:
-            safe_copy(src, dest)
-        else:
-            raise
-
-
 def safe_link(src, dest, *, result=None):
     """Try to create a hardlink, but resort to copying in the case of cross device links.
 
@@ -353,38 +320,6 @@ def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
 
     result = FileListResult()
     _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing,
-                  report_written=report_written)
-    return result
-
-
-def move_files(src, dest, *, files=None, ignore_missing=False, report_written=False):
-    """Move files from source to destination.
-
-    Args:
-       src (str): The source file or directory
-       dest (str): The destination directory
-       files (list): Optional list of files in `src` to move
-       ignore_missing (bool): Dont raise any error if a source file is missing
-       report_written (bool): Add to the result object the full list of files written
-
-    Returns:
-       (:class:`~.FileListResult`): The result describing what happened during this file operation
-
-    Raises:
-       OSError: In the case of unexpected system call failures
-       shutil.Error: In case of unexpected system call failures
-
-    .. note::
-
-       Directories in `dest` are replaced with files from `src`,
-       unless the existing directory in `dest` is not empty in which
-       case the path will be reported in the return value.
-    """
-    if files is None:
-        files = list_relative_paths(src)
-
-    result = FileListResult()
-    _process_list(src, dest, files, safe_move, result, ignore_missing=ignore_missing,
                   report_written=report_written)
     return result
 
