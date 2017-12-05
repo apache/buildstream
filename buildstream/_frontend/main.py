@@ -512,16 +512,18 @@ def shell(app, element, sysroot, build, command):
               help="Overwrite files existing in checkout directory")
 @click.option('--integrate/--no-integrate', default=True, is_flag=True,
               help="Whether to run integration commands")
+@click.option('--hardlinks', default=False, is_flag=True,
+              help="Checkout hardlinks instead of copies (handle with care)")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def checkout(app, element, directory, force, integrate):
+def checkout(app, element, directory, force, integrate, hardlinks):
     """Checkout a built artifact to the specified directory
     """
     app.initialize((element,))
     try:
-        app.pipeline.checkout(directory, force, integrate)
+        app.pipeline.checkout(directory, force, integrate, hardlinks)
         click.echo("")
     except BstError as e:
         click.echo("")
