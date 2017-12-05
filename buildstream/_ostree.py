@@ -320,12 +320,15 @@ def configure_remote(repo, remote, url, key_url=None):
         vd.insert_value('gpg-verify', Variant.new_boolean(False))
         options = vd.end()
 
-    repo.remote_change(None,      # Optional OSTree.Sysroot
-                       OSTree.RepoRemoteChange.ADD_IF_NOT_EXISTS,
-                       remote,    # Remote name
-                       url,       # Remote url
-                       options,   # Remote options
-                       None)      # Optional Gio.Cancellable
+    try:
+        repo.remote_change(None,      # Optional OSTree.Sysroot
+                           OSTree.RepoRemoteChange.ADD_IF_NOT_EXISTS,
+                           remote,    # Remote name
+                           url,       # Remote url
+                           options,   # Remote options
+                           None)      # Optional Gio.Cancellable
+    except GLib.GError as e:
+        raise OSTreeError("Failed to configure remote '{}': {}".format(remote, e.message)) from e
 
     # Remote needs to exist before adding key
     if key_url is not None:
