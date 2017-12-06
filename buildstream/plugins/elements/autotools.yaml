@@ -2,6 +2,8 @@
 
 variables:
 
+  build-dir: _builddir
+
   autogen: |
     export NOCONFIGURE=1;
     if [ -e autogen ]; then ./autogen;
@@ -11,7 +13,7 @@ variables:
     else autoreconf -ivf;
     fi
 
-  conf-cmd: ./configure
+  conf-cmd: configure
   conf-extra: ''
   conf-global: ''
   conf-local: ''
@@ -33,10 +35,12 @@ variables:
 
   configure: |
 
-    %{conf-cmd} %{conf-args}
+    mkdir %{build-dir}
+    cd %{build-dir}
+    ../%{conf-cmd} %{conf-args}
 
-  make: make
-  make-install: make -j1 DESTDIR="%{install-root}" install
+  make: make -C %{build-dir}
+  make-install: make -j1 -C %{build-dir} DESTDIR="%{install-root}" install
 
   # Set this if the sources cannot handle parallelization.
   #
