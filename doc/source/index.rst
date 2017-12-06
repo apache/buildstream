@@ -24,7 +24,8 @@ Installing
 * :ref:`installing`
 * :ref:`docker`
 * :ref:`artifacts`
-
+* :ref:`createproject`
+* :ref:`buildproject`
 
 Running
 -------

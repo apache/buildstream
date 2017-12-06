@@ -17,8 +17,20 @@ BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
 * ruamel.yaml python library
-* PyGObject introspection bindings
 * OSTree >= v2017.8 with introspection data
+* build-essential
+* git
+* gir1.2-ostree-1.0
+* bubblewrap
+* dh-autoreconf
+* libglib2.0-dev
+* bison
+* liblzma-dev
+* e2fslibs-dev
+* gobject-introspection
+* libostree-dev
+* libgirepository1.0-dev
+
 
 Note that ``ruamel.yaml`` is a pure python library which is normally
 obtainable via pip, however there seems to be some problems with installing
@@ -29,7 +41,6 @@ you will additionally need:
 
 * pip for python3 (only required for setup)
 * Python 3 development libraries and headers
-* git (to checkout buildstream)
 
 Here are some examples of how to prepare the base requirements on
 some distros.
@@ -65,17 +76,52 @@ At this point you should be able to get the system requirements with::
 
 Debian Buster or Sid
 ~~~~~~~~~~~~~~~~~~~~~
-For debian unstable or testing, only the following line should be enough
-to get the base system requirements installed::
 
-  sudo apt-get install \
-      python3-dev python3-pip git \
-      python3-gi gir1.2-ostree-1.0 ostree \
-      bubblewrap python3-ruamel.yaml
+For debian unstable or testing, the following line should be enough
+to get most of the base system requirements installed::
 
+  sudo apt install build-essential \
+      python3 \
+      python3-dev \
+      python3-pip \
+      git \
+      python3-gi \
+      gir1.2-ostree-1.0 \
+      bubblewrap \
+      ruamel.yaml \
+      dh-autoreconf \
+      libglib2.0-dev \
+      bison \
+      liblzma-dev \
+      e2fslibs-dev \
+      gobject-introspection \
+      libostree-dev \
+      libgirepository1.0-dev 
+
+To install ostree:
+
+Go to the directory you want the ostree repo stored in::
+
+   git clone https://github.com/ostreedev/ostree.git 
+   cd ostree
+   sudo mkdir /opt/ostree
+   sudo chown $USERNAME /opt/ostree
+   ./autogen.sh
+   ./configure --prefix=/opt/ostree
+   make
+   sudo make install
+
+we need to add those install paths to our path and as we have installed object introspection
+and built ostree with this capability we must also specify that on our path.
+
+So you must add::
+
+   PATH=/opt/ostree/bin:$PATH
+export GI_TYPELIB_PATH=/opt/ostree/lib/girepository-1.0/
 
 Fedora
 ~~~~~~
+
 For recent fedora systems, the following line should get you the system
 requirements you need::
 
