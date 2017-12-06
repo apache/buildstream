@@ -75,7 +75,7 @@ class Profile():
             heading += 'Profile for key: {}\n'.format(self.key)
             heading += 'Started at: {}\n'.format(time)
             if self.message:
-                heading += '\n    {}'.format(message)
+                heading += '\n    {}'.format(self.message)
             heading += '================================================================\n'
             f.write(heading)
             ps = pstats.Stats(self.profiler, stream=f).sort_stats('cumulative')
