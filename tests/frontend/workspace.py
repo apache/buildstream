@@ -189,3 +189,117 @@ def test_build(cli, tmpdir, datafiles, kind):
 
     # Check that the original /usr/bin/hello is not in the checkout
     assert not os.path.exists(os.path.join(workspace, 'usr', 'bin', 'hello'))
+
+
+# Check that when no workspaces.yml is present, that `bst workspaces list`
+# shows no workspaces
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_empty(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    assert not os.path.exists(os.path.join(project, '.bst', 'workspaces.yml'))
+
+    result = cli.run(project=project, args=['workspace', 'list'])
+
+    assert result.exit_code == 0
+
+    loaded = _yaml.load_data(result.output)
+    assert isinstance(loaded.get('workspaces'), list)
+    workspaces = loaded['workspaces']
+    assert len(workspaces) == 0
+
+
+# Check that when no workspaces.yml is present, that `bst workspaces list`
+# shows no workspaces
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_no_workspaces_yml(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    assert not os.path.exists(os.path.join(project, '.bst', 'workspaces.yml'))
+
+    result = cli.run(project=project, args=['workspace', 'list'])
+
+    assert result.exit_code == 0
+
+    loaded = _yaml.load_data(result.output)
+    assert isinstance(loaded.get('workspaces'), list)
+    workspaces = loaded['workspaces']
+    assert len(workspaces) == 0
+
+
+# Check that when a workspaces.yml is present of the old format (that is, one
+# that does not have a version field), that we can still read this as expected.
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_artificial_no_version(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    os.makedirs(os.path.join(project, '.bst'), exist_ok=True)
+
+    workspace_dict = {
+        "alpha.bst": {
+            0: "/workspaces/bravo",
+            1: "/workspaces/charlie"
+        }
+    }
+
+    _yaml.dump(workspace_dict, os.path.join(project, '.bst', 'workspaces.yml'))
+
+    result = cli.run(project=project, args=['workspace', 'list'])
+
+    assert result.exit_code == 0
+
+    loaded = _yaml.load_data(result.output)
+    assert isinstance(loaded.get('workspaces'), list)
+    workspaces = loaded['workspaces']
+    assert len(workspaces) == 2
+
+    bravo = next(workspace for workspace in workspaces if workspace['directory'] == '/workspaces/bravo')
+    assert bravo['element'] == 'alpha.bst'
+    # XXX: Currently no index is specified for the 0th element. Does this
+    #      need to change?
+
+    charlie = next(workspace for workspace in workspaces if workspace['directory'] == '/workspaces/charlie')
+    assert charlie['element'] == 'alpha.bst'
+    assert charlie['index'] == 1
+
+
+# Check that we can read the new format for the version 1 workspaces.yml format
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_artificial_version_1(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    os.makedirs(os.path.join(project, '.bst'), exist_ok=True)
+
+    workspace_dict = {
+        "version": 1,
+        "build-elements": {
+            "alpha.bst": {
+                "sources": {
+                    0: {
+                        "path": "/workspaces/bravo"
+                    },
+                    1: {
+                        "path": "/workspaces/charlie"
+                    }
+                }
+            }
+        }
+    }
+
+    _yaml.dump(workspace_dict, os.path.join(project, '.bst', 'workspaces.yml'))
+
+    result = cli.run(project=project, args=['workspace', 'list'])
+
+    assert result.exit_code == 0
+
+    loaded = _yaml.load_data(result.output)
+    assert isinstance(loaded.get('workspaces'), list)
+    workspaces = loaded['workspaces']
+    assert len(workspaces) == 2
+
+    bravo = next(workspace for workspace in workspaces if workspace['directory'] == '/workspaces/bravo')
+    assert bravo['element'] == 'alpha.bst'
+    # XXX: Currently no index is specified for the 0th element. Does this
+    #      need to change?
+
+    charlie = next(workspace for workspace in workspaces if workspace['directory'] == '/workspaces/charlie')
+    assert charlie['element'] == 'alpha.bst'
+    assert charlie['index'] == 1
