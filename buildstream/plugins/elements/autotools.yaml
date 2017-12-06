@@ -2,6 +2,8 @@
 
 variables:
 
+  build-dir: _bst_build_dir
+
   autogen: |
     export NOCONFIGURE=1;
 
@@ -22,7 +24,7 @@ variables:
   # For backwards compatibility only, do not use.
   conf-extra: ''
 
-  conf-cmd: ./configure
+  conf-cmd: configure
   conf-args: |
 
     --prefix=%{prefix} \
@@ -41,10 +43,12 @@ variables:
 
   configure: |
 
-    %{conf-cmd} %{conf-args}
+    mkdir %{build-dir}
+    cd %{build-dir}
+    ../%{conf-cmd} %{conf-args}
 
-  make: make
-  make-install: make -j1 DESTDIR="%{install-root}" install
+  make: make -C %{build-dir}
+  make-install: make -j1 -C %{build-dir} DESTDIR="%{install-root}" install
 
   # Set this if the sources cannot handle parallelization.
   #
