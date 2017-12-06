@@ -172,14 +172,15 @@ class BzrSource(Source):
         repo in an inconsistent state.
         """
         with self.tempdir() as repodir:
-            if os.path.exists(self._get_mirror_dir()):
+            mirror_dir = self._get_mirror_dir()
+            if os.path.exists(mirror_dir):
                 try:
                     # shutil.copytree doesn't like it if destination exists
                     shutil.rmtree(repodir)
-                    shutil.copytree(self._get_mirror_dir(), repodir)
+                    shutil.copytree(mirror_dir, repodir)
                 except (shutil.Error, OSError) as e:
                     raise SourceError("{}: Failed to copy bzr repo from '{}' to '{}'"
-                                      .format(str(self), self.mirror_dir, tmpdir)) from e
+                                      .format(str(self), mirror_dir, repodir)) from e
 
             yield repodir
             self._atomic_replace_mirrordir(repodir)
