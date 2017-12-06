@@ -16,3 +16,11 @@ tmp
 
 # Integration test results
 /integration-tests/*results/
+
+#Built Docs
+doc/build/
+doc/source/elements/
+doc/source/sources/
+
+
+
