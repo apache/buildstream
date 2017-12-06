@@ -1,3 +1,5 @@
+.. _createproject:
+
 Creating a basic project
 ====
 
@@ -26,6 +28,9 @@ Create a project directory and in it create the following directories:
 install wget or some other download tool
 
 ----
+
+For this example we will be using cmake-test,
+as it is a relatively small and simple project to build
 
 Download https://gitlab.com/BuildStream/buildstream/raw/master/integration-tests/cmake-test/src/step7.tar.gz
 
