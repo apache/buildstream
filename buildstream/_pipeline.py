@@ -425,7 +425,6 @@ class Pipeline():
 
         self.message(MessageType.START, "Starting build")
         elapsed, status = scheduler.run(queues)
-        built = len(build.processed_elements)
 
         if status == SchedStatus.ERROR:
             self.message(MessageType.FAIL, "Build failed", elapsed=elapsed)
