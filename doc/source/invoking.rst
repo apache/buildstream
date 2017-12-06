@@ -14,6 +14,8 @@ Invoking BuildStream
 .. click:: buildstream._frontend.main:fetch
    :prog: fetch
 
+.. _invoking_track:
+
 .. click:: buildstream._frontend.main:track
    :prog: track
 
@@ -25,6 +27,8 @@ Invoking BuildStream
 
 .. click:: buildstream._frontend.main:show
    :prog: show
+
+.. _invoking_shell:
 
 .. click:: buildstream._frontend.main:shell
    :prog: shell 
