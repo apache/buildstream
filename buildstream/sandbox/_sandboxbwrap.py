@@ -55,8 +55,6 @@ class SandboxBwrap(Sandbox):
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
         root_directory = self.get_directory()
-        scratch_directory = self._get_scratch_directory()
-        scratch_tempdir = os.path.join(scratch_directory, 'temp')
 
         # Fallback to the sandbox default settings for
         # the cwd and env.
