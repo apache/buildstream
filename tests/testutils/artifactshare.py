@@ -38,6 +38,7 @@ class ArtifactShare():
         os.makedirs(self.repo)
 
         self.init()
+        self.update_summary()
 
     # init():
     #
