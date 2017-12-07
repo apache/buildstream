@@ -202,13 +202,18 @@ def cli(context, **kwargs):
 @click.option('--track-except', multiple=True,
               type=click.Path(dir_okay=False, readable=True),
               help="Except certain dependencies from tracking")
+@click.option('--track-all', default=False, is_flag=True,
+              help="Track all elements in the build pipeline before building")
 @click.option('--track-save', default=False, is_flag=True,
               help="Write out the tracked references to their element files")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, elements, all, track, track_save, track_except):
+def build(app, elements, all, track, track_save, track_all, track_except):
     """Build elements in a pipeline"""
+
+    if track_all:
+        track = elements
 
     app.initialize(elements, except_=track_except, rewritable=track_save)
     app.pipeline.initialize(use_remote_cache=True, inconsistent=track)
