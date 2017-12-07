@@ -452,6 +452,64 @@ def get_bst_version():
     return (int(versions[0]), int(versions[1]))
 
 
+@contextmanager
+def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
+                     errors=None, newline=None, closefd=True, opener=None):
+    """Save a file with a temporary name and rename it into place when ready.
+
+    This is a context manager which is meant for saving data to files.
+    The data is written to a temporary file, which gets renamed to the target
+    name when the context is closed. This avoids readers of the file from
+    getting an incomplete file.
+
+    **Example:**
+
+    .. code:: python
+
+      with save_file_atomic('/path/to/foo', 'w') as f:
+          f.write(stuff)
+
+    The file will be called something like ``tmpCAFEBEEF`` until the
+    context block ends, at which point it gets renamed to ``foo``. The
+    temporary file will be created in the same directory as the output file.
+    The ``filename`` parameter must be an absolute path.
+
+    If an exception occurs or the process is terminated, the temporary file will
+    be deleted.
+    """
+    # This feature has been proposed for upstream Python in the past, e.g.:
+    # https://bugs.python.org/issue8604
+
+    assert os.path.isabs(filename), "The utils.save_file_atomic() parameter ``filename`` must be an absolute path"
+    dirname = os.path.dirname(filename)
+    fd, tempname = tempfile.mkstemp(dir=dirname)
+    os.close(fd)
+
+    f = open(tempname, mode=mode, buffering=buffering, encoding=encoding,
+             errors=errors, newline=newline, closefd=closefd, opener=opener)
+
+    def cleanup_tempfile():
+        f.close()
+        try:
+            os.remove(tempname)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            raise UtilError("Failed to cleanup temporary file {}: {}".format(tempname, e)) from e
+
+    try:
+        with _signals.terminator(cleanup_tempfile):
+            f.real_filename = filename
+            yield f
+            f.close()
+            # This operation is atomic, at least on platforms we care about:
+            # https://bugs.python.org/issue8828
+            os.replace(tempname, filename)
+    except Exception as e:
+        cleanup_tempfile()
+        raise
+
+
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
 def _force_rmtree(rootpath, **kwargs):
