@@ -1,6 +1,5 @@
 .. _installing:
 
-
 BuildStream on your host
 ========================
 Until BuildStream is available in your distro, there are a few hoops to jump

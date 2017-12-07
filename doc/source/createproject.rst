@@ -5,7 +5,7 @@ Creating a basic project
 
 This Section assumes you have installed Buildstream already.
 
-If not, go to :ref:`install`
+If not, go to :ref:`installing`
 
 Or :ref:`docker`
 

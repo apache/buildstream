@@ -6,8 +6,8 @@ What you can do with a built project
 Once you have successfully built a project with Buildstream, 
 there are 2 things you can do with it:
 
-- :ref:`_invoking_shell` 
-- :ref:`_invoking_checkout`
+- :ref:`invoking_shell` 
+- :ref:`invoking_checkout`
 
 
 Shell

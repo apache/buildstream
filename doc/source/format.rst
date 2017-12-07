@@ -135,8 +135,6 @@ Asides from the common ``kind`` and ``directory`` attributes which may be applie
 Sources, refer to the Source specific documentation for meaningful attributes for the
 particular Source.
 
-.. _format_variables:
-
 Variables
 ~~~~~~~~~
 
