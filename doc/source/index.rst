@@ -26,6 +26,8 @@ Installing
 * :ref:`artifacts`
 * :ref:`createproject`
 * :ref:`buildproject`
+* :ref:`modifyingandtesting`
+
 
 Running
 -------
