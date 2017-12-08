@@ -233,6 +233,9 @@ class Project():
         # Load base variables
         self._variables = _yaml.node_get(config, Mapping, 'variables')
 
+        # Add the project name as a default variable
+        self._variables['project-name'] = self.name
+
         # Extend variables with automatic variables and option exports
         self._variables['max-jobs'] = multiprocessing.cpu_count()
 
