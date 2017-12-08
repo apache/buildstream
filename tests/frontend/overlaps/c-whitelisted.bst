@@ -4,4 +4,8 @@ config:
   target: /
 sources:
 - kind: local
-  path: "../three"
+  path: "c"
+public:
+  bst:
+    overlap-whitelist:
+    - "file*"

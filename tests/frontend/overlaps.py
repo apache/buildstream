@@ -1,6 +1,8 @@
 import os
 import pytest
 from tests.testutils.runcli import cli
+from buildstream._exceptions import ErrorDomain
+from buildstream import _yaml
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -8,14 +10,64 @@ DATA_DIR = os.path.join(
     "overlaps"
 )
 
+project_template = {
+    "name": "test",
+    "element-path": "."
+}
+
+
+def gen_project(project_dir, fail_on_overlap):
+    template = dict(project_template)
+    template["fail-on-overlap"] = fail_on_overlap
+    projectfile = os.path.join(project_dir, "project.conf")
+    _yaml.dump(template, projectfile)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_overlaps(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "basic")
-    result = cli.run(project=project, silent=True, args=[
+    project_dir = str(datafiles)
+    gen_project(project_dir, False)
+    result = cli.run(project=project_dir, silent=True, args=[
         'build', 'collect.bst'])
-
     result.assert_success()
-    assert "/file1: three.bst above one.bst" in result.stderr
-    assert "/file2: two.bst above three.bst above one.bst" in result.stderr
-    assert "/file3: two.bst above three.bst" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_overlaps_error(cli, datafiles):
+    project_dir = str(datafiles)
+    gen_project(project_dir, True)
+    result = cli.run(project=project_dir, silent=True, args=[
+        'build', 'collect.bst'])
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.ELEMENT, "overlap-error")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_overlaps_whitelist(cli, datafiles):
+    project_dir = str(datafiles)
+    gen_project(project_dir, True)
+    result = cli.run(project=project_dir, silent=True, args=[
+        'build', 'collect-whitelisted.bst'])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_overlaps_whitelist_ignored(cli, datafiles):
+    project_dir = str(datafiles)
+    gen_project(project_dir, False)
+    result = cli.run(project=project_dir, silent=True, args=[
+        'build', 'collect-whitelisted.bst'])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_overlaps_whitelist_on_overlapper(cli, datafiles):
+    # Tests that the overlapping element is responsible for whitelisting,
+    # i.e. that if A overlaps B overlaps C, and the B->C overlap is permitted,
+    # it'll still fail because A doesn't permit overlaps.
+    project_dir = str(datafiles)
+    gen_project(project_dir, True)
+    result = cli.run(project=project_dir, silent=True, args=[
+        'build', 'collect-partially-whitelisted.bst'])
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.ELEMENT, "overlap-error")

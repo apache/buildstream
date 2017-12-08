@@ -1,9 +1,9 @@
 kind: compose
 
 depends:
-- filename: a.bst
+- filename: a-whitelisted.bst
   type: build
-- filename: b.bst
+- filename: b-whitelisted.bst
   type: build
 - filename: c.bst
   type: build
