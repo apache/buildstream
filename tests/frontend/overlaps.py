@@ -11,7 +11,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_overlaps(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = os.path.join(datafiles.dirname, datafiles.basename, "basic")
     result = cli.run(project=project, silent=True, args=[
         'build', 'collect.bst'])
 

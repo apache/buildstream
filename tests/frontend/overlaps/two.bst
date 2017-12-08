@@ -4,4 +4,4 @@ config:
   target: /
 sources:
 - kind: local
-  path: two
+  path: "../two"
