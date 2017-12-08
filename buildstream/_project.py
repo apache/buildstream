@@ -241,7 +241,7 @@ class Project():
             for source, _ in _yaml.node_items(self._workspaces['build-elements'][element]['sources']):
                 yield (element, int(source), self._workspaces['build-elements'][element]['sources'][source]['path'])
 
-    # _get_workspace()
+    # _get_workspace_path()
     #
     # Get the path of the workspace source associated with the given
     # element's source at the given index
@@ -254,13 +254,13 @@ class Project():
     #    None if no workspace is open, the path to the workspace
     #    otherwise
     #
-    def _get_workspace(self, element, index):
+    def _get_workspace_path(self, element, index):
         try:
             return self._workspaces['build-elements'][element]['sources'][index]['path']
         except KeyError:
             return None
 
-    # _set_workspace()
+    # _set_workspace_path()
     #
     # Set the path of the workspace associated with the given
     # element's source at the given index
@@ -270,9 +270,11 @@ class Project():
     #    index (int) - The source index
     #    path (str) - The path to set the workspace to
     #
-    def _set_workspace(self, element, index, path):
+    def _set_workspace_path(self, element, index, path):
         if element.name not in self._workspaces['build-elements']:
-            self._workspaces['build-elements'][element.name] = {"sources": {}}
+            self._workspaces['build-elements'][element.name] = {}
+        if 'sources' not in self._workspaces['build-elements'][element.name]:
+            self._workspaces['build-elements'][element.name]['sources'] = {}
 
         self._workspaces['build-elements'][element.name]['sources'][index] = {'path': path}
         element._set_source_workspace(index, path)
@@ -292,6 +294,10 @@ class Project():
 
         # Contains a provenance object
         if len(self._workspaces['build-elements'][element]['sources']) == 1:
+            del self._workspaces['build-elements'][element]['sources']
+
+        # Contains a provenance object
+        if len(self._workspaces['build-elements'][element]) == 1:
             del self._workspaces['build-elements'][element]
 
     # _load_workspace_config()
@@ -367,7 +373,7 @@ class Project():
     #
     # Dump the current workspace element to the project configuration
     # file. This makes any changes performed with _delete_workspace or
-    # _set_workspace permanent
+    # _set_workspace_path permanent
     #
     def _save_workspace_config(self):
         _yaml.dump(_yaml.node_sanitize(self._workspaces),
