@@ -80,6 +80,7 @@ class Project():
         self._cache_key = None
         self._source_format_versions = {}
         self._element_format_versions = {}
+        self._fail_on_overlap = False
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load()
@@ -136,6 +137,7 @@ class Project():
             'split-rules', 'elements', 'plugins',
             'aliases', 'name',
             'artifacts', 'options',
+            'fail-on-overlap'
         ])
 
         # The project name, element path and option declarations
@@ -250,6 +252,10 @@ class Project():
 
         # Load project split rules
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
+
+        # Fail on overlap
+        self._fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap',
+                                               default_value=False)
 
     # _store_origin()
     #

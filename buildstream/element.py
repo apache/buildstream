@@ -146,6 +146,7 @@ class Element(Plugin):
         self.__pull_failed = False              # Whether pull was attempted but failed
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
+        self.__whitelist_regex = None
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(plugin_conf)
@@ -443,7 +444,8 @@ class Element(Plugin):
 
         Raises:
            (:class:`.ElementError`): If any of the dependencies in `scope` have not
-                                     yet produced artifacts.
+                                     yet produced artifacts, or if forbidden overlaps
+                                     occur.
         """
         ignored = {}
         overlaps = OrderedDict()
@@ -473,9 +475,33 @@ class Element(Plugin):
 
         if overlaps:
             detail = "Staged files overwrite existing files in staging area:\n"
+            forbidden_overlap = False
+            overlap_error = False
             for f, elements in overlaps.items():
-                detail += "  /{}: ".format(f) + " above ".join(reversed(elements)) + "\n"
-            self.warn("Overlaps detected", detail=detail)
+                forbidden_overlap_elements = []
+                # The bottom item overlaps nothing
+                overlapping_elements = elements[1:]
+                for elm in overlapping_elements:
+                    element = self.search(Scope.BUILD, elm)
+                    element_project = element._get_project()
+                    if not element.__file_is_whitelisted(f):
+                        forbidden_overlap = True
+                        forbidden_overlap_elements.append(elm)
+                        if element_project._fail_on_overlap:
+                            overlap_error = True
+
+                if forbidden_overlap_elements:
+                    detail += ("/{}: {} {} not permitted to overlap other elements, order {} \n"
+                               .format(f, " and ".join(forbidden_overlap_elements),
+                                       "is" if len(forbidden_overlap_elements) == 1 else "are",
+                                       " above ".join(reversed(elements))))
+
+            if forbidden_overlap:
+                if overlap_error:
+                    raise ElementError("Non-whitelisted overlaps detected and fail-on-overlaps is set",
+                                       detail=detail, reason="overlap-error")
+                else:
+                    self.warn("Non-whitelisted overlaps detected", detail=detail)
 
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
@@ -1700,6 +1726,20 @@ class Element(Plugin):
             ]
 
         return element_public
+
+    def __file_is_whitelisted(self, pattern):
+        # Considered storing the whitelist regex for re-use, but public data
+        # can be altered mid-build.
+        # Public data is not guaranteed to stay the same for the duration of
+        # the build, but I can think of no reason to change it mid-build.
+        # If this ever changes, things will go wrong unexpectedly.
+        if not self.__whitelist_regex:
+            bstdata = self.get_public_data('bst')
+            whitelist = _yaml.node_get(bstdata, list, 'overlap-whitelist', default_value=[])
+            whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
+            expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
+            self.__whitelist_regex = re.compile(expression)
+        return self.__whitelist_regex.match(pattern)
 
     def __init_splits(self):
         bstdata = self.get_public_data('bst')
