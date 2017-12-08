@@ -101,10 +101,14 @@ class PluginContext():
 
                     # Also load the defaults - required since setuptools
                     # may need to extract the file.
-                    defaults = plugin.dist.get_resource_filename(
-                        pkg_resources._manager,
-                        plugin.module_name.replace('.', os.sep) + '.yaml'
-                    )
+                    try:
+                        defaults = plugin.dist.get_resource_filename(
+                            pkg_resources._manager,
+                            plugin.module_name.replace('.', os.sep) + '.yaml'
+                        )
+                    except KeyError:
+                        # The plugin didn't have an accompanying YAML file
+                        defaults = None
 
                     # Set the plugin-base source to the setuptools directory
                     source = self.plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
