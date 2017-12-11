@@ -20,31 +20,56 @@ If using docker, run::
 
   bst-here 
 
-in the directory you want to use
-
-Create a project directory and in it create the following directories:
-    elements, elements/dependencies, keys, src
-
-install wget or some other download tool
+In the directory you want to use.
 
 ----
 
-For this example we will be using cmake-test,
-as it is a relatively small and simple project to build
+Create File Structure
+~~~~
 
-Download https://gitlab.com/BuildStream/buildstream/raw/master/integration-tests/cmake-test/src/step7.tar.gz
+Create a project directory and in it create the following directories:
 
-This should provide you with step7.tar.gz
+* elements
 
-Move step7.tar.gz to src
+* elements/dependencies
+
+* keys
+
+* src
+
+
+
+
+Source files
+~~~~
+
+There are multiple ways of including source files with build stream, and this is done though things called plugins.
+
+The list of options can be found here :ref:`plugins_sources`
+
+
+If you plan on following along with this tutorial, do the following:
+
+    Install wget or some other download tool.
+
+    For this example we will be using cmake-test, as it is a relatively small and simple project to build.
+
+    Download https://gitlab.com/BuildStream/buildstream/raw/master/integration-tests/cmake-test/src/step7.tar.gz
+
+    This should provide you with `step7.tar.gz`
+
+    Move `step7.tar.gz` to `src`
 
 ----
 
 Download https://gitlab.com/BuildStream/buildstream/raw/master/integration-tests/cmake-test/keys/gnome-sdk.gpg
 
-This should provide you with gnome-sdk.gpg
+This should provide you with `gnome-sdk.gpg`
 
-Move gnome-sdk.gpg to keys
+Move `gnome-sdk.gpg` to `keys`
+
+
+
 
 Creating the project files
 ----
