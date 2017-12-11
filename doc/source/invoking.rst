@@ -60,6 +60,8 @@ Invoking BuildStream
 
 ----
 
+.. _invoking_workspace:
+
 .. click:: buildstream._frontend.main:workspace
    :prog: workspace
 

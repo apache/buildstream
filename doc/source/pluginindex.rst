@@ -19,7 +19,7 @@ General Elements
 * :mod:`compose <elements.compose>` - Compose the output of multiple elements
 * :mod:`script <elements.script>` - Run scripts to create output
 
-.. _plugins_elements:
+.. _plugins_build:
 
 Build Elements
 ~~~~~~~~~~~~~~

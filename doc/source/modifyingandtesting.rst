@@ -8,15 +8,23 @@ Creating a workspace
 
 A work space is a seperate directory containing a copy of the project sourcecode
 
-In this example, we will again be using gedit.bst, but this will work on any buildable project
+This example assumes you have a project that can be successfully built.
+
+If not, go to :ref:`buildproject`
+
+In this example we be using `gedit.bst`, but this will work on any buildable project
 
 ----
 
 From the root of the project directory run:
 
-    ``bst workspace open core/gedit.bst ../workspace1``
+    ``bst`` :ref:`invoking_workspace` ``open [project bst file] workspace1``
 
-You now have an external copy of your project to work with.
+In this case, that would be core/gedit.bst
+
+This will create a copy of your project files in the declared directory
+
+And give you an external copy of your project to work with.
 
 
 Modifying code in the workspace
@@ -24,7 +32,7 @@ Modifying code in the workspace
 
 To modify the workspace copy of your project, you will have to move to the workspace directory
 
-    ``cd ../workspace1``
+    ``cd workspace1``
 
 Here you will see the output of your build.
 
@@ -54,7 +62,7 @@ You can now use the shell command from the project root to run your project agai
 
 E.G:
 
-    ``bst shell core/gedit``
+    ``bst`` :ref:`invoking_shell` ``core/gedit``
 
 You should now see any changes that you made.
 

@@ -40,22 +40,20 @@ In this case, we will be using `gedit.bst` in elements/core
 
 from the root of the project repo run:
 
-    ``bst`` :ref:`invoking_build` ``core/gedit.bst``
+    ``bst`` :ref:`invoking_build` ``[project bst file]``
 
-To build the project.
+In this case, that would be core/gedit.bst
+
+This will try to build the project.
+
+----
 
 If you get an error requesting the use of ``bst track``
 
 run:
-    ``bst`` :ref:`invoking_track` ``--deps all core/gedit.bst``
+    ``bst`` :ref:`invoking_track` ``--deps all [project bst file]``
 
-This will update all dependencies and should allow the build to pass.
+This command updates all project dependencies.
 
-Run the build command again and this time it should pass.
-
-Once this is done, you can run:
-    ``bst`` :ref:`invoking_shell` ``core/gedit.bst``
-
-Which will create a shell where gedit has been built.
-once the shell has been started, running the `gedit` command should begin the application
+Run the build command again and this time it should succeed.
 

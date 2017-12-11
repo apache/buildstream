@@ -46,7 +46,8 @@ Source files
 There are multiple ways of including source files with build stream, and this is done though things called plugins.
 
 The list of options can be found here :ref:`plugins_sources`
-And each option can be clicked for an example of "element"
+
+Each option can be clicked for an example of an "element"
 
 
 If you plan on following along with this tutorial, do the following:
@@ -81,22 +82,22 @@ Project.conf
 
 In the root of the project directory create a file called project.conf containing::
 
-  name: ProjectName  # The name you want to give to your project
-  element-path: elementsPath # The relative path to the "elements" directory
-  # The elements directory is where your .bst files will be stored 
-  aliases:
-    name:url # This is used so you can moderate the URLs/Repos used by your build. 
-             # This way, they can be modified in a single place instead of multiple
-             # Use this name in place of the url anywhere you would use it  
-    gnomesdk: https://sdk.gnome.org/    
-    
-  options:
-     arch:
-       type: arch
-       description: The machine architecture
-       values:
-       - x86_64
-       - i386
+    name: ProjectName  # The name you want to give to your project
+    element-path: elements # The relative path to the "elements" directory
+    # The elements directory is where your .bst files will be stored
+    aliases:
+      name: url # This is used so you can moderate the URLs/Repos used by your build.
+                # This way, they can be modified in a single place instead of multiple
+                # Use this name in place of the url anywhere you would use it
+      gnomesdk: https://sdk.gnome.org/
+
+    options:
+       arch:
+         type: arch
+         description: The machine architecture
+         values:
+         - x86_64
+         - i386
 
 
 step7.bst
@@ -104,7 +105,7 @@ step7.bst
 
 In the elements directory Create a file called step7.bst containing::
 
-  kind: cmake #This is an element plugin (linked below)
+  kind: cmake # This is a build element plugin (linked below)
   description: Cmake test
   
   depends:
@@ -114,10 +115,10 @@ In the elements directory Create a file called step7.bst containing::
       type: build
   
   sources:
-    - kind: tar #This is a Source Plugin
-      url: file:/src/step7.tar.gz
+    - kind: tar # This is a Source Plugin
+      url: [PathToProjectDir]/src/step7.tar.gz
   
-:ref:`plugins_elements:`
+:ref:`kind (plugins)<plugins_build>`
 
 :ref:`format_depends`
 
@@ -163,13 +164,3 @@ In the elements/dependencies directory Create a file called base-platform.bst co
       - ldconfig
 
 :ref:`format_public` 
-
-Building
-----
-
-From the project root directory run:
-
-  ``bst`` :ref:`invoking_build` ``step7.bst``
-  
-You can substitute step7.bst for your own .bst file
-
