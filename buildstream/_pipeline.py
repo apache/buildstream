@@ -851,7 +851,7 @@ class Pipeline():
             source_directory = os.path.join(tempdir, 'source')
             try:
                 os.makedirs(source_directory)
-            except e:
+            except OSError as e:
                 raise PipelineError("Failed to create directory: {}"
                                     .format(e)) from e
 
