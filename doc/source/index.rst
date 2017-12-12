@@ -76,6 +76,11 @@ Creating Plugins
   * :ref:`core_framework`
 
 
+Internals
+---------
+* :ref:`cachekeys`
+
+
 Indices and tables
 ------------------
 * :ref:`modindex`
