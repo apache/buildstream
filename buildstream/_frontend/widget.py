@@ -219,16 +219,12 @@ class CacheKey(Widget):
 
     def render(self, message):
 
-        # This can only happen when logging before initialization in debug mode
-        if not self.key_length:
-            return self.format_profile.fmt('[') + (' ' * 8) + self.format_profile.fmt(']')
+        element_id = message.task_id or message.unique_id
+        if element_id is None or not self.key_length:
+            return ""
 
         missing = False
         key = ' ' * self.key_length
-        element_id = message.task_id or message.unique_id
-        if element_id is None:
-            return ""
-
         plugin = _plugin_lookup(element_id)
         if isinstance(plugin, Element):
             _, key, missing = plugin._get_full_display_key()
@@ -479,7 +475,7 @@ class LogLine(Widget):
         # Separator line before following output
         text += self.format_profile.fmt("~" * 79 + '\n')
 
-        click.echo(text, color=styling, nl=False)
+        click.echo(text, color=styling, nl=False, err=True)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 
@@ -529,7 +525,7 @@ class LogLine(Widget):
 
         text += self.format_values(values, style_value=False)
 
-        click.echo(text, color=styling, nl=False)
+        click.echo(text, color=styling, nl=False, err=True)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 
