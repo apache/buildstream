@@ -79,6 +79,7 @@ class Source(Plugin):
         self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
         self.__consistency = None                       # Cached consistency state
         self.__workspace = None                         # Directory of the currently active workspace
+        self.__workspace_key = None                     # Cached directory content hashes for workspaced source
 
         self.configure(meta.config)
 
@@ -370,8 +371,11 @@ class Source(Plugin):
 
     # Set the current workspace directory
     #
+    # Note that this invalidate the workspace key.
+    #
     def _set_workspace(self, directory):
         self.__workspace = directory
+        self.__workspace_key = None
 
     # Return the current workspace directory
     def _get_workspace(self):
@@ -379,8 +383,11 @@ class Source(Plugin):
 
     # Delete the workspace
     #
+    # Note that this invalidate the workspace key.
+    #
     def _del_workspace(self):
         self.__workspace = None
+        self.__workspace_key = None
 
     # Whether the source has a set workspace
     #
@@ -400,19 +407,27 @@ class Source(Plugin):
                 utils.safe_copy(fullpath, destfile)
 
     # Get a unique key for the workspace
-    def _get_workspace_key(self):
-        fullpath = self._get_workspace_path()
+    #
+    # Note that to avoid re-traversing the file system if this function is
+    # called multiple times, the workspace key is cached. You can still force a
+    # new calculation to happen by setting the 'recalculate' flag.
+    #
+    def _get_workspace_key(self, recalculate=False):
+        if recalculate or self.__workspace_key is None:
+            fullpath = self._get_workspace_path()
 
-        # Get a list of tuples of the the project relative paths and fullpaths
-        if os.path.isdir(fullpath):
-            filelist = utils.list_relative_paths(fullpath)
-            filelist = [(relpath, os.path.join(fullpath, relpath)) for relpath in filelist]
-        else:
-            filelist = [(self.__workspace, fullpath)]
+            # Get a list of tuples of the the project relative paths and fullpaths
+            if os.path.isdir(fullpath):
+                filelist = utils.list_relative_paths(fullpath)
+                filelist = [(relpath, os.path.join(fullpath, relpath)) for relpath in filelist]
+            else:
+                filelist = [(self.__workspace, fullpath)]
 
-        # Return a list of (relative filename, sha256 digest) tuples, a sorted list
-        # has already been returned by list_relative_paths()
-        return [(relpath, _unique_key(fullpath)) for relpath, fullpath in filelist]
+            # Return a list of (relative filename, sha256 digest) tuples, a sorted list
+            # has already been returned by list_relative_paths()
+            self.__workspace_key = [(relpath, _unique_key(fullpath)) for relpath, fullpath in filelist]
+
+        return self.__workspace_key
 
 
 # Get the sha256 sum for the content of a file
