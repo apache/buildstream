@@ -265,11 +265,16 @@ class Source(Plugin):
                 # A workspace is considered inconsistent in the case
                 # that it's directory went missing
                 #
-                fullpath = os.path.join(self.get_project_directory(), self.__workspace)
+                fullpath = self._get_workspace_path()
                 if not os.path.exists(fullpath):
                     self.__consistency = Consistency.INCONSISTENT
 
         return self.__consistency
+
+    # Return the absolute path of the element's workspace
+    #
+    def _get_workspace_path(self):
+        return os.path.join(self.get_project_directory(), self.__workspace)
 
     # Bump local cached consistency state, this is done from
     # the pipeline after the successful completion of fetch
@@ -387,7 +392,7 @@ class Source(Plugin):
     # Stage the workspace
     #
     def _stage_workspace(self, directory):
-        fullpath = os.path.join(self.get_project_directory(), self.__workspace)
+        fullpath = self._get_workspace_path()
 
         with self.timed_activity("Staging local files at {}".format(self.__workspace)):
             if os.path.isdir(fullpath):
@@ -398,7 +403,7 @@ class Source(Plugin):
 
     # Get a unique key for the workspace
     def _get_workspace_key(self):
-        fullpath = os.path.join(self.get_project_directory(), self.__workspace)
+        fullpath = self._get_workspace_path()
 
         # Get a list of tuples of the the project relative paths and fullpaths
         if os.path.isdir(fullpath):
