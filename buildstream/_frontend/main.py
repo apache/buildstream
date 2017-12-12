@@ -199,11 +199,11 @@ def cli(context, **kwargs):
               type=click.Path(dir_okay=False, readable=True),
               help="Specify elements to track during the build. Can be used "
                    "repeatedly to specify multiple elements")
+@click.option('--track-all', default=False, is_flag=True,
+              help="Track all elements in the pipeline")
 @click.option('--track-except', multiple=True,
               type=click.Path(dir_okay=False, readable=True),
               help="Except certain dependencies from tracking")
-@click.option('--track-all', default=False, is_flag=True,
-              help="Track all elements in the build pipeline before building")
 @click.option('--track-save', default=False, is_flag=True,
               help="Write out the tracked references to their element files")
 @click.argument('elements', nargs=-1,
