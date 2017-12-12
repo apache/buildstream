@@ -736,8 +736,6 @@ class App():
 
     def __init__(self, main_options):
         self.main_options = main_options
-        self.messaging_enabled = False
-        self.startup_messages = []
         self.logger = None
         self.status = None
         self.target = None
@@ -747,11 +745,6 @@ class App():
         self.project = None
         self.scheduler = None
         self.pipeline = None
-
-        # For the initialization time tickers
-        self.file_count = 0
-        self.resolve_count = 0
-        self.cache_count = 0
 
         # Failure messages, hashed by unique plugin id
         self.fail_messages = {}
@@ -775,11 +768,6 @@ class App():
         # Whether we handle failures interactively
         # defaults to whether we are interactive or not.
         self.interactive_failures = self.interactive
-
-        # Early enable messaging in debug mode
-        if self.main_options['debug']:
-            click.echo("DEBUG: Early enablement of messages")
-            self.messaging_enabled = True
 
         # Resolve whether to use colors in output
         if self.main_options['colors'] is None:
@@ -867,11 +855,7 @@ class App():
 
         try:
             self.pipeline = Pipeline(self.context, self.project, elements, except_,
-                                     rewritable=rewritable,
-                                     load_ticker=self.load_ticker,
-                                     resolve_ticker=self.resolve_ticker,
-                                     remote_ticker=self.remote_ticker,
-                                     cache_ticker=self.cache_ticker)
+                                     rewritable=rewritable)
         except BstError as e:
             click.echo("Error loading pipeline: {}".format(e))
             sys.exit(-1)
@@ -884,7 +868,6 @@ class App():
 
         # Pipeline is loaded, lets start displaying pipeline messages from tasks
         self.logger.size_request(self.pipeline)
-        self.messaging_enabled = True
 
         profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
@@ -1052,11 +1035,6 @@ class App():
                                   styling=self.colors,
                                   deps=deps)
 
-        # Print any held messages from startup after printing the heading
-        for message in self.startup_messages:
-            self.message_handler(message, self.context)
-        self.startup_messages = []
-
     #
     # Print a summary of the queues
     #
@@ -1069,13 +1047,6 @@ class App():
     # Handle messages from the pipeline
     #
     def message_handler(self, message, context):
-
-        # Drop messages by default in the beginning while
-        # loading the pipeline, unless debug is specified.
-        if not self.messaging_enabled:
-            if message.message_type in unconditional_messages:
-                self.startup_messages.append(message)
-            return
 
         # Drop status messages from the UI if not verbose, we'll still see
         # info messages and status messages will still go to the log files.
@@ -1103,68 +1074,6 @@ class App():
         # Additionally log to a file
         if self.main_options['log_file']:
             click.echo(text, file=self.main_options['log_file'], color=False, nl=False)
-
-    #
-    # Tickers at initialization time
-    #
-    def load_ticker(self, name):
-        if not self.context.log_verbose:
-            return
-
-        if name:
-            self.file_count += 1
-
-            if self.is_a_tty:
-                click.echo("Loading:   {:0>3}\r"
-                           .format(self.file_count), nl=False, err=True)
-            elif self.file_count == 1:
-                click.echo("Loading.", nl=False, err=True)
-            else:
-                click.echo(".", nl=False, err=True)
-        else:
-            click.echo('', err=True)
-
-    def resolve_ticker(self, name):
-        if not self.context.log_verbose:
-            return
-
-        if name:
-            self.resolve_count += 1
-
-            if self.is_a_tty:
-                click.echo("Resolving: {:0>3}/{:0>3}\r"
-                           .format(self.file_count, self.resolve_count), nl=False, err=True)
-            elif self.resolve_count == 1:
-                click.echo("Resolving {} elements."
-                           .format(self.file_count), nl=False, err=True)
-            else:
-                click.echo(".", nl=False, err=True)
-        else:
-            click.echo('', err=True)
-
-    def remote_ticker(self, name):
-        if not self.context.log_verbose:
-            return
-
-        click.echo("Fetching artifact list from {}".format(name), err=True)
-
-    def cache_ticker(self, name):
-        if not self.context.log_verbose:
-            return
-
-        if name:
-            self.cache_count += 1
-
-            if self.is_a_tty:
-                click.echo("Checking:  {:0>3}/{:0>3}\r"
-                           .format(self.file_count, self.cache_count), nl=False, err=True)
-            elif self.cache_count == 1:
-                click.echo("Checking {} elements."
-                           .format(self.file_count), nl=False, err=True)
-            else:
-                click.echo(".", nl=False, err=True)
-        else:
-            click.echo('', err=True)
 
     @contextmanager
     def interrupted(self):
