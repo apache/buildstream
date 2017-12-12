@@ -176,7 +176,7 @@ class GitMirror():
         elif exit_code != 0:
             raise SourceError(
                 "{plugin}: Failed to show gitmodules at ref {ref}".format(
-                    plugin=self, ref=self.ref)) from e
+                    plugin=self, ref=self.ref))
 
         content = '\n'.join([l.strip() for l in output.splitlines()])
 
