@@ -25,9 +25,10 @@ import shlex
 import shutil
 import tarfile
 import itertools
+from contextlib import contextmanager
 from operator import itemgetter
-from tempfile import TemporaryDirectory
 from pluginbase import PluginBase
+from tempfile import TemporaryDirectory
 
 from ._exceptions import PipelineError, ArtifactError, ImplError
 from ._message import Message, MessageType
@@ -93,14 +94,6 @@ class Planner():
 #    rewritable (bool): Whether the loaded files should be rewritable
 #                       this is a bit more expensive due to deep copies
 #    use_remote_cache (bool): Whether to connect with remote artifact cache
-#    load_ticker (callable): A function which will be called for each loaded element
-#    resolve_ticker (callable): A function which will be called for each resolved element
-#    cache_ticker (callable): A function which will be called for each element
-#                             while interrogating caches
-#
-# The ticker methods will be called with an element name for each tick, a final
-# tick with None as the argument is passed to signal that processing of this
-# stage has terminated.
 #
 # Raises:
 #    LoadError
@@ -111,12 +104,7 @@ class Planner():
 #
 class Pipeline():
 
-    def __init__(self, context, project, targets, except_,
-                 rewritable=False,
-                 remote_ticker=None,
-                 cache_ticker=None,
-                 load_ticker=None,
-                 resolve_ticker=None):
+    def __init__(self, context, project, targets, except_, rewritable=False):
         self.context = context
         self.project = project
         self.session_elements = 0
@@ -128,14 +116,12 @@ class Pipeline():
         Platform._create_instance(context, project)
         self.platform = Platform.get_platform()
         self.artifacts = self.platform.artifactcache
-        self.remote_ticker = remote_ticker
-        self.cache_ticker = cache_ticker
 
         loader = Loader(self.project.element_path, targets + except_,
                         self.project._options)
-        meta_elements = loader.load(rewritable, load_ticker)
-        if load_ticker:
-            load_ticker(None)
+
+        with self.timed_activity("Loading pipeline", silent_nested=True):
+            meta_elements = loader.load(rewritable, None)
 
         # Create the factories after resolving the project
         pluginbase = PluginBase(package='buildstream.plugins')
@@ -143,14 +129,12 @@ class Pipeline():
         self.source_factory = SourceFactory(pluginbase, project._plugin_source_paths)
 
         # Resolve the real elements now that we've resolved the project
-        resolved_elements = [self.resolve(meta_element, ticker=resolve_ticker)
-                             for meta_element in meta_elements]
+        with self.timed_activity("Resolving pipeline"):
+            resolved_elements = [self.resolve(meta_element)
+                                 for meta_element in meta_elements]
 
         self.targets = resolved_elements[:len(targets)]
         self.exceptions = resolved_elements[len(targets):]
-
-        if resolve_ticker:
-            resolve_ticker(None)
 
     def initialize(self, use_remote_cache=False, inconsistent=None):
         # Preflight directly, before ever interrogating caches or
@@ -182,34 +166,28 @@ class Pipeline():
                 self.project._set_workspace(element, source, workspace)
 
     def fetch_remote_refs(self):
-        try:
-            if self.remote_ticker:
-                self.remote_ticker(self.artifacts.url)
-            self.artifacts.initialize_remote()
-            self.artifacts.fetch_remote_refs()
-        except ArtifactError:
-            self.message(MessageType.WARN, "Failed to fetch remote refs")
-            self.artifacts.set_offline()
+        with self.timed_activity("Fetching remote refs", silent_nested=True):
+            try:
+                self.artifacts.initialize_remote()
+                self.artifacts.fetch_remote_refs()
+            except ArtifactError:
+                self.message(MessageType.WARN, "Failed to fetch remote refs")
+                self.artifacts.set_offline()
 
     def resolve_cache_keys(self, inconsistent):
         if inconsistent:
             inconsistent = self.get_elements_to_track(inconsistent)
 
-        for element in self.dependencies(Scope.ALL):
-            if self.cache_ticker:
-                self.cache_ticker(element.name)
-
-            if inconsistent and element in inconsistent:
-                # Load the pipeline in an explicitly inconsistent state, use
-                # this for pipelines with tracking queues enabled.
-                element._force_inconsistent()
-            else:
-                # Resolve cache keys and interrogate the artifact cache
-                # for the first time.
-                element._cached()
-
-        if self.cache_ticker:
-            self.cache_ticker(None)
+        with self.timed_activity("Resolving cached state", silent_nested=True):
+            for element in self.dependencies(Scope.ALL):
+                if inconsistent and element in inconsistent:
+                    # Load the pipeline in an explicitly inconsistent state, use
+                    # this for pipelines with tracking queues enabled.
+                    element._force_inconsistent()
+                else:
+                    # Resolve cache keys and interrogate the artifact cache
+                    # for the first time.
+                    element._cached()
 
     # Generator function to iterate over elements and optionally
     # also iterate over sources.
@@ -266,15 +244,21 @@ class Pipeline():
         self.context._message(
             Message(None, message_type, message, **args))
 
+    # Local timed activities, announces the jobs as well
+    #
+    @contextmanager
+    def timed_activity(self, activity_name, *, detail=None, silent_nested=False):
+        with self.context._timed_activity(activity_name,
+                                          detail=detail,
+                                          silent_nested=silent_nested):
+            yield
+
     # Internal: Instantiates plugin-provided Element and Source instances
     # from MetaElement and MetaSource objects
     #
-    def resolve(self, meta_element, ticker=None):
+    def resolve(self, meta_element):
         if meta_element in self._resolved_elements:
             return self._resolved_elements[meta_element]
-
-        if ticker:
-            ticker(meta_element.name)
 
         element = self.element_factory.create(meta_element.kind,
                                               self.context,
@@ -286,9 +270,9 @@ class Pipeline():
 
         # resolve dependencies
         for dep in meta_element.dependencies:
-            element._add_dependency(self.resolve(dep, ticker=ticker), Scope.RUN)
+            element._add_dependency(self.resolve(dep), Scope.RUN)
         for dep in meta_element.build_dependencies:
-            element._add_dependency(self.resolve(dep, ticker=ticker), Scope.BUILD)
+            element._add_dependency(self.resolve(dep), Scope.BUILD)
 
         # resolve sources
         for meta_source in meta_element.sources:
