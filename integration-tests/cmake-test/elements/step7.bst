@@ -9,5 +9,5 @@ depends:
 
 sources:
   - kind: tar
-    url: file:///home/tristanmaat/Documents/Projects/buildstream/buildstream-tests/cmake-test/src/step7.tar.gz
+    url: file:///step7.tar.gz
     ref: 9591707afbae77751730b4af4c52a18b1cdc4378237bc64055f099bc95c330db
