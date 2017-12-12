@@ -50,10 +50,6 @@ class ScriptElement(buildstream.ScriptElement):
             'commands', 'root-read-only', 'layout'
         ])
 
-        if "commands" not in node:
-            raise ElementError("{}: Unexpectedly missing command group 'commands'"
-                               .format(self))
-
         cmds = self.node_subst_list(node, "commands")
         self.add_commands("commands", cmds)
 
