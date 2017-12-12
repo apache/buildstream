@@ -67,7 +67,6 @@ Class Reference
 ---------------
 """
 
-import datetime
 import os
 import subprocess
 from contextlib import contextmanager
@@ -75,7 +74,7 @@ from weakref import WeakValueDictionary
 
 from . import _yaml, _signals
 from . import utils
-from ._exceptions import PluginError, ImplError, BstError
+from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
 
 
@@ -449,37 +448,10 @@ class Plugin():
               # This will raise SourceError on its own
               self.call(... command which takes time ...)
         """
-        starttime = datetime.datetime.now()
-        stopped_time = None
-
-        def stop_time():
-            nonlocal stopped_time
-            stopped_time = datetime.datetime.now()
-
-        def resume_time():
-            nonlocal stopped_time
-            nonlocal starttime
-            sleep_time = datetime.datetime.now() - stopped_time
-            starttime += sleep_time
-
-        with _signals.suspendable(stop_time, resume_time):
-            try:
-                # Push activity depth for status messages
-                self.__message(MessageType.START, activity_name, detail=detail)
-                self.__context._push_message_depth(silent_nested)
-                yield
-
-            except BstError as e:
-                # Note the failure in status messages and reraise, the scheduler
-                # expects an error when there is an error.
-                elapsed = datetime.datetime.now() - starttime
-                self.__context._pop_message_depth()
-                self.__message(MessageType.FAIL, activity_name, elapsed=elapsed)
-                raise
-
-            elapsed = datetime.datetime.now() - starttime
-            self.__context._pop_message_depth()
-            self.__message(MessageType.SUCCESS, activity_name, elapsed=elapsed)
+        with self.__context._timed_activity(activity_name,
+                                            detail=detail,
+                                            silent_nested=silent_nested):
+            yield
 
     def call(self, *popenargs, fail=None, **kwargs):
         """A wrapper for subprocess.call()
