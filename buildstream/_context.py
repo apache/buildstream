@@ -19,11 +19,15 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import datetime
 from collections import deque, Mapping
+from contextlib import contextmanager
+from . import _signals
 from . import _site
 from . import _yaml
 from . import utils
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError, LoadErrorReason, BstError
+from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 
 
@@ -302,6 +306,54 @@ class Context():
 
         self._message_handler(message, context=self)
         return
+
+    # _timed_activity()
+    #
+    # Context manager for performing timed activities and logging those
+    #
+    # Args:
+    #    context (Context): The invocation context object
+    #    activity_name (str): The name of the activity
+    #    detail (str): An optional detailed message, can be multiline output
+    #    silent_nested (bool): If specified, nested messages will be silenced
+    #
+    @contextmanager
+    def _timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
+
+        starttime = datetime.datetime.now()
+        stopped_time = None
+
+        def stop_time():
+            nonlocal stopped_time
+            stopped_time = datetime.datetime.now()
+
+        def resume_time():
+            nonlocal stopped_time
+            nonlocal starttime
+            sleep_time = datetime.datetime.now() - stopped_time
+            starttime += sleep_time
+
+        with _signals.suspendable(stop_time, resume_time):
+            try:
+                # Push activity depth for status messages
+                message = Message(unique_id, MessageType.START, activity_name, detail=detail)
+                self._message(message)
+                self._push_message_depth(silent_nested)
+                yield
+
+            except BstError as e:
+                # Note the failure in status messages and reraise, the scheduler
+                # expects an error when there is an error.
+                elapsed = datetime.datetime.now() - starttime
+                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
+                self._pop_message_depth()
+                self._message(message)
+                raise
+
+            elapsed = datetime.datetime.now() - starttime
+            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
+            self._pop_message_depth()
+            self._message(message)
 
     # Force the resolved XDG variables into the environment,
     # this is so that they can be used directly to specify
