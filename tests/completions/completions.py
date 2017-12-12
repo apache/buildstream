@@ -40,6 +40,7 @@ MAIN_OPTIONS = [
     "--option ",
     "--on-error ",
     "--pushers ",
+    "--quiet ",
     "--strict ",
     "--verbose ",
     "--version ",

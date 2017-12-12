@@ -162,6 +162,8 @@ click.BaseCommand.main = override_main
               help="Force non interactive mode, otherwise this is automatically decided")
 @click.option('--verbose/--no-verbose', default=None,
               help="Be extra verbose")
+@click.option('--quiet', is_flag=True, default=False,
+              help="Be extra quiet")
 @click.option('--debug/--no-debug', default=None,
               help="Print debugging output")
 @click.option('--error-lines', type=click.INT, default=None,
@@ -769,6 +771,11 @@ class App():
         # defaults to whether we are interactive or not.
         self.interactive_failures = self.interactive
 
+        self.quiet = self.main_options['quiet']
+        if self.quiet and (self.main_options['debug'] or self.main_options['verbose']):
+            click.echo("ERROR: Option --quiet cannot be used with --debug or --verbose", err=True)
+            sys.exit(-1)
+
         # Resolve whether to use colors in output
         if self.main_options['colors'] is None:
             self.colors = self.is_a_tty
@@ -794,6 +801,11 @@ class App():
         except BstError as e:
             click.echo("Error loading user configuration: {}".format(e), err=True)
             sys.exit(-1)
+
+        if self.quiet:
+            # We really want those set to False, not to the defaults from user config
+            self.main_options['debug'] = False
+            self.main_options['verbose'] = False
 
         # Override things in the context from our command line options,
         # the command line when used, trumps the config files.
@@ -875,6 +887,8 @@ class App():
     # Render the status area, conditional on some internal state
     #
     def maybe_render_status(self):
+        if self.quiet:
+            return
 
         # If we're suspended or terminating, then dont render the status area
         if self.status and self.scheduler and \
@@ -1030,6 +1044,9 @@ class App():
     # will process a pipeline.
     #
     def print_heading(self, deps=None):
+        if self.quiet:
+            return
+
         self.logger.print_heading(self.pipeline,
                                   self.main_options['log_file'],
                                   styling=self.colors,
@@ -1039,6 +1056,9 @@ class App():
     # Print a summary of the queues
     #
     def print_summary(self):
+        if self.quiet:
+            return
+
         self.logger.print_summary(self.pipeline, self.scheduler,
                                   self.main_options['log_file'],
                                   styling=self.colors)
@@ -1047,6 +1067,8 @@ class App():
     # Handle messages from the pipeline
     #
     def message_handler(self, message, context):
+        if self.quiet and message.message_type not in (MessageType.FAIL, MessageType.BUG):
+            return
 
         # Drop status messages from the UI if not verbose, we'll still see
         # info messages and status messages will still go to the log files.
