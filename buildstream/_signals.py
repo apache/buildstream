@@ -61,11 +61,12 @@ def terminator(terminate_func):
     if outermost:
         original_handler = signal.signal(signal.SIGTERM, terminator_handler)
 
-    yield
-
-    if outermost:
-        signal.signal(signal.SIGTERM, original_handler)
-    terminator_stack.pop()
+    try:
+        yield
+    finally:
+        if outermost:
+            signal.signal(signal.SIGTERM, original_handler)
+        terminator_stack.pop()
 
 
 # Just a simple object for holding on to two callbacks
@@ -121,12 +122,13 @@ def suspendable(suspend_callback, resume_callback):
     if outermost:
         original_stop = signal.signal(signal.SIGTSTP, suspend_handler)
 
-    yield
+    try:
+        yield
+    finally:
+        if outermost:
+            signal.signal(signal.SIGTSTP, original_stop)
 
-    if outermost:
-        signal.signal(signal.SIGTSTP, original_stop)
-
-    suspendable_stack.pop()
+        suspendable_stack.pop()
 
 
 # blocked()
@@ -150,11 +152,12 @@ def blocked(signal_list, ignore=True):
         # Set and save the sigprocmask
         blocked_signals = signal.pthread_sigmask(signal.SIG_BLOCK, signal_list)
 
-        yield
-
-        # If we have discarded the signals completely, this line will
-        # cause the discard_handler() to trigger for each signal in the list
-        signal.pthread_sigmask(signal.SIG_SETMASK, blocked_signals)
+        try:
+            yield
+        finally:
+            # If we have discarded the signals completely, this line will cause
+            # the discard_handler() to trigger for each signal in the list
+            signal.pthread_sigmask(signal.SIG_SETMASK, blocked_signals)
 
 
 # ignored()
@@ -171,7 +174,8 @@ def ignored(signal_list):
     for sig in signal_list:
         orig_handlers[sig] = signal.signal(sig, signal.SIG_IGN)
 
-    yield
-
-    for sig in signal_list:
-        signal.signal(sig, orig_handlers[sig])
+    try:
+        yield
+    finally:
+        for sig in signal_list:
+            signal.signal(sig, orig_handlers[sig])
