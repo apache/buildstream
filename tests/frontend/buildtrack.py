@@ -300,12 +300,12 @@ def test_build_track_track_first(cli, datafiles, tmpdir, strict):
     assert result.exit_code == 0
 
     # Assert that 1.bst successfully tracks before 0.bst builds
-    track_messages = re.finditer(r'\[track:1.bst\s*]', result.output)
-    build_0 = re.search(r'\[build:0.bst\s*] START', result.output).start()
+    track_messages = re.finditer(r'\[track:1.bst\s*]', result.stderr)
+    build_0 = re.search(r'\[build:0.bst\s*] START', result.stderr).start()
     assert all(track_message.start() < build_0 for track_message in track_messages)
 
     # Assert that 2.bst is *only* rebuilt if we are in strict mode
-    build_2 = re.search(r'\[build:2.bst\s*] START', result.output)
+    build_2 = re.search(r'\[build:2.bst\s*] START', result.stderr)
     if strict == '--strict':
         assert build_2 is not None
     else:

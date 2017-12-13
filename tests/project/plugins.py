@@ -4,9 +4,6 @@ import pytest
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._pipeline import Pipeline
-from buildstream._platform import Platform
-
-from tests.testutils.site import HAVE_ROOT
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -18,7 +15,11 @@ def create_pipeline(tmpdir, basedir, target):
     context = Context([])
     project = Project(basedir, context)
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
-    context._platform = Platform.get_platform()
+
+    def dummy_handler(message, context):
+        pass
+
+    context._set_message_handler(dummy_handler)
 
     return Pipeline(context, project, [target], [])
 
@@ -29,7 +30,6 @@ def create_pipeline(tmpdir, basedir, target):
 # also test that the project's configuration of plugin
 # paths is actually working.
 #
-@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'plugins'))
 def test_custom_element(datafiles, tmpdir):
 

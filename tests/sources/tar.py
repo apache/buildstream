@@ -104,7 +104,7 @@ def test_track_warning(cli, tmpdir, datafiles):
         'track', 'target.bst'
     ])
     assert result.exit_code == 0
-    assert "Potential man-in-the-middle attack!" in result.output
+    assert "Potential man-in-the-middle attack!" in result.stderr
 
 
 def _list_dir_contents(srcdir):

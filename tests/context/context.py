@@ -4,8 +4,6 @@ import pytest
 from buildstream._context import Context
 from buildstream._exceptions import LoadError, LoadErrorReason
 
-from tests.testutils.site import HAVE_ROOT
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'data',
@@ -37,7 +35,6 @@ def test_context_create(context_fixture):
 #######################################
 #     Test configuration loading      #
 #######################################
-@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 def test_context_load(context_fixture):
     context = context_fixture['context']
     cache_home = context_fixture['xdg-cache']
@@ -52,7 +49,6 @@ def test_context_load(context_fixture):
 
 # Test that values in a user specified config file
 # override the defaults
-@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_user_config(context_fixture, datafiles):
     context = context_fixture['context']
