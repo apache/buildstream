@@ -44,5 +44,3 @@ except ProgramNotFoundError:
     HAVE_LZIP = False
 
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
-
-HAVE_ROOT = HAVE_BWRAP or os.geteuid() == 0
