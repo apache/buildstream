@@ -4,18 +4,26 @@ What you can do with a built project
 ====
 
 Once you have successfully built a project with Buildstream, 
-there are 2 things you can do with it:
+there are 3 things you can do with it:
 
 - :ref:`invoking_shell` 
 - :ref:`invoking_checkout`
-
+- :ref:`invoking_workspace`
 
 Shell
 ----
 
-This is used to test builds in development, and is run inside of a sandbox environment
+This command allows you to peek inside of a built project. 
+This is useful for debugging and ensuring the system built everything properly
 
 Checkout
 ----
 
-This is used if you want to take the output of the build and move it away from the rest of the files used to generate it
+This command returns all *:ref:artifacts* that are defined in the *:ref:install-root*
+
+
+Workspace
+----
+
+This command returns the source code of the target project to a target directory,
+providing you with a safe copy of your sourcecode to modify.
