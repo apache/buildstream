@@ -70,9 +70,8 @@ def test_parallel_order(cli, tmpdir, datafiles):
 
     assert result.exit_code == 0
 
-    # Get the planned order, excepting the 'Loading' messages before
-    # the pipeline is printed
-    names = result.output.splitlines()[3:]
+    # Get the planned order
+    names = result.output.splitlines()
     names = [name[len('multiple_targets/order/'):] for name in names]
 
     # Create all possible 'correct' topological orderings
@@ -100,9 +99,8 @@ def test_target_is_dependency(cli, tmpdir, datafiles):
 
     assert result.exit_code == 0
 
-    # Get the planned order, excepting the 'Loading' messages before
-    # the pipeline is printed
-    names = result.output.splitlines()[3:]
+    # Get the planned order
+    names = result.output.splitlines()
     names = [name[len('multiple_targets/dependency/'):] for name in names]
 
     assert names == ['pony.bst', 'horsey.bst', 'zebry.bst']

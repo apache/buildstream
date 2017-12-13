@@ -5,9 +5,6 @@ from buildstream import BuildElement
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._pipeline import Pipeline
-from buildstream._platform import Platform
-
-from tests.testutils.site import HAVE_ROOT
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -18,7 +15,11 @@ def create_pipeline(tmpdir, basedir, target):
     context = Context([])
     project = Project(basedir, context)
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
-    context._platform = Platform.get_platform()
+
+    def dummy_handler(message, context):
+        pass
+
+    context._set_message_handler(dummy_handler)
 
     return Pipeline(context, project, [target], [])
 
@@ -41,7 +42,6 @@ def assert_command(datafiles, tmpdir, target, command, expected):
 ###############################################################
 #  Test proper loading of some default commands from plugins  #
 ###############################################################
-@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.parametrize("target,command,expected", [
     ('autotools.bst', 'install-commands', "make -j1 DESTDIR=\"/buildstream/install\" install"),
     ('cmake.bst', 'configure-commands',
@@ -62,7 +62,6 @@ def test_defaults(datafiles, tmpdir, target, command, expected):
 ################################################################
 #  Test overriding of variables to produce different commands  #
 ################################################################
-@pytest.mark.skipif(not HAVE_ROOT, reason="requires root permissions")
 @pytest.mark.parametrize("target,command,expected", [
     ('autotools.bst', 'install-commands', "make -j1 DESTDIR=\"/custom/install/root\" install"),
     ('cmake.bst', 'configure-commands',

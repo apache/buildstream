@@ -17,6 +17,6 @@ def test_overlaps(cli, datafiles):
 
     assert result.exit_code == 0
     print(result.output)
-    assert "/file1: three.bst above one.bst" in result.output
-    assert "/file2: two.bst above three.bst above one.bst" in result.output
-    assert "/file3: two.bst above three.bst" in result.output
+    assert "/file1: three.bst above one.bst" in result.stderr
+    assert "/file2: two.bst above three.bst above one.bst" in result.stderr
+    assert "/file3: two.bst above three.bst" in result.stderr
