@@ -47,6 +47,10 @@ def terminator_handler(signal, frame):
 # that while the code block is running, the supplied function
 # will be called upon process termination.
 #
+# Note that after handlers are called, the termination will be handled by
+# terminating immediately with os._exit(). This means that SystemExit will not
+# be raised and 'finally' clauses will not be executed.
+#
 # Args:
 #    terminate_func (callable): A function to call when aborting
 #                               the nested code block.
