@@ -82,3 +82,26 @@ then applied as a glob style match, as understood by
 This is used for creating compositions with the :mod:`compose <elements.compose>`
 element and can be used by other deployment related elements for the purpose of
 splitting element artifacts into separate packages.
+
+
+.. _public_overlap_whitelist:
+
+Overlap whitelist
+-----------------
+
+The overlap whitelist indicates which files this element is allowed to overlap
+over other elements when staged together with other elements.
+
+Each item in the overlap whitelist has substitutions applied from
+:ref:`variables <format_variables>`, and is then applied as a glob-style match
+(i.e. :func:`utils.glob() <buildstream.utils.glob>`).
+
+.. code:: yaml
+
+  public:
+    bst:
+      overlap-whitelist:
+      - |
+        %{sysconfdir}/*
+      - |
+        /etc/fontcache
