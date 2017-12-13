@@ -51,7 +51,7 @@ run_test () {
 		echo "Running test '$element_name'"
 
 		bst_with_flags build "$element_name".bst
-		bst_with_flags checkout "$element_name".bst "$test_dir"
+		bst_checkout "$element_name".bst "$test_dir"
 
 		exit=0
 		compare_results "$element_name" "$RESULTS" "$EXPECTED" || exit=$?

@@ -45,7 +45,7 @@ run_test () {
 	echo "Running test 'step7'"
 
 	bst_with_flags build "step7.bst"
-	bst_with_flags checkout "step7.bst" "results/step7"
+	bst_checkout "step7.bst" "results/step7"
 
 	# Remove changing binary file
 	rm results/step7/usr/bin/libMathFunctions.a
@@ -65,7 +65,7 @@ run_test () {
 	echo "Running test 'step7-run'"
 
 	bst_with_flags build "step7-run.bst"
-	bst_with_flags checkout "step7-run.bst" "results/step7-run"
+	bst_checkout "step7-run.bst" "results/step7-run"
 
 	exit=0
 	compare_results "step7-run" "results" "expected" || exit=$?

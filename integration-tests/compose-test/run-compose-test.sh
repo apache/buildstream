@@ -57,7 +57,7 @@ run_test () {
 		echo "Running test '$element_name'"
 
 		bst_with_flags build "$element_name".bst
-		bst_with_flags checkout "$element_name".bst "$test_dir"
+		bst_checkout "$element_name".bst "$test_dir"
 
 		# XXX Special case for compose-integration-remove, dont
 		#     use the automated compare_results for this because
