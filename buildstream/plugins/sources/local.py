@@ -44,7 +44,8 @@ class LocalSource(Source):
     def __init__(self, context, project, meta):
         super().__init__(context, project, meta)
 
-        self.__unique_key = None  # Cached unique key to avoid multiple file system traversal if requested multiple times.
+        # Cached unique key to avoid multiple file system traversal if the unique key is requested multiple times.
+        self.__unique_key = None
 
     def configure(self, node):
         self.node_validate(node, ['path'] + Source.COMMON_CONFIG_KEYS)
