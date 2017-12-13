@@ -726,10 +726,11 @@ def _tempdir(suffix="", prefix="tmp", dir=None):
         if os.path.isdir(tempdir):
             shutil.rmtree(tempdir)
 
-    with _signals.terminator(cleanup_tempdir):
-        yield tempdir
-
-    cleanup_tempdir()
+    try:
+        with _signals.terminator(cleanup_tempdir):
+            yield tempdir
+    finally:
+        cleanup_tempdir()
 
 
 # _kill_process_tree()
