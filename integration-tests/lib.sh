@@ -112,6 +112,23 @@ bst_with_flags() {
     fi
 }
 
+# bst_checkout
+#
+# Call bst checkout
+#
+# Args
+#    element_name ($1) - the element name to checkout
+#    directory ($2) - the checkout directory
+bst_checkout() {
+    local element=$1
+    local directory=$2
+
+    # Use --hardlinks option to speed things up, this
+    # is fine as long as we dont modify files in the checkout.
+    #
+    bst_with_flags checkout --hardlinks "${element}" "${directory}"
+}
+
 # report_results
 #
 # Args:
