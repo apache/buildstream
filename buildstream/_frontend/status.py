@@ -145,13 +145,13 @@ class Status():
         # feeds for the amount of lines we intend to print first, and
         # move cursor position back to the first line
         for _ in range(self.alloc_lines + self.header.lines):
-            click.echo('')
+            click.echo('', err=True)
         for _ in range(self.alloc_lines + self.header.lines):
             self.move_up()
 
         # Render the one line header
         text = self.header.render(self.term_width, elapsed)
-        click.echo(text, color=self.colors)
+        click.echo(text, color=self.colors, err=True)
 
         # Now we have the number of columns, and an allocation for
         # alignment of each column
@@ -167,7 +167,7 @@ class Status():
                     text += ' ' * self.spacing
 
             # Print the line
-            click.echo(text, color=self.colors)
+            click.echo(text, color=self.colors, err=True)
 
         # Track what we printed last, for the next clear
         self.last_lines = self.alloc_lines + self.header.lines
@@ -184,10 +184,10 @@ class Status():
     def move_up(self):
         # Explicitly move to beginning of line, fixes things up
         # when there was a ^C or ^Z printed to the terminal.
-        click.echo(self.term.move_x(0) + self.term.move_up, nl=False)
+        click.echo(self.term.move_x(0) + self.term.move_up, nl=False, err=True)
 
     def clear_line(self):
-        click.echo(self.term.clear_eol, nl=False)
+        click.echo(self.term.clear_eol, nl=False, err=True)
 
     def allocate(self):
         if not self.need_alloc:

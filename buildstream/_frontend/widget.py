@@ -475,7 +475,7 @@ class LogLine(Widget):
         # Separator line before following output
         text += self.format_profile.fmt("~" * 79 + '\n')
 
-        click.echo(text, color=styling, nl=False)
+        click.echo(text, color=styling, nl=False, err=True)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 
@@ -525,7 +525,7 @@ class LogLine(Widget):
 
         text += self.format_values(values, style_value=False)
 
-        click.echo(text, color=styling, nl=False)
+        click.echo(text, color=styling, nl=False, err=True)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 

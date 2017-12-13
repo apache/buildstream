@@ -220,10 +220,10 @@ def build(app, elements, all, track, track_save, track_all, track_except):
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track, track_save)
-        click.echo("")
+        click.echo("", err=True)
         app.print_summary()
     except PipelineError:
-        click.echo("")
+        click.echo("", err=True)
         app.print_summary()
         sys.exit(-1)
 
@@ -265,10 +265,10 @@ def fetch(app, elements, deps, track, except_):
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
         app.pipeline.fetch(app.scheduler, dependencies, track)
-        click.echo("")
+        click.echo("", err=True)
         app.print_summary()
     except PipelineError as e:
-        click.echo("{}".format(e))
+        click.echo("{}".format(e), err=True)
         app.print_summary()
         sys.exit(-1)
 
@@ -305,10 +305,10 @@ def track(app, elements, deps, except_):
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
         app.pipeline.track(app.scheduler, dependencies)
-        click.echo("")
+        click.echo("", err=True)
         app.print_summary()
     except PipelineError as e:
-        click.echo("{}".format(e))
+        click.echo("{}".format(e), err=True)
         app.print_summary()
         sys.exit(-1)
 
@@ -337,10 +337,10 @@ def pull(app, elements, deps):
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
-        click.echo("")
+        click.echo("", err=True)
     except BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e))
+        click.echo("", err=True)
+        click.echo("ERROR: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -368,10 +368,10 @@ def push(app, elements, deps):
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
-        click.echo("")
+        click.echo("", err=True)
     except BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e))
+        click.echo("", err=True)
+        click.echo("ERROR: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -448,7 +448,7 @@ def show(app, elements, deps, except_, order, format, downloadable):
     try:
         dependencies = app.pipeline.deps_elements(deps)
     except PipelineError as e:
-        click.echo("{}".format(e))
+        click.echo("{}".format(e), err=True)
         sys.exit(-1)
 
     if order == "alpha":
@@ -507,20 +507,20 @@ def shell(app, element, sysroot, build, command):
                 missing_deps.append(dep)
 
     if missing_deps:
-        click.echo("")
-        click.echo("Missing elements for staging an environment for a shell:")
+        click.echo("", err=True)
+        click.echo("Missing elements for staging an environment for a shell:", err=True)
         for dep in missing_deps:
-            click.echo("   {}".format(dep.name))
-        click.echo("")
-        click.echo("Try building them first")
+            click.echo("   {}".format(dep.name), err=True)
+        click.echo("", err=True)
+        click.echo("Try building them first", err=True)
         sys.exit(-1)
 
     try:
         exitcode = app.pipeline.targets[0]._shell(scope, sysroot, command=command)
         sys.exit(exitcode)
     except BstError as e:
-        click.echo("")
-        click.echo("Errors shelling into this pipeline: {}".format(e))
+        click.echo("", err=True)
+        click.echo("Errors shelling into this pipeline: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -545,10 +545,10 @@ def checkout(app, element, directory, force, integrate, hardlinks):
     app.pipeline.initialize()
     try:
         app.pipeline.checkout(directory, force, integrate, hardlinks)
-        click.echo("")
+        click.echo("", err=True)
     except BstError as e:
         click.echo("")
-        click.echo("ERROR: {}".format(e))
+        click.echo("ERROR: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -581,10 +581,10 @@ def source_bundle(app, target, force, directory,
         app.print_heading(dependencies)
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
                                    compression, directory)
-        click.echo("")
+        click.echo("", err=True)
     except BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e))
+        click.echo("", err=True)
+        click.echo("ERROR: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -620,10 +620,10 @@ def workspace_open(app, no_checkout, force, source, track, element, directory):
     app.pipeline.initialize(inconsistent=[element])
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
-        click.echo("")
+        click.echo("", err=True)
     except BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e))
+        click.echo("", err=True)
+        click.echo("ERROR: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -645,15 +645,15 @@ def workspace_close(app, source, remove_dir, element):
     app.pipeline.initialize()
     if app.interactive and remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
-            click.echo('Aborting')
+            click.echo('Aborting', err=True)
             sys.exit(-1)
 
     try:
         app.pipeline.close_workspace(source, remove_dir)
-        click.echo("")
+        click.echo("", err=True)
     except BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e))
+        click.echo("", err=True)
+        click.echo("ERROR: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -676,15 +676,15 @@ def workspace_reset(app, source, track, no_checkout, element):
     app.pipeline.initialize()
     if app.interactive:
         if not click.confirm('This will remove all your changes, are you sure?'):
-            click.echo('Aborting')
+            click.echo('Aborting', err=True)
             sys.exit(-1)
 
     try:
         app.pipeline.reset_workspace(app.scheduler, source, track, no_checkout)
-        click.echo("")
+        click.echo("", err=True)
     except BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e))
+        click.echo("", err=True)
+        click.echo("ERROR: {}".format(e), err=True)
         sys.exit(-1)
 
 
@@ -703,13 +703,13 @@ def workspace_list(app):
         context = Context(app.main_options['option'])
         context.load(config)
     except BstError as e:
-        click.echo("Error loading user configuration: {}".format(e))
+        click.echo("Error loading user configuration: {}".format(e), err=True)
         sys.exit(-1)
 
     try:
         project = Project(directory, context)
     except BstError as e:
-        click.echo("Error loading project: {}".format(e))
+        click.echo("Error loading project: {}".format(e), err=True)
         sys.exit(-1)
 
     workspaces = []
@@ -792,7 +792,7 @@ class App():
             self.context = Context(self.main_options['option'])
             self.context.load(config)
         except BstError as e:
-            click.echo("Error loading user configuration: {}".format(e))
+            click.echo("Error loading user configuration: {}".format(e), err=True)
             sys.exit(-1)
 
         # Override things in the context from our command line options,
@@ -850,14 +850,14 @@ class App():
         try:
             self.project = Project(directory, self.context)
         except BstError as e:
-            click.echo("Error loading project: {}".format(e))
+            click.echo("Error loading project: {}".format(e), err=True)
             sys.exit(-1)
 
         try:
             self.pipeline = Pipeline(self.context, self.project, elements, except_,
                                      rewritable=rewritable)
         except BstError as e:
-            click.echo("Error loading pipeline: {}".format(e))
+            click.echo("Error loading pipeline: {}".format(e), err=True)
             sys.exit(-1)
 
         # Create our status printer, only available in interactive
@@ -947,7 +947,7 @@ class App():
                 self.status.clear()
                 click.echo("\n\n\nBUG: Message handling out of sync, " +
                            "unable to retrieve failure message for element {}\n\n\n\n\n"
-                           .format(element))
+                           .format(element), err=True)
             else:
                 self.handle_failure(element, queue, failure)
 
@@ -1066,7 +1066,7 @@ class App():
             self.status.clear()
 
         text = self.logger.render(message)
-        click.echo(text, color=self.colors, nl=False)
+        click.echo(text, color=self.colors, nl=False, err=True)
 
         # Maybe render the status area
         self.maybe_render_status()
