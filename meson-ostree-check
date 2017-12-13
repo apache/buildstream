@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import sys
+
+try:
+    import gi
+    gi.require_version('OSTree', '1.0')
+    from gi.repository import OSTree
+except (ImportError, ValueError):
+    sys.stderr.write("OSTree not found.\n")
+    sys.exit(1)
+
+try:
+    print('{}.{}'.format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
+except AttributeError:
+    sys.stderr.write("OSTree found, but it is probably too old as it does not "
+                     "provide the expected version information.\n")

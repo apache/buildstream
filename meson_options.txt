@@ -1,0 +1,2 @@
+option('check_backend', type: 'combo', choices: ['auto', 'linux', 'unix'],
+        description: 'Check for dependencies needed for a specific backend (default: autodetect backend)')
