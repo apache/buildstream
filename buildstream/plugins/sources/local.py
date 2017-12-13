@@ -41,6 +41,11 @@ from buildstream import utils
 
 class LocalSource(Source):
 
+    def __init__(self, context, project, meta):
+        super().__init__(context, project, meta)
+
+        self.__unique_key = None  # Cached unique key to avoid multiple file system traversal if requested multiple times.
+
     def configure(self, node):
         self.node_validate(node, ['path'] + Source.COMMON_CONFIG_KEYS)
 
@@ -53,16 +58,18 @@ class LocalSource(Source):
             raise SourceError("Specified path '{}' does not exist".format(self.path))
 
     def get_unique_key(self):
-        # Get a list of tuples of the the project relative paths and fullpaths
-        if os.path.isdir(self.fullpath):
-            filelist = utils.list_relative_paths(self.fullpath)
-            filelist = [(relpath, os.path.join(self.fullpath, relpath)) for relpath in filelist]
-        else:
-            filelist = [(self.path, self.fullpath)]
+        if self.__unique_key is None:
+            # Get a list of tuples of the the project relative paths and fullpaths
+            if os.path.isdir(self.fullpath):
+                filelist = utils.list_relative_paths(self.fullpath)
+                filelist = [(relpath, os.path.join(self.fullpath, relpath)) for relpath in filelist]
+            else:
+                filelist = [(self.path, self.fullpath)]
 
-        # Return a list of (relative filename, sha256 digest) tuples, a sorted list
-        # has already been returned by list_relative_paths()
-        return [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
+            # Return a list of (relative filename, sha256 digest) tuples, a sorted list
+            # has already been returned by list_relative_paths()
+            self.__unique_key = [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
+        return self.__unique_key
 
     def get_consistency(self):
         return Consistency.CACHED
