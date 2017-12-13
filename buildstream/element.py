@@ -465,7 +465,7 @@ class Element(Plugin):
             detail = "Staged files overwrite existing files in staging area:\n"
             for f, elements in overlaps.items():
                 detail += "  /{}: ".format(f) + " above ".join(reversed(elements)) + "\n"
-            self.warn("Overlaps detected!", detail=detail)
+            self.warn("Overlaps detected", detail=detail)
 
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
