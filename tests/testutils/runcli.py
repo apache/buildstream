@@ -5,9 +5,17 @@ import shutil
 import itertools
 import traceback
 from contextlib import contextmanager, ExitStack
-from click.testing import CliRunner
 from ruamel import yaml
 import pytest
+
+# XXX Using pytest private internals here
+#
+# We use pytest internals to capture the stdout/stderr during
+# a run of the buildstream CLI. We do this because click's
+# CliRunner convenience API (click.testing module) does not support
+# separation of stdout/stderr.
+#
+from _pytest.capture import MultiCapture, SysCapture
 
 from tests.testutils.site import IS_LINUX
 
@@ -22,18 +30,24 @@ from buildstream._exceptions import _get_last_exception
 # Wrapper for the click.testing result
 class Result():
 
-    def __init__(self, result):
-        self.exit_code = result.exit_code
-        self.output = result.output
+    def __init__(self,
+                 exit_code=None,
+                 exception=None,
+                 exc_info=None,
+                 output=None,
+                 stderr=None):
+        self.exit_code = exit_code
+        self.exc = exception
+        self.exc_info = exc_info
         self.exception = _get_last_exception()
-        self.result = result
+        self.output = output
+        self.stderr = stderr
 
     ##################################################################
     #                         Result parsers                         #
     ##################################################################
     def get_tracked_elements(self):
-        tracked = re.findall(r'\[track:(\S+)\s*]',
-                             self.result.output)
+        tracked = re.findall(r'\[track:(\S+)\s*]', self.stderr)
         if tracked is None:
             return []
 
@@ -45,7 +59,6 @@ class Cli():
     def __init__(self, directory, verbose=True):
         self.directory = directory
         self.config = None
-        self.cli_runner = CliRunner()
         self.verbose = verbose
 
     # configure():
@@ -118,19 +131,59 @@ class Cli():
             except ValueError:
                 sys.__stdout__ = open('/dev/stdout', 'w')
 
-            result = self.cli_runner.invoke(bst_cli, bst_args)
+            result = self.invoke(bst_cli, bst_args)
 
         # Some informative stdout we can observe when anything fails
         if self.verbose:
             command = "bst " + " ".join(bst_args)
             print("BuildStream exited with code {} for invocation:\n\t{}"
                   .format(result.exit_code, command))
-            print("Program output was:\n{}".format(result.output))
+            if result.output:
+                print("Program output was:\n{}".format(result.output))
+            if result.stderr:
+                print("Program stderr was:\n{}".format(result.stderr))
 
             if result.exc_info and result.exc_info[0] != SystemExit:
                 traceback.print_exception(*result.exc_info)
 
-        return Result(result)
+        return result
+
+    def invoke(self, cli, args=None, color=False, **extra):
+        exc_info = None
+        exception = None
+        exit_code = 0
+
+        capture = MultiCapture(Capture=SysCapture)
+        capture.start_capturing()
+
+        try:
+            cli.main(args=args or (), prog_name=cli.name, **extra)
+        except SystemExit as e:
+            if e.code != 0:
+                exception = e
+
+            exc_info = sys.exc_info()
+
+            exit_code = e.code
+            if not isinstance(exit_code, int):
+                sys.stdout.write(str(exit_code))
+                sys.stdout.write('\n')
+                exit_code = 1
+        except Exception as e:
+            exception = e
+            exit_code = -1
+            exc_info = sys.exc_info()
+        finally:
+            sys.stdout.flush()
+
+        out, err = capture.readouterr()
+        capture.stop_capturing()
+
+        return Result(exit_code=exit_code,
+                      exception=exception,
+                      exc_info=exc_info,
+                      output=out,
+                      stderr=err)
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
