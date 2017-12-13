@@ -135,9 +135,10 @@ class Source(Plugin):
         Yields:
            (str): A path to a temporary directory
 
-        This should be used by source plugins directly instead of the
-        tempfile module, as it will take care of cleaning up the temporary
-        directory in the case of forced termination.
+        This should be used by source plugins directly instead of the tempfile
+        module. This one will automatically cleanup in case of termination by
+        catching the signal before os._exit(). It will also use the 'mirror
+        directory' as expected for a source.
         """
         mirrordir = self.get_mirror_directory()
         with utils._tempdir(dir=mirrordir) as tempdir:
