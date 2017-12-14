@@ -1,2 +1,5 @@
 option('check_backend', type: 'combo', choices: ['auto', 'linux', 'unix'],
         description: 'Check for dependencies needed for a specific backend (default: autodetect backend)')
+
+option('bash_completion', type: 'string', value: 'yes',
+       description: 'Directory to install Bash completion files (or "yes" for default directory, "no" to disable installation')

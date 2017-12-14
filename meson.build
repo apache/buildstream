@@ -117,6 +117,34 @@ if backend == 'linux'
 endif
 
 
+####################################################################
+# bash-completion
+####################################################################
+
+install_bash_completion = false
+if get_option('bash_completion') == 'yes' or get_option('bash_completion') == 'auto'
+  bash_completion_package = dependency('bash-completion', required: false)
+  if bash_completion_package.found()
+    bash_completion_dir = bash_completion_package.get_pkgconfig_variable('completionsdir')
+  else
+    bash_completion_dir = join_paths(get_option('prefix'), get_option('datadir'), 'bash-completion', 'completions')
+  endif
+  install_bash_completion = true
+elif get_option('bash_completion') == 'no' or get_option('bash_completion') == ''
+  install_bash_completion = false
+  bash_completion_dir = '(disabled)'
+else
+  install_bash_completion = true
+  bash_completion_dir = get_option('bash_completion')
+endif
+
+if install_bash_completion
+  message('Installing Bash completion script to @0@'.format(bash_completion_dir))
+else
+  message('Not installing Bash completion script')
+endif
+
+
 # Detect version from Git using setuptools_scm.
 package_version_result = run_command(python, '-c', 'import setuptools_scm; print(setuptools_scm.get_version())')
 if package_version_result.returncode() != 0
