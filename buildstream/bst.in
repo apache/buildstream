@@ -25,6 +25,6 @@ PYTHON_SITE_PACKAGES_DIR = '@pythondir@'
 
 sys.path.insert(1, PYTHON_SITE_PACKAGES_DIR)
 
-import buildstream._frontend
+from buildstream._frontend import cli
 
-sys.exit(buildstream._frontend.cli())
+sys.exit(cli())

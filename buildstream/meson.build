@@ -45,8 +45,14 @@ install_data(
     sources + [version],
     install_dir: join_paths(python_site_packages_dir, 'buildstream'))
 
-main = configure_file(
-    input: 'main.py.in',
+bst_main = configure_file(
+    input: 'bst.in',
     output: 'bst',
+    configuration: cdata,
+    install_dir: get_option('bindir'))
+
+bst_artifact_receive_main = configure_file(
+    input: 'bst-artifact-receive.in',
+    output: 'bst-artifact-receive',
     configuration: cdata,
     install_dir: get_option('bindir'))
