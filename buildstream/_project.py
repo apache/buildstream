@@ -128,7 +128,7 @@ class Project():
         config.pop('elements', None)
         _yaml.node_final_assertions(config)
         _yaml.node_validate(config, [
-            'required-project-version',
+            'format-version',
             'element-path', 'variables',
             'environment', 'environment-nocache',
             'split-rules', 'elements', 'plugins',
@@ -179,7 +179,7 @@ class Project():
         self._workspaces = self._load_workspace_config()
 
         # Assert project version
-        format_version = _yaml.node_get(config, int, 'required-project-version', default_value=0)
+        format_version = _yaml.node_get(config, int, 'format-version', default_value=0)
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(

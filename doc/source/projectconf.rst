@@ -147,12 +147,12 @@ Project Version Format
 ''''''''''''''''''''''
 
 The project's minimum required version of buildstream is specified in
-``project.conf`` with the ``required-project-version`` field, e.g.
+``project.conf`` with the ``format-version`` field, e.g.
 
 .. code:: yaml
 
   # The minimum base BuildStream format
-  required-project-version: 0
+  format-version: 0
 
 
 .. _project_options:
