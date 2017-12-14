@@ -38,10 +38,15 @@ from contextlib import contextmanager
 
 import psutil
 
-from . import VERSION
 from . import _signals
 from . import _yaml
 from ._exceptions import ProgramNotFoundError
+
+
+try:
+    from .version import VERSION
+except ImportError:
+    VERSION = '(uninstalled)'
 
 
 class FileListResult():

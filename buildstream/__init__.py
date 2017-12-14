@@ -25,4 +25,8 @@ from .source import Source, SourceError, Consistency
 from .element import Element, ElementError, Scope
 from .buildelement import BuildElement
 from .scriptelement import ScriptElement
-from .config import VERSION
+
+try:
+    from .version import VERSION
+except ImportError:
+    VERSION = '(uninstalled)'
