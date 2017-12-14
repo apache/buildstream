@@ -1,0 +1,24 @@
+# Script to detect if a Python module requirement is satisfied.
+#
+# This should be handled by Meson instead of requiring a script, see:
+# https://github.com/mesonbuild/meson/issues/2377
+
+import pkg_resources
+
+import sys
+
+requirements =  sys.argv[1:]
+
+returncode = 0
+
+for requirement in requirements:
+    try:
+        pkg_resources.require(requirement)
+    except pkg_resources.VersionConflict as e:
+        sys.stderr.write("Wanted Python dependency {}, got {}.\n".format(e.req, e.dist))
+        returncode = 1
+    except pkg_resources.DistributionNotFound as e:
+        sys.stderr.write("Required Python dependency {} was not found.\n".format(e.req))
+        returncode = 1
+
+sys.exit(returncode)

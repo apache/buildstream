@@ -20,7 +20,6 @@
 
 import os
 import inspect
-import pkg_resources
 
 from ._exceptions import PluginError
 from . import utils
@@ -82,6 +81,10 @@ class PluginContext():
         return source
 
     def _get_pip_plugin_source(self, package_name, kind):
+        # Importing pkg_resources can be a slow operation (see:
+        # https://github.com/pypa/setuptools/issues/510) so we only do it when
+        # needed.
+        import pkg_resources
         defaults = None
         if ('pip', package_name) not in self.alternate_sources:
             # key by a tuple to avoid collision

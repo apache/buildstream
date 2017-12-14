@@ -30,6 +30,50 @@ if not python_version.version_compare('>= 3.4')
   error('BuildStream requires Python >= 3.4')
 endif
 
+# FIXME: We check manually for our Python dependencies as Meson doesn't
+# support doing so yet. See https://github.com/mesonbuild/meson/issues/2377
+
+setuptools_check = run_command(python, '-c', 'import pkg_resources')
+if setuptools_check.returncode() != 0
+  error('Python Setuptools was not found; the pkg_resources module is required.\n' +
+        setuptools_check.stderr().strip())
+endif
+
+install_requires = [
+  'blessings',
+  'Click',
+  'jinja2',
+  'pluginbase',
+  'psutil',
+  'ruamel.yaml',
+]
+
+setup_requires = [
+  'setuptools_scm',
+]
+
+test_requires = [
+  'pep8',
+  # Pin coverage to 4.2 for now, we're experiencing
+  # random crashes with 4.4.2
+  'coverage == 4.4.0',
+  'pytest >= 3.1.0',
+  'pytest-cov',
+  'pytest-datafiles',
+  'pytest-env',
+  'pytest-pep8',
+  # Provide option to run tests in parallel, less reliable
+  'pytest-xdist',
+]
+
+missing_dependency_errors = []
+
+message('Checking for Python dependencies')
+modules_check = run_command(python, 'meson-python-packages-check', install_requires + setup_requires + test_requires)
+if modules_check.returncode() != 0
+  error('Python dependency requirements are not satisfied:\n' + modules_check.stderr().strip())
+endif
+
 ##################################################################
 # Bubblewrap requirements
 ##################################################################
