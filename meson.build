@@ -42,6 +42,7 @@ endif
 install_requires = [
   'blessings',
   'Click',
+  'click-man',
   'jinja2',
   'pluginbase',
   'psutil',
@@ -133,3 +134,4 @@ cdata.set('package_version', package_version)
 cdata.set('pythondir', python_site_packages_dir)
 
 subdir('buildstream')
+subdir('man')

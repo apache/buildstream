@@ -1,0 +1,31 @@
+# click_man is designed to be used only with setuptools.
+# As we don't use setuptools, we need a wrapper to integrate it with Meson.
+
+
+import click_man.core
+
+import sys
+
+import buildstream._frontend
+import buildstream._artifactcache.pushreceive
+
+
+def main():
+    if len(sys.argv) != 2:
+        raise RuntimeError("Usage: {} OUTPUT_DIR".format(sys.argv[0]))
+
+    output_directory = sys.argv[1]
+
+    click_man.core.write_man_pages(name='bst',
+                                   cli=buildstream._frontend.cli,
+                                   target_dir=output_directory)
+    click_man.core.write_man_pages(name='bst-artifact-receive',
+                                   cli=buildstream._artifactcache.pushreceive.receive_main,
+                                   target_dir=output_directory)
+
+
+try:
+    main()
+except RuntimeError as e:
+    sys.stderr.write("{}\n".format(e))
+    sys.exit(1)
