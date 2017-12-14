@@ -20,13 +20,12 @@
 import os
 import sys
 import click
-import pkg_resources  # From setuptools
 from contextlib import contextmanager
 from blessings import Terminal
 from click import UsageError
 
 # Import buildstream public symbols
-from .. import Scope
+from .. import Scope, VERSION
 
 # Import various buildstream internals
 from .._context import Context
@@ -41,9 +40,6 @@ from .. import _yaml
 # Import frontend assets
 from . import Profile, LogLine, Status
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-
-# Some globals resolved for default arguments in the cli
-build_stream_version = pkg_resources.require("buildstream")[0].version
 
 
 ##################################################################
@@ -140,7 +136,7 @@ click.BaseCommand.main = override_main
 #                          Main Options                          #
 ##################################################################
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
-@click.version_option(version=build_stream_version)
+@click.version_option(version=VERSION)
 @click.option('--config', '-c',
               type=click.Path(exists=True, dir_okay=False, readable=True),
               help="Configuration file to use")

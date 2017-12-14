@@ -24,11 +24,10 @@ from contextlib import ExitStack
 from mmap import mmap
 
 import click
-import pkg_resources
 from ruamel import yaml
 
 from . import Profile
-from .. import Element, Scope, Consistency
+from .. import Element, Scope, Consistency, VERSION
 from .. import _yaml
 from .._exceptions import ImplError
 from .._message import MessageType
@@ -423,12 +422,11 @@ class LogLine(Widget):
         context = pipeline.context
         project = pipeline.project
         starttime = datetime.datetime.now()
-        bst = pkg_resources.require("buildstream")[0]
         text = ''
 
         # Main invocation context
         text += '\n'
-        text += self.content_profile.fmt("BuildStream Version {}\n".format(bst.version), bold=True)
+        text += self.content_profile.fmt("BuildStream Version {}\n".format(VERSION), bold=True)
         values = OrderedDict()
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)

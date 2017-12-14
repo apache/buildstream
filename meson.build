@@ -1,4 +1,4 @@
-project('buildstream', version: '0.1')
+project('buildstream')
 
 if get_option('check_backend') == 'auto'
   platform = host_machine.system()
@@ -72,10 +72,20 @@ if backend == 'linux'
 endif
 
 
+# Detect version from Git using setuptools_scm.
+package_version_result = run_command(python, '-c', 'import setuptools_scm; print(setuptools_scm.get_version())')
+if package_version_result.returncode() != 0
+  error('Failed to detect package version: @0@'.format(package_version_result.stderr().strip()))
+endif
+package_version = package_version_result.stdout().strip()
+message('Detected package version @0@'.format(package_version))
+
+
 python_name = 'python' + python_version
 python_site_packages_dir = join_paths(get_option('prefix'), get_option('libdir'), python_name, 'site-packages')
 
 cdata = configuration_data()
+cdata.set('package_version', package_version)
 cdata.set('pythondir', python_site_packages_dir)
 
 subdir('buildstream')

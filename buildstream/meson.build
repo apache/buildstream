@@ -36,12 +36,17 @@ sources = [
     '_yaml.py',
 ]
 
+config = configure_file(
+    input: 'config.py.in',
+    output: 'config.py',
+    configuration: cdata)
+
+install_data(
+    sources + [config],
+    install_dir: join_paths(python_site_packages_dir, 'buildstream'))
+
 main = configure_file(
     input: 'main.py.in',
     output: 'bst',
     configuration: cdata,
     install_dir: get_option('bindir'))
-
-install_data(
-    sources,
-    install_dir: join_paths(python_site_packages_dir, 'buildstream'))

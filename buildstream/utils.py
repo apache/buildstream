@@ -36,9 +36,9 @@ import subprocess
 import tempfile
 from contextlib import contextmanager
 
-import pkg_resources
 import psutil
 
+from . import VERSION
 from . import _signals
 from . import _yaml
 from ._exceptions import ProgramNotFoundError
@@ -408,8 +408,7 @@ def get_bst_version():
        (int): The major version
        (int): The minor version
     """
-    package = pkg_resources.require("buildstream")[0]
-    versions = package.version.split('.')[:2]
+    versions = VERSION.split('.')[:2]
 
     return (int(versions[0]), int(versions[1]))
 
