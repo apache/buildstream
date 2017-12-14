@@ -224,31 +224,8 @@ class Project():
             # Store the origins if they're not 'core'.
             # core elements are loaded by default, so storing is unnecessary.
             if _yaml.node_get(origin, str, 'origin') != 'core':
-                # Add origins for sources
-                if 'sources' in origin:
-                    source_dict = _yaml.node_copy(origin)
-                    sources = _yaml.node_get(origin, Mapping, 'sources', default_value={})
-                    source_dict['plugins'] = [k for k, _ in _yaml.node_items(sources)]
-                    del source_dict['sources']
-                    if 'elements' in source_dict:
-                        del source_dict['elements']
-                    # paths are passed in relative to the project, but must be absolute
-                    if source_dict['origin'] == 'local':
-                        source_dict['path'] = os.path.join(self.directory,
-                                                           source_dict['path'])
-                    self._plugin_source_origins.append(source_dict)
-                if 'elements' in origin:
-                    element_dict = _yaml.node_copy(origin)
-                    elements = _yaml.node_get(origin, Mapping, 'elements', default_value={})
-                    element_dict['plugins'] = [k for k, _ in _yaml.node_items(elements)]
-                    del element_dict['elements']
-                    if 'sources' in element_dict:
-                        del element_dict['sources']
-                    # paths are passed in relative to the project, but must be absolute
-                    if element_dict['origin'] == 'local':
-                        element_dict['path'] = os.path.join(self.directory,
-                                                            element_dict['path'])
-                    self._plugin_element_origins.append(element_dict)
+                self._store_origin(origin, 'sources', self._plugin_source_origins)
+                self._store_origin(origin, 'elements', self._plugin_element_origins)
 
         # Source url aliases
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
@@ -270,6 +247,37 @@ class Project():
 
         # Load project split rules
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
+
+    # _store_origin()
+    #
+    # Helper function to store plugin origins
+    #
+    # Args:
+    #    origin (dict) - a dictionary indicating the origin of a group of
+    #                    plugins.
+    #    plugin_group (str) - The name of the type of plugin that is being
+    #                         loaded
+    #    destination (list) - A list of dicts to store the origins in
+    #
+    # Raises:
+    #    LoadError if 'origin' is an unexpected value
+    def _store_origin(self, origin, plugin_group, destination):
+        expected_groups = ['sources', 'elements']
+        if plugin_group not in expected_groups:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Unexpected plugin group: {}, expecting {}"
+                            .format(plugin_group, expected_groups))
+        if plugin_group in origin:
+            origin_dict = _yaml.node_copy(origin)
+            plugins = _yaml.node_get(origin, Mapping, plugin_group, default_value={})
+            origin_dict['plugins'] = [k for k, _ in _yaml.node_items(plugins)]
+            for group in expected_groups:
+                if group in origin_dict:
+                    del origin_dict[group]
+            if origin_dict['origin'] == 'local':
+                # paths are passed in relative to the project, but must be absolute
+                origin_dict['path'] = os.path.join(self.directory, origin_dict['path'])
+            destination.append(origin_dict)
 
     # _list_workspaces()
     #
