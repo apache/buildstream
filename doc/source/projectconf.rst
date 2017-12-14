@@ -154,24 +154,6 @@ The project's minimum required version of buildstream is specified in
   # The minimum base BuildStream format
   required-project-version: 0
 
-Versioning
-~~~~~~~~~~
-
-The ``project.conf`` allows asserting the minimal required core
-format version and the minimal required version for individual
-plugins.
-
-.. code:: yaml
-
-  required-versions:
-
-    project: 0
-
-    # The minimum version of the autotools element
-    elements:
-      autotools: 3
-
-
 
 .. _project_options:
 
