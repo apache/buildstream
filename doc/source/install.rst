@@ -27,7 +27,8 @@ this package so we recommend installing it with your package manager first.
 For the purpose of installing BuildStream while there are no distro packages,
 you will additionally need:
 
-* pip for python3 (only required for setup)
+* Meson
+* Ninja
 * Python 3 development libraries and headers
 * git (to checkout buildstream)
 
@@ -83,17 +84,20 @@ requirements you need::
                  python3-psutil ostree
 
 
-User installation with pip
+User installation with Meson
 --------------------------
 Once you have the base system dependencies, you can clone the buildstream
 git repository and install it as a regular user::
 
   git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
-  pip3 install --user .
+  mkdir build
+  cd build
+  meson .. --prefix=$HOME/.local -Dbash_completion=no
+  ninja install
 
-This will install buildstream and it's pure python dependencies directly into
-your user's homedir in ``~/.local``
+This will install buildstream and its pure python dependencies directly into
+your user's homedir in ``$HOME/.local``.
 
 
 Adjust PATH
@@ -121,12 +125,12 @@ to your ``~/.bash_completion``:
    :language: yaml
 
 
-Upgrading with pip
+Upgrading with Meson
 ~~~~~~~~~~~~~~~~~~
 To upgrade a previously install BuildStream, you will need to pull the latest
-changes and reinstall as such::
+changes and rerun ``ninja install`` from the build/ directory.
 
-  pip3 uninstall buildstream
   cd buildstream
   git pull --rebase
-  pip3 install --user .
+  cd build
+  ninja install
