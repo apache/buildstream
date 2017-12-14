@@ -32,7 +32,7 @@ endif
 
 # FIXME: We check manually for our Python dependencies as Meson doesn't
 # support doing so yet. See https://github.com/mesonbuild/meson/issues/2377
-
+message('Checking for setuptools (for pkg_resources)')
 setuptools_check = run_command(python, '-c', 'import pkg_resources')
 if setuptools_check.returncode() != 0
   error('Python Setuptools was not found; the pkg_resources module is required.\n' +
