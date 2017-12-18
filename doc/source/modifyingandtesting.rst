@@ -6,9 +6,12 @@ Modifying and testing code
 Creating a workspace
 ----
 
-A work space is a seperate directory containing a copy of the project sourcecode
+A work space is a seperate directory containing a copy of the project sourcecode.
+This would usually be used when you want to modify and test your code, without changing the original.
+This is very useful for trying out new patches and changes without risking loss of work.
 
-This example assumes you have a project that can be successfully built.
+This example assumes you have a project that can be built (Has the appropriate .bst files in place)
+`Note: The project does not need to build sucessfully, only have the ability to build` 
 
 If not, go to :ref:`buildproject`
 
@@ -18,7 +21,7 @@ In this example we be using `gedit.bst`, but this will work on any buildable pro
 
 From the root of the project directory run:
 
-    ``bst`` :ref:`invoking_workspace` ``open [project bst file] workspace1``
+    ``bst`` :ref:`invoking_workspace` ``open gedit.bst workspace1``
 
 In this case, that would be core/gedit.bst
 

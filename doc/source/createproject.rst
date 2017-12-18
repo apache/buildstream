@@ -9,9 +9,8 @@ If not, go to :ref:`installing`
 
 Or :ref:`docker`
 
-This section will be using files from: 
+This section will be using files from Cmake-test 
 
-https://gitlab.com/BuildStream/buildstream/tree/master/integration-tests/cmake-test/
 
 Setup
 ----
@@ -56,14 +55,14 @@ If you plan on following along with this tutorial, do the following:
 
     For this example we will be using cmake-test, as it is a relatively small and simple project to build.
 
-    Download https://gitlab.com/BuildStream/buildstream/raw/master/integration-tests/cmake-test/src/step7.tar.gz
+    Download :download:`step7.tar.gz <../../integration-tests/cmake-test/src/step7.tar.gz>`
 
     This should provide you with `step7.tar.gz`
 
     Move `step7.tar.gz` to `src`
 
 
-    Download https://gitlab.com/BuildStream/buildstream/raw/master/integration-tests/cmake-test/keys/gnome-sdk.gpg
+    Download :download:`gnome-sdk.gpg <../../integration-tests/cmake-test/keys/gnome-sdk.gpg>`
 
     This should provide you with `gnome-sdk.gpg`
 

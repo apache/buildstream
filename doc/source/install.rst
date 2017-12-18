@@ -79,44 +79,12 @@ Debian Buster or Sid
 For debian unstable or testing, the following line should be enough
 to get most of the base system requirements installed::
 
-  sudo apt install build-essential \
-      python3 \
-      python3-dev \
-      python3-pip \
-      git \
-      python3-gi \
-      gir1.2-ostree-1.0 \
-      bubblewrap \
-      ruamel.yaml \
-      dh-autoreconf \
-      libglib2.0-dev \
-      bison \
-      liblzma-dev \
-      e2fslibs-dev \
-      gobject-introspection \
-      libostree-dev \
-      libgirepository1.0-dev 
-
-To install ostree:
-
-Go to the directory you want the ostree repo stored in::
-
-   git clone https://github.com/ostreedev/ostree.git 
-   cd ostree
-   sudo mkdir /opt/ostree
-   sudo chown $USERNAME /opt/ostree
-   ./autogen.sh
-   ./configure --prefix=/opt/ostree
-   make
-   sudo make install
-
-we need to add those install paths to our path and as we have installed object introspection
-and built ostree with this capability we must also specify that on our path.
-
-So you must add::
-
-   PATH=/opt/ostree/bin:$PATH
-export GI_TYPELIB_PATH=/opt/ostree/lib/girepository-1.0/
+  sudo apt-get install \
+      python3 python3-dev python3-pip git \
+      python3-dev python3-pip git \
+      python3-gi gir1.2-ostree-1.0 ostree \
+      bubblewrap ruamel.yaml
+      bubblewrap python3-ruamel.yaml
 
 Fedora
 ~~~~~~
