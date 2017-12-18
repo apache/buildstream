@@ -10,12 +10,16 @@ tests/**/*.pyc
 .eggs
 
 # Some testing related things
+cache/
 tmp
 .coverage
+.coverage.*
 .cache
+*.bst/
 
-# Integration test results
-/integration-tests/*results/
+# Pycache, in case buildstream is ran directly from within the source
+# tree
+__pycache__/
 
 # Generated version file
 buildstream/__version__.py
