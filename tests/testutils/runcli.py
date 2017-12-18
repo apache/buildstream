@@ -386,10 +386,14 @@ def configured(directory, config=None):
     if not config:
         config = {}
 
-    config['sourcedir'] = os.path.join(directory, 'sources')
-    config['builddir'] = os.path.join(directory, 'build')
-    config['artifactdir'] = os.path.join(directory, 'artifacts')
-    config['logdir'] = os.path.join(directory, 'logs')
+    if not config.get('sourcedir', False):
+        config['sourcedir'] = os.path.join(directory, 'sources')
+    if not config.get('builddir', False):
+        config['builddir'] = os.path.join(directory, 'build')
+    if not config.get('artifactdir', False):
+        config['artifactdir'] = os.path.join(directory, 'artifacts')
+    if not config.get('logdir', False):
+        config['logdir'] = os.path.join(directory, 'logs')
 
     # Dump it and yield the filename for test scripts to feed it
     # to buildstream as an artument
