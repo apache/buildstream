@@ -9,7 +9,7 @@ If not, go to :ref:`installing`
 
 Or :ref:`docker`
 
-This section will be using files from Cmake-test 
+This section will be using files from Cmake-test
 
 
 Setup
@@ -17,7 +17,7 @@ Setup
 
 If using docker, run::
 
-  bst-here 
+  bst-here
 
 In the directory you want to use.
 
@@ -42,7 +42,7 @@ Create a project directory and in it create the following directories:
 Source files
 ~~~~
 
-There are multiple ways of including source files with build stream, and this is done though things called plugins.
+There are multiple ways of including source files with BuildStream, and this is done through things called plugins.
 
 The list of options can be found here :ref:`plugins_sources`
 
@@ -106,17 +106,17 @@ In the elements directory Create a file called step7.bst containing::
 
   kind: cmake # This is a build element plugin (linked below)
   description: Cmake test
-  
+
   depends:
     - filename: dependencies/base-platform.bst
       type: build
     - filename: dependencies/base-sdk.bst
       type: build
-  
+
   sources:
     - kind: tar # This is a Source Plugin
       url: [PathToProjectDir]/src/step7.tar.gz
-  
+
 :ref:`kind (plugins)<plugins_build>`
 
 :ref:`format_depends`
@@ -162,4 +162,4 @@ In the elements/dependencies directory Create a file called base-platform.bst co
       integration-commands:
       - ldconfig
 
-:ref:`format_public` 
+:ref:`format_public`
