@@ -688,7 +688,7 @@ class Element(Plugin):
         script_path = os.path.join(directory, "build-" + self.normal_name)
 
         with self.timed_activity("Writing build script", silent_nested=True):
-            with open(script_path, "w") as script_file:
+            with utils.save_file_atomic(script_path, "w") as script_file:
                 script_file.write(script)
 
             os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)

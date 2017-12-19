@@ -927,7 +927,7 @@ class Pipeline():
         with open(_site.build_all_template, "r") as f:
             script_template = f.read()
 
-        with open(script_path, "w") as script:
+        with utils.save_file_atomic(script_path, "w") as script:
             script.write(script_template.format(modules=module_string))
 
         os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
