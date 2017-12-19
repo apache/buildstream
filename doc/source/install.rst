@@ -19,8 +19,7 @@ BuildStream requires the following base system requirements:
 * OSTree >= v2017.8 with introspection data
 * build-essential
 * git
-* gir1.2-ostree-1.0
-* bubblewrap
+* gir1.2-ostree-1* bubblewrap
 * dh-autoreconf
 * libglib2.0-dev
 * bison
