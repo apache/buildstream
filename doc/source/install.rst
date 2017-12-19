@@ -31,8 +31,9 @@ BuildStream requires the following base system requirements:
 
 
 Note that ``ruamel.yaml`` is a pure python library which is normally
-obtainable via pip, however there seems to be some problems with installing
-this package so we recommend installing it with your package manager first.
+obtainable via pip, however there seems to be some problem with
+installing this package so we recommend installing it with your
+package manager first.
 
 For the purpose of installing BuildStream while there are no distro packages,
 you will additionally need:
@@ -104,7 +105,7 @@ git repository and install it as a regular user::
   cd buildstream
   pip3 install --user .
 
-This will install buildstream and it's pure python dependencies directly into
+This will install buildstream and its pure python dependencies directly into
 your user's homedir in ``~/.local``
 
 
@@ -135,7 +136,7 @@ to your ``~/.bash_completion``:
 
 Upgrading with pip
 ~~~~~~~~~~~~~~~~~~
-To upgrade a previously install BuildStream, you will need to pull the latest
+To upgrade a previously installed BuildStream, you will need to pull the latest
 changes and reinstall as such::
 
   pip3 uninstall buildstream
