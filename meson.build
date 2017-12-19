@@ -1,4 +1,4 @@
-project('buildstream')
+project('buildstream', version: '0.1')
 
 if get_option('check_backend') == 'auto'
   platform = host_machine.system()
@@ -152,11 +152,14 @@ endif
 
 # Detect version from Git using setuptools_scm.
 package_version_result = run_command(python, '-c', 'import setuptools_scm; print(setuptools_scm.get_version())')
-if package_version_result.returncode() != 0
-  error('Failed to detect package version: @0@'.format(package_version_result.stderr().strip()))
+if package_version_result.returncode() == 0
+  package_version = package_version_result.stdout().strip()
+  message('Detected package version from Git: @0@'.format(package_version))
+else
+  message('Failed to detect package version from Git: @0@.'.format(package_version_result.stderr().strip()))
+  package_version = meson.project_version()
+  message('Using version from Meson.build: @0@.'.format(package_version))
 endif
-package_version = package_version_result.stdout().strip()
-message('Detected package version @0@'.format(package_version))
 
 
 python_name = 'python' + python_version
