@@ -75,6 +75,11 @@ if modules_check.returncode() != 0
   error('Python dependency requirements are not satisfied:\n' + modules_check.stderr().strip())
 endif
 
+pytest = find_program('pytest-3')
+# We configure pytest through a pytest.ini file in this directory, so as
+# long as we set the workdir correctly it "just works" when run by Meson.
+pytest_workdir = meson.current_source_dir()
+
 ##################################################################
 # Bubblewrap requirements
 ##################################################################
@@ -163,3 +168,4 @@ cdata.set('pythondir', python_site_packages_dir)
 
 subdir('buildstream')
 subdir('man')
+subdir('tests')
