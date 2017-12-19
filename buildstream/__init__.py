@@ -29,4 +29,4 @@ from .scriptelement import ScriptElement
 try:
     from .version import VERSION
 except ImportError:
-    VERSION = '(uninstalled)'
+    VERSION = '0.0.0 (uninstalled)'
