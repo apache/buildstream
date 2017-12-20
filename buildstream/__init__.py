@@ -18,7 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-# Plugin auther facing APIs
+# Plugin author facing APIs
+from .utils import UtilError, ProgramNotFoundError
 from .sandbox import Sandbox, SandboxFlags
 from .plugin import Plugin
 from .source import Source, SourceError, Consistency

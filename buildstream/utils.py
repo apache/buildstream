@@ -41,7 +41,26 @@ import psutil
 
 from . import _signals
 from . import _yaml
-from ._exceptions import ProgramNotFoundError
+from ._exceptions import BstError
+
+
+class UtilError(BstError):
+    """Raised by utility functions when system calls fail.
+
+    This will be handled internally by the BuildStream core,
+    if you need to handle this error, then it should be reraised,
+    or either of the :class:`.ElementError` or :class:`.SourceError`
+    exceptions should be raised from this error.
+    """
+    pass
+
+
+class ProgramNotFoundError(BstError):
+    """Raised if a required program is not found.
+
+    It is normally unneeded to handle this exception from plugin code.
+    """
+    pass
 
 
 class FileListResult():
@@ -177,13 +196,17 @@ def sha256sum(filename):
        (str): An sha256 checksum string
 
     Raises:
-       OSError: In the case there was an issue opening
-                or reading `filename`
+       UtilError: In the case there was an issue opening
+                  or reading `filename`
     """
-    h = hashlib.sha256()
-    with open(filename, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
+    try:
+        h = hashlib.sha256()
+        with open(filename, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                h.update(chunk)
+    except OSError as e:
+        raise UtilError("Failed to get a checksum of file '{}': {}"
+                        .format(filename, e)) from e
 
     return h.hexdigest()
 
@@ -197,8 +220,7 @@ def safe_copy(src, dest, *, result=None):
        result (:class:`~.FileListResult`): An optional collective result
 
     Raises:
-       OSError: In the case of unexpected system call failures
-       shutil.Error: In case of unexpected system call failures
+       UtilError: In the case of unexpected system call failures
 
     This is almost the same as shutil.copy2(), except that
     we unlink *dest* before overwriting it if it exists, just
@@ -209,7 +231,8 @@ def safe_copy(src, dest, *, result=None):
         os.unlink(dest)
     except OSError as e:
         if e.errno != errno.ENOENT:
-            raise
+            raise UtilError("Failed to remove destination file '{}': {}"
+                            .format(dest, e)) from e
 
     shutil.copyfile(src, dest)
     try:
@@ -224,6 +247,9 @@ def safe_copy(src, dest, *, result=None):
         if result:
             result.failed_attributes.append(dest)
         pass
+    except shutil.Error as e:
+        raise UtilError("Failed to copy '{} -> {}': {}"
+                        .format(src, dest, e)) from e
 
 
 def safe_link(src, dest, *, result=None):
@@ -235,8 +261,7 @@ def safe_link(src, dest, *, result=None):
        result (:class:`~.FileListResult`): An optional collective result
 
     Raises:
-       OSError: In the case of unexpected system call failures
-       shutil.Error: In case of unexpected system call failures
+       UtilError: In the case of unexpected system call failures
     """
 
     # First unlink the target if it exists
@@ -244,7 +269,8 @@ def safe_link(src, dest, *, result=None):
         os.unlink(dest)
     except OSError as e:
         if e.errno != errno.ENOENT:
-            raise
+            raise UtilError("Failed to remove destination file '{}': {}"
+                            .format(dest, e)) from e
 
     # If we can't link it due to cross-device hardlink, copy
     try:
@@ -253,7 +279,8 @@ def safe_link(src, dest, *, result=None):
         if e.errno == errno.EXDEV:
             safe_copy(src, dest)
         else:
-            raise
+            raise UtilError("Failed to link '{} -> {}': {}"
+                            .format(src, dest, e)) from e
 
 
 def safe_remove(path):
@@ -270,7 +297,7 @@ def safe_remove(path):
        if `path` was a non empty directory.
 
     Raises:
-       OSError: In the case of unexpected system call failures
+       UtilError: In the case of unexpected system call failures
     """
     if os.path.lexists(path):
 
@@ -280,7 +307,8 @@ def safe_remove(path):
             os.unlink(path)
         except OSError as e:
             if e.errno != errno.EISDIR:
-                raise
+                raise UtilError("Failed to remove '{}': {}"
+                                .format(path, e))
 
             try:
                 os.rmdir(path)
@@ -288,7 +316,8 @@ def safe_remove(path):
                 if e.errno == errno.ENOTEMPTY:
                     return False
                 else:
-                    raise
+                    raise UtilError("Failed to remove '{}': {}"
+                                    .format(path, e))
 
     return True
 
@@ -307,8 +336,7 @@ def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
        (:class:`~.FileListResult`): The result describing what happened during this file operation
 
     Raises:
-       OSError: In the case of unexpected system call failures
-       shutil.Error: In case of unexpected system call failures
+       UtilError: In the case of unexpected system call failures
 
     .. note::
 
@@ -320,8 +348,12 @@ def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
         files = list_relative_paths(src)
 
     result = FileListResult()
-    _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing,
-                  report_written=report_written)
+    try:
+        _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing,
+                      report_written=report_written)
+    except OSError as e:
+        raise UtilError("Failed to copy '{} -> {}': {}"
+                        .format(src, dest, e))
     return result
 
 
@@ -339,8 +371,7 @@ def link_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
        (:class:`~.FileListResult`): The result describing what happened during this file operation
 
     Raises:
-       OSError: In the case of unexpected system call failures
-       shutil.Error: In case of unexpected system call failures
+       UtilError: In the case of unexpected system call failures
 
     .. note::
 
@@ -357,8 +388,13 @@ def link_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
         files = list_relative_paths(src)
 
     result = FileListResult()
-    _process_list(src, dest, files, safe_link, result, ignore_missing=ignore_missing,
-                  report_written=report_written)
+    try:
+        _process_list(src, dest, files, safe_link, result, ignore_missing=ignore_missing,
+                      report_written=report_written)
+    except OSError as e:
+        raise UtilError("Failed to link '{} -> {}': {}"
+                        .format(src, dest, e))
+
     return result
 
 
@@ -421,9 +457,17 @@ def _force_rmtree(rootpath, **kwargs):
         for d in dirs:
             path = os.path.join(root, d.lstrip('/'))
             if os.path.exists(path) and not os.path.islink(path):
-                os.chmod(path, 0o755)
+                try:
+                    os.chmod(path, 0o755)
+                except OSError as e:
+                    raise UtilError("Failed to ensure write permission on file '{}': {}"
+                                    .format(path, e))
 
-    shutil.rmtree(rootpath, **kwargs)
+    try:
+        shutil.rmtree(rootpath, **kwargs)
+    except shutil.Error as e:
+        raise UtilError("Failed to remove cache directory '{}': {}"
+                        .format(rootpath, e))
 
 
 # Recursively make directories in target area
@@ -444,8 +488,8 @@ def _copy_directories(srcdir, destdir, target):
                 os.makedirs(new_dir)
                 yield (new_dir, mode)
             else:
-                raise OSError('Source directory tree has file where '
-                              'directory expected: {}'.format(old_dir))
+                raise UtilError('Source directory tree has file where '
+                                'directory expected: {}'.format(old_dir))
 
 
 def _ensure_real_directory(root, destpath):
@@ -458,10 +502,10 @@ def _ensure_real_directory(root, destpath):
     #
     realpath = os.path.realpath(destpath)
     if not realpath.startswith(os.path.realpath(root)):
-        raise IOError('Destination path resolves to a path outside ' +
-                      'of the staging area\n\n' +
-                      '  Destination path: {}\n'.format(destpath) +
-                      '  Real path: {}'.format(realpath))
+        raise UtilError('Destination path resolves to a path outside ' +
+                        'of the staging area\n\n' +
+                        '  Destination path: {}\n'.format(destpath) +
+                        '  Real path: {}'.format(realpath))
 
     # Ensure the real destination path exists before trying to get the mode
     # of the real destination path.
@@ -530,12 +574,12 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
             file_stat = os.lstat(srcpath)
             mode = file_stat.st_mode
 
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             # Skip this missing file
             if ignore_missing:
                 continue
             else:
-                raise
+                raise UtilError("Source file is missing: {}".format(srcpath))
 
         if stat.S_ISDIR(mode):
             # Ensure directory exists in destination
@@ -544,8 +588,8 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
 
             dest_stat = os.lstat(os.path.realpath(destpath))
             if not stat.S_ISDIR(dest_stat.st_mode):
-                raise OSError('Destination not a directory. source has {}'
-                              ' destination has {}'.format(srcpath, destpath))
+                raise UtilError('Destination not a directory. source has {}'
+                                ' destination has {}'.format(srcpath, destpath))
             permissions.append((destpath, os.stat(srcpath).st_mode))
 
         elif stat.S_ISLNK(mode):
@@ -578,7 +622,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=
 
         else:
             # Unsupported type.
-            raise OSError('Cannot extract {} into staging-area. Unsupported type.'.format(srcpath))
+            raise UtilError('Cannot extract {} into staging-area. Unsupported type.'.format(srcpath))
 
     # Write directory permissions now that all files have been written
     for d, perms in permissions:

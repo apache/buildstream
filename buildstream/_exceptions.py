@@ -134,19 +134,6 @@ class ImplError(BstError):
     pass
 
 
-# ProgramNotFoundError
-#
-# Raised if a required program is not found
-#
-# BuildStream requires various software to exist on the host for
-# it to work correctly. This exception is thrown if that software
-# can not be found. E.g. The :class:`.Sandbox` class expects that
-# bubblewrap is installed for it to work.
-#
-class ProgramNotFoundError(BstError):
-    pass
-
-
 # PlatformError
 #
 # Raised if the current platform is not supported.
