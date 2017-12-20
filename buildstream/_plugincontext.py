@@ -78,7 +78,7 @@ class PluginContext():
             # as they'll take the plugins with them.
             self.alternate_sources[('local', path)] = source
         else:
-            source = self.alternate_sources(('local', path))
+            source = self.alternate_sources[('local', path)]
         return source
 
     def _get_pip_plugin_source(self, package_name, kind):
