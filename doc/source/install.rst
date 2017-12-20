@@ -17,17 +17,10 @@ BuildStream requires the following base system requirements:
 * python3 >= 3.4
 * ruamel.yaml python library
 * OSTree >= v2017.8 with introspection data
-* build-essential
 * git
-* gir1.2-ostree-1* bubblewrap
-* dh-autoreconf
-* libglib2.0-dev
-* bison
-* liblzma-dev
-* e2fslibs-dev
+* gir1.2-ostree-1
+* bubblewrap
 * gobject-introspection
-* libostree-dev
-* libgirepository1.0-dev
 
 
 Note that ``ruamel.yaml`` is a pure python library which is normally

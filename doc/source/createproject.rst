@@ -42,7 +42,7 @@ Create a project directory and in it create the following directories:
 Source files
 ~~~~
 
-There are multiple ways of including source files with build stream, and this is done though things called plugins.
+There are multiple ways of including source files with buildstream, and this is done through things called plugins.
 
 The list of options can be found here :ref:`plugins_sources`
 
@@ -50,8 +50,6 @@ Each option can be clicked for an example of an "element"
 
 
 If you plan on following along with this tutorial, do the following:
-
-    Install wget or some other download tool.
 
     For this example we will be using cmake-test, as it is a relatively small and simple project to build.
 
@@ -61,6 +59,14 @@ If you plan on following along with this tutorial, do the following:
 
     Move `step7.tar.gz` to `src`
 
+This file is the project repository, 
+
+You can include repositories into buildstream in multiple ways.
+
+One of which, is via a local tar.gz
+
+Read :ref:`format_sources` for more information on the different options
+
 
     Download :download:`gnome-sdk.gpg <../../integration-tests/cmake-test/keys/gnome-sdk.gpg>`
 
@@ -68,10 +74,9 @@ If you plan on following along with this tutorial, do the following:
 
     Move `gnome-sdk.gpg` to `keys`
 
+This key is needed in order to decrypt the files used in this example.
+
 ----
-
-Alternatively, you can link to your project using one of the options in sources or tar.gz your projects and use it in place of step7.tar.gz
-
 
 Creating the project files
 ----
@@ -102,13 +107,20 @@ In the root of the project directory create a file called project.conf containin
 step7.bst
 ~~~~
 
+This is the element that is actually being called and build.
+It depends on:
+* usermerge.bst 
+* base-sdk.bst
+
+
+
 In the elements directory Create a file called step7.bst containing::
 
   kind: cmake # This is a build element plugin (linked below)
   description: Cmake test
   
   depends:
-    - filename: dependencies/base-platform.bst
+    - filename: dependencies/usermerge.bst
       type: build
     - filename: dependencies/base-sdk.bst
       type: build
@@ -130,36 +142,28 @@ base-sdk.bst
 
 In the elements/dependencies directory Create a file called base-sdk.bst containing::
 
-  kind: import
-  description: Import the base freedesktop SDK
-  sources:
+ kind: import
+ description: Import the base freedesktop SDK
+ sources:
   - kind: ostree
     url: gnomesdk:repo/
     gpg-key: keys/gnome-sdk.gpg
     track: runtime/org.freedesktop.BaseSdk/x86_64/1.4
+    ref: 0d9d255d56b08aeaaffb1c820eef85266eb730cb5667e50681185ccf5cd7c882
   config:
     source: files
     target: usr
+ 
 
 :ref:`format_config`
 
-base-platform.bst
+usermerge.bst
 ~~~~
 
 In the elements/dependencies directory Create a file called base-platform.bst containing::
 
   kind: import
-  description: Import the base freedesktop platform
+  description: Some symlinks for the flatpak runtime environment
   sources:
-  - kind: ostree
-    url: gnomesdk:repo/
-    gpg-key: keys/gnome-sdk.gpg
-    track: runtime/org.freedesktop.BasePlatform/x86_64/1.4
-  config:
-    source: files
-  public:
-    bst:
-      integration-commands:
-      - ldconfig
-
-:ref:`format_public` 
+    - kind: local
+      path: files/usrmerge

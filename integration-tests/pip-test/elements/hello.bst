@@ -12,5 +12,5 @@ depends:
 
 sources:
 - kind: tar
-  url: file:///hello.tar.xz
+  url: file:///home/phillipsmyth/projects/buildstream/integration-tests/pip-test/src/hello.tar.xz
   ref: ad96570b552498807abec33c06210bf68378d854ced6753b77916c5ed517610d

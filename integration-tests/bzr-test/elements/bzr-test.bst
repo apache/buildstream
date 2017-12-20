@@ -9,7 +9,7 @@ depends:
 
 sources:
 - kind: bzr
-  url: file:///src
+  url: file:///home/phillipsmyth/projects/buildstream/integration-tests/bzr-test/src
   track: trunk
 
   ref: '2'
