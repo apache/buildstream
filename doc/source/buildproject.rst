@@ -21,12 +21,10 @@ in the directory you want to use
 
 ----
 
-If not already installed, install `git`
-
 This example will be using `gnome-modulesets`, but this will apply to any buildable repo
 
-Download :download:`gnome modulesets <example_projects/gnome-modulesets.tar>`
- 
+Download or clone `gnome-Modulesets  <http://gnome7.codethink.co.uk/gnome-modulesets.git/>`_
+
 Then move into the repo
 
 Building
