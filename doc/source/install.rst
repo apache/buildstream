@@ -38,6 +38,7 @@ you will additionally need:
 
 * Python 3 development libraries and headers
 
+* git (to checkout or install buildstream from git)
 
 Here are some examples of how to prepare the base requirements on
 some distros.
