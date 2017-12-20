@@ -4,8 +4,7 @@
 import os
 import sys
 
-from buildstream import utils
-from buildstream._exceptions import ProgramNotFoundError
+from buildstream import utils, ProgramNotFoundError
 
 try:
     utils.get_host_tool('bzr')

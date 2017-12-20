@@ -6,8 +6,7 @@ from contextlib import ExitStack
 import pytest
 
 from buildstream._artifactcache.tarcache import Tar
-from buildstream.utils import get_host_tool
-from buildstream._exceptions import ProgramNotFoundError
+from buildstream import utils, ProgramNotFoundError
 
 
 # Test that it 'works' - this may be equivalent to test_archive_no_tar()
@@ -37,7 +36,7 @@ def test_archive_no_tar():
     try:
         for tar in ['gtar', 'tar']:
             with pytest.raises(ProgramNotFoundError):
-                get_host_tool(tar)
+                utils.get_host_tool(tar)
 
     # Run the same test as before, this time 'tar' should not be available
         test_archive_default()
@@ -72,7 +71,7 @@ def test_extract_no_tar():
     # Ensure we can't find 'tar' or 'gtar'
     for tar in ['gtar', 'tar']:
         with pytest.raises(ProgramNotFoundError):
-            get_host_tool(tar)
+            utils.get_host_tool(tar)
 
     # Run the same test as before, this time 'tar' should not be available
     try:
