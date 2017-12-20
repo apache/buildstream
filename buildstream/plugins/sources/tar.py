@@ -67,21 +67,20 @@ class TarSource(DownloadableFileSource):
         self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
 
     def preflight(self):
+        self.host_lzip = None
         if self.url.endswith('.lz'):
-            try:
-                utils.get_host_tool('lzip')
-            except utils.ProgramNotFoundError:
-                raise SourceError('File "{}" requires "lzip" tool on host which is missing'.format(self.url))
+            self.host_lzip = utils.get_host_tool('lzip')
 
     def get_unique_key(self):
         return super().get_unique_key() + [self.base_dir]
 
     @contextmanager
     def _run_lzip(self):
+        assert(self.host_lzip)
         with TemporaryFile() as lzip_stdout:
             with ExitStack() as context:
                 lzip_file = context.enter_context(open(self._get_mirror_file(), 'r'))
-                self.call(['lzip', '-d'],
+                self.call([self.host_lzip, '-d'],
                           stdin=lzip_file,
                           stdout=lzip_stdout)
 
