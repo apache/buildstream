@@ -23,9 +23,9 @@ import shutil
 import tarfile
 import subprocess
 
-from .. import utils
+from .. import utils, ProgramNotFoundError
 from ..element import _KeyStrength
-from .._exceptions import ArtifactError, ProgramNotFoundError
+from .._exceptions import ArtifactError
 
 from . import ArtifactCache
 
