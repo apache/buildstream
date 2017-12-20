@@ -10,7 +10,7 @@ tests/**/*.pyc
 .eggs
 
 # Some testing related things
-cache/
+integration-cache/
 tmp
 .coverage
 .coverage.*

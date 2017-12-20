@@ -4,6 +4,7 @@ import sys
 import shutil
 import itertools
 import traceback
+import subprocess
 from contextlib import contextmanager, ExitStack
 from ruamel import yaml
 import pytest
@@ -15,7 +16,7 @@ import pytest
 # CliRunner convenience API (click.testing module) does not support
 # separation of stdout/stderr.
 #
-from _pytest.capture import MultiCapture, SysCapture
+from _pytest.capture import MultiCapture, FDCapture
 
 from tests.testutils.site import IS_LINUX
 
@@ -159,10 +160,15 @@ class Result():
 
 class Cli():
 
-    def __init__(self, directory, verbose=True):
+    def __init__(self, directory, verbose=True, default_options=None):
         self.directory = directory
         self.config = None
         self.verbose = verbose
+
+        if default_options is None:
+            default_options = []
+
+        self.default_options = default_options
 
     # configure():
     #
@@ -173,7 +179,11 @@ class Cli():
     #    config (dict): The user configuration to use
     #
     def configure(self, config):
-        self.config = config
+        if self.config is None:
+            self.config = {}
+
+        for key, val in config.items():
+            self.config[key] = val
 
     def remove_artifact_from_cache(self, project, element_name):
         cache_dir = os.path.join(project, 'cache', 'artifacts')
@@ -199,9 +209,14 @@ class Cli():
     #    env (dict): Environment variables to temporarily set during the test
     #    args (list): A list of arguments to pass buildstream
     #
-    def run(self, configure=True, project=None, silent=False, env=None, cwd=None, args=None):
+    def run(self, configure=True, project=None, silent=False, env=None,
+            cwd=None, options=None, args=None):
         if args is None:
             args = []
+        if options is None:
+            options = []
+
+        options = self.default_options + options
 
         with ExitStack() as stack:
             bst_args = ['--no-colors']
@@ -217,6 +232,9 @@ class Cli():
 
             if project:
                 bst_args += ['--directory', project]
+
+            for option, value in options:
+                bst_args += ['--option', option, value]
 
             bst_args += args
 
@@ -256,29 +274,36 @@ class Cli():
         exception = None
         exit_code = 0
 
-        capture = MultiCapture(Capture=SysCapture)
-        capture.start_capturing()
+        # Temporarily redirect sys.stdin to /dev/null to ensure that
+        # Popen doesn't attempt to read pytest's dummy stdin.
+        old_stdin = sys.stdin
+        with open(os.devnull) as devnull:
+            sys.stdin = devnull
 
-        try:
-            cli.main(args=args or (), prog_name=cli.name, **extra)
-        except SystemExit as e:
-            if e.code != 0:
+            capture = MultiCapture(out=True, err=True, in_=False, Capture=FDCapture)
+            capture.start_capturing()
+
+            try:
+                cli.main(args=args or (), prog_name=cli.name, **extra)
+            except SystemExit as e:
+                if e.code != 0:
+                    exception = e
+
+                exc_info = sys.exc_info()
+
+                exit_code = e.code
+                if not isinstance(exit_code, int):
+                    sys.stdout.write(str(exit_code))
+                    sys.stdout.write('\n')
+                    exit_code = 1
+            except Exception as e:
                 exception = e
+                exit_code = -1
+                exc_info = sys.exc_info()
+            finally:
+                sys.stdout.flush()
 
-            exc_info = sys.exc_info()
-
-            exit_code = e.code
-            if not isinstance(exit_code, int):
-                sys.stdout.write(str(exit_code))
-                sys.stdout.write('\n')
-                exit_code = 1
-        except Exception as e:
-            exception = e
-            exit_code = -1
-            exc_info = sys.exc_info()
-        finally:
-            sys.stdout.flush()
-
+        sys.stdin = old_stdin
         out, err = capture.readouterr()
         capture.stop_capturing()
 
@@ -343,6 +368,22 @@ class Cli():
         return result.output.splitlines()
 
 
+class CliIntegration(Cli):
+    def run(self, *args, **kwargs):
+
+        # Set the project_dir variable in our project.conf for
+        # relative tar imports
+        project_conf = os.path.join(kwargs['project'], 'project.conf')
+
+        with open(project_conf) as f:
+            config = f.read()
+        config = config.format(project_dir=kwargs['project'])
+        with open(project_conf, 'w') as f:
+            f.write(config)
+
+        return super().run(*args, **kwargs)
+
+
 # Main fixture
 #
 # Use result = cli.run([arg1, arg2]) to run buildstream commands
@@ -352,6 +393,31 @@ def cli(tmpdir):
     directory = os.path.join(str(tmpdir), 'cache')
     os.makedirs(directory)
     return Cli(directory)
+
+
+# A variant of the main fixture that keeps persistent artifact and
+# source caches.
+#
+# It also does not use the click test runner to avoid deadlock issues
+# when running `bst shell`, but unfortunately cannot produce nice
+# stacktraces.
+@pytest.fixture()
+def cli_integration(tmpdir):
+    directory = os.path.join(str(tmpdir), 'cache')
+    os.makedirs(directory)
+
+    if os.environ.get('BST_FORCE_BACKEND') == 'unix':
+        fixture = CliIntegration(directory, default_options=[('linux', 'False')])
+    else:
+        fixture = CliIntegration(directory)
+
+    # We want to cache sources for integration tests more permanently,
+    # to avoid downloading the huge base-sdk repeatedly
+    fixture.configure({
+        'sourcedir': os.path.join(os.getcwd(), 'integration-cache', 'sources')
+    })
+
+    return fixture
 
 
 @contextmanager
