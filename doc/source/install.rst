@@ -21,7 +21,6 @@ BuildStream requires the following base system requirements:
 * python3 >= 3.4
 * ruamel.yaml python library
 * OSTree >= v2017.8 with introspection data
-* git
 * bubblewrap
 * gobject-introspection
 
