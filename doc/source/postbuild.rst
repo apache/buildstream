@@ -19,8 +19,7 @@ This is useful for debugging and ensuring the system built everything properly
 Checkout
 ----
 
-This command returns all *:ref:artifacts* that are defined in the *:ref:install-root*
-
+This command returns all :ref:`artifacts <artifacts>` that are defined in the install-root
 
 Workspace
 ----

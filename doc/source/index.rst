@@ -18,16 +18,18 @@ These pipelines are composed of abstract elements which perform mutations on
 on *filesystem data* as input and output, and are related to eachother by their
 dependencies.
 
+Quick Start
+-----------
+* :ref:`buildproject`
+* :ref:`postbuild`
+* :ref:`modifyingandtesting`
+
 
 Installing
 ----------
 * :ref:`installing`
 * :ref:`docker`
 * :ref:`artifacts`
-* :ref:`createproject`
-* :ref:`buildproject`
-* :ref:`modifyingandtesting`
-
 
 Running
 -------
