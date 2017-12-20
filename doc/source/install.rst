@@ -38,7 +38,7 @@ you will additionally need:
 
 * Python 3 development libraries and headers
 
-* git (to checkout or install buildstream from git)
+* git (to checkout or install BuildStream from git)
 
 Here are some examples of how to prepare the base requirements on
 some distros.
@@ -106,7 +106,7 @@ requirements you need::
 User installation with pip
 --------------------------
 
-Once you have the base system dependencies, you can clone the buildstream
+Once you have the base system dependencies, you can clone the BuildStream
 git repository and install it as a regular user::
 
 
@@ -117,7 +117,7 @@ git repository and install it as a regular user::
   pip3 install --user .
 
 
-This will install buildstream and it's pure python dependencies directly into
+This will install BuildStream and its pure python dependencies directly into
 your user's home dir in ``~/.local``
 
 
@@ -128,7 +128,7 @@ Adjust PATH
 Since BuildStream is now installed under your local user's install directories,
 you need to ensure that ``PATH`` is adjusted.
 
-A regular way to do this is to add the following line to the end of your ``~/.bashrc``::
+The regular way to do this is to add the following line to the end of your ``~/.bashrc``::
 
 
   export PATH=${PATH}:~/.local/bin
@@ -158,8 +158,8 @@ to your ``~/.bash_completion``:
 Upgrading with pip
 ~~~~~~~~~~~~~~~~~~
 
-To upgrade a previously install BuildStream, you will need to pull the latest
-changes and reinstall as such::
+To upgrade a previously installed BuildStream, you will need to pull
+the latest changes and reinstall as such::
 
 
   pip3 uninstall buildstream

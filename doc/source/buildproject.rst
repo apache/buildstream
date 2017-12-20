@@ -3,7 +3,7 @@
 Building a basic project
 ====
 
-This Section assumes you have installed Buildstream already.
+This section assumes you have installed BuildStream already.
 
 If not, go to :ref:`installing`
 
@@ -15,7 +15,7 @@ Setup
 
 If using docker, run::
 
-  bst-here 
+  bst-here
 
 in the directory you want to use
 
@@ -32,7 +32,7 @@ Building
 
 Find the .bst file that you want to build
 
-In this case, we will be using `gedit.bst` in elements/core 
+In this case, we will be using `gedit.bst` from elements/core
 
 from the root of the project repo run:
 
@@ -44,10 +44,10 @@ In this case, Gedit uses "autotools", so will therefore run:
 
 * `autoreconf;`
 * `./configure;`
-* `make;` 
+* `make;`
 * `make install`
 
-Buildstream will run the commands needed to build each plugin in the same way the user would.
+BuildStream will run the commands needed to build each plugin in the same way the user would.
 
 This removes the need for the user to type dozens of different commands if using multiple build files
 
@@ -55,9 +55,9 @@ This removes the need for the user to type dozens of different commands if using
 
 If you get an error requesting the use of ``bst track``
 
-This occurs when a ref has not been provided for an elements source. 
+This occurs when a ref has not been provided for an element source.
 
-This means that buildstream does not know where to look to download something.
+This means that BuildStream does not know where to look to download something.
 
 ``bst`` :ref:`invoking_track` resolves this issue by checking for the latest commit on the branch provided in the source of the file.
 
@@ -71,7 +71,4 @@ Where element is the element listed in the error message
 
 This command will go through each element and repeat the process of tracking them.
 
-After tracking all untracked elements
-
-Run the build command again and this time it should succeed.
-
+After tracking all untracked elements, run the build command again and this time it should succeed.
