@@ -35,6 +35,9 @@ class BuildQueue(Queue):
         return element._get_unique_id()
 
     def ready(self, element):
+        # state of dependencies may have changed, recalculate element state
+        element._update_state()
+
         return element._buildable()
 
     def skip(self, element):
@@ -43,6 +46,6 @@ class BuildQueue(Queue):
     def done(self, element, result, returncode):
         # Elements are cached after they are successfully assembled
         if returncode == 0:
-            element._cached(recalculate=True)
+            element._update_state()
 
         return True

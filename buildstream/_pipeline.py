@@ -209,7 +209,7 @@ class Pipeline():
                 else:
                     # Resolve cache keys and interrogate the artifact cache
                     # for the first time.
-                    element._cached()
+                    element._update_state()
 
     # Generator function to iterate over elements and optionally
     # also iterate over sources.

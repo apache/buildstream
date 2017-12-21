@@ -136,10 +136,12 @@ class Element(Plugin):
         self.__sources = []                     # List of Sources
         self.__cache_key = None                 # Our cached cache key
         self.__weak_cache_key = None            # Our cached weak cache key
-        self.__cache_key_from_artifact = None   # Our cached cache key from artifact
+        self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = artifacts            # Artifact cache
         self.__cached = None                    # Whether we have a cached artifact
+        self.__strong_cached = None             # Whether we have a cached artifact
         self.__remotely_cached = None           # Whether we have a remotely cached artifact
+        self.__remotely_strong_cached = None    # Whether we have a remotely cached artifact
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
 
@@ -733,8 +735,8 @@ class Element(Plugin):
 
     # _force_inconsistent():
     #
-    # Force an element state to be inconsistent. Cache keys are unset, Artifacts appear
-    # to be not cached and any sources appear to be inconsistent.
+    # Force an element state to be inconsistent. Any sources appear to be
+    # inconsistent.
     #
     # This is used across the pipeline in sessions where the
     # elements in question are going to be tracked, causing the
@@ -743,40 +745,19 @@ class Element(Plugin):
     # succeeds.
     #
     def _force_inconsistent(self):
-        self.__cached = None
-        self.__cache_key = None
-        self.__weak_cache_key = None
         for source in self.__sources:
             source._force_inconsistent()
 
     # _cached():
     #
-    # Args:
-    #    recalculate (bool): Whether to forcefully recalculate
-    #
     # Returns:
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    # Note: The recalculate argument is actually tristate:
-    #
-    #    o None: Calculate cache state if not previously calculated
-    #    o True: Force recalculate cached state, even if already checked
-    #    o False: Only return cached state, never recalculate automatically
-    #
-    def _cached(self, recalculate=None, strength=None):
-
-        if recalculate:
-            self.__cached = None
-            self.__strong_cached = None
+    def _cached(self, strength=None):
 
         if strength is None:
             strength = _KeyStrength.STRONG if self._get_strict() else _KeyStrength.WEAK
-
-        if recalculate is not False:
-            if self.__cached is None and self._get_cache_key() is not None:
-                self.__cached = self.__artifacts.contains(self)
-                self.__strong_cached = self.__artifacts.contains(self, strength=_KeyStrength.STRONG)
 
         if self.__cached is None:
             return False
@@ -787,44 +768,23 @@ class Element(Plugin):
 
     # _assert_cached()
     #
-    # Args:
-    #    recalculate (bool): Argument to pass to Element._cached()
-    #
     # Raises an error if the artifact is not cached.
     #
-    def _assert_cached(self, recalculate=None):
-        if not self._cached(recalculate=recalculate):
+    def _assert_cached(self):
+        if not self._cached():
             raise ElementError("{}: Missing artifact {}"
                                .format(self, self._get_display_key()))
 
     # _remotely_cached():
     #
-    # Args:
-    #    recalculate (bool): Whether to forcefully recalculate
-    #
     # Returns:
     #    (bool): Whether this element is already present in
     #            the remote artifact cache
     #
-    # Note: The recalculate argument is actually tristate:
-    #
-    #    o None: Calculate cache state if not previously calculated
-    #    o True: Force recalculate cached state, even if already checked
-    #    o False: Only return cached state, never recalculate automatically
-    #
-    def _remotely_cached(self, recalculate=None, strength=None):
-
-        if recalculate:
-            self.__remotely_cached = None
-            self.__remotely_strong_cached = None
+    def _remotely_cached(self, strength=None):
 
         if strength is None:
             strength = _KeyStrength.STRONG if self._get_strict() else _KeyStrength.WEAK
-
-        if recalculate is not False:
-            if self.__remotely_cached is None and self._get_cache_key() is not None:
-                self.__remotely_cached = self.__artifacts.remote_contains(self)
-                self.__remotely_strong_cached = self.__artifacts.remote_contains(self, strength=_KeyStrength.STRONG)
 
         if self.__remotely_cached is None:
             return False
@@ -917,7 +877,7 @@ class Element(Plugin):
 
     # _get_cache_key():
     #
-    # Returns the cache key, calculating it if necessary
+    # Returns the cache key
     #
     # Args:
     #    strength (_KeyStrength): Either STRONG or WEAK key strength
@@ -928,79 +888,22 @@ class Element(Plugin):
     # None is returned if information for the cache key is missing.
     #
     def _get_cache_key(self, strength=_KeyStrength.STRONG):
-        if self.__cache_key is None:
-            # It is not really necessary to check if the Source object's
-            # local mirror has the ref cached locally or not, it's only important
-            # to know if the source has a ref specified or not, in order to
-            # produce a cache key.
-            #
-            if self._consistency() == Consistency.INCONSISTENT:
-                return None
-
-            # Calculate strong cache key
-            dependencies = [
-                e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-            ]
-            self.__cache_key = self.__calculate_cache_key(dependencies)
-
-            # Calculate weak cache key
-            # Weak cache key includes names of direct build dependencies
-            # but does not include keys of dependencies.
-            if self.BST_STRICT_REBUILD:
-                dependencies = [
-                    e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD)
-                ]
-            else:
-                dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
-                ]
-
-            self.__weak_cache_key = self.__calculate_cache_key(dependencies)
-
         if strength == _KeyStrength.STRONG:
             return self.__cache_key
         else:
             return self.__weak_cache_key
 
-    # _get_cache_key_from_artifact():
+    # _get_strict_cache_key():
     #
-    # Returns the strong cache key as stored in the cached artifact
-    #
-    # Args:
-    #    recalculate (bool): Whether to forcefully recalculate
+    # Returns the cache key for strict build mode
     #
     # Returns:
-    #    (str): A hex digest cache key for this Element
+    #    (str): A hex digest cache key for this Element, or None
     #
-    def _get_cache_key_from_artifact(self, recalculate=False):
-        if recalculate:
-            self.__cache_key_from_artifact = None
-
-        if self.__cache_key_from_artifact is None:
-            self._assert_cached(recalculate=False)
-
-            # Load the strong cache key from the artifact
-            metadir = os.path.join(self.__artifacts.extract(self), 'meta')
-            meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
-            self.__cache_key_from_artifact = meta['keys']['strong']
-
-        return self.__cache_key_from_artifact
-
-    # _get_cache_key_for_build():
+    # None is returned if information for the cache key is missing.
     #
-    # Returns the strong cache key using cached artifacts as dependencies
-    #
-    # Returns:
-    #    (str): A hex digest cache key for this Element
-    #
-    # This is the cache key for a fresh build of this element.
-    #
-    def _get_cache_key_for_build(self):
-        dependencies = [
-            e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
-        ]
-        return self.__calculate_cache_key(dependencies)
+    def _get_strict_cache_key(self):
+        return self.__strict_cache_key
 
     # _get_full_display_key():
     #
@@ -1015,21 +918,15 @@ class Element(Plugin):
     #
     def _get_full_display_key(self):
         context = self._get_context()
-        cache_key = None
         dim_key = True
 
-        if self._consistency() == Consistency.INCONSISTENT:
-            cache_key = None
-        elif self._get_strict() or self._cached(strength=_KeyStrength.STRONG):
-            cache_key = self._get_cache_key()
-        elif self._cached():
-            cache_key = self._get_cache_key_from_artifact()
-        elif self._buildable():
-            cache_key = self._get_cache_key_for_build()
+        cache_key = self._get_cache_key()
 
         if not cache_key:
             cache_key = "{:?<64}".format('')
-        elif self._get_cache_key() == cache_key:
+        elif self._get_cache_key() == self.__strict_cache_key:
+            # Strong cache key used in this session matches cache key
+            # that would be used in strict build mode
             dim_key = False
 
         length = min(len(cache_key), context.log_key_length)
@@ -1147,16 +1044,19 @@ class Element(Plugin):
                 # Store public data
                 _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
+                # ensure we have cache keys
+                self._update_state()
+
                 # Store artifact metadata
                 dependencies = {
-                    e.name: e._get_cache_key_from_artifact() for e in self.dependencies(Scope.BUILD)
+                    e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
                 }
                 workspaced_dependencies = {
                     e.name: e._workspaced() for e in self.dependencies(Scope.BUILD)
                 }
                 meta = {
                     'keys': {
-                        'strong': self._get_cache_key_for_build(),
+                        'strong': self._get_cache_key(),
                         'weak': self._get_cache_key(_KeyStrength.WEAK),
                         'dependencies': dependencies
                     },
@@ -1197,7 +1097,7 @@ class Element(Plugin):
     #   (bool): True if this element should not be pushed
     #
     def _skip_push(self):
-        if not self._cached(recalculate=None):
+        if not self._cached():
             return True
 
         # Do not push tained artifact
@@ -1288,7 +1188,7 @@ class Element(Plugin):
     def _workspaced_artifact(self):
 
         if self.__workspaced_artifact is None:
-            self._assert_cached(recalculate=False)
+            self._assert_cached()
 
             metadir = os.path.join(self.__artifacts.extract(self), 'meta')
             meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
@@ -1302,7 +1202,7 @@ class Element(Plugin):
     def _workspaced_dependencies_artifact(self):
 
         if self.__workspaced_dependencies_artifact is None:
-            self._assert_cached(recalculate=False)
+            self._assert_cached()
 
             metadir = os.path.join(self.__artifacts.extract(self), 'meta')
             meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
@@ -1458,6 +1358,85 @@ class Element(Plugin):
         project = self._get_project()
         context = self._get_context()
         return context._get_strict(project.name)
+
+    # _update_state()
+    #
+    # Keep track of element state. Calculate cache keys if possible and
+    # check whether artifacts are cached.
+    #
+    # This must be called whenever the state of an element may have changed.
+    #
+    def _update_state(self):
+        if self._consistency() == Consistency.INCONSISTENT:
+            # Tracking is still pending
+            return
+
+        if self.__weak_cache_key is None:
+            # Calculate weak cache key
+            # Weak cache key includes names of direct build dependencies
+            # but does not include keys of dependencies.
+            if self.BST_STRICT_REBUILD:
+                dependencies = [
+                    e._get_cache_key(strength=_KeyStrength.WEAK)
+                    for e in self.dependencies(Scope.BUILD)
+                ]
+            else:
+                dependencies = [
+                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
+                ]
+
+            self.__weak_cache_key = self.__calculate_cache_key(dependencies)
+
+            if self.__weak_cache_key is None:
+                # Weak cache key could not be calculated yet
+                return
+
+        # Update __cached in non-strict builds now that the weak cache key is available
+        if not self._get_strict() and not self.__cached:
+            self.__cached = self.__artifacts.contains(self)
+        if not self._get_strict() and not self.__remotely_cached:
+            self.__remotely_cached = self.__artifacts.remote_contains(self)
+
+        if self.__strict_cache_key is None:
+            dependencies = [
+                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
+            ]
+            self.__strict_cache_key = self.__calculate_cache_key(dependencies)
+
+            if self.__strict_cache_key is None:
+                # Strict cache key could not be calculated yet
+                return
+
+        if self.__cache_key is None:
+            # Calculate strong cache key
+            if self._get_strict():
+                self.__cache_key = self.__strict_cache_key
+            elif self._cached():
+                # Load the strong cache key from the artifact
+                metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+                meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
+                self.__cache_key = meta['keys']['strong']
+            elif not self._remotely_cached() and self._buildable():
+                # Artifact will be built, not downloaded
+                dependencies = [
+                    e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                ]
+                self.__cache_key = self.__calculate_cache_key(dependencies)
+
+            if self.__weak_cache_key is None:
+                # Strong cache key could not be calculated yet
+                return
+
+        # Update __strong_cached for non-strict builds now that the strong cache key is available
+        if not self.__strong_cached:
+            self.__strong_cached = self.__artifacts.contains(self, strength=_KeyStrength.STRONG)
+        if not self.__remotely_strong_cached:
+            self.__remotely_strong_cached = self.__artifacts.remote_contains(self, strength=_KeyStrength.STRONG)
+
+        if self._get_strict() and not self.__cached:
+            self.__cached = self.__strong_cached
+        if self._get_strict() and not self.__remotely_cached:
+            self.__remotely_cached = self.__remotely_strong_cached
 
     #############################################################
     #                   Private Local Methods                   #
@@ -1682,7 +1661,7 @@ class Element(Plugin):
                 yield filename.lstrip(os.sep)
 
     def _load_public_data(self):
-        self._assert_cached(recalculate=False)
+        self._assert_cached()
         assert(self.__dynamic_public is None)
 
         # Load the public data from the artifact

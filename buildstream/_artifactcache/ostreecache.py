@@ -45,6 +45,9 @@ def buildref(element, key):
         for x in element.normal_name
     ])
 
+    if key is None:
+        raise ArtifactError('Cache key missing')
+
     # assume project and element names are not allowed to contain slashes
     return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
@@ -100,7 +103,10 @@ class OSTreeCache(ArtifactCache):
         if strength is None:
             strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
 
-        key = element._get_cache_key(strength)
+        if strength == _KeyStrength.STRONG:
+            key = element._get_strict_cache_key()
+        else:
+            key = element._get_cache_key(strength)
         if not key:
             return False
 
@@ -140,7 +146,10 @@ class OSTreeCache(ArtifactCache):
         if strength is None:
             strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
 
-        key = element._get_cache_key(strength)
+        if strength == _KeyStrength.STRONG:
+            key = element._get_strict_cache_key()
+        else:
+            key = element._get_cache_key(strength)
         if not key:
             return False
 
@@ -163,7 +172,7 @@ class OSTreeCache(ArtifactCache):
     # Returns: path to extracted artifact
     #
     def extract(self, element):
-        ref = buildref(element, element._get_cache_key())
+        ref = buildref(element, element._get_strict_cache_key())
 
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, ref)
@@ -214,7 +223,7 @@ class OSTreeCache(ArtifactCache):
     #
     def commit(self, element, content):
         # tag with strong cache key based on dependency versions used for the build
-        ref = buildref(element, element._get_cache_key_for_build())
+        ref = buildref(element, element._get_cache_key())
 
         # also store under weak cache key
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
@@ -234,7 +243,7 @@ class OSTreeCache(ArtifactCache):
     #
     def pull(self, element, progress=None):
 
-        ref = buildref(element, element._get_cache_key())
+        ref = buildref(element, element._get_strict_cache_key())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
         try:
@@ -257,8 +266,8 @@ class OSTreeCache(ArtifactCache):
                 rev = _ostree.checksum(self.repo, weak_ref)
 
                 # extract strong cache key from this newly fetched artifact
-                element._cached(recalculate=True)
-                ref = buildref(element, element._get_cache_key_from_artifact())
+                element._update_state()
+                ref = buildref(element, element._get_cache_key())
 
                 # create tag for strong cache key
                 _ostree.set_ref(self.repo, ref, rev)
@@ -288,7 +297,7 @@ class OSTreeCache(ArtifactCache):
         if len(self.push_urls) == 0:
             raise ArtifactError("Push is not enabled for any of the configured remote artifact caches.")
 
-        ref = buildref(element, element._get_cache_key_from_artifact())
+        ref = buildref(element, element._get_cache_key())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
         for push_url in self.push_urls:

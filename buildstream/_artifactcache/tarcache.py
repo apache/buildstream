@@ -252,8 +252,10 @@ class TarCache(ArtifactCache):
         if strength is None:
             strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
 
-        key = element._get_cache_key(strength)
-
+        if strength == _KeyStrength.STRONG:
+            key = element._get_strict_cache_key()
+        else:
+            key = element._get_cache_key(strength)
         if not key:
             return False
 
@@ -279,13 +281,13 @@ class TarCache(ArtifactCache):
     # Implements artifactcache.commit().
     #
     def commit(self, element, content):
-        ref = tarpath(element, element._get_cache_key_for_build())
+        ref = tarpath(element, element._get_cache_key())
         weak_ref = tarpath(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
         os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
 
         with utils._tempdir() as temp:
-            refdir = os.path.join(temp, element._get_cache_key_for_build())
+            refdir = os.path.join(temp, element._get_cache_key())
             shutil.copytree(content, refdir, symlinks=True)
 
             if ref != weak_ref:
@@ -293,7 +295,7 @@ class TarCache(ArtifactCache):
                 shutil.copytree(content, weak_refdir, symlinks=True)
 
             Tar.archive(os.path.join(self.tardir, ref),
-                        element._get_cache_key_for_build(),
+                        element._get_cache_key(),
                         temp)
 
             if ref != weak_ref:
@@ -307,7 +309,7 @@ class TarCache(ArtifactCache):
     #
     def extract(self, element):
 
-        key = element._get_cache_key()
+        key = element._get_strict_cache_key()
         ref = buildref(element, key)
         path = tarpath(element, key)
 
