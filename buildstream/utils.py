@@ -804,7 +804,7 @@ def _kill_process_tree(pid):
 
 # _call()
 #
-# A wrapper for subprocess.call() supporting suspend and resum
+# A wrapper for subprocess.call() supporting suspend and resume
 #
 # Args:
 #    popenargs (list): Popen() arguments
