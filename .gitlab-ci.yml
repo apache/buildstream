@@ -5,10 +5,9 @@ cache:
     - cache/buildstream/sources/
 
 stages:
-  - dist
+  - prepare
   - test
-  - coverage
-  - docs
+  - post
 
 before_script:
   # Diagnostics
@@ -21,10 +20,14 @@ before_script:
   - adduser -m buildstream
   - chown -R buildstream:buildstream .
 
+#####################################################
+#                  Prepare stage                    #
+#####################################################
+
 # Create a source distribution
 #
-distcheck:
-  stage: dist
+source_dist:
+  stage: prepare
   script:
 
   # Generate the source distribution tarball
@@ -56,6 +59,10 @@ distcheck:
   artifacts:
     paths:
     - dist/
+
+#####################################################
+#                    Test stage                     #
+#####################################################
 
 # Run premerge commits
 #
@@ -103,7 +110,7 @@ integration_linux:
     - logs-linux/
 
   dependencies:
-  - distcheck
+  - source_dist
 
 pytest_unix:
   stage: test
@@ -152,12 +159,40 @@ integration_unix:
     - logs-unix/
 
   dependencies:
-  - distcheck
+  - source_dist
+
+# Automatically build documentation for every commit, we want to know
+# if building documentation fails even if we're not deploying it.
+#
+# Note: We still do not enforce a consistent installation of python2
+#       or sphinx, as python2 will significantly grow the backing image.
+#
+docs:
+  stage: test
+  script:
+  - dnf install -y python2
+  - pip3 install sphinx
+  - pip3 install sphinx-click
+  - cd dist && ./unpack.sh && cd buildstream
+  - pip3 install .
+  - make -C doc
+  - cd ../..
+  - mv dist/buildstream/doc/build/html public
+  artifacts:
+    paths:
+    - public/
+  dependencies:
+  - source_dist
+
+
+#####################################################
+#                    Post stage                     #
+#####################################################
 
 # Collate coverage reports
 #
 coverage:
-  stage: coverage
+  stage: post
   script:
     - pip3 install --no-index .
     - mkdir report
@@ -176,27 +211,26 @@ coverage:
   - pytest_unix
   - integration_unix
 
-# Automatically build documentation, only for merges which land
-# on master branch.
-#
-# Note: We still do not enforce a consistent installation of python2
-#       or sphinx, as python2 will significantly grow the backing image.
+# Deploy, only for merges which land on master branch.
 #
 pages:
-  stage: docs
+  stage: post
+  dependencies:
+  - source_dist
+  - docs
   script:
-  - dnf install -y python2
-  - pip3 install sphinx
-  - pip3 install sphinx-click
-  - cd dist && ./unpack.sh && cd buildstream
-  - pip3 install .
-  - make -C doc
-  - cd ../..
-  - mv dist/buildstream/doc/build/html public
+  - find public/
   artifacts:
     paths:
     - public/
   only:
+  #
+  # FIXME:
+  #
+  # Ideally we want to publish to a different subdir of
+  # pages depending on which stable branch we are building here,
+  # not currently automatically supported but can be worked around.
+  #
+  # See https://gitlab.com/gitlab-org/gitlab-ce/issues/35141
+  #
   - master
-  dependencies:
-  - distcheck
