@@ -819,6 +819,8 @@ def _call(*popenargs, terminate=False, **kwargs):
 
     kwargs['start_new_session'] = True
 
+    process = None
+
     # Handle termination, suspend and resume
     def kill_proc():
         if process:
