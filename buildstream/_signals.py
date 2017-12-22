@@ -19,6 +19,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import os
 import signal
+import sys
+import traceback
 from contextlib import contextmanager, ExitStack
 from collections import deque
 
@@ -34,7 +36,18 @@ suspendable_stack = deque()
 def terminator_handler(signal, frame):
     while terminator_stack:
         terminator = terminator_stack.pop()
-        terminator()
+        try:
+            terminator()
+        except:
+            # Ensure we print something if there's an exception raised when
+            # processing the handlers. Note that the default exception
+            # handler won't be called because we os._exit next, so we must
+            # catch all possible exceptions with the unqualified 'except'
+            # clause.
+            traceback.print_exc(file=sys.stderr)
+            print('Error encountered in BuildStream while processing custom SIGTERM handler:',
+                  terminator,
+                  file=sys.stderr)
 
     # Use special exit here, terminate immediately, recommended
     # for precisely this situation where child forks are teminated.
