@@ -831,9 +831,8 @@ def _call(*popenargs, terminate=False, **kwargs):
                 proc = psutil.Process(process.pid)
                 proc.terminate()
 
-                exit_code = None
                 try:
-                    exit_code = proc.wait(20)
+                    proc.wait(20)
                 except psutil.TimeoutExpired:
                     # Did not terminate within the timeout: murder
                     _kill_process_tree(process.pid)
