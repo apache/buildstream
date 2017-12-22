@@ -1,8 +1,15 @@
 # Profile helper for the SafeHardlinks FUSE filesystem
 #
-# Run inside a project directory!
+# Run this from a project directory and pass it the name of an element to
+# stage.
+#
+# It will stage the artifact and then block the main process. At this point
+# you can open a bwrap sandbox and run a command inside the FUSE mount
+# manually. Once you are done, hit CTRL+C and a profile will be written to
+# disk of what happened inside the FUSE mount.
 
 
+import cProfile
 import os
 import signal
 import subprocess
@@ -23,39 +30,18 @@ def mount_in_process_and_block(self, mountpoint):
 
     self._Mount__operations = self.create_operations()
 
+    profile = os.path.abspath('fuse.pstats')
+
     print("Mounting a SafeHardlinks filesystem at {} then blocking".format(mountpoint))
-    print("Profile will be written to {}".format(os.path.abspath('fuse.pstats')))
+    print("Profile will be written to {}".format(profile))
     print("Try: bwrap --bind {} / --dev /dev --proc /proc --tmpfs /tmp COMMAND".format(mountpoint))
 
-    with tempfile.NamedTemporaryFile('w') as f:
-        f.write("""
-import buildstream, sys\n
-operations = buildstream._fuse.hardlinks.SafeHardlinkOps(sys.argv[2], sys.argv[3])\n
-buildstream._fuse.fuse.FUSE(operations, sys.argv[1], nothreads=True, foreground=True, nonempty=True)\n
-        """)
-        f.flush()
-
-        args = [sys.executable, '-m', 'cProfile',  f.name,
-                mountpoint, self.directory, self.tempdir]
-        print(args)
-
-        # Run the FUSE mount as subprocess with profiling enabled.
-        try:
-            p = subprocess.Popen(args)
-            p.wait()
-        except KeyboardInterrupt:
-            print("Terminating on KeyboardInterrupt")
-            p.send_signal(signal.SIGINT)
-            p.wait()
-            print("Returncode: {}".format(p.returncode))
-            raise
-
-
-    # Here's how you'd run the FUSE mount in-process. Your profile gets skewed
-    # by the time spent staging stuff though.
-    #buildstream._fuse.fuse.FUSE(self._Mount__operations,
-    #                            self._Mount__mountpoint,
-    #                            nothreads=True, foreground=True, nonempty=True)
+    profiler = cProfile.Profile()
+    profiler.runcall(
+        buildstream._fuse.fuse.FUSE,
+        self._Mount__operations, self._Mount__mountpoint,
+        nothreads=True, foreground=True, nonempty=True)
+    profiler.dump_stats(profile)
 
 
 buildstream._fuse.hardlinks.SafeHardlinks.mount = mount_in_process_and_block
