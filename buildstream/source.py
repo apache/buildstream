@@ -27,7 +27,7 @@ from contextlib import contextmanager
 
 from . import Plugin
 from . import _yaml, utils
-from ._exceptions import BstError, ImplError, LoadError, LoadErrorReason
+from ._exceptions import BstError, ImplError, LoadError, LoadErrorReason, ErrorDomain
 
 
 class Consistency():
@@ -58,7 +58,8 @@ class SourceError(BstError):
 
     This exception is raised when a :class:`.Source` encounters an error.
     """
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.SOURCE, reason=reason)
 
 
 class Source(Plugin):

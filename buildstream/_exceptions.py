@@ -23,6 +23,8 @@ from enum import Enum
 
 # The last raised exception, this is used in test cases only
 _last_exception = None
+_last_task_error_domain = None
+_last_task_error_reason = None
 
 
 def _get_last_exception():
@@ -31,6 +33,41 @@ def _get_last_exception():
     le = _last_exception
     _last_exception = None
     return le
+
+
+# Called from regression test fixtures
+def _get_last_task_error():
+    global _last_task_error_domain
+    global _last_task_error_reason
+
+    d = _last_task_error_domain
+    r = _last_task_error_reason
+    _last_task_error_domain = _last_task_error_reason = None
+    return (d, r)
+
+
+# Called from the scheduler when an error is encountered
+def _set_last_task_error(domain, reason):
+    global _last_task_error_domain
+    global _last_task_error_reason
+
+    _last_task_error_domain = domain
+    _last_task_error_reason = reason
+
+
+class ErrorDomain(Enum):
+    PLUGIN = 1
+    LOAD = 2
+    IMPL = 3
+    PLATFORM = 4
+    SANDBOX = 5
+    ARTIFACT = 6
+    PIPELINE = 7
+    OSTREE = 8
+    UTIL = 9
+    PROG_NOT_FOUND = 12
+    SOURCE = 10
+    ELEMENT = 11
 
 
 # BstError is an internal base exception class for BuildSream
@@ -42,15 +79,20 @@ def _get_last_exception():
 #
 class BstError(Exception):
 
-    def __init__(self, message):
+    def __init__(self, message, *, domain=None, reason=None):
         global _last_exception
 
-        super(BstError, self).__init__(message)
+        super().__init__(message)
 
         # The build sandbox in which the error occurred, if the
         # error occurred at element assembly time.
         #
         self.sandbox = None
+
+        # Error domain and reason
+        #
+        self.domain = domain
+        self.reason = reason
 
         # Hold on to the last raised exception for testing purposes
         _last_exception = self
@@ -64,7 +106,8 @@ class BstError(Exception):
 # or by the base :class:`.Plugin` element itself.
 #
 class PluginError(BstError):
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason)
 
 
 # LoadErrorReason
@@ -113,16 +156,16 @@ class LoadErrorReason(Enum):
 #
 # Raised while loading some YAML.
 #
+# Args:
+#    reason (LoadErrorReason): machine readable error reason
+#    message (str): human readable error explanation
+#
 # This exception is raised when loading or parsing YAML, or when
 # interpreting project YAML
 #
 class LoadError(BstError):
     def __init__(self, reason, message):
-        super(LoadError, self).__init__(message)
-
-        # The :class:`.LoadErrorReason` for which this exception was raised
-        #
-        self.reason = reason
+        super().__init__(message, domain=ErrorDomain.LOAD, reason=reason)
 
 
 # ImplError
@@ -131,14 +174,16 @@ class LoadError(BstError):
 # implement a mandatory method
 #
 class ImplError(BstError):
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.IMPL, reason=reason)
 
 
 # PlatformError
 #
 # Raised if the current platform is not supported.
 class PlatformError(BstError):
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.PLATFORM, reason=reason)
 
 
 # SandboxError
@@ -146,7 +191,8 @@ class PlatformError(BstError):
 # Raised when errors are encountered by the sandbox implementation
 #
 class SandboxError(BstError):
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.SANDBOX, reason=reason)
 
 
 # ArtifactError
@@ -154,7 +200,8 @@ class SandboxError(BstError):
 # Raised when errors are encountered in the artifact caches
 #
 class ArtifactError(BstError):
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.ARTIFACT, reason=reason)
 
 
 # PipelineError
@@ -163,11 +210,12 @@ class ArtifactError(BstError):
 #
 class PipelineError(BstError):
 
-    def __init__(self, message=None):
+    def __init__(self, message=None, reason=None):
 
         # The empty string should never appear to a user,
         # this only allows us to treat this internal error as
         # a BstError from the frontend.
         if message is None:
             message = ""
-        super(PipelineError, self).__init__(message)
+
+        super().__init__(message, domain=ErrorDomain.PIPELINE, reason=reason)

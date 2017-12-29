@@ -30,7 +30,7 @@ import multiprocessing
 from ruamel import yaml
 
 # BuildStream toplevel imports
-from .._exceptions import BstError
+from .._exceptions import BstError, _set_last_task_error
 from .._message import Message, MessageType, unconditional_messages
 from ..plugin import _plugin_lookup
 from .. import _yaml, _signals, utils
@@ -278,9 +278,12 @@ class Job():
                                  elapsed=elapsed, detail=str(e),
                                  logfile=filename, sandbox=e.sandbox)
 
+                # Report the exception to the parent (for internal testing purposes)
+                self.child_send_error(e)
                 self.child_shutdown(1)
 
             except Exception as e:
+
                 # If an unhandled (not normalized to BstError) occurs, that's a bug,
                 # send the traceback and formatted exception back to the frontend
                 # and print it to the log file.
@@ -300,6 +303,20 @@ class Job():
         # make sure we dont try to handle SIGTERM while the process
         # is already busy in sys.exit()
         self.child_shutdown(0)
+
+    def child_send_error(self, e):
+        domain = None
+        reason = None
+
+        if isinstance(e, BstError):
+            domain = e.domain
+            reason = e.reason
+
+        envelope = Envelope('error', {
+            'domain': domain,
+            'reason': reason
+        })
+        self.queue.put(envelope)
 
     def child_complete(self, pid, returncode, element):
         if returncode != 0 and self.tries <= self.max_retries:
@@ -381,6 +398,12 @@ class Job():
             # Propagate received messages from children
             # back through the context.
             self.scheduler.context._message(envelope.message)
+        elif envelope.message_type == 'error':
+            # For regression tests only, save the last error domain / reason
+            # reported from a child task in the main process, this global state
+            # is currently managed in _exceptions.py
+            _set_last_task_error(envelope.message['domain'],
+                                 envelope.message['reason'])
         elif envelope.message_type == 'result':
             assert(self.result is None)
             self.result = envelope.message

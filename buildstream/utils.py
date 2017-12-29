@@ -41,7 +41,7 @@ import psutil
 
 from . import _signals
 from . import _yaml
-from ._exceptions import BstError
+from ._exceptions import BstError, ErrorDomain
 
 
 class UtilError(BstError):
@@ -52,7 +52,8 @@ class UtilError(BstError):
     or either of the :class:`.ElementError` or :class:`.SourceError`
     exceptions should be raised from this error.
     """
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.UTIL, reason=reason)
 
 
 class ProgramNotFoundError(BstError):
@@ -60,7 +61,8 @@ class ProgramNotFoundError(BstError):
 
     It is normally unneeded to handle this exception from plugin code.
     """
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.PROG_NOT_FOUND, reason=reason)
 
 
 class FileListResult():

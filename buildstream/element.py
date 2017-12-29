@@ -35,7 +35,7 @@ import shutil
 
 from . import _yaml
 from ._variables import Variables
-from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError
+from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
 from . import Plugin, Consistency
 from ._project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import SandboxFlags
@@ -84,7 +84,8 @@ class ElementError(BstError):
 
     This exception is raised when an :class:`.Element` encounters an error.
     """
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.ELEMENT, reason=reason)
 
 
 class Element(Plugin):

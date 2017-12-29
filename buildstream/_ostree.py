@@ -23,7 +23,7 @@
 # Code based on Jürg's artifact cache and Andrew's ostree plugin
 #
 import os
-from ._exceptions import BstError
+from ._exceptions import BstError, ErrorDomain
 
 import gi
 gi.require_version('OSTree', '1.0')
@@ -33,7 +33,8 @@ from gi.repository.GLib import Variant, VariantDict  # nopep8
 
 # For users of this file, they must expect (except) it.
 class OSTreeError(BstError):
-    pass
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.UTIL, reason=reason)
 
 
 # ensure()
