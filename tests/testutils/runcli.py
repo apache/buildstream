@@ -24,7 +24,7 @@ from buildstream._frontend.main import cli as bst_cli
 from buildstream import _yaml
 
 # Special private exception accessor, for test case purposes
-from buildstream._exceptions import _get_last_exception
+from buildstream._exceptions import BstError, _get_last_exception, _get_last_task_error
 
 
 # Wrapper for the click.testing result
@@ -39,13 +39,104 @@ class Result():
         self.exit_code = exit_code
         self.exc = exception
         self.exc_info = exc_info
-        self.exception = _get_last_exception()
         self.output = output
         self.stderr = stderr
 
-    ##################################################################
-    #                         Result parsers                         #
-    ##################################################################
+        # The last exception/error state is stored at exception
+        # creation time in BstError(), but this breaks down with
+        # recoverable errors where code blocks ignore some errors
+        # and fallback to alternative branches.
+        #
+        # For this reason, we just ignore the exception and errors
+        # in the case that the exit code reported is 0 (success).
+        #
+        if self.exit_code != 0:
+            self.exception = _get_last_exception()
+            self.task_error_domain, \
+                self.task_error_reason = _get_last_task_error()
+        else:
+            self.exception = None
+            self.task_error_domain = None
+            self.task_error_reason = None
+
+    # assert_success()
+    #
+    # Asserts that the buildstream session completed successfully
+    #
+    # Args:
+    #    fail_message (str): An optional message to override the automatic
+    #                        assertion error messages
+    # Raises:
+    #    (AssertionError): If the session did not complete successfully
+    #
+    def assert_success(self, fail_message=''):
+        assert self.exit_code == 0, fail_message
+        assert self.exc is None, fail_message
+        assert self.exception is None, fail_message
+
+    # assert_main_error()
+    #
+    # Asserts that the buildstream session failed, and that
+    # the main process error report is as expected
+    #
+    # Args:
+    #    error_domain (ErrorDomain): The domain of the error which occurred
+    #    error_reason (any): The reason field of the error which occurred
+    #    fail_message (str): An optional message to override the automatic
+    #                        assertion error messages
+    # Raises:
+    #    (AssertionError): If any of the assertions fail
+    #
+    def assert_main_error(self,
+                          error_domain,
+                          error_reason,
+                          fail_message=''):
+
+        assert self.exit_code == -1, fail_message
+        assert self.exc is not None, fail_message
+        assert self.exception is not None, fail_message
+        assert isinstance(self.exception, BstError), fail_message
+
+        assert self.exception.domain == error_domain, fail_message
+        assert self.exception.reason == error_reason, fail_message
+
+    # assert_task_error()
+    #
+    # Asserts that the buildstream session failed, and that
+    # the child task error which caused buildstream to exit
+    # is as expected.
+    #
+    # Args:
+    #    error_domain (ErrorDomain): The domain of the error which occurred
+    #    error_reason (any): The reason field of the error which occurred
+    #    fail_message (str): An optional message to override the automatic
+    #                        assertion error messages
+    # Raises:
+    #    (AssertionError): If any of the assertions fail
+    #
+    def assert_task_error(self,
+                          error_domain,
+                          error_reason,
+                          fail_message=''):
+
+        assert self.exit_code == -1, fail_message
+        assert self.exc is not None, fail_message
+        assert self.exception is not None, fail_message
+        assert isinstance(self.exception, BstError), fail_message
+
+        assert self.task_error_domain == error_domain, fail_message
+        assert self.task_error_reason == error_reason, fail_message
+
+    # get_tracked_elements()
+    #
+    # Produces a list of element names on which tracking occurred
+    # during the session.
+    #
+    # This is done by parsing the buildstream stderr log
+    #
+    # Returns:
+    #    (list): A list of element names
+    #
     def get_tracked_elements(self):
         tracked = re.findall(r'\[track:(\S+)\s*]', self.stderr)
         if tracked is None:
@@ -196,7 +287,7 @@ class Cli():
             '--downloadable',
             element_name
         ])
-        assert result.exit_code == 0
+        result.assert_success()
         return result.output.strip()
 
     # Fetch an element's cache key by invoking bst show
@@ -209,7 +300,7 @@ class Cli():
             '--format', '%{full-key}',
             element_name
         ])
-        assert result.exit_code == 0
+        result.assert_success()
         return result.output.strip()
 
     # Get the decoded config of an element.
@@ -222,7 +313,7 @@ class Cli():
             element_name
         ])
 
-        assert result.exit_code == 0
+        result.assert_success()
         return yaml.safe_load(result.output)
 
     # Fetch the elements that would be in the pipeline with the given
@@ -236,7 +327,7 @@ class Cli():
         args += list(itertools.chain.from_iterable(zip(itertools.repeat('--except'), except_)))
 
         result = self.run(project=project, silent=True, args=args + elements)
-        assert result.exit_code == 0
+        result.assert_success()
         return result.output.splitlines()
 
 
