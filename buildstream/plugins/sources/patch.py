@@ -53,9 +53,11 @@ class PatchSource(Source):
     def preflight(self):
         # Check if the configured file really exists
         if not os.path.exists(self.fullpath):
-            raise SourceError("Specified path '{}' does not exist".format(self.path))
+            raise SourceError("Specified path '{}' does not exist".format(self.path),
+                              reason="patch-no-exist")
         elif not os.path.isfile(self.fullpath):
-            raise SourceError("Specified path '{}' must be a file".format(self.path))
+            raise SourceError("Specified path '{}' must be a file".format(self.path),
+                              reason="patch-not-a-file")
 
         # Check if patch is installed, get the binary at the same time
         self.host_patch = utils.get_host_tool("patch")
@@ -67,23 +69,25 @@ class PatchSource(Source):
         return Consistency.CACHED
 
     def get_ref(self):
-        # We dont have a ref, we"re a local file...
-        return None
+        return None  # pragma: nocover
 
     def set_ref(self, ref, node):
-        pass
+        pass  # pragma: nocover
 
     def fetch(self):
         # Nothing to do here for a local source
-        pass
+        pass  # pragma: nocover
 
     def stage(self, directory):
         with self.timed_activity("Applying local patch: {}".format(self.path)):
             if not os.path.isdir(directory):
                 raise SourceError(
-                    "Patch directory '{}' does not exist".format(directory))
+                    "Patch directory '{}' does not exist".format(directory),
+                    reason="patch-no-directory"
+                )
             elif not os.listdir(directory):
-                raise SourceError("Empty patch directory '{}'".format(directory))
+                raise SourceError("Empty patch directory '{}'".format(directory),
+                                  reason="patch-no-files")
             strip_level_option = "-p{}".format(self.strip_level)
             self.call([self.host_patch, strip_level_option, "-i", self.fullpath, "-d", directory],
                       fail="Failed to apply patch {}".format(self.path))
