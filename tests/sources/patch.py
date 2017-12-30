@@ -1,8 +1,7 @@
 import os
 import pytest
 
-from buildstream._pipeline import PipelineError
-from buildstream import SourceError
+from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli
 
 DATA_DIR = os.path.join(
@@ -22,9 +21,21 @@ def test_missing_patch(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, SourceError)
+    result.assert_main_error(ErrorDomain.SOURCE, 'patch-no-exist')
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_non_regular_file_patch(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Add a fifo, that's not a regular file, should cause explosions
+    patch_path = os.path.join(datafiles.dirname, datafiles.basename, 'irregular_file.patch')
+    os.mkfifo(patch_path)
+
+    result = cli.run(project=project, args=[
+        'show', 'irregular.bst'
+    ])
+    result.assert_main_error(ErrorDomain.SOURCE, "patch-not-a-file")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -34,9 +45,9 @@ def test_stage_and_patch(cli, tmpdir, datafiles):
 
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'file.txt')) as f:
@@ -50,9 +61,8 @@ def test_stage_file_nonexistent_dir(cli, tmpdir, datafiles):
 
     # Fails at build time because it tries to patch into a non-existing directory
     result = cli.run(project=project, args=['build', 'failure-nonexistent-dir.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, PipelineError)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.SOURCE, "patch-no-files")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -62,9 +72,8 @@ def test_stage_file_empty_dir(cli, tmpdir, datafiles):
 
     # Fails at build time because it tries to patch with nothing else staged
     result = cli.run(project=project, args=['build', 'failure-empty-dir.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, PipelineError)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.SOURCE, "patch-no-files")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'separate-patch-dir'))
@@ -74,9 +83,9 @@ def test_stage_separate_patch_dir(cli, tmpdir, datafiles):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'test-dir', 'file.txt')) as f:
@@ -90,9 +99,9 @@ def test_stage_multiple_patches(cli, tmpdir, datafiles):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'file.txt')) as f:
@@ -106,9 +115,9 @@ def test_patch_strip_level(cli, tmpdir, datafiles):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'file.txt')) as f:

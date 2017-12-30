@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream._pipeline import PipelineError
+from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 
 from tests.testutils import cli, create_repo
@@ -35,9 +35,8 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
     ])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, PipelineError)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.SOURCE, None)
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -68,11 +67,11 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['fetch', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert we checked out both files at their expected location
     assert os.path.exists(os.path.join(checkoutdir, 'file.txt'))

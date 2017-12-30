@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream import SourceError
+from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli
 
 DATA_DIR = os.path.join(
@@ -21,9 +21,7 @@ def test_missing_file(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, SourceError)
+    result.assert_main_error(ErrorDomain.SOURCE, None)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -33,9 +31,9 @@ def test_stage_file(cli, tmpdir, datafiles):
 
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the checkout contains the expected file
     assert(os.path.exists(os.path.join(checkoutdir, 'file.txt')))
@@ -48,9 +46,9 @@ def test_stage_directory(cli, tmpdir, datafiles):
 
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the checkout contains the expected file and directory and other file
     assert(os.path.exists(os.path.join(checkoutdir, 'file.txt')))

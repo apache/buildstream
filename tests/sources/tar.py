@@ -4,7 +4,7 @@ import tarfile
 import tempfile
 import subprocess
 
-from buildstream._pipeline import PipelineError
+from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from tests.testutils import cli
 from tests.testutils.site import HAVE_LZIP
@@ -65,9 +65,8 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
     ])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, PipelineError)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.SOURCE, None)
 
 
 # Test that when I fetch with an invalid ref, it fails.
@@ -84,9 +83,8 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
     ])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, PipelineError)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.SOURCE, None)
 
 
 # Test that when tracking with a ref set, there is a warning
@@ -103,7 +101,7 @@ def test_track_warning(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'track', 'target.bst'
     ])
-    assert result.exit_code == 0
+    result.assert_success()
     assert "Potential man-in-the-middle attack!" in result.stderr
 
 
@@ -131,13 +129,13 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['track', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['fetch', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "a")
@@ -160,13 +158,13 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['track', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['fetch', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the full content of the tarball is checked out (base-dir: '')
     original_dir = os.path.join(str(datafiles), "content")
@@ -189,13 +187,13 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['track', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['fetch', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "a")
@@ -225,13 +223,13 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['track', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['fetch', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "base-directory")
@@ -254,13 +252,13 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
 
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['track', 'target-lz.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['fetch', 'target-lz.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['build', 'target-lz.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     result = cli.run(project=project, args=['checkout', 'target-lz.bst', checkoutdir])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "a")
