@@ -222,7 +222,7 @@ class Pipeline():
             for element in inconsistent:
                 detail += "  " + element.name + "\n"
             self.message(MessageType.ERROR, "Inconsistent pipeline", detail=detail)
-            raise PipelineError()
+            raise PipelineError(reason="inconsistent-pipeline")
 
     # Generator function to iterate over only the elements
     # which are required to build the pipeline target, omitting
