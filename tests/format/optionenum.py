@@ -1,7 +1,7 @@
 import os
 import pytest
 from buildstream import _yaml
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils.runcli import cli
 
 # Project directory
@@ -28,7 +28,7 @@ def test_conditional_cli(cli, datafiles, target, option, value, expected):
         '--format', '%{vars}',
         target])
 
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['result'] == expected
 
@@ -61,7 +61,7 @@ def test_conditional_config(cli, datafiles, target, option, value, expected):
         '--format', '%{vars}',
         target])
 
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['result'] == expected
 
@@ -75,10 +75,7 @@ def test_invalid_value_cli(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -101,10 +98,7 @@ def test_invalid_value_config(cli, datafiles, config_option):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -115,7 +109,4 @@ def test_missing_values(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

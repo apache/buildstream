@@ -20,7 +20,7 @@ def test_prepend_configure_commands(cli, datafiles):
         '--format', '%{config}',
         'element.bst'])
 
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     config_commands = loaded['configure-commands']
     assert len(config_commands) == 3

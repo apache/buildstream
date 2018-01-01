@@ -1,6 +1,6 @@
 import os
 import pytest
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils.runcli import cli
 
 # Project directory
@@ -28,11 +28,7 @@ def test_assertion_cli(cli, datafiles, target, opt_pony, opt_horsy, assertion):
         '--deps', 'none',
         '--format', '%{vars}',
         target])
-
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.USER_ASSERTION
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.USER_ASSERTION)
 
     # Assert that the assertion text provided by the user
     # is found in the exception text

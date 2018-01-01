@@ -1,6 +1,6 @@
 import os
 import pytest
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils.runcli import cli
 
 # Project directory
@@ -16,10 +16,7 @@ def test_project_error(cli, datafiles):
         '--format', '%{vars}',
         'element.bst'])
 
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.TRAILING_LIST_DIRECTIVE
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.TRAILING_LIST_DIRECTIVE)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -34,10 +31,7 @@ def test_element_error(cli, datafiles, target):
         '--format', '%{vars}',
         target])
 
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.TRAILING_LIST_DIRECTIVE
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.TRAILING_LIST_DIRECTIVE)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -49,7 +43,4 @@ def test_project_error(cli, datafiles):
         '--format', '%{vars}',
         'element.bst'])
 
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.ILLEGAL_COMPOSITE
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.ILLEGAL_COMPOSITE)

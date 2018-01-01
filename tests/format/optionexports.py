@@ -31,6 +31,6 @@ def test_export(cli, datafiles, option_name, option_value, var_name, var_value):
         '--format', '%{vars}',
         'element.bst'])
 
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded[var_name] == var_value

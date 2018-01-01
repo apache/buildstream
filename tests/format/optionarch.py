@@ -2,7 +2,7 @@ import os
 import pytest
 from contextlib import contextmanager
 from buildstream import _yaml
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils.runcli import cli
 
 # Project directory
@@ -56,8 +56,8 @@ def test_conditional(cli, datafiles, uname, value, expected):
             'element.bst'
         ]
         result = cli.run(project=project, silent=True, args=bst_args)
+        result.assert_success()
 
-        assert result.exit_code == 0
         loaded = _yaml.load_data(result.output)
         assert loaded['result'] == expected
 
@@ -74,7 +74,4 @@ def test_unsupported_arch(cli, datafiles):
             'element.bst'
         ])
 
-        assert result.exit_code != 0
-        assert result.exception
-        assert isinstance(result.exception, LoadError)
-        assert result.exception.reason == LoadErrorReason.INVALID_DATA
+        result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

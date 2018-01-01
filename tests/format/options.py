@@ -1,7 +1,7 @@
 import os
 import pytest
 from buildstream import _yaml
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils.runcli import cli
 
 # Project directory
@@ -22,10 +22,7 @@ def test_invalid_option_type(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -39,10 +36,7 @@ def test_invalid_option_cli(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -62,10 +56,7 @@ def test_invalid_option_config(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -76,10 +67,7 @@ def test_invalid_expression(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.EXPRESSION_FAILED
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.EXPRESSION_FAILED)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -90,11 +78,7 @@ def test_undefined(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.EXPRESSION_FAILED
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.EXPRESSION_FAILED)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -105,10 +89,7 @@ def test_invalid_condition(cli, datafiles):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -126,7 +107,7 @@ def test_simple_conditional(cli, datafiles, opt_option, expected_prefix):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['prefix'] == expected_prefix
 
@@ -149,7 +130,7 @@ def test_nested_conditional(cli, datafiles, debug, logging, expected):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['debug'] == expected
 
@@ -172,7 +153,7 @@ def test_compound_and_conditional(cli, datafiles, debug, logging, expected):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['debug'] == expected
 
@@ -195,7 +176,7 @@ def test_compound_or_conditional(cli, datafiles, debug, logging, expected):
         '--deps', 'none',
         '--format', '%{vars}',
         'element.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['logging'] == expected
 
@@ -213,7 +194,7 @@ def test_deep_nesting_level1(cli, datafiles, option, expected):
         '--deps', 'none',
         '--format', '%{public}',
         'element.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     shallow_list = loaded['shallow-nest']
     first_dict = shallow_list[0]
@@ -234,7 +215,7 @@ def test_deep_nesting_level2(cli, datafiles, option, expected):
         '--deps', 'none',
         '--format', '%{public}',
         'element-deeper.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
     loaded = _yaml.load_data(result.output)
     shallow_list = loaded['deep-nest']
     deeper_list = shallow_list[0]
