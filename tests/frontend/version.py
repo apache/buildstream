@@ -16,5 +16,5 @@ def assert_version(cli_version_output):
 
 def test_version(cli):
     result = cli.run(args=['--version'])
-    assert result.exit_code == 0
+    result.assert_success()
     assert_version(result.output)

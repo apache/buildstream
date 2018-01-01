@@ -46,14 +46,14 @@ def test_track(cli, tmpdir, datafiles, kind):
 
     # Now first try to track it
     result = cli.run(project=project, args=['track', element_name])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And now fetch it: The Source has probably already cached the
     # latest ref locally, but it is not required to have cached
     # the associated content of the latest ref at track time, that
     # is the job of fetch.
     result = cli.run(project=project, args=['fetch', element_name])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that we are now buildable because the source is
     # now cached.
@@ -88,7 +88,7 @@ def test_track_recurse(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'track', '--deps', 'all',
         element_target_name])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And now fetch it: The Source has probably already cached the
     # latest ref locally, but it is not required to have cached
@@ -97,7 +97,7 @@ def test_track_recurse(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'fetch', '--deps', 'all',
         element_target_name])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that the dependency is buildable and the target is waiting
     assert cli.get_element_state(project, element_dep_name) == 'buildable'
@@ -132,7 +132,7 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'track', '--deps', 'all', '--except', element_dep_name,
         element_target_name])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And now fetch it: The Source has probably already cached the
     # latest ref locally, but it is not required to have cached
@@ -141,7 +141,7 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'fetch', '--deps', 'none',
         element_target_name])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that the dependency is buildable and the target is waiting
     assert cli.get_element_state(project, element_dep_name) == 'no reference'

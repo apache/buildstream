@@ -40,7 +40,7 @@ def test_push_pull(cli, tmpdir, datafiles, override_url, project_url, user_url):
 
     # First build it without the artifact cache configured
     result = cli.run(project=project, args=['build', 'import-bin.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that we are now cached locally
     state = cli.get_element_state(project, 'import-bin.bst')
@@ -76,7 +76,7 @@ def test_push_pull(cli, tmpdir, datafiles, override_url, project_url, user_url):
 
     # Now try bst push
     result = cli.run(project=project, args=['push', 'import-bin.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And finally assert that the artifact is in the share
     assert_shared(cli, share, project, 'import-bin.bst')
@@ -99,7 +99,7 @@ def test_push_pull(cli, tmpdir, datafiles, override_url, project_url, user_url):
 
     # Now try bst pull
     result = cli.run(project=project, args=['pull', 'import-bin.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And assert that it's again in the local cache, without having built
     state = cli.get_element_state(project, 'import-bin.bst')
@@ -114,7 +114,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 
     # First build it without the artifact cache configured
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that we are now cached locally
     state = cli.get_element_state(project, 'target.bst')
@@ -140,7 +140,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 
     # Now try bst push
     result = cli.run(project=project, args=['push', '--deps', 'all', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And finally assert that the artifact is in the share
     all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
@@ -166,7 +166,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 
     # Now try bst pull
     result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And assert that it's again in the local cache, without having built
     for element_name in all_elements:

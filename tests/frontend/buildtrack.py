@@ -7,7 +7,7 @@ import pytest
 from tests.testutils import cli, create_repo
 
 from buildstream import _yaml
-from buildstream._exceptions import LoadError
+from buildstream._exceptions import ErrorDomain
 
 
 # Project directory
@@ -254,10 +254,8 @@ def test_build_track_inconsistent(cli, datafiles, tmpdir,
     args += itertools.chain.from_iterable(zip(itertools.repeat('--track-except'), exceptions))
     args += ['0.bst']
 
-    result = cli.run(args=args, silent=True)
-
-    assert result.exit_code != 0
-    assert isinstance(result.exception, LoadError)
+    result = cli.run(project=project, args=args, silent=True)
+    result.assert_main_error(ErrorDomain.PIPELINE, "inconsistent-pipeline")
 
 
 # Assert that if a build element has a dependency in the tracking
@@ -290,14 +288,14 @@ def test_build_track_track_first(cli, datafiles, tmpdir, strict):
     # Build 1.bst and 2.bst first so we have an artifact for them
     args = [strict, 'build', '2.bst']
     result = cli.run(args=args, project=project, silent=True)
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Test building 0.bst while tracking 1.bst
     cli.remove_artifact_from_cache(project, '0.bst')
 
     args = [strict, 'build', '--track', '1.bst', '2.bst']
     result = cli.run(args=args, project=project, silent=True)
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that 1.bst successfully tracks before 0.bst builds
     track_messages = re.finditer(r'\[track:1.bst\s*]', result.stderr)

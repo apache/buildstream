@@ -13,7 +13,7 @@ def assert_help(cli_output):
 
 def test_help_main(cli):
     result = cli.run(args=['--help'])
-    assert result.exit_code == 0
+    result.assert_success()
     assert_help(result.output)
 
 
@@ -31,5 +31,5 @@ def test_help_main(cli):
 ])
 def test_help(cli, command):
     result = cli.run(args=[command, '--help'])
-    assert result.exit_code == 0
+    result.assert_success()
     assert_help(result.output)

@@ -24,7 +24,7 @@ def test_show(cli, datafiles, target, format, expected):
         '--deps', 'none',
         '--format', format,
         target])
-    assert result.exit_code == 0
+    result.assert_success()
 
     if result.output.strip() != expected:
         raise AssertionError("Expected output:\n{}\nInstead received output:\n{}"
@@ -48,7 +48,7 @@ def test_show_except(cli, datafiles, target, except_, expected):
         '--except', except_,
         target])
 
-    assert result.exit_code == 0
+    result.assert_success()
 
     results = result.output.strip().splitlines()
     if results != expected:
@@ -68,7 +68,7 @@ def test_parallel_order(cli, tmpdir, datafiles):
     args = ['show', '-d', 'plan', '-f', '%{name}'] + elements
     result = cli.run(project=project, args=args)
 
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Get the planned order
     names = result.output.splitlines()
@@ -97,7 +97,7 @@ def test_target_is_dependency(cli, tmpdir, datafiles):
     args = ['show', '-d', 'plan', '-f', '%{name}'] + elements
     result = cli.run(project=project, args=args)
 
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Get the planned order
     names = result.output.splitlines()

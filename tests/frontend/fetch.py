@@ -41,7 +41,7 @@ def test_fetch(cli, tmpdir, datafiles, kind):
 
     # Now try to fetch it
     result = cli.run(project=project, args=['fetch', element_name])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that we are now buildable because the source is
     # now cached.

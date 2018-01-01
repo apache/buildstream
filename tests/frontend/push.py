@@ -39,7 +39,7 @@ def test_push(cli, tmpdir, datafiles, override_url, user_url, project_url):
 
     # First build it without the artifact cache configured
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that we are now cached locally
     state = cli.get_element_state(project, 'target.bst')
@@ -75,7 +75,7 @@ def test_push(cli, tmpdir, datafiles, override_url, user_url, project_url):
 
     # Now try bst push
     result = cli.run(project=project, args=['push', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And finally assert that the artifact is in the share
     assert_shared(cli, share, project, 'target.bst')
@@ -89,7 +89,7 @@ def test_push_all(cli, tmpdir, datafiles):
 
     # First build it without the artifact cache configured
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that we are now cached locally
     state = cli.get_element_state(project, 'target.bst')
@@ -118,7 +118,7 @@ def test_push_all(cli, tmpdir, datafiles):
         'push', 'target.bst',
         '--deps', 'all'
     ])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # And finally assert that all the artifacts are in the share
     assert_shared(cli, share, project, 'target.bst')

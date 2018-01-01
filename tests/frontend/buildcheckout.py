@@ -3,7 +3,7 @@ import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
-from buildstream._pipeline import PipelineError
+from buildstream._exceptions import ErrorDomain
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -31,7 +31,7 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
     # First build it
     result = cli.run(project=project, args=strict_args(['build', 'target.bst'], strict))
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that after a successful build, the builddir is empty
     builddir = os.path.join(cli.directory, 'build')
@@ -46,7 +46,7 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
     # Now check it out
     result = cli.run(project=project, args=checkout_args)
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the executable hello file is found in the checkout
     filename = os.path.join(checkout, 'usr', 'bin', 'hello')
@@ -66,7 +66,7 @@ def test_build_checkout_nonempty(datafiles, cli, hardlinks):
 
     # First build it
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that after a successful build, the builddir is empty
     builddir = os.path.join(cli.directory, 'build')
@@ -86,8 +86,7 @@ def test_build_checkout_nonempty(datafiles, cli, hardlinks):
 
     # Now check it out
     result = cli.run(project=project, args=checkout_args)
-    assert result.exit_code != 0
-    assert isinstance(result.exception, PipelineError)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -99,7 +98,7 @@ def test_build_checkout_force(datafiles, cli, hardlinks):
 
     # First build it
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that after a successful build, the builddir is empty
     builddir = os.path.join(cli.directory, 'build')
@@ -119,7 +118,7 @@ def test_build_checkout_force(datafiles, cli, hardlinks):
 
     # Now check it out
     result = cli.run(project=project, args=checkout_args)
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the file we added is still there
     filename = os.path.join(checkout, 'file.txt')
@@ -167,14 +166,14 @@ def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
 
     assert cli.get_element_state(project, element_name) == 'fetch needed'
     result = cli.run(project=project, args=strict_args(['build', element_name], strict))
-    assert result.exit_code == 0
+    result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
 
     # Now check it out
     result = cli.run(project=project, args=strict_args([
         'checkout', element_name, checkout
     ], strict))
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the pony.h include from files/dev-files exists
     filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
@@ -190,10 +189,6 @@ def test_install_to_build(cli, tmpdir, datafiles):
     # We expect this to throw an ElementError, since the element will
     # attempt to stage into /buildstream/build, which is not allowed.
     result = cli.run(project=project, args=strict_args(['build', element], True))
-    assert result.exit_code != 0
 
-    # While the error thrown is an ElementError, the pipeline picks up
-    # the error and raises it as a PipelineError. Since we are testing
-    # through the cli runner, we can't be more specific.
-    assert result.exception
-    assert isinstance(result.exception, PipelineError)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.ELEMENT, None)

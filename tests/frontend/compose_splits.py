@@ -20,13 +20,13 @@ def test_compose_splits(datafiles, cli, target):
 
     # First build it
     result = cli.run(project=project, args=['build', target])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Now check it out
     result = cli.run(project=project, args=[
         'checkout', target, checkout
     ])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the executable hello file is found in the checkout
     filename = os.path.join(checkout, 'usr', 'bin', 'hello')

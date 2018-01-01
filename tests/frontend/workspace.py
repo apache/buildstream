@@ -55,7 +55,7 @@ def open_workspace(cli, tmpdir, datafiles, kind, track):
     args.extend([element_name, workspace])
 
     result = cli.run(project=project, args=args)
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert that we are now buildable because the source is
     # now cached.
@@ -90,7 +90,7 @@ def test_close(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'workspace', 'close', '--remove-dir', element_name
     ])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert the workspace dir has been deleted
     assert not os.path.exists(workspace)
@@ -109,7 +109,7 @@ def test_close_removed(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'workspace', 'close', element_name
     ])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Assert the workspace dir has been deleted
     assert not os.path.exists(workspace)
@@ -132,7 +132,7 @@ def test_reset(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'workspace', 'reset', element_name
     ])
-    assert result.exit_code == 0
+    result.assert_success()
     assert os.path.exists(os.path.join(workspace, 'usr', 'bin', 'hello'))
     assert not os.path.exists(os.path.join(workspace, 'etc', 'pony.conf'))
 
@@ -147,7 +147,7 @@ def test_list(cli, tmpdir, datafiles, kind):
     result = cli.run(project=project, args=[
         'workspace', 'list'
     ])
-    assert result.exit_code == 0
+    result.assert_success()
 
     loaded = _yaml.load_data(result.output)
     assert isinstance(loaded.get('workspaces'), list)
@@ -174,14 +174,14 @@ def test_build(cli, tmpdir, datafiles, kind):
     # Build modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
     result = cli.run(project=project, args=['build', element_name])
-    assert result.exit_code == 0
+    result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
 
     # Checkout the result
     result = cli.run(project=project, args=[
         'checkout', element_name, checkout
     ])
-    assert result.exit_code == 0
+    result.assert_success()
 
     # Check that the pony.conf from the modified workspace exists
     filename = os.path.join(checkout, 'etc', 'pony.conf')
