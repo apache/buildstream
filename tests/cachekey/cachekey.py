@@ -155,9 +155,5 @@ def test_cache_key(datafiles, cli):
         '--format', '%{name}::%{full-key}',
         'target.bst'
     ])
-
-    if result.exit_code != 0:
-        raise AssertionError("BuildStream exited with code {} and output:\n{}"
-                             .format(result.exit_code, result.output))
-
+    result.assert_success()
     assert_cache_keys(project, result.output)
