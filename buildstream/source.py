@@ -306,7 +306,13 @@ class Source(Plugin):
     def _ensure_directory(self, directory):
         if self.__directory is not None:
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
-        os.makedirs(directory, exist_ok=True)
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as e:
+            raise SourceError("Failed to create staging directory: {}"
+                              .format(e),
+                              reason="ensure-stage-dir-fail") from e
         return directory
 
     # Wrapper for stage() api which gives the source
