@@ -1,0 +1,16 @@
+=================
+buildstream 1.0.0
+=================
+First stable release of BuildStream
+
+BuildStream 1.0.0 is all about API stability - for the past months we
+have been reviewing our various API surfaces, implementing strategies
+for revisioning of our interfaces and cleaning up. Long term stability
+is very important for build reproducibility over time, and this release
+is the first promise we are making on any API surfaces.
+
+Stable API surfaces include:
+  o The command line interface
+  o The YAML user configuration file format
+  o The YAML project `.bst` file format
+  o The core Python module imported by external plugins
