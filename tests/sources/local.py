@@ -53,3 +53,14 @@ def test_stage_directory(cli, tmpdir, datafiles):
     # Check that the checkout contains the expected file and directory and other file
     assert(os.path.exists(os.path.join(checkoutdir, 'file.txt')))
     assert(os.path.exists(os.path.join(checkoutdir, 'subdir', 'anotherfile.txt')))
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'file-exists'))
+def test_stage_file_exists(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.SOURCE, 'ensure-stage-dir-fail')
