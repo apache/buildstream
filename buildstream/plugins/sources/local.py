@@ -77,14 +77,14 @@ class LocalSource(Source):
 
     # We dont have a ref, we're a local file...
     def get_ref(self):
-        return None
+        return None  # pragma: nocover
 
     def set_ref(self, ref, node):
-        pass
+        pass  # pragma: nocover
 
     def fetch(self):
         # Nothing to do here for a local source
-        pass
+        pass  # pragma: nocover
 
     def stage(self, directory):
 
