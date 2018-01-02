@@ -1,9 +1,12 @@
 # Basic toplevel package includes
-include README.rst
-include HACKING.rst
+include buildstream.doap
 include COPYING
 include Dockerfile
 include Dockerfile-build.sh
+include HACKING.rst
+include MAINTAINERS
+include NEWS
+include README.rst
 
 # Documentation package includes
 include doc/Makefile

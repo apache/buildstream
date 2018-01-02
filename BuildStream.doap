@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:gnome="http://api.gnome.org/doap-extensions#"
+         xmlns="http://usefulinc.com/ns/doap#">
+
+  <name xml:lang="en">BuildStream</name>
+  <shortdesc xml:lang="en">Build tool for running abstract, deterministic build pipelines</shortdesc>
+  <homepage rdf:resource="https://gitlab.com/BuildStream/buildstream/" />
+  <mailing-list rdf:resource="https://mail.gnome.org/mailman/listinfo/buildstream-list" />
+  <download-page rdf:resource="http://download.gnome.org/sources/BuildStream/" />
+  <bug-database rdf:resource="https://gitlab.com/BuildStream/buildstream/issues" />
+
+  <category rdf:resource="http://api.gnome.org/doap-extensions#apps" />
+  <programming-language>python3</programming-language>
+
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Tristan Van Berkom</foaf:name>
+      <foaf:mbox rdf:resource="mailto:tristan.vanberkom@codethink.co.uk" />
+      <gnome:userid>tvb</gnome:userid>
+    </foaf:Person>
+  </maintainer>
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Jürg Billeter</foaf:name>
+      <foaf:mbox rdf:resource="mailto:juerg.billeter@codethink.co.uk" />
+      <gnome:userid>juergbi</gnome:userid>
+    </foaf:Person>
+  </maintainer>
+</Project>
