@@ -59,8 +59,13 @@ class DownloadableFileSource(Source):
             return new_ref
 
     def fetch(self):
+
+        # Just a defensive check, it is impossible for the
+        # file to be already cached because Source.fetch() will
+        # not be called if the source is already Consistency.CACHED.
+        #
         if os.path.isfile(self._get_mirror_file()):
-            return
+            return  # pragma: nocover
 
         # Download the file, raise hell if the sha256sums don't match,
         # and mirror the file otherwise.
