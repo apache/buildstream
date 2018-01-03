@@ -58,6 +58,8 @@ General Elements
 * :mod:`junction <elements.junction>` - Integrate subprojects
 
 
+.. _plugins_build:
+
 Build Elements
 ''''''''''''''
 
