@@ -137,7 +137,6 @@ if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
 #             Main setup() Invocation               #
 #####################################################
 setup(name='BuildStream',
-      version='0.1',
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
       use_scm_version=True,
