@@ -56,6 +56,8 @@ details here in order to have a more complete initial example.
 Let's break down the above and give a brief explanation of what these attributes mean.
 
 
+.. _format_kind:
+
 Kind
 ~~~~
 
@@ -74,6 +76,8 @@ To refer to a third party plugin, prefix the plugin with its package, for exampl
 
    kind: buildstream-plugins:dpkg_build
 
+
+.. _format_depends:
 
 Depends
 ~~~~~~~
@@ -136,7 +140,6 @@ Asides from the common ``kind`` and ``directory`` attributes which may be applie
 Sources, refer to the Source specific documentation for meaningful attributes for the
 particular Source.
 
-
 Variables
 ~~~~~~~~~
 
@@ -151,6 +154,8 @@ declared and overridden in the :ref:`projectconf`
 
 See `Using Variables`_ below for a more in depth discussion on variables in BuildStream.
 
+
+.. _format_environment:
 
 Environment
 ~~~~~~~~~~~
