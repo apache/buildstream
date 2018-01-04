@@ -54,11 +54,14 @@ class Consistency():
 
 
 class SourceError(BstError):
-    """Raised by Source implementations.
+    """This exception should be raised by :class:`.Source` implementations
+    to report errors to the user.
 
-    This exception is raised when a :class:`.Source` encounters an error.
+    Args:
+       message (str): The error message to report to the user
+       reason (str): An optional machine readable reason string, used for test cases
     """
-    def __init__(self, message, reason=None):
+    def __init__(self, message, *, reason=None):
         super().__init__(message, domain=ErrorDomain.SOURCE, reason=reason)
 
 
