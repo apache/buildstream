@@ -78,6 +78,8 @@ with an artifact share.
     # A url from which to download prebuilt artifacts
     url: https://foo.com/artifacts
 
+You can also specify a list of caches here; later entries in the list
+will have higher priority than earlier ones.
 
 Plugin Origins and Versions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

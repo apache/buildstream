@@ -5,20 +5,59 @@
 
 Artifact Caches
 ===============
-BuildStream revisions output of each element under it's specific
-cache key in a local artifact cache.
+BuildStream caches the results of builds in a local artifact cache, and will
+avoid building an element if there is a suitable build already present in the
+local artifact cache.
 
-This artifact cache can however be shared with others, or automated
-builders can be made to contribute to a shared artifact cache so
-that developers dont need to build everything all the time, instead
-they can download prebuilt artifacts from a shared cache, if an artifact
-is available for the specific cache keys they need.
+In addition to the local artifact cache, you can configure one or more remote
+artifact caches and BuildStream will then try to pull a suitable build from one
+of the remotes, falling back to a local build if needed.
 
-This page outlines how to setup and use a shared artifact cache.
+Configuring BuildStream to use remote caches
+--------------------------------------------
+A project will often set up continuous build infrastructure that pushes
+built artifacts to a shared cache, so developers working on the project can
+make use of these pre-built artifacts instead of having to each build the whole
+project locally. The project can declare this cache in its
+:ref:`project configuration file <project_essentials_artifacts>`.
 
+Users can declare additional remote caches in the :ref:`user configuration
+<config_artifacts>`. There are several use cases for this: your project may not
+define its own cache, it may be useful to have a local mirror of its cache, or
+you may have a reason to share artifacts privately.
+
+Remote artifact caches are identified by their URL. There are currently three
+supported protocols:
+
+* ``http``: Pull-only access, without transport-layer security
+* ``https``: Pull-only access, with transport-layer security
+* ``ssh``: Push access, authenticated via SSH
+
+BuildStream allows you to configure as many caches as you like, and will query
+them in a specific order:
+
+1. Project-specific overrides in the user config
+2. Project configuration
+3. User configuration
+
+When an artifact is built locally, BuildStream will try to push it to the first
+writable cache in the list. If all the configured caches are pull-only then it
+will not try to push anywhere. You can manually push artifacts to any cache
+using the :ref:`bst pull command <invoking>`.
+
+Artifacts are identified using the element's :ref:`cache key <cachekeys>` so
+the builds provided by a cache should be interchangable with those provided
+by any other cache -- BuildStream doesn't enforce "bit for bit" reproducibility,
+but by controlling all inputs to the build we aim to ensure "functional"
+reproducibility.
+
+
+Setting up a remote artifact cache
+----------------------------------
+The rest of this page outlines how to set up a shared artifact cache.
 
 Setting up the user
--------------------
+~~~~~~~~~~~~~~~~~~~
 A specific user is not needed for downloading artifacts, but since we
 are going to use ssh to upload the artifacts, you will want a dedicated
 user to own the artifact cache.
@@ -29,7 +68,7 @@ user to own the artifact cache.
 
 
 Installing the receiver
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 You will also need to install BuildStream on the artifact server in order
 to receive uploaded artifacts over ssh. Follow the instructions for installing
 BuildStream :ref:`here <installing>`
@@ -52,7 +91,7 @@ requiring BuildStream's more exigent dependencies by setting the
 
 
 Initializing the cache
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 Now that you have a dedicated user to own the artifact cache, change
 to that user, and create the artifact cache ostree repository directly
 in it's home directory as such:
@@ -65,7 +104,7 @@ This should result in an artifact cache residing at the path ``/home/artifacts/a
 
 
 Serve the cache over https
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 This part should be pretty simple, you can do this with various technologies, all
 we really require is that you make the artifacts available over https (you can use
 http but until we figure out using gpg signed ostree commits for the artifacts, it's
@@ -103,7 +142,7 @@ is the case for hosting anything over https.
 
 
 Configure and run sshd
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 You will need to run the sshd service to allow uploading artifacts.
 
 For this you will want something like the following in your ``/etc/ssh/sshd_config``
@@ -129,7 +168,7 @@ For this you will want something like the following in your ``/etc/ssh/sshd_conf
 
 
 Summary file updates
---------------------
+~~~~~~~~~~~~~~~~~~~~
 BuildStream uses the OSTree summary file to determine what artifacts are
 available in the remote artifact cache. ``ostree summary -u`` updates
 the summary file. This command cannot be run concurrently and thus it
@@ -146,7 +185,7 @@ E.g., create ``/etc/cron.d/artifacts`` with the following content:
 
 
 User Configuration
-------------------
+~~~~~~~~~~~~~~~~~~
 The user configuration for artifacts is documented with the rest
 of the :ref:`user configuration documentation <config>`.
 
@@ -168,7 +207,7 @@ then a user can use the following user configuration:
 
 
 Authenticating Users
---------------------
+~~~~~~~~~~~~~~~~~~~~
 In order to give permission to a given user to upload
 artifacts, simply use the regular ``ssh`` method.
 
