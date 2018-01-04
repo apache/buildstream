@@ -5,6 +5,9 @@
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
+
+   modules
 
 BuildStream Documentation
 =========================
