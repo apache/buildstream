@@ -1,9 +1,19 @@
 # Makefile for Sphinx documentation
 #
 
-# You can set these variables from the command line.
+# Note, due to a problem with python2/python3 parallel
+# installability of sphinx (https://github.com/sphinx-doc/sphinx/issues/4375)
+# we dont use the standard `sphinx-build` and `sphinx-apidoc` entry points.
+#
+# The following technique works as long as sphinx is installed for python3,
+# regardless of the entry point which might be in /usr/bin or PATH, but
+# will stop working in sphinx >= 2.0. Hopefully by then, the mentioned
+# bug will be fixed and we can use a standard python3 specific script to
+# invoke sphnix.
+#
 SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
+SPHINXBUILD   = python3 -m sphinx
+SPHINXAPIDOC  = python3 -m sphinx.apidoc
 PAPER         =
 BUILDDIR      = build
 
@@ -13,20 +23,6 @@ PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -W -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
-
-# Fix for when python is mapped to python2 not python3
-# This is an issue in the sphinx-build script provided in the default install
-# because it uses the generic python env, so we need to have a copy of this script
-# but with an explicit call to python3.
-#
-# Why python3? We are using some features of sphinx that are only implemented
-# currently in python3
-#
-PYV=$(shell python -c "import sys;t='{v[0]}'.format(v=list(sys.version_info[:2]));sys.stdout.write(t)")
-
-ifeq ($(PYV), 2)
-	SPHINXBUILD = ./sphinx-build3
-endif
 
 .PHONY: all templates html devhelp
 
@@ -69,7 +65,7 @@ all: html devhelp
 templates:
 	mkdir -p source/elements
 	mkdir -p source/sources
-	sphinx-apidoc --force --separate --module-first --no-headings -o source $(CURDIR)/../buildstream
+	$(SPHINXAPIDOC) --force --separate --module-first --no-headings -o source $(CURDIR)/../buildstream
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
 
