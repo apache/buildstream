@@ -40,7 +40,6 @@ import pkg_resources
 import psutil
 
 from . import _signals
-from . import _yaml
 from ._exceptions import BstError, ErrorDomain
 
 
@@ -206,6 +205,7 @@ def sha256sum(filename):
         with open(filename, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 h.update(chunk)
+
     except OSError as e:
         raise UtilError("Failed to get a checksum of file '{}': {}"
                         .format(filename, e)) from e
@@ -732,24 +732,6 @@ def _relative_symlink_target(root, symlink, target):
         return newtarget
     else:
         return target
-
-
-# _generate_key()
-#
-# Generate an sha256 hex digest from the given value. The value
-# can be a simple value or recursive dictionary with lists etc,
-# anything simple enough to serialize.
-#
-# Args:
-#    value: A value to get a key for
-#
-# Returns:
-#    (str): An sha256 hex digest of the given value
-#
-def _generate_key(value):
-    ordered = _yaml.node_sanitize(value)
-    string = pickle.dumps(ordered)
-    return hashlib.sha256(string).hexdigest()
 
 
 # _set_deterministic_user()

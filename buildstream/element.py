@@ -40,6 +40,7 @@ from . import Plugin, Consistency
 from ._project import BST_ARTIFACT_VERSION as BST_CORE_ARTIFACT_VERSION
 from . import SandboxFlags
 from . import utils
+from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
@@ -900,7 +901,7 @@ class Element(Plugin):
 
         context = self._get_context()
         project = self._get_project()
-        return utils._generate_key({
+        return _cachekey.generate_key({
             'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
                                                self.BST_ARTIFACT_VERSION),
             'context': context._get_cache_key(),

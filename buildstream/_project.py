@@ -22,6 +22,7 @@ import os
 import multiprocessing  # for cpu_count()
 from collections import Mapping
 from . import utils
+from . import _cachekey
 from . import _site
 from . import _yaml
 from ._profile import Topics, profile_start, profile_end
@@ -402,6 +403,6 @@ class Project():
 
             # Anything that alters the build goes into the unique key
             # (currently nothing here)
-            self._cache_key = utils._generate_key({})
+            self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key

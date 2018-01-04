@@ -22,10 +22,10 @@ import os
 import datetime
 from collections import deque, Mapping
 from contextlib import contextmanager
+from . import _cachekey
 from . import _signals
 from . import _site
 from . import _yaml
-from . import utils
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
@@ -253,7 +253,7 @@ class Context():
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
-            self._cache_key = utils._generate_key({})
+            self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key
 
