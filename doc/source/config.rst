@@ -29,12 +29,25 @@ Project Specific Value
 The ``projects`` key can be used to specify project specific configurations,
 the supported configurations on a project wide basis are listed here.
 
+.. _config_artifacts:
 
 Artifact Server
 ~~~~~~~~~~~~~~~
-The artifact server is usually specified by the project you build, but
-it can be overridden on a per project basis using the same format
-:ref:`described here <project_essentials_artifacts>`.
+The project you build will often specify a :ref:`remote artifact cache
+<artifacts>` already, but you may want to specify extra caches. There are two
+ways to do this.  You can add one or more global caches:
+
+**Example**
+
+.. code:: yaml
+
+   artifacts:
+     url: https://artifacts.com/artifacts
+
+Caches listed there will be considered lower priority than those specified
+by the project configuration.
+
+You can also add project-specific caches:
 
 **Example**
 
@@ -43,8 +56,15 @@ it can be overridden on a per project basis using the same format
    projects:
      project-name:
        artifacts:
-         url: https://artifacts.com/artifacts
+         - url: https://artifacts.com/artifacts1
+         - url: ssh://user@artifacts.com/artifacts2
+           push: true
 
+Caches listed here will be considered higher priority than those specified
+by the project.
+
+If you give a list of URLs, earlier entries in the list will have higher
+priority than later ones.
 
 Strict Build Plan
 ~~~~~~~~~~~~~~~~~
