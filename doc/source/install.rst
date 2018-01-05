@@ -82,7 +82,7 @@ For recent fedora systems, the following line should get you the system
 requirements you need::
 
   dnf install -y bubblewrap fuse git python3-gobject \
-                 python3-psutil ostree
+                 python3-psutil ostree python3-ruamel-yaml
 
 
 User installation with pip
