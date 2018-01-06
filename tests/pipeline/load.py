@@ -9,7 +9,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'simple'))
-def test_load_simple(cli, datafiles, tmpdir):
+def test_load_simple(cli, datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.get_element_config(basedir, 'simple.bst')
 
@@ -20,7 +20,7 @@ def test_load_simple(cli, datafiles, tmpdir):
 #        Testing Element.dependencies() iteration             #
 ###############################################################
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
-def test_iterate_scope_all(cli, datafiles, tmpdir):
+def test_iterate_scope_all(cli, datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['target.bst']
 
@@ -38,7 +38,7 @@ def test_iterate_scope_all(cli, datafiles, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
-def test_iterate_scope_run(cli, datafiles, tmpdir):
+def test_iterate_scope_run(cli, datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['target.bst']
 
@@ -53,7 +53,7 @@ def test_iterate_scope_run(cli, datafiles, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
-def test_iterate_scope_build(cli, datafiles, tmpdir):
+def test_iterate_scope_build(cli, datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['target.bst']
 
@@ -67,7 +67,7 @@ def test_iterate_scope_build(cli, datafiles, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
-def test_iterate_scope_build_of_child(cli, datafiles, tmpdir):
+def test_iterate_scope_build_of_child(cli, datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['target.bst']
 
@@ -86,7 +86,7 @@ def test_iterate_scope_build_of_child(cli, datafiles, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'iterate'))
-def test_iterate_no_recurse(cli, datafiles, tmpdir):
+def test_iterate_no_recurse(cli, datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['target.bst']
 
@@ -176,7 +176,7 @@ def test_iterate_no_recurse(cli, datafiles, tmpdir):
         'build.bst',
     ]),
 ])
-def test_except_elements(cli, datafiles, tmpdir, elements, exceptions, results):
+def test_except_elements(cli, datafiles, elements, exceptions, results):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Except second-level-2 and check that the correct dependencies
