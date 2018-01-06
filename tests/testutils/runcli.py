@@ -41,6 +41,7 @@ class Result():
         self.exc_info = exc_info
         self.output = output
         self.stderr = stderr
+        self.unhandled_exception = False
 
         # The last exception/error state is stored at exception
         # creation time in BstError(), but this breaks down with
@@ -51,6 +52,14 @@ class Result():
         # in the case that the exit code reported is 0 (success).
         #
         if self.exit_code != 0:
+
+            # Check if buildstream failed to handle an
+            # exception, topevel CLI exit should always
+            # be a SystemExit exception.
+            #
+            if not isinstance(exception, SystemExit):
+                self.unhandled_exception = True
+
             self.exception = _get_last_exception()
             self.task_error_domain, \
                 self.task_error_reason = _get_last_task_error()
@@ -73,6 +82,7 @@ class Result():
         assert self.exit_code == 0, fail_message
         assert self.exc is None, fail_message
         assert self.exception is None, fail_message
+        assert self.unhandled_exception is False
 
     # assert_main_error()
     #
@@ -96,6 +106,7 @@ class Result():
         assert self.exc is not None, fail_message
         assert self.exception is not None, fail_message
         assert isinstance(self.exception, BstError), fail_message
+        assert self.unhandled_exception is False
 
         assert self.exception.domain == error_domain, fail_message
         assert self.exception.reason == error_reason, fail_message
@@ -123,6 +134,7 @@ class Result():
         assert self.exc is not None, fail_message
         assert self.exception is not None, fail_message
         assert isinstance(self.exception, BstError), fail_message
+        assert self.unhandled_exception is False
 
         assert self.task_error_domain == error_domain, fail_message
         assert self.task_error_reason == error_reason, fail_message
