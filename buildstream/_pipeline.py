@@ -30,7 +30,7 @@ from operator import itemgetter
 from pluginbase import PluginBase
 from tempfile import TemporaryDirectory
 
-from ._exceptions import PipelineError, ArtifactError, ImplError
+from ._exceptions import PipelineError, ArtifactError, ImplError, BstError
 from ._message import Message, MessageType
 from ._elementfactory import ElementFactory
 from ._loader import Loader
@@ -152,7 +152,16 @@ class Pipeline():
 
     def preflight(self):
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
-            plugin.preflight()
+            try:
+                plugin.preflight()
+            except BstError as e:
+                # Prepend the plugin identifier string to the error raised by
+                # the plugin so that users can more quickly identify the issue
+                # that a given plugin is encountering.
+                #
+                # Propagate the original error reason for test case purposes
+                #
+                raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
 
     def initialize_workspaces(self):
         for element_name, source, workspace in self.project._list_workspaces():
