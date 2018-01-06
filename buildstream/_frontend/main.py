@@ -215,8 +215,8 @@ def build(app, elements, all, track, track_save, track_all, track_except):
     if track_all:
         track = elements
 
-    app.initialize(elements, except_=track_except, rewritable=track_save)
-    app.pipeline.initialize(use_remote_cache=True, inconsistent=track)
+    app.initialize(elements, except_=track_except, rewritable=track_save,
+                   use_remote_cache=True, inconsistent=track)
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track, track_save)
@@ -259,8 +259,8 @@ def fetch(app, elements, deps, track, except_):
         all:   All dependencies
     """
 
-    app.initialize(elements, except_=except_, rewritable=track)
-    app.pipeline.initialize(inconsistent=elements if track else None)
+    app.initialize(elements, except_=except_, rewritable=track,
+                   inconsistent=elements if track else None)
     try:
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
@@ -299,8 +299,7 @@ def track(app, elements, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, except_=except_, rewritable=True)
-    app.pipeline.initialize(inconsistent=elements)
+    app.initialize(elements, except_=except_, rewritable=True, inconsistent=elements)
     try:
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
@@ -332,8 +331,7 @@ def pull(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements)
-    app.pipeline.initialize(use_remote_cache=True)
+    app.initialize(elements, use_remote_cache=True)
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
@@ -363,8 +361,7 @@ def push(app, elements, deps):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements)
-    app.pipeline.initialize(use_remote_cache=True)
+    app.initialize(elements, use_remote_cache=True)
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
@@ -443,8 +440,7 @@ def show(app, elements, deps, except_, order, format, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(elements, except_=except_)
-    app.pipeline.initialize(use_remote_cache=downloadable)
+    app.initialize(elements, except_=except_, use_remote_cache=downloadable)
     try:
         dependencies = app.pipeline.deps_elements(deps)
     except PipelineError as e:
@@ -497,7 +493,6 @@ def shell(app, element, sysroot, build, command):
         scope = Scope.RUN
 
     app.initialize((element,))
-    app.pipeline.initialize()
 
     # Assert we have everything we need built.
     missing_deps = []
@@ -542,7 +537,6 @@ def checkout(app, element, directory, force, integrate, hardlinks):
     """Checkout a built artifact to the specified directory
     """
     app.initialize((element,))
-    app.pipeline.initialize()
     try:
         app.pipeline.checkout(directory, force, integrate, hardlinks)
         click.echo("", err=True)
@@ -574,8 +568,7 @@ def checkout(app, element, directory, force, integrate, hardlinks):
 def source_bundle(app, target, force, directory,
                   track, compression, except_):
     """Produce a source bundle to be manually executed"""
-    app.initialize((target,), rewritable=track)
-    app.pipeline.initialize(inconsistent=[target])
+    app.initialize((target,), rewritable=track, inconsistent=[target])
     try:
         dependencies = app.pipeline.deps_elements('all')
         app.print_heading(dependencies)
@@ -616,8 +609,7 @@ def workspace():
 def workspace_open(app, no_checkout, force, source, track, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize((element,), rewritable=track)
-    app.pipeline.initialize(inconsistent=[element])
+    app.initialize((element,), rewritable=track, inconsistent=[element])
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
         click.echo("", err=True)
@@ -642,7 +634,6 @@ def workspace_close(app, source, remove_dir, element):
     """Close a workspace"""
 
     app.initialize((element,))
-    app.pipeline.initialize()
     if app.interactive and remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting', err=True)
@@ -673,7 +664,6 @@ def workspace_close(app, source, remove_dir, element):
 def workspace_reset(app, source, track, no_checkout, element):
     """Reset a workspace to its original state"""
     app.initialize((element,))
-    app.pipeline.initialize()
     if app.interactive:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting', err=True)
@@ -781,7 +771,7 @@ class App():
     # Initialize the main pipeline
     #
     def initialize(self, elements, except_=tuple(), rewritable=False,
-                   inconsistent=False, use_remote_cache=False):
+                   inconsistent=None, use_remote_cache=False):
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
@@ -865,6 +855,13 @@ class App():
                              self.success_profile, self.error_profile,
                              self.pipeline, self.scheduler,
                              colors=self.colors)
+
+        # Initialize pipeline
+        try:
+            self.pipeline.initialize(use_remote_cache=use_remote_cache, inconsistent=inconsistent)
+        except BstError as e:
+            click.echo("Error initializing pipeline: {}".format(e), err=True)
+            sys.exit(-1)
 
         # Pipeline is loaded, lets start displaying pipeline messages from tasks
         self.logger.size_request(self.pipeline)
