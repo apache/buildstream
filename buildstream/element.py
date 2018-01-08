@@ -134,6 +134,7 @@ class Element(Plugin):
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__sources = []                     # List of Sources
+        self.__cache_key_dict = None            # Dict for cache key calculation
         self.__cache_key = None                 # Our cached cache key
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -853,27 +854,33 @@ class Element(Plugin):
         if None in dependencies:
             return None
 
-        # Filter out nocache variables from the element's environment
-        cache_env = {
-            key: value
-            for key, value in self.node_items(self.__environment)
-            if key not in self.__env_nocache
-        }
+        # Generate dict that is used as base for all cache keys
+        if self.__cache_key_dict is None:
+            # Filter out nocache variables from the element's environment
+            cache_env = {
+                key: value
+                for key, value in self.node_items(self.__environment)
+                if key not in self.__env_nocache
+            }
 
-        context = self._get_context()
-        project = self._get_project()
-        return _cachekey.generate_key({
-            'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
-                                               self.BST_ARTIFACT_VERSION),
-            'context': context._get_cache_key(),
-            'project': project._get_cache_key(),
-            'element': self.get_unique_key(),
-            'environment': cache_env,
-            'sources': [s._get_unique_key() for s in self.__sources],
-            'dependencies': dependencies,
-            'public': self.__public,
-            'cache': type(self.__artifacts).__name__
-        })
+            context = self._get_context()
+            project = self._get_project()
+            self.__cache_key_dict = {
+                'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
+                                                   self.BST_ARTIFACT_VERSION),
+                'context': context._get_cache_key(),
+                'project': project._get_cache_key(),
+                'element': self.get_unique_key(),
+                'environment': cache_env,
+                'sources': [s._get_unique_key() for s in self.__sources],
+                'public': self.__public,
+                'cache': type(self.__artifacts).__name__
+            }
+
+        cache_key_dict = self.__cache_key_dict.copy()
+        cache_key_dict['dependencies'] = dependencies
+
+        return _cachekey.generate_key(cache_key_dict)
 
     # _get_cache_key():
     #
