@@ -40,7 +40,7 @@ Arch
 ~~~~
 Install the dependencies with:
 
-  sudo pacman -S python python-pip python-gobject git \
+  sudo pacman -S fuse2 python python-pip python-gobject git \
                  ostree bubblewrap python-ruamel-yaml
 
 Debian Stretch
@@ -60,7 +60,7 @@ At this point you should be able to get the system requirements with::
 
   sudo apt-get install \
       python3-dev python3-pip git python3-gi \
-      python3-ruamel.yaml bubblewrap
+      python3-ruamel.yaml bubblewrap fuse libfuse2
   sudo apt-get install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
 
@@ -73,7 +73,7 @@ to get the base system requirements installed::
   sudo apt-get install \
       python3-dev python3-pip git \
       python3-gi gir1.2-ostree-1.0 ostree \
-      bubblewrap python3-ruamel.yaml
+      bubblewrap python3-ruamel.yaml fuse libfuse2
 
 
 Fedora
@@ -81,7 +81,7 @@ Fedora
 For recent fedora systems, the following line should get you the system
 requirements you need::
 
-  dnf install -y bubblewrap fuse git python3-gobject \
+  dnf install -y bubblewrap fuse fuse-libs git python3-gobject \
                  python3-psutil ostree python3-ruamel-yaml
 
 
