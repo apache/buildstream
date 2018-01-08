@@ -87,7 +87,7 @@ requirements you need::
 
 User installation with pip
 --------------------------
-Once you have the base system dependencies, you can clone the buildstream
+Once you have the base system dependencies, you can clone the BuildStream
 git repository and install it as a regular user::
 
   git clone https://gitlab.com/BuildStream/buildstream.git
@@ -96,6 +96,17 @@ git repository and install it as a regular user::
 
 This will install buildstream and it's pure python dependencies directly into
 your user's homedir in ``~/.local``
+
+If you are installing as a developer and want to easily test changes
+or if you would like to update your BuildStream installation via git,
+then you can specify the ``-e`` option when invoking pip::
+
+  pip3 install --user -e .
+
+.. warning::
+
+   This will run BuildStream directly from your git checkout and will break
+   if you ever move the git checkout or run ``git clean -xdf``.
 
 
 Adjust PATH
