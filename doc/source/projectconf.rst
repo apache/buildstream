@@ -32,6 +32,30 @@ The project name will be used in user configuration and anywhere
 that a project needs to be specified.
 
 
+Format Version
+~~~~~~~~~~~~~~
+The BuildStream format is guaranteed to be backwards compatible
+with any earlier releases. The project's minimum required format
+version of BuildStream can be specified in ``project.conf`` with
+the ``format-version`` field, e.g.:
+
+.. code:: yaml
+
+  # The minimum base BuildStream format
+  format-version: 0
+
+BuildStream will increment it's core YAML format version at least once
+in any given minor point release where the format has been extended
+to support a new feature.
+
+.. note::
+
+   :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
+   plugins also implement their own YAML configuration fragments and as
+   such are revisioned separately from the core format. See :ref:`project_plugins`
+   for details on specifying a minimum version of a specific plugin.
+
+
 Element Path
 ~~~~~~~~~~~~
 To allow the user to structure their project nicely, BuildStream
@@ -77,82 +101,90 @@ with an artifact share.
     url: https://foo.com/artifacts
 
 
-Plugin Origins and Versions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _project_plugins:
 
-The BuildStream format is guaranteed to be backwards compatible
-with any earlier releases. The core YAML format, the format supported
-by various plugins, and the overall BuildStream release version are
-revisioned separately.
+External Plugins
+----------------
+If your project makes use of any custom :mod:`Element <buildstream.element>` or
+:mod:`Source <buildstream.source>` plugins, then the project must inform BuildStream
+of the plugins it means to make use of and the origin from which it can be loaded.
 
-If your project includes any custom *Elements* or *Sources*, then
-the origins, names, and minimum version must be defined.
-If your project must use a minimum version of a core plugin, this is
-also specified here.
+Note that plugins with the same name from different origins are not permitted.
 
-Note that elements or plugins with the same name from different origins
-are not permitted.
 
-Plugin specification format
-'''''''''''''''''''''''''''
+Core plugins
+~~~~~~~~~~~~
+Plugins provided by the BuildStream core need not be explicitly specified
+here, but you may use this section to specify a minimal format version
+to ensure that they provide the features which your project requires.
 
 .. code:: yaml
 
    plugins:
-   
-   # Core is only listed here as a means to allow project.conf
-   # authors to specify API versioning requirements
    - origin: core
-   
-     # Here we CAN specify minimal bound API version for each plugin,
-     # if we have such dependencies
+
+     # We require a new feature of the `git` source plugin, and
+     # a new feature introduced in version 2 of the `patch` plugin.
      sources:
-       git: 2
-       local: 1
-   
+       git: 1
+       patch: 2
+
+     # ... And a new feature of the `script` element, added
+     # in version 2 of it's own format version.
      elements:
        script: 2
-   
-   # Specify the "pony" plugins found by pip
-   - origin: pip
-     package-name: pony
-   
-     # Here we MUST specify a minimal bound API version for each
-     # plugin, in order to indicate which plugin is to be discovered
-     # from this particular "pip" origin
-     sources:
-       flying-pony: 0
-   
-   - origin: pip
-     package-name: potato
-   
-     # Here we have the rotten potato element loaded
-     # from the "potato" plugin package loaded via pip,
-     # this is a separate origin as the "flying-pony" source
-     elements:
-       rotten-potato: 0
-   
-   # Specify the plugins defined locally
-   - origin: local
-     path: plugins/sources
-   
-     # Here again we MUST define a minimal bound API version,
-     # even though it's immaterial since it's revisioned with
-     # the project itself, it informs BuildStream that this
-     # source must be loaded in this way
-     sources:
-       mysource: 0
 
-Project Version Format
-''''''''''''''''''''''
 
-The project's minimum required version of buildstream is specified in
-``project.conf`` with the ``format-version`` field, e.g.
+Local Plugins
+~~~~~~~~~~~~~
+Local plugins are expected to be found in a subdirectory of the actual
+BuildStream project. :mod:`Element <buildstream.element>` and
+:mod:`Source <buildstream.source>` plugins should be stored in separate
+directories to avoid namespace collisions.
+
+The versions of local plugins are largely immaterial since they are
+revisioned along with the project by the user, usually in a VCS like git.
+However, for the sake of consistency with other plugin loading origins
+we require that you specify a version, this can always be ``0`` for a local
+plugin.
+
 
 .. code:: yaml
 
-  # The minimum base BuildStream format
-  format-version: 0
+   plugins:
+
+   - origin: local
+     path: plugins/sources
+
+     # We want to use the `mysource` source plugin located in our
+     # project's `plugins/sources` subdirectory.
+     sources:
+       mysource: 0
+
+
+Pip Plugins
+~~~~~~~~~~~
+Plugins loaded from the ``pip`` origin are expected to be installed
+separately on the host operating system using python's package management
+system.
+
+.. code:: yaml
+
+   plugins:
+
+   - origin: pip
+
+     # Specify the name of the python package containing
+     # the plugins we want to load. The name one would use
+     # on the `pip install` command line.
+     #
+     package-name: potato
+
+     # We again must specify a minimal format version for the
+     # external plugin, it is allowed to be `0`.
+     #
+     elements:
+       potato: 0
 
 
 .. _project_options:

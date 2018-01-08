@@ -43,6 +43,7 @@ Project format
 * :ref:`projectconf`
 
   * :ref:`project_essentials`
+  * :ref:`project_plugins`
   * :ref:`project_options`
   * :ref:`project_defaults`
   * :ref:`project_builtin_defaults`
