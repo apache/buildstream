@@ -3,22 +3,46 @@ Hacking on BuildStream
 Some tips and guidelines for developers hacking on BuildStream
 
 
-Getting Started
----------------
-After cloning the BuildStream module with git, you will want a development installation.
+Feature Additions
+-----------------
+Major feature additions should be proposed on the
+`mailing list <https://mail.gnome.org/mailman/listinfo/buildstream-list>`_
+before being considered for inclusion, we strongly recommend proposing
+in advance of commencing work.
 
-To do this, first install ``pip`` and run the following command in the buildstream
-checkout directory::
+New features must be well documented and tested either in our main
+test suite if possible, or otherwise in the integration tests.
 
-  pip install --user -e .
+It is expected that the individual submitting the work take ownership
+of their feature within BuildStream for a reasonable timeframe of at least
+one release cycle after their work has landed on the master branch. This is
+to say that the submitter is expected to address and fix any side effects and
+bugs which may have fell through the cracks in the review process, giving us
+a reasonable timeframe for identifying these.
 
-The above will install some dependencies and also a symlink to your buildstream checkout
-in your local user's python environment, so any changes you make to buildstream will be
-effective for your user.
 
-You can later uninstall the local installation by running::
+Patch Submissions
+-----------------
+Branches must be submitted as merge requests in gitlab and should usually
+be associated to an issue report on gitlab.
 
-  pip uninstall buildstream
+Commits in the branch which address specific issues must specify the
+issue number in the commit message.
+
+Merge requests that are not yet ready for review must be prefixed with the
+``WIP:`` identifier. A merge request is not ready for review until the
+submitter expects that the patch is ready to actually land.
+
+Submitted branches must not contain a history of the work done in the
+feature branch. Please use git's interactive rebase feature in order to
+compose a clean patch series suitable for submission.
+
+We prefer that test case and documentation changes be submitted
+in separate commits from the code changes which they test.
+
+Ideally every commit in the history of master passes its test cases. This
+makes bisections more easy to perform, but is not always practical with
+more complex branches.
 
 
 Coding Style
@@ -38,7 +62,7 @@ The pep8 linter will run automatically when running the test suite.
 
 Imports
 ~~~~~~~
-Module imports inside BuildStream are done with . notation
+Module imports inside BuildStream are done with relative ``.`` notation
 
 Good::
 
@@ -57,49 +81,12 @@ An element plugin will derive from Element by importing::
   from buildstream import Element
 
 When importing utilities specifically, dont import function names
-from there, instead::
+from there, instead import the module itself::
 
   from . import utils
 
 This makes things clear when reading code that said functions
 are not defined in the same file but come from utils.py for example.
-
-
-One Class One Module
-~~~~~~~~~~~~~~~~~~~~
-BuildStream is mostly Object Oriented with a few utility files.
-
-* Every object should go into its own file (module) inside the buildstream package
-* Files should be named after their class in lower case with no underscore.
-
-This is to say a class named FooBar will certainly reside in a file named foobar.py.
-Unless FooBar is private in which case the file is of course _foobar.py.
-
-When adding a public class, it should be imported in toplevel __init__.py
-so that buildstream consumers can import it directly from the buildstream
-package, without requiring knowledge of the BuildStream package structure,
-which is allowed to change over time.
-
-
-Private API
-~~~~~~~~~~~
-BuildStream strives to guarantee a minimal and comprehensive public API
-surface both for embedders of the BuildStream pipeline and implementors
-of custom plugin Elements and Sources.
-
-Python does not have a real concept of private API, but as a convention
-anything which is private uses an underscore prefix.
-
-* Modules which are private have their file named _module.py
-* Private classes are named _Class
-* Private methods, class variables and instance variables have a leading underscore as well
-
-Exceptions to the above rules is to follow a principle of least underscores:
-
-* If a module is entirely private, there is no need for the classes
-  it contains to have a leading underscore.
-* If a class is entirely private, there is no need to mark its members
-  as private with leading underscores.
 
 
 Documenting BuildStream
@@ -127,18 +114,14 @@ other mechanism::
   pip install --user sphinx-click
 
 Furthermore, the documentation build requires that BuildStream itself
-be installed first, this can be a developer installation as described
-at the top of this text::
+be installed.
 
-  cd buildstream
-  pip install --user -e .
+To build the documentation, just run the following::
 
-Finally, to build the current set of docs, just run the following::
+  make -C doc
 
-  cd doc
-  make
-
-This will give you a build/html directory with the html docs.
+This will give you a ``doc/build/html`` directory with the html docs which
+you can view in your browser locally to test.
 
 
 Man Pages
@@ -164,10 +147,6 @@ in the buildstream distribution.
 
 Documenting Conventions
 ~~~~~~~~~~~~~~~~~~~~~~~
-When adding a new class to the buildstream core, an entry referring to
-the new module where the new class is defined should be added to
-the toplevel index manually in doc/source/index.rst.
-
 We use the sphinx.ext.napoleon extension for the purpose of having
 a bit nicer docstrings than the default sphinx docstrings.
 
@@ -181,10 +160,11 @@ format::
      argument2 (type): Description of arg
 
   Returns:
-     Description of returned thing indicating its type
+     (type): Description of returned thing of the specified type
 
   Raises:
-     SomeError, SomeOtherError
+     (SomeError): When some error occurs
+     (SomeOtherError): When some other error occurs
 
   A detailed description can go here if one is needed, only
   after the above part documents the calling conventions.
@@ -251,11 +231,10 @@ The MANIFEST.in and setup.py
 ----------------------------
 When adding a dependency to BuildStream, it's important to update the setup.py accordingly.
 
-When adding data files which need to be discovered at runtime by BuildStream, it's important
-update setup.py accordingly.
+When adding data files which need to be discovered at runtime by BuildStream, update setup.py accordingly.
 
 When adding data files for the purpose of docs or tests, or anything that is not covered by
-setup.py, it's important to update the MANIFEST.in accordingly.
+setup.py, update the MANIFEST.in accordingly.
 
 At any time, running the following command to create a source distribution should result in
 creating a tarball which contains everything we want it to include::
