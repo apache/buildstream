@@ -104,6 +104,8 @@ def list_relative_paths(directory):
        Relative filenames in `directory`
     """
     for (dirpath, dirnames, filenames) in os.walk(directory):
+        dirnames.sort()
+        filenames.sort()
 
         relpath = os.path.relpath(dirpath, directory)
 
