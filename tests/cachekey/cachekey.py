@@ -150,6 +150,16 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 def test_cache_key(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Workaround bug in recent versions of setuptools: newer
+    # versions of setuptools fail to preserve symbolic links
+    # when creating a source distribution, causing this test
+    # to fail from a dist tarball.
+    goodbye_link = os.path.join(project, 'files', 'local',
+                                'usr', 'bin', 'goodbye')
+    os.unlink(goodbye_link)
+    os.symlink('hello', goodbye_link)
+
     result = cli.run(project=project, silent=True, args=[
         'show',
         '--format', '%{name}::%{full-key}',
