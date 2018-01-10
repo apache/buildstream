@@ -22,8 +22,9 @@ import multiprocessing
 import os
 import string
 import tempfile
+import signal
 
-from .. import _ostree, utils
+from .. import _ostree, _signals, utils
 from .._exceptions import ArtifactError
 from ..element import _KeyStrength
 from .._ostree import OSTreeError
@@ -308,18 +309,27 @@ class OSTreeCache(ArtifactCache):
             try:
                 q.put((True, _ostree.list_remote_refs(self.repo, remote=remote)))
             except OSTreeError as e:
-                q.put((False, e))
+                q.put((False, str(e)))
 
         q = multiprocessing.Queue()
         p = multiprocessing.Process(target=child_action, args=(self.repo, remote, q))
-        p.start()
-        ret, res = q.get()
-        p.join()
+
+        try:
+
+            # Keep SIGINT blocked in the child process
+            with _signals.blocked([signal.SIGINT], ignore=False):
+                p.start()
+
+            ret, res = q.get()
+            p.join()
+        except KeyboardInterrupt:
+            utils._kill_process_tree(p.pid)
+            raise
 
         if ret:
             self._remote_refs = res
         else:
-            raise ArtifactError("Failed to fetch remote refs") from res
+            raise ArtifactError("Failed to fetch remote refs: {}".format(res))
 
     # push():
     #
