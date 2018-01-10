@@ -20,10 +20,11 @@
 
 import multiprocessing
 import os
+import signal
 import string
 import tempfile
 
-from .. import _ostree, utils
+from .. import _ostree, _signals, utils
 from .._exceptions import ArtifactError
 from ..element import _KeyStrength
 from .._ostree import OSTreeError
@@ -384,9 +385,18 @@ class OSTreeCache(ArtifactCache):
         q = multiprocessing.Queue()
         for remote in self.remote_specs:
             p = multiprocessing.Process(target=child_action, args=(remote.url, q))
-            p.start()
-            exception, push_url, pull_url, remote_refs = q.get()
-            p.join()
+
+            try:
+
+                # Keep SIGINT blocked in the child process
+                with _signals.blocked([signal.SIGINT], ignore=False):
+                    p.start()
+
+                exception, push_url, pull_url, remote_refs = q.get()
+                p.join()
+            except KeyboardInterrupt:
+                utils._kill_process_tree(p.pid)
+                raise
 
             if exception and on_failure:
                 on_failure(remote.url, exception)
