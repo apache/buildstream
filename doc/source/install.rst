@@ -50,7 +50,7 @@ setup as described `here <https://backports.debian.org/Instructions/>`_
 
 By adding the following line to your sources.list::
 
-  deb http://ftp.debian.org/debian jessie-backports main
+  deb http://ftp.debian.org/debian stretch-backports main
 
 And then running::
 
