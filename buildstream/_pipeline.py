@@ -516,18 +516,22 @@ class Pipeline():
                                 .format(directory))
 
         # Stage deps into a temporary sandbox first
-        with target._prepare_sandbox(Scope.RUN, None, integrate=integrate) as sandbox:
+        try:
+            with target._prepare_sandbox(Scope.RUN, None, integrate=integrate) as sandbox:
 
-            # Copy or move the sandbox to the target directory
-            sandbox_root = sandbox.get_directory()
-            with target.timed_activity("Checking out files in {}".format(directory)):
-                try:
-                    if hardlinks:
-                        self.checkout_hardlinks(sandbox_root, directory)
-                    else:
-                        utils.copy_files(sandbox_root, directory)
-                except OSError as e:
-                    raise PipelineError("Failed to checkout files: {}".format(e)) from e
+                # Copy or move the sandbox to the target directory
+                sandbox_root = sandbox.get_directory()
+                with target.timed_activity("Checking out files in {}".format(directory)):
+                    try:
+                        if hardlinks:
+                            self.checkout_hardlinks(sandbox_root, directory)
+                        else:
+                            utils.copy_files(sandbox_root, directory)
+                    except OSError as e:
+                        raise PipelineError("Failed to checkout files: {}".format(e)) from e
+        except BstError as e:
+            raise PipelineError("Error while staging dependencies into a sandbox: {}".format(e),
+                                reason=e.reason) from e
 
     # Helper function for checkout()
     #

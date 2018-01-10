@@ -1014,7 +1014,10 @@ class App():
                 #
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
-                    element._shell(Scope.BUILD, failure.sandbox)
+                    try:
+                        element._shell(Scope.BUILD, failure.sandbox)
+                    except BstError as e:
+                        click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':
                     with open(failure.logfile, 'r') as logfile:
                         content = logfile.read()
