@@ -106,6 +106,11 @@ def list_relative_paths(directory):
     """
     for (dirpath, dirnames, filenames) in os.walk(directory):
 
+        # Modifying the dirnames directly ensures that the os.walk() generator
+        # allows us to specify the order in which they will be iterated.
+        dirnames.sort()
+        filenames.sort()
+
         relpath = os.path.relpath(dirpath, directory)
 
         # We don't want "./" pre-pended to all the entries in the root of
@@ -346,13 +351,15 @@ def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
        unless the existing directory in `dest` is not empty in which
        case the path will be reported in the return value.
     """
+    presorted = False
     if files is None:
         files = list_relative_paths(src)
+        presorted = True
 
     result = FileListResult()
     try:
         _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing,
-                      report_written=report_written)
+                      report_written=report_written, presorted=presorted)
     except OSError as e:
         raise UtilError("Failed to copy '{} -> {}': {}"
                         .format(src, dest, e))
@@ -386,13 +393,15 @@ def link_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
        If a hardlink cannot be created due to crossing filesystems,
        then the file will be copied instead.
     """
+    presorted = False
     if files is None:
         files = list_relative_paths(src)
+        presorted = True
 
     result = FileListResult()
     try:
         _process_list(src, dest, files, safe_link, result, ignore_missing=ignore_missing,
-                      report_written=report_written)
+                      report_written=report_written, presorted=presorted)
     except OSError as e:
         raise UtilError("Failed to link '{} -> {}': {}"
                         .format(src, dest, e))
@@ -536,29 +545,31 @@ def _ensure_real_directory(root, destpath):
 #    actionfunc: The function to call for regular files
 #    result: The FileListResult
 #    ignore_missing: Dont raise any error if a source file is missing
+#    presorted: Whether the passed list is known to be presorted
 #
 #
-def _process_list(srcdir, destdir, filelist, actionfunc, result, ignore_missing=False, report_written=False):
+def _process_list(srcdir, destdir, filelist, actionfunc, result,
+                  ignore_missing=False, report_written=False,
+                  presorted=False):
 
     # Keep track of directory permissions, since these need to be set
     # *after* files have been written.
     permissions = []
 
-    # filelist comes in as a generator, and we need to use it more than once.
-    filelist = list(filelist)
+    # Sorting the list of files is necessary to ensure that we processes
+    # symbolic links which lead to directories before processing files inside
+    # those directories.
+    if not presorted:
+        filelist = sorted(filelist)
 
-    # Add to the results the list of files written
-    if report_written:
-        result.files_written += filelist
-
-    # Note we consume the filelist (which is a generator and not a list)
-    # by sorting it, this is necessary to ensure that we processes symbolic
-    # links which lead to directories before processing files inside those
-    # directories.
-    #
-    for path in sorted(filelist):
+    # Now walk the list
+    for path in filelist:
         srcpath = os.path.join(srcdir, path)
         destpath = os.path.join(destdir, path)
+
+        # Add to the results the list of files written
+        if report_written:
+            result.files_written.append(path)
 
         # Collect overlaps
         if os.path.lexists(destpath) and not os.path.isdir(destpath):
