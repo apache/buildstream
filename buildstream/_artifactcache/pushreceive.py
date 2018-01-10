@@ -656,22 +656,28 @@ def initialize_push_connection(remote):
     writer = PushMessageWriter(ssh.stdin)
     reader = PushMessageReader(ssh.stdout)
 
-    writer.send_hello()
-    args = reader.receive_info()
+    try:
+        writer.send_hello()
+        args = reader.receive_info()
+        writer.send_done()
 
-    if 'pull_url' in args:
-        pull_url = args['pull_url']
-    else:
-        raise PushException(
-            "Remote cache did not tell us its pull URL. This cache probably "
-            "requires updating to a newer version of `bst-artifact-receive`.")
-
-    writer.send_done()
-
-    ssh.wait()
-    if ssh.returncode != 0:
-        error = ssh.stderr.read().decode('unicode-escape')
-        raise PushException(error)
+        if 'pull_url' in args:
+            pull_url = args['pull_url']
+        else:
+            raise PushException(
+                "Remote cache did not tell us its pull URL. This cache probably "
+                "requires updating to a newer version of `bst-artifact-receive`.")
+    except PushException as protocol_error:
+        # If we get a read error on the wire, let's first see if SSH reported
+        # an error such as 'Permission denied'. If so this will be much more
+        # useful to the user than the "Expected reply, got none" sort of
+        # message that reader.receive_info() will have raised.
+        ssh.wait()
+        if ssh.returncode != 0:
+            ssh_error = ssh.stderr.read().decode('unicode-escape')
+            raise PushException("SSH error: {}".format(ssh_error))
+        else:
+            raise protocol_error
 
     return pull_url
 
