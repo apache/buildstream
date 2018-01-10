@@ -106,7 +106,8 @@ def unique_key(filename):
     if os.path.isdir(filename):
         return "0"
     elif os.path.islink(filename):
-        return "1"
+        # For a symbolic link, use the link target as it's unique identifier
+        return os.readlink(filename)
 
     return utils.sha256sum(filename)
 
