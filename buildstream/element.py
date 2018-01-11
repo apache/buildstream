@@ -86,9 +86,10 @@ class ElementError(BstError):
 
     Args:
        message (str): The error message to report to the user
+       detail (str): A possibly multiline, more detailed error message
        reason (str): An optional machine readable reason string, used for test cases
     """
-    def __init__(self, message, *, reason=None):
+    def __init__(self, message, *, detail=None, reason=None):
         super().__init__(message, domain=ErrorDomain.ELEMENT, reason=reason)
 
 
