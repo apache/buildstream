@@ -36,9 +36,9 @@ import tempfile
 import itertools
 from contextlib import contextmanager
 
-import pkg_resources
 import psutil
 
+from . import __version__
 from . import _signals
 from ._exceptions import BstError, ErrorDomain
 
@@ -455,8 +455,7 @@ def get_bst_version():
        (int): The major version
        (int): The minor version
     """
-    package = pkg_resources.require("buildstream")[0]
-    versions = package.version.split('.')[:2]
+    versions = __version__.split('.')[:2]
 
     return (int(versions[0]), int(versions[1]))
 

@@ -20,7 +20,6 @@
 import os
 import sys
 import click
-import pkg_resources  # From setuptools
 from contextlib import contextmanager
 from blessings import Terminal
 from click import UsageError
@@ -37,13 +36,11 @@ from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
 from .. import _yaml
+from .. import __version__ as build_stream_version
 
 # Import frontend assets
 from . import Profile, LogLine, Status
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-
-# Some globals resolved for default arguments in the cli
-build_stream_version = pkg_resources.require("buildstream")[0].version
 
 # Intendation for all logging
 INDENT = 4

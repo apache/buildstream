@@ -19,6 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 # Plugin author facing APIs
+from .__version__ import __version__
 from .utils import UtilError, ProgramNotFoundError
 from .sandbox import Sandbox, SandboxFlags
 from .plugin import Plugin

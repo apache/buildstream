@@ -16,3 +16,6 @@ tmp
 
 # Integration test results
 /integration-tests/*results/
+
+# Generated version file
+buildstream/__version__.py
