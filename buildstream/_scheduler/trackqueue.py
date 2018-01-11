@@ -73,10 +73,15 @@ class TrackQueue(Queue):
                     try:
                         _yaml.dump(toplevel, fullname)
                     except OSError as e:
-                        source.error("Failed to update project file",
-                                     detail="{}: Failed to rewrite "
-                                     "tracked source to file {}: {}"
-                                     .format(source, fullname, e))
+                        # FIXME: We currently dont have a clear path to
+                        #        fail the scheduler from the main process, so
+                        #        this will just warn and BuildStream will exit
+                        #        with a success code.
+                        #
+                        source.warn("Failed to update project file",
+                                    detail="{}: Failed to rewrite "
+                                    "tracked source to file {}: {}"
+                                    .format(source, fullname, e))
 
         # Forcefully recalculate the element's consistency state after successfully
         # tracking, this is avoid a following fetch queue operating on the sources
