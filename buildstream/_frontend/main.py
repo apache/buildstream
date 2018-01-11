@@ -390,10 +390,12 @@ def push(app, elements, deps):
               help='Format string for each element')
 @click.option('--downloadable', default=False, is_flag=True,
               help="Refresh downloadable state")
+@click.option('--sources', default=False, is_flag=True,
+              help="Show Sources for elements in the pipeline")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def show(app, elements, deps, except_, order, format, downloadable):
+def show(app, elements, deps, except_, order, format, downloadable, sources):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -455,6 +457,24 @@ def show(app, elements, deps, except_, order, format, downloadable):
 
     report = app.logger.show_pipeline(dependencies, format)
     click.echo(report, color=app.colors)
+
+    if sources:  # If the sources flag is active
+        for element in app.pipeline.dependencies(Scope.ALL):
+            sourcesList = [source for source in element.sources()]
+            if len(sourcesList):
+                click.echo("\n" + element.name)
+                click.echo("_________________")
+                for source in sourcesList:
+                    kind = source.get_kind()
+                    click.echo("Type: " + kind)
+                    if kind == 'ostree':
+                        click.echo(source.url)
+                    elif kind == 'git':
+                        click.echo(source.original_url)
+                    elif kind == 'local':
+                        click.echo(source.fullpath)
+                    click.echo(source.get_ref())
+        click.echo("\n")
 
 
 ##################################################################
