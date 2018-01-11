@@ -230,8 +230,7 @@ class Pipeline():
                      "Try tracking these elements first with `bst track`\n\n"
             for element in inconsistent:
                 detail += "  " + element.name + "\n"
-            self.message(MessageType.ERROR, "Inconsistent pipeline", detail=detail)
-            raise PipelineError(reason="inconsistent-pipeline")
+            raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 
     # Generator function to iterate over only the elements
     # which are required to build the pipeline target, omitting
