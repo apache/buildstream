@@ -5,6 +5,9 @@ from tests.testutils import cli_integration as cli
 from tests.testutils.integration import format_files, assert_contains
 
 
+pytestmark = pytest.mark.integration
+
+
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project"

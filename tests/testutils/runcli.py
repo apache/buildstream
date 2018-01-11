@@ -402,7 +402,7 @@ def cli(tmpdir):
 # when running `bst shell`, but unfortunately cannot produce nice
 # stacktraces.
 @pytest.fixture()
-def cli_integration(tmpdir):
+def cli_integration(tmpdir, integration_cache):
     directory = os.path.join(str(tmpdir), 'cache')
     os.makedirs(directory)
 
@@ -414,7 +414,8 @@ def cli_integration(tmpdir):
     # We want to cache sources for integration tests more permanently,
     # to avoid downloading the huge base-sdk repeatedly
     fixture.configure({
-        'sourcedir': os.path.join(os.getcwd(), 'integration-cache', 'sources')
+        'sourcedir': os.path.join(integration_cache, 'sources'),
+        'artifactdir': os.path.join(integration_cache, 'artifacts')
     })
 
     return fixture

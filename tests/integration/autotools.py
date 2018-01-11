@@ -5,6 +5,9 @@ from tests.testutils import cli_integration as cli
 from tests.testutils.integration import format_files, assert_contains
 
 
+pytestmark = pytest.mark.integration
+
+
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project"
@@ -13,6 +16,7 @@ DATA_DIR = os.path.join(
 
 # Test that an autotools build 'works' - we use the autotools sample
 # amhello project for this.
+@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)

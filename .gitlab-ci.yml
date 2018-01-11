@@ -1,8 +1,9 @@
 image: buildstream/buildstream-fedora:master-42-571406d
 
 cache:
+  key: "$CI_JOB_NAME-"
   paths:
-    - cache/buildstream/sources/
+    - cache/
 
 stages:
   - prepare
@@ -14,9 +15,9 @@ before_script:
   - mount
   - df -h
 
-  # Store cache in the project directory
-  - if [ -d "$(pwd)/cache" ]; then chmod -R a+rw "$(pwd)/cache"; fi
-  - export XDG_CACHE_HOME="$(pwd)/cache"
+  - mkdir -p "$(pwd)/cache"
+  - chmod -R a+rw "$(pwd)/cache"
+
   - adduser -m buildstream
   - chown -R buildstream:buildstream .
 
@@ -66,10 +67,11 @@ source_dist:
 
 # Run premerge commits
 #
-pytest_linux:
+linux-tests:
   stage: test
   variables:
     PYTEST_ADDOPTS: "--color=yes"
+    INTEGRATION_CACHE: "/builds/BuildStream/cache/"
   script:
 
   # Unpack and get into dist/buildstream
@@ -79,46 +81,24 @@ pytest_linux:
 
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri'
+  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
 
   # Go back to the toplevel and collect our reports
   - cd ../..
-  - mkdir -p coverage-pytest-linux/
-  - cp dist/buildstream/.coverage.* coverage-pytest-linux/coverage.pytest-linux
-  artifacts:
-    paths:
-    - coverage-pytest-linux/
-
-# Run integration tests
-#
-integration_linux:
-  stage: test
-
-  script:
-    - cd dist && ./install.sh && cd ..
-    - cd integration-tests
-
-    # We run as a simple user to test for permission issues
-    - su buildstream -c './run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test'
-
-    - cd ..
-    - mkdir -p coverage-linux/
-    - cp integration-tests/.coverage coverage-linux/coverage.linux
-    - cp -a integration-tests/tmp/logs logs-linux
-
+  - mkdir -p coverage-linux/
+  - cp dist/buildstream/.coverage.* coverage-linux/coverage.linux
   artifacts:
     paths:
     - coverage-linux/
-    - logs-linux/
-
   dependencies:
   - source_dist
 
-pytest_unix:
+unix-tests:
   stage: test
   variables:
     BST_FORCE_BACKEND: "unix"
     PYTEST_ADDOPTS: "--color=yes"
+    INTEGRATION_CACHE: "/builds/BuildStream/cache/"
   script:
     # We remove the Bubblewrap and OSTree packages here so that we catch any
     # codepaths that try to use them. Removing OSTree causes fuse-libs to
@@ -130,32 +110,12 @@ pytest_unix:
     - cd dist && ./unpack.sh && cd buildstream
 
     # Since the unix platform is required to run as root, no user change required
-    - python3 setup.py test --index-url invalid://uri
+    - python3 setup.py test --index-url invalid://uri --addopts --integration
 
     # Go back to the toplevel and collect our reports
     - cd ../..
-    - mkdir -p coverage-pytest-unix
-    - cp dist/buildstream/.coverage.* coverage-pytest-unix/coverage.pytest-unix
-  artifacts:
-    paths:
-      - coverage-pytest-unix/
-
-integration_unix:
-  stage: test
-  variables:
-    BST_FORCE_BACKEND: "unix"
-  script:
-    - cd dist && ./install.sh && cd ..
-    - cd integration-tests
-
-    # Since the unix platform is required to run as root, no user change required
-    - ./run-test.sh --arg --colors --cov ../.coveragerc --sources ${XDG_CACHE_HOME}/buildstream/sources test
-
-    - cd ..
     - mkdir -p coverage-unix/
-    - cp integration-tests/.coverage coverage-unix/coverage.unix
-    - cp -a integration-tests/tmp/logs logs-unix
-
+    - cp dist/buildstream/.coverage.* coverage-unix/coverage.unix
   artifacts:
     paths:
     - coverage-unix/
@@ -197,22 +157,19 @@ docs:
 coverage:
   stage: post
   script:
+    - cd dist && ./unpack.sh && cd buildstream
     - pip3 install --no-index .
     - mkdir report
     - cd report
-    - cp ../coverage-linux/coverage.linux .coverage
-    - cp ../coverage-unix/coverage.unix .
-    - coverage combine --rcfile=../.coveragerc -a ../coverage-unix/coverage.unix
-    - cp ../coverage-pytest-linux/coverage.pytest-linux .
-    - coverage combine --rcfile=../.coveragerc -a coverage.pytest-linux
-    - cp ../coverage-pytest-unix/coverage.pytest-unix .
-    - coverage combine --rcfile=../.coveragerc -a coverage.pytest-unix
+    - cp ../../../coverage-linux/coverage.linux .
+    - cp ../../../coverage-unix/coverage.unix .
+    - coverage combine --rcfile=../.coveragerc -a coverage.linux
+    - coverage combine --rcfile=../.coveragerc -a coverage.unix
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
-  - pytest_linux
-  - integration_linux
-  - pytest_unix
-  - integration_unix
+  - linux-tests
+  - unix-tests
+  - source_dist
 
 # Deploy, only for merges which land on master branch.
 #
