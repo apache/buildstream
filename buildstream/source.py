@@ -58,11 +58,12 @@ class SourceError(BstError):
     to report errors to the user.
 
     Args:
-       message (str): The error message to report to the user
+       message (str): The breif error description to report to the user
+       detail (str): A possibly multiline, more detailed error message
        reason (str): An optional machine readable reason string, used for test cases
     """
-    def __init__(self, message, *, reason=None):
-        super().__init__(message, domain=ErrorDomain.SOURCE, reason=reason)
+    def __init__(self, message, *, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason)
 
 
 class Source(Plugin):
