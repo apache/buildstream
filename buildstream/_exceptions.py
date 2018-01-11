@@ -79,10 +79,15 @@ class ErrorDomain(Enum):
 #
 class BstError(Exception):
 
-    def __init__(self, message, *, domain=None, reason=None):
+    def __init__(self, message, *, detail=None, domain=None, reason=None):
         global _last_exception
 
         super().__init__(message)
+
+        # Additional error detail, these are used to construct detail
+        # portions of the logging messages when encountered.
+        #
+        self.detail = detail
 
         # The build sandbox in which the error occurred, if the
         # error occurred at element assembly time.
@@ -210,7 +215,7 @@ class ArtifactError(BstError):
 #
 class PipelineError(BstError):
 
-    def __init__(self, message=None, reason=None):
+    def __init__(self, message=None, *, detail=None, reason=None):
 
         # The empty string should never appear to a user,
         # this only allows us to treat this internal error as
@@ -218,4 +223,4 @@ class PipelineError(BstError):
         if message is None:
             message = ""
 
-        super().__init__(message, domain=ErrorDomain.PIPELINE, reason=reason)
+        super().__init__(message, detail=detail, domain=ErrorDomain.PIPELINE, reason=reason)
