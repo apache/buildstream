@@ -20,7 +20,6 @@
 
 import os
 import inspect
-import pkg_resources
 
 from ._exceptions import PluginError
 from . import utils
@@ -84,6 +83,7 @@ class PluginContext():
     def _get_pip_plugin_source(self, package_name, kind):
         defaults = None
         if ('pip', package_name) not in self.alternate_sources:
+            import pkg_resources
             # key by a tuple to avoid collision
             try:
                 package = pkg_resources.get_entry_info(package_name,
