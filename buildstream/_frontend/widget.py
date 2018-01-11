@@ -143,7 +143,6 @@ class TypeName(Widget):
         MessageType.STATUS: "cyan",
         MessageType.INFO: "magenta",
         MessageType.WARN: "yellow",
-        MessageType.ERROR: "red",
         MessageType.START: "blue",
         MessageType.SUCCESS: "green",
         MessageType.FAIL: "red",
@@ -251,11 +250,12 @@ class LogFile(Widget):
         # Hold on to the logging directory so we can abbreviate
         self.logdir = pipeline.context.logdir
 
-    def render(self, message):
+    def render(self, message, abbrev=True):
 
         if message.logfile and message.scheduler:
             logfile = message.logfile
-            if logfile.startswith(self.logdir):
+
+            if logfile.startswith(self.logdir) and abbrev:
                 logfile = logfile[len(self.logdir) + 1:]
 
             if message.message_type in [MessageType.FAIL, MessageType.BUG]:
@@ -319,8 +319,9 @@ class LogLine(Widget):
         for widget in self.columns:
             text += widget.render(message)
 
-        # Show the log file only in the main start/success/fail messages
-        if message.logfile and message.scheduler:
+        # Show the log file only in the main start/success messages
+        if message.logfile and message.scheduler and \
+           message.message_type in [MessageType.START, MessageType.SUCCESS]:
             text += self.logfile_widget.render(message)
         else:
             text += self.message_widget.render(message)
@@ -372,12 +373,17 @@ class LogLine(Widget):
             extra_nl = True
 
         if message.scheduler and message.message_type == MessageType.FAIL:
+            text += '\n'
+            text += self.indent + self.err_profile.fmt("Printing the last {} lines from log file:"
+                                                       .format(self.log_lines)) + '\n'
+            text += self.indent + self.logfile_widget.render(message, abbrev=False) + '\n'
+            text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
+
             log_content = self.read_last_lines(message.logfile)
             log_content = self.indent + self.indent.join(log_content.splitlines(True))
-
-            text += '\n'
             text += self.detail_profile.fmt(log_content)
             text += '\n'
+            text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
             extra_nl = True
 
         if extra_nl:
@@ -400,12 +406,15 @@ class LogLine(Widget):
                 count += 1
 
                 # If location is -1 (none found), this will print the
-                # first character despite the later +1
+                # first character because of the later +1
                 end = location
 
-            # end+1 since we do not want to print the first newline
-            # (consistent with `tail` behavior)
-            lines = log[end:].splitlines()
+            # end+1 is correct whether or not a newline was found at
+            # that location. If end is -1 (seek before beginning of file)
+            # then we get the first characther. If end is a newline position,
+            # we discard it and only want to print the beginning of the next
+            # line.
+            lines = log[(end + 1):].splitlines()
             return '\n'.join([line.decode('utf-8') for line in lines]).rstrip()
 
     #
