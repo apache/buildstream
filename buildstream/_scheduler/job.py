@@ -274,8 +274,8 @@ class Job():
                     self.message(element, MessageType.FAIL, "Try #{} failed, retrying".format(self.tries),
                                  elapsed=elapsed)
                 else:
-                    self.message(element, MessageType.FAIL, self.action_name,
-                                 elapsed=elapsed, detail=str(e),
+                    self.message(element, MessageType.FAIL, str(e),
+                                 elapsed=elapsed, detail=e.detail,
                                  logfile=filename, sandbox=e.sandbox)
 
                 # Report the exception to the parent (for internal testing purposes)
