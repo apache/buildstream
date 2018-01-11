@@ -404,15 +404,6 @@ class Plugin():
         """
         self.__message(MessageType.WARN, brief, detail=detail)
 
-    def error(self, brief, *, detail=None):
-        """Print an error message
-
-        Args:
-           brief (str): The brief message
-           detail (str): An optional detailed message, can be multiline output
-        """
-        self.__message(MessageType.ERROR, brief, detail=detail)
-
     def log(self, brief, *, detail=None):
         """Log a message into the plugin's log file
 
