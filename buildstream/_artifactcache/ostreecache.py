@@ -53,7 +53,7 @@ def buildref(element, key):
 # Args:
 #     context (Context): The BuildStream context
 #     project (Project): The BuildStream project
-#     enable_push (bool): Whether pushing is allowed
+#     enable_push (bool): Whether pushing is allowed by the platform
 #
 # Pushing is explicitly disabled by the platform in some cases,
 # like when we are falling back to functioning without using
@@ -69,12 +69,12 @@ class OSTreeCache(ArtifactCache):
         ostreedir = os.path.join(context.artifactdir, 'ostree')
         self.repo = _ostree.ensure(ostreedir, False)
 
-        self.push_url = None
+        self.push_urls = []
         self.pull_urls = []
         self._remote_refs = {}
 
-    def set_remotes(self, urls, on_failure=None):
-        self.urls = urls
+    def set_remotes(self, remote_specs, on_failure=None):
+        self.remote_specs = remote_specs
 
         self._initialize_remotes(on_failure)
 
@@ -82,7 +82,7 @@ class OSTreeCache(ArtifactCache):
         return (len(self.pull_urls) > 0)
 
     def has_push_remotes(self):
-        return (self.push_url is not None)
+        return (len(self.push_urls) > 0)
 
     # contains():
     #
@@ -282,44 +282,17 @@ class OSTreeCache(ArtifactCache):
     # Raises:
     #   (ArtifactError): if there was an error
     def push(self, element):
+        any_pushed = False
 
-        if self.push_url is None:
-            raise ArtifactError("The protocol in use does not support pushing.")
+        if len(self.push_urls) == 0:
+            raise ArtifactError("Push is not enabled for any of the configured remote artifact caches.")
 
         ref = buildref(element, element._get_cache_key_from_artifact())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
-        if self.push_url.startswith("file://"):
-            # local repository
-            push_repo = _ostree.ensure(self.push_url[7:], True)
-            _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=ref)
-            _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
+        for push_url in self.push_urls:
+            any_pushed |= self._push_to_remote(push_url, element, ref, weak_ref)
 
-            # Local remotes are not really a thing, just return True here
-            return True
-        else:
-            # Push over ssh
-            #
-            with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:
-
-                with element.timed_activity("Preparing compressed archive"):
-                    # First create a temporary archive-z2 repository, we can
-                    # only use ostree-push with archive-z2 local repo.
-                    temp_repo = _ostree.ensure(temp_repo_dir, True)
-
-                    # Now push the ref we want to push into our temporary archive-z2 repo
-                    _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
-                    _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
-
-                with element.timed_activity("Sending artifact"), \
-                    element._output_file() as output_file:
-                    try:
-                        pushed = push_artifact(temp_repo.get_path().get_path(),
-                                               self.push_url,
-                                               [ref, weak_ref], output_file)
-                    except PushException as e:
-                        raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
-
-                return pushed
+        return any_pushed
 
     # _initialize_remote():
     #
@@ -409,22 +382,26 @@ class OSTreeCache(ArtifactCache):
         # possible to pickle local functions such as child_action().
         #
         q = multiprocessing.Queue()
-        for url in self.urls:
-            p = multiprocessing.Process(target=child_action, args=(url, q))
+        for remote in self.remote_specs:
+            p = multiprocessing.Process(target=child_action, args=(remote.url, q))
             p.start()
             exception, push_url, pull_url, remote_refs = q.get()
             p.join()
 
             if exception and on_failure:
-                on_failure(url, exception)
+                on_failure(remote.url, exception)
             elif exception:
                 raise ArtifactError() from exception
             else:
-                # Use first pushable remote we find for pushing.
-                if push_url and not self.push_url:
-                    self.push_url = push_url
+                if remote.push:
+                    if push_url:
+                        self.push_urls.append(push_url)
+                    else:
+                        raise ArtifactError("Push enabled but not supported by repo at: {}".format(remote.url))
 
-                # Use all pullable remotes, in priority order
+                # The specs are deduplicated when reading the config, but since
+                # each push URL can supply an arbitrary pull URL we must dedup
+                # those again here.
                 if pull_url and pull_url not in self.pull_urls:
                     self.pull_urls.append(pull_url)
 
@@ -435,3 +412,37 @@ class OSTreeCache(ArtifactCache):
                 for ref in remote_refs:
                     if ref not in self._remote_refs:
                         self._remote_refs[ref] = remote
+
+    def _push_to_remote(self, push_url, element, ref, weak_ref):
+        if push_url.startswith("file://"):
+            # local repository
+            push_repo = _ostree.ensure(push_url[7:], True)
+            _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+            _ostree.fetch(push_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
+
+            # Local remotes are not really a thing, just return True here
+            return True
+        else:
+            # Push over ssh
+            #
+            with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:
+
+                with element.timed_activity("Preparing compressed archive"):
+                    # First create a temporary archive-z2 repository, we can
+                    # only use ostree-push with archive-z2 local repo.
+                    temp_repo = _ostree.ensure(temp_repo_dir, True)
+
+                    # Now push the ref we want to push into our temporary archive-z2 repo
+                    _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
+                    _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
+
+                with element.timed_activity("Sending artifact"), \
+                    element._output_file() as output_file:
+                    try:
+                        pushed = push_artifact(temp_repo.get_path().get_path(),
+                                               push_url,
+                                               [ref, weak_ref], output_file)
+                    except PushException as e:
+                        raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
+
+                return pushed

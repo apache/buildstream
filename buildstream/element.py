@@ -1204,8 +1204,7 @@ class Element(Plugin):
         if self._tainted():
             return True
 
-        # Do not push artifact that is already in the remote artifact repository
-        return self.__artifacts.remote_contains_key(self, self._get_cache_key_from_artifact())
+        return False
 
     # _push():
     #

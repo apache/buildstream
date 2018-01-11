@@ -28,7 +28,7 @@ from . import _yaml
 from ._profile import Topics, profile_start, profile_end
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
-from ._artifactcache import artifact_cache_urls_from_config_node
+from ._artifactcache import artifact_cache_specs_from_config_node
 
 
 # The base BuildStream format version
@@ -173,7 +173,7 @@ class Project():
         #
 
         # Load artifacts pull/push configuration for this project
-        self.artifact_urls = artifact_cache_urls_from_config_node(config)
+        self.artifact_cache_specs = artifact_cache_specs_from_config_node(config)
 
         # Workspace configurations
         self._workspaces = self._load_workspace_config()

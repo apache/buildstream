@@ -19,24 +19,35 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
-from collections import Mapping
+from collections import Mapping, namedtuple
 
 from .._exceptions import ImplError, LoadError, LoadErrorReason
 from .. import utils
 from .. import _yaml
 
 
-def artifact_cache_url_from_spec(spec):
-    _yaml.node_validate(spec, ['url'])
-    url = _yaml.node_get(spec, str, 'url')
-    if len(url) == 0:
-        provenance = _yaml.node_get_provenance(spec)
-        raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "{}: empty artifact cache URL".format(provenance))
-    return url
+# An ArtifactCacheSpec holds the user configuration for a single remote
+# artifact cache.
+#
+# Args:
+#     url (str): Location of the remote artifact cache
+#     push (bool): Whether we should attempt to push artifacts to this cache,
+#                  in addition to pulling from it.
+#
+class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push')):
+    @staticmethod
+    def new_from_config_node(spec_node):
+        _yaml.node_validate(spec_node, ['url', 'push'])
+        url = _yaml.node_get(spec_node, str, 'url')
+        push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
+        if len(url) == 0:
+            provenance = _yaml.node_get_provenance(spec_node)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: empty artifact cache URL".format(provenance))
+        return ArtifactCacheSpec(url, push)
 
 
-# artifact_cache_urls_from_config_node()
+# artifact_cache_specs_from_config_node()
 #
 # Parses the configuration of remote artifact caches from a config block.
 #
@@ -44,29 +55,29 @@ def artifact_cache_url_from_spec(spec):
 #   config_node (dict): The config block, which may contain the 'artifacts' key
 #
 # Returns:
-#   A list of URLs pointing to remote artifact caches.
+#   A list of ArtifactCacheSpec instances.
 #
 # Raises:
 #   LoadError, if the config block contains invalid keys.
 #
-def artifact_cache_urls_from_config_node(config_node):
-    urls = []
+def artifact_cache_specs_from_config_node(config_node):
+    cache_specs = []
 
     artifacts = config_node.get('artifacts', [])
     if isinstance(artifacts, Mapping):
-        urls.append(artifact_cache_url_from_spec(artifacts))
+        cache_specs.append(ArtifactCacheSpec.new_from_config_node(artifacts))
     elif isinstance(artifacts, list):
-        for spec in artifacts:
-            urls.append(artifact_cache_url_from_spec(spec))
+        for spec_node in artifacts:
+            cache_specs.append(ArtifactCacheSpec.new_from_config_node(spec_node))
     else:
         provenance = _yaml.node_get_provenance(config_node, key='artifacts')
         raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                               "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
                               (str(provenance)))
-    return urls
+    return cache_specs
 
 
-# configured_artifact_cache_urls():
+# configured_remote_artifact_cache_specs():
 #
 # Return the list of configured artifact remotes for a given project, in priority
 # order. This takes into account the user and project configuration.
@@ -76,14 +87,14 @@ def artifact_cache_urls_from_config_node(config_node):
 #     project (Project): The BuildStream project
 #
 # Returns:
-#   A list of URLs pointing to remote artifact caches.
+#   A list of ArtifactCacheSpec instances describing the remote artifact caches.
 #
-def configured_artifact_cache_urls(context, project):
+def configured_remote_artifact_cache_specs(context, project):
     project_overrides = context._get_overrides(project.name)
-    project_extra_urls = artifact_cache_urls_from_config_node(project_overrides)
+    project_extra_specs = artifact_cache_specs_from_config_node(project_overrides)
 
     return list(utils._deduplicate(
-        project_extra_urls + project.artifact_urls + context.artifact_urls))
+        project_extra_specs + project.artifact_cache_specs + context.artifact_cache_specs))
 
 
 # An ArtifactCache manages artifacts.
@@ -102,7 +113,7 @@ class ArtifactCache():
         self.extractdir = os.path.join(context.artifactdir, 'extract')
 
         self._local = False
-        self.urls = []
+        self.remote_specs = []
 
     # set_remotes():
     #
@@ -110,10 +121,10 @@ class ArtifactCache():
     # contact each remote cache.
     #
     # Args:
-    #     urls (list): List of artifact remote URLs, in priority order.
+    #     remote_specs (list): List of ArtifactCacheSpec instances, in priority order.
     #     on_failure (callable): Called if we fail to contact one of the caches.
-    def set_remotes(self, urls, on_failure=None):
-        self.urls = urls
+    def set_remotes(self, remote_specs, on_failure=None):
+        self.remote_specs = remote_specs
 
     # contains():
     #
@@ -169,7 +180,7 @@ class ArtifactCache():
     # Returns: True if any remote repositories are configured, False otherwise
     #
     def has_fetch_remotes(self):
-        return (len(self.urls) > 0)
+        return (len(self.remote_specs) > 0)
 
     # has_push_remotes():
     #
@@ -178,7 +189,7 @@ class ArtifactCache():
     # Returns: True if any remote repository is configured, False otherwise
     #
     def has_push_remotes(self):
-        return (len(self.urls) > 0)
+        return (any(spec for spec in self.remote_specs if spec.push) > 0)
 
     # remote_contains_key():
     #

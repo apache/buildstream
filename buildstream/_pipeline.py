@@ -40,7 +40,7 @@ from . import Scope
 from . import _site
 from . import utils
 from ._platform import Platform
-from ._artifactcache import configured_artifact_cache_urls
+from ._artifactcache import ArtifactCacheSpec, configured_remote_artifact_cache_specs
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 
@@ -155,13 +155,13 @@ class Pipeline():
 
         # Initialize remote artifact caches. We allow the commandline to override
         # the user config in some cases (for example `bst push --remote=...`).
-        artifact_urls = []
+        artifact_caches = []
         if add_remote_cache:
-            artifact_urls += [add_remote_cache]
+            artifact_caches += [ArtifactCacheSpec(add_remote_cache, push=True)]
         if use_configured_remote_caches:
-            artifact_urls += configured_artifact_cache_urls(self.context, self.project)
-        if len(artifact_urls) > 0:
-            self.initialize_remote_caches(artifact_urls)
+            artifact_caches += configured_remote_artifact_cache_specs(self.context, self.project)
+        if len(artifact_caches) > 0:
+            self.initialize_remote_caches(artifact_caches)
 
         self.resolve_cache_keys(inconsistent)
 
@@ -189,12 +189,12 @@ class Pipeline():
 
                 self.project._set_workspace(element, source, workspace)
 
-    def initialize_remote_caches(self, artifact_urls):
+    def initialize_remote_caches(self, artifact_cache_specs):
         def remote_failed(url, error):
             self.message(MessageType.WARN, "Failed to fetch remote refs from {}: {}\n".format(url, error))
 
         with self.timed_activity("Initializing remote caches", silent_nested=True):
-            self.artifacts.set_remotes(artifact_urls, on_failure=remote_failed)
+            self.artifacts.set_remotes(artifact_cache_specs, on_failure=remote_failed)
 
     def resolve_cache_keys(self, inconsistent):
         if inconsistent:
