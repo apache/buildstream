@@ -372,11 +372,7 @@ class OSTreeCache(ArtifactCache):
                 remote_refs = _ostree.list_remote_refs(self.repo, remote=remote)
                 q.put((None, push_url, pull_url, remote_refs))
             except Exception as e:
-                # Exceptions aren't automatically propagated by
-                # multiprocessing, so we catch everything here. Note that
-                # GLib.Error subclasses can't be returned (as they don't
-                # 'pickle') and so they'll be ignored.
-                q.put((e, None, None, None))
+                q.put((str(e), None, None, None))
 
         # Kick off all the initialization jobs one by one.
         #
@@ -393,16 +389,16 @@ class OSTreeCache(ArtifactCache):
                 with _signals.blocked([signal.SIGINT], ignore=False):
                     p.start()
 
-                exception, push_url, pull_url, remote_refs = q.get()
+                error, push_url, pull_url, remote_refs = q.get()
                 p.join()
             except KeyboardInterrupt:
                 utils._kill_process_tree(p.pid)
                 raise
 
-            if exception and on_failure:
-                on_failure(remote.url, exception)
-            elif exception:
-                raise ArtifactError() from exception
+            if error and on_failure:
+                on_failure(remote.url, error)
+            elif error:
+                raise ArtifactError(error)
             else:
                 if remote.push:
                     if push_url:
