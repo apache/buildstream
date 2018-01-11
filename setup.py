@@ -28,6 +28,7 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 4:
 
 try:
     from setuptools import setup, find_packages
+    from setuptools.command.easy_install import ScriptWriter
 except ImportError:
     print("BuildStream requires setuptools in order to build. Install it using"
           " your package manager (usually python3-setuptools) or via pip (pip3"
@@ -131,6 +132,42 @@ if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
     bst_install_entry_points['console_scripts'] += [
         'bst = buildstream._frontend:cli'
     ]
+
+
+#####################################################
+#    Monkey-patching setuptools for performance     #
+#####################################################
+#
+# The template of easy_install.ScriptWriter is inefficient in our case as it
+# imports pkg_resources. Patching the template only doesn't work because of the
+# old string formatting used (%). This forces us to overwrite the class function
+# as well.
+#
+# The patch was inspired from https://github.com/ninjaaron/fast-entry_points
+# which we believe was also inspired from the code from `setuptools` project.
+TEMPLATE = '''\
+# -*- coding: utf-8 -*-
+import sys
+
+from {0} import {1}
+
+if __name__ == '__main__':
+    sys.exit({2}())'''
+
+
+@classmethod
+def get_args(cls, dist, header=None):
+    if header is None:
+        header = cls.get_header()
+    for name, ep in dist.get_entry_map('console_scripts').items():
+        cls._ensure_safe_name(name)
+        script_text = TEMPLATE.format(ep.module_name, ep.attrs[0], '.'.join(ep.attrs))
+        args = cls._get_script_args('console', name, header, script_text)
+        for res in args:
+            yield res
+
+
+ScriptWriter.get_args = get_args
 
 
 #####################################################
