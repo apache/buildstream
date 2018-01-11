@@ -45,6 +45,9 @@ from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 # Some globals resolved for default arguments in the cli
 build_stream_version = pkg_resources.require("buildstream")[0].version
 
+# Intendation for all logging
+INDENT = 4
+
 
 ##################################################################
 #            Override of click's main entry point                #
@@ -220,10 +223,9 @@ def build(app, elements, all, track, track_save, track_all, track_except):
     app.print_heading()
     try:
         app.pipeline.build(app.scheduler, all, track, track_save)
-        click.echo("", err=True)
         app.print_summary()
-    except PipelineError:
-        click.echo("", err=True)
+    except PipelineError as e:
+        app.print_error(e)
         app.print_summary()
         sys.exit(-1)
 
@@ -265,10 +267,9 @@ def fetch(app, elements, deps, track, except_):
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
         app.pipeline.fetch(app.scheduler, dependencies, track)
-        click.echo("", err=True)
         app.print_summary()
     except PipelineError as e:
-        click.echo("{}".format(e), err=True)
+        app.print_error(e)
         app.print_summary()
         sys.exit(-1)
 
@@ -304,10 +305,9 @@ def track(app, elements, deps, except_):
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
         app.pipeline.track(app.scheduler, dependencies)
-        click.echo("", err=True)
         app.print_summary()
     except PipelineError as e:
-        click.echo("{}".format(e), err=True)
+        app.print_error(e)
         app.print_summary()
         sys.exit(-1)
 
@@ -335,10 +335,10 @@ def pull(app, elements, deps):
     try:
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
-        click.echo("", err=True)
+        app.print_summary()
     except BstError as e:
-        click.echo("", err=True)
-        click.echo("ERROR: {}".format(e), err=True)
+        app.print_error(e)
+        app.print_summary()
         sys.exit(-1)
 
 
@@ -365,10 +365,10 @@ def push(app, elements, deps):
     try:
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
-        click.echo("", err=True)
+        app.print_summary()
     except BstError as e:
-        click.echo("", err=True)
-        click.echo("ERROR: {}".format(e), err=True)
+        app.print_error(e)
+        app.print_summary()
         sys.exit(-1)
 
 
@@ -541,8 +541,7 @@ def checkout(app, element, directory, force, integrate, hardlinks):
         app.pipeline.checkout(directory, force, integrate, hardlinks)
         click.echo("", err=True)
     except BstError as e:
-        click.echo("")
-        click.echo("ERROR: {}".format(e), err=True)
+        app.print_error(e)
         sys.exit(-1)
 
 
@@ -826,7 +825,7 @@ class App():
             self.error_profile,
             self.detail_profile,
             # Indentation for detailed messages
-            indent=4,
+            indent=INDENT,
             # Number of last lines in an element's log to print (when encountering errors)
             log_lines=self.context.log_error_lines,
             # Maximum number of lines to print in a detailed message
@@ -1036,9 +1035,21 @@ class App():
     # Print a summary of the queues
     #
     def print_summary(self):
+        click.echo("", err=True)
         self.logger.print_summary(self.pipeline, self.scheduler,
                                   self.main_options['log_file'],
                                   styling=self.colors)
+
+    #
+    # Print an error
+    #
+    def print_error(self, error):
+        click.echo("", err=True)
+        click.echo("{}".format(error), err=True)
+        if error.detail:
+            indent = " " * INDENT
+            detail = '\n' + indent + indent.join(error.detail.splitlines(True))
+            click.echo("{}".format(detail), err=True)
 
     #
     # Handle messages from the pipeline
