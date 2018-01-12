@@ -1,4 +1,12 @@
 =================
+buildstream 1.1.0
+=================
+
+  o Multiple artifact caches are now supported in project and
+    user configuration with a priority order (issue #85)
+
+
+=================
 buildstream 1.0.0
 =================
 First stable release of BuildStream
