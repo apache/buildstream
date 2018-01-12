@@ -187,6 +187,14 @@ def cli(context, **kwargs):
 def build(app, elements, all, track, track_save, track_all, track_except):
     """Build elements in a pipeline"""
 
+    if track_except and not (track or track_all):
+        click.echo("ERROR: --track-except cannot be used without --track or --track-all")
+        sys.exit(-1)
+
+    if track_save and not (track or track_all):
+        click.echo("ERROR: --track-save cannot be used without --track or --track-all")
+        sys.exit(-1)
+
     if track_all:
         track = elements
 
