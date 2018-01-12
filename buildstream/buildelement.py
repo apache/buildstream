@@ -101,10 +101,19 @@ import os
 from . import Element, Scope, ElementError
 from . import SandboxFlags
 
-_command_steps = ['bootstrap-commands',
-                  'configure-commands',
+
+# This list is preserved because of an unfortunate situation, we
+# need to remove these older commands which were secret and never
+# documented, but without breaking the cache keys.
+_legacy_command_steps = ['bootstrap-commands',
+                         'configure-commands',
+                         'build-commands',
+                         'test-commands',
+                         'install-commands',
+                         'strip-commands']
+
+_command_steps = ['configure-commands',
                   'build-commands',
-                  'test-commands',
                   'install-commands',
                   'strip-commands']
 
@@ -120,8 +129,11 @@ class BuildElement(Element):
         #        extend the configuration
         self.node_validate(node, _command_steps)
 
-        for command_name in _command_steps:
-            self.commands[command_name] = self._get_commands(node, command_name)
+        for command_name in _legacy_command_steps:
+            if command_name in _command_steps:
+                self.commands[command_name] = self._get_commands(node, command_name)
+            else:
+                self.commands[command_name] = []
 
     def preflight(self):
         pass
