@@ -90,7 +90,7 @@ class ElementError(BstError):
        reason (str): An optional machine readable reason string, used for test cases
     """
     def __init__(self, message, *, detail=None, reason=None):
-        super().__init__(message, domain=ErrorDomain.ELEMENT, reason=reason)
+        super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason)
 
 
 class Element(Plugin):
