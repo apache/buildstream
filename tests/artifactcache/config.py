@@ -87,16 +87,16 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     user_config, project_config = configure_remote_caches(override_caches, project_caches, user_caches)
     project_config['name'] = 'test'
 
-    user_config_file = tmpdir.join('buildstream.conf')
+    user_config_file = str(tmpdir.join('buildstream.conf'))
     _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
 
     project_dir = tmpdir.mkdir('project')
-    project_config_file = project_dir.join('project.conf')
+    project_config_file = str(project_dir.join('project.conf'))
     _yaml.dump(_yaml.node_sanitize(project_config), filename=project_config_file)
 
     context = Context([])
     context.load(config=user_config_file)
-    project = Project(project_dir, context)
+    project = Project(str(project_dir), context)
 
     # Use the helper from the artifactcache module to parse our configuration.
     parsed_cache_specs = configured_remote_artifact_cache_specs(context, project)
