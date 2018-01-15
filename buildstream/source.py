@@ -82,7 +82,8 @@ class Source(Plugin):
         self.__origin_node = meta.origin_node           # YAML node this Source was loaded from
         self.__origin_toplevel = meta.origin_toplevel   # Toplevel YAML node for the file
         self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
-        self.__consistency = None                       # Cached consistency state
+        self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+        self.__tracking = False                         # Source is scheduled to be tracked
         self.__workspace = None                         # Directory of the currently active workspace
         self.__workspace_key = None                     # Cached directory content hashes for workspaced source
 
@@ -258,10 +259,15 @@ class Source(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # Wrapper for get_consistency() api which caches the result
+    # Update cached consistency for a source
     #
-    def _get_consistency(self, recalculate=False):
-        if recalculate or self.__consistency is None:
+    # This must be called whenever the state of a source may have changed.
+    #
+    def _update_state(self):
+        if self.__tracking:
+            return
+
+        if self.__consistency < Consistency.CACHED:
             self.__consistency = self.get_consistency()
 
             if self._has_workspace() and \
@@ -274,6 +280,9 @@ class Source(Plugin):
                 if not os.path.exists(fullpath):
                     self.__consistency = Consistency.INCONSISTENT
 
+    # Return cached consistency
+    #
+    def _get_consistency(self):
         return self.__consistency
 
     # Return the absolute path of the element's workspace
@@ -281,16 +290,7 @@ class Source(Plugin):
     def _get_workspace_path(self):
         return os.path.join(self.get_project_directory(), self.__workspace)
 
-    # Bump local cached consistency state, this is done from
-    # the pipeline after the successful completion of fetch
-    # and track jobs.
-    #
-    def _bump_consistency(self, consistency):
-        if (self.__consistency is None or
-            consistency > self.__consistency):
-            self.__consistency = consistency
-
-    # Force a source to appear to be in an inconsistent state.
+    # Mark a source as scheduled to be tracked
     #
     # This is used across the pipeline in sessions where the
     # source in question are going to be tracked. This is important
@@ -299,7 +299,7 @@ class Source(Plugin):
     # elements from being assembled until the source is CACHED.
     #
     def _schedule_tracking(self):
-        self.__consistency = Consistency.INCONSISTENT
+        self.__tracking = True
 
     # Wrapper function around plugin provided fetch method
     #
@@ -366,6 +366,8 @@ class Source(Plugin):
             self.set_ref(ref, node)
             changed = True
 
+        self.__tracking = False
+
         return changed
 
     # Wrapper for track()
@@ -374,8 +376,6 @@ class Source(Plugin):
         new_ref = self.track()
         current_ref = self.get_ref()
 
-        # It's consistent unless it reported an error
-        self._bump_consistency(Consistency.RESOLVED)
         if current_ref != new_ref:
             self.info("Found new revision: {}".format(new_ref))
 

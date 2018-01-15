@@ -717,20 +717,17 @@ class Element(Plugin):
 
     # _consistency():
     #
-    # Args:
-    #    recalcualte (bool): Whether to forcefully recalculate
-    #
     # Returns:
     #    (list): The minimum consistency of the elements sources
     #
     # If the element has no sources, this returns Consistency.CACHED
-    def _consistency(self, recalculate=False):
+    def _consistency(self):
 
         # The source objects already cache the consistency state, it
         # should not be expensive to iterate over the sources to get at it
         consistency = Consistency.CACHED
         for source in self.__sources:
-            source_consistency = source._get_consistency(recalculate=recalculate)
+            source_consistency = source._get_consistency()
             consistency = min(consistency, source_consistency)
         return consistency
 
@@ -1374,6 +1371,10 @@ class Element(Plugin):
     # This must be called whenever the state of an element may have changed.
     #
     def _update_state(self):
+        # Determine consistency of sources
+        for source in self.__sources:
+            source._update_state()
+
         if self._consistency() == Consistency.INCONSISTENT:
             # Tracking is still pending
             return

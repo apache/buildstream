@@ -206,10 +206,10 @@ class Pipeline():
                     # Load the pipeline in an explicitly inconsistent state, use
                     # this for pipelines with tracking queues enabled.
                     element._schedule_tracking()
-                else:
-                    # Resolve cache keys and interrogate the artifact cache
-                    # for the first time.
-                    element._update_state()
+
+                # Determine initial element state. This may resolve cache keys
+                # and interrogate the artifact cache.
+                element._update_state()
 
     # Generator function to iterate over elements and optionally
     # also iterate over sources.
