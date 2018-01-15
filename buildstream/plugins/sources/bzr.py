@@ -113,6 +113,21 @@ class BzrSource(Source):
                   fail="Failed to checkout revision {} from branch {} to {}"
                        .format(self.ref, self._get_branch_dir(), directory))
 
+    def init_workspace(self, directory):
+        url = os.path.join(self.url, self.tracking)
+        with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
+            # Checkout from the cache
+            self.call([self.host_bzr, "branch",
+                       "--use-existing-dir",
+                       "--revision=revno:{}".format(self.ref),
+                       self._get_branch_dir(), directory],
+                      fail="Failed to branch revision {} from branch {} to {}"
+                           .format(self.ref, self._get_branch_dir(), directory))
+            # Switch the parent branch to the source's origin
+            self.call([self.host_bzr, "switch",
+                       "--directory={}".format(directory), url],
+                      fail="Failed to switch workspace's parent branch to {}".format(url))
+
     def _check_ref(self):
         # If the mirror doesnt exist yet, then we dont have the ref
         if not os.path.exists(self._get_branch_dir()):
