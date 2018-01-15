@@ -298,7 +298,7 @@ class Source(Plugin):
     # keys until the source is RESOLVED and also prevent depending
     # elements from being assembled until the source is CACHED.
     #
-    def _force_inconsistent(self):
+    def _schedule_tracking(self):
         self.__consistency = Consistency.INCONSISTENT
 
     # Wrapper function around plugin provided fetch method

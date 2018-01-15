@@ -734,7 +734,7 @@ class Element(Plugin):
             consistency = min(consistency, source_consistency)
         return consistency
 
-    # _force_inconsistent():
+    # _schedule_tracking():
     #
     # Force an element state to be inconsistent. Any sources appear to be
     # inconsistent.
@@ -745,9 +745,9 @@ class Element(Plugin):
     # and reinterrogation of element state after tracking of elements
     # succeeds.
     #
-    def _force_inconsistent(self):
+    def _schedule_tracking(self):
         for source in self.__sources:
-            source._force_inconsistent()
+            source._schedule_tracking()
 
     # _cached():
     #

@@ -144,7 +144,7 @@ class Pipeline():
         self.exceptions = resolved_elements[len(targets):]
 
     def initialize(self, use_configured_remote_caches=False,
-                   add_remote_cache=None, inconsistent=None):
+                   add_remote_cache=None, track_elements=None):
         # Preflight directly, before ever interrogating caches or
         # anything.
         self.preflight()
@@ -163,7 +163,7 @@ class Pipeline():
         if len(artifact_caches) > 0:
             self.initialize_remote_caches(artifact_caches)
 
-        self.resolve_cache_keys(inconsistent)
+        self.resolve_cache_keys(track_elements)
 
     def preflight(self):
         for plugin in self.dependencies(Scope.ALL, include_sources=True):
@@ -196,16 +196,16 @@ class Pipeline():
         with self.timed_activity("Initializing remote caches", silent_nested=True):
             self.artifacts.set_remotes(artifact_cache_specs, on_failure=remote_failed)
 
-    def resolve_cache_keys(self, inconsistent):
-        if inconsistent:
-            inconsistent = self.get_elements_to_track(inconsistent)
+    def resolve_cache_keys(self, track_elements):
+        if track_elements:
+            track_elements = self.get_elements_to_track(track_elements)
 
         with self.timed_activity("Resolving cached state", silent_nested=True):
             for element in self.dependencies(Scope.ALL):
-                if inconsistent and element in inconsistent:
+                if track_elements and element in track_elements:
                     # Load the pipeline in an explicitly inconsistent state, use
                     # this for pipelines with tracking queues enabled.
-                    element._force_inconsistent()
+                    element._schedule_tracking()
                 else:
                     # Resolve cache keys and interrogate the artifact cache
                     # for the first time.
