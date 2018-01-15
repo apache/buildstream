@@ -1,4 +1,15 @@
 =================
+buildstream 1.0.1
+=================
+
+  o Fixed instability of cache keys generated for elements
+    using the `local` source
+
+  o Removed some undocumented secret and unused APIs, technically
+    a break but nothing yet depends on these.
+
+
+=================
 buildstream 1.0.0
 =================
 First stable release of BuildStream
