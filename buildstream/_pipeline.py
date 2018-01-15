@@ -191,7 +191,7 @@ class Pipeline():
 
     def initialize_remote_caches(self, artifact_cache_specs):
         def remote_failed(url, error):
-            self.message(MessageType.WARN, "Failed to fetch remote refs from {}: {}\n".format(url, error))
+            self.message(MessageType.WARN, "Failed to fetch remote refs from {}: {}".format(url, error))
 
         with self.timed_activity("Initializing remote caches", silent_nested=True):
             self.artifacts.set_remotes(artifact_cache_specs, on_failure=remote_failed)
