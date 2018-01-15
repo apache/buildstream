@@ -580,7 +580,7 @@ def checkout(app, element, directory, force, integrate, hardlinks):
 def source_bundle(app, target, force, directory,
                   track, compression, except_):
     """Produce a source bundle to be manually executed"""
-    app.initialize((target,), rewritable=track, inconsistent=[target])
+    app.initialize((target,), rewritable=track, inconsistent=[target] if track else None)
     try:
         dependencies = app.pipeline.deps_elements('all')
         app.print_heading(dependencies)
@@ -621,7 +621,7 @@ def workspace():
 def workspace_open(app, no_checkout, force, source, track, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize((element,), rewritable=track, inconsistent=[element])
+    app.initialize((element,), rewritable=track, inconsistent=[element] if track else None)
     try:
         app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
         click.echo("", err=True)
