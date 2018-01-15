@@ -1,9 +1,9 @@
-.TH "BST SHOW" "1" "10-Sep-2017" "" "bst show Manual"
+.TH "BST SHOW" "1" "15-Jan-2018" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
 .B bst show
-[OPTIONS] TARGET
+[OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Show elements in the pipeline
 
@@ -27,7 +27,6 @@ the following symbols can be used in the format string:
 
 
     %{name}           The element name
-    %{variant}        The selected element variant
     %{key}            The abbreviated cache key (if all sources are consistent)
     %{full-key}       The full cache key (if all sources are consistent)
     %{state}          cached, buildable, waiting or inconsistent
@@ -53,7 +52,7 @@ If you want to use a newline in a format string in bash, use the '$' modifier:
         $'---------- %{name} ----------\n%{vars}'
 .SH OPTIONS
 .TP
-\fB\-\-except\fP TEXT
+\fB\-\-except\fP PATH
 Except certain dependencies
 .TP
 \fB\-d,\fP \-\-deps [none|plan|run|build|all]
@@ -65,5 +64,5 @@ Staging or alphabetic ordering of dependencies
 \fB\-f,\fP \-\-format FORMAT
 Format string for each element
 .TP
-\fB\-\-variant\fP TEXT
-A variant of the specified target
+\fB\-\-downloadable\fP
+Refresh downloadable state
