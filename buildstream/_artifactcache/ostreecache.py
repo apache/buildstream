@@ -327,8 +327,7 @@ class OSTreeCache(ArtifactCache):
                 push_url = url
                 pull_url = initialize_push_connection(url)
             except PushException as e:
-                raise ArtifactError("BuildStream did not connect successfully "
-                                    "to the shared cache {}: {}".format(url, e))
+                raise ArtifactError(e) from e
         elif url.startswith('/'):
             push_url = pull_url = 'file://' + url
         elif url.startswith('file://'):

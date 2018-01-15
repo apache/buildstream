@@ -719,8 +719,8 @@ def initialize_push_connection(remote):
         # message that reader.receive_info() will have raised.
         ssh.wait()
         if ssh.returncode != 0:
-            ssh_error = ssh.stderr.read().decode('unicode-escape')
-            raise PushException("SSH error: {}".format(ssh_error))
+            ssh_error = ssh.stderr.read().decode('unicode-escape').strip()
+            raise PushException("{}".format(ssh_error))
         else:
             raise protocol_error
 
