@@ -45,6 +45,26 @@ makes bisections more easy to perform, but is not always practical with
 more complex branches.
 
 
+Commit Messages
+~~~~~~~~~~~~~~~
+Commit messages must be formatted with a brief summary line, optionally
+followed by an empty line and then a free form detailed description of
+the change.
+
+The summary line must start with what changed, followed by a colon and
+a very brief description of the change.
+
+**Example**::
+
+  element.py: Added the frobnicator so that foos are properly frobbed.
+
+  The new frobnicator frobnicates foos all the way throughout
+  the element. Elements that are not properly frobnicated raise
+  an error to inform the user of invalid frobnication rules.
+
+  This fixes issue #123
+
+
 Coding Style
 ------------
 Coding style details for BuildStream
