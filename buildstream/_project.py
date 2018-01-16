@@ -82,6 +82,8 @@ class Project():
         self._load()
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
+        self._context._add_project(self)
+
     # translate_url():
     #
     # Translates the given url which may be specified with an alias

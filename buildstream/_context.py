@@ -109,6 +109,7 @@ class Context():
         self._message_handler = None
         self._message_depth = deque()
         self._platform = None
+        self._projects = []
         self._project_overrides = {}
         self._fetch_subprojects = fetch_subprojects
 
@@ -206,6 +207,26 @@ class Context():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: on-error should be one of: {}".format(
                                 provenance, ", ".join(valid_actions)))
+
+    # _add_project():
+    #
+    # Add a project to the context.
+    #
+    # Args:
+    #    project (Project): The project to add
+    #
+    def _add_project(self, project):
+        self._projects.append(project)
+
+    # _get_projects():
+    #
+    # Return the list of projects in the context.
+    #
+    # Returns:
+    #    (list): The list of projects
+    #
+    def _get_projects(self):
+        return self._projects
 
     # _get_overrides():
     #
