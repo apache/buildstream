@@ -76,6 +76,6 @@ def test_no_shell(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = execute_shell(cli, project, '/usr/bin/echo Pegasissies!', element=element_name)
+    result = execute_shell(cli, project, '/bin/echo Pegasissies!', element=element_name)
     assert result.exit_code == 0
     assert result.output == "Pegasissies!\n"

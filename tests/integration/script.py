@@ -107,7 +107,7 @@ def test_script_no_root(cli, tmpdir, datafiles):
     res = cli.run(project=project, args=['build', element_name])
     assert res.exit_code != 0
 
-    assert "sh: /test: Read-only file system" in res.stderr
+    assert "/test: Read-only file system" in res.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
