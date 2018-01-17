@@ -1,28 +1,64 @@
 :orphan:
 
-.. _plugins:
+
+.. _main_authoring:
+
+Authoring Projects
+==================
+This section details how to use the BuildStream YAML format to
+create your own project or modify existing projects.
+
+
+Project format
+--------------
+* :ref:`formatintro`
+
+  * :ref:`format_structure`
+  * :ref:`format_composition`
+  * :ref:`format_directives`
+
+* :ref:`projectconf`
+
+  * :ref:`project_essentials`
+  * :ref:`project_plugins`
+  * :ref:`project_options`
+  * :ref:`project_defaults`
+  * :ref:`project_builtin_defaults`
+
+* :ref:`format`
+
+  * :ref:`format_basics`
+  * :ref:`format_dependencies`
+  * :ref:`format_variables`
+
+* :ref:`public`
+
 
 Plugins
-=======
+-------
+Plugins provide their own individual plugin specific YAML configurations,
+The element ``.bst`` files can specify plugin specific configuration in
+the :ref:`config section <format_config>`, while sources declared on a
+given element specify their plugin specific configuration
+:ref:`directly on their main dictionary <format_sources>`.
 
-
-.. _plugins_elements:
 
 Elements
---------
+~~~~~~~~
 The following element types are provided with BuildStream:
 
 
 General Elements
-~~~~~~~~~~~~~~~~
+''''''''''''''''
 
 * :mod:`stack <elements.stack>` - Symbolic Element for dependency grouping
 * :mod:`import <elements.import>` - Import sources directly
 * :mod:`compose <elements.compose>` - Compose the output of multiple elements
 * :mod:`script <elements.script>` - Run scripts to create output
 
+
 Build Elements
-~~~~~~~~~~~~~~
+''''''''''''''
 
 * :mod:`manual <elements.manual>` - Manual Build Element
 * :mod:`autotools <elements.autotools>` - Autotools Build Element
@@ -35,11 +71,8 @@ Build Elements
 * :mod:`pip <elements.pip>` - Pip build element
 
 
-.. _plugins_sources:
-
-
 Sources
---------
+~~~~~~~
 The following source types are provided with BuildStream:
 
 * :mod:`local <sources.local>` - A Source implementation for local files and directories
@@ -49,3 +82,12 @@ The following source types are provided with BuildStream:
 * :mod:`bzr <sources.bzr>` - A Source implementation for bazaar
 * :mod:`ostree <sources.ostree>` - A Source implementation for ostree
 * :mod:`patch <sources.patch>` - A Source implementation for applying local patches
+
+
+
+External Plugins
+----------------
+External plugins need to be installed separately, here is
+a list of BuildStream plugin projects known to us at this time:
+
+* `bst-external <http://buildstream.gitlab.io/bst-external/>`_

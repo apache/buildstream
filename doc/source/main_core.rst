@@ -1,12 +1,12 @@
 :orphan:
 
-.. _pluginauthoring:
 
+.. _main_core:
 
-Authoring Plugins
-=================
-Here we try to provide any additional documentation one will need
-to create their own custom plugins to use with BuildStream.
+Core documentation and reference
+================================
+This section details the core API reference along with
+other more elaborate details about BuildStream internals.
 
 
 .. _core_framework:
@@ -15,7 +15,8 @@ Core Framework
 --------------
 The core public APIs are of interest to anyone who wishes to
 implement custom :mod:`Element <buildstream.element>` or
-:mod:`Source <buildstream.source>` plugins.
+:mod:`Source <buildstream.source>` plugins, and can also be
+useful for working on BuildStream itself.
 
 * :mod:`Plugin <buildstream.plugin>` - Base Class for all plugins
 * :mod:`Source <buildstream.source>` - Base Source Class
@@ -24,3 +25,8 @@ implement custom :mod:`Element <buildstream.element>` or
 * :mod:`ScriptElement <buildstream.scriptelement>` - Script Element Class
 * :mod:`Sandbox <buildstream.sandbox.sandbox>` - Build Sandbox
 * :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
+
+
+Internals
+---------
+* :ref:`cachekeys`

@@ -29,60 +29,12 @@ Installing
 * :ref:`artifacts`
 
 
-Running
--------
-* :ref:`invoking`
-* :ref:`config`
+Documentation
+-------------
 
-
-Project format
---------------
-* :ref:`formatintro`
-
-  * :ref:`format_structure`
-  * :ref:`format_composition`
-  * :ref:`format_directives`
-
-* :ref:`projectconf`
-
-  * :ref:`project_essentials`
-  * :ref:`project_plugins`
-  * :ref:`project_options`
-  * :ref:`project_defaults`
-  * :ref:`project_builtin_defaults`
-
-* :ref:`format`
-
-  * :ref:`format_basics`
-  * :ref:`format_dependencies`
-  * :ref:`format_variables`
-
-* :ref:`public`
-
-
-Builtin Plugins
----------------
-* :ref:`plugins`
-
-  * :ref:`plugins_elements`
-  * :ref:`plugins_sources`
-
-External Plugins
-----------------
-
-* `bst-external <http://buildstream.gitlab.io/bst-external/>`_
-
-
-Creating Plugins
-----------------
-* :ref:`pluginauthoring`
-
-  * :ref:`core_framework`
-
-
-Internals
----------
-* :ref:`cachekeys`
+* :ref:`main_using`
+* :ref:`main_authoring`
+* :ref:`main_core`
 
 
 Indices and tables
