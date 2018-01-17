@@ -26,6 +26,7 @@ from blessings import Terminal
 
 import click
 from click import UsageError
+import traceback
 
 from .cli import cli
 
@@ -36,7 +37,7 @@ from .. import Scope
 from .._context import Context
 from .._project import Project
 from .._exceptions import BstError, LoadError
-from .._message import MessageType, unconditional_messages
+from .._message import Message, MessageType, unconditional_messages
 from .._pipeline import Pipeline, PipelineError
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
@@ -107,6 +108,19 @@ class App():
         if limits[0] != limits[1]:
             # Set soft limit to hard limit
             resource.setrlimit(resource.RLIMIT_NOFILE, (limits[1], limits[1]))
+
+    def global_exception_handler(self, exception_class, value, tb):
+        global_message_id = None
+        message = Message(global_message_id, MessageType.BUG, str(value),
+                          detail="\n".join(traceback.format_tb(tb)))
+        self.message_handler(message, self.context)
+
+        # If the scheduler has started, try to terminate all jobs gracefully,
+        # but do not call sys.exit() as this may leave zombie processes.
+        if self.scheduler.loop:
+            self.scheduler.terminate_jobs()
+        else:
+            sys.exit(-1)
 
     #
     # Initialize the main pipeline
@@ -179,6 +193,10 @@ class App():
 
         # Propagate pipeline feedback to the user
         self.context._set_message_handler(self.message_handler)
+
+        # Now that we have a logger and message handler,
+        # we can override the global exception hook.
+        sys.excepthook = self.global_exception_handler
 
         try:
             self.project = Project(directory, self.context, cli_options=self.main_options['option'])

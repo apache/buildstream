@@ -159,7 +159,8 @@ class Scheduler():
         # attribute to decide whether or not to print status info
         # etc and the following code block will trigger some callbacks.
         self.terminated = True
-        self.loop.call_soon(self.terminate_jobs_real)
+        if self.loop is not None:
+            self.loop.call_soon(self.terminate_jobs_real)
 
         # Block this until we're finished terminating jobs,
         # this will remain blocked forever.
