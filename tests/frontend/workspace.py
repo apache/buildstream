@@ -1,6 +1,7 @@
 import os
 import pytest
 import shutil
+import subprocess
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
@@ -73,6 +74,24 @@ def open_workspace(cli, tmpdir, datafiles, kind, track):
 @pytest.mark.parametrize("kind", repo_kinds)
 def test_open(cli, tmpdir, datafiles, kind):
     open_workspace(cli, tmpdir, datafiles, kind, False)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_bzr(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "bzr", False)
+
+    # Check that the .bzr dir exists
+    bzrdir = os.path.join(workspace, ".bzr")
+    assert(os.path.isdir(bzrdir))
+
+    # Check that the correct origin branch is set
+    element_config = _yaml.load(os.path.join(project, "elements", element_name))
+    source_config = element_config['sources'][0]
+    output = subprocess.check_output(["bzr", "info"], cwd=workspace)
+    stripped_url = source_config['url'].lstrip("file:///")
+    expected_output_str = ("checkout of branch: /{}/{}"
+                           .format(stripped_url, source_config['track']))
+    assert(expected_output_str in str(output))
 
 
 @pytest.mark.datafiles(DATA_DIR)
