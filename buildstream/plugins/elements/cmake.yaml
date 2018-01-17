@@ -15,10 +15,13 @@ variables:
 
   cmake: |
 
-    cmake -B%{build-dir} -H. %{cmake-args}
+    cmake -B%{build-dir} -H. -GNinja %{cmake-args}
 
-  make: make -C %{build-dir}
-  make-install: make -j1 -C %{build-dir} DESTDIR="%{install-root}" install
+  ninja: |
+    ninja -j ${NINJAJOBS} -C %{build-dir}
+
+  ninja-install: |
+    env DESTDIR="%{install-root}" ninja -C %{build-dir} install
 
   # Set this if the sources cannot handle parallelization.
   #
@@ -36,14 +39,14 @@ config:
   #
   build-commands:
   - |
-    %{make}
+    %{ninja}
 
   # Commands for installing the software into a
   # destination folder
   #
   install-commands:
   - |
-    %{make-install}
+    %{ninja-install}
 
   # Commands for stripping debugging information out of
   # installed binaries
@@ -52,13 +55,12 @@ config:
   - |
     %{strip-binaries}
 
-# Use max-jobs CPUs for building and enable verbosity
+# Use max-jobs CPUs for building
 environment:
-  MAKEFLAGS: -j%{max-jobs}
-  V: 1
+  NINJAJOBS: |
+    %{max-jobs}
 
-# And dont consider MAKEFLAGS or V as something which may
+# And dont consider NINJAJOBS as something which may
 # effect build output.
 environment-nocache:
-- MAKEFLAGS
-- V
+- NINJAJOBS
