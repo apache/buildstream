@@ -19,7 +19,7 @@ def test_cmake_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
-    element_name = 'cmake/step7.bst'
+    element_name = 'cmake/cmakehello.bst'
 
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
@@ -27,36 +27,22 @@ def test_cmake_build(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['checkout', element_name, checkout])
     assert result.exit_code == 0
 
-    assert_contains(checkout, ['/usr', '/usr/bin', '/usr/include',
-                               '/usr/lib', '/usr/bin/libMathFunctions.a',
-                               '/usr/bin/Tutorial',
-                               '/usr/include/MathFunctions.h',
-                               '/usr/include/TutorialConfig.h',
-                               '/usr/lib/debug',
-                               '/usr/lib/debug/Tutorial'])
+    assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello',
+                               '/usr/lib/debug', '/usr/lib/debug/hello'])
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_cmake_run(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')
-    element_name = 'cmake/step7.bst'
+    element_name = 'cmake/cmakehello.bst'
 
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['shell', element_name, '/usr/bin/Tutorial', '9'])
+    result = cli.run(project=project, args=['shell', element_name, '/usr/bin/hello'])
     assert result.exit_code == 0
 
-    assert result.output == """Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-Computing sqrt of 9 to be 3
-The square root of 9 is 3
+    assert result.output == """Hello World!
+This is hello.
 """
