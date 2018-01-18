@@ -25,8 +25,12 @@ from contextlib import ExitStack
 
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
+from ruamel.yaml.constructor import RoundTripConstructor
 from ._exceptions import LoadError, LoadErrorReason
 
+# This overrides the ruamel constructor to treat everything as a string
+RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:int', RoundTripConstructor.construct_yaml_str)
+RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:float', RoundTripConstructor.construct_yaml_str)
 
 # We store information in the loaded yaml on a DictProvenance
 # stored in all dictionaries under this key

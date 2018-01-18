@@ -246,7 +246,8 @@ class Project():
         self._variables['project-name'] = self.name
 
         # Extend variables with automatic variables and option exports
-        self._variables['max-jobs'] = multiprocessing.cpu_count()
+        # Initialize it as a string as all variables are processed as strings.
+        self._variables['max-jobs'] = str(multiprocessing.cpu_count())
 
         # Export options into variables, if that was requested
         for _, option in self._options.options.items():

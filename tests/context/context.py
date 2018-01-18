@@ -113,18 +113,3 @@ def test_context_load_notdict_config(context_fixture, datafiles):
 
     # XXX Should this be a different LoadErrorReason ?
     assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
-
-
-@pytest.mark.datafiles(os.path.join(DATA_DIR))
-def test_context_load_invalid_type(context_fixture, datafiles):
-    context = context_fixture['context']
-    assert(isinstance(context, Context))
-
-    conf_file = os.path.join(datafiles.dirname,
-                             datafiles.basename,
-                             'invalidtype.yaml')
-
-    with pytest.raises(LoadError) as exc:
-        context.load(conf_file)
-
-    assert (exc.value.reason == LoadErrorReason.ILLEGAL_COMPOSITE)

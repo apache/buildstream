@@ -350,3 +350,43 @@ def test_list_composition_twice(datafiles, filename1, filename2,
 
     assert child['mood'] == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_convert_value_to_string(datafiles):
+    conf_file = os.path.join(datafiles.dirname,
+                             datafiles.basename,
+                             'convert_value_to_str.yaml')
+
+    # Run file through yaml to convert it
+    test_dict = _yaml.load(conf_file)
+
+    user_config = _yaml.node_get(test_dict, str, "Test1")
+    assert isinstance(user_config, str)
+    assert user_config == "1_23_4"
+
+    user_config = _yaml.node_get(test_dict, str, "Test2")
+    assert isinstance(user_config, str)
+    assert user_config == "1.23.4"
+
+    user_config = _yaml.node_get(test_dict, str, "Test3")
+    assert isinstance(user_config, str)
+    assert user_config == "1.20"
+
+    user_config = _yaml.node_get(test_dict, str, "Test4")
+    assert isinstance(user_config, str)
+    assert user_config == "OneTwoThree"
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_value_doesnt_match_expected(datafiles):
+    conf_file = os.path.join(datafiles.dirname,
+                             datafiles.basename,
+                             'convert_value_to_str.yaml')
+
+    # Run file through yaml to convert it
+    test_dict = _yaml.load(conf_file)
+
+    with pytest.raises(LoadError) as exc:
+        user_config = _yaml.node_get(test_dict, int, "Test4")
+    assert exc.value.reason == LoadErrorReason.INVALID_DATA

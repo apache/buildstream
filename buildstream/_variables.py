@@ -115,9 +115,10 @@ class Variables():
 
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
+        # Initialize it as a string as all variables are processed as strings.
         #
         if _yaml.node_get(variables, bool, 'notparallel', default_value=False):
-            variables['max-jobs'] = 1
+            variables['max-jobs'] = str(1)
 
         # Resolve the dictionary once, reporting the new dictionary with things
         # substituted in it, and reporting unmatched tokens.
