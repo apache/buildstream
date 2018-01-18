@@ -376,6 +376,10 @@ class Source(Plugin):
         new_ref = self.track()
         current_ref = self.get_ref()
 
+        if new_ref is None:
+            # No tracking, keep current ref
+            new_ref = current_ref
+
         if current_ref != new_ref:
             self.info("Found new revision: {}".format(new_ref))
 
