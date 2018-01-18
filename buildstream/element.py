@@ -967,13 +967,12 @@ class Element(Plugin):
     #    (list): A list of Source object ids and their new references
     #
     def _track(self):
-        changed = []
+        refs = []
         for source in self.__sources:
             new_ref = source._track()
-            if new_ref is not None:
-                changed.append((source._get_unique_id(), new_ref))
+            refs.append((source._get_unique_id(), new_ref))
 
-        return changed
+        return refs
 
     # _assemble():
     #
