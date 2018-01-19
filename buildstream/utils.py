@@ -34,6 +34,7 @@ import string
 import subprocess
 import tempfile
 import itertools
+import functools
 from contextlib import contextmanager
 
 import psutil
@@ -560,6 +561,11 @@ def _copy_directories(srcdir, destdir, target):
                                 'directory expected: {}'.format(old_dir))
 
 
+@functools.lru_cache(maxsize=64)
+def _resolve_symlinks(path):
+    return os.path.realpath(path)
+
+
 def _ensure_real_directory(root, destpath):
     # The realpath in the sandbox may refer to a file outside of the
     # sandbox when any of the direcory branches are a symlink to an
@@ -568,12 +574,12 @@ def _ensure_real_directory(root, destpath):
     # This should not happen as we rely on relative_symlink_target() below
     # when staging the actual symlinks which may lead up to this path.
     #
-    realpath = os.path.realpath(destpath)
-    if not realpath.startswith(os.path.realpath(root)):
+    destpath_resolved = _resolve_symlinks(destpath)
+    if not destpath_resolved.startswith(_resolve_symlinks(root)):
         raise UtilError('Destination path resolves to a path outside ' +
                         'of the staging area\n\n' +
                         '  Destination path: {}\n'.format(destpath) +
-                        '  Real path: {}'.format(realpath))
+                        '  Real path: {}'.format(destpath_resolved))
 
     # Ensure the real destination path exists before trying to get the mode
     # of the real destination path.
@@ -582,10 +588,10 @@ def _ensure_real_directory(root, destpath):
     # refer to non-existing directories, they will be created on demand here
     # at staging time.
     #
-    if not os.path.exists(realpath):
-        os.makedirs(realpath)
+    if not os.path.exists(destpath_resolved):
+        os.makedirs(destpath_resolved)
 
-    return realpath
+    return destpath_resolved
 
 
 # _process_list()
@@ -656,7 +662,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
             if not os.path.exists(destpath):
                 _ensure_real_directory(destdir, destpath)
 
-            dest_stat = os.lstat(os.path.realpath(destpath))
+            dest_stat = os.lstat(_resolve_symlinks(destpath))
             if not stat.S_ISDIR(dest_stat.st_mode):
                 raise UtilError('Destination not a directory. source has {}'
                                 ' destination has {}'.format(srcpath, destpath))
@@ -728,11 +734,11 @@ def _relative_symlink_target(root, symlink, target):
 
         # We want a relative path from the directory in which symlink
         # is located, not from the symlink itself.
-        symlinkdir, _ = os.path.split(os.path.realpath(symlink))
+        symlinkdir, _ = os.path.split(_resolve_symlinks(symlink))
 
         # Create a full path to the target, including the leading staging
         # directory
-        fulltarget = os.path.join(os.path.realpath(root), target)
+        fulltarget = os.path.join(_resolve_symlinks(root), target)
 
         # now get the relative path from the directory where the symlink
         # is located within the staging root, to the target within the same
