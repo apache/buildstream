@@ -13,7 +13,6 @@ variables:
 
   conf-cmd: ./configure
   conf-extra: ''
-  conf-global: ''
   conf-local: ''
   conf-args: |
 
