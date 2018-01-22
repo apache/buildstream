@@ -1430,7 +1430,7 @@ class Element(Plugin):
                 ]
                 self.__cache_key = self.__calculate_cache_key(dependencies)
 
-            if self.__weak_cache_key is None:
+            if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
                 return
 
