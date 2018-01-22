@@ -1409,6 +1409,14 @@ class Element(Plugin):
             ]
             self.__strict_cache_key = self.__calculate_cache_key(dependencies)
 
+            if self.__strict_cache_key is None and self._cached():
+                # Strict cache key could not be calculated yet, but we can load
+                # it from the artifact. (This happens after we pull using the
+                # weak key).
+                metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+                meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
+                self.__strict_cache_key = meta['keys']['strong']
+
             if self.__strict_cache_key is None:
                 # Strict cache key could not be calculated yet
                 return
