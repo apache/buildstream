@@ -1430,10 +1430,6 @@ class Element(Plugin):
                 ]
                 self.__cache_key = self.__calculate_cache_key(dependencies)
 
-            if self.__weak_cache_key is None:
-                # Strong cache key could not be calculated yet
-                return
-
         # Update __strong_cached for non-strict builds now that the strong cache key is available
         if not self.__strong_cached:
             self.__strong_cached = self.__artifacts.contains(self, strength=_KeyStrength.STRONG)
