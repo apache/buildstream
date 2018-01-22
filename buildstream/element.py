@@ -1398,12 +1398,6 @@ class Element(Plugin):
                 # Weak cache key could not be calculated yet
                 return
 
-        # Update __cached in non-strict builds now that the weak cache key is available
-        if not self._get_strict() and not self.__cached:
-            self.__cached = self.__artifacts.contains(self)
-        if not self._get_strict() and not self.__remotely_cached:
-            self.__remotely_cached = self.__artifacts.remote_contains(self)
-
         if self.__strict_cache_key is None:
             dependencies = [
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
@@ -1413,6 +1407,16 @@ class Element(Plugin):
             if self.__strict_cache_key is None:
                 # Strict cache key could not be calculated yet
                 return
+
+        # Query caches now that the weak and strict cache keys are available
+        if not self.__cached:
+            self.__cached = self.__artifacts.contains(self)
+        if not self.__remotely_cached:
+            self.__remotely_cached = self.__artifacts.remote_contains(self)
+        if not self.__strong_cached:
+            self.__strong_cached = self.__artifacts.contains(self, strength=_KeyStrength.STRONG)
+        if not self.__remotely_strong_cached:
+            self.__remotely_strong_cached = self.__artifacts.remote_contains(self, strength=_KeyStrength.STRONG)
 
         if self.__cache_key is None:
             # Calculate strong cache key
@@ -1433,17 +1437,6 @@ class Element(Plugin):
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
                 return
-
-        # Update __strong_cached for non-strict builds now that the strong cache key is available
-        if not self.__strong_cached:
-            self.__strong_cached = self.__artifacts.contains(self, strength=_KeyStrength.STRONG)
-        if not self.__remotely_strong_cached:
-            self.__remotely_strong_cached = self.__artifacts.remote_contains(self, strength=_KeyStrength.STRONG)
-
-        if self._get_strict() and not self.__cached:
-            self.__cached = self.__strong_cached
-        if self._get_strict() and not self.__remotely_cached:
-            self.__remotely_cached = self.__remotely_strong_cached
 
     #############################################################
     #                   Private Local Methods                   #
