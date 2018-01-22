@@ -135,7 +135,6 @@ class Element(Plugin):
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__sources = []                     # List of Sources
         self.__cache_key_dict = None            # Dict for cache key calculation
-        self.__cache_key = None                 # Our cached cache key
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = artifacts            # Artifact cache
@@ -893,7 +892,7 @@ class Element(Plugin):
     #
     def _get_cache_key(self, strength=_KeyStrength.STRONG):
         if strength == _KeyStrength.STRONG:
-            return self.__cache_key
+            return self.__strict_cache_key
         else:
             return self.__weak_cache_key
 
@@ -1413,22 +1412,6 @@ class Element(Plugin):
             if self.__strict_cache_key is None:
                 # Strict cache key could not be calculated yet
                 return
-
-        if self.__cache_key is None:
-            # Calculate strong cache key
-            if self._get_strict():
-                self.__cache_key = self.__strict_cache_key
-            elif self._cached():
-                # Load the strong cache key from the artifact
-                metadir = os.path.join(self.__artifacts.extract(self), 'meta')
-                meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
-                self.__cache_key = meta['keys']['strong']
-            elif not self._remotely_cached() and self._buildable():
-                # Artifact will be built, not downloaded
-                dependencies = [
-                    e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                ]
-                self.__cache_key = self.__calculate_cache_key(dependencies)
 
         # Update __strong_cached for non-strict builds now that the strong cache key is available
         if not self.__strong_cached:
