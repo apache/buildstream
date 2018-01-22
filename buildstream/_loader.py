@@ -362,7 +362,18 @@ class Loader():
 
             source._stage(basedir)
 
-        project = Project(basedir, self.context, junction=element)
+        project_dir = os.path.join(basedir, element.path)
+
+        try:
+            project = Project(project_dir, self.context, junction=element)
+        except LoadError as e:
+            if e.reason == LoadErrorReason.MISSING_FILE:
+                raise LoadError(reason=e.reason,
+                                message="Could not find the project.conf file for {}. "
+                                        "Expecting a project at path '{}' within {}".
+                                        format(element, element.path or '.', source)) from e
+            else:
+                raise
 
         loader = Loader(project, [], parent=self, tempdir=basedir)
 

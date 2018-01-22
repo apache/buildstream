@@ -45,6 +45,9 @@ Overview
        machine_arch: "%{machine_arch}"
        debug: True
 
+     # Optionally look in a subpath of the source repository for the project
+     path: projects/hello
+
 .. note::
 
    Junction elements may not specify any dependencies as they are simply
@@ -115,6 +118,7 @@ from buildstream._pipeline import PipelineError
 class JunctionElement(Element):
 
     def configure(self, node):
+        self.path = self.node_get_member(node, str, 'path', default='')
         self.options = self.node_get_member(node, Mapping, 'options', default={})
 
     def preflight(self):
