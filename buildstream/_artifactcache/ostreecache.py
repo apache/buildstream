@@ -172,14 +172,16 @@ class OSTreeCache(ArtifactCache):
     # Returns: path to extracted artifact
     #
     def extract(self, element):
-        ref = buildref(element, element._get_strict_cache_key())
+        strict_cache_key = element._get_strict_cache_key()
 
-        # resolve ref to checksum
-        rev = _ostree.checksum(self.repo, ref)
+        if strict_cache_key:
+            ref = buildref(element, strict_cache_key)
 
-        # resolve weak cache key, if artifact is missing for strong cache key
-        # and the context allows use of weak cache keys
-        if not rev and not element._get_strict():
+            # resolve ref to checksum
+            rev = _ostree.checksum(self.repo, ref)
+        elif not element._get_strict():
+            # resolve weak cache key, if artifact is missing for strong cache key
+            # and the context allows use of weak cache keys
             ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
             rev = _ostree.checksum(self.repo, ref)
 
@@ -242,12 +244,16 @@ class OSTreeCache(ArtifactCache):
     #     progress (callable): The progress callback, if any
     #
     def pull(self, element, progress=None):
-
-        ref = buildref(element, element._get_strict_cache_key())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
+        strict_cache_key = element._get_strict_cache_key()
+        if strict_cache_key:
+            ref = buildref(element, strict_cache_key)
+        else:
+            ref = None
+
         try:
-            if ref in self._remote_refs:
+            if ref is not None and ref in self._remote_refs:
                 # fetch the artifact using the strong cache key
                 _ostree.fetch(self.repo, remote=self._remote_refs[ref],
                               ref=ref, progress=progress)
