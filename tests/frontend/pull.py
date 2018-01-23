@@ -154,3 +154,54 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
 
     # And assert that it's again in the local cache, without having built
     assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_pull_non_strict(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+    workspace = os.path.join(str(tmpdir), 'workspace')
+
+    # First build the target element and push to the remote.
+    cli.configure({
+        'artifacts': {'url': share.repo, 'push': True},
+        'projects': {
+            'test': {'strict': False}
+        }
+    })
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+    # Assert that everything is now cached in the remote.
+    share.update_summary()
+    all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
+    for element_name in all_elements:
+        assert_shared(cli, share, project, element_name)
+
+    # Now we've pushed, delete the user's local artifact cache
+    # directory and try to redownload it from the share
+    #
+    artifacts = os.path.join(cli.directory, 'artifacts')
+    shutil.rmtree(artifacts)
+
+    # Assert that we are now in a downloadable state, nothing
+    # is cached locally anymore
+    for element_name in all_elements:
+        assert cli.get_element_state(project, element_name) == 'downloadable'
+
+    # Open a workspace to force change in strict cache key
+    result = cli.run(project=project, args=['workspace', 'open', 'import-bin.bst', workspace])
+
+    # Assert that the workspaced element requires a rebuild
+    assert cli.get_element_state(project, 'import-bin.bst') == 'buildable'
+    # Assert that the target is still downloadable due to --no-strict
+    assert cli.get_element_state(project, 'target.bst') == 'downloadable'
+
+    # Now try bst pull
+    result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
+    result.assert_success()
+
+    # And assert that the target is again in the local cache, without having built
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
