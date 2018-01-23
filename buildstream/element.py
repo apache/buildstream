@@ -1362,6 +1362,24 @@ class Element(Plugin):
         context = self._get_context()
         return context._get_strict(project.name)
 
+    # _pull_pending()
+    #
+    # Check whether the artifact will be pulled.
+    #
+    # Returns:
+    #   (bool): Whether a pull operation is pending
+    #
+    def _pull_pending(self):
+        if not self.__strong_cached and self.__remotely_strong_cached:
+            # Pull pending using strict cache key
+            return True
+        elif not self.__cached and self.__remotely_cached:
+            # Pull pending using weak cache key
+            return True
+        else:
+            # No pull pending
+            return False
+
     # _update_state()
     #
     # Keep track of element state. Calculate cache keys if possible and

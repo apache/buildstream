@@ -46,18 +46,9 @@ class PullQueue(Queue):
         if element._get_strict_cache_key() is None:
             return QueueStatus.WAIT
 
-        if element._cached(strength=_KeyStrength.STRONG):
-            return QueueStatus.SKIP
-        elif element._remotely_cached(strength=_KeyStrength.STRONG):
-            # pull artifact using strong key
-            return QueueStatus.READY
-        elif element._cached():
-            return QueueStatus.SKIP
-        elif element._remotely_cached():
-            # pull artifact using weak key
+        if element._pull_pending():
             return QueueStatus.READY
         else:
-            # nothing to pull
             return QueueStatus.SKIP
 
     def done(self, element, result, returncode):
