@@ -56,6 +56,9 @@ class PullQueue(Queue):
         if returncode != 0:
             return False
 
+        if not result:
+            element._pull_failed()
+
         element._update_state()
 
         # Element._pull() returns True if it downloaded an artifact,

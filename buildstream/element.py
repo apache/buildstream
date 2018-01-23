@@ -143,6 +143,7 @@ class Element(Plugin):
         self.__strong_cached = None             # Whether we have a cached artifact
         self.__remotely_cached = None           # Whether we have a remotely cached artifact
         self.__remotely_strong_cached = None    # Whether we have a remotely cached artifact
+        self.__pull_failed = False              # Whether pull was attempted but failed
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
 
@@ -1370,6 +1371,11 @@ class Element(Plugin):
     #   (bool): Whether a pull operation is pending
     #
     def _pull_pending(self):
+        if self.__pull_failed:
+            # Consider this equivalent to artifact being unavailable in
+            # remote cache
+            return False
+
         if not self.__strong_cached and self.__remotely_strong_cached:
             # Pull pending using strict cache key
             return True
@@ -1379,6 +1385,13 @@ class Element(Plugin):
         else:
             # No pull pending
             return False
+
+    # _pull_failed()
+    #
+    # Indicate that pull was attempted but failed.
+    #
+    def _pull_failed(self):
+        self.__pull_failed = True
 
     # _update_state()
     #
