@@ -39,6 +39,13 @@ class PullQueue(Queue):
         return element._pull()
 
     def status(self, element):
+        # state of dependencies may have changed, recalculate element state
+        element._update_state()
+
+        # cache cannot be queried until strict cache key is available
+        if element._get_strict_cache_key() is None:
+            return QueueStatus.WAIT
+
         if element._cached(strength=_KeyStrength.STRONG):
             return QueueStatus.SKIP
         elif element._remotely_cached(strength=_KeyStrength.STRONG):
