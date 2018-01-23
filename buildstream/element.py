@@ -1440,12 +1440,15 @@ class Element(Plugin):
             # Calculate strong cache key
             if self._get_strict():
                 self.__cache_key = self.__strict_cache_key
+            elif self._pull_pending():
+                # Effective strong cache key is unknown until after the pull
+                pass
             elif self._cached():
                 # Load the strong cache key from the artifact
                 metadir = os.path.join(self.__artifacts.extract(self), 'meta')
                 meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
                 self.__cache_key = meta['keys']['strong']
-            elif not self._remotely_cached() and self._buildable():
+            elif self._buildable():
                 # Artifact will be built, not downloaded
                 dependencies = [
                     e._get_cache_key() for e in self.dependencies(Scope.BUILD)
