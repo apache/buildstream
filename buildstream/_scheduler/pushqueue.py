@@ -20,7 +20,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 # Local imports
-from . import Queue, QueueType
+from . import Queue, QueueStatus, QueueType
 
 
 # A queue which pushes element artifacts
@@ -35,8 +35,11 @@ class PushQueue(Queue):
         # returns whether an artifact was uploaded or not
         return element._push()
 
-    def skip(self, element):
-        return element._skip_push()
+    def status(self, element):
+        if element._skip_push():
+            return QueueStatus.SKIP
+
+        return QueueStatus.READY
 
     def done(self, element, result, returncode):
 

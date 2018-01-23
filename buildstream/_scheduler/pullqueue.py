@@ -23,7 +23,7 @@
 from ..element import _KeyStrength
 
 # Local imports
-from . import Queue, QueueType
+from . import Queue, QueueStatus, QueueType
 
 
 # A queue which pulls element artifacts
@@ -38,20 +38,20 @@ class PullQueue(Queue):
         # returns whether an artifact was downloaded or not
         return element._pull()
 
-    def skip(self, element):
+    def status(self, element):
         if element._cached(strength=_KeyStrength.STRONG):
-            return True
+            return QueueStatus.SKIP
         elif element._remotely_cached(strength=_KeyStrength.STRONG):
             # pull artifact using strong key
-            return False
+            return QueueStatus.READY
         elif element._cached():
-            return True
+            return QueueStatus.SKIP
         elif element._remotely_cached():
             # pull artifact using weak key
-            return False
+            return QueueStatus.READY
         else:
             # nothing to pull
-            return True
+            return QueueStatus.SKIP
 
     def done(self, element, result, returncode):
 

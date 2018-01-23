@@ -21,6 +21,7 @@
 
 # System imports
 from collections import deque
+from enum import Enum
 
 # Local imports
 from .job import Job
@@ -38,6 +39,20 @@ class QueueType():
 
     # Tasks which upload stuff to the internet
     PUSH = 3
+
+
+# Queue status for a given element
+#
+#
+class QueueStatus(Enum):
+    # The element is waiting for dependencies.
+    WAIT = 1
+
+    # The element can skip this queue.
+    SKIP = 2
+
+    # The element is ready for processing in this queue.
+    READY = 3
 
 
 # Queue()
@@ -89,33 +104,18 @@ class Queue():
     def process(self, element):
         pass
 
-    # ready()
+    # status()
     #
-    # Abstract method for reporting whether an element
-    # is ready for processing in this queue or not.
-    #
-    # Args:
-    #    element (Element): An element to process
-    #
-    # Returns:
-    #    (bool): Whether the element is ready for processing
-    #
-    def ready(self, element):
-        return True
-
-    # skip()
-    #
-    # Abstract method for reporting whether an element
-    # can be skipped for this phase.
+    # Abstract method for reporting the status of an element.
     #
     # Args:
     #    element (Element): An element to process
     #
     # Returns:
-    #    (bool): Whether the element can be skipped
+    #    (QueueStatus): The element status
     #
-    def skip(self, element):
-        return False
+    def status(self, element):
+        return QueueStatus.READY
 
     # done()
     #
@@ -149,7 +149,7 @@ class Queue():
 
         # Place skipped elements directly on the done queue
         elts = list(elts)
-        skip = [elt for elt in elts if self.skip(elt)]
+        skip = [elt for elt in elts if self.status(elt) == QueueStatus.SKIP]
         wait = [elt for elt in elts if elt not in skip]
 
         self.wait_queue.extend(wait)
@@ -167,11 +167,12 @@ class Queue():
         while len(self.wait_queue) > 0 and scheduler.get_job_token(self.queue_type):
             element = self.wait_queue.popleft()
 
-            if not self.ready(element):
+            status = self.status(element)
+            if status == QueueStatus.WAIT:
                 scheduler.put_job_token(self.queue_type)
                 unready.append(element)
                 continue
-            elif self.skip(element):
+            elif status == QueueStatus.SKIP:
                 scheduler.put_job_token(self.queue_type)
                 self.done_queue.append(element)
                 self.skipped_elements.append(element)

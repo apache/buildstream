@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-from . import Queue, QueueType
+from . import Queue, QueueStatus, QueueType
 
 
 # A queue which assembles elements
@@ -34,14 +34,17 @@ class BuildQueue(Queue):
         element._assemble()
         return element._get_unique_id()
 
-    def ready(self, element):
+    def status(self, element):
         # state of dependencies may have changed, recalculate element state
         element._update_state()
 
-        return element._buildable()
+        if element._cached():
+            return QueueStatus.SKIP
 
-    def skip(self, element):
-        return element._cached()
+        if not element._buildable():
+            return QueueStatus.WAIT
+
+        return QueueStatus.READY
 
     def done(self, element, result, returncode):
         # Elements are cached after they are successfully assembled

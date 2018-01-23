@@ -27,7 +27,7 @@ from ..plugin import _plugin_lookup
 from .. import _yaml
 
 # Local imports
-from . import Queue, QueueType
+from . import Queue, QueueStatus, QueueType
 
 
 # A queue which tracks sources
@@ -45,9 +45,12 @@ class TrackQueue(Queue):
     def process(self, element):
         return element._track()
 
-    def skip(self, element):
+    def status(self, element):
         # We can skip elements entirely if they have no sources.
-        return len(list(element.sources())) == 0
+        if len(list(element.sources())) == 0:
+            return QueueStatus.SKIP
+
+        return QueueStatus.READY
 
     def done(self, element, result, returncode):
 

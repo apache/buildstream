@@ -18,7 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .queue import Queue, QueueType
+from .queue import Queue, QueueStatus, QueueType
 
 from .fetchqueue import FetchQueue
 from .trackqueue import TrackQueue

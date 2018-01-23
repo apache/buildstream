@@ -23,7 +23,7 @@
 from .. import Consistency
 
 # Local imports
-from . import Queue, QueueType
+from . import Queue, QueueStatus, QueueType
 
 
 # A queue which fetches element sources
@@ -43,14 +43,17 @@ class FetchQueue(Queue):
         for source in element.sources():
             source._fetch()
 
-    def skip(self, element):
+    def status(self, element):
         # Optionally skip elements that are already in the artifact cache
         if self.skip_cached and element._cached():
-            return True
+            return QueueStatus.SKIP
 
         # This will automatically skip elements which
         # have no sources.
-        return element._consistency() == Consistency.CACHED
+        if element._consistency() == Consistency.CACHED:
+            return QueueStatus.SKIP
+
+        return QueueStatus.READY
 
     def done(self, element, result, returncode):
 
