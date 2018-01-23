@@ -44,9 +44,17 @@ class FetchQueue(Queue):
             source._fetch()
 
     def status(self, element):
+        # state of dependencies may have changed, recalculate element state
+        element._update_state()
+
         # Optionally skip elements that are already in the artifact cache
-        if self.skip_cached and element._cached():
-            return QueueStatus.SKIP
+        if self.skip_cached:
+            # cache cannot be queried until strict cache key is available
+            if element._get_strict_cache_key() is None:
+                return QueueStatus.WAIT
+
+            if element._cached():
+                return QueueStatus.SKIP
 
         # This will automatically skip elements which
         # have no sources.
