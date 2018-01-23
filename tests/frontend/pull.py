@@ -205,3 +205,47 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
 
     # And assert that the target is again in the local cache, without having built
     assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+
+    # First build the target element and push to the remote.
+    cli.configure({
+        'artifacts': {'url': share.repo, 'push': True},
+        'projects': {
+            'test': {'strict': False}
+        }
+    })
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+    # Assert that everything is now cached in the remote.
+    share.update_summary()
+    all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
+    for element_name in all_elements:
+        assert_shared(cli, share, project, element_name)
+
+    # Now we've pushed, delete the user's local artifact cache
+    # directory and try to redownload it from the share
+    #
+    artifacts = os.path.join(cli.directory, 'artifacts')
+    shutil.rmtree(artifacts)
+
+    # Assert that we are now in a downloadable state, nothing
+    # is cached locally anymore
+    for element_name in all_elements:
+        assert cli.get_element_state(project, element_name) == 'downloadable'
+
+    # Now try bst build with tracking and pulling.
+    # Tracking will be skipped for target.bst as it doesn't have any sources.
+    # With the non-strict build plan target.bst immediately enters the pull queue.
+    # However, pulling has to be deferred until the dependencies have been
+    # tracked as the strict cache key needs to be calculated before querying
+    # the caches.
+    result = cli.run(project=project, args=['build', '--track-all', 'target.bst'])
+    result.assert_success()
