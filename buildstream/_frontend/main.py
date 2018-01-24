@@ -52,6 +52,12 @@ INDENT = 4
 
 # Special completion for completing the bst elements in a project dir
 def complete_target(ctx, args, incomplete):
+    """
+    :param ctx: context associated with the parsed command
+    :param args: full list of args typed before the incomplete arg
+    :param incomplete: the incomplete text to autocomplete
+    :return: all the possible user-specified completions for the param
+    """
     app = ctx.obj
 
     # First resolve the directory, in case there is an
@@ -92,6 +98,13 @@ def complete_target(ctx, args, incomplete):
 
 
 def override_completions(cmd_param, ctx, args, incomplete):
+    """
+    :param cmd_param: command definition
+    :param ctx: context associated with the parsed command
+    :param args: full list of args typed before the incomplete arg
+    :param incomplete: the incomplete text to autocomplete
+    :return: all the possible user-specified completions for the param
+    """
 
     # We can't easily extend click's data structures without
     # modifying click itself, so just do some weak special casing

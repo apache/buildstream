@@ -145,7 +145,7 @@ def resolve_ctx(cli, prog_name, args):
     Parse into a hierarchy of contexts. Contexts are connected through the parent variable.
     :param cli: command definition
     :param prog_name: the program that is running
-    :param args: full list of args
+    :param args: full list of args typed before the incomplete arg
     :return: the final context/command parsed
     """
     ctx = cli.make_context(prog_name, args, resilient_parsing=True)
@@ -212,9 +212,12 @@ def is_incomplete_argument(current_params, cmd_param):
 def get_user_autocompletions(ctx, args, incomplete, cmd_param, override):
     """
     :param ctx: context associated with the parsed command
-    :param args: full list of args
-    :param incomplete: the incomplete text to autocomplete
+    :param args: full list of args typed before the incomplete arg
+    :param incomplete: the incomplete text of the arg to autocomplete
     :param cmd_param: command definition
+    :param override: a callable (cmd_param, ctx, args, incomplete) that will be
+    called to override default completion based on parameter type. Should raise
+    'CompleteUnhandled' if it could not find a completion.
     :return: all the possible user-specified completions for the param
     """
 
@@ -232,8 +235,11 @@ def get_choices(cli, prog_name, args, incomplete, override):
     """
     :param cli: command definition
     :param prog_name: the program that is running
-    :param args: full list of args
-    :param incomplete: the incomplete text to autocomplete
+    :param args: full list of args typed before the incomplete arg
+    :param incomplete: the incomplete text of the arg to autocomplete
+    :param override: a callable (cmd_param, ctx, args, incomplete) that will be
+    called to override default completion based on parameter type. Should raise
+    'CompleteUnhandled' if it could not find a completion.
     :return: all the possible completions for the incomplete
     """
     all_args = copy.deepcopy(args)
