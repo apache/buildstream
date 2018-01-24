@@ -26,7 +26,6 @@ import calendar
 import errno
 import hashlib
 import os
-import pickle
 import re
 import shutil
 import signal
