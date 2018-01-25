@@ -17,8 +17,10 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+import os
+from .cli import cli
 
-from .profile import Profile
-from .status import Status
-from .widget import LogLine
-from .main import cli
+if "_BST_COMPLETION" not in os.environ:
+    from .profile import Profile
+    from .status import Status
+    from .widget import LogLine

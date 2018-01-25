@@ -26,7 +26,6 @@ from contextlib import ExitStack
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
 from ._exceptions import LoadError, LoadErrorReason
-from . import utils
 
 
 # We store information in the loaded yaml on a DictProvenance
@@ -214,6 +213,7 @@ def load_data(data, shortname=None, copy_tree=False):
 def dump(node, filename=None):
     with ExitStack() as stack:
         if filename:
+            from . import utils
             f = stack.enter_context(utils.save_file_atomic(filename, 'w'))
         else:
             f = sys.stdout

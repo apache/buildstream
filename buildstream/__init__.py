@@ -19,11 +19,13 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 # Plugin author facing APIs
-from .__version__ import __version__
-from .utils import UtilError, ProgramNotFoundError
-from .sandbox import Sandbox, SandboxFlags
-from .plugin import Plugin
-from .source import Source, SourceError, Consistency
-from .element import Element, ElementError, Scope
-from .buildelement import BuildElement
-from .scriptelement import ScriptElement
+import os
+if "_BST_COMPLETION" not in os.environ:
+    from .__version__ import __version__
+    from .utils import UtilError, ProgramNotFoundError
+    from .sandbox import Sandbox, SandboxFlags
+    from .plugin import Plugin
+    from .source import Source, SourceError, Consistency
+    from .element import Element, ElementError, Scope
+    from .buildelement import BuildElement
+    from .scriptelement import ScriptElement
