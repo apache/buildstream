@@ -747,6 +747,8 @@ class Element(Plugin):
         for source in self.__sources:
             source._schedule_tracking()
 
+        self._update_state()
+
     # _cached():
     #
     # Returns:
