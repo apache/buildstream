@@ -3,14 +3,19 @@
 .. _installing:
 
 
-BuildStream on your host
-========================
-Until BuildStream is available in your distro, there are a few hoops to jump
-through to get started.
+Installing BuildStream
+======================
+Until BuildStream is available in your distro, you will need to install
+it yourself from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
+using python's ``pip`` package manager.
+
+This page has some instructions for installing the dependencies you
+will need using your distribution's package manager, this is followed by
+instructions for installing BuildStream itself :ref:`using pip <installing_pip>`.
 
 If your system cannot provide the base system requirements for BuildStream,
-then we have some instructions below which can get you started using BuildStream
-within a Docker container.
+then we have some instructions which can help you get started
+:ref:`using BuildStream with Docker <docker>`.
 
 
 System requirements
@@ -85,28 +90,31 @@ requirements you need::
                  python3-psutil ostree python3-ruamel-yaml
 
 
-User installation with pip
---------------------------
+.. _installing_pip:
+
+Installing with pip
+-------------------
 Once you have the base system dependencies, you can clone the BuildStream
 git repository and install it as a regular user::
 
   git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
-  pip3 install --user .
-
-This will install buildstream and it's pure python dependencies directly into
-your user's homedir in ``~/.local``
-
-If you are installing as a developer and want to easily test changes
-or if you would like to update your BuildStream installation via git,
-then you can specify the ``-e`` option when invoking pip::
-
   pip3 install --user -e .
 
-.. warning::
+This will install buildstream's pure python dependencies into
+your user's homedir in ``~/.local`` and will run BuildStream directly
+from the git checkout directory.
 
-   This will run BuildStream directly from your git checkout and will break
-   if you ever move the git checkout or run ``git clean -xdf``.
+Keep following the instructions below to ensure that the ``bst``
+command is in your ``PATH`` and to enable bash completions for it.
+
+.. note::
+
+   We recommend the ``-e`` option because you can upgrade your
+   installation by simply updating the checked out git repository.
+
+   If you want a full installation that is not linked to your
+   git checkout, just omit the ``-e`` option from the above commands.
 
 
 Adjust PATH
@@ -134,12 +142,19 @@ to your ``~/.bash_completion``:
    :language: yaml
 
 
-Upgrading with pip
-~~~~~~~~~~~~~~~~~~
-To upgrade a previously install BuildStream, you will need to pull the latest
-changes and reinstall as such::
+Upgrading BuildStream with pip
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Assuming you have followed the default instructions above, all
+you need to do to upgrade BuildStream is to update your local git
+checkout::
+
+  cd /path/to/buildstream
+  git pull --rebase
+
+If you did not specify the ``-e`` option at install time, you will
+need to cleanly reinstall BuildStream::
 
   pip3 uninstall buildstream
-  cd buildstream
+  cd /path/to/buildstream
   git pull --rebase
   pip3 install --user .
