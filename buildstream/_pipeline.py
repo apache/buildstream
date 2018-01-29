@@ -179,15 +179,15 @@ class Pipeline():
                 raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
 
     def initialize_workspaces(self):
-        for element_name, source, workspace in self.project._list_workspaces():
+        for element_name, workspace in self.project._list_workspaces():
             for target in self.targets:
                 element = target.search(Scope.ALL, element_name)
 
                 if element is None:
-                    self.unused_workspaces.append((element_name, source, workspace))
+                    self.unused_workspaces.append((element_name, workspace))
                     continue
 
-                self.project._set_workspace(element, source, workspace)
+                self.project._set_workspace(element, workspace)
 
     def initialize_remote_caches(self, artifact_cache_specs):
         def remote_failed(url, error):
@@ -422,7 +422,7 @@ class Pipeline():
     def build(self, scheduler, build_all, track_first, save):
         if len(self.unused_workspaces) > 0:
             self.message(MessageType.WARN, "Unused workspaces",
-                         detail="\n".join([el + "-" + str(src) for el, src, _
+                         detail="\n".join([el for el, _
                                            in self.unused_workspaces]))
 
         # We set up two plans; one to track elements, the other to
@@ -558,17 +558,17 @@ class Pipeline():
     #
     # Args:
     #    directory (str): The directory to stage the source in
-    #    source_index (int): The index of the source to stage
     #    no_checkout (bool): Whether to skip checking out the source
     #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
     #
-    def open_workspace(self, scheduler, directory, source_index, no_checkout, track_first, force):
+    def open_workspace(self, scheduler, directory, no_checkout, track_first, force):
         # When working on workspaces we only have one target
         target = self.targets[0]
         workdir = os.path.abspath(directory)
-        sources = list(target.sources())
-        source_index = self.validate_workspace_index(source_index)
+
+        if len(list(target.sources())) == 0:
+            raise PipelineError("The given element has no sources")
 
         # Check directory
         try:
@@ -580,9 +580,9 @@ class Pipeline():
             raise PipelineError("Checkout directory is not empty: {}".format(directory))
 
         # Check for workspace config
-        if self.project._get_workspace(target.name, source_index):
+        if self.project._get_workspace(target.name):
             raise PipelineError("Workspace '{}' is already defined."
-                                .format(target.name + " - " + str(source_index)))
+                                .format(target.name))
 
         plan = [target]
 
@@ -616,16 +616,16 @@ class Pipeline():
                              "Fetched {} elements".format(fetched), elapsed=elapsed)
 
         if not no_checkout:
-            source = sources[source_index]
-            with target.timed_activity("Staging source to {}".format(directory)):
-                if source.get_consistency() != Consistency.CACHED:
-                    raise PipelineError("Could not stage uncached source. " +
-                                        "Use `--track` to track and " +
-                                        "fetch the latest version of the " +
-                                        "source.")
-                source._init_workspace(directory)
+            with target.timed_activity("Staging sources to {}".format(directory)):
+                for source in target.sources():
+                    if source.get_consistency() != Consistency.CACHED:
+                        raise PipelineError("Could not stage uncached source. " +
+                                            "Use `--track` to track and " +
+                                            "fetch the latest version of the " +
+                                            "source.")
+                    source._init_workspace(directory)
 
-        self.project._set_workspace(target, source_index, workdir)
+        self.project._set_workspace(target, workdir)
 
         with target.timed_activity("Saving workspace configuration"):
             self.project._save_workspace_config()
@@ -635,17 +635,15 @@ class Pipeline():
     # Close a project workspace
     #
     # Args:
-    #    source_index (int) - The index of the source
     #    remove_dir (bool) - Whether to remove the associated directory
     #
-    def close_workspace(self, source_index, remove_dir):
+    def close_workspace(self, remove_dir):
         # When working on workspaces we only have one target
         target = self.targets[0]
-        source_index = self.validate_workspace_index(source_index)
 
         # Remove workspace directory if prompted
         if remove_dir:
-            path = self.project._get_workspace(target.name, source_index)
+            path = self.project._get_workspace(target.name)
             if path is not None:
                 with target.timed_activity("Removing workspace directory {}"
                                            .format(path)):
@@ -658,17 +656,17 @@ class Pipeline():
         # Delete the workspace config entry
         with target.timed_activity("Removing workspace"):
             try:
-                self.project._delete_workspace(target.name, source_index)
+                self.project._delete_workspace(target.name)
             except KeyError:
                 raise PipelineError("Workspace '{}' is currently not defined"
-                                    .format(target.name + " - " + str(source_index)))
+                                    .format(target.name))
 
         # Update workspace config
         self.project._save_workspace_config()
 
         # Reset source to avoid checking out the (now empty) workspace
-        source = list(target.sources())[source_index]
-        source._del_workspace()
+        for source in target.sources():
+            source._del_workspace()
 
     # reset_workspace
     #
@@ -681,20 +679,18 @@ class Pipeline():
     #    track (bool): Whether to also track the source
     #    no_checkout (bool): Whether to check out the source (at all)
     #
-    def reset_workspace(self, scheduler, source_index, track, no_checkout):
+    def reset_workspace(self, scheduler, track, no_checkout):
         # When working on workspaces we only have one target
         target = self.targets[0]
-        source_index = self.validate_workspace_index(source_index)
-        workspace_dir = self.project._get_workspace(target.name, source_index)
+        workspace_dir = self.project._get_workspace(target.name)
 
         if workspace_dir is None:
             raise PipelineError("Workspace '{}' is currently not defined"
                                 .format(target.name + " - " + str(source_index)))
 
-        self.close_workspace(source_index, True)
+        self.close_workspace(True)
 
-        self.open_workspace(scheduler, workspace_dir, source_index, no_checkout,
-                            track, False)
+        self.open_workspace(scheduler, workspace_dir, no_checkout, track, False)
 
     # pull()
     #
@@ -830,19 +826,6 @@ class Pipeline():
         # Ensure that we return elements in the same order they were
         # in before.
         return [element for element in elements if element in visited]
-
-    def validate_workspace_index(self, source_index):
-        sources = list(self.targets[0].sources())
-
-        # Validate source_index
-        if len(sources) < 1:
-            raise PipelineError("The given element has no sources")
-        if len(sources) == 1 and source_index is None:
-            source_index = 0
-        if source_index is None:
-            raise PipelineError("An index needs to be specified for elements with more than one source")
-
-        return source_index
 
     # Various commands define a --deps option to specify what elements to
     # use in the result, this function reports a list that is appropriate for

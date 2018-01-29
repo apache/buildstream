@@ -610,20 +610,18 @@ def workspace():
               help="Do not checkout the source, only link to the given directory")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
-@click.option('--source', '-s', default=None, type=click.INT, metavar='INDEX',
-              help="The source to create a workspace for. Projects with one source may omit this")
 @click.option('--track', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def workspace_open(app, no_checkout, force, source, track, element, directory):
+def workspace_open(app, no_checkout, force, track, element, directory):
     """Open a workspace for manual source modification"""
 
     app.initialize((element,), rewritable=track, track_elements=[element] if track else None)
     try:
-        app.pipeline.open_workspace(app.scheduler, directory, source, no_checkout, track, force)
+        app.pipeline.open_workspace(app.scheduler, directory, no_checkout, track, force)
         click.echo("", err=True)
     except BstError as e:
         click.echo("", err=True)
@@ -635,14 +633,12 @@ def workspace_open(app, no_checkout, force, source, track, element, directory):
 #                     Workspace Close Command                    #
 ##################################################################
 @workspace.command(name='close', short_help="Close a workspace")
-@click.option('--source', '-s', default=None, type=click.INT, metavar='INDEX',
-              help="The source of the workspace to remove. Projects with one source may omit this")
 @click.option('--remove-dir', default=False, is_flag=True,
               help="Remove the path that contains the closed workspace")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_close(app, source, remove_dir, element):
+def workspace_close(app, remove_dir, element):
     """Close a workspace"""
 
     app.initialize((element,))
@@ -652,7 +648,7 @@ def workspace_close(app, source, remove_dir, element):
             sys.exit(-1)
 
     try:
-        app.pipeline.close_workspace(source, remove_dir)
+        app.pipeline.close_workspace(remove_dir)
         click.echo("", err=True)
     except BstError as e:
         click.echo("", err=True)
@@ -664,8 +660,6 @@ def workspace_close(app, source, remove_dir, element):
 #                     Workspace Reset Command                    #
 ##################################################################
 @workspace.command(name='reset', short_help="Reset a workspace to its original state")
-@click.option('--source', '-s', default=None, type=click.INT, metavar='INDEX',
-              help="The source of the workspace to reset. Projects with one source may omit this")
 @click.option('--track', default=False, is_flag=True,
               help="Track and fetch the latest source before resetting")
 @click.option('--no-checkout', default=False, is_flag=True,
@@ -673,7 +667,7 @@ def workspace_close(app, source, remove_dir, element):
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_reset(app, source, track, no_checkout, element):
+def workspace_reset(app, track, no_checkout, element):
     """Reset a workspace to its original state"""
     app.initialize((element,))
     if app.interactive:
@@ -682,7 +676,7 @@ def workspace_reset(app, source, track, no_checkout, element):
             sys.exit(-1)
 
     try:
-        app.pipeline.reset_workspace(app.scheduler, source, track, no_checkout)
+        app.pipeline.reset_workspace(app.scheduler, track, no_checkout)
         click.echo("", err=True)
     except BstError as e:
         click.echo("", err=True)
@@ -715,13 +709,11 @@ def workspace_list(app):
         sys.exit(-1)
 
     workspaces = []
-    for element_name, source_index, directory in project._list_workspaces():
+    for element_name, directory in project._list_workspaces():
         workspace = {
             'element': element_name,
             'directory': directory,
         }
-        if source_index > 0:
-            workspace['index'] = source_index
 
         workspaces.append(workspace)
 
