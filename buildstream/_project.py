@@ -179,6 +179,7 @@ class Project():
 
         # Workspace configurations
         self._workspaces = self._load_workspace_config()
+        self._ensure_workspace_config_format()
 
         # Assert project version
         format_version = _yaml.node_get(config, int, 'format-version', default_value=0)
@@ -293,11 +294,10 @@ class Project():
     # Generator function to enumerate workspaces.
     #
     # Yields:
-    #    A tuple in the following format: (element, source, path).
+    #    A tuple in the following format: (element, path).
     def _list_workspaces(self):
         for element, _ in _yaml.node_items(self._workspaces):
-            for source, _ in _yaml.node_items(self._workspaces[element]):
-                yield (element, int(source), self._workspaces[element][source])
+            yield (element, self._workspaces[element])
 
     # _get_workspace()
     #
@@ -306,15 +306,14 @@ class Project():
     #
     # Args:
     #    element (str) - The element name
-    #    index (int) - The source index
     #
     # Returns:
     #    None if no workspace is open, the path to the workspace
     #    otherwise
     #
-    def _get_workspace(self, element, index):
+    def _get_workspace(self, element):
         try:
-            return self._workspaces[element][index]
+            return self._workspaces[element]
         except KeyError:
             return None
 
@@ -325,15 +324,14 @@ class Project():
     #
     # Args:
     #    element (str) - The element name
-    #    index (int) - The source index
     #    path (str) - The path to set the workspace to
     #
-    def _set_workspace(self, element, index, path):
+    def _set_workspace(self, element, path):
         if element.name not in self._workspaces:
             self._workspaces[element.name] = {}
 
-        self._workspaces[element.name][index] = path
-        element._set_source_workspace(index, path)
+        self._workspaces[element.name] = path
+        element._set_source_workspaces(path)
 
     # _delete_workspace()
     #
@@ -343,14 +341,9 @@ class Project():
     #
     # Args:
     #    element (str) - The element name
-    #    index (int) - The source index
     #
-    def _delete_workspace(self, element, index):
-        del self._workspaces[element][index]
-
-        # Contains a provenance object
-        if len(self._workspaces[element]) == 1:
-            del self._workspaces[element]
+    def _delete_workspace(self, element):
+        del self._workspaces[element]
 
     # _load_workspace_config()
     #
@@ -359,13 +352,11 @@ class Project():
     #
     # Returns:
     #
-    #    A node containing a dict that assigns projects to their
+    #    A node containing a dict that assigns elements to their
     #    workspaces. For example:
     #
-    #        amhello.bst: {
-    #            0: /home/me/automake,
-    #            1: /home/me/amhello
-    #        }
+    #        alpha.bst: /home/me/alpha
+    #        bravo.bst: /home/me/bravo
     #
     def _load_workspace_config(self):
         os.makedirs(os.path.join(self.directory, ".bst"), exist_ok=True)
@@ -377,6 +368,45 @@ class Project():
                             "Could not load workspace config: {}".format(e)) from e
 
         return _yaml.load(workspace_file)
+
+    # _ensure_workspace_config_format()
+    #
+    # If workspace config is in old-style format, i.e. it is using
+    # source-specific workspaces, try to convert it to element-specific
+    # workspaces.
+    #
+    # This method will rewrite workspace config, if it is in old format.
+    #
+    # Args:
+    #    workspaces (dict): current workspace config, usually output of _load_workspace_config()
+    #
+    # Raises: LoadError if there was a problem with the workspace config
+    #
+    def _ensure_workspace_config_format(self):
+        needs_rewrite = False
+        for element, config in _yaml.node_items(self._workspaces):
+            if isinstance(config, str):
+                pass
+
+            elif isinstance(config, dict):
+                sources = list(_yaml.node_items(config))
+                if len(sources) > 1:
+                    detail = "There are multiple workspaces open for '{}'.\n" + \
+                             "This is not supported anymore.\n" + \
+                             "Please remove this element from '{}'."
+                    raise LoadError(LoadErrorReason.INVALID_DATA,
+                                    detail.format(element,
+                                                  os.path.join(self.directory, ".bst", "workspaces.yml")))
+
+                self._workspaces[element] = sources[0][1]
+                needs_rewrite = True
+
+            else:
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "Workspace config is in unexpected format.")
+
+        if needs_rewrite:
+            self._save_workspace_config()
 
     # _save_workspace_config()
     #

@@ -1214,8 +1214,9 @@ class Element(Plugin):
 
     # Set a source's workspace
     #
-    def _set_source_workspace(self, source_index, path):
-        self.__sources[source_index]._set_workspace(path)
+    def _set_source_workspaces(self, path):
+        for source in self.sources():
+            source._set_workspace(path)
 
     # Whether this element has a source that is workspaced.
     #
