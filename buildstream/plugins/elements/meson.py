@@ -1,4 +1,5 @@
 #  Copyright (C) 2017 Patrick Griffis
+#  Copyright (C) 2018 Codethink Ltd.
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
