@@ -4,9 +4,15 @@ variables:
 
   build-dir: _builddir
 
-  cmake-extra: ''
+  # Project-wide extra arguments to be passed to `cmake`
   cmake-global: ''
+
+  # Element-specific extra arguments to be passed to `cmake`.
   cmake-local: ''
+
+  # For backwards compatibility only, do not use.
+  cmake-extra: ''
+
   cmake-args: |
 
     -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}" \

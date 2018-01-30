@@ -15,10 +15,33 @@
 
 """Meson build element
 
-A :mod:`BuildElement <buildstream.buildelement>` implementation for using
-Meson build scripts
+This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
+using `Meson <http://mesonbuild.com/>`_ build scripts.
 
-The meson default configuration:
+You will often want to pass additional arguments to ``meson``. This should
+be done on a per-element basis by setting the ``meson-local`` variable.  Here is
+an example:
+
+.. code:: yaml
+
+   variables:
+     meson-local: |
+       -Dmonkeys=yes
+
+If you want to pass extra options to ``meson`` for every element in your
+project, set the ``meson-global`` variable in your project.conf file. Here is
+an example of that:
+
+.. code:: yaml
+
+   elements:
+     meson:
+       variables:
+         meson-global: |
+           -Dmonkeys=always
+
+Here is the default configuration for the ``meson`` element in full:
+
   .. literalinclude:: ../../../buildstream/plugins/elements/meson.yaml
      :language: yaml
 """

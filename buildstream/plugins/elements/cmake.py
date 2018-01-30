@@ -20,10 +20,33 @@
 
 """CMake build element
 
-A :mod:`BuildElement <buildstream.buildelement>` implementation for using
-cmake build scripts
+This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
+using the `CMake <https://cmake.org/>`_ build system.
 
-The cmake default configuration:
+You will often want to pass additional arguments to the ``cmake`` program for
+specific configuration options. This should be done on a per-element basis by
+setting the ``cmake-local`` variable.  Here is an example:
+
+.. code:: yaml
+
+   variables:
+     cmake-local: |
+       -DCMAKE_BUILD_TYPE=Debug
+
+If you want to pass extra options to ``cmake`` for every element in your
+project, set the ``cmake-global`` variable in your project.conf file. Here is
+an example of that:
+
+.. code:: yaml
+
+   elements:
+     cmake:
+       variables:
+         cmake-global: |
+           -DCMAKE_BUILD_TYPE=Release
+
+Here is the default configuration for the ``cmake`` element in full:
+
   .. literalinclude:: ../../../buildstream/plugins/elements/cmake.yaml
      :language: yaml
 """

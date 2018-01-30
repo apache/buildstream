@@ -20,10 +20,34 @@
 
 """Autotools build element
 
-A :mod:`BuildElement <buildstream.buildelement>` implementation for using
-autotools build scripts
+This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
+using Autotools build scripts (also known as the `GNU Build System
+<https://en.wikipedia.org/wiki/GNU_Build_System>`_).
 
-The autotools default configuration:
+You will often want to pass additional arguments to ``configure``. This should
+be done on a per-element basis by setting the ``conf-local`` variable.  Here is
+an example:
+
+.. code:: yaml
+
+   variables:
+     conf-local: |
+       --disable-foo --enable-bar
+
+If you want to pass extra options to ``configure`` for every element in your
+project, set the ``conf-global`` variable in your project.conf file. Here is
+an example of that:
+
+.. code:: yaml
+
+   elements:
+     autotools:
+       variables:
+         conf-global: |
+           --disable-gtk-doc --disable-static
+
+Here is the default configuration for the ``autotools`` element in full:
+
   .. literalinclude:: ../../../buildstream/plugins/elements/autotools.yaml
      :language: yaml
 """

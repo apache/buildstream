@@ -11,10 +11,16 @@ variables:
     else autoreconf -ivf;
     fi
 
-  conf-cmd: ./configure
-  conf-extra: ''
+  # Project-wide extra arguments to be passed to `configure`
   conf-global: ''
+
+  # Element-specific extra arguments to be passed to `configure`.
   conf-local: ''
+
+  # For backwards compatibility only, do not use.
+  conf-extra: ''
+
+  conf-cmd: ./configure
   conf-args: |
 
     --prefix=%{prefix} \

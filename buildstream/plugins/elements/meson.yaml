@@ -4,9 +4,15 @@ variables:
 
   build-dir: _builddir
 
-  meson-extra: ''
+  # Project-wide extra arguments to be passed to `meson`
   meson-global: ''
+
+  # Element-specific extra arguments to be passed to `meson`.
   meson-local: ''
+
+  # For backwards compatibility only, do not use.
+  meson-extra: ''
+
   meson-args: |
 
     --prefix=%{prefix} \
