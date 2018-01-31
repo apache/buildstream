@@ -22,7 +22,7 @@ import os
 
 from .._artifactcache.tarcache import TarCache
 from .._exceptions import PlatformError
-from ..sandbox import SandboxChroot
+from ..sandbox import SandboxChroot, SandboxUserChroot
 
 from . import Platform
 
@@ -35,12 +35,14 @@ class Unix(Platform):
         self._artifact_cache = TarCache(context)
 
         # Not necessarily 100% reliable, but we want to fail early.
-        if os.geteuid() != 0:
-            raise PlatformError("Root privileges are required to run without bubblewrap.")
+        # if os.geteuid() != 0:
+        #     raise PlatformError("Root privileges are required to run without bubblewrap.")
 
     @property
     def artifactcache(self):
         return self._artifact_cache
 
     def create_sandbox(self, *args, **kwargs):
-        return SandboxChroot(*args, **kwargs)
+        # We can optionally create a SandboxUserChroot
+        return SandboxUserChroot(*args, **kwargs)
+        # return SandboxChroot(*args, **kwargs)

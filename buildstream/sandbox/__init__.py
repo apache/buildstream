@@ -19,5 +19,6 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 from .sandbox import Sandbox, SandboxFlags
+from ._sandboxuserchroot import SandboxUserChroot
 from ._sandboxchroot import SandboxChroot
 from ._sandboxbwrap import SandboxBwrap

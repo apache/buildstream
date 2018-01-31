@@ -91,24 +91,12 @@ class SandboxChroot(Sandbox):
 
         return status
 
-    # chroot()
+    # popen()
     #
-    # A helper function to chroot into the rootfs.
+    # A helper function to create and manage a subprocess. We mimic
+    # subprocess.Popen's interface here.
     #
-    # Args:
-    #    rootfs (str): The path of the sysroot to chroot into
-    #    command (list): The command to execute in the chroot env
-    #    stdin (file): The stdin
-    #    stdout (file): The stdout
-    #    stderr (file): The stderr
-    #    cwd (str): The current working directory
-    #    env (dict): The environment variables to use while executing the command
-    #    flags (:class:`SandboxFlags`): The flags to enable on the sandbox
-    #
-    # Returns:
-    #    (int): The exit code of the executed command
-    #
-    def chroot(self, rootfs, command, stdin, stdout, stderr, cwd, env, flags):
+    def popen(self, command, **kwargs):
         def kill_proc():
             if process:
                 # First attempt to gracefully terminate
@@ -128,55 +116,76 @@ class SandboxChroot(Sandbox):
             group_id = os.getpgid(process.pid)
             os.killpg(group_id, signal.SIGCONT)
 
+        with _signals.suspendable(suspend_proc, resume_proc), \
+             _signals.terminator(kill_proc):
+            process = subprocess.Popen(command, **kwargs)
+
+            # Wait for the child process to finish, ensuring that
+            # a SIGINT has exactly the effect the user probably
+            # expects (i.e. let the child process handle it).
+            try:
+                while True:
+                    try:
+                        _, status = os.waitpid(process.pid, 0)
+                        # If the process exits due to a signal, we
+                        # brutally murder it to avoid zombies
+                        if not os.WIFEXITED(status):
+                            utils._kill_process_tree(process.pid)
+
+                    # Unlike in the bwrap case, here only the main
+                    # process seems to receive the SIGINT. We pass
+                    # on the signal to the child and then continue
+                    # to wait.
+                    except KeyboardInterrupt:
+                        process.send_signal(signal.SIGINT)
+                        continue
+
+                    break
+            # If we can't find the process, it has already died of
+            # its own accord, and therefore we don't need to check
+            # or kill anything.
+            except psutil.NoSuchProcess:
+                pass
+
+            # Return the exit code - see the documentation for
+            # os.WEXITSTATUS to see why this is required.
+            if os.WIFEXITED(status):
+                code = os.WEXITSTATUS(status)
+            else:
+                code = -1
+
+        return code
+
+    # chroot()
+    #
+    # A helper function to chroot into the rootfs.
+    #
+    # Args:
+    #    rootfs (str): The path of the sysroot to chroot into
+    #    command (list): The command to execute in the chroot env
+    #    stdin (file): The stdin
+    #    stdout (file): The stdout
+    #    stderr (file): The stderr
+    #    cwd (str): The current working directory
+    #    env (dict): The environment variables to use while executing the command
+    #    flags (:class:`SandboxFlags`): The flags to enable on the sandbox
+    #
+    # Returns:
+    #    (int): The exit code of the executed command
+    #
+    def chroot(self, rootfs, command, stdin, stdout, stderr, cwd, env, flags):
         try:
-            with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-                process = subprocess.Popen(
-                    command,
-                    close_fds=True,
-                    cwd=os.path.join(rootfs, cwd.lstrip(os.sep)),
-                    env=env,
-                    stdin=stdin,
-                    stdout=stdout,
-                    stderr=stderr,
-                    # If you try to put gtk dialogs here Tristan (either)
-                    # will personally scald you
-                    preexec_fn=lambda: (os.chroot(rootfs), os.chdir(cwd)),
-                    start_new_session=flags & SandboxFlags.INTERACTIVE
-                )
-
-                # Wait for the child process to finish, ensuring that
-                # a SIGINT has exactly the effect the user probably
-                # expects (i.e. let the child process handle it).
-                try:
-                    while True:
-                        try:
-                            _, status = os.waitpid(process.pid, 0)
-                            # If the process exits due to a signal, we
-                            # brutally murder it to avoid zombies
-                            if not os.WIFEXITED(status):
-                                utils._kill_process_tree(process.pid)
-
-                        # Unlike in the bwrap case, here only the main
-                        # process seems to receive the SIGINT. We pass
-                        # on the signal to the child and then continue
-                        # to wait.
-                        except KeyboardInterrupt:
-                            process.send_signal(signal.SIGINT)
-                            continue
-
-                        break
-                # If we can't find the process, it has already died of
-                # its own accord, and therefore we don't need to check
-                # or kill anything.
-                except psutil.NoSuchProcess:
-                    pass
-
-                # Return the exit code - see the documentation for
-                # os.WEXITSTATUS to see why this is required.
-                if os.WIFEXITED(status):
-                    code = os.WEXITSTATUS(status)
-                else:
-                    code = -1
+            return self.popen(command,
+                              close_fds=True,
+                              cwd=os.path.join(rootfs, cwd.lstrip(os.sep)),
+                              env=env,
+                              stdin=stdin,
+                              stdout=stdout,
+                              stderr=stderr,
+                              # If you try to put gtk dialogs here Tristan (either)
+                              # will personally scald you
+                              preexec_fn=lambda: (os.chroot(rootfs), os.chdir(cwd)),
+                              start_new_session=flags & SandboxFlags.INTERACTIVE)
 
         except subprocess.SubprocessError as e:
             # Exceptions in preexec_fn are simply reported as
@@ -188,8 +197,6 @@ class SandboxChroot(Sandbox):
                                    .format(rootfs, cwd)) from e
             else:
                 raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
-
-        return code
 
     # create_devices()
     #
