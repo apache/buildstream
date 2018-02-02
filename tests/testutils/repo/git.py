@@ -36,13 +36,18 @@ class Git(Repo):
                         env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
-    def add_submodule(self, subdir, url):
-        self.submodules[subdir] = url
+    def add_submodule(self, subdir, url=None, checkout=None):
+        submodule = {}
+        if checkout is not None:
+            submodule['checkout'] = checkout
+        if url is not None:
+            submodule['url'] = url
+        self.submodules[subdir] = submodule
         subprocess.call(['git', 'submodule', 'add', url, subdir], env=GIT_ENV, cwd=self.repo)
         subprocess.call(['git', 'commit', '-m', 'Added the submodule'], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
-    def source_config(self, ref=None):
+    def source_config(self, ref=None, checkout_submodules=None):
         config = {
             'kind': 'git',
             'url': 'file://' + self.repo,
@@ -50,11 +55,11 @@ class Git(Repo):
         }
         if ref is not None:
             config['ref'] = ref
+        if checkout_submodules is not None:
+            config['checkout-submodules'] = checkout_submodules
 
         if self.submodules:
-            config['submodules'] = {}
-            for subdir, url in self.submodules.items():
-                config['submodules'][subdir] = {'url': url}
+            config['submodules'] = dict(self.submodules)
 
         return config
 
