@@ -43,16 +43,25 @@
    # if the 'track' attribute was specified.
    ref: d63cbb6fdc0bbdadc4a1b92284826a6d63a7ebcd
 
+   # Optionally specify whether submodules should be checked-out.
+   # If not set, this will default to 'True'
+   checkout-submodules: True
+
    # If your repository has submodules, explicitly specifying the
    # url from which they are to be fetched allows you to easily
    # rebuild the same sources from a different location. This is
    # especially handy when used with project defined aliases which
    # can be redefined at a later time.
+   # You may also explicitly specify whether to check out this
+   # submodule. If 'checkout' is set, it will override
+   # 'checkout-submodules' with the value set below.
    submodules:
      plugins/bar:
        url: upstream:bar.git
+       checkout: True
      plugins/baz:
        url: upstream:baz.git
+       checkout: False
 
 """
 
@@ -227,19 +236,27 @@ class GitSource(Source):
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', '') or None
 
-        self.node_validate(node, ['url', 'track', 'ref', 'submodules'] + Source.COMMON_CONFIG_KEYS)
+        config_keys = ['url', 'track', 'ref', 'submodules', 'checkout-submodules']
+        self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
         self.tracking = self.node_get_member(node, str, 'track', '') or None
+        self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
         self.submodules = []
 
-        # Parse a list of path/uri tuples for the submodule overrides dictionary
+        # Parse a dict of submodule overrides, stored in the submodule_overrides
+        # and submodule_checkout_overrides dictionaries.
         self.submodule_overrides = {}
+        self.submodule_checkout_overrides = {}
         modules = self.node_get_member(node, Mapping, 'submodules', {})
         for path, _ in self.node_items(modules):
             submodule = self.node_get_member(modules, Mapping, path)
-            self.submodule_overrides[path] = self.node_get_member(submodule, str, 'url')
+            url = self.node_get_member(submodule, str, 'url', '') or None
+            self.submodule_overrides[path] = url
+            if 'checkout' in submodule:
+                checkout = self.node_get_member(submodule, bool, 'checkout')
+                self.submodule_checkout_overrides[path] = checkout
 
         if not (ref or self.tracking):
             raise SourceError("{}: Must specify either 'ref' or 'track' parameters".format(self))
@@ -254,10 +271,18 @@ class GitSource(Source):
         # from another location, it should not effect the cache key.
         key = [self.original_url, self.mirror.ref]
 
+        # Only modify the cache key with checkout_submodules if it's something
+        # other than the default behaviour.
+        if self.checkout_submodules is False:
+            key.append({"checkout_submodules": self.checkout_submodules})
+
         # We want the cache key to change if the source was
         # configured differently, and submodules count.
         if self.submodule_overrides:
             key.append(self.submodule_overrides)
+
+        if self.submodule_checkout_overrides:
+            key.append({"submodule_checkout_overrides": self.submodule_checkout_overrides})
 
         return key
 
@@ -332,7 +357,13 @@ class GitSource(Source):
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
             self.mirror.stage(directory)
             for mirror in self.submodules:
-                mirror.stage(directory)
+                if mirror.path in self.submodule_checkout_overrides:
+                    checkout = self.submodule_checkout_overrides[mirror.path]
+                else:
+                    checkout = self.checkout_submodules
+
+                if checkout:
+                    mirror.stage(directory)
 
     ###########################################################
     #                     Local Functions                     #
