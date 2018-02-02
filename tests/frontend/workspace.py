@@ -4,6 +4,7 @@ import shutil
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
 
@@ -189,3 +190,56 @@ def test_build(cli, tmpdir, datafiles, kind):
 
     # Check that the original /usr/bin/hello is not in the checkout
     assert not os.path.exists(os.path.join(workspace, 'usr', 'bin', 'hello'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_old_format(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    os.makedirs(os.path.join(project, '.bst'))
+    workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
+
+    workspace_dict_old = {
+        "alpha.bst": {
+            0: "/workspaces/bravo",
+        }
+    }
+
+    workspace_dict_expected = {
+        "alpha.bst": "/workspaces/bravo"
+    }
+
+    _yaml.dump(workspace_dict_old, workspace_config_path)
+
+    # Check that we can still read workspace config that is in old format
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_success()
+
+    loaded_config = _yaml.load(workspace_config_path)
+
+    # Check that workspace config has been converted to the new format after
+    # running a workspace command
+    elements = list(_yaml.node_items(loaded_config))
+    assert len(elements) == len(workspace_dict_expected)
+    for element, path in workspace_dict_expected.items():
+        assert path == _yaml.node_get(loaded_config, str, element)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_old_format_fail(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    os.makedirs(os.path.join(project, '.bst'))
+    workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
+
+    workspace_dict_old = {
+        "alpha.bst": {
+            0: "/workspaces/bravo",
+            1: "/workspaces/charlie",
+        }
+    }
+
+    _yaml.dump(workspace_dict_old, workspace_config_path)
+
+    # Check that trying to load workspace config in old format raises an error
+    # if there are workspaces open for more than one source for an element
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
