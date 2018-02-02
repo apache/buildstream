@@ -56,7 +56,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
 
-    # Write out our test target with a bad ref
+    # Write out our test target
     element = {
         'kind': 'import',
         'sources': [
