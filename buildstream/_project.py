@@ -66,6 +66,7 @@ class Project():
         self._variables = {}     # The default variables overridden with project wide overrides
         self._environment = {}   # The base sandbox environment
         self._elements = {}      # Element specific configurations
+        self._sources = {}       # Source specific configurations
         self._aliases = {}       # Aliases dictionary
         self._workspaces = {}    # Workspaces
         self._plugin_source_origins = []   # Origins of custom sources
@@ -123,10 +124,13 @@ class Project():
         project_conf = _yaml.load(projectfile)
         _yaml.composite(config, project_conf)
 
-        # Element type configurations will be composited later onto element types,
-        # so we delete it from here and run our final assertion after.
+        # Element and Source  type configurations will be composited later onto
+        # element/source types, so we delete it from here and run our final
+        # assertion after.
         self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
+        self._sources = _yaml.node_get(config, Mapping, 'sources', default_value={})
         config.pop('elements', None)
+        config.pop('sources', None)
         _yaml.node_final_assertions(config)
         _yaml.node_validate(config, [
             'format-version',

@@ -23,6 +23,7 @@ Source
 """
 
 import os
+from collections import Mapping
 from contextlib import contextmanager
 
 from . import Plugin
@@ -74,6 +75,9 @@ class Source(Plugin):
     All Sources derive from this class, this interface defines how
     the core will be interacting with Sources.
     """
+    __defaults = {}          # The defaults from the project
+    __defaults_set = False   # Flag, in case there are not defaults at all
+
     def __init__(self, context, project, meta):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__(meta.name, context, project, provenance, "source")
@@ -88,7 +92,11 @@ class Source(Plugin):
         self.__workspace = None                         # Directory of the currently active workspace
         self.__workspace_key = None                     # Cached directory content hashes for workspaced source
 
-        self.configure(meta.config)
+        # Collect the composited element configuration and
+        # ask the element to configure itself.
+        self.__init_defaults()
+        self.__config = self.__extract_config(meta)
+        self.configure(self.__config)
 
     COMMON_CONFIG_KEYS = ['kind', 'directory']
     """Common source config keys
@@ -96,6 +104,25 @@ class Source(Plugin):
     Source config keys that must not be accessed in configure(), and
     should be checked for using node_validate().
     """
+
+    def __init_defaults(self):
+        if not self.__defaults_set:
+            project = self._get_project()
+            sources = project._sources
+            type(self).__defaults = sources.get(self.get_kind(), {})
+            type(self).__defaults_set = True
+
+    # This will resolve the final configuration to be handed
+    # off to source.configure()
+    #
+    def __extract_config(self, meta):
+        config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
+        config = _yaml.node_chain_copy(config)
+
+        _yaml.composite(config, meta.config)
+        _yaml.node_final_assertions(config)
+
+        return config
 
     def get_mirror_directory(self):
         """Fetches the directory where this source should store things

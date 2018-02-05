@@ -503,6 +503,8 @@ be specified here.
        %{libdir}/lib*.la
 
 
+.. _project_element_overrides:
+
 Element Overrides
 ~~~~~~~~~~~~~~~~~
 Base attributes declared by element default yaml files can be overridden
@@ -525,6 +527,26 @@ variables, environments or plugin specific configuration data as shown below.
 
        environment:
          PKG_CONFIG_PATH=%{libdir}/pkgconfig
+
+
+.. _project_source_overrides:
+
+Source Overrides
+~~~~~~~~~~~~~~~~
+Default values (overriding built-in defaults) can be set on a project
+wide basis. The sources dictionary can be used to override plugin specific
+configuration data as shown below.
+
+
+.. code:: yaml
+
+   sources:
+
+     # Override default values for all git sources
+     git:
+
+       config:
+         checkout-submodules: False
 
 
 .. _project_builtin_defaults:
