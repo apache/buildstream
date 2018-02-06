@@ -20,6 +20,7 @@
 import os
 import sys
 import click
+import resource
 from contextlib import contextmanager
 from blessings import Terminal
 from click import UsageError
@@ -777,6 +778,14 @@ class App():
             self.colors = True
         else:
             self.colors = False
+
+        # Increase the soft limit for open file descriptors to the maximum.
+        # SafeHardlinks FUSE needs to hold file descriptors for all processes in the sandbox.
+        # Avoid hitting the limit too quickly.
+        limits = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if limits[0] != limits[1]:
+            # Set soft limit to hard limit
+            resource.setrlimit(resource.RLIMIT_NOFILE, (limits[1], limits[1]))
 
     #
     # Initialize the main pipeline
