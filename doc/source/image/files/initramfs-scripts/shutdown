@@ -1,0 +1,67 @@
+#!/bin/sh
+
+fail(){
+    echo "$@" >&2
+    # The behaviour on failure of systemd when shutting down without a
+    # shutdownramfs is to freeze if it fails, but the behaviour of an initramfs
+    # on failure is to drop you into a recovery shell. The latter seems more
+    # useful.
+    exec /bin/sh
+}
+
+startswith(){
+    # Filter out lines that don't start with $1
+    # grep ^EXPR is usually sufficient, but would require escaping of EXPR.
+    # Instead this compares the line to the line with its prefix stripped,
+    # so if the line is different, then it started with that prefix.
+    # It's ugly, but is less logic than escaping the regular expression and
+    # using grep, more reliable than not making any effort to escape, and
+    # less surprising than requiring the parameter to be pre-escaped.
+    while read -r line; do
+        if [ "${line#"$1"}" != "$line" ]; then
+            printf '%s\n' "$line"
+        fi
+    done
+}
+
+recursive_umount(){
+    # Recursively unmount every mountpoint under $1.
+    # This works by filtering to select mountpoints from mountinfo that start
+    # with the absolute path of the directory given.
+    # It unmounts in reverse-order, so that it may unmount dependent mounts
+    # first, and it has to handle the paths having octal escape sequences.
+    set -- "$(readlink -f "$1")"
+    cut -d' ' -f5 /proc/self/mountinfo | startswith "$1" \
+        | sort -r | while read -r mp; do
+        umount "$(echo -e "$mp")"
+    done
+}
+
+# Give the rootfs another chance to write its state to disk.
+sync
+
+# Kill any http://www.freedesktop.org/wiki/Software/systemd/RootStorageDaemons/
+# as we don't have any facility to cleanly shut them down in this initramfs.
+killall5
+
+# Recursively unmount the old root, so they have a chance of performing
+# unmount-time cleanup.
+recursive_umount /oldroot
+
+case "$1" in
+reboot|poweroff|halt)
+        if ! "$1" -f; then
+            fail "$1 command failed"
+        fi
+        ;;
+kexec)
+        # probably don't have this, but we'll try anyway
+        if ! kexec -e; then
+            fail "$1 command failed"
+        fi
+        ;;
+*)
+        fail "Unrecognized shutdown verb $1"
+        ;;
+esac
+

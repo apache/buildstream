@@ -13,7 +13,8 @@ Building a Linux image
 
    This page does *not* list all files required for the project, it
    merely comments on noteworthy sections. See `this repository
-   <https://gitlab.com/tlater/image-test>`_ for the full project.
+   <https://gitlab.com/BuildStream/buildstream-examples/build-x86image>`_
+   for the full project.
 
 Setting up the project
 ~~~~~~~~~~~~~~~~~~~~~~

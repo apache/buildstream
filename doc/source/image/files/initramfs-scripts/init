@@ -1,0 +1,132 @@
+#!/bin/sh
+trap 'exec /bin/sh' INT EXIT
+
+# We need proc for reading the kernel command line
+mount -n -t proc none /proc
+
+set -- $(cat /proc/cmdline)
+
+# We don't want to leave mount points around
+umount /proc
+
+rootwait=true # defaults to off in the kernel, I think it's more useful on
+for arg; do
+    case "$arg" in
+    root=LABEL=*)
+        if [ x"$root_type" != x ]; then
+            echo "Warning, multiple root= specified, using latest."
+        fi
+        root_type=label
+        root="${arg#root=LABEL=}"
+        ;;
+    root=UUID=*)
+        if [ x"$root_type" != x ]; then
+            echo "Warning, multiple root= specified, using latest."
+        fi
+        root_type=uuid
+        root="${arg#root=UUID=}"
+        ;;
+    root=*)
+        if [ x"$root_type" != x ]; then
+            echo "Warning, multiple root= specified, using latest."
+        fi
+        root_type=disk
+        root="${arg#root=}"
+        ;;
+    rootflags=*)
+        if [ x"$rootflags" != x ]; then
+            echo "Warning, multiple rootflags= specified, using latest."
+        fi
+        rootflags=",${arg#rootflags=}"
+        ;;
+    rootfstype=*)
+        if [ x"$rootfstype" != x ]; then
+            echo "Warning, multiple rootfstype= specified, using latest."
+        fi
+        rootfstype="${arg#rootfstype=}"
+        ;;
+    rootdelay=*)
+        if [ x"$rootdelay" != x ]; then
+            echo "Warning, multiple rootdelay= specified, using latest."
+        fi
+        rootdelay="${arg#rootdelay=}"
+        ;;
+    rootwait)
+        rootwait=true
+        ;;
+    norootwait)
+        rootwait=false
+        ;;
+    ro)
+        ro=ro
+        ;;
+    rw)
+        ro=rw
+        ;;
+    init=*)
+        init="${arg#init=}"
+        ;;
+    esac
+done
+
+
+if [ x"$rootdelay" != x ]; then
+    sleep "$rootdelay"
+fi
+
+if [ x"$rootfstype" = x ]; then
+    # Warn that busybox may not be able to auto-detect rootfs type
+    cat <<\EOF
+Warning, rootfs type not specified, auto-detection of type is slow and
+may fail. Please add rootfstype=$type to kernel command line.
+EOF
+fi
+
+mount -n -t devtmpfs devtmpfs /dev
+
+while true; do
+    case "$root_type" in
+    disk)
+        if mount -n -t "${rootfstype}" -o "${ro-rw}""$rootflags" "$root" /mnt; then
+            break
+        else
+            echo disk $root not found
+            blkid
+        fi
+        ;;
+    label)
+        disk="$(findfs LABEL="$root")"
+        if [ x"$disk" = x ]; then
+            echo disk with label $root not found
+            blkid
+        else
+            mount -n -t "${rootfstype}" -o "${ro-rw}""$rootflags" "$disk" /mnt && break
+        fi
+        ;;
+    uuid)
+        disk="$(findfs UUID="$root")"
+        if [ x"$disk" = x ]; then
+            echo disk with UUID $root not found
+            blkid
+        else
+            mount -n -t "${rootfstype}" -o "${ro-rw}""$rootflags" "$disk" /mnt && break
+        fi
+        ;;
+    '')
+        echo "Error, no root specified"
+        exit 1
+        ;;
+    esac
+    if "$rootwait"; then
+        echo Trying again in 0.5 seconds
+        sleep 0.5
+    fi
+done
+umount -n /dev
+
+# We dont create any static device nodes while building,
+# device nodes will be created by systemd but before that
+# we at least need the console
+mknod -m 0600 /mnt/dev/console c 5 1
+
+exec switch_root -c /dev/console /mnt "${init-/sbin/init}"
