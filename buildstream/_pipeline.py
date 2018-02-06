@@ -234,9 +234,10 @@ class Pipeline():
     #
     def assert_consistent(self, toplevel):
         inconsistent = []
-        for element in toplevel:
-            if element._consistency() == Consistency.INCONSISTENT:
-                inconsistent.append(element)
+        with self.timed_activity("Checking sources"):
+            for element in toplevel:
+                if element._consistency() == Consistency.INCONSISTENT:
+                    inconsistent.append(element)
 
         if inconsistent:
             detail = "Exact versions are missing for the following elements\n" + \
