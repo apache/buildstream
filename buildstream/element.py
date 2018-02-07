@@ -474,34 +474,32 @@ class Element(Plugin):
                 ignored[dep.name] = result.ignored
 
         if overlaps:
-            detail = "Staged files overwrite existing files in staging area:\n"
-            forbidden_overlap = False
-            overlap_error = False
+            overlap_error = overlap_warning = False
+            error_detail = warning_detail = "Staged files overwrite existing files in staging area:\n"
             for f, elements in overlaps.items():
-                forbidden_overlap_elements = []
+                overlap_error_elements = []
+                overlap_warning_elements = []
                 # The bottom item overlaps nothing
                 overlapping_elements = elements[1:]
                 for elm in overlapping_elements:
                     element = self.search(scope, elm)
                     element_project = element._get_project()
                     if not element.__file_is_whitelisted(f):
-                        forbidden_overlap = True
-                        forbidden_overlap_elements.append(elm)
                         if element_project._fail_on_overlap:
+                            overlap_error_elements.append(elm)
                             overlap_error = True
+                        else:
+                            overlap_warning_elements.append(elm)
+                            overlap_warning = True
 
-                if forbidden_overlap_elements:
-                    detail += ("/{}: {} {} not permitted to overlap other elements, order {} \n"
-                               .format(f, " and ".join(forbidden_overlap_elements),
-                                       "is" if len(forbidden_overlap_elements) == 1 else "are",
-                                       " above ".join(reversed(elements))))
+                warning_detail += _overlap_error_detail(f, overlap_warning_elements, elements)
+                error_detail += _overlap_error_detail(f, overlap_error_elements, elements)
 
-            if forbidden_overlap:
-                if overlap_error:
-                    raise ElementError("Non-whitelisted overlaps detected and fail-on-overlaps is set",
-                                       detail=detail, reason="overlap-error")
-                else:
-                    self.warn("Non-whitelisted overlaps detected", detail=detail)
+            if overlap_warning:
+                self.warn("Non-whitelisted overlaps detected", detail=warning_detail)
+            if overlap_error:
+                raise ElementError("Non-whitelisted overlaps detected and fail-on-overlaps is set",
+                                   detail=error_detail, reason="overlap-error")
 
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
@@ -1818,3 +1816,13 @@ class Element(Plugin):
         # Load the public data from the artifact
         metadir = os.path.join(self.__artifacts.extract(self), 'meta')
         self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
+
+
+def _overlap_error_detail(f, forbidden_overlap_elements, elements):
+    if forbidden_overlap_elements:
+        return ("/{}: {} {} not permitted to overlap other elements, order {} \n"
+                .format(f, " and ".join(forbidden_overlap_elements),
+                        "is" if len(forbidden_overlap_elements) == 1 else "are",
+                        " above ".join(reversed(elements))))
+    else:
+        return ""
