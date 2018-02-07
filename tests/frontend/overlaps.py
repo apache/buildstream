@@ -71,3 +71,14 @@ def test_overlaps_whitelist_on_overlapper(cli, datafiles):
         'build', 'collect-partially-whitelisted.bst'])
     result.assert_main_error(ErrorDomain.PIPELINE, None)
     result.assert_task_error(ErrorDomain.ELEMENT, "overlap-error")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_overlaps_script(cli, datafiles):
+    # Test overlaps with script element to test
+    # Element.stage_dependency_artifacts() with Scope.RUN
+    project_dir = str(datafiles)
+    gen_project(project_dir, False)
+    result = cli.run(project=project_dir, silent=True, args=[
+        'build', 'script.bst'])
+    result.assert_success()
