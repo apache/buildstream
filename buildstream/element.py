@@ -482,7 +482,7 @@ class Element(Plugin):
                 # The bottom item overlaps nothing
                 overlapping_elements = elements[1:]
                 for elm in overlapping_elements:
-                    element = self.search(Scope.BUILD, elm)
+                    element = self.search(scope, elm)
                     element_project = element._get_project()
                     if not element.__file_is_whitelisted(f):
                         forbidden_overlap = True
