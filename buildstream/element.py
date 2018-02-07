@@ -1395,7 +1395,7 @@ class Element(Plugin):
             if scope == Scope.BUILD:
                 flags |= SandboxFlags.ROOT_READ_ONLY
             elif scope == Scope.RUN:
-                flags |= SandboxFlags.NETWORK_ENABLED
+                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
 
             if command:
                 argv = [arg for arg in command]

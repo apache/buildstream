@@ -130,7 +130,9 @@ class SandboxBwrap(Sandbox):
 
         # Set UID and GUI
         if self.user_ns_available:
-            bwrap_command += ['--unshare-user', '--uid', '0', '--gid', '0']
+            bwrap_command += ['--unshare-user']
+            if not flags & SandboxFlags.INHERIT_UID:
+                bwrap_command += ['--uid', '0', '--gid', '0']
 
         # Add the command
         bwrap_command += command

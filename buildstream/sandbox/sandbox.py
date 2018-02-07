@@ -61,6 +61,15 @@ class SandboxFlags():
     the terminal entirely.
     """
 
+    INHERIT_UID = 0x08
+    """Whether to use the user id and group id from the host environment
+
+    This determines if processes in the sandbox should run with the
+    same user id and group id as BuildStream itself. By default,
+    processes run with user id and group id 0, protected by a user
+    namespace where available.
+    """
+
 
 class Sandbox():
     """Sandbox()
