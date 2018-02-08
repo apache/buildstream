@@ -138,7 +138,10 @@ class SandboxBwrap(Sandbox):
         # Set UID and GUI
         if self.user_ns_available:
             bwrap_command += ['--unshare-user']
-            if not flags & SandboxFlags.INHERIT_UID:
+            if flags & SandboxFlags.INHERIT_UID:
+                bwrap_command += ['--ro-bind', '/etc/passwd', '/etc/passwd']
+                bwrap_command += ['--ro-bind', '/etc/group', '/etc/group']
+            else:
                 bwrap_command += ['--uid', '0', '--gid', '0']
 
         # Add the command
