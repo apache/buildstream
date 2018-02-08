@@ -284,7 +284,7 @@ class SandboxChroot(Sandbox):
                 # Since the exit stack has already registered a mount
                 # for this path, we do not need to register another
                 # umount call.
-                root_mount.__enter__()
+                root_mount.__enter__()               # pylint: disable=no-member
 
             yield
 

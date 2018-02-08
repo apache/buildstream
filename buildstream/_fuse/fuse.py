@@ -19,6 +19,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+# pylint: skip-file
+
 from __future__ import print_function, absolute_import, division
 
 from ctypes import *

@@ -93,7 +93,7 @@ class PluginContext():
                 raise PluginError("Failed to load {} plugin '{}': {}"
                                   .format(self.base_type.__name__, kind, e)) from e
             location = package.dist.get_resource_filename(
-                pkg_resources._manager,
+                pkg_resources._manager,              # pylint: disable=no-member
                 package.module_name.replace('.', os.sep) + '.py'
             )
 
@@ -101,7 +101,7 @@ class PluginContext():
             # may need to extract the file.
             try:
                 defaults = package.dist.get_resource_filename(
-                    pkg_resources._manager,
+                    pkg_resources._manager,         # pylint: disable=no-member
                     package.module_name.replace('.', os.sep) + '.yaml'
                 )
             except KeyError:

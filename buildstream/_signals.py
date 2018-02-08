@@ -70,7 +70,7 @@ def terminator_handler(signal, frame):
 #
 @contextmanager
 def terminator(terminate_func):
-    global terminator_stack
+    global terminator_stack                   # pylint: disable=global-statement
 
     outermost = False if terminator_stack else True
 
@@ -130,7 +130,7 @@ def suspend_handler(sig, frame):
 #
 @contextmanager
 def suspendable(suspend_callback, resume_callback):
-    global suspendable_stack
+    global suspendable_stack                  # pylint: disable=global-statement
 
     outermost = False if suspendable_stack else True
     suspender = Suspender(suspend_callback, resume_callback)

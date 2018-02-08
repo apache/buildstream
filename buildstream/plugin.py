@@ -654,7 +654,7 @@ def _plugin_lookup(unique_id):
 # No need for unregister, WeakValueDictionary() will remove entries
 # in itself when the referenced plugins are garbage collected.
 def _plugin_register(plugin):
-    global __PLUGINS_UNIQUE_ID
+    global __PLUGINS_UNIQUE_ID                # pylint: disable=global-statement
     __PLUGINS_UNIQUE_ID += 1
     __PLUGINS_TABLE[__PLUGINS_UNIQUE_ID] = plugin
     return __PLUGINS_UNIQUE_ID
