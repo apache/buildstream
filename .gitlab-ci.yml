@@ -72,10 +72,7 @@ linting:
   variables:
     PYTEST_ADDOPTS: "--color=yes"
   script:
-    - cd dist && ./unpack.sh && cd buildstream
     - python3 setup.py test --addopts '--no-cov --pylint --pep8 -m "pep8 or pylint"'
-  dependencies:
-    - source_dist
 
 # Run premerge commits
 #

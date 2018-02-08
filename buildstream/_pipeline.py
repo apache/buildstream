@@ -687,7 +687,7 @@ class Pipeline():
 
         if workspace_dir is None:
             raise PipelineError("Workspace '{}' is currently not defined"
-                                .format(target.name + " - " + str(source_index)))
+                                .format(target.name))
 
         self.close_workspace(True)
 
