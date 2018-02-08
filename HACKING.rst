@@ -247,6 +247,63 @@ tests for this), documentation on the datafiles extension can
 be found here: https://pypi.python.org/pypi/pytest-datafiles
 
 
+Measuring BuildStream performance
+---------------------------------
+
+Benchmarking framework
+~~~~~~~~~~~~~~~~~~~~~~~
+
+BuildStream has a utility to measure performance which is available from a
+separate repository at https://gitlab.com/BuildStream/benchmarks. This tool
+allows you to run a fixed set of workloads with multiple versions of
+BuildStream. From this you can see whether one version performs better or
+worse than another which is useful when looking for regressions and when
+testing potential optimizations.
+
+For full documentation on how to use the benchmarking tool see the README in
+the 'benchmarks' repository.
+
+Profiling tools
+~~~~~~~~~~~~~~~
+
+When looking for ways to speed up the code you should make use of a profiling
+tool.
+
+Python provides `cProfile <https://docs.python.org/3/library/profile.html>`_
+which gives you a list of all functions called during execution and how much
+time was spent in each function. Here is an example of running `bst --help`
+under cProfile:
+
+    python3 -m cProfile -o bst.cprofile -- $(which bst) --help
+
+You can then analyze the results interactively using the 'pstats' module:
+
+    python3 -m pstats ./bst.cprofile
+
+For more detailed documentation of cProfile and 'pstats', see:
+https://docs.python.org/3/library/profile.html.
+
+For a richer visualisation of the callstack you can try `Pyflame
+<https://github.com/uber/pyflame>`_. Once you have followed the instructions in
+Pyflame's README to install the tool, you can profile `bst` commands as in the
+following example:
+
+    pyflame --output bst.flame --trace bst --help
+
+You may see an `Unexpected ptrace(2) exception:` error. Note that the `bst`
+operation will continue running in the background in this case, you will need
+to wait for it to complete or kill it. Once this is done, rerun the above
+command which appears to fix the issue.
+
+Once you have output from pyflame, you can use the ``flamegraph.pl`` script
+from the `Flamegraph project <https://github.com/brendangregg/FlameGraph>`_
+to generate an .svg image:
+
+    ./flamegraph.pl bst.flame > bst-flamegraph.svg
+
+The generated SVG file can then be viewed in your preferred web browser.
+
+
 The MANIFEST.in and setup.py
 ----------------------------
 When adding a dependency to BuildStream, it's important to update the setup.py accordingly.
