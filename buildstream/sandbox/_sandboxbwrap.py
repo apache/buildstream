@@ -96,7 +96,9 @@ class SandboxBwrap(Sandbox):
         # complete, root is remounted as RO
         bwrap_command += ["--bind", root_mount_source, "/"]
 
-        if not flags & SandboxFlags.NETWORK_ENABLED:
+        if flags & SandboxFlags.NETWORK_ENABLED:
+            bwrap_command += ['--ro-bind', '/etc/resolv.conf', '/etc/resolv.conf']
+        else:
             bwrap_command += ['--unshare-net']
             bwrap_command += ['--unshare-uts', '--hostname', 'buildstream']
             bwrap_command += ['--unshare-ipc']
