@@ -337,7 +337,7 @@ class Source(Plugin):
     def _fetch(self):
         self.fetch()
 
-    # Return the path where this source should be staged under given dierctory
+    # Return the path where this source should be staged under given directory
     def _get_staging_path(self, directory):
         if self.__directory is not None:
             directory = os.path.join(directory, self.__directory.lstrip(os.sep))
