@@ -369,7 +369,7 @@ need not be specified and will default to an empty set.
 
 **Evaluating**
 
-Flags type options can be tested in conditional expressions using
+Options of type ``flags`` can be tested in conditional expressions using
 a pythonic *in* syntax to test if an element is present in a set:
 
 .. code:: yaml
@@ -389,7 +389,7 @@ exported as a comma separated list of selected value strings.
 
 Architecture
 ~~~~~~~~~~~~
-The ``arch`` type option is special enumeration option which
+The ``arch`` option type is special enumeration option which
 defaults to the result of `uname -m`, and does not support
 assigning any default in the project configuration.
 
