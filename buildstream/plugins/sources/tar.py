@@ -26,6 +26,9 @@
    # Specify the tar source kind
    kind: tar
 
+   # Optionally specify a relative staging directory
+   # directory: path/to/stage
+
    # Specify the tar url. Using an alias defined in your project
    # configuration is encouraged. 'bst track' will update the
    # sha256sum in 'ref' to the downloaded file's sha256sum.

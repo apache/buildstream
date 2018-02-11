@@ -27,6 +27,9 @@
    # Specify the zip source kind
    kind: zip
 
+   # Optionally specify a relative staging directory
+   # directory: path/to/stage
+
    # Specify the zip url. Using an alias defined in your project
    # configuration is encouraged. 'bst track' will update the
    # sha256sum in 'ref' to the downloaded file's sha256sum.

@@ -26,6 +26,9 @@
    # Specify the bzr source kind
    kind: bzr
 
+   # Optionally specify a relative staging directory
+   # directory: path/to/stage
+
    # Specify the bzr url. Bazaar URLs come in many forms, see
    # `bzr help urlspec` for more information. Using an alias defined
    # in your project configuration is encouraged.
