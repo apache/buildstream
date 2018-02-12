@@ -317,7 +317,9 @@ class Scheduler():
 
     def sched(self):
 
-        if self.queue_jobs:
+        process_queues = True
+
+        while self.queue_jobs and process_queues:
 
             # Pull elements forward through queues
             elements = []
@@ -340,6 +342,10 @@ class Scheduler():
             # to complete before ever starting a build
             for queue in reversed(self.queues):
                 queue.process_ready()
+
+            # process_ready() may have skipped jobs, adding them to the done_queue.
+            # Pull these skipped elements forward to the next queue and process them.
+            process_queues = sum([len(q.done_queue) for q in self.queues]) > 0
 
         # If nothings ticking, time to bail out
         ticking = 0
