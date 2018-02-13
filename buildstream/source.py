@@ -420,7 +420,7 @@ class Source(Plugin):
             if self._has_workspace():
                 detail = "This source has an open workspace.\n" \
                     + "To start using the new reference, please close the existing workspace."
-                self.warn("Updated reference will be ingnored as source has open workspace", detail=detail)
+                self.warn("Updated reference will be ignored as source has open workspace", detail=detail)
 
         return new_ref
 
