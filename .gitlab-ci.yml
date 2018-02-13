@@ -68,8 +68,9 @@ linux-tests:
   stage: test
   variables:
     PYTEST_ADDOPTS: "--color=yes"
-    INTEGRATION_CACHE: "/builds/BuildStream/buildstream/cache/"
   script:
+
+  - export INTEGRATION_CACHE="$(pwd)/cache/"
 
   # Unpack and get into dist/buildstream
   - cd dist && ./unpack.sh
@@ -95,8 +96,10 @@ unix-tests:
   variables:
     BST_FORCE_BACKEND: "unix"
     PYTEST_ADDOPTS: "--color=yes"
-    INTEGRATION_CACHE: "/builds/BuildStream/buildstream/cache/"
   script:
+
+    - export INTEGRATION_CACHE="$(pwd)/cache/"
+
     # We remove the Bubblewrap and OSTree packages here so that we catch any
     # codepaths that try to use them. Removing OSTree causes fuse-libs to
     # disappear unless we mark it as user-installed.
