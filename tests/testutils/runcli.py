@@ -157,6 +157,20 @@ class Result():
 
         return list(tracked)
 
+    def get_pushed_elements(self):
+        pushed = re.findall(r'\[\s*push:(\S+)\s*\]\s*START\s*Pushing Artifact', self.stderr)
+        if pushed is None:
+            return []
+
+        return list(pushed)
+
+    def get_pulled_elements(self):
+        pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*START', self.stderr)
+        if pulled is None:
+            return []
+
+        return list(pulled)
+
 
 class Cli():
 

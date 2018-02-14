@@ -142,3 +142,56 @@ def test_push_all(cli, tmpdir, datafiles):
     assert_shared(cli, share, project, 'import-bin.bst')
     assert_shared(cli, share, project, 'import-dev.bst')
     assert_shared(cli, share, project, 'compose-all.bst')
+
+
+# Tests that `bst build` won't push artifacts to the cache it just pulled from.
+#
+# Regression test for https://gitlab.com/BuildStream/buildstream/issues/233.
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_after_pull(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Set up two artifact shares.
+    share1 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1'))
+    share2 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2'))
+
+    # Set the scene: share1 has the artifact, share2 does not.
+    #
+    cli.configure({
+        'artifacts': {'url': share1.repo, 'push': True},
+    })
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    share1.update_summary()
+    cli.remove_artifact_from_cache(project, 'target.bst')
+
+    assert_shared(cli, share1, project, 'target.bst')
+    assert_not_shared(cli, share2, project, 'target.bst')
+    assert cli.get_element_state(project, 'target.bst') == 'downloadable'
+
+    # Now run the build again. Correct `bst build` behaviour is to download the
+    # artifact from share1 but not push it back again.
+    #
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    assert result.get_pulled_elements() == ['target.bst']
+    assert result.get_pushed_elements() == []
+
+    # Delete the artifact locally again.
+    cli.remove_artifact_from_cache(project, 'target.bst')
+
+    # Now we add share2 into the mix as a second push remote. This time,
+    # `bst build` should push to share2 after pulling from share1.
+    cli.configure({
+        'artifacts': [
+            {'url': share1.repo, 'push': True},
+            {'url': share2.repo, 'push': True},
+        ]
+    })
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    assert result.get_pulled_elements() == ['target.bst']
+    assert result.get_pushed_elements() == ['target.bst']
