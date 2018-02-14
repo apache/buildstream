@@ -481,7 +481,7 @@ def prefix_choice_value_proc(choices):
     def value_proc(user_input):
         remaining_candidate = [choice for choice in choices if choice.startswith(user_input)]
 
-        if len(remaining_candidate) == 0:
+        if not remaining_candidate:
             raise UsageError("Expected one of {}, got {}".format(choices, user_input))
         elif len(remaining_candidate) == 1:
             return remaining_candidate[0]

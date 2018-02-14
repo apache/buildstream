@@ -40,7 +40,7 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push')):
         _yaml.node_validate(spec_node, ['url', 'push'])
         url = _yaml.node_get(spec_node, str, 'url')
         push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
-        if len(url) == 0:
+        if not url:
             provenance = _yaml.node_get_provenance(spec_node)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: empty artifact cache URL".format(provenance))

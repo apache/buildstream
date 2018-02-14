@@ -247,7 +247,7 @@ class PushMessageReader(object):
 
     def read(self):
         header = self.file.read(HEADER_SIZE)
-        if len(header) == 0:
+        if not header:
             # Remote end quit
             return None, None
         order, version, cmdtype, size = self.decode_header(header)
@@ -510,7 +510,7 @@ class OSTreePusher(object):
             remote_rev = remote_refs.get(branch, '0' * 64)
             if rev != remote_rev:
                 update_refs[branch] = remote_rev, rev
-        if len(update_refs) == 0:
+        if not update_refs:
             logging.info('Nothing to update')
             self.writer.send_done()
             return self.close()
@@ -632,7 +632,7 @@ class OSTreeReceiver(object):
         self.reader.receive_done()
 
         # If we didn't get any objects, we're done
-        if len(received_objects) == 0:
+        if not received_objects:
             return 0
 
         # Got all objects, move them to the object store

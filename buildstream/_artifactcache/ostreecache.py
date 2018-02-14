@@ -334,7 +334,7 @@ class OSTreeCache(ArtifactCache):
 
         push_remotes = [r for r in self._remotes[project] if r.spec.push]
 
-        if len(push_remotes) == 0:
+        if not push_remotes:
             raise ArtifactError("Push is not enabled for any of the configured remote artifact caches.")
 
         refs = [buildref(element, key) for key in keys]

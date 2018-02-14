@@ -47,7 +47,7 @@ class TrackQueue(Queue):
 
     def status(self, element):
         # We can skip elements entirely if they have no sources.
-        if len(list(element.sources())) == 0:
+        if not list(element.sources()):
             return QueueStatus.SKIP
 
         return QueueStatus.READY

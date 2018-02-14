@@ -348,7 +348,7 @@ class LogLine(Widget):
 
     def _parse_logfile_format(self, format_string, content_profile, format_profile):
         logfile_tokens = []
-        while len(format_string) > 0:
+        while format_string:
             if format_string.startswith("%%"):
                 logfile_tokens.append(FixedText("%", content_profile, format_profile))
                 format_string = format_string[2:]
@@ -523,7 +523,7 @@ class LogLine(Widget):
         text += '\n'
 
         # Project Options
-        if len(project._options.variables) > 0:
+        if project._options.variables:
             text += self.content_profile.fmt("Project Options\n", bold=True)
             values = OrderedDict()
             for key in sorted(project._options.variables):
@@ -703,7 +703,7 @@ class LogLine(Widget):
             if "%{workspace-dirs" in format:
                 dirs = [path.replace(os.getenv('HOME', '/root'), '~')
                         for path in element._workspace_dirs()]
-                if len(dirs) > 0:
+                if dirs:
                     line = p.fmt_subst(
                         line, 'workspace-dirs', "Workspaces: " + ", ".join(dirs))
                 else:

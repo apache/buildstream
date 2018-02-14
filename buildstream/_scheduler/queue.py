@@ -167,14 +167,14 @@ class Queue():
         self.skipped_elements.extend(skip)
 
     def dequeue(self):
-        while len(self.done_queue) > 0:
+        while self.done_queue:
             yield self.done_queue.popleft()
 
     def process_ready(self):
         scheduler = self.scheduler
         unready = []
 
-        while len(self.wait_queue) > 0 and scheduler.get_job_token(self.queue_type):
+        while self.wait_queue and scheduler.get_job_token(self.queue_type):
             element = self.wait_queue.popleft()
 
             status = self.status(element)

@@ -145,7 +145,7 @@ class Variables():
         resolved = variables
         unmatched = ['dummy']
         last_unmatched = ['dummy']
-        while len(unmatched) > 0:
+        while unmatched:
             resolved, unmatched = resolve_one(resolved)
 
             # Lists of strings can be compared like this

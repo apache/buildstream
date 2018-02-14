@@ -153,7 +153,7 @@ class Pipeline():
         if use_configured_remote_caches:
             for project in self.context._get_projects():
                 artifact_caches = configured_remote_artifact_cache_specs(self.context, project)
-                if len(artifact_caches) > 0:
+                if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
                     self.artifacts.set_remotes(artifact_caches, project=project)
                     has_remote_caches = True
         if has_remote_caches:
@@ -413,7 +413,7 @@ class Pipeline():
     #                 elements
     #
     def build(self, scheduler, build_all, track_first, save):
-        if len(self.unused_workspaces) > 0:
+        if self.unused_workspaces:
             self.message(MessageType.WARN, "Unused workspaces",
                          detail="\n".join([el for el, _
                                            in self.unused_workspaces]))
@@ -560,9 +560,9 @@ class Pipeline():
         target = self.targets[0]
         workdir = os.path.abspath(directory)
 
-        if len(list(target.sources())) == 0:
+        if not list(target.sources()):
             build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
-            if len(build_depends) == 0:
+            if not build_depends:
                 raise PipelineError("The given element has no sources or build-dependencies")
             detail = "Try opening a workspace on one of its dependencies instead:\n"
             detail += "  \n".join(build_depends)
@@ -586,7 +586,7 @@ class Pipeline():
             fetch = FetchQueue(skip_cached=True)
             queues.append(fetch)
 
-        if len(queues) > 0:
+        if queues:
             queues[0].enqueue(plan)
 
             elapsed, status = scheduler.run(queues)
