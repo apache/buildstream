@@ -112,8 +112,6 @@ disable=#####################################
         # Messages that report warnings which should be addressed #
         ###########################################################
 
-        bare-except,
-        broad-except,
         consider-merging-isinstance,
         dangerous-default-value,
         global-statement,

@@ -427,7 +427,9 @@ class OSTreeCache(ArtifactCache):
                 remote = self._ensure_remote(self.repo, pull_url)
                 remote_refs = _ostree.list_remote_refs(self.repo, remote=remote)
                 q.put((None, push_url, pull_url, remote_refs))
-            except Exception as e:
+            except Exception as e:               # pylint: disable=broad-except
+                # Whatever happens, we need to return it to the calling process
+                #
                 q.put((str(e), None, None, None))
 
         # Kick off all the initialization jobs one by one.

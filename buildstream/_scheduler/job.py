@@ -282,7 +282,7 @@ class Job():
                 self.child_send_error(e)
                 self.child_shutdown(1)
 
-            except Exception as e:
+            except Exception as e:                        # pylint: disable=broad-except
 
                 # If an unhandled (not normalized to BstError) occurs, that's a bug,
                 # send the traceback and formatted exception back to the frontend

@@ -78,7 +78,7 @@ def assert_ostree_version():
         try:
             gi.require_version('OSTree', '1.0')
             from gi.repository import OSTree
-        except:
+        except ValueError:
             exit_ostree("OSTree not found")
 
         try:
