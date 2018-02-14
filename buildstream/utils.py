@@ -255,7 +255,7 @@ def safe_copy(src, dest, *, result=None):
         # over extended file attributes.
         if result:
             result.failed_attributes.append(dest)
-        pass
+
     except shutil.Error as e:
         raise UtilError("Failed to copy '{} -> {}': {}"
                         .format(src, dest, e)) from e

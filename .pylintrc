@@ -114,7 +114,6 @@ disable=#####################################
 
         logging-format-interpolation,
 
-        unnecessary-pass,
         cyclic-import,
 
         # These are hard to spot without linting, but easy to fix
