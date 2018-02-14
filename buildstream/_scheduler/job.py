@@ -156,7 +156,7 @@ class Job():
 
         # Join the child process after sending SIGTERM
         self.process.join(timeout)
-        return (self.process.exitcode is not None)
+        return self.process.exitcode is not None
 
     # kill()
     #
@@ -404,7 +404,7 @@ class Job():
             _set_last_task_error(envelope.message['domain'],
                                  envelope.message['reason'])
         elif envelope.message_type == 'result':
-            assert(self.result is None)
+            assert self.result is None
             self.result = envelope.message
         else:
             raise Exception()

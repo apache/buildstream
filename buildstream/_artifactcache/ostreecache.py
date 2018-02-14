@@ -198,7 +198,7 @@ class OSTreeCache(ArtifactCache):
 
         push_remotes_with_artifact = set(r for r in remotes_with_artifact if r.spec.push)
         push_remotes_for_project = set(self._remotes[element._get_project()])
-        return not (push_remotes_for_project.issubset(push_remotes_with_artifact))
+        return not push_remotes_for_project.issubset(push_remotes_with_artifact)
 
     # extract():
     #

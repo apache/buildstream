@@ -797,7 +797,7 @@ class Element(Plugin):
     # in a subprocess.
     #
     def _schedule_assemble(self):
-        assert(not self.__assemble_scheduled)
+        assert not self.__assemble_scheduled
         self.__assemble_scheduled = True
 
         for source in self.__sources:
@@ -811,7 +811,7 @@ class Element(Plugin):
     # in a subprocess.
     #
     def _assemble_done(self):
-        assert(self.__assemble_scheduled)
+        assert self.__assemble_scheduled
 
         for source in self.__sources:
             source._assemble_done()
@@ -889,7 +889,7 @@ class Element(Plugin):
             return False
 
         for dependency in self.dependencies(Scope.BUILD):
-            if not (dependency._cached()):
+            if not dependency._cached():
                 return False
 
         return True
@@ -1055,7 +1055,7 @@ class Element(Plugin):
     def _assemble(self):
 
         # Assert call ordering
-        assert(not self._cached())
+        assert not self._cached()
 
         context = self._get_context()
         with self._output_file() as output_file:
@@ -1946,7 +1946,7 @@ class Element(Plugin):
 
     def _load_public_data(self):
         self._assert_cached()
-        assert(self.__dynamic_public is None)
+        assert self.__dynamic_public is None
 
         # Load the public data from the artifact
         metadir = os.path.join(self.__extract(), 'meta')

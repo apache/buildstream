@@ -114,9 +114,6 @@ disable=#####################################
 
         logging-format-interpolation,
 
-        # We use assert(<>), which should perhaps be assert <>
-        superfluous-parens,
-
         # Some of us like type() - should be discouraged
         unidiomatic-typecheck,
 

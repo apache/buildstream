@@ -308,7 +308,7 @@ class Context():
         self._message_depth.appendleft(silent_nested)
 
     def _pop_message_depth(self):
-        assert(self._message_depth)
+        assert self._message_depth
         self._message_depth.popleft()
 
     def _silent_messages(self):
@@ -334,7 +334,7 @@ class Context():
         # Send it off to the log handler (can be the frontend,
         # or it can be the child task which will log and propagate
         # to the frontend)
-        assert(self._message_handler)
+        assert self._message_handler
 
         self._message_handler(message, context=self)
         return

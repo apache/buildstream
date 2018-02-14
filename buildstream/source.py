@@ -339,7 +339,7 @@ class Source(Plugin):
     # in a subprocess.
     #
     def _schedule_assemble(self):
-        assert(not self.__assemble_scheduled)
+        assert not self.__assemble_scheduled
         self.__assemble_scheduled = True
 
         # Invalidate workspace key as the build modifies the workspace directory
@@ -351,7 +351,7 @@ class Source(Plugin):
     # in a subprocess.
     #
     def _assemble_done(self):
-        assert(self.__assemble_scheduled)
+        assert self.__assemble_scheduled
         self.__assemble_scheduled = False
 
     # _stable():
@@ -499,7 +499,7 @@ class Source(Plugin):
     # new calculation to happen by setting the 'recalculate' flag.
     #
     def _get_workspace_key(self, recalculate=False):
-        assert(not self.__assemble_scheduled)
+        assert not self.__assemble_scheduled
 
         if recalculate or self.__workspace_key is None:
             fullpath = self._get_workspace_path()

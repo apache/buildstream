@@ -97,7 +97,7 @@ def profile_start(topic, key, message=None):
 
     # Start profiling and hold on to the key
     profile = Profile(topic, key, message)
-    assert(active_profiles.get(profile.key) is None)
+    assert active_profiles.get(profile.key) is None
     active_profiles[profile.key] = profile
 
 
@@ -116,7 +116,7 @@ def profile_end(topic, key):
 
     topic_key = topic + '-' + key
     profile = active_profiles.get(topic_key)
-    assert(profile)
+    assert profile
     profile.end()
     del active_profiles[topic_key]
 

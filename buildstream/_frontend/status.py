@@ -228,7 +228,7 @@ class Status():
             line_len = len(line)
             lines += 1
             for col in range(columns):
-                if (col < line_len):
+                if col < line_len:
                     job = line[col]
                     column_widths[col] = max(column_widths[col], job.size)
 

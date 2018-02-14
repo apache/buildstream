@@ -81,9 +81,9 @@ class Queue():
         self.skipped_elements = []
 
         # Assert the subclass has setup class data
-        assert(self.action_name is not None)
-        assert(self.complete_name is not None)
-        assert(self.queue_type is not None)
+        assert self.action_name is not None
+        assert self.complete_name is not None
+        assert self.queue_type is not None
 
     #####################################################
     #     Abstract Methods for Queue implementations    #

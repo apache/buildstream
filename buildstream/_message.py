@@ -75,4 +75,4 @@ class Message():
         self.scheduler = scheduler        # Whether this is a scheduler level message
         self.creation_time = datetime.datetime.now()
         if message_type in (MessageType.SUCCESS, MessageType.FAIL):
-            assert(elapsed is not None)
+            assert elapsed is not None

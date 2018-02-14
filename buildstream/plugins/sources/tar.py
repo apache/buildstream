@@ -79,7 +79,7 @@ class TarSource(DownloadableFileSource):
 
     @contextmanager
     def _run_lzip(self):
-        assert(self.host_lzip)
+        assert self.host_lzip
         with TemporaryFile() as lzip_stdout:
             with ExitStack() as context:
                 lzip_file = context.enter_context(open(self._get_mirror_file(), 'r'))

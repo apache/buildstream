@@ -96,7 +96,7 @@ class Mount():
     #
     def mount(self, mountpoint):
 
-        assert(self.__process is None)
+        assert self.__process is None
 
         self.__mountpoint = mountpoint
         self.__process = Process(target=self.__run_fuse)
