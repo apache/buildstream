@@ -35,6 +35,11 @@ def assert_not_shared(cli, share, project, element_name):
                              .format(share.repo, element_name))
 
 
+# Tests that:
+#
+#  * `bst build` pushes all build elements to configured 'push' cache
+#  * `bst pull --deps all` downloads everything from cache after local deletion
+#
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_all(cli, tmpdir, datafiles):
@@ -75,6 +80,11 @@ def test_push_pull_all(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, element_name) == 'cached'
 
 
+# Tests that:
+#
+#  * `bst build` pushes all build elements ONLY to configured 'push' cache
+#  * `bst show` finds artifacts that are available only in the secondary cache
+#
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_secondary_cache(cli, tmpdir, datafiles):
@@ -107,6 +117,11 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'downloadable'
 
 
+# Tests that:
+#
+#  * `bst push --remote` pushes to the given remote, not one from the config
+#  * `bst pull --remote` pulls from the given remote
+#
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_specific_remote(cli, tmpdir, datafiles):
@@ -156,6 +171,10 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
 
+# Tests that:
+#
+#  * In non-strict mode, dependency changes don't block artifact reuse
+#
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_non_strict(cli, tmpdir, datafiles):
@@ -207,6 +226,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
 
+# Regression test for https://gitlab.com/BuildStream/buildstream/issues/202
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_track_non_strict(cli, tmpdir, datafiles):

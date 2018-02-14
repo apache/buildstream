@@ -36,6 +36,11 @@ def assert_not_shared(cli, share, project, element_name):
                              .format(share.repo, element_name))
 
 
+# Tests that:
+#
+#  * `bst push` fails if there are no remotes configured for pushing
+#  * `bst push` successfully pushes to any remote that is configured for pushing
+#
 @pytest.mark.datafiles(DATA_DIR)
 def test_push(cli, tmpdir, datafiles):
     project = str(datafiles)
@@ -91,6 +96,8 @@ def test_push(cli, tmpdir, datafiles):
     assert_shared(cli, share2, project, 'target.bst')
 
 
+# Tests that `bst push --deps all` pushes all dependencies of the given element.
+#
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_all(cli, tmpdir, datafiles):
