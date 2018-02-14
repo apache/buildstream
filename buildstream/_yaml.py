@@ -355,8 +355,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
                     raise ValueError()
             elif not (expected_type == list or
                       expected_type == dict or
-                      isinstance(value, list) or
-                      isinstance(value, dict)):
+                      isinstance(value, (list, dict))):
                 value = expected_type(value)
             else:
                 raise ValueError()

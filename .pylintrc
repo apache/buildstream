@@ -112,7 +112,6 @@ disable=#####################################
         # Messages that report warnings which should be addressed #
         ###########################################################
 
-        consider-merging-isinstance,
         dangerous-default-value,
         global-statement,
         len-as-condition,
