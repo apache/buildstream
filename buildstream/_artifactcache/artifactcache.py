@@ -208,7 +208,7 @@ class ArtifactCache():
     def has_push_remotes(self, *, element=None):
         return False
 
-    # remote_contains_key():
+    # remote_contains():
     #
     # Check whether the artifact for the specified Element is already available
     # in any remote artifact cache.
