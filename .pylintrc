@@ -112,7 +112,6 @@ disable=#####################################
         # Messages that report warnings which should be addressed #
         ###########################################################
 
-        global-statement,
         len-as-condition,
         logging-format-interpolation,
 

@@ -122,7 +122,7 @@ def profile_end(topic, key):
 
 
 def profile_init():
-    global initialized
+    global initialized  # pylint: disable=global-statement
     if not initialized:
         setting = os.getenv('BST_PROFILE')
         if setting:

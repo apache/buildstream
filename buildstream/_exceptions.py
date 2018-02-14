@@ -20,6 +20,8 @@
 
 from enum import Enum
 
+# Disable pylint warnings for whole file here:
+# pylint: disable=global-statement
 
 # The last raised exception, this is used in test cases only
 _last_exception = None
