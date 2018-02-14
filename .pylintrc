@@ -112,7 +112,6 @@ disable=#####################################
         # Messages that report warnings which should be addressed #
         ###########################################################
 
-        anomalous-backslash-in-string,
         bad-continuation,
         bare-except,
         broad-except,

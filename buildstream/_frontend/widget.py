@@ -353,7 +353,7 @@ class LogLine(Widget):
                 logfile_tokens.append(FixedText("%", content_profile, format_profile))
                 format_string = format_string[2:]
                 continue
-            m = re.search("^%\{([^\}]+)\}", format_string)
+            m = re.search(r"^%\{([^\}]+)\}", format_string)
             if m is not None:
                 variable = m.group(1)
                 format_string = format_string[m.end(0):]

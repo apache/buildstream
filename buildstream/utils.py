@@ -142,6 +142,7 @@ def list_relative_paths(directory):
             yield os.path.join(basepath, f)
 
 
+# pylint: disable=anomalous-backslash-in-string
 def glob(paths, pattern):
     """A generator to yield paths which match the glob pattern
 
@@ -998,7 +999,7 @@ def _glob2re(pat):
                 res = '{}[{}]'.format(res, stuff)
         else:
             res = res + re.escape(c)
-    return res + '\Z(?ms)'
+    return res + r'\Z(?ms)'
 
 
 # _deduplicate()
