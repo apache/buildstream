@@ -325,7 +325,7 @@ def node_get_provenance(node, key=None, indices=None):
 # Note:
 #    Returned strings are stripped of leading and trailing whitespace
 #
-def node_get(node, expected_type, key, indices=[], default_value=None):
+def node_get(node, expected_type, key, indices=None, default_value=None):
     value = node.get(key, default_value)
     provenance = node_get_provenance(node)
     if value is None:
@@ -333,7 +333,7 @@ def node_get(node, expected_type, key, indices=[], default_value=None):
                         "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 
     path = key
-    if indices:
+    if indices is not None:
         # Implied type check of the element itself
         value = node_get(node, list, key)
         for index in indices:

@@ -392,7 +392,7 @@ class ProcessWithPipes(object):
 
 
 class OSTreePusher(object):
-    def __init__(self, repopath, remotepath, branches=[], verbose=False,
+    def __init__(self, repopath, remotepath, branches=None, verbose=False,
                  debug=False, output=None):
         self.repopath = repopath
         self.remotepath = remotepath
@@ -410,7 +410,7 @@ class OSTreePusher(object):
         self.repo.open(None)
 
         # Enumerate branches to push
-        if len(branches) == 0:
+        if branches is None:
             _, self.refs = self.repo.list_refs(None, None)
         else:
             self.refs = {}
