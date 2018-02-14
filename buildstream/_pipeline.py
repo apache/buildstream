@@ -37,7 +37,7 @@ from . import Scope
 from . import _site
 from . import utils
 from ._platform import Platform
-from ._artifactcache import ArtifactCacheSpec, configured_remote_artifact_cache_specs
+from ._artifactcache.artifactcache import ArtifactCacheSpec, configured_remote_artifact_cache_specs
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 

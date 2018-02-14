@@ -22,10 +22,10 @@
 import os
 import sys
 import stat
-import psutil
 import signal
 import subprocess
 from contextlib import contextmanager, ExitStack
+import psutil
 
 from .._exceptions import SandboxError
 from .. import utils

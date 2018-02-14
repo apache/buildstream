@@ -23,10 +23,11 @@ import signal
 import time
 import sys
 
-from .._exceptions import ImplError
-from .fuse import FUSE
 from contextlib import contextmanager
 from multiprocessing import Process
+from .fuse import FUSE
+
+from .._exceptions import ImplError
 from .. import _signals
 
 

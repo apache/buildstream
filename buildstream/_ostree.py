@@ -27,12 +27,15 @@
 # pylint: disable=bad-exception-context,catching-non-exception
 
 import os
-from ._exceptions import BstError, ErrorDomain
 
 import gi
+from gi.repository.GLib import Variant, VariantDict
+
+from ._exceptions import BstError, ErrorDomain
+
+# pylint: disable=wrong-import-position,wrong-import-order
 gi.require_version('OSTree', '1.0')
 from gi.repository import GLib, Gio, OSTree  # nopep8
-from gi.repository.GLib import Variant, VariantDict  # nopep8
 
 
 # For users of this file, they must expect (except) it.

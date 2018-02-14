@@ -18,23 +18,24 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-import click
 import logging
+import multiprocessing
 import os
 import subprocess
 import sys
 import shutil
 import tarfile
 import tempfile
-import multiprocessing
 from enum import Enum
 from urllib.parse import urlparse
 
+import click
+import gi
+
 from .. import _signals
 
-import gi
 gi.require_version('OSTree', '1.0')
+# pylint: disable=wrong-import-position,wrong-import-order
 from gi.repository import GLib, Gio, OSTree  # nopep8
 
 

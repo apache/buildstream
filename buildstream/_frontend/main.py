@@ -17,15 +17,17 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-from .cli import cli
 
 import os
 import sys
-import click
 import resource
 from contextlib import contextmanager
 from blessings import Terminal
+
+import click
 from click import UsageError
+
+from .cli import cli
 
 # Import buildstream public symbols
 from .. import Scope

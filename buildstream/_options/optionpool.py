@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #
-import jinja2
+
 from collections import Mapping
+import jinja2
 
 from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason

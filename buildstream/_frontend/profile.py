@@ -18,8 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import re
-import click
 import copy
+import click
 
 
 # Profile()

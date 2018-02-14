@@ -19,9 +19,10 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
-import pytest
 import shutil
 import tempfile
+
+import pytest
 
 
 def pytest_addoption(parser):
