@@ -92,6 +92,11 @@ class PluginContext():
             except pkg_resources.DistributionNotFound as e:
                 raise PluginError("Failed to load {} plugin '{}': {}"
                                   .format(self.base_type.__name__, kind, e)) from e
+
+            if package is None:
+                raise PluginError("Pip package {} does not contain a plugin named '{}'"
+                                  .format(package_name, kind))
+
             location = package.dist.get_resource_filename(
                 pkg_resources._manager,
                 package.module_name.replace('.', os.sep) + '.py'
