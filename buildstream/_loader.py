@@ -370,8 +370,8 @@ class Loader():
             if e.reason == LoadErrorReason.MISSING_FILE:
                 raise LoadError(reason=e.reason,
                                 message="Could not find the project.conf file for {}. "
-                                        "Expecting a project at path '{}' within {}".
-                                        format(element, element.path or '.', source)) from e
+                                        "Expecting a project at path '{}' within {}"
+                                .format(element, element.path or '.', source)) from e
             else:
                 raise
 

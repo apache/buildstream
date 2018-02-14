@@ -98,7 +98,7 @@ class BzrSource(Source):
                                           "--custom", "--template={revno}",
                                           self._get_branch_dir()],
                                          fail="Failed to read the revision number at '{}'"
-                                              .format(self._get_branch_dir()))
+                                         .format(self._get_branch_dir()))
             if ret != 0:
                 raise SourceError("{}: Failed to get ref for tracking {}".format(self, self.tracking))
 
@@ -114,7 +114,7 @@ class BzrSource(Source):
                    "--revision=revno:{}".format(self.ref),
                    self._get_branch_dir(), directory],
                   fail="Failed to checkout revision {} from branch {} to {}"
-                       .format(self.ref, self._get_branch_dir(), directory))
+                  .format(self.ref, self._get_branch_dir(), directory))
 
     def init_workspace(self, directory):
         url = os.path.join(self.url, self.tracking)
@@ -125,7 +125,7 @@ class BzrSource(Source):
                        "--revision=revno:{}".format(self.ref),
                        self._get_branch_dir(), directory],
                       fail="Failed to branch revision {} from branch {} to {}"
-                           .format(self.ref, self._get_branch_dir(), directory))
+                      .format(self.ref, self._get_branch_dir(), directory))
             # Switch the parent branch to the source's origin
             self.call([self.host_bzr, "switch",
                        "--directory={}".format(directory), url],

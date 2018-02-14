@@ -1615,7 +1615,7 @@ class Element(Plugin):
             cached = self.__artifacts.contains(self, self.__weak_cache_key)
             remotely_cached = self.__artifacts.remote_contains(self, self.__weak_cache_key)
             if (not self.__assemble_scheduled and not self.__assemble_done and
-                not cached and not remotely_cached):
+                    not cached and not remotely_cached):
                 self._schedule_assemble()
                 return
 
@@ -1641,7 +1641,7 @@ class Element(Plugin):
             self.__remotely_strong_cached = self.__artifacts.remote_contains(self, self.__strict_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
-            not self.__cached and not self.__remotely_cached):
+                not self.__cached and not self.__remotely_cached):
             # Workspaced sources are considered unstable if a build is pending
             # as the build will modify the contents of the workspace.
             # Determine as early as possible if a build is pending to discard

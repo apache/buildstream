@@ -378,8 +378,7 @@ class Job():
             message.message_type = MessageType.WARN
 
         # Send to frontend if appropriate
-        if (context._silent_messages() and
-            message.message_type not in unconditional_messages):
+        if context._silent_messages() and (message.message_type not in unconditional_messages):
             return
 
         if message.message_type == MessageType.LOG:

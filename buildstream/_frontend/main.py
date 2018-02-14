@@ -430,8 +430,7 @@ class App():
             self.fail_messages[message.unique_id] = message
 
         # Send to frontend if appropriate
-        if (self.context._silent_messages() and
-            message.message_type not in unconditional_messages):
+        if self.context._silent_messages() and (message.message_type not in unconditional_messages):
             return
 
         if self.status:

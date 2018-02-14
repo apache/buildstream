@@ -112,7 +112,6 @@ disable=#####################################
         # Messages that report warnings which should be addressed #
         ###########################################################
 
-        bad-continuation,
         bare-except,
         broad-except,
         consider-merging-isinstance,
