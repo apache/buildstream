@@ -68,7 +68,7 @@ class SandboxBwrap(Sandbox):
             env = self._get_environment()
 
         # We want command args as a list of strings
-        if type(command) == str:
+        if isinstance(command, str):
             command = [command]
 
         # Create the mount map, this will tell us where

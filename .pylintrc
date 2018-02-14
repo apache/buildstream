@@ -114,9 +114,6 @@ disable=#####################################
 
         logging-format-interpolation,
 
-        # Some of us like type() - should be discouraged
-        unidiomatic-typecheck,
-
         # We aren't fully compliant with pep8 import order yet
         wrong-import-order,
         wrong-import-position,
