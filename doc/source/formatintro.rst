@@ -58,13 +58,19 @@ a project relative path to the element one depends on must be provided.
 
 Composition
 -----------
-Below are the various sources of configuration which go into an element in the order
-in which they are applied. Configurations which are applied later have a higher priority
-and override configurations which precede them.
+Below are the various sources of configuration which go into an element or source in the
+order in which they are applied. Configurations which are applied later have a higher
+priority and override configurations which precede them.
 
 
-1. Builtin Defaults
-~~~~~~~~~~~~~~~~~~~
+0. Hard-coded Defaults
+~~~~~~~~~~~~~~~~~~~~~~
+Where a config field is optional, a hard-coded default will
+be present.
+
+
+1. Builtin Default Project Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The :ref:`projectconf` provides a set of default values for *variables*
 and the *environment* which are all documented with your copy of BuildStream. 
 
@@ -76,27 +82,36 @@ anything in the *variables* or *environment* sections in your ``project.conf`` t
 will override the builtin defaults.
 
 
-3. Element Defaults
-~~~~~~~~~~~~~~~~~~~
-Elements are all implemented as plugins. Each plugin installs a ``.yaml`` file along side
-their plugin to define the default *variables*, *environment* and *config*. The *config*
-is element specific and as such this is the first place where defaults can be set on the
-*config* section.
+3. Plugin Defaults
+~~~~~~~~~~~~~~~~~~
+Elements and Sources are all implemented as plugins.
 
-The *variables* and *environment* specified in the declaring plugin's defaults here override
-the project configuration defaults for the given element ``kind``.
+Each Element plugin installs a ``.yaml`` file along side their plugin to
+define the default *variables*, *environment* and *config*.  The *config*
+is element specific and as such this is the first place where defaults
+can be set on the *config* section.
+
+The *variables* and *environment* specified in the declaring plugin's
+defaults here override the project configuration defaults for the given
+element ``kind``.
+
+Source plugins do not have a ``.yaml`` file, and do not have *variables* or
+*environment*.
 
 
-4. Project Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
+4. Project Configuration Overrides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``project.conf`` now gives you another opportunity to override *variables*, *environment*
-and *config* sections on a per element basis.
+and *config* sections on a per plugin basis.
 
-Configurations specified in the *elements* section of the ``project.conf`` will override
-the given element's default.
+Configurations specified in the *elements* or *sources* sections of the ``project.conf``
+will override the given plugin's default.
+
+See also :ref:`Source Overrides<project_source_overrides>` and
+:ref:`Element Overrides<project_element_overrides>`
 
 
-5. Element Declarations
+5. Plugin Declarations
 ~~~~~~~~~~~~~~~~~~~~~~~
 Finally, after having resolved any :ref:`conditionals <format_directives_conditional>`
 in the parsing phase of loading element declarations; the configurations specified in a
