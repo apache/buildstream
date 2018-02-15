@@ -112,11 +112,21 @@ class TimeCode(Widget):
     def render(self, message):
         return self.render_time(message.elapsed)
 
-    def render_time(self, elapsed):
+    def _microsecond_timing(self):
         global microsecond_timing
         if microsecond_timing == "undefined":
             microsecond_timing = True if os.getenv('BST_MICROSECOND_TIMING') else False
+        return microsecond_timing
 
+    def render_width(self):
+        width = 8
+        if self._microsecond_timing():
+            width += 6
+        if self.brackets:
+            width += 2
+        return width
+
+    def render_time(self, elapsed):
         if elapsed is None:
             fields = [
                 self.content_profile.fmt('--')
@@ -136,7 +146,7 @@ class TimeCode(Widget):
 
         text += self.format_profile.fmt(':').join(fields)
 
-        if microsecond_timing:
+        if self._microsecond_timing():
             if elapsed is None:
                 text += self.content_profile.fmt(".------")
             else:

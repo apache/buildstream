@@ -279,7 +279,7 @@ class StatusHeader():
 
         # Format and calculate size for pipeline target and overall time code
         size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
-        size += 8  # Size of time code
+        size += self.time_code.render_width()  # Size of time code
         size += len(self.pipeline.project.name) + 1
         text += self.time_code.render_time(elapsed)
         text += ' ' + self.content_profile.fmt(self.pipeline.project.name)
@@ -338,7 +338,7 @@ class StatusJob():
         self.time_code = TimeCode(content_profile, format_profile)
 
         # Calculate the size needed to display
-        self.size = 10  # Size of time code
+        self.size = self.time_code.render_width()
         self.size += len(action_name)
         self.size += len(element.name)
         self.size += 3  # '[' + ':' + ']'
