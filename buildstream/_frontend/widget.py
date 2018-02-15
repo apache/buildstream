@@ -34,6 +34,8 @@ from .._exceptions import ImplError
 from .._message import MessageType
 from ..plugin import _plugin_lookup
 
+microsecond_timing = "undefined"
+
 
 # Widget()
 #
@@ -111,6 +113,10 @@ class TimeCode(Widget):
         return self.render_time(message.elapsed)
 
     def render_time(self, elapsed):
+        global microsecond_timing
+        if microsecond_timing == "undefined":
+            microsecond_timing = True if os.getenv('BST_MICROSECOND_TIMING') else False
+
         if elapsed is None:
             fields = [
                 self.content_profile.fmt('--')
@@ -129,6 +135,13 @@ class TimeCode(Widget):
             text += self.format_profile.fmt('[')
 
         text += self.format_profile.fmt(':').join(fields)
+
+        if microsecond_timing:
+            if elapsed is None:
+                text += self.content_profile.fmt(".------")
+            else:
+                text += self.content_profile.fmt(".{0:06d}".format(elapsed.microseconds))
+
         if self.brackets:
             text += self.format_profile.fmt(']')
 
