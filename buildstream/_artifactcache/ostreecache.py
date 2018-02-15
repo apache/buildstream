@@ -179,7 +179,7 @@ class OSTreeCache(ArtifactCache):
     #     element (Element): The Element to check
     #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
     #
-    # Returns: True if the artifact is in the cache, False otherwise
+    # Returns: True if the artifact is in a cache, False otherwise
     #
     def remote_contains(self, element, strength=None):
         if strength is None:
@@ -194,6 +194,35 @@ class OSTreeCache(ArtifactCache):
 
         remotes = self.remotes_containing_key(element, key)
         return len(remotes) > 0
+
+    # push_needed():
+    #
+    # Check whether an artifact for the specified Element needs to be pushed to
+    # any of the configured push remotes. The policy is to push every artifact
+    # we build to every configured push remote, so this should only return False
+    # if all of the configured push remotes already contain the given artifact.
+    #
+    # This function checks for presence of the artifact only using its strong
+    # key. The presence of the weak key in a cache does not necessarily indicate
+    # that this particular artifact is present, only that there is a
+    # partially-compatible version available.
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #
+    # Returns: False if all the push remotes have the artifact, True otherwise
+    #
+    def push_needed(self, element):
+        key = element._get_cache_key(strength=_KeyStrength.STRONG)
+
+        if not key:
+            return False
+
+        remotes_with_artifact = self.remotes_containing_key(element, key)
+
+        push_remotes_with_artifact = set(r for r in remotes_with_artifact if r.spec.push)
+        push_remotes_for_project = set(self._remotes[element._get_project()])
+        return not (push_remotes_for_project.issubset(push_remotes_with_artifact))
 
     # extract():
     #
@@ -331,8 +360,7 @@ class OSTreeCache(ArtifactCache):
     #     element (Element): The Element whose artifact is to be pushed
     #
     # Returns:
-    #   (bool): True if the remote was updated, False if it already existed
-    #           and no updated was required
+    #   (bool): True if any remote was updated, False if no pushes were required
     #
     # Raises:
     #   (ArtifactError): if there was an error
@@ -349,8 +377,12 @@ class OSTreeCache(ArtifactCache):
         ref = buildref(element, element._get_cache_key())
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
+        remotes_with_ref = self.remotes_containing_key(element, ref)
+        remotes_with_weak_ref = self.remotes_containing_key(element, weak_ref)
+
         for remote in push_remotes:
-            any_pushed |= self._push_to_remote(remote, element, ref, weak_ref)
+            if remote not in remotes_with_ref or remote not in remotes_with_weak_ref:
+                any_pushed |= self._push_to_remote(remote, element, ref, weak_ref)
 
         return any_pushed
 

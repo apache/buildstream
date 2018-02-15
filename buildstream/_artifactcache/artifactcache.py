@@ -217,7 +217,27 @@ class ArtifactCache():
     #     element (Element): The Element to check
     #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
     #
-    # Returns: True if the artifact is in the cache, False otherwise
+    # Returns: True if the artifact is in a cache, False otherwise
     #
     def remote_contains(self, element, strength=None):
+        return False
+
+    # push_needed():
+    #
+    # Check whether an artifact for the specified Element needs to be pushed to
+    # any of the configured push remotes. The policy is to push every artifact
+    # we build to every configured push remote, so this should only return False
+    # if all of the configured push remotes already contain the given artifact.
+    #
+    # This function checks for presence of the artifact only using its strong
+    # key. The presence of the weak key in a cache does not necessarily indicate
+    # that this particular artifact is present, only that there is a
+    # partially-compatible version available.
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #
+    # Returns: False if all the push remotes have the artifact, True otherwise
+    #
+    def push_needed(self, element):
         return False

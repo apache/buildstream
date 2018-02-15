@@ -1161,10 +1161,10 @@ class Element(Plugin):
 
     # _skip_push():
     #
-    # Determine whether element should be pushed.
+    # Determine whether we should create a push job for this element.
     #
     # Returns:
-    #   (bool): True if this element should not be pushed
+    #   (bool): True if this element does not need a push job to be created
     #
     def _skip_push(self):
         if not self.__artifacts.has_push_remotes(element=self):
@@ -1178,7 +1178,11 @@ class Element(Plugin):
         if self._tainted():
             return True
 
-        return False
+        # Skip if every push remote contains this element already.
+        if self.__artifacts.push_needed(self):
+            return False
+        else:
+            return True
 
     # _push():
     #
