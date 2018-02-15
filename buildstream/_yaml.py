@@ -191,7 +191,7 @@ def load(filename, shortname=None, copy_tree=False):
 def load_data(data, shortname=None, copy_tree=False):
 
     try:
-        contents = yaml.load(data, yaml.loader.RoundTripLoader)
+        contents = yaml.load(data, yaml.loader.RoundTripLoader, preserve_quotes=True)
     except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark)) from e
