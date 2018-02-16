@@ -1376,19 +1376,26 @@ class Element(Plugin):
     def _shell(self, scope=None, directory=None, command=None):
 
         with self._prepare_sandbox(scope, directory) as sandbox:
-
-            # Override the element environment with some of
-            # the host environment and use that for the shell environment.
-            #
-            # XXX Hard code should be removed
             environment = self.get_environment()
-            environment = copy.copy(environment)
-            overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
-            for override in overrides:
-                if os.environ.get(override) is not None:
-                    environment[override] = os.environ.get(override)
+            flags = SandboxFlags.INTERACTIVE
 
-            flags = SandboxFlags.NETWORK_ENABLED | SandboxFlags.INTERACTIVE
+            if scope == Scope.RUN:
+                # If a testing sandbox was requested, override the element environment
+                # with some of the host environment and use that for the shell.
+                #
+                # XXX Hard code should be removed
+                environment = copy.copy(environment)
+                overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
+                for override in overrides:
+                    if os.environ.get(override) is not None:
+                        environment[override] = os.environ.get(override)
+
+            # Decide whether to create a build style sandbox or an open
+            # testing sandbox based on whether the build scope was requested
+            if scope == Scope.BUILD:
+                flags |= SandboxFlags.ROOT_READ_ONLY
+            elif scope == Scope.RUN:
+                flags |= SandboxFlags.NETWORK_ENABLED
 
             if command:
                 argv = [arg for arg in command]
