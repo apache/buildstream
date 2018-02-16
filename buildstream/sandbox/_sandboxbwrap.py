@@ -51,6 +51,7 @@ class SandboxBwrap(Sandbox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user_ns_available = kwargs['user_ns_available']
+        self.die_with_parent_available = kwargs['die_with_parent_available']
 
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
@@ -83,6 +84,10 @@ class SandboxBwrap(Sandbox):
         # Create a new pid namespace, this also ensures that any subprocesses
         # are cleaned up when the bwrap process exits.
         bwrap_command += ['--unshare-pid']
+
+        # Ensure subprocesses are cleaned up when the bwrap parent dies.
+        if self.die_with_parent_available:
+            bwrap_command += ['--die-with-parent']
 
         # Add in the root filesystem stuff first.
         #

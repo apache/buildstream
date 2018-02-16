@@ -36,6 +36,9 @@ class Linux(Platform):
 
         self._user_ns_available = False
         self.check_user_ns_available(context)
+
+        self.check_die_with_parent_available(context)
+
         self._artifact_cache = OSTreeCache(context, enable_push=self._user_ns_available)
 
     def check_user_ns_available(self, context):
@@ -69,6 +72,23 @@ class Linux(Platform):
                         detail="Some builds may not function due to lack of uid / gid 0, " +
                         "artifacts created will not be trusted for push purposes."))
 
+    def check_die_with_parent_available(self, context):
+
+        # bwrap supports --die-with-parent since 0.1.8.
+        # Let's check whether the host bwrap supports it.
+        bwrap = utils.get_host_tool('bwrap')
+
+        try:
+            subprocess.check_call([
+                bwrap,
+                '--ro-bind', '/', '/',
+                '--die-with-parent',
+                'true'
+            ], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self._die_with_parent_available = True
+        except subprocess.CalledProcessError:
+            self._die_with_parent_available = False
+
     @property
     def artifactcache(self):
         return self._artifact_cache
@@ -76,4 +96,5 @@ class Linux(Platform):
     def create_sandbox(self, *args, **kwargs):
         # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
         kwargs['user_ns_available'] = self._user_ns_available
+        kwargs['die_with_parent_available'] = self._die_with_parent_available
         return SandboxBwrap(*args, **kwargs)
