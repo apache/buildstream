@@ -26,6 +26,8 @@ Sandbox
 need only understand this interface, while it may be given a different
 sandbox implementation, any sandbox implementation it is given will
 conform to this interface.
+
+See also: :ref:`sandboxing`.
 """
 
 import os

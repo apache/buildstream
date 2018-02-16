@@ -30,3 +30,4 @@ useful for working on BuildStream itself.
 Internals
 ---------
 * :ref:`cachekeys`
+* :ref:`sandboxing`
