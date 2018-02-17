@@ -61,7 +61,7 @@ BST_HERE_PS1="\[\033[01;34m\]\w\[\033[00m\]> "
 if [ "$#" -eq 0 ]; then
     command="/bin/bash -i"
 else
-    command="/usr/bin/bst $@"
+    command="/usr/local/bin/bst $@"
 fi
 
 # FIXME: We run with --privileged to allow bwrap to mount system
