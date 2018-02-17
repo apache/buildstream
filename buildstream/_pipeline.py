@@ -563,15 +563,6 @@ class Pipeline():
         if len(list(target.sources())) == 0:
             raise PipelineError("The given element has no sources")
 
-        # Check directory
-        try:
-            os.makedirs(directory, exist_ok=True)
-        except OSError as e:
-            raise PipelineError("Failed to create workspace directory: {}".format(e)) from e
-
-        if not no_checkout and not force and os.listdir(directory):
-            raise PipelineError("Checkout directory is not empty: {}".format(directory))
-
         # Check for workspace config
         if self.project._get_workspace(target.name):
             raise PipelineError("Workspace '{}' is already defined."
@@ -608,14 +599,24 @@ class Pipeline():
                 self.message(MessageType.SUCCESS,
                              "Fetched {} elements".format(fetched), elapsed=elapsed)
 
+        if not no_checkout and target._consistency() != Consistency.CACHED:
+            raise PipelineError("Could not stage uncached source. " +
+                                "Use `--track` to track and " +
+                                "fetch the latest version of the " +
+                                "source.")
+
+        # Check directory
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as e:
+            raise PipelineError("Failed to create workspace directory: {}".format(e)) from e
+
         if not no_checkout:
+            if not force and os.listdir(directory):
+                raise PipelineError("Checkout directory is not empty: {}".format(directory))
+
             with target.timed_activity("Staging sources to {}".format(directory)):
                 for source in target.sources():
-                    if source.get_consistency() != Consistency.CACHED:
-                        raise PipelineError("Could not stage uncached source. " +
-                                            "Use `--track` to track and " +
-                                            "fetch the latest version of the " +
-                                            "source.")
                     source._init_workspace(directory)
 
         self.project._set_workspace(target, workdir)
