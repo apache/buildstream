@@ -52,7 +52,7 @@ from ._platform import Platform
 # or if buildstream was changed in a way which can cause
 # the same cache key to produce something that is no longer
 # the same.
-_BST_CORE_ARTIFACT_VERSION = 1
+_BST_CORE_ARTIFACT_VERSION = 0
 
 
 # _KeyStrength():
