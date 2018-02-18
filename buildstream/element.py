@@ -919,22 +919,12 @@ class Element(Plugin):
 
             context = self._get_context()
             project = self._get_project()
-            operating_system, _, _, _, machine_arch = os.uname()
-
             self.__cache_key_dict = {
                 'artifact-version': "{}.{}".format(_BST_CORE_ARTIFACT_VERSION,
                                                    self.BST_ARTIFACT_VERSION),
                 'context': context._get_cache_key(),
                 'project': project._get_cache_key(),
                 'element': self.get_unique_key(),
-
-                # The execution environment may later be delegated
-                # to sandboxes which support virtualization
-                #
-                'execution-environment': {
-                    'os': operating_system,
-                    'arch': machine_arch
-                },
                 'environment': cache_env,
                 'sources': [s._get_unique_key() for s in self.__sources],
                 'public': self.__public,
