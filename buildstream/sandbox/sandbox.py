@@ -99,8 +99,8 @@ class Sandbox():
         self.__directory = directory
         self.__root = os.path.join(self.__directory, 'root')
         self.__scratch = os.path.join(self.__directory, 'scratch')
-        for directory in [self.__root, self.__scratch]:
-            os.makedirs(directory, exist_ok=True)
+        for directory_ in [self.__root, self.__scratch]:
+            os.makedirs(directory_, exist_ok=True)
 
     def get_directory(self):
         """Fetches the sandbox root directory
