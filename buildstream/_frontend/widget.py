@@ -268,6 +268,26 @@ class LogFile(Widget):
         return text
 
 
+class MessageOrLogFile(Widget):
+    """ START and SUCCESS messages are expected to have no useful
+        information in the message text, so we display the logfile name for
+        these messages, and the message text for other types.
+    """
+    def __init__(self, content_profile, format_profile, err_profile):
+        super(MessageOrLogFile, self).__init__(content_profile, format_profile)
+        self.message_widget = MessageText(content_profile, format_profile)
+        self.logfile_widget = LogFile(content_profile, format_profile, err_profile)
+
+    def render(self, message):
+        # Show the log file only in the main start/success messages
+        if message.logfile and message.scheduler and \
+           message.message_type in [MessageType.START, MessageType.SUCCESS]:
+            text = self.logfile_widget.render(message)
+        else:
+            text = self.message_widget.render(message)
+        return text
+
+
 # A widget for formatting a log line
 class LogLine(Widget):
 
@@ -287,7 +307,6 @@ class LogLine(Widget):
         self.message_lines = message_lines
 
         self.space_widget = Space(content_profile, format_profile)
-        self.message_widget = MessageText(content_profile, format_profile)
         self.logfile_widget = LogFile(content_profile, format_profile, err_profile)
 
         if debug:
@@ -301,7 +320,8 @@ class LogLine(Widget):
             ElementName(content_profile, format_profile),
             self.space_widget,
             TypeName(content_profile, format_profile),
-            self.space_widget
+            self.space_widget,
+            MessageOrLogFile(content_profile, format_profile, err_profile)
         ])
 
     def size_request(self, pipeline):
@@ -309,7 +329,6 @@ class LogLine(Widget):
             widget.size_request(pipeline)
 
         self.space_widget.size_request(pipeline)
-        self.message_widget.size_request(pipeline)
         self.logfile_widget.size_request(pipeline)
 
     def render(self, message):
@@ -318,13 +337,6 @@ class LogLine(Widget):
         text = ''
         for widget in self.columns:
             text += widget.render(message)
-
-        # Show the log file only in the main start/success messages
-        if message.logfile and message.scheduler and \
-           message.message_type in [MessageType.START, MessageType.SUCCESS]:
-            text += self.logfile_widget.render(message)
-        else:
-            text += self.message_widget.render(message)
 
         text += '\n'
 
