@@ -61,24 +61,24 @@ class PushCommandType(Enum):
     done = 4
 
 
-def msg_byteorder(sys_byteorder=sys.byteorder):
-    if sys_byteorder == 'little':
+def msg_byteorder(byteorder=sys.byteorder):
+    if byteorder == 'little':
         return 'l'
-    elif sys_byteorder == 'big':
+    elif byteorder == 'big':
         return 'B'
     else:
         raise PushException('Unrecognized system byteorder {}'
-                            .format(sys_byteorder))
+                            .format(byteorder))
 
 
-def sys_byteorder(msg_byteorder):
-    if msg_byteorder == 'l':
+def sys_byteorder(byteorder):
+    if byteorder == 'l':
         return 'little'
-    elif msg_byteorder == 'B':
+    elif byteorder == 'B':
         return 'big'
     else:
         raise PushException('Unrecognized message byteorder {}'
-                            .format(msg_byteorder))
+                            .format(byteorder))
 
 
 def ostree_object_path(repo, obj):

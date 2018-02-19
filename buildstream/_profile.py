@@ -69,11 +69,11 @@ class Profile():
         with open(filename, "a", encoding="utf-8") as f:
 
             dt = datetime.datetime.fromtimestamp(self.start)
-            time = dt.strftime('%Y-%m-%d %H:%M:%S')
+            time_ = dt.strftime('%Y-%m-%d %H:%M:%S')
 
             heading = '================================================================\n'
             heading += 'Profile for key: {}\n'.format(self.key)
-            heading += 'Started at: {}\n'.format(time)
+            heading += 'Started at: {}\n'.format(time_)
             if self.message:
                 heading += '\n    {}'.format(self.message)
             heading += '================================================================\n'

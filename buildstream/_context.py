@@ -153,14 +153,14 @@ class Context():
             'scheduler', 'artifacts', 'logging', 'projects',
         ])
 
-        for dir in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
+        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #
-            path = _yaml.node_get(defaults, str, dir)
+            path = _yaml.node_get(defaults, str, directory)
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
-            setattr(self, dir, path)
+            setattr(self, directory, path)
 
         # Load artifact share configuration
         self.artifact_cache_specs = artifact_cache_specs_from_config_node(defaults)

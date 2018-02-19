@@ -33,11 +33,11 @@ suspendable_stack = deque()
 
 
 # Per process SIGTERM handler
-def terminator_handler(signal, frame):
+def terminator_handler(signal_, frame):
     while terminator_stack:
-        terminator = terminator_stack.pop()
+        terminator_ = terminator_stack.pop()
         try:
-            terminator()
+            terminator_()
         except:                                                 # pylint: disable=bare-except
             # Ensure we print something if there's an exception raised when
             # processing the handlers. Note that the default exception
@@ -46,7 +46,7 @@ def terminator_handler(signal, frame):
             # clause.
             traceback.print_exc(file=sys.stderr)
             print('Error encountered in BuildStream while processing custom SIGTERM handler:',
-                  terminator,
+                  terminator_,
                   file=sys.stderr)
 
     # Use special exit here, terminate immediately, recommended

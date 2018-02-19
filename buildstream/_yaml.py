@@ -20,7 +20,7 @@
 
 import sys
 import collections
-import copy
+from copy import deepcopy
 from contextlib import ExitStack
 
 from ruamel import yaml
@@ -238,7 +238,7 @@ def dump(node, filename=None):
 #
 def node_decorated_copy(filename, toplevel, copy_tree=False):
     if copy_tree:
-        result = copy.deepcopy(toplevel)
+        result = deepcopy(toplevel)
     else:
         result = toplevel
 

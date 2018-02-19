@@ -822,7 +822,7 @@ def _set_deterministic_mtime(directory):
 # supports cleaning up the temp directory on SIGTERM.
 #
 @contextmanager
-def _tempdir(suffix="", prefix="tmp", dir=None):
+def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-builtin
     tempdir = tempfile.mkdtemp(suffix=suffix, prefix=prefix, dir=dir)
 
     def cleanup_tempdir():

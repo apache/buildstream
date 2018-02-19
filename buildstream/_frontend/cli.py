@@ -168,9 +168,9 @@ def cli(context, **kwargs):
 #                          Build Command                         #
 ##################################################################
 @cli.command(short_help="Build elements in a pipeline")
-@click.option('--all', default=False, is_flag=True,
+@click.option('--all', 'all_', default=False, is_flag=True,
               help="Build elements that would not be needed for the current build plan")
-@click.option('--track', multiple=True,
+@click.option('--track', 'track_', multiple=True,
               type=click.Path(dir_okay=False, readable=True),
               help="Specify elements to track during the build. Can be used "
                    "repeatedly to specify multiple elements")
@@ -184,26 +184,26 @@ def cli(context, **kwargs):
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, elements, all, track, track_save, track_all, track_except):
+def build(app, elements, all_, track_, track_save, track_all, track_except):
     """Build elements in a pipeline"""
 
-    if track_except and not (track or track_all):
+    if track_except and not (track_ or track_all):
         click.echo("ERROR: --track-except cannot be used without --track or --track-all")
         sys.exit(-1)
 
-    if track_save and not (track or track_all):
+    if track_save and not (track_ or track_all):
         click.echo("ERROR: --track-save cannot be used without --track or --track-all")
         sys.exit(-1)
 
     if track_all:
-        track = elements
+        track_ = elements
 
     app.initialize(elements, except_=track_except, rewritable=track_save,
-                   use_configured_remote_caches=True, track_elements=track,
+                   use_configured_remote_caches=True, track_elements=track_,
                    fetch_subprojects=True)
     app.print_heading()
     try:
-        app.pipeline.build(app.scheduler, all, track, track_save)
+        app.pipeline.build(app.scheduler, all_, track_, track_save)
         app.print_summary()
     except PipelineError as e:
         app.print_error(e)
@@ -221,12 +221,12 @@ def build(app, elements, all, track, track_save, track_all, track_except):
 @click.option('--deps', '-d', default='plan',
               type=click.Choice(['none', 'plan', 'all']),
               help='The dependencies to fetch (default: plan)')
-@click.option('--track', default=False, is_flag=True,
+@click.option('--track', 'track_', default=False, is_flag=True,
               help="Track new source references before fetching")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def fetch(app, elements, deps, track, except_):
+def fetch(app, elements, deps, track_, except_):
     """Fetch sources required to build the pipeline
 
     By default this will only try to fetch sources which are
@@ -242,13 +242,13 @@ def fetch(app, elements, deps, track, except_):
         all:   All dependencies
     """
 
-    app.initialize(elements, except_=except_, rewritable=track,
-                   track_elements=elements if track else None,
+    app.initialize(elements, except_=except_, rewritable=track_,
+                   track_elements=elements if track_ else None,
                    fetch_subprojects=True)
     try:
         dependencies = app.pipeline.deps_elements(deps)
         app.print_heading(deps=dependencies)
-        app.pipeline.fetch(app.scheduler, dependencies, track)
+        app.pipeline.fetch(app.scheduler, dependencies, track_)
         app.print_summary()
     except PipelineError as e:
         app.print_error(e)
@@ -381,7 +381,7 @@ def push(app, elements, deps, remote):
 @click.option('--order', default="stage",
               type=click.Choice(['stage', 'alpha']),
               help='Staging or alphabetic ordering of dependencies')
-@click.option('--format', '-f', metavar='FORMAT', default=None,
+@click.option('--format', '-f', 'format_', metavar='FORMAT', default=None,
               type=click.STRING,
               help='Format string for each element')
 @click.option('--downloadable', default=False, is_flag=True,
@@ -389,7 +389,7 @@ def push(app, elements, deps, remote):
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def show(app, elements, deps, except_, order, format, downloadable):
+def show(app, elements, deps, except_, order, format_, downloadable):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -446,10 +446,10 @@ def show(app, elements, deps, except_, order, format, downloadable):
     if order == "alpha":
         dependencies = sorted(dependencies)
 
-    if not format:
-        format = app.context.log_element_format
+    if not format_:
+        format_ = app.context.log_element_format
 
-    report = app.logger.show_pipeline(dependencies, format)
+    report = app.logger.show_pipeline(dependencies, format_)
     click.echo(report, color=app.colors)
 
 
@@ -457,7 +457,7 @@ def show(app, elements, deps, except_, order, format, downloadable):
 #                          Shell Command                         #
 ##################################################################
 @cli.command(short_help="Shell into an element's sandbox environment")
-@click.option('--build', '-b', is_flag=True, default=False,
+@click.option('--build', '-b', 'build_', is_flag=True, default=False,
               help='Stage dependencies and sources to build')
 @click.option('--sysroot', '-s', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
@@ -471,7 +471,7 @@ def show(app, elements, deps, except_, order, format, downloadable):
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, element, sysroot, mount, isolate, build, command):
+def shell(app, element, sysroot, mount, isolate, build_, command):
     """Run a command in the target element's sandbox environment
 
     This will stage a temporary sysroot for running the target
@@ -490,7 +490,7 @@ def shell(app, element, sysroot, mount, isolate, build, command):
     """
     from ..element import Scope
     from .._project import HostMount
-    if build:
+    if build_:
         scope = Scope.BUILD
     else:
         scope = Scope.RUN
@@ -564,7 +564,7 @@ def checkout(app, element, directory, force, integrate, hardlinks):
 @click.option('--compression', default='gz',
               type=click.Choice(['none', 'gz', 'bz2', 'xz']),
               help="Compress the tar file using the given algorithm.")
-@click.option('--track', default=False, is_flag=True,
+@click.option('--track', 'track_', default=False, is_flag=True,
               help="Track new source references before building")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
@@ -574,13 +574,13 @@ def checkout(app, element, directory, force, integrate, hardlinks):
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
 def source_bundle(app, target, force, directory,
-                  track, compression, except_):
+                  track_, compression, except_):
     """Produce a source bundle to be manually executed"""
-    app.initialize((target,), rewritable=track, track_elements=[target] if track else None)
+    app.initialize((target,), rewritable=track_, track_elements=[target] if track_ else None)
     try:
         dependencies = app.pipeline.deps_elements('all')
         app.print_heading(dependencies)
-        app.pipeline.source_bundle(app.scheduler, dependencies, force, track,
+        app.pipeline.source_bundle(app.scheduler, dependencies, force, track_,
                                    compression, directory)
         click.echo("", err=True)
     except BstError as e:
@@ -606,18 +606,18 @@ def workspace():
               help="Do not checkout the source, only link to the given directory")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
-@click.option('--track', default=False, is_flag=True,
+@click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track, element, directory):
+def workspace_open(app, no_checkout, force, track_, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize((element,), rewritable=track, track_elements=[element] if track else None)
+    app.initialize((element,), rewritable=track_, track_elements=[element] if track_ else None)
     try:
-        app.pipeline.open_workspace(app.scheduler, directory, no_checkout, track, force)
+        app.pipeline.open_workspace(app.scheduler, directory, no_checkout, track_, force)
         click.echo("", err=True)
     except BstError as e:
         app.print_error(e)
@@ -660,14 +660,14 @@ def workspace_close(app, remove_dir, element):
 #                     Workspace Reset Command                    #
 ##################################################################
 @workspace.command(name='reset', short_help="Reset a workspace to its original state")
-@click.option('--track', default=False, is_flag=True,
+@click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch the latest source before resetting")
 @click.option('--no-checkout', default=False, is_flag=True,
               help="Do not checkout the source, only link to the given directory")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_reset(app, track, no_checkout, element):
+def workspace_reset(app, track_, no_checkout, element):
     """Reset a workspace to its original state"""
     app.initialize((element,))
     if app.interactive:
@@ -676,7 +676,7 @@ def workspace_reset(app, track, no_checkout, element):
             sys.exit(-1)
 
     try:
-        app.pipeline.reset_workspace(app.scheduler, track, no_checkout)
+        app.pipeline.reset_workspace(app.scheduler, track_, no_checkout)
         click.echo("", err=True)
     except BstError as e:
         click.echo("", err=True)
@@ -714,12 +714,12 @@ def workspace_list(app):
 
     workspaces = []
     for element_name, directory in project._list_workspaces():
-        workspace = {
+        workspace_ = {
             'element': element_name,
             'directory': directory,
         }
 
-        workspaces.append(workspace)
+        workspaces.append(workspace_)
 
     _yaml.dump({
         'workspaces': workspaces

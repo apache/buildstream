@@ -637,12 +637,12 @@ class LogLine(Widget):
 
         return text
 
-    def show_pipeline(self, dependencies, format):
+    def show_pipeline(self, dependencies, format_):
         report = ''
         p = Profile()
 
         for element in dependencies:
-            line = format
+            line = format_
 
             full_key, cache_key, dim_keys = element._get_full_display_key()
 
@@ -666,41 +666,41 @@ class LogLine(Widget):
                     line = p.fmt_subst(line, 'state', "waiting", fg='blue')
 
             # Element configuration
-            if "%{config" in format:
+            if "%{config" in format_:
                 config = _yaml.node_sanitize(element._Element__config)
                 line = p.fmt_subst(
                     line, 'config',
                     yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
 
             # Variables
-            if "%{vars" in format:
+            if "%{vars" in format_:
                 variables = _yaml.node_sanitize(element._Element__variables.variables)
                 line = p.fmt_subst(
                     line, 'vars',
                     yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
             # Environment
-            if "%{env" in format:
+            if "%{env" in format_:
                 environment = _yaml.node_sanitize(element._Element__environment)
                 line = p.fmt_subst(
                     line, 'env',
                     yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
             # Public
-            if "%{public" in format:
+            if "%{public" in format_:
                 environment = _yaml.node_sanitize(element._Element__public)
                 line = p.fmt_subst(
                     line, 'public',
                     yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
             # Workspaced
-            if "%{workspaced" in format:
+            if "%{workspaced" in format_:
                 line = p.fmt_subst(
                     line, 'workspaced',
                     '(workspaced)' if element._workspaced() else '', fg='yellow')
 
             # Workspace-dirs
-            if "%{workspace-dirs" in format:
+            if "%{workspace-dirs" in format_:
                 dirs = [path.replace(os.getenv('HOME', '/root'), '~')
                         for path in element._workspace_dirs()]
                 if dirs:

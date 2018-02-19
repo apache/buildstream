@@ -116,10 +116,6 @@ disable=#####################################
 
         cyclic-import,
 
-        # These are hard to spot without linting, but easy to fix
-        redefined-builtin,
-        redefined-outer-name,
-
         simplifiable-if-statement,
 
         bad-whitespace

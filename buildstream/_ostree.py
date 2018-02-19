@@ -77,10 +77,10 @@ def ensure(path, compress):
 # Args:
 #    repo (OSTree.Repo): The repo
 #    path (str): The checkout path
-#    commit (str): The commit checksum to checkout
+#    commit_ (str): The commit checksum to checkout
 #    user (boot): Whether to checkout in user mode
 #
-def checkout(repo, path, commit, user=False):
+def checkout(repo, path, commit_, user=False):
 
     # Check out a full copy of an OSTree at a given ref to some directory.
     #
@@ -111,9 +111,9 @@ def checkout(repo, path, commit, user=False):
     # current working directory.
     AT_FDCWD = -100
     try:
-        repo.checkout_at(options, AT_FDCWD, path, commit)
+        repo.checkout_at(options, AT_FDCWD, path, commit_)
     except GLib.GError as e:
-        raise OSTreeError("Failed to checkout commit '{}': {}".format(commit, e.message)) from e
+        raise OSTreeError("Failed to checkout commit '{}': {}".format(commit_, e.message)) from e
 
 
 # commit():
@@ -124,10 +124,10 @@ def checkout(repo, path, commit, user=False):
 #
 # Args:
 #    repo (OSTree.Repo): The repo
-#    dir (str): The source directory to commit to the repo
+#    dir_ (str): The source directory to commit to the repo
 #    refs (list): A list of symbolic references (tag) for the commit
 #
-def commit(repo, dir, refs):
+def commit(repo, dir_, refs):
 
     def commit_filter(repo, path, file_info):
 
@@ -148,7 +148,7 @@ def commit(repo, dir, refs):
     try:
         # add tree to repository
         mtree = OSTree.MutableTree.new()
-        repo.write_directory_to_mtree(Gio.File.new_for_path(dir),
+        repo.write_directory_to_mtree(Gio.File.new_for_path(dir_),
                                       mtree, commit_modifier)
         _, root = repo.write_mtree(mtree)
 
@@ -239,8 +239,8 @@ def exists(repo, ref):
 #
 def checksum(repo, ref):
 
-    _, checksum = repo.resolve_rev(ref, True)
-    return checksum
+    _, checksum_ = repo.resolve_rev(ref, True)
+    return checksum_
 
 
 # fetch()
