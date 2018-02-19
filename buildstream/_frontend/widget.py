@@ -112,20 +112,17 @@ class Debug(Widget):
     def render(self, message):
         unique_id = 0 if message.unique_id is None else message.unique_id
 
-        text = self.format_profile.fmt('[pid:')
+        text = self.format_profile.fmt('pid:')
         text += self.content_profile.fmt("{: <5}".format(message.pid))
         text += self.format_profile.fmt(" id:")
         text += self.content_profile.fmt("{:0>3}".format(unique_id))
-        text += self.format_profile.fmt(']')
 
         return text
 
 
 # A widget for rendering the time codes
 class TimeCode(Widget):
-
-    def __init__(self, content_profile, format_profile, brackets=True, microseconds=False):
-        self.brackets = brackets
+    def __init__(self, content_profile, format_profile, microseconds=False):
         self.microseconds = microseconds
         super(TimeCode, self).__init__(content_profile, format_profile)
 
@@ -146,21 +143,13 @@ class TimeCode(Widget):
                 for field in [hours, minutes, seconds]
             ]
 
-        text = ''
-        if self.brackets:
-            text += self.format_profile.fmt('[')
-
-        text += self.format_profile.fmt(':').join(fields)
+        text = self.format_profile.fmt(':').join(fields)
 
         if self.microseconds:
             if elapsed is not None:
                 text += self.content_profile.fmt(".{0:06d}".format(elapsed.microseconds))
             else:
                 text += self.content_profile.fmt(".------")
-
-        if self.brackets:
-            text += self.format_profile.fmt(']')
-
         return text
 
 
@@ -218,11 +207,9 @@ class ElementName(Widget):
         if not action_name:
             action_name = "Main"
 
-        return self.format_profile.fmt('[') + \
-            self.content_profile.fmt("{: >5}".format(action_name.lower())) + \
+        return self.content_profile.fmt("{: >5}".format(action_name.lower())) + \
             self.format_profile.fmt(':') + \
-            self.content_profile.fmt(self.fmt_string.format(name)) + \
-            self.format_profile.fmt(']')
+            self.content_profile.fmt(self.fmt_string.format(name))
 
 
 # A widget for displaying the primary message text
@@ -262,7 +249,7 @@ class CacheKey(Widget):
         else:
             text = self.content_profile.fmt(key, dim=missing)
 
-        return self.format_profile.fmt('[') + text + self.format_profile.fmt(']')
+        return text
 
 
 # A widget for formatting the log file

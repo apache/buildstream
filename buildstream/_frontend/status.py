@@ -248,7 +248,7 @@ class StatusHeader():
         self.error_profile = error_profile
         self.pipeline = pipeline
         self.scheduler = scheduler
-        self.time_code = TimeCode(content_profile, format_profile, brackets=False)
+        self.time_code = TimeCode(content_profile, format_profile)
         self.lines = 3
 
     def render_queue(self, queue):
