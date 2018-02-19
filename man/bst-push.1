@@ -1,11 +1,14 @@
-.TH "BST PUSH" "1" "10-Sep-2017" "" "bst push Manual"
+.TH "BST PUSH" "1" "19-Feb-2018" "" "bst push Manual"
 .SH NAME
 bst\-push \- Push a built artifact
 .SH SYNOPSIS
 .B bst push
-[OPTIONS] TARGET
+[OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
-Push a built artifact to the configured remote artifact cache.
+Push a built artifact to a remote artifact cache.
+
+The default destination is the highest priority configured cache. You can
+override this by passing a different cache URL with the `--remote` flag.
 
 Specify `--deps` to control which artifacts to push:
 
@@ -14,8 +17,8 @@ Specify `--deps` to control which artifacts to push:
     all:   All dependencies
 .SH OPTIONS
 .TP
-\fB\-\-variant\fP TEXT
-A variant of the specified target
-.TP
 \fB\-d,\fP \-\-deps [none|all]
 The dependencies to push (default: none)
+.TP
+\fB\-r,\fP \-\-remote TEXT
+The URL of the remote cache (defaults to the first configured cache)

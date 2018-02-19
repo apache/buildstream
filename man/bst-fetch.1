@@ -1,9 +1,9 @@
-.TH "BST FETCH" "1" "10-Sep-2017" "" "bst fetch Manual"
+.TH "BST FETCH" "1" "19-Feb-2018" "" "bst fetch Manual"
 .SH NAME
 bst\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
 .B bst fetch
-[OPTIONS] TARGET
+[OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Fetch sources required to build the pipeline
 
@@ -20,7 +20,7 @@ Specify `--deps` to control which sources to fetch:
     all:   All dependencies
 .SH OPTIONS
 .TP
-\fB\-\-except\fP TEXT
+\fB\-\-except\fP PATH
 Except certain dependencies from fetching
 .TP
 \fB\-d,\fP \-\-deps [none|plan|all]
@@ -28,6 +28,3 @@ The dependencies to fetch (default: plan)
 .TP
 \fB\-\-track\fP
 Track new source references before fetching
-.TP
-\fB\-\-variant\fP TEXT
-A variant of the specified target

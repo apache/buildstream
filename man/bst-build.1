@@ -1,9 +1,9 @@
-.TH "BST BUILD" "1" "10-Sep-2017" "" "bst build Manual"
+.TH "BST BUILD" "1" "19-Feb-2018" "" "bst build Manual"
 .SH NAME
 bst\-build \- Build elements in a pipeline
 .SH SYNOPSIS
 .B bst build
-[OPTIONS] TARGET
+[OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Build elements in a pipeline
 .SH OPTIONS
@@ -11,8 +11,14 @@ Build elements in a pipeline
 \fB\-\-all\fP
 Build elements that would not be needed for the current build plan
 .TP
-\fB\-\-track\fP
-Track new source references before building (implies --all)
+\fB\-\-track\fP PATH
+Specify elements to track during the build. Can be used repeatedly to specify multiple elements
 .TP
-\fB\-\-variant\fP TEXT
-A variant of the specified target
+\fB\-\-track\-all\fP
+Track all elements in the pipeline
+.TP
+\fB\-\-track\-except\fP PATH
+Except certain dependencies from tracking
+.TP
+\fB\-\-track\-save\fP
+Write out the tracked references to their element files

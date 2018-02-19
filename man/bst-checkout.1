@@ -1,9 +1,9 @@
-.TH "BST CHECKOUT" "1" "10-Sep-2017" "" "bst checkout Manual"
+.TH "BST CHECKOUT" "1" "19-Feb-2018" "" "bst checkout Manual"
 .SH NAME
 bst\-checkout \- Checkout a built artifact
 .SH SYNOPSIS
 .B bst checkout
-[OPTIONS] TARGET DIRECTORY
+[OPTIONS] ELEMENT DIRECTORY
 .SH DESCRIPTION
 Checkout a built artifact to the specified directory
     
@@ -12,5 +12,8 @@ Checkout a built artifact to the specified directory
 \fB\-f,\fP \-\-force
 Overwrite files existing in checkout directory
 .TP
-\fB\-\-variant\fP TEXT
-A variant of the specified target
+\fB\-\-integrate\fP / \-\-no\-integrate
+Whether to run integration commands
+.TP
+\fB\-\-hardlinks\fP
+Checkout hardlinks instead of copies (handle with care)
