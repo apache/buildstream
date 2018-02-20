@@ -32,6 +32,7 @@ from ._options import OptionPool
 from ._artifactcache import artifact_cache_specs_from_config_node
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
+from ._projectrefs import ProjectRefs, ProjectRefStorage
 
 
 # The base BuildStream format version
@@ -39,7 +40,7 @@ from ._sourcefactory import SourceFactory
 # This version is bumped whenever enhancements are made
 # to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 4
+BST_FORMAT_VERSION = 5
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -100,6 +101,10 @@ class Project():
         self._source_format_versions = {}
         self._element_format_versions = {}
         self._fail_on_overlap = False
+        self._ref_storage = None  # The ProjectRefStorage setting
+
+        # The project.refs management object for this project
+        self.refs = ProjectRefs(self.directory)
 
         # Shell options
         self._shell_command = []      # The default interactive shell command
@@ -166,7 +171,8 @@ class Project():
             'split-rules', 'elements', 'plugins',
             'aliases', 'name',
             'artifacts', 'options',
-            'fail-on-overlap', 'shell'
+            'fail-on-overlap', 'shell',
+            'ref-storage'
         ])
 
         # The project name, element path and option declarations
@@ -294,6 +300,18 @@ class Project():
 
         # Fail on overlap
         self._fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap')
+
+        # Use separate file for storing source references
+        self._ref_storage = _yaml.node_get(config, str, 'ref-storage')
+        if self._ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
+            p = _yaml.node_get_provenance(config, 'ref-storage')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Invalid value '{}' specified for ref-storage"
+                            .format(p, self._ref_storage))
+
+        # Load project.refs if it exists, this may be ignored.
+        if self._ref_storage == ProjectRefStorage.PROJECT_REFS:
+            self.refs.load(self._options)
 
         # Parse shell options
         shell_options = _yaml.node_get(config, Mapping, 'shell')
