@@ -68,6 +68,9 @@ class PatchSource(Source):
     def get_consistency(self):
         return Consistency.CACHED
 
+    def load_ref(self, node):
+        pass
+
     def get_ref(self):
         return None  # pragma: nocover
 

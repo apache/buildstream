@@ -76,6 +76,9 @@ class LocalSource(Source):
         return Consistency.CACHED
 
     # We dont have a ref, we're a local file...
+    def load_ref(self, node):
+        pass
+
     def get_ref(self):
         return None  # pragma: nocover
 

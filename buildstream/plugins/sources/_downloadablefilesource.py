@@ -36,6 +36,10 @@ class DownloadableFileSource(Source):
         else:
             return Consistency.RESOLVED
 
+    def load_ref(self, node):
+        self.ref = self.node_get_member(node, str, 'ref', '') or None
+        self.etag = self.node_get_member(node, str, 'etag', '') or None
+
     def get_ref(self):
         # Report `None` value if we dont have a ref
         if self.ref is None:

@@ -79,14 +79,14 @@ class OSTreeSource(Source):
         # Our OSTree repo handle
         self.repo = None
 
-        if not (self.ref or self.tracking):
-            raise SourceError("{}: Must specify either 'ref' or 'track' parameters".format(self))
-
     def preflight(self):
-        return
+        pass
 
     def get_unique_key(self):
         return [self.original_url, self.ref]
+
+    def load_ref(self, node):
+        self.ref = self.node_get_member(node, str, 'ref', '') or None
 
     def get_ref(self):
         return self.ref

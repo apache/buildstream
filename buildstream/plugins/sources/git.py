@@ -258,9 +258,6 @@ class GitSource(Source):
                 checkout = self.node_get_member(submodule, bool, 'checkout')
                 self.submodule_checkout_overrides[path] = checkout
 
-        if not (ref or self.tracking):
-            raise SourceError("{}: Must specify either 'ref' or 'track' parameters".format(self))
-
     def preflight(self):
         # Check if git is installed, get the binary at the same time
         self.host_git = utils.get_host_tool('git')
@@ -292,6 +289,9 @@ class GitSource(Source):
         elif self.mirror.ref is not None:
             return Consistency.RESOLVED
         return Consistency.INCONSISTENT
+
+    def load_ref(self, node):
+        self.mirror.ref = self.node_get_member(node, str, 'ref', '') or None
 
     def get_ref(self):
         return self.mirror.ref
