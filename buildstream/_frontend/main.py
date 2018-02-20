@@ -172,7 +172,8 @@ class App():
             # Maximum number of lines to print in a detailed message
             message_lines=self.context.log_message_lines,
             # Whether to print additional debugging information
-            debug=self.context.log_debug)
+            debug=self.context.log_debug,
+            message_format=self.context.log_message_format)
 
         # Propagate pipeline feedback to the user
         self.context._set_message_handler(self.message_handler)

@@ -22,7 +22,7 @@ import os
 from collections import OrderedDict
 from contextlib import ExitStack
 from mmap import mmap
-
+import re
 import click
 from ruamel import yaml
 
@@ -336,7 +336,8 @@ class LogLine(Widget):
                  indent=4,
                  log_lines=10,
                  message_lines=10,
-                 debug=False):
+                 debug=False,
+                 message_format: str=None):
         super(LogLine, self).__init__(content_profile, format_profile)
 
         self.columns = []
@@ -346,6 +347,7 @@ class LogLine(Widget):
         self.indent = ' ' * indent
         self.log_lines = log_lines
         self.message_lines = message_lines
+        self.message_format = message_format
 
         self.space_widget = Space(content_profile, format_profile)
         self.logfile_widget = LogFile(content_profile, format_profile, err_profile)
@@ -355,15 +357,45 @@ class LogLine(Widget):
                 Debug(content_profile, format_profile)
             ])
 
-        self.columns.extend([
-            TimeCode(content_profile, format_profile),
-            CacheKey(content_profile, format_profile, err_profile),
-            ElementName(content_profile, format_profile),
-            self.space_widget,
-            TypeName(content_profile, format_profile),
-            self.space_widget,
-            MessageOrLogFile(content_profile, format_profile, err_profile)
-        ])
+        logfile_format = message_format
+
+        self.logfile_variable_names = {
+            "elapsed": TimeCode(content_profile, format_profile, microseconds=False),
+            "elapsed-us": TimeCode(content_profile, format_profile, microseconds=True),
+            "wallclock": WallclockTime(content_profile, format_profile),
+            "key": CacheKey(content_profile, format_profile, err_profile),
+            "element": ElementName(content_profile, format_profile),
+            "action": TypeName(content_profile, format_profile),
+            "message": MessageOrLogFile(content_profile, format_profile, err_profile),
+            "sequence": SequenceID(content_profile, format_profile)
+        }
+        logfile_tokens = self._parse_logfile_format(logfile_format, content_profile, format_profile)
+        self.columns.extend(logfile_tokens)
+
+    def _parse_logfile_format(self, format_string, content_profile, format_profile):
+        logfile_tokens = []
+        while len(format_string) > 0:
+            if format_string.startswith("%%"):
+                logfile_tokens.append(FixedText("%", content_profile, format_profile))
+                format_string = format_string[2:]
+                continue
+            m = re.search("^%\{([^\}]+)\}", format_string)
+            if m is not None:
+                variable = m.group(1)
+                format_string = format_string[m.end(0):]
+                if variable not in self.logfile_variable_names:
+                    raise Exception("'{0}' is not a valid log variable name.".format(variable))
+                logfile_tokens.append(self.logfile_variable_names[variable])
+            else:
+                m = re.search("^[^%]+", format_string)
+                if m is not None:
+                    text = FixedText(m.group(0), content_profile, format_profile)
+                    format_string = format_string[m.end(0):]
+                    logfile_tokens.append(text)
+                else:
+                    # No idea what to do now
+                    raise Exception("'{0}' could not be parsed into a valid logging format.".format(format_string))
+        return logfile_tokens
 
     def size_request(self, pipeline):
         for widget in self.columns:

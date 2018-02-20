@@ -174,7 +174,7 @@ class Context():
         _yaml.node_validate(logging, [
             'key-length', 'verbose',
             'error-lines', 'message-lines',
-            'debug', 'element-format'
+            'debug', 'element-format', 'message-format'
         ])
         self.log_key_length = _yaml.node_get(logging, int, 'key-length')
         self.log_debug = _yaml.node_get(logging, bool, 'debug')
@@ -182,6 +182,7 @@ class Context():
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
         self.log_message_lines = _yaml.node_get(logging, int, 'message-lines')
         self.log_element_format = _yaml.node_get(logging, str, 'element-format')
+        self.log_message_format = _yaml.node_get(logging, str, 'message-format')
 
         # Load scheduler config
         scheduler = _yaml.node_get(defaults, Mapping, 'scheduler')

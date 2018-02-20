@@ -79,3 +79,8 @@ logging:
 
     %{state: >12} %{key} %{name} %{workspace-dirs}
 
+  # Format string for all log messages.
+  message-format: |
+
+    [%{elapsed}][%{key}][%{element}] %{action} %{message}
+
