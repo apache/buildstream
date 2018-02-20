@@ -312,7 +312,7 @@ class LogLine(Widget):
                  log_lines=10,
                  message_lines=10,
                  debug=False,
-                 message_format: str=None):
+                 message_format: str = None):
         super(LogLine, self).__init__(content_profile, format_profile)
 
         self.columns = []

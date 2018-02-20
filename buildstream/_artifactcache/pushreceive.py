@@ -32,7 +32,7 @@ from urllib.parse import urlparse
 import click
 import gi
 
-from .. import _signals
+from .. import _signals  # nopep8
 
 gi.require_version('OSTree', '1.0')
 # pylint: disable=wrong-import-position,wrong-import-order
