@@ -1,6 +1,19 @@
 # Default BuildStream project configuration.
 
 
+# General configuration defaults
+#
+
+# Require format version 0
+format-version: 0
+
+# Overlaps are just warnings
+fail-on-overlap: False
+
+# Elements are found at the project root
+element-path: .
+
+
 # Variable Configuration
 #
 variables:
@@ -172,3 +185,12 @@ split-rules:
     %{datadir}/zoneinfo
   - |
     %{datadir}/zoneinfo/**
+
+
+# Default behavior for `bst shell`
+#
+shell:
+
+  # Command to run when `bst shell` does not provide a command
+  #
+  command: [ 'sh', '-i' ]

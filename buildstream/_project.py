@@ -174,7 +174,7 @@ class Project():
         self.name = _yaml.node_get(config, str, 'name')
         self.element_path = os.path.join(
             self.directory,
-            _yaml.node_get(config, str, 'element-path', default_value='.')
+            _yaml.node_get(config, str, 'element-path')
         )
 
         # Load project options
@@ -215,7 +215,7 @@ class Project():
         self._ensure_workspace_config_format()
 
         # Assert project version
-        format_version = _yaml.node_get(config, int, 'format-version', default_value=0)
+        format_version = _yaml.node_get(config, int, 'format-version')
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
@@ -293,14 +293,12 @@ class Project():
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
 
         # Fail on overlap
-        self._fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap',
-                                               default_value=False)
+        self._fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap')
 
         # Parse shell options
-        shell_options = _yaml.node_get(config, Mapping, 'shell', default_value={})
+        shell_options = _yaml.node_get(config, Mapping, 'shell')
         _yaml.node_validate(shell_options, ['command', 'environment', 'host-files'])
-        self._shell_command = _yaml.node_get(shell_options, list, 'command',
-                                             default_value=['sh', '-i'])
+        self._shell_command = _yaml.node_get(shell_options, list, 'command')
 
         # Perform environment expansion right away
         shell_environment = _yaml.node_get(shell_options, Mapping, 'environment', default_value={})

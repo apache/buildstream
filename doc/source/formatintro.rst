@@ -62,23 +62,27 @@ Below are the various sources of configuration which go into an element or sourc
 order in which they are applied. Configurations which are applied later have a higher
 priority and override configurations which precede them.
 
-1. BuildStream Default Project Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`builtin defaults <project_builtin_defaults>` provide a set of default values for *variables*
-and the *environment*.
+1. Builtin Defaults
+~~~~~~~~~~~~~~~~~~~
+The :ref:`builtin defaults <project_builtin_defaults>` provide a set of builtin
+default default values for ``project.conf``.
+
+The project wide defaults defined in the builtin project configuration, such as the
+*variables* or *environment* sections, form the base configuration of all elements.
 
 
 2. Project Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
+The :ref:`project wide defaults <project_defaults>` specified in your
+``project.conf`` are now applied on top of builtin defaults.
 
-The project wide defaults in ``project.conf`` are now applied on top
-of builtin defaults.  If you specify anything in the *variables* or
-*environment* sections in your ``project.conf`` then it will override
-the builtin defaults.
+Defaults such as the :ref:`variables <project_defaults_variables>` or
+:ref:`environment <project_defaults_environment>` which are specified in
+your ``project.conf`` override the builtin defaults for elements.
 
-Note that plugin-specific configuration in ``project.conf`` is not applied
-until later.
+Note that :ref:`plugin type specific configuration <project_overrides>`
+in ``project.conf`` is not applied until later.
 
 
 3. Plugin Defaults
@@ -100,14 +104,17 @@ Source plugins do not have a ``.yaml`` file, and do not have *variables* or
 
 4. Project Configuration Overrides
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``project.conf`` now gives you another opportunity to override *variables*, *environment*
-and *config* sections on a per plugin basis.
+The ``project.conf`` now gives you :ref:`another opportunity <project_overrides>` to
+override configuration on a per plugin basis.
 
-Configurations specified in the *elements* or *sources* sections of the ``project.conf``
-will override the given plugin's default.
+Configurations specified in the :ref:`elements <project_element_overrides>` or
+:ref:`sources <project_source_overrides>` sections of the ``project.conf``
+will override the given plugin's defaults.
 
-See also :ref:`Source Overrides<project_source_overrides>` and
-:ref:`Element Overrides<project_element_overrides>`
+In this phase, it is possible to override any configurations of a given plugin,
+including configuration in element specific *config* sections.
+
+See also :ref:`project_overrides`
 
 
 5. Plugin Declarations

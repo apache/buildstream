@@ -126,168 +126,6 @@ and the order that the elements were overlapped.
   fail-on-overlap: true
 
 
-.. _project_shell:
-
-Customizing the shell
----------------------
-Since BuildStream cannot know intimate details about your host or about
-the nature of the runtime and software that you are building, the shell
-environment for debugging and testing applications may need some help.
-
-The ``shell`` section allows some customization of the shell environment.
-
-.. note::
-
-   The ``shell`` section is available since :ref:`format version 1 <project_format_version>`
-
-
-Interactive Shell Command
-~~~~~~~~~~~~~~~~~~~~~~~~~
-By default, BuildStream will use ``sh -i`` when running an interactive
-shell, unless a specific command is given to the ``bst shell`` command.
-
-BuildStream will automatically set a convenient prompt via the ``PS1``
-environment variable for interactive shells; which might be overwritten
-depending on the shell you use in your runtime.
-
-If you are using ``bash``, we recommend the following configuration to
-ensure that the customized prompt is not overwritten:
-
-.. code:: yaml
-
-   shell:
-
-     # Specify the command to run by default for interactive shells
-     command: [ 'bash', '--noprofile', '--norc', '-i' ]
-
-
-Environment Assignments
-~~~~~~~~~~~~~~~~~~~~~~~
-In order to cooperate with your host environment, a debugging shell
-sometimes needs to be configured with some extra knowledge inheriting
-from your host environment.
-
-This can be achieved by setting up the shell ``environment`` configuration,
-which is expressed as a dictionary very similar to the
-:ref:`default environment <project_defaults_environment>`, except that it
-supports host side environment variable expansion in values.
-
-.. note::
-
-   The ``environment`` configuration is available since :ref:`format version 4 <project_format_version>`
-
-For example, to share your host ``DISPLAY`` and ``DBUS_SESSION_BUS_ADDRESS``
-environments with debugging shells for your project, specify the following:
-
-.. code:: yaml
-
-   shell:
-
-     # Share some environment variables from the host environment
-     environment:
-       DISPLAY: '$DISPLAY'
-       DBUS_SESSION_BUS_ADDRESS: '$DBUS_SESSION_BUS_ADDRESS'
-
-Or, a more complex example is how one might share the host pulseaudio
-server with a ``bst shell`` environment:
-
-.. code:: yaml
-
-   shell:
-
-     # Set some environment variables explicitly
-     environment:
-       PULSE_SERVER: 'unix:${XDG_RUNTIME_DIR}/pulse/native'
-
-
-Host Files
-~~~~~~~~~~
-It can be useful to share some files on the host with a shell so that
-it can integrate better with the host environment.
-
-The ``host-files`` configuration allows one to specify files and
-directories on the host to be bind mounted into the sandbox.
-
-.. note::
-
-   The ``host-files`` configuration is available since :ref:`format version 4 <project_format_version>`
-
-.. warning::
-
-   One should never mount directories where one expects to
-   find data and files which belong to the user, such as ``/home``
-   on POSIX platforms.
-
-   This is because the unsuspecting user may corrupt their own
-   files accidentally as a result. Instead users can use the
-   ``--mount`` option of ``bst shell`` to mount data into the shell.
-
-
-The ``host-files`` configuration is an ordered list of *mount specifications*.
-
-Members of the list can be *fully specified* as a dictionary, or a simple
-string can be used if only the defaults are required.
-
-The fully specified dictionary has the following members:
-
-* ``path``
-
-  The path inside the sandbox. This is the only mandatory
-  member of the mount specification.
-
-* ``host_path``
-
-  The host path to mount at ``path`` in the sandbox. This
-  will default to ``path`` if left unspecified.
-
-* ``optional``
-
-  Whether the mount should be considered optional. This
-  is ``False`` by default.
-
-
-Here is an example of a *fully specified mount specification*:
-
-.. code:: yaml
-
-   shell:
-
-     # Mount an arbitrary resolv.conf from the host to
-     # /etc/resolv.conf in the sandbox, and avoid any
-     # warnings if the host resolv.conf doesnt exist.
-     host-files:
-     - host_path: '/usr/local/work/etc/resolv.conf'
-       path: '/etc/resolv.conf'
-       optional: True
-
-Here is an example of using *shorthand mount specifications*:
-
-.. code:: yaml
-
-   shell:
-
-     # Specify a list of files to mount in the sandbox
-     # directory from the host.
-     #
-     # If these do not exist on the host, a warning will
-     # be issued but the shell will still be launched.
-     host-files:
-     - '/etc/passwd'
-     - '/etc/group'
-     - '/etc/resolv.conf'
-
-Host side environment variable expansion is also supported:
-
-.. code:: yaml
-
-   shell:
-
-     # Mount a host side pulseaudio server socket into
-     # the shell environment at the same location.
-     host-files:
-     - '${XDG_RUNTIME_DIR}/pulse/native'
-
-
 .. _project_plugins:
 
 External Plugins
@@ -605,8 +443,8 @@ same syntax as other Flag options.
 
 .. _project_defaults:
 
-Specifying Defaults
---------------------
+Element Default Configuration
+-----------------------------
 The ``project.conf`` plays a role in defining elements by
 providing default values and also by overriding values declared
 by plugins on a plugin wide basis.
@@ -614,6 +452,8 @@ by plugins on a plugin wide basis.
 See the :ref:`composition <format_composition>` documentation for
 more detail on how elements are composed.
 
+
+.. _project_defaults_variables:
 
 Variables
 ~~~~~~~~~
@@ -671,13 +511,21 @@ be specified here.
        %{libdir}/lib*.la
 
 
+.. _project_overrides:
+
+Overriding Plugin Defaults
+--------------------------
+Base attributes declared by element and source plugins can be overridden
+on a project wide basis. This section explains how to make project wide
+statements which augment the configuration of an element or source plugin.
+
+
 .. _project_element_overrides:
 
 Element Overrides
 ~~~~~~~~~~~~~~~~~
-Base attributes declared by element default yaml files can be overridden
-on a project wide basis. The elements dictionary can be used to override
-variables, environments or plugin specific configuration data as shown below.
+The elements dictionary can be used to override variables, environments
+or plugin specific configuration data as shown below.
 
 
 .. code:: yaml
@@ -701,9 +549,8 @@ variables, environments or plugin specific configuration data as shown below.
 
 Source Overrides
 ~~~~~~~~~~~~~~~~
-Default values (overriding built-in defaults) can be set on a project
-wide basis. The sources dictionary can be used to override plugin specific
-configuration data as shown below.
+The sources dictionary can be used to override source plugin
+specific configuration data as shown below.
 
 
 .. code:: yaml
@@ -719,6 +566,168 @@ configuration data as shown below.
 .. note::
 
    The ``sources`` override is available since :ref:`format version 1 <project_format_version>`
+
+
+.. _project_shell:
+
+Customizing the shell
+---------------------
+Since BuildStream cannot know intimate details about your host or about
+the nature of the runtime and software that you are building, the shell
+environment for debugging and testing applications may need some help.
+
+The ``shell`` section allows some customization of the shell environment.
+
+.. note::
+
+   The ``shell`` section is available since :ref:`format version 1 <project_format_version>`
+
+
+Interactive Shell Command
+~~~~~~~~~~~~~~~~~~~~~~~~~
+By default, BuildStream will use ``sh -i`` when running an interactive
+shell, unless a specific command is given to the ``bst shell`` command.
+
+BuildStream will automatically set a convenient prompt via the ``PS1``
+environment variable for interactive shells; which might be overwritten
+depending on the shell you use in your runtime.
+
+If you are using ``bash``, we recommend the following configuration to
+ensure that the customized prompt is not overwritten:
+
+.. code:: yaml
+
+   shell:
+
+     # Specify the command to run by default for interactive shells
+     command: [ 'bash', '--noprofile', '--norc', '-i' ]
+
+
+Environment Assignments
+~~~~~~~~~~~~~~~~~~~~~~~
+In order to cooperate with your host environment, a debugging shell
+sometimes needs to be configured with some extra knowledge inheriting
+from your host environment.
+
+This can be achieved by setting up the shell ``environment`` configuration,
+which is expressed as a dictionary very similar to the
+:ref:`default environment <project_defaults_environment>`, except that it
+supports host side environment variable expansion in values.
+
+.. note::
+
+   The ``environment`` configuration is available since :ref:`format version 4 <project_format_version>`
+
+For example, to share your host ``DISPLAY`` and ``DBUS_SESSION_BUS_ADDRESS``
+environments with debugging shells for your project, specify the following:
+
+.. code:: yaml
+
+   shell:
+
+     # Share some environment variables from the host environment
+     environment:
+       DISPLAY: '$DISPLAY'
+       DBUS_SESSION_BUS_ADDRESS: '$DBUS_SESSION_BUS_ADDRESS'
+
+Or, a more complex example is how one might share the host pulseaudio
+server with a ``bst shell`` environment:
+
+.. code:: yaml
+
+   shell:
+
+     # Set some environment variables explicitly
+     environment:
+       PULSE_SERVER: 'unix:${XDG_RUNTIME_DIR}/pulse/native'
+
+
+Host Files
+~~~~~~~~~~
+It can be useful to share some files on the host with a shell so that
+it can integrate better with the host environment.
+
+The ``host-files`` configuration allows one to specify files and
+directories on the host to be bind mounted into the sandbox.
+
+.. note::
+
+   The ``host-files`` configuration is available since :ref:`format version 4 <project_format_version>`
+
+.. warning::
+
+   One should never mount directories where one expects to
+   find data and files which belong to the user, such as ``/home``
+   on POSIX platforms.
+
+   This is because the unsuspecting user may corrupt their own
+   files accidentally as a result. Instead users can use the
+   ``--mount`` option of ``bst shell`` to mount data into the shell.
+
+
+The ``host-files`` configuration is an ordered list of *mount specifications*.
+
+Members of the list can be *fully specified* as a dictionary, or a simple
+string can be used if only the defaults are required.
+
+The fully specified dictionary has the following members:
+
+* ``path``
+
+  The path inside the sandbox. This is the only mandatory
+  member of the mount specification.
+
+* ``host_path``
+
+  The host path to mount at ``path`` in the sandbox. This
+  will default to ``path`` if left unspecified.
+
+* ``optional``
+
+  Whether the mount should be considered optional. This
+  is ``False`` by default.
+
+
+Here is an example of a *fully specified mount specification*:
+
+.. code:: yaml
+
+   shell:
+
+     # Mount an arbitrary resolv.conf from the host to
+     # /etc/resolv.conf in the sandbox, and avoid any
+     # warnings if the host resolv.conf doesnt exist.
+     host-files:
+     - host_path: '/usr/local/work/etc/resolv.conf'
+       path: '/etc/resolv.conf'
+       optional: True
+
+Here is an example of using *shorthand mount specifications*:
+
+.. code:: yaml
+
+   shell:
+
+     # Specify a list of files to mount in the sandbox
+     # directory from the host.
+     #
+     # If these do not exist on the host, a warning will
+     # be issued but the shell will still be launched.
+     host-files:
+     - '/etc/passwd'
+     - '/etc/group'
+     - '/etc/resolv.conf'
+
+Host side environment variable expansion is also supported:
+
+.. code:: yaml
+
+   shell:
+
+     # Mount a host side pulseaudio server socket into
+     # the shell environment at the same location.
+     host-files:
+     - '${XDG_RUNTIME_DIR}/pulse/native'
 
 
 .. _project_builtin_defaults:
