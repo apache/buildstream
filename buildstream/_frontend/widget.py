@@ -103,8 +103,9 @@ class Debug(Widget):
 # A widget for rendering the time codes
 class TimeCode(Widget):
 
-    def __init__(self, content_profile, format_profile, brackets=True):
+    def __init__(self, content_profile, format_profile, brackets=True, microseconds=False):
         self.brackets = brackets
+        self.microseconds = microseconds
         super(TimeCode, self).__init__(content_profile, format_profile)
 
     def render(self, message):
@@ -129,6 +130,13 @@ class TimeCode(Widget):
             text += self.format_profile.fmt('[')
 
         text += self.format_profile.fmt(':').join(fields)
+
+        if self.microseconds:
+            if elapsed is not None:
+                text += self.content_profile.fmt(".{0:06d}".format(elapsed.microseconds))
+            else:
+                text += self.content_profile.fmt(".------")
+
         if self.brackets:
             text += self.format_profile.fmt(']')
 
