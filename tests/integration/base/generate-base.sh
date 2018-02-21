@@ -3,7 +3,7 @@
 # Generate a base sysroot for running the BuildStream integration tests.
 #
 # The sysroot is based off the Alpine Linux distribution. The script downloads
-# a release of Alpine, sets up a cheap consider using `bwrap` and installs the
+# a release of Alpine, sets up a cheap container using `bwrap` and installs the
 # packages that are needed by the integration tests, then outputs a .tar.xz
 # file.
 
