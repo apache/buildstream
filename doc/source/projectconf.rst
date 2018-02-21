@@ -105,6 +105,25 @@ with an artifact share.
 You can also specify a list of caches here; earlier entries in the list
 will have higher priority than later ones.
 
+
+Fail on Overlaps
+~~~~~~~~~~~~~~~~
+When multiple elements are staged, there's a possibility that different
+elements will try and stage different versions of the same file.
+
+When ``fail-on-overlap`` is true, if an overlap is detected
+that hasn't been allowed by the element's
+:ref:`overlap whitelist<public_overlap_whitelist>`,
+then an error will be raised and the build will fail.
+
+otherwise, a warning will be raised indicating which files had overlaps,
+and the order that the elements were overlapped.
+
+.. code:: yaml
+
+  fail-on-overlap: true
+
+
 .. _project_plugins:
 
 External Plugins
@@ -189,23 +208,6 @@ system.
      #
      elements:
        potato: 0
-
-Fail on Overlaps
-~~~~~~~~~~~~~~~~
-When multiple elements are staged, there's a possibility that different
-elements will try and stage different versions of the same file.
-
-When ``fail-on-overlap`` is true, if an overlap is detected
-that hasn't been allowed by the element's
-:ref:`overlap whitelist<public_overlap_whitelist>`,
-then an error will be raised and the build will fail.
-
-otherwise, a warning will be raised indicating which files had overlaps,
-and the order that the elements were overlapped.
-
-.. code:: yaml
-
-  fail-on-overlap: true
 
 
 .. _project_options:
