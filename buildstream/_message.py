@@ -59,7 +59,8 @@ class Message():
                  depth=None,
                  logfile=None,
                  sandbox=None,
-                 scheduler=False):
+                 scheduler=False,
+                 sequence_id=None):
         self.message_type = message_type  # Message type
         self.message = message            # The message string
         self.detail = detail              # An additional detail string
@@ -72,6 +73,6 @@ class Message():
         self.unique_id = unique_id        # The plugin object ID issueing the message
         self.task_id = task_id            # The plugin object ID of the task
         self.scheduler = scheduler        # Whether this is a scheduler level message
-
+        self.sequence_id = sequence_id    # Unique ID for a task, so we can track all messages per task
         if message_type in (MessageType.SUCCESS, MessageType.FAIL):
             assert(elapsed is not None)
