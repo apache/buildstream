@@ -11,4 +11,4 @@ sources:
 
 config:
   build-commands:
-    - g++ -c hello.cpp
+    - cc -c hello.c
