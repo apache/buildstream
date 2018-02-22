@@ -52,6 +52,13 @@ def ensure(path, compress):
         else OSTree.RepoMode.BARE_USER
 
     repo.create(mode)
+
+    # Disble OSTree's built in minimum-disk-space check.
+    config = repo.copy_config()
+    config.set_string('core', 'min-free-space-percent', '0')
+    repo.write_config(config)
+    repo.reload_config()
+
     return repo
 
 
