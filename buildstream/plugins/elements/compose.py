@@ -47,6 +47,14 @@ class ComposeElement(Element):
     #
     BST_STRICT_REBUILD = True
 
+    # Compose artifacts must never have indirect dependencies,
+    # so runtime dependencies are forbidden.
+    BST_FORBID_RDEPENDS = True
+
+    # This element ignores sources, so we should forbid them from being
+    # added, to reduce the potential for confusion
+    BST_FORBID_SOURCES = True
+
     def configure(self, node):
         self.node_validate(node, [
             'integrate', 'include', 'exclude', 'include-orphans'
@@ -60,17 +68,7 @@ class ComposeElement(Element):
         self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
 
     def preflight(self):
-        # Assert that the user did not list any runtime dependencies
-        runtime_deps = list(self.dependencies(Scope.RUN, recurse=False))
-        if runtime_deps:
-            raise ElementError("{}: Only build type dependencies supported by compose elements"
-                               .format(self))
-
-        # Assert that the user did not specify any sources, as they will
-        # be ignored by this element type anyway
-        sources = list(self.sources())
-        if sources:
-            raise ElementError("{}: Compose elements may not have sources".format(self))
+        pass
 
     def get_unique_key(self):
         key = {'integrate': self.integration,
