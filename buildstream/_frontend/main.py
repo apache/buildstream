@@ -342,7 +342,7 @@ class App():
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     try:
-                        element._shell(Scope.BUILD, failure.sandbox)
+                        element._shell(Scope.BUILD, failure.sandbox, isolate=True)
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':

@@ -1368,18 +1368,25 @@ class Element(Plugin):
     # Args:
     #    scope (Scope): Either BUILD or RUN scopes are valid, or None
     #    directory (str): A directory to an existing sandbox, or None
+    #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox
     #
     # Returns: Exit code
     #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, command=None):
+    def _shell(self, scope=None, directory=None, isolate=False, command=None):
 
         with self._prepare_sandbox(scope, directory) as sandbox:
             environment = self.get_environment()
-            flags = SandboxFlags.INTERACTIVE
+            flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
 
-            if scope == Scope.RUN:
+            # Special configurations for non-isolated sandboxes
+            if not isolate:
+
+                # Open the network, and reuse calling uid/gid
+                #
+                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
+
                 # If a testing sandbox was requested, override the element environment
                 # with some of the host environment and use that for the shell.
                 #
@@ -1389,13 +1396,6 @@ class Element(Plugin):
                 for override in overrides:
                     if os.environ.get(override) is not None:
                         environment[override] = os.environ.get(override)
-
-            # Decide whether to create a build style sandbox or an open
-            # testing sandbox based on whether the build scope was requested
-            if scope == Scope.BUILD:
-                flags |= SandboxFlags.ROOT_READ_ONLY
-            elif scope == Scope.RUN:
-                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
 
             if command:
                 argv = [arg for arg in command]

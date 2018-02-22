@@ -458,20 +458,22 @@ def show(app, elements, deps, except_, order, format, downloadable):
 ##################################################################
 @cli.command(short_help="Shell into an element's sandbox environment")
 @click.option('--build', '-b', is_flag=True, default=False,
-              help='Create a build sandbox')
+              help='Stage dependencies and sources to build')
 @click.option('--sysroot', '-s', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="An existing sysroot")
+@click.option('--isolate', is_flag=True, default=False,
+              help='Create an isolated build sandbox')
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, element, sysroot, build, command):
+def shell(app, element, sysroot, isolate, build, command):
     """Run a command in the target element's sandbox environment
 
-    This will first stage a temporary sysroot for running
-    the target element, assuming it has already been built
-    and all required artifacts are in the local cache.
+    This will stage a temporary sysroot for running the target
+    element, assuming it has already been built and all required
+    artifacts are in the local cache.
 
     Use the --build option to create a temporary sysroot for
     building the element instead.
@@ -508,7 +510,7 @@ def shell(app, element, sysroot, build, command):
         sys.exit(-1)
 
     try:
-        exitcode = app.pipeline.targets[0]._shell(scope, sysroot, command=command)
+        exitcode = app.pipeline.targets[0]._shell(scope, sysroot, isolate=isolate, command=command)
         sys.exit(exitcode)
     except BstError as e:
         click.echo("", err=True)
