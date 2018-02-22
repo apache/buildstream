@@ -128,6 +128,14 @@ class Element(Plugin):
     any of the dependencies have changed.
     """
 
+    BST_FORBID_RDEPENDS = False
+    """Whether to raise exceptions if an element has runtime-dependencies.
+    """
+
+    BST_FORBID_SOURCES = False
+    """Whether to raise exceptions if an element has sources.
+    """
+
     def __init__(self, context, project, artifacts, meta, plugin_conf):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
@@ -1661,6 +1669,21 @@ class Element(Plugin):
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
                 return
+
+    def _preflight(self):
+        if self.BST_FORBID_RDEPENDS:
+            runtime_deps = list(self.dependencies(Scope.RUN, recurse=False))
+            if runtime_deps:
+                raise ElementError("{}: Runtime dependencies are forbidden for elements of type {}"
+                                   .format(self, type(self).__name__), reason="element-forbidden-rdepends")
+
+        if self.BST_FORBID_SOURCES:
+            sources = list(self.sources())
+            if sources:
+                raise ElementError("{}: Sources are forbidden for elements of type {}"
+                                   .format(self, type(self).__name__), reason="element-forbidden-sources")
+
+        self.preflight()
 
     #############################################################
     #                   Private Local Methods                   #

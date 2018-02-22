@@ -350,7 +350,7 @@ class Loader():
             source = meta_element.project._create_source(meta_source.kind,
                                                          meta_source)
 
-            source.preflight()
+            source._preflight()
 
             if source.get_consistency() != Consistency.CACHED:
                 if self.context._fetch_subprojects:

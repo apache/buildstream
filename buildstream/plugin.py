@@ -577,6 +577,17 @@ class Plugin():
         else:
             yield self.__log
 
+    # _preflight():
+    # Calls preflight() for the plugin, and allows generic preflight
+    # checks to be added
+    #
+    # Raises:
+    #    SourceError: If it's a Source implementation
+    #    ElementError: If it's an Element implementation
+    #    ProgramNotFoundError: If a required host tool is not found
+    def _preflight(self):
+        self.preflight()
+
     #############################################################
     #                     Local Private Methods                 #
     #############################################################
