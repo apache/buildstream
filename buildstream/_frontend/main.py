@@ -342,7 +342,7 @@ class App():
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     try:
-                        element._shell(Scope.BUILD, failure.sandbox, isolate=True)
+                        self.shell(element, Scope.BUILD, failure.sandbox, isolate=True)
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':
@@ -363,6 +363,23 @@ class App():
                     click.echo("\nRetrying failed job\n", err=True)
                     queue.failed_elements.remove(element)
                     queue.enqueue([element])
+
+    def shell(self, element, scope, directory, isolate=False, command=None):
+        _, key, dim = element._get_full_display_key()
+        element_name = element._get_full_name()
+
+        if self.colors:
+            prompt = self.format_profile.fmt('[') + \
+                self.content_profile.fmt(key, dim=dim) + \
+                self.format_profile.fmt('@') + \
+                self.content_profile.fmt(element_name) + \
+                self.format_profile.fmt(':') + \
+                self.content_profile.fmt('$PWD') + \
+                self.format_profile.fmt(']$') + ' '
+        else:
+            prompt = '[{}@{}:${{PWD}}]$ '.format(key, element_name)
+
+        return element._shell(scope, directory, isolate=isolate, prompt=prompt, command=command)
 
     def tick(self, elapsed):
         self.maybe_render_status()

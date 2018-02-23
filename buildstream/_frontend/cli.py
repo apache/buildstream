@@ -510,7 +510,8 @@ def shell(app, element, sysroot, isolate, build, command):
         sys.exit(-1)
 
     try:
-        exitcode = app.pipeline.targets[0]._shell(scope, sysroot, isolate=isolate, command=command)
+        element = app.pipeline.targets[0]
+        exitcode = app.shell(element, scope, sysroot, isolate=isolate, command=command)
         sys.exit(exitcode)
     except BstError as e:
         click.echo("", err=True)
