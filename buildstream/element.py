@@ -1382,6 +1382,11 @@ class Element(Plugin):
             environment = copy.copy(environment)
             flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
 
+            # Fetch the main toplevel project, in case this is a junctioned
+            # subproject, we want to use the rules defined by the main one.
+            context = self._get_context()
+            project = context._get_toplevel_project()
+
             if prompt is not None:
                 environment['PS1'] = prompt
 
@@ -1392,19 +1397,15 @@ class Element(Plugin):
                 #
                 flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
 
-                # If a testing sandbox was requested, override the element environment
-                # with some of the host environment and use that for the shell.
-                #
-                # XXX Hard code should be removed
-                overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
-                for override in overrides:
-                    if os.environ.get(override) is not None:
-                        environment[override] = os.environ.get(override)
+                # Use the project defined list of env vars to inherit
+                for inherit in project._shell_env_inherit:
+                    if os.environ.get(inherit) is not None:
+                        environment[inherit] = os.environ.get(inherit)
 
             if command:
                 argv = [arg for arg in command]
             else:
-                argv = ['sh', '-i']
+                argv = project._shell_command
 
             self.status("Running command", detail=" ".join(argv))
 
