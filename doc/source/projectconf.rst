@@ -34,6 +34,8 @@ The project name will be used in user configuration and anywhere
 that a project needs to be specified.
 
 
+.. _project_format_version:
+
 Format Version
 ~~~~~~~~~~~~~~
 The BuildStream format is guaranteed to be backwards compatible
@@ -122,6 +124,60 @@ and the order that the elements were overlapped.
 .. code:: yaml
 
   fail-on-overlap: true
+
+
+.. _project_shell:
+
+Customizing the shell
+---------------------
+Since BuildStream cannot know intimate details about your host or about
+the nature of the runtime and software that you are building, the shell
+environment for debugging and testing applications may need some help.
+
+The ``shell`` section allows some customization of the shell environment.
+
+.. note::
+
+   The ``shell`` section is available since :ref:`format version 1 <project_format_version>`
+
+
+Interactive Shell Command
+~~~~~~~~~~~~~~~~~~~~~~~~~
+By default, BuildStream will use ``sh -i`` when running an interactive
+shell, unless a specific command is given to the ``bst shell`` command.
+
+BuildStream will automatically set a convenient prompt via the ``PS1``
+environment variable for interactive shells; which might be overwritten
+depending on the shell you use in your runtime.
+
+If you are using ``bash``, we recommend the following configuration to
+ensure that the customized prompt is not overwritten:
+
+.. code:: yaml
+
+   shell:
+
+     # Specify the command to run by default for interactive shells
+     command: [ 'bash', '--noprofile', '--norc', '-i' ]
+
+
+Environment Inheritance
+~~~~~~~~~~~~~~~~~~~~~~~
+In order to cooperate with your host environment, a debugging shell
+sometimes needs to know some of your host environment variables in
+order to be more useful.
+
+For example, to share your host ``DISPLAY`` and ``DBUS_SESSION_BUS_ADDRESS``
+environments with debugging shells for your project, specify the following:
+
+.. code:: yaml
+
+   shell:
+
+     # Environment variables to inherit from the host environment
+     environment-inherit:
+     - DISPLAY
+     - DBUS_SESSION_BUS_ADDRESS
 
 
 .. _project_plugins:
