@@ -228,6 +228,17 @@ class Context():
     def _get_projects(self):
         return self._projects
 
+    # _get_toplevel_project():
+    #
+    # Return the toplevel project, the one which BuildStream was
+    # invoked with as opposed to a junctioned subproject.
+    #
+    # Returns:
+    #    (list): The list of projects
+    #
+    def _get_toplevel_project(self):
+        return self._projects[0]
+
     # _get_overrides():
     #
     # Fetch the override dictionary for the active project. This returns
