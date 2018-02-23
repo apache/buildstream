@@ -1369,16 +1369,21 @@ class Element(Plugin):
     #    scope (Scope): Either BUILD or RUN scopes are valid, or None
     #    directory (str): A directory to an existing sandbox, or None
     #    isolate (bool): Whether to isolate the environment like we do in builds
+    #    prompt (str): A suitable prompt string for PS1
     #    command (list): An argv to launch in the sandbox
     #
     # Returns: Exit code
     #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, isolate=False, command=None):
+    def _shell(self, scope=None, directory=None, isolate=False, prompt=None, command=None):
 
         with self._prepare_sandbox(scope, directory) as sandbox:
             environment = self.get_environment()
+            environment = copy.copy(environment)
             flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
+
+            if prompt is not None:
+                environment['PS1'] = prompt
 
             # Special configurations for non-isolated sandboxes
             if not isolate:
@@ -1391,7 +1396,6 @@ class Element(Plugin):
                 # with some of the host environment and use that for the shell.
                 #
                 # XXX Hard code should be removed
-                environment = copy.copy(environment)
                 overrides = ['DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']
                 for override in overrides:
                     if os.environ.get(override) is not None:
