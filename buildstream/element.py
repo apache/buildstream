@@ -535,13 +535,6 @@ class Element(Plugin):
                 raise ElementError("Non-whitelisted overlaps detected and fail-on-overlaps is set",
                                    detail=error_detail, reason="overlap-error")
 
-        if overwrites:
-            detail = "Staged files overwrite existing files in staging area:\n"
-            for key, value in overwrites.items():
-                detail += "\nFrom {}:\n".format(key)
-                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
-            self.warn("Overlapping files", detail=detail)
-
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
             for key, value in ignored.items():
@@ -1858,6 +1851,7 @@ class Element(Plugin):
                         include_file = True
                         included_by_domains.append(domain)
                     if domain in exclude:
+                        print("Exclude {} due to {}".format(filename, domain))
                         exclude_file = True
 
             if orphans and not claimed_file:

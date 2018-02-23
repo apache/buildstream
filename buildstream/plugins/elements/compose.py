@@ -98,14 +98,16 @@ class ComposeElement(Element):
         with self.timed_activity("Staging dependencies", silent_nested=True):
             self.stage_dependency_artifacts(sandbox, Scope.BUILD)
 
-        manifest = set()
+        file_list = set()
+        artifact_map = dict()
         if require_split:
             with self.timed_activity("Computing split", silent_nested=True):
                 for dep in self.dependencies(Scope.BUILD):
-                    files = dep.compute_manifest(include=self.include,
+                    manifest = dep.compute_manifest(include=self.include,
                                                  exclude=self.exclude,
                                                  orphans=self.include_orphans)
-                    manifest.update(files)
+                    file_list.update(manifest.keys())
+                    artifact_map.update(manifest)
 
         # Make a snapshot of all the files.
         basedir = sandbox.get_directory()
@@ -128,8 +130,10 @@ class ComposeElement(Element):
                 if require_split:
 
                     seen = set()
+                    print("\n\n\nsnapshot: {}\n\n\n".format(snapshot))
                     # Calculate added modified files
                     for path in utils.list_relative_paths(basedir):
+                        print("Got: {}".format(path))
                         seen.add(path)
                         if snapshot.get(path) is None:
                             added_files.append(path)
@@ -138,7 +142,7 @@ class ComposeElement(Element):
 
                     # Calculate removed files
                     removed_files = [
-                        path for path in manifest
+                        path for path in file_list
                         if path not in seen
                     ]
                     self.info("Integration modified {}, added {} and removed {} files"
@@ -152,8 +156,10 @@ class ComposeElement(Element):
         # Do we want to force include files which were modified by
         # the integration commands, even if they were not added ?
         #
-        manifest.update(added_files)
-        manifest.difference_update(removed_files)
+        file_list.update(added_files)
+        file_list.difference_update(removed_files)
+
+        print("Explicitly removeD: {}".format(removed_files))
 
         # XXX We should be moving things outside of the build sandbox
         # instead of into a subdir. The element assemble() method should
@@ -182,23 +188,13 @@ class ComposeElement(Element):
 
         detail = "\n".join(lines)
 
+        total_files = len([f for f in file_list if f != '.'])
+
         with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
-            manifest = self.stage_dependency_artifacts(sandbox, Scope.BUILD,
-                                                       path=stagedir,
-                                                       include=self.include,
-                                                       exclude=self.exclude,
-                                                       orphans=self.include_orphans)
+            self.info("Composing {} files".format(total_files))
+            utils.link_files(basedir, installdir, files=file_list)
 
-            if self.integration:
-                self.status("Moving {} integration files".format(len(integration_files)))
-                utils.move_files(basedir, installdir, integration_files)
-
-                for filename in integration_files:
-                    manifest[filename] = manifest.get(filename, {})
-                    manifest[filename]['integration'] = True
-
-        total_files = len(manifest)
-        detail = self._readable_manifest(manifest)
+        detail = self._readable_manifest(file_list, artifact_map)
         self.log("Composed {} files".format(total_files), detail=detail)
 
         # And we're done
@@ -206,15 +202,17 @@ class ComposeElement(Element):
 
     # Show a list of files that made it into the artifact, grouped by the
     # artifact and split-rules domains that resulted in each one being there.
-    def _readable_manifest(self, manifest):
+    def _readable_manifest(self, file_list, artifact_map):
         domains = collections.defaultdict(list)
 
         # Convert the filename->domain mapping into a domain->filename mapping.
-        for filename, entry in manifest.items():
+        for filename in file_list:
+            print("filename: {}, map: {}".format(filename, artifact_map.get(filename)))
             if filename == '.':
                 continue
 
-            if 'artifact' in entry:
+            if filename in artifact_map:
+                entry = artifact_map[filename]
                 domains_for_file = entry.get('domains') or ["(no domain)"]
                 for domain in domains_for_file:
                     full_domain_name = entry['artifact'].name + " " + domain
