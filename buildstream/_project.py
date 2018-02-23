@@ -37,9 +37,9 @@ from ._sourcefactory import SourceFactory
 # The base BuildStream format version
 #
 # This version is bumped whenever enhancements are made
-# to the ``project.conf`` format or the format in general.
+# to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 0
+BST_FORMAT_VERSION = 1
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -78,6 +78,10 @@ class Project():
         self._source_format_versions = {}
         self._element_format_versions = {}
         self._fail_on_overlap = False
+
+        # Shell options
+        self._shell_command = []      # The default interactive shell command
+        self._shell_env_inherit = []  # Environment vars to inherit when non-isolated
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load()
@@ -139,7 +143,7 @@ class Project():
             'split-rules', 'elements', 'plugins',
             'aliases', 'name',
             'artifacts', 'options',
-            'fail-on-overlap'
+            'fail-on-overlap', 'shell'
         ])
 
         # The project name, element path and option declarations
@@ -268,6 +272,14 @@ class Project():
         # Fail on overlap
         self._fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap',
                                                default_value=False)
+
+        # Parse shell options
+        shell_options = _yaml.node_get(config, Mapping, 'shell', default_value={})
+        _yaml.node_validate(shell_options, ['command', 'environment-inherit'])
+        self._shell_command = _yaml.node_get(shell_options, list, 'command',
+                                             default_value=['sh', '-i'])
+        self._shell_env_inherit = _yaml.node_get(shell_options, list, 'environment-inherit',
+                                                 default_value=[])
 
     # _store_origin()
     #
