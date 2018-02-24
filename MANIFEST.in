@@ -1,8 +1,6 @@
 # Basic toplevel package includes
 include buildstream.doap
 include COPYING
-include Dockerfile
-include Dockerfile-build.sh
 include HACKING.rst
 include MAINTAINERS
 include NEWS
