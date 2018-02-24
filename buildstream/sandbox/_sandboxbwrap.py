@@ -94,6 +94,7 @@ class SandboxBwrap(Sandbox):
         if not flags & SandboxFlags.NETWORK_ENABLED:
             bwrap_command += ['--unshare-net']
             bwrap_command += ['--unshare-uts', '--hostname', 'buildstream']
+            bwrap_command += ['--unshare-ipc']
 
         if cwd is not None:
             bwrap_command += ['--chdir', cwd]
