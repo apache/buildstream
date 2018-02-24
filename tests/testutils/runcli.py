@@ -293,6 +293,7 @@ class Cli():
 
                 exit_code = e.code
                 if not isinstance(exit_code, int):
+                    sys.stdout.write('Program exit code was not an integer: ')
                     sys.stdout.write(str(exit_code))
                     sys.stdout.write('\n')
                     exit_code = 1
