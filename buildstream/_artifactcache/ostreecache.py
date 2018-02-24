@@ -65,7 +65,7 @@ def buildref(element, key):
 #
 class OSTreeCache(ArtifactCache):
 
-    def __init__(self, context, enable_push):
+    def __init__(self, context, *, enable_push):
         super().__init__(context)
 
         self.enable_push = enable_push

@@ -36,7 +36,7 @@ class Linux(Platform):
 
         self._user_ns_available = False
         self.check_user_ns_available(context)
-        self._artifact_cache = OSTreeCache(context, self._user_ns_available)
+        self._artifact_cache = OSTreeCache(context, enable_push=self._user_ns_available)
 
     def check_user_ns_available(self, context):
 
