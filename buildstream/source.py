@@ -616,6 +616,23 @@ class Source(Plugin):
             yield tempdir
 
     #############################################################
+    #       Private Abstract Methods used in BuildStream        #
+    #############################################################
+
+    # Returns the local path to the source
+    #
+    # If the source is locally available, this method returns the absolute
+    # path. Otherwise, the return value is None.
+    #
+    # This is an optimization for local sources and optional to implement.
+    #
+    # Returns:
+    #    (str): The local absolute path, or None
+    #
+    def _get_local_path(self):
+        return None
+
+    #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
 
