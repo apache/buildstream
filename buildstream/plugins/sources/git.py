@@ -138,7 +138,14 @@ class GitMirror():
             raise SourceError("{}: expected ref '{}' was not found in git repository: '{}'"
                               .format(self.source, self.ref, self.url))
 
-    def latest_commit(self, tracking):
+    def latest_commit(self, tracking, *, track_tags):
+        if track_tags:
+            _, output = self.source.check_output(
+                [self.source.host_git, 'describe', '--abbrev=0', tracking],
+                fail="Unable to find annotated tag for specified branch name '{}'".format(tracking),
+                cwd=self.mirror)
+            tracking = output.rstrip('\n')
+
         _, output = self.source.check_output(
             [self.source.host_git, 'rev-parse', tracking],
             fail="Unable to find commit for specified branch name '{}'".format(tracking),
@@ -246,12 +253,13 @@ class GitSource(Source):
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', '') or None
 
-        config_keys = ['url', 'track', 'ref', 'submodules', 'checkout-submodules']
+        config_keys = ['url', 'track', 'track-tags', 'ref', 'submodules', 'checkout-submodules']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
         self.tracking = self.node_get_member(node, str, 'track', '') or None
+        self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
         self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
         self.submodules = []
 
@@ -322,7 +330,7 @@ class GitSource(Source):
             self.mirror.fetch()
 
             # Update self.mirror.ref and node.ref from the self.tracking branch
-            ret = self.mirror.latest_commit(self.tracking)
+            ret = self.mirror.latest_commit(self.tracking, track_tags=self.track_tags)
 
         return ret
 
