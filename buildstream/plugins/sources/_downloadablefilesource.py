@@ -12,11 +12,12 @@ from buildstream import utils
 
 class DownloadableFileSource(Source):
 
-    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref']
+    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag']
 
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', '') or None
+        self.etag = self.node_get_member(node, str, 'etag', '') or None
         self.url = self.translate_url(self.original_url)
 
     def preflight(self):
@@ -36,10 +37,14 @@ class DownloadableFileSource(Source):
             return Consistency.RESOLVED
 
     def get_ref(self):
-        return self.ref
+        return (self.ref, self.etag)
 
     def set_ref(self, ref, node):
-        node['ref'] = self.ref = ref
+        self.ref, self.etag = ref
+
+        node['ref'] = self.ref
+        if self.etag:
+            node['etag'] = self.etag
 
     def track(self):
         # there is no 'track' field in the source to determine what/whether
@@ -47,7 +52,7 @@ class DownloadableFileSource(Source):
         # decision by the user.
         with self.timed_activity("Tracking {}".format(self.url),
                                  silent_nested=True):
-            new_ref = self._ensure_mirror()
+            new_ref, new_etag = self._ensure_mirror()
 
             if self.ref and self.ref != new_ref:
                 detail = "When tracking, new ref differs from current ref:\n" \
@@ -56,7 +61,7 @@ class DownloadableFileSource(Source):
                     + "  New ref: {}\n".format(new_ref)
                 self.warn("Potential man-in-the-middle attack!", detail=detail)
 
-            return new_ref
+            return (new_ref, new_etag)
 
     def fetch(self):
 
@@ -70,7 +75,7 @@ class DownloadableFileSource(Source):
         # Download the file, raise hell if the sha256sums don't match,
         # and mirror the file otherwise.
         with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
-            sha256 = self._ensure_mirror()
+            sha256, etag = self._ensure_mirror()
             if sha256 != self.ref:
                 raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
                                   .format(self.url, sha256, self.ref))
@@ -82,8 +87,16 @@ class DownloadableFileSource(Source):
                 default_name = os.path.basename(self.url)
                 request = urllib.request.Request(self.url)
                 request.add_header('Accept', '*/*')
+
+                # Do not re-download the file if the ETag matches
+                if self.etag and self.get_consistency() == Consistency.CACHED:
+                    request.add_header('If-None-Match', self.etag)
+
                 with contextlib.closing(urllib.request.urlopen(request)) as response:
                     info = response.info()
+
+                    etag = info['ETag'] if 'ETag' in info else None
+
                     filename = info.get_filename(default_name)
                     filename = os.path.basename(filename)
                     local_file = os.path.join(td, filename)
@@ -100,9 +113,13 @@ class DownloadableFileSource(Source):
                 # In case the old file was corrupted somehow.
                 os.rename(local_file, self._get_mirror_file(sha256))
 
-                return sha256
+                return (sha256, etag)
 
         except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError) as e:
+            if isinstance(e, urllib.error.HTTPError) and e.code == 304:
+                # Already cached and not modified
+                return (self.ref, self.etag)
+
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e)) from e
 
