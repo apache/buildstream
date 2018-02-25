@@ -191,7 +191,17 @@ class GitMirror(SourceFetcher):
             [self.source.host_git, 'rev-parse', tracking],
             fail="Unable to find commit for specified branch name '{}'".format(tracking),
             cwd=self.mirror)
-        return output.rstrip('\n')
+        ref = output.rstrip('\n')
+
+        # Prefix the ref with the closest annotated tag, if available,
+        # to make the ref human readable
+        exit_code, output = self.source.check_output(
+            [self.source.host_git, 'describe', '--abbrev=40', '--long', ref],
+            cwd=self.mirror)
+        if exit_code == 0:
+            ref = output.rstrip('\n')
+
+        return ref
 
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
