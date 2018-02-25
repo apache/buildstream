@@ -124,6 +124,9 @@ class LocalSource(Source):
                     else:
                         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
+    def _get_local_path(self):
+        return self.fullpath
+
 
 # Create a unique key for a file
 def unique_key(filename):
