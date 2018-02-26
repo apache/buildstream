@@ -258,6 +258,10 @@ The ``type`` attribute can be used to express the dependency type.
 The ``junction`` attribute can be used to depend on elements in other projects.
 See :mod:`junction <elements.junction>`.
 
+.. note::
+
+   The ``junction`` attribute is available since :ref:`format version 1 <project_format_version>`
+
 
 Dependency Types
 ~~~~~~~~~~~~~~~~
