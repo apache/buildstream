@@ -126,20 +126,27 @@ class ComposeElement(Element):
 
                 if require_split:
 
-                    seen = set()
-                    # Calculate added modified files
-                    for path in utils.list_relative_paths(basedir):
-                        seen.add(path)
-                        if snapshot.get(path) is None:
-                            added_files.add(path)
-                        elif snapshot[path] != getmtime(os.path.join(basedir, path)):
-                            modified_files.add(path)
+                    # Calculate added, modified and removed files
+                    basedir_contents = set(utils.list_relative_paths(basedir))
+                    for path in manifest:
+                        if path in basedir_contents:
+                            if path in snapshot:
+                                preintegration_mtime = snapshot[path]
+                                if preintegration_mtime != getmtime(os.path.join(basedir, path)):
+                                    modified_files.add(path)
+                            else:
+                                # If the path appears in the manifest but not the initial snapshot,
+                                # it may be a file staged inside a directory symlink. In this case
+                                # the path we got from the manifest won't show up in the snapshot
+                                # because utils.list_relative_paths() doesn't recurse into symlink
+                                # directories.
+                                pass
+                        elif path in snapshot:
+                            removed_files.add(path)
 
-                    # Calculate removed files
-                    removed_files = set([
-                        path for path in manifest
-                        if path not in seen
-                    ])
+                    for path in basedir_contents:
+                        if path not in snapshot:
+                            added_files.add(path)
 
                     self.info("Integration modified {}, added {} and removed {} files"
                               .format(len(modified_files), len(added_files), len(removed_files)))
