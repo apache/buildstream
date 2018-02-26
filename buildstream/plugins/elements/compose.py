@@ -104,12 +104,7 @@ class ComposeElement(Element):
                                                  orphans=self.include_orphans)
                     manifest.update(files)
 
-        # Make a snapshot of all the files.
         basedir = sandbox.get_directory()
-        snapshot = {
-            f: getmtime(os.path.join(basedir, f))
-            for f in utils.list_relative_paths(basedir)
-        }
         modified_files = set()
         removed_files = set()
         added_files = set()
@@ -118,6 +113,14 @@ class ComposeElement(Element):
         # once they are all staged and ready
         if self.integration:
             with self.timed_activity("Integrating sandbox"):
+                if require_split:
+
+                    # Make a snapshot of all the files before integration-commands are run.
+                    snapshot = {
+                        f: getmtime(os.path.join(basedir, f))
+                        for f in utils.list_relative_paths(basedir)
+                    }
+
                 for dep in self.dependencies(Scope.BUILD):
                     dep.integrate(sandbox)
 
