@@ -40,7 +40,7 @@ def integration_cache(request):
     # Set the tempdir to the INTEGRATION_CACHE variable, or the
     # default if that is not set.
     if 'INTEGRATION_CACHE' in os.environ:
-        cache_dir = os.path.join(os.environ['INTEGRATION_CACHE'], 'integration-cache')
+        cache_dir = os.environ['INTEGRATION_CACHE']
     else:
         cache_dir = os.path.abspath('./integration-cache')
 
