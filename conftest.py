@@ -39,16 +39,16 @@ def integration_cache(request):
 
     # Set the tempdir to the INTEGRATION_CACHE variable, or the
     # default if that is not set.
-    cache_dir = os.environ.get('INTEGRATION_CACHE', tempfile.gettempdir())
+    if 'INTEGRATION_CACHE' in os.environ:
+        cache_dir = os.path.join(os.environ['INTEGRATION_CACHE'], 'integration-cache')
+    else:
+        cache_dir = os.path.abspath('./integration-cache')
 
-    # We use a separate tempdir to cache sources and artifacts to
-    # increase test speed
-    cache = os.path.join(cache_dir, 'integration-cache')
-    yield cache
+    yield cache_dir
 
     # Clean up the artifacts after each test run - we only want to
     # cache sources
     try:
-        shutil.rmtree(os.path.join(cache, 'artifacts'))
+        shutil.rmtree(os.path.join(cache_dir, 'artifacts'))
     except FileNotFoundError:
         pass
