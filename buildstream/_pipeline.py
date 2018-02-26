@@ -561,7 +561,12 @@ class Pipeline():
         workdir = os.path.abspath(directory)
 
         if len(list(target.sources())) == 0:
-            raise PipelineError("The given element has no sources")
+            build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
+            if len(build_depends) == 0:
+                raise PipelineError("The given element has no sources or build-dependencies")
+            detail = "Try opening a workspace on one of its dependencies instead:\n"
+            detail += "  \n".join(build_depends)
+            raise PipelineError("The given element has no sources", detail=detail)
 
         # Check for workspace config
         if self.project._get_workspace(target.name):

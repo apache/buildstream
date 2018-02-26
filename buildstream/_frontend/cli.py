@@ -611,8 +611,7 @@ def workspace_open(app, no_checkout, force, track, element, directory):
         app.pipeline.open_workspace(app.scheduler, directory, no_checkout, track, force)
         click.echo("", err=True)
     except BstError as e:
-        click.echo("", err=True)
-        click.echo("ERROR: {}".format(e), err=True)
+        app.print_error(e)
         sys.exit(-1)
 
 
