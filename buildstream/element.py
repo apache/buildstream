@@ -809,17 +809,8 @@ class Element(Plugin):
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self, strength=None):
-
-        if strength is None:
-            strength = _KeyStrength.STRONG if self._get_strict() else _KeyStrength.WEAK
-
-        if self.__cached is None:
-            return False
-        elif strength == _KeyStrength.STRONG:
-            return self.__strong_cached
-        else:
-            return self.__cached
+    def _cached(self):
+        return self.__cached
 
     # _assert_cached()
     #
@@ -836,17 +827,8 @@ class Element(Plugin):
     #    (bool): Whether this element is already present in
     #            the remote artifact cache
     #
-    def _remotely_cached(self, strength=None):
-
-        if strength is None:
-            strength = _KeyStrength.STRONG if self._get_strict() else _KeyStrength.WEAK
-
-        if self.__remotely_cached is None:
-            return False
-        elif strength == _KeyStrength.STRONG:
-            return self.__remotely_strong_cached
-        else:
-            return self.__remotely_cached
+    def _remotely_cached(self):
+        return self.__remotely_cached
 
     # _tainted():
     #
