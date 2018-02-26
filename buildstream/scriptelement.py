@@ -53,6 +53,14 @@ class ScriptElement(Element):
     #
     BST_STRICT_REBUILD = True
 
+    # Script artifacts must never have indirect dependencies,
+    # so runtime dependencies are forbidden.
+    BST_FORBID_RDEPENDS = True
+
+    # This element ignores sources, so we should forbid them from being
+    # added, to reduce the potential for confusion
+    BST_FORBID_SOURCES = True
+
     def set_work_dir(self, work_dir=None):
         """Sets the working dir
 
@@ -175,16 +183,6 @@ class ScriptElement(Element):
                                            .format(self, item['element']))
 
     def preflight(self):
-        # All dependencies on script elements must be BUILD only, otherwise
-        # the element will get pulled into dependencies
-        if any(self.dependencies(Scope.RUN, recurse=False)):
-            raise ElementError("{}: Only build type dependencies supported by script elements"
-                               .format(self))
-
-        # Script elements have no use for sources, so they should not be present.
-        if any(self.sources()):
-            raise ElementError("{}: Script elements should not have sources".format(self))
-
         # The layout, if set, must make sense.
         self.__validate_layout()
 
