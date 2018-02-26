@@ -110,9 +110,9 @@ class ComposeElement(Element):
             f: getmtime(os.path.join(basedir, f))
             for f in utils.list_relative_paths(basedir)
         }
-        modified_files = []
-        removed_files = []
-        added_files = []
+        modified_files = set()
+        removed_files = set()
+        added_files = set()
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
@@ -128,15 +128,16 @@ class ComposeElement(Element):
                     for path in utils.list_relative_paths(basedir):
                         seen.add(path)
                         if snapshot.get(path) is None:
-                            added_files.append(path)
+                            added_files.add(path)
                         elif snapshot[path] != getmtime(os.path.join(basedir, path)):
-                            modified_files.append(path)
+                            modified_files.add(path)
 
                     # Calculate removed files
-                    removed_files = [
+                    removed_files = set([
                         path for path in manifest
                         if path not in seen
-                    ]
+                    ])
+
                     self.info("Integration modified {}, added {} and removed {} files"
                               .format(len(modified_files), len(added_files), len(removed_files)))
 
