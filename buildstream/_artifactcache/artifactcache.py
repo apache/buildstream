@@ -147,11 +147,11 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element to check
-    #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
+    #     key (str): The cache key to use
     #
     # Returns: True if the artifact is in the cache, False otherwise
     #
-    def contains(self, element, strength=None):
+    def contains(self, element, key):
         raise ImplError("Cache '{kind}' does not implement contains()"
                         .format(kind=type(self).__name__))
 
@@ -215,11 +215,11 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element to check
-    #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
+    #     key (str): The cache key to use
     #
     # Returns: True if the artifact is in a cache, False otherwise
     #
-    def remote_contains(self, element, strength=None):
+    def remote_contains(self, element, key):
         return False
 
     # push_needed():

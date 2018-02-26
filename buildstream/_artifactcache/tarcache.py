@@ -248,17 +248,7 @@ class TarCache(ArtifactCache):
     #
     # Implements artifactcache.contains().
     #
-    def contains(self, element, strength=None):
-        if strength is None:
-            strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
-
-        if strength == _KeyStrength.STRONG:
-            key = element._get_strict_cache_key()
-        else:
-            key = element._get_cache_key(strength)
-        if not key:
-            return False
-
+    def contains(self, element, key):
         path = os.path.join(self.tardir, tarpath(element, key))
         return os.path.isfile(path)
 

@@ -133,21 +133,11 @@ class OSTreeCache(ArtifactCache):
     #
     # Args:
     #     element (Element): The Element to check
-    #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
+    #     key (str): The cache key to use
     #
     # Returns: True if the artifact is in the cache, False otherwise
     #
-    def contains(self, element, strength=None):
-        if strength is None:
-            strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
-
-        if strength == _KeyStrength.STRONG:
-            key = element._get_strict_cache_key()
-        else:
-            key = element._get_cache_key(strength)
-        if not key:
-            return False
-
+    def contains(self, element, key):
         ref = buildref(element, key)
         return _ostree.exists(self.repo, ref)
 
@@ -177,21 +167,11 @@ class OSTreeCache(ArtifactCache):
     #
     # Args:
     #     element (Element): The Element to check
-    #     strength (_KeyStrength): Either STRONG or WEAK key strength, or None
+    #     key (str): The cache key to use
     #
     # Returns: True if the artifact is in a cache, False otherwise
     #
-    def remote_contains(self, element, strength=None):
-        if strength is None:
-            strength = _KeyStrength.STRONG if element._get_strict() else _KeyStrength.WEAK
-
-        if strength == _KeyStrength.STRONG:
-            key = element._get_strict_cache_key()
-        else:
-            key = element._get_cache_key(strength)
-        if not key:
-            return False
-
+    def remote_contains(self, element, key):
         remotes = self.remotes_containing_key(element, key)
         return len(remotes) > 0
 

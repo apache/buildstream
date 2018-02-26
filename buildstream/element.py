@@ -1554,14 +1554,15 @@ class Element(Plugin):
                 return
 
         # Query caches now that the weak and strict cache keys are available
+        key_for_cache_lookup = self.__strict_cache_key if self._get_strict() else self.__weak_cache_key
         if not self.__cached:
-            self.__cached = self.__artifacts.contains(self)
+            self.__cached = self.__artifacts.contains(self, key_for_cache_lookup)
         if not self.__remotely_cached:
-            self.__remotely_cached = self.__artifacts.remote_contains(self)
+            self.__remotely_cached = self.__artifacts.remote_contains(self, key_for_cache_lookup)
         if not self.__strong_cached:
-            self.__strong_cached = self.__artifacts.contains(self, strength=_KeyStrength.STRONG)
+            self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
         if not self.__remotely_strong_cached:
-            self.__remotely_strong_cached = self.__artifacts.remote_contains(self, strength=_KeyStrength.STRONG)
+            self.__remotely_strong_cached = self.__artifacts.remote_contains(self, self.__strict_cache_key)
 
         if self.__cache_key is None:
             # Calculate strong cache key
