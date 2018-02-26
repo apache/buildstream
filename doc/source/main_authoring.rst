@@ -57,6 +57,7 @@ General Elements
 * :mod:`compose <elements.compose>` - Compose the output of multiple elements
 * :mod:`script <elements.script>` - Run scripts to create output
 * :mod:`junction <elements.junction>` - Integrate subprojects
+* :mod:`filter <elements.filter>` - Extract a subset of files from another element
 
 
 Build Elements

@@ -1,0 +1,29 @@
+
+# Filter element configuration
+config:
+
+  # A list of domains to include from each artifact, as
+  # they were defined in the element's 'split-rules'.
+  #
+  # Since domains can be added, it is not an error to
+  # specify domains which may not exist for all of the
+  # elements in this composition.
+  #
+  # The default empty list indicates that all domains
+  # from each dependency should be included.
+  #
+  include: []
+
+  # A list of domains to exclude from each artifact, as
+  # they were defined in the element's 'split-rules'.
+  #
+  # In the case that a file is spoken for by a domain
+  # in the 'include' list and another in the 'exclude'
+  # list, then the file will be excluded.
+  exclude: []
+
+  # Whether to include orphan files which are not
+  # included by any of the 'split-rules' present on
+  # a given element.
+  #
+  include-orphans: False
