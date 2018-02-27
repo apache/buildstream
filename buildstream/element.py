@@ -1134,7 +1134,26 @@ class Element(Plugin):
         def progress(percent, message):
             self.status(message)
 
-        self.__artifacts.pull(self, progress=progress)
+        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+
+        if self.__remotely_strong_cached:
+            key = self.__strict_cache_key
+            self.__artifacts.pull(self, key, progress=progress)
+
+            # update weak ref by pointing it to this newly fetched artifact
+            self.__artifacts.link_key(self, key, weak_key)
+        elif not self._get_strict() and self.__remotely_cached:
+            self.__artifacts.pull(self, weak_key, progress=progress)
+
+            # extract strong cache key from this newly fetched artifact
+            self._update_state()
+
+            # create tag for strong cache key
+            key = self._get_cache_key(strength=_KeyStrength.STRONG)
+            self.__artifacts.link_key(self, weak_key, key)
+        else:
+            raise ElementError("Attempt to pull unavailable artifact for element {}"
+                               .format(self.name))
 
         # Notify successfull download
         display_key = self._get_display_key()

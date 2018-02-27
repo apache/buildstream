@@ -277,49 +277,43 @@ class OSTreeCache(ArtifactCache):
     #
     # Args:
     #     element (Element): The Element whose artifact is to be fetched
+    #     key (str): The cache key to use
     #     progress (callable): The progress callback, if any
     #
-    def pull(self, element, progress=None):
+    def pull(self, element, key, *, progress=None):
         project = element._get_project()
 
         artifact_map = self._artifact_maps[project]
 
-        ref = buildref(element, element._get_strict_cache_key())
-        weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
+        ref = buildref(element, key)
 
         try:
-            if artifact_map.contains(ref):
-                # fetch the artifact from highest priority remote using the strong cache key
-                remote = artifact_map.lookup_first(ref)
-                remote_name = self._ensure_remote(self.repo, remote.pull_url)
-                _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
-
-                # resolve ref to checksum
-                rev = _ostree.checksum(self.repo, ref)
-
-                # update weak ref by pointing it to this newly fetched artifact
-                _ostree.set_ref(self.repo, weak_ref, rev)
-            elif artifact_map.contains(weak_ref):
-                # fetch the artifact from the highest priority cache using the weak cache key
-                remote = artifact_map.lookup_first(weak_ref)
-                remote_name = self._ensure_remote(self.repo, remote.pull_url)
-                _ostree.fetch(self.repo, remote=remote_name, ref=weak_ref, progress=progress)
-
-                # resolve weak_ref to checksum
-                rev = _ostree.checksum(self.repo, weak_ref)
-
-                # extract strong cache key from this newly fetched artifact
-                element._update_state()
-                ref = buildref(element, element._get_cache_key())
-
-                # create tag for strong cache key
-                _ostree.set_ref(self.repo, ref, rev)
-            else:
-                raise ArtifactError("Attempt to pull unavailable artifact for element {}"
-                                    .format(element.name))
+            # fetch the artifact from highest priority remote using the specified cache key
+            remote = artifact_map.lookup_first(ref)
+            remote_name = self._ensure_remote(self.repo, remote.pull_url)
+            _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
         except OSTreeError as e:
             raise ArtifactError("Failed to pull artifact for element {}: {}"
                                 .format(element.name, e)) from e
+
+    # link_key():
+    #
+    # Add a key for an existing artifact.
+    #
+    # Args:
+    #     element (Element): The Element whose artifact is to be linked
+    #     oldkey (str): An existing cache key for the artifact
+    #     newkey (str): A new cache key for the artifact
+    #
+    def link_key(self, element, oldkey, newkey):
+        oldref = buildref(element, oldkey)
+        newref = buildref(element, newkey)
+
+        # resolve ref to checksum
+        rev = _ostree.checksum(self.repo, oldref)
+
+        # create additional ref for the same checksum
+        _ostree.set_ref(self.repo, newref, rev)
 
     # push():
     #

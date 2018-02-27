@@ -269,8 +269,22 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element whose artifact is to be fetched
+    #     key (str): The cache key to use
     #     progress (callable): The progress callback, if any
     #
-    def pull(self, element, progress=None):
+    def pull(self, element, key, *, progress=None):
         raise ImplError("Cache '{kind}' does not implement pull()"
+                        .format(kind=type(self).__name__))
+
+    # link_key():
+    #
+    # Add a key for an existing artifact.
+    #
+    # Args:
+    #     element (Element): The Element whose artifact is to be linked
+    #     oldkey (str): An existing cache key for the artifact
+    #     newkey (str): A new cache key for the artifact
+    #
+    def link_key(self, element, oldkey, newkey):
+        raise ImplError("Cache '{kind}' does not implement link_key()"
                         .format(kind=type(self).__name__))
