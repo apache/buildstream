@@ -258,3 +258,15 @@ class ArtifactCache():
     def push(self, element):
         raise ImplError("Cache '{kind}' does not implement push()"
                         .format(kind=type(self).__name__))
+
+    # pull():
+    #
+    # Pull artifact from one of the configured remote repositories.
+    #
+    # Args:
+    #     element (Element): The Element whose artifact is to be fetched
+    #     progress (callable): The progress callback, if any
+    #
+    def pull(self, element, progress=None):
+        raise ImplError("Cache '{kind}' does not implement pull()"
+                        .format(kind=type(self).__name__))
