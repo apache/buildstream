@@ -30,10 +30,6 @@ class BuildQueue(Queue):
     complete_name = "Built"
     queue_type = QueueType.BUILD
 
-    def prepare(self, element):
-        # Inform element in main process that it is scheduled for assembly
-        element._schedule_assemble()
-
     def process(self, element):
         element._assemble()
         return element._get_unique_id()

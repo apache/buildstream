@@ -152,6 +152,8 @@ class Element(Plugin):
         self.__strong_cached = None             # Whether we have a cached artifact
         self.__remotely_cached = None           # Whether we have a remotely cached artifact
         self.__remotely_strong_cached = None    # Whether we have a remotely cached artifact
+        self.__assemble_scheduled = False       # Element is scheduled to be assembled
+        self.__assemble_done = False            # Element is assembled
         self.__pull_failed = False              # Whether pull was attempted but failed
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
@@ -787,6 +789,9 @@ class Element(Plugin):
     # in a subprocess.
     #
     def _schedule_assemble(self):
+        assert(not self.__assemble_scheduled)
+        self.__assemble_scheduled = True
+
         for source in self.__sources:
             source._schedule_assemble()
 
@@ -798,8 +803,13 @@ class Element(Plugin):
     # in a subprocess.
     #
     def _assemble_done(self):
+        assert(self.__assemble_scheduled)
+
         for source in self.__sources:
             source._assemble_done()
+
+        self.__assemble_scheduled = False
+        self.__assemble_done = True
 
         self._update_state()
 
@@ -954,6 +964,14 @@ class Element(Plugin):
     #    (bool): True if cache can be queried
     #
     def _can_query_cache(self):
+        # If build has already been scheduled, we know that the element is
+        # not cached and thus can allow cache query even if the strict cache key
+        # is not available yet.
+        # This special case is required for workspaced elements to prevent
+        # them from getting blocked in the pull queue.
+        if self.__assemble_scheduled:
+            return True
+
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
 
@@ -1567,6 +1585,20 @@ class Element(Plugin):
                 # Weak cache key could not be calculated yet
                 return
 
+        if not self._get_strict():
+            # Full cache query in non-strict mode requires both the weak and
+            # strict cache keys. However, we need to determine as early as
+            # possible whether a build is pending to discard unstable cache keys
+            # for workspaced elements. For this cache check the weak cache keys
+            # are sufficient. However, don't update the `cached` attributes
+            # until the full cache query below.
+            cached = self.__artifacts.contains(self, self.__weak_cache_key)
+            remotely_cached = self.__artifacts.remote_contains(self, self.__weak_cache_key)
+            if (not self.__assemble_scheduled and not self.__assemble_done and
+                not cached and not remotely_cached):
+                self._schedule_assemble()
+                return
+
         if self.__strict_cache_key is None:
             dependencies = [
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
@@ -1587,6 +1619,15 @@ class Element(Plugin):
             self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
         if not self.__remotely_strong_cached:
             self.__remotely_strong_cached = self.__artifacts.remote_contains(self, self.__strict_cache_key)
+
+        if (not self.__assemble_scheduled and not self.__assemble_done and
+            not self.__cached and not self.__remotely_cached):
+            # Workspaced sources are considered unstable if a build is pending
+            # as the build will modify the contents of the workspace.
+            # Determine as early as possible if a build is pending to discard
+            # unstable cache keys.
+            self._schedule_assemble()
+            return
 
         if self.__cache_key is None:
             # Calculate strong cache key
