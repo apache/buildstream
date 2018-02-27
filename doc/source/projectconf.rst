@@ -180,6 +180,48 @@ environments with debugging shells for your project, specify the following:
      - DBUS_SESSION_BUS_ADDRESS
 
 
+Host Files
+~~~~~~~~~~
+It can be useful to share some files on the host with a shell so that
+it can integrate better with the host environment.
+
+The ``host-files`` configuration allows one to specify files on
+the host to be bind mounted into the sandbox. If a file listed here
+is found to be a directory on the host, or if the file does not exist
+on the host at all; then a warning message will be printed and the shell
+will still be launched.
+
+The ``host-files`` configuration can be specified as a list
+of filenames to be mirrored into the sandbox at the same location:
+
+.. code:: yaml
+
+   shell:
+
+     # Specify a list of files to mount in the sandbox
+     # directory from the host.
+     host-files:
+     - '/etc/resolv.conf'
+     - '/etc/passwd'
+
+Alternatively, one can specify a dictionary with the ``host`` and ``sandbox``
+attributes for a bit more flexibility, allowing one to mount a file
+from the host to an alternative location in the sandbox:
+
+.. code:: yaml
+
+   shell:
+
+     # Mount the host's resolv.conf in a different location
+     host-files:
+     - host: '/etc/resolv.conf'
+       sandbox: '/usr/local/etc/resolv.conf'
+
+.. note::
+
+   The ``host-files`` configuration is available since :ref:`format version 2 <project_format_version>`
+
+
 .. _project_plugins:
 
 External Plugins
