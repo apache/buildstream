@@ -39,7 +39,7 @@ from ._sourcefactory import SourceFactory
 # This version is bumped whenever enhancements are made
 # to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 1
+BST_FORMAT_VERSION = 2
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -82,6 +82,7 @@ class Project():
         # Shell options
         self._shell_command = []      # The default interactive shell command
         self._shell_env_inherit = []  # Environment vars to inherit when non-isolated
+        self._shell_host_files = {}   # Mapping of sandbox paths to host paths
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load()
@@ -275,11 +276,24 @@ class Project():
 
         # Parse shell options
         shell_options = _yaml.node_get(config, Mapping, 'shell', default_value={})
-        _yaml.node_validate(shell_options, ['command', 'environment-inherit'])
+        _yaml.node_validate(shell_options, ['command', 'environment-inherit', 'host-files'])
         self._shell_command = _yaml.node_get(shell_options, list, 'command',
                                              default_value=['sh', '-i'])
         self._shell_env_inherit = _yaml.node_get(shell_options, list, 'environment-inherit',
                                                  default_value=[])
+
+        # Host files is parsed as a list for convenience
+        host_files = _yaml.node_get(shell_options, list, 'host-files', default_value=[])
+        for host_file in host_files:
+            if isinstance(host_file, str):
+                self._shell_host_files[host_file] = host_file
+            else:
+                index = host_files.index(host_file)
+                host_file_desc = _yaml.node_get(shell_options, Mapping, 'host-files', indices=[index])
+                _yaml.node_validate(host_file_desc, ['host', 'sandbox'])
+                host_path = _yaml.node_get(host_file_desc, str, 'host')
+                sandbox_path = _yaml.node_get(host_file_desc, str, 'sandbox')
+                self._shell_host_files[sandbox_path] = host_path
 
     # _store_origin()
     #
