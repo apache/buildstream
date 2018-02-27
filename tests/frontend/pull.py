@@ -210,8 +210,9 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
     for element_name in all_elements:
         assert cli.get_element_state(project, element_name) == 'downloadable'
 
-    # Open a workspace to force change in strict cache key
-    result = cli.run(project=project, args=['workspace', 'open', 'import-bin.bst', workspace])
+    # Add a file to force change in strict cache key of import-bin.bst
+    with open(os.path.join(str(project), 'files', 'bin-files', 'usr', 'bin', 'world'), 'w') as f:
+        f.write('world')
 
     # Assert that the workspaced element requires a rebuild
     assert cli.get_element_state(project, 'import-bin.bst') == 'buildable'
