@@ -238,10 +238,11 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element to check
+    #     key (str): The cache key to use
     #
     # Returns: False if all the push remotes have the artifact, True otherwise
     #
-    def push_needed(self, element):
+    def push_needed(self, element, key):
         return False
 
     # push():

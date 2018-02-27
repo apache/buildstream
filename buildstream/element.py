@@ -1160,8 +1160,13 @@ class Element(Plugin):
         if self._tainted():
             return True
 
+        # Use the strong cache key to check whether a remote already has the artifact.
+        # In non-strict mode we want to push updated artifacts even if the
+        # remote already has an artifact with the same weak cache key.
+        key = self._get_cache_key(strength=_KeyStrength.STRONG)
+
         # Skip if every push remote contains this element already.
-        if self.__artifacts.push_needed(self):
+        if self.__artifacts.push_needed(self, key):
             return False
         else:
             return True

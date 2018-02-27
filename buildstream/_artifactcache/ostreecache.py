@@ -189,14 +189,11 @@ class OSTreeCache(ArtifactCache):
     #
     # Args:
     #     element (Element): The Element to check
+    #     key (str): The cache key to use
     #
     # Returns: False if all the push remotes have the artifact, True otherwise
     #
-    def push_needed(self, element):
-        key = element._get_cache_key(strength=_KeyStrength.STRONG)
-
-        if not key:
-            return False
+    def push_needed(self, element, key):
 
         remotes_with_artifact = self.remotes_containing_key(element, key)
 
