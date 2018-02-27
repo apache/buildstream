@@ -946,18 +946,6 @@ class Element(Plugin):
         else:
             return self.__weak_cache_key
 
-    # _get_strict_cache_key():
-    #
-    # Returns the cache key for strict build mode
-    #
-    # Returns:
-    #    (str): A hex digest cache key for this Element, or None
-    #
-    # None is returned if information for the cache key is missing.
-    #
-    def _get_strict_cache_key(self):
-        return self.__strict_cache_key
-
     # _can_query_cache():
     #
     # Returns whether the cache key required for cache queries is available.
