@@ -19,9 +19,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-# BuildStream toplevel imports
-from ..element import _KeyStrength
-
 # Local imports
 from . import Queue, QueueStatus, QueueType
 

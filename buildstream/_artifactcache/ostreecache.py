@@ -26,7 +26,6 @@ import tempfile
 
 from .. import _ostree, _signals, utils
 from .._exceptions import ArtifactError
-from ..element import _KeyStrength
 from .._ostree import OSTreeError
 
 from . import ArtifactCache

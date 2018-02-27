@@ -24,7 +24,6 @@ import tarfile
 import subprocess
 
 from .. import utils, ProgramNotFoundError
-from ..element import _KeyStrength
 from .._exceptions import ArtifactError
 
 from . import ArtifactCache
