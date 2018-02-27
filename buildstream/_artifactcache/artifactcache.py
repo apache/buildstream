@@ -251,6 +251,7 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element whose artifact is to be pushed
+    #     keys (list): The cache keys to use
     #
     # Returns:
     #   (bool): True if any remote was updated, False if no pushes were required
@@ -258,7 +259,7 @@ class ArtifactCache():
     # Raises:
     #   (ArtifactError): if there was an error
     #
-    def push(self, element):
+    def push(self, element, keys):
         raise ImplError("Cache '{kind}' does not implement push()"
                         .format(kind=type(self).__name__))
 

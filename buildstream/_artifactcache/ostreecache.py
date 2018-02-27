@@ -327,13 +327,14 @@ class OSTreeCache(ArtifactCache):
     #
     # Args:
     #     element (Element): The Element whose artifact is to be pushed
+    #     keys (list): The cache keys to use
     #
     # Returns:
     #   (bool): True if any remote was updated, False if no pushes were required
     #
     # Raises:
     #   (ArtifactError): if there was an error
-    def push(self, element):
+    def push(self, element, keys):
         any_pushed = False
 
         project = element._get_project()
@@ -343,15 +344,14 @@ class OSTreeCache(ArtifactCache):
         if len(push_remotes) == 0:
             raise ArtifactError("Push is not enabled for any of the configured remote artifact caches.")
 
-        ref = buildref(element, element._get_cache_key())
-        weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
+        refs = [buildref(element, key) for key in keys]
 
-        remotes_with_ref = self.remotes_containing_key(element, ref)
-        remotes_with_weak_ref = self.remotes_containing_key(element, weak_ref)
+        remotes_for_each_ref = [self.remotes_containing_key(element, ref) for ref in refs]
 
         for remote in push_remotes:
-            if remote not in remotes_with_ref or remote not in remotes_with_weak_ref:
-                any_pushed |= self._push_to_remote(remote, element, ref, weak_ref)
+            # Push if the remote is missing any of the refs
+            if any([remote not in remotes_with_ref for remotes_with_ref in remotes_for_each_ref]):
+                any_pushed |= self._push_to_remote(remote, element, refs)
 
         return any_pushed
 
@@ -502,7 +502,7 @@ class OSTreeCache(ArtifactCache):
             self._artifact_maps[project] = artifact_map
             self._remotes[project] = remotes
 
-    def _push_to_remote(self, remote, element, ref, weak_ref):
+    def _push_to_remote(self, remote, element, refs):
         with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:
 
             with element.timed_activity("Preparing compressed archive"):
@@ -511,16 +511,16 @@ class OSTreeCache(ArtifactCache):
                 temp_repo = _ostree.ensure(temp_repo_dir, True)
 
                 # Now push the ref we want to push into our temporary archive-z2 repo
-                _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
-                _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=weak_ref)
+                for ref in refs:
+                    _ostree.fetch(temp_repo, remote=self.repo.get_path().get_uri(), ref=ref)
 
             with element.timed_activity("Sending artifact"), \
                 element._output_file() as output_file:
                 try:
                     pushed = push_artifact(temp_repo.get_path().get_path(),
                                            remote.push_url,
-                                           [ref, weak_ref], output_file)
+                                           refs, output_file)
                 except PushException as e:
-                    raise ArtifactError("Failed to push artifact {}: {}".format(ref, e)) from e
+                    raise ArtifactError("Failed to push artifact {}: {}".format(refs, e)) from e
 
             return pushed

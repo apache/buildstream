@@ -1187,7 +1187,8 @@ class Element(Plugin):
             return False
 
         with self.timed_activity("Pushing Artifact"):
-            return self.__artifacts.push(self)
+            # Push all keys used for local commit
+            return self.__artifacts.push(self, self.__get_cache_keys_for_commit())
 
     # _logfile()
     #
