@@ -262,20 +262,6 @@ class TarCache(ArtifactCache):
         path = os.path.join(self.tardir, tarpath(element, key))
         return os.path.isfile(path)
 
-    # remove()
-    #
-    # Implements artifactcache.remove().
-    #
-    # FIXME: Untested...
-    #
-    def remove(self, element):
-        key = element._get_cache_key()
-        if not key:
-            return
-
-        path = (os.path.join(self.tardir, tarpath(element, key)))
-        shutil.rmtree(path)
-
     # commit()
     #
     # Implements artifactcache.commit().
