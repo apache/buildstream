@@ -15,6 +15,24 @@ DATA_DIR = os.path.join(
 )
 
 
+def create_project_conf(project_dir, config):
+    project_file = os.path.join(project_dir, 'project.conf')
+    config['name'] = 'test'
+    config['element-path'] = 'elements'
+    config['aliases'] = {
+        'gnome7': 'https://gnome7.codethink.co.uk/',
+        'project_dir': 'file://{}'.format(project_dir),
+    }
+    config['options'] = {
+        'linux': {
+            'type': 'bool',
+            'description': 'Whether to expect a linux platform',
+            'default': 'True'
+        }
+    }
+    _yaml.dump(config, project_file)
+
+
 # execute_shell()
 #
 # Helper to run `bst shell` and first ensure that the element is built
@@ -65,6 +83,11 @@ def test_executable(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_inherit(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+    create_project_conf(project, {
+        'shell': {
+            'environment-inherit': ['ANIMAL']
+        }
+    })
 
     # Set the env var, and expect the same with added newline
     os.environ['ANIMAL'] = animal
@@ -80,6 +103,11 @@ def test_inherit(cli, tmpdir, datafiles, animal):
 @pytest.mark.datafiles(DATA_DIR)
 def test_isolated_no_inherit(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+    create_project_conf(project, {
+        'shell': {
+            'environment-inherit': ['ANIMAL']
+        }
+    })
 
     # Set the env var, but expect that it is not applied
     os.environ['ANIMAL'] = animal
