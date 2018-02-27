@@ -49,8 +49,7 @@ class FetchQueue(Queue):
 
         # Optionally skip elements that are already in the artifact cache
         if self.skip_cached:
-            # cache cannot be queried until strict cache key is available
-            if element._get_strict_cache_key() is None:
+            if not element._can_query_cache():
                 return QueueStatus.WAIT
 
             if element._cached():

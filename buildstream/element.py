@@ -958,6 +958,17 @@ class Element(Plugin):
     def _get_strict_cache_key(self):
         return self.__strict_cache_key
 
+    # _can_query_cache():
+    #
+    # Returns whether the cache key required for cache queries is available.
+    #
+    # Returns:
+    #    (bool): True if cache can be queried
+    #
+    def _can_query_cache(self):
+        # cache cannot be queried until strict cache key is available
+        return self.__strict_cache_key is not None
+
     # _get_full_display_key():
     #
     # Returns cache keys for display purposes
