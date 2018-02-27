@@ -73,10 +73,9 @@ class ComposeElement(Element):
             raise ElementError("{}: Compose elements may not have sources".format(self))
 
     def get_unique_key(self):
-        key = {}
-        key['integrate'] = self.integration,
-        key['include'] = sorted(self.include),
-        key['orphans'] = self.include_orphans
+        key = {'integrate': self.integration,
+               'include': sorted(self.include),
+               'orphans': self.include_orphans}
 
         if self.exclude:
             key['exclude'] = sorted(self.exclude)
