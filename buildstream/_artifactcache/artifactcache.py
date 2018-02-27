@@ -164,6 +164,7 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element to extract
+    #     key (str): The cache key to use
     #
     # Raises:
     #     ArtifactError: In cases there was an OSError, or if the artifact
@@ -171,7 +172,7 @@ class ArtifactCache():
     #
     # Returns: path to extracted artifact
     #
-    def extract(self, element):
+    def extract(self, element, key):
         raise ImplError("Cache '{kind}' does not implement extract()"
                         .format(kind=type(self).__name__))
 

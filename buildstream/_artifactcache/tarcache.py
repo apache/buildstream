@@ -283,16 +283,10 @@ class TarCache(ArtifactCache):
     #
     # Implements artifactcache.extract().
     #
-    def extract(self, element):
+    def extract(self, element, key):
 
-        key = element._get_strict_cache_key()
         ref = buildref(element, key)
         path = tarpath(element, key)
-
-        if not os.path.isfile(os.path.join(self.tardir, path)):
-            key = element._get_cache_key(strength=_KeyStrength.WEAK)
-            ref = buildref(element, key)
-            path = tarpath(element, key)
 
         if not os.path.isfile(os.path.join(self.tardir, path)):
             raise ArtifactError("Artifact missing for {}".format(ref))

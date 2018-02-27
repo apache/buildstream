@@ -421,7 +421,7 @@ class Element(Plugin):
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_display_key())):
             # Get the extracted artifact
-            artifact = os.path.join(self.__artifacts.extract(self), 'files')
+            artifact = os.path.join(self.__extract(), 'files')
 
             # Hard link it into the staging area
             #
@@ -1251,7 +1251,7 @@ class Element(Plugin):
         if self.__workspaced_artifact is None:
             self._assert_cached()
 
-            metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+            metadir = os.path.join(self.__extract(), 'meta')
             meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
             if 'workspaced' in meta:
                 self.__workspaced_artifact = meta['workspaced']
@@ -1265,7 +1265,7 @@ class Element(Plugin):
         if self.__workspaced_dependencies_artifact is None:
             self._assert_cached()
 
-            metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+            metadir = os.path.join(self.__extract(), 'meta')
             meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
             if 'workspaced_dependencies' in meta:
                 self.__workspaced_dependencies_artifact = meta['workspaced_dependencies']
@@ -1573,7 +1573,7 @@ class Element(Plugin):
                 pass
             elif self._cached():
                 # Load the strong cache key from the artifact
-                metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+                metadir = os.path.join(self.__extract(), 'meta')
                 meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
                 self.__cache_key = meta['keys']['strong']
             elif self._buildable():
@@ -1773,7 +1773,7 @@ class Element(Plugin):
         }
 
     def __compute_splits(self, include=None, exclude=None, orphans=True):
-        basedir = os.path.join(self.__artifacts.extract(self), 'files')
+        basedir = os.path.join(self.__extract(), 'files')
 
         # No splitting requested, just report complete artifact
         if orphans and not (include or exclude):
@@ -1823,12 +1823,22 @@ class Element(Plugin):
             if include_file and not exclude_file:
                 yield filename.lstrip(os.sep)
 
+    def __extract(self):
+        key = self.__strict_cache_key
+
+        # Use weak cache key, if artifact is missing for strong cache key
+        # and the context allows use of weak cache keys
+        if not self._get_strict() and not self.__artifacts.contains(self, key):
+            key = self._get_cache_key(strength=_KeyStrength.WEAK)
+
+        return self.__artifacts.extract(self, key)
+
     def _load_public_data(self):
         self._assert_cached()
         assert(self.__dynamic_public is None)
 
         # Load the public data from the artifact
-        metadir = os.path.join(self.__artifacts.extract(self), 'meta')
+        metadir = os.path.join(self.__extract(), 'meta')
         self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
 
     def _subst_string(self, value):

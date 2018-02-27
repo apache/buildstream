@@ -213,6 +213,7 @@ class OSTreeCache(ArtifactCache):
     #
     # Args:
     #     element (Element): The Element to extract
+    #     key (str): The cache key to use
     #
     # Raises:
     #     ArtifactError: In cases there was an OSError, or if the artifact
@@ -220,17 +221,11 @@ class OSTreeCache(ArtifactCache):
     #
     # Returns: path to extracted artifact
     #
-    def extract(self, element):
-        ref = buildref(element, element._get_strict_cache_key())
+    def extract(self, element, key):
+        ref = buildref(element, key)
 
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, ref)
-
-        # resolve weak cache key, if artifact is missing for strong cache key
-        # and the context allows use of weak cache keys
-        if not rev and not element._get_strict():
-            ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
-            rev = _ostree.checksum(self.repo, ref)
 
         if not rev:
             raise ArtifactError("Artifact missing for {}".format(ref))
