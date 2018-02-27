@@ -1430,6 +1430,16 @@ class Element(Plugin):
                     if os.environ.get(inherit) is not None:
                         environment[inherit] = os.environ.get(inherit)
 
+                # Setup any project defined bind mounts
+                for target, source in _yaml.node_items(project._shell_host_files):
+                    if not os.path.exists(source):
+                        self.warn("Not mounting non-existing host file: {}".format(source))
+                    elif os.path.isdir(source):
+                        self.warn("Not mounting directory listed as host file: {}".format(source))
+                    else:
+                        sandbox.mark_directory(target)
+                        sandbox._set_mount_source(target, source)
+
             if command:
                 argv = [arg for arg in command]
             else:
