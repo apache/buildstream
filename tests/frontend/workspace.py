@@ -193,9 +193,11 @@ def test_build(cli, tmpdir, datafiles, kind):
 
     # Build modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
+    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
     result = cli.run(project=project, args=['build', element_name])
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
+    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
 
     # Checkout the result
     result = cli.run(project=project, args=[
