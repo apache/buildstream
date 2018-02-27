@@ -241,3 +241,20 @@ class ArtifactCache():
     #
     def push_needed(self, element):
         return False
+
+    # push():
+    #
+    # Push committed artifact to remote repository.
+    #
+    # Args:
+    #     element (Element): The Element whose artifact is to be pushed
+    #
+    # Returns:
+    #   (bool): True if any remote was updated, False if no pushes were required
+    #
+    # Raises:
+    #   (ArtifactError): if there was an error
+    #
+    def push(self, element):
+        raise ImplError("Cache '{kind}' does not implement push()"
+                        .format(kind=type(self).__name__))
