@@ -256,28 +256,17 @@ class TarCache(ArtifactCache):
     #
     # Implements artifactcache.commit().
     #
-    def commit(self, element, content):
-        ref = tarpath(element, element._get_cache_key())
-        weak_ref = tarpath(element, element._get_cache_key(strength=_KeyStrength.WEAK))
-
+    def commit(self, element, content, keys):
         os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
 
         with utils._tempdir() as temp:
-            refdir = os.path.join(temp, element._get_cache_key())
-            shutil.copytree(content, refdir, symlinks=True)
+            for key in keys:
+                ref = tarpath(element, key)
 
-            if ref != weak_ref:
-                weak_refdir = os.path.join(temp, element._get_cache_key(strength=_KeyStrength.WEAK))
-                shutil.copytree(content, weak_refdir, symlinks=True)
+                refdir = os.path.join(temp, key)
+                shutil.copytree(content, refdir, symlinks=True)
 
-            Tar.archive(os.path.join(self.tardir, ref),
-                        element._get_cache_key(),
-                        temp)
-
-            if ref != weak_ref:
-                Tar.archive(os.path.join(self.tardir, weak_ref),
-                            element._get_cache_key(strength=_KeyStrength.WEAK),
-                            temp)
+                Tar.archive(os.path.join(self.tardir, ref), key, temp)
 
     # extract()
     #

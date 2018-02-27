@@ -1118,7 +1118,7 @@ class Element(Plugin):
                 _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
                 with self.timed_activity("Caching Artifact"):
-                    self.__artifacts.commit(self, assembledir)
+                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
 
             # Finally cleanup the build dir
             cleanup_rootdir()
@@ -1832,6 +1832,17 @@ class Element(Plugin):
             key = self._get_cache_key(strength=_KeyStrength.WEAK)
 
         return self.__artifacts.extract(self, key)
+
+    def __get_cache_keys_for_commit(self):
+        keys = []
+
+        # tag with strong cache key based on dependency versions used for the build
+        keys.append(self._get_cache_key(strength=_KeyStrength.STRONG))
+
+        # also store under weak cache key
+        keys.append(self._get_cache_key(strength=_KeyStrength.WEAK))
+
+        return utils._deduplicate(keys)
 
     def _load_public_data(self):
         self._assert_cached()

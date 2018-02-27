@@ -264,16 +264,13 @@ class OSTreeCache(ArtifactCache):
     # Args:
     #     element (Element): The Element commit an artifact for
     #     content (str): The element's content directory
+    #     keys (list): The cache keys to use
     #
-    def commit(self, element, content):
-        # tag with strong cache key based on dependency versions used for the build
-        ref = buildref(element, element._get_cache_key())
-
-        # also store under weak cache key
-        weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
+    def commit(self, element, content, keys):
+        refs = [buildref(element, key) for key in keys]
 
         try:
-            _ostree.commit(self.repo, content, [ref, weak_ref])
+            _ostree.commit(self.repo, content, refs)
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 

@@ -183,8 +183,9 @@ class ArtifactCache():
     # Args:
     #     element (Element): The Element commit an artifact for
     #     content (str): The element's content directory
+    #     keys (list): The cache keys to use
     #
-    def commit(self, element, content):
+    def commit(self, element, content, keys):
         raise ImplError("Cache '{kind}' does not implement commit()"
                         .format(kind=type(self).__name__))
 
