@@ -2,7 +2,7 @@ import os
 import pytest
 
 from tests.testutils import cli_integration as cli
-from tests.testutils.integration import format_files, assert_contains
+from tests.testutils.integration import assert_contains
 
 
 pytestmark = pytest.mark.integration
@@ -21,7 +21,6 @@ DATA_DIR = os.path.join(
 def test_autotools_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
-    element_path = os.path.join(project, 'elements')
     element_name = 'autotools/amhello.bst'
 
     result = cli.run(project=project, args=['build', element_name])
@@ -41,7 +40,6 @@ def test_autotools_build(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
     element_name = 'autotools/amhello.bst'
 
     result = cli.run(project=project, args=['build', element_name])

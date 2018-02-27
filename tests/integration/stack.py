@@ -4,7 +4,6 @@ import pytest
 from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
-from tests.testutils.integration import format_files, walk_dir
 
 
 pytestmark = pytest.mark.integration
@@ -20,7 +19,6 @@ DATA_DIR = os.path.join(
 def test_stack(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
-    element_path = os.path.join(project, 'elements')
     element_name = 'stack/stack.bst'
 
     res = cli.run(project=project, args=['build', element_name])

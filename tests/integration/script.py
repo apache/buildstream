@@ -4,7 +4,6 @@ import pytest
 from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
-from tests.testutils.integration import format_files, walk_dir
 
 
 pytestmark = pytest.mark.integration
@@ -144,7 +143,6 @@ def test_script_cwd(cli, tmpdir, datafiles):
 def test_script_layout(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
-    element_path = os.path.join(project, 'elements')
     element_name = 'script/script-layout.bst'
 
     res = cli.run(project=project, args=['build', element_name])

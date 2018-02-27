@@ -3,22 +3,6 @@ import os
 from buildstream import _yaml
 
 
-# Recursively call .format() on all files in the given directory.
-#
-# This modifies the original files.
-#
-def format_files(directory, *args, **kwargs):
-    for dirname, _, filenames in os.walk(directory):
-        for filename in filenames:
-            with open(os.path.join(dirname, filename), 'r') as f:
-                template = f.read()
-
-            element = template.format(*args, **kwargs)
-
-            with open(os.path.join(dirname, filename), 'w') as f:
-                f.write(element)
-
-
 # Return a list of files relative to the given directory
 def walk_dir(root):
     for dirname, dirnames, filenames in os.walk(root):

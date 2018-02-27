@@ -4,7 +4,6 @@ import pytest
 from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
-from tests.testutils.integration import format_files, walk_dir
 
 
 pytestmark = pytest.mark.integration
