@@ -273,7 +273,7 @@ class OSTreeCache(ArtifactCache):
         weak_ref = buildref(element, element._get_cache_key(strength=_KeyStrength.WEAK))
 
         try:
-            _ostree.commit(self.repo, content, ref, weak_ref)
+            _ostree.commit(self.repo, content, [ref, weak_ref])
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 

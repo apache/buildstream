@@ -118,10 +118,9 @@ def checkout(repo, path, commit, user=False):
 # Args:
 #    repo (OSTree.Repo): The repo
 #    dir (str): The source directory to commit to the repo
-#    ref (str): A symbolic reference (tag) for the commit
-#    branch (str): Optional branch for the commit
+#    refs (list): A list of symbolic references (tag) for the commit
 #
-def commit(repo, dir, ref, branch=None):
+def commit(repo, dir, refs):
 
     def commit_filter(repo, path, file_info):
 
@@ -147,14 +146,11 @@ def commit(repo, dir, ref, branch=None):
         _, root = repo.write_mtree(mtree)
 
         # create root commit object, no parent, no branch
-        _, rev = repo.write_commit(None, ref, None, None, root)
+        _, rev = repo.write_commit(None, None, None, None, root)
 
-        # create tag
-        repo.transaction_set_ref(None, ref, rev)
-
-        # optionally create/update branch (without parent commit for now)
-        if branch:
-            repo.transaction_set_ref(None, branch, rev)
+        # create refs
+        for ref in refs:
+            repo.transaction_set_ref(None, ref, rev)
 
         # complete repo transaction
         repo.commit_transaction(None)
