@@ -54,12 +54,28 @@ class Mount():
             self.mount_source = os.path.join(self.mount_base, 'mount')
             self.mount_tempdir = os.path.join(self.mount_base, 'temp')
             os.makedirs(self.mount_origin, exist_ok=True)
-            os.makedirs(self.mount_source, exist_ok=True)
             os.makedirs(self.mount_tempdir, exist_ok=True)
         else:
             # No redirection needed
             self.mount_source = os.path.join(root_directory, mount_point.lstrip(os.sep))
+
+        external_mount_sources = sandbox._get_mount_sources()
+        external_mount_source = external_mount_sources.get(mount_point)
+
+        if external_mount_source is None:
             os.makedirs(self.mount_source, exist_ok=True)
+        else:
+            if os.path.isdir(external_mount_source):
+                os.makedirs(self.mount_source, exist_ok=True)
+            else:
+                # When mounting a regular file, ensure the parent
+                # directory exists in the sandbox; and that an empty
+                # file is created at the mount location.
+                parent_dir = os.path.dirname(self.mount_source.rstrip('/'))
+                os.makedirs(parent_dir, exist_ok=True)
+                if not os.path.exists(self.mount_source):
+                    with open(self.mount_source, 'w'):
+                        pass
 
     @contextmanager
     def mounted(self, sandbox):
