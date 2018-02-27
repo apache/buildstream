@@ -147,3 +147,100 @@ def test_no_shell(cli, tmpdir, datafiles):
     result = execute_shell(cli, project, ['/bin/echo', 'Pegasissies!'], element=element_name)
     assert result.exit_code == 0
     assert result.output == "Pegasissies!\n"
+
+
+# Test that bind mounts defined in project.conf work
+@pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
+@pytest.mark.datafiles(DATA_DIR)
+def test_host_files(cli, tmpdir, datafiles, path):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
+
+    create_project_conf(project, {
+        'shell': {
+            'host-files': [
+                {
+                    'host': ponyfile,
+                    'sandbox': path
+                }
+            ]
+        }
+    })
+
+    result = execute_shell(cli, project, ['cat', path])
+    assert result.exit_code == 0
+    assert result.output == 'pony\n'
+
+
+# Test that bind mounts defined in project.conf dont mount in isolation
+@pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
+@pytest.mark.datafiles(DATA_DIR)
+def test_isolated_no_mount(cli, tmpdir, datafiles, path):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
+
+    create_project_conf(project, {
+        'shell': {
+            'host-files': [
+                {
+                    'host': ponyfile,
+                    'sandbox': path
+                }
+            ]
+        }
+    })
+
+    result = execute_shell(cli, project, ['cat', path], isolate=True)
+    assert result.exit_code != 0
+
+
+# Test that bind mounts which specify directories dont get mounted
+@pytest.mark.datafiles(DATA_DIR)
+def test_host_files_refuse_dir(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    ponydir = os.path.join(project, 'files', 'shell-mount')
+
+    create_project_conf(project, {
+        'shell': {
+            'host-files': [
+                {
+                    'host': ponydir,
+                    'sandbox': '/usr/share/pony'
+                }
+            ]
+        }
+    })
+
+    # Assert that we did successfully run something in the shell anyway
+    result = execute_shell(cli, project, ['echo', 'Hello'])
+    assert result.exit_code == 0
+    assert result.output == 'Hello\n'
+
+    # Assert that there was some warning about refusing to mount
+    assert ponydir in result.stderr
+
+
+# Test that we warn about non-existing files on the host, but execute the shell anyway
+@pytest.mark.datafiles(DATA_DIR)
+def test_host_files_non_existing(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    ponyfile = os.path.join(project, 'files', 'shell-mount', 'horsy.txt')
+
+    create_project_conf(project, {
+        'shell': {
+            'host-files': [
+                {
+                    'host': ponyfile,
+                    'sandbox': '/etc/pony.conf'
+                }
+            ]
+        }
+    })
+
+    # Assert that we did successfully run something in the shell anyway
+    result = execute_shell(cli, project, ['echo', 'Hello'])
+    assert result.exit_code == 0
+    assert result.output == 'Hello\n'
+
+    # Assert that there was some warning about refusing to mount
+    assert ponyfile in result.stderr
