@@ -483,7 +483,7 @@ def shell(app, element, sysroot, isolate, build, command):
     to use a specific sysroot.
 
     If no COMMAND is specified, the default is to attempt
-    to run an interactive shell with `sh -i`.
+    to run an interactive shell.
     """
     from ..element import Scope
     if build:
