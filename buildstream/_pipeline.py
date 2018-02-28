@@ -674,7 +674,6 @@ class Pipeline():
     #
     # Args:
     #    scheduler: The app scheduler
-    #    source_index (int): The index of the source to reset
     #    track (bool): Whether to also track the source
     #    no_checkout (bool): Whether to check out the source (at all)
     #
@@ -685,7 +684,7 @@ class Pipeline():
 
         if workspace_dir is None:
             raise PipelineError("Workspace '{}' is currently not defined"
-                                .format(target.name + " - " + str(source_index)))
+                                .format(target.name))
 
         self.close_workspace(True)
 
