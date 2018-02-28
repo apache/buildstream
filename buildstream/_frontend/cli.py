@@ -147,7 +147,7 @@ click.BaseCommand.main = override_main
               help="Force enable/disable ANSI color codes in output")
 @click.option('--strict/--no-strict', default=None, is_flag=True,
               help="Elements must be rebuilt when their dependencies have changed")
-@click.option('--option', '-o', type=click.Tuple([str, str]), multiple=True,
+@click.option('--option', '-o', type=click.Tuple([str, str]), multiple=True, metavar='OPTION VALUE',
               help="Specify a project option")
 @click.pass_context
 def cli(context, **kwargs):
