@@ -18,6 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import datetime
 import os
 
 
@@ -74,5 +75,6 @@ class Message():
         self.task_id = task_id            # The plugin object ID of the task
         self.scheduler = scheduler        # Whether this is a scheduler level message
         self.sequence_id = sequence_id    # Unique ID for a task, so we can track all messages per task
+        self.creation_time = datetime.datetime.now()
         if message_type in (MessageType.SUCCESS, MessageType.FAIL):
             assert(elapsed is not None)

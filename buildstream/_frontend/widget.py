@@ -85,6 +85,27 @@ class Space(Widget):
         return ' '
 
 
+# Used to add fixed text between columns
+class FixedText(Widget):
+
+    def __init__(self, text, content_profile, format_profile):
+        super(FixedText, self).__init__(content_profile, format_profile)
+        self.text = text
+
+    def render(self, message):
+        return self.format_profile.fmt(self.text)
+
+
+# Used to add the wallclock time this message was created at
+class WallclockTime(Widget):
+    def render(self, message):
+        fields = [self.content_profile.fmt("{:02d}".format(x)) for x in
+                  [message.creation_time.hour,
+                   message.creation_time.minute,
+                   message.creation_time.second]]
+        return self.format_profile.fmt(":").join(fields)
+
+
 # A widget for rendering the debugging column
 class Debug(Widget):
 
