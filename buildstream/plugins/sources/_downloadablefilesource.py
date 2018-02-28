@@ -115,11 +115,13 @@ class DownloadableFileSource(Source):
 
                 return (sha256, etag)
 
-        except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError) as e:
-            if isinstance(e, urllib.error.HTTPError) and e.code == 304:
-                # Already cached and not modified
+        except urllib.error.HTTPError as e:
+            if e.code == 304:
                 return (self.ref, self.etag)
+            raise SourceError("{}: Error mirroring {}: {}"
+                              .format(self, self.url, e)) from e
 
+        except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError) as e:
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e)) from e
 

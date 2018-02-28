@@ -64,7 +64,8 @@ class FilterElement(Element):
         build_deps = list(self.dependencies(Scope.BUILD, recurse=False))
         if len(build_deps) != 1:
             detail = "Full list of build-depends:\n"
-            detail += "  \n".join([x.name for x in build_deps])
+            deps_list = "  \n".join([x.name for x in build_deps])
+            detail += deps_list
             raise ElementError("{}: {} element must have exactly 1 build-dependency, actually have {}"
                                .format(self, type(self).__name__, len(build_deps)),
                                detail=detail, reason="filter-bdepend-wrong-count")
@@ -73,7 +74,8 @@ class FilterElement(Element):
         runtime_deps = list(self.dependencies(Scope.RUN, recurse=False))
         if build_deps[0] in runtime_deps:
             detail = "Full list of runtime depends:\n"
-            detail += "  \n".join([x.name for x in runtime_deps])
+            deps_list = "  \n".join([x.name for x in runtime_deps])
+            detail += deps_list
             raise ElementError("{}: {} element's build dependency must not also be a runtime dependency"
                                .format(self, type(self).__name__),
                                detail=detail, reason="filter-bdepend-also-rdepend")

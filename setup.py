@@ -161,6 +161,10 @@ if __name__ == '__main__':
     sys.exit({2}())'''
 
 
+# Modify the get_args() function of the ScriptWriter class
+# Note: the pylint no-member warning has been disabled as the functions: get_header(),
+# ensure_safe_name() and _get_script_args() are all members of this class.
+# pylint: disable=no-member
 @classmethod
 def get_args(cls, dist, header=None):
     if header is None:

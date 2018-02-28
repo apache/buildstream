@@ -22,6 +22,10 @@
 #
 # Code based on Jürg's artifact cache and Andrew's ostree plugin
 #
+
+# Disable pylint warnings that are not appicable to this module
+# pylint: disable=bad-exception-context,catching-non-exception
+
 import os
 from ._exceptions import BstError, ErrorDomain
 
