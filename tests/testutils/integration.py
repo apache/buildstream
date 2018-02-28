@@ -6,6 +6,11 @@ from buildstream import _yaml
 # Return a list of files relative to the given directory
 def walk_dir(root):
     for dirname, dirnames, filenames in os.walk(root):
+        # ensure consistent traversal order, needed for consistent
+        # handling of symlinks.
+        dirnames.sort()
+        filenames.sort()
+
         # print path to all subdirectories first.
         for subdirname in dirnames:
             yield os.path.join(dirname, subdirname)[len(root):]
