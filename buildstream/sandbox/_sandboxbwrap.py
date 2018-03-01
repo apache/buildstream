@@ -130,7 +130,16 @@ class SandboxBwrap(Sandbox):
                 mount_source = mount_source_overrides[mount_point]
             else:
                 mount_source = mount_map.get_mount_source(mount_point)
-            bwrap_command += ['--bind', mount_source, mount_point]
+
+            # Use --dev-bind for all mounts, this is simply a bind mount which does
+            # not restrictive about devices.
+            #
+            # While it's important for users to be able to mount devices
+            # into the sandbox for `bst shell` testing purposes, it is
+            # harmless to do in a build environment where the directories
+            # we mount just never contain device files.
+            #
+            bwrap_command += ['--dev-bind', mount_source, mount_point]
 
         if flags & SandboxFlags.ROOT_READ_ONLY:
             bwrap_command += ["--remount-ro", "/"]
