@@ -116,8 +116,6 @@ disable=#####################################
 
         cyclic-import,
 
-        simplifiable-if-statement,
-
         bad-whitespace
 
 # Enable the message, report, category or checker with the given id(s). You can

@@ -445,7 +445,7 @@ def is_composite_list(node):
         has_keys = False
 
         for key, _ in node_items(node):
-            if key in ['(>)', '(<)', '(=)']:
+            if key in ['(>)', '(<)', '(=)']:  # pylint: disable=simplifiable-if-statement
                 has_directives = True
             else:
                 has_keys = True
