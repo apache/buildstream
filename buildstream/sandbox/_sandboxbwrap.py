@@ -24,6 +24,7 @@ import time
 import errno
 import signal
 import subprocess
+import shutil
 from contextlib import ExitStack
 
 import psutil
@@ -208,14 +209,30 @@ class SandboxBwrap(Sandbox):
                     continue
 
                 base_directory = os.path.join(root_mount_source, basedir)
-                try:
-                    os.rmdir(base_directory)
-                except FileNotFoundError:
-                    # ignore this, if bwrap cleaned up properly then it's not a problem.
+
+                if flags & SandboxFlags.INTERACTIVE:
+                    # Be more lenient in interactive mode here.
                     #
-                    # If the directory was not empty on the other hand, then this is clearly
-                    # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
-                    pass
+                    # In interactive mode; it's possible that the project shell
+                    # configuration has mounted some things below the base
+                    # directories, such as /dev/dri, and in this case it's less
+                    # important to consider cleanup, as we wont be collecting
+                    # this build result and creating an artifact.
+                    #
+                    # Note: Ideally; we should instead fix upstream bubblewrap to
+                    #       cleanup any debris it creates at startup time, and do
+                    #       the same ourselves for any directories we explicitly create.
+                    #
+                    shutil.rmtree(base_directory, ignore_errors=True)
+                else:
+                    try:
+                        os.rmdir(base_directory)
+                    except FileNotFoundError:
+                        # ignore this, if bwrap cleaned up properly then it's not a problem.
+                        #
+                        # If the directory was not empty on the other hand, then this is clearly
+                        # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
+                        pass
 
         return exit_code
 
