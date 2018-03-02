@@ -1,4 +1,19 @@
 =================
+buildstream 1.1.1
+=================
+
+  o New project configuration controlling how the sandbox behaves
+    when `bst shell` is used; allowing projects to provide a more
+    functional shell environment.
+
+  o Log lines are now configurable with the new "message-format"
+    user configuration, allowing one to express optional fields
+    such as microsecond precision and wallclock time.
+
+  o Newly added filter element
+
+
+=================
 buildstream 1.1.0
 =================
 
