@@ -41,10 +41,11 @@ def create_project_conf(project_dir, config):
 #    cli (Cli): The cli runner fixture
 #    project (str): The project directory
 #    command (list): The command argv list
+#    mount (tuple): A (host, target) tuple for the `--mount` option
 #    element (str): The element to build and run a shell with
 #    isolate (bool): Whether to pass --isolate to `bst shell`
 #
-def execute_shell(cli, project, command, element='base.bst', isolate=False):
+def execute_shell(cli, project, command, mount=None, element='base.bst', isolate=False):
     # Ensure the element is built
     result = cli.run(project=project, args=['build', element])
     assert result.exit_code == 0
@@ -52,6 +53,9 @@ def execute_shell(cli, project, command, element='base.bst', isolate=False):
     args = ['shell']
     if isolate:
         args += ['--isolate']
+    if mount is not None:
+        host_path, target_path = mount
+        args += ['--mount', host_path, target_path]
     args += [element, '--'] + command
 
     return cli.run(project=project, args=args)
@@ -160,8 +164,8 @@ def test_host_files(cli, tmpdir, datafiles, path):
         'shell': {
             'host-files': [
                 {
-                    'host': ponyfile,
-                    'sandbox': path
+                    'host_path': ponyfile,
+                    'path': path
                 }
             ]
         }
@@ -183,8 +187,8 @@ def test_isolated_no_mount(cli, tmpdir, datafiles, path):
         'shell': {
             'host-files': [
                 {
-                    'host': ponyfile,
-                    'sandbox': path
+                    'host_path': ponyfile,
+                    'path': path
                 }
             ]
         }
@@ -194,44 +198,26 @@ def test_isolated_no_mount(cli, tmpdir, datafiles, path):
     assert result.exit_code != 0
 
 
-# Test that bind mounts which specify directories dont get mounted
+# Test that we warn about non-existing files on the host if the mount is not
+# declared as optional, and that there is no warning if it is optional
+@pytest.mark.parametrize("optional", [("mandatory"), ("optional")])
 @pytest.mark.datafiles(DATA_DIR)
-def test_host_files_refuse_dir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-    ponydir = os.path.join(project, 'files', 'shell-mount')
-
-    create_project_conf(project, {
-        'shell': {
-            'host-files': [
-                {
-                    'host': ponydir,
-                    'sandbox': '/usr/share/pony'
-                }
-            ]
-        }
-    })
-
-    # Assert that we did successfully run something in the shell anyway
-    result = execute_shell(cli, project, ['echo', 'Hello'])
-    assert result.exit_code == 0
-    assert result.output == 'Hello\n'
-
-    # Assert that there was some warning about refusing to mount
-    assert ponydir in result.stderr
-
-
-# Test that we warn about non-existing files on the host, but execute the shell anyway
-@pytest.mark.datafiles(DATA_DIR)
-def test_host_files_non_existing(cli, tmpdir, datafiles):
+def test_host_files_missing(cli, tmpdir, datafiles, optional):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'horsy.txt')
 
+    if optional == "optional":
+        option = True
+    else:
+        option = False
+
     create_project_conf(project, {
         'shell': {
             'host-files': [
                 {
-                    'host': ponyfile,
-                    'sandbox': '/etc/pony.conf'
+                    'host_path': ponyfile,
+                    'path': '/etc/pony.conf',
+                    'optional': option
                 }
             ]
         }
@@ -242,5 +228,21 @@ def test_host_files_non_existing(cli, tmpdir, datafiles):
     assert result.exit_code == 0
     assert result.output == 'Hello\n'
 
-    # Assert that there was some warning about refusing to mount
-    assert ponyfile in result.stderr
+    if option:
+        # Assert that there was no warning about the mount
+        assert ponyfile not in result.stderr
+    else:
+        # Assert that there was a warning about the mount
+        assert ponyfile in result.stderr
+
+
+# Test that bind mounts defined in project.conf work
+@pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
+@pytest.mark.datafiles(DATA_DIR)
+def test_cli_mount(cli, tmpdir, datafiles, path):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
+
+    result = execute_shell(cli, project, ['cat', path], mount=(ponyfile, path))
+    assert result.exit_code == 0
+    assert result.output == 'pony\n'
