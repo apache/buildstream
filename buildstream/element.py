@@ -1404,6 +1404,7 @@ class Element(Plugin):
     # Args:
     #    scope (Scope): Either BUILD or RUN scopes are valid, or None
     #    directory (str): A directory to an existing sandbox, or None
+    #    mounts (list): A list of (str, str) tuples, representing host/target paths to mount
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    prompt (str): A suitable prompt string for PS1
     #    command (list): An argv to launch in the sandbox
@@ -1411,7 +1412,7 @@ class Element(Plugin):
     # Returns: Exit code
     #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, isolate=False, prompt=None, command=None):
+    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None):
 
         with self._prepare_sandbox(scope, directory) as sandbox:
             environment = self.get_environment()
@@ -1438,15 +1439,17 @@ class Element(Plugin):
                     if os.environ.get(inherit) is not None:
                         environment[inherit] = os.environ.get(inherit)
 
-                # Setup any project defined bind mounts
-                for target, source in _yaml.node_items(project._shell_host_files):
-                    if not os.path.exists(source):
-                        self.warn("Not mounting non-existing host file: {}".format(source))
-                    elif os.path.isdir(source):
-                        self.warn("Not mounting directory listed as host file: {}".format(source))
+                # Setup any requested bind mounts
+                if mounts is None:
+                    mounts = []
+
+                for mount in project._shell_host_files + mounts:
+                    if not os.path.exists(mount.host_path):
+                        if not mount.optional:
+                            self.warn("Not mounting non-existing host file: {}".format(mount.host_path))
                     else:
-                        sandbox.mark_directory(target)
-                        sandbox._set_mount_source(target, source)
+                        sandbox.mark_directory(mount.path)
+                        sandbox._set_mount_source(mount.path, mount.host_path)
 
             if command:
                 argv = [arg for arg in command]

@@ -365,7 +365,7 @@ class App():
                     queue.failed_elements.remove(element)
                     queue.enqueue([element])
 
-    def shell(self, element, scope, directory, isolate=False, command=None):
+    def shell(self, element, scope, directory, *, mounts=None, isolate=False, command=None):
         _, key, dim = element._get_full_display_key()
         element_name = element._get_full_name()
 
@@ -380,7 +380,7 @@ class App():
         else:
             prompt = '[{}@{}:${{PWD}}]$ '.format(key, element_name)
 
-        return element._shell(scope, directory, isolate=isolate, prompt=prompt, command=command)
+        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command)
 
     def tick(self, elapsed):
         self.maybe_render_status()

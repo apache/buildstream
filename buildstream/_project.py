@@ -39,10 +39,27 @@ from ._sourcefactory import SourceFactory
 # This version is bumped whenever enhancements are made
 # to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 2
+BST_FORMAT_VERSION = 3
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
+
+
+# HostMount()
+#
+# A simple object describing the behavior of
+# a host mount.
+#
+class HostMount():
+
+    def __init__(self, path, host_path=None, optional=False):
+
+        self.path = path              # Path inside the sandbox
+        self.host_path = host_path    # Path on the host
+        self.optional = optional      # Optional mounts do not incur warnings or errors
+
+        if self.host_path is None:
+            self.host_path = self.path
 
 
 # Project()
@@ -82,7 +99,7 @@ class Project():
         # Shell options
         self._shell_command = []      # The default interactive shell command
         self._shell_env_inherit = []  # Environment vars to inherit when non-isolated
-        self._shell_host_files = {}   # Mapping of sandbox paths to host paths
+        self._shell_host_files = []   # A list of HostMount objects
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load()
@@ -286,14 +303,20 @@ class Project():
         host_files = _yaml.node_get(shell_options, list, 'host-files', default_value=[])
         for host_file in host_files:
             if isinstance(host_file, str):
-                self._shell_host_files[host_file] = host_file
+                mount = HostMount(host_file)
             else:
+                # Some validation
                 index = host_files.index(host_file)
                 host_file_desc = _yaml.node_get(shell_options, Mapping, 'host-files', indices=[index])
-                _yaml.node_validate(host_file_desc, ['host', 'sandbox'])
-                host_path = _yaml.node_get(host_file_desc, str, 'host')
-                sandbox_path = _yaml.node_get(host_file_desc, str, 'sandbox')
-                self._shell_host_files[sandbox_path] = host_path
+                _yaml.node_validate(host_file_desc, ['path', 'host_path', 'optional'])
+
+                # Parse the host mount
+                path = _yaml.node_get(host_file_desc, str, 'path')
+                host_path = _yaml.node_get(host_file_desc, str, 'host_path', default_value='') or None
+                optional = _yaml.node_get(host_file_desc, bool, 'optional', default_value=False)
+                mount = HostMount(path, host_path, optional)
+
+            self._shell_host_files.append(mount)
 
     # _store_origin()
     #

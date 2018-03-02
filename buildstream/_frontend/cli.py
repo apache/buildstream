@@ -462,13 +462,16 @@ def show(app, elements, deps, except_, order, format, downloadable):
 @click.option('--sysroot', '-s', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="An existing sysroot")
+@click.option('--mount', type=click.Tuple([click.Path(exists=True), str]), multiple=True,
+              metavar='HOSTPATH PATH',
+              help="Mount a file or directory into the sandbox")
 @click.option('--isolate', is_flag=True, default=False,
               help='Create an isolated build sandbox')
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, element, sysroot, isolate, build, command):
+def shell(app, element, sysroot, mount, isolate, build, command):
     """Run a command in the target element's sandbox environment
 
     This will stage a temporary sysroot for running the target
@@ -486,6 +489,7 @@ def shell(app, element, sysroot, isolate, build, command):
     to run an interactive shell.
     """
     from ..element import Scope
+    from .._project import HostMount
     if build:
         scope = Scope.BUILD
     else:
@@ -509,9 +513,14 @@ def shell(app, element, sysroot, isolate, build, command):
         click.echo("Try building them first", err=True)
         sys.exit(-1)
 
+    mounts = [
+        HostMount(path, host_path)
+        for host_path, path in mount
+    ]
+
     try:
         element = app.pipeline.targets[0]
-        exitcode = app.shell(element, scope, sysroot, isolate=isolate, command=command)
+        exitcode = app.shell(element, scope, sysroot, mounts=mounts, isolate=isolate, command=command)
         sys.exit(exitcode)
     except BstError as e:
         click.echo("", err=True)
