@@ -185,14 +185,58 @@ Host Files
 It can be useful to share some files on the host with a shell so that
 it can integrate better with the host environment.
 
-The ``host-files`` configuration allows one to specify files on
-the host to be bind mounted into the sandbox. If a file listed here
-is found to be a directory on the host, or if the file does not exist
-on the host at all; then a warning message will be printed and the shell
-will still be launched.
+The ``host-files`` configuration allows one to specify files and
+directories on the host to be bind mounted into the sandbox.
 
-The ``host-files`` configuration can be specified as a list
-of filenames to be mirrored into the sandbox at the same location:
+.. warning::
+
+   One should never mount directories where one expects to
+   find data and files which belong to the user, such as ``/home``
+   on POSIX platforms.
+
+   This is because the unsuspecting user may corrupt their own
+   files accidentally as a result. Instead users can use the
+   ``--mount`` option of ``bst shell`` to mount data into the shell.
+
+
+The ``host-files`` configuration is an ordered list of *mount specifications*.
+
+Members of the list can be *fully specified* as a dictionary, or a simple
+string can be used if only the defaults are required.
+
+The fully specified dictionary has the following members:
+
+* ``path``
+
+  The path inside the sandbox. This is the only mandatory
+  member of the mount specification.
+
+* ``host_path``
+
+  The host path to mount at ``path`` in the sandbox. This
+  will default to ``path`` if left unspecified.
+
+* ``optional``
+
+  Whether the mount should be considered optional. This
+  is ``False`` by default.
+
+
+Here is an example of a *fully specified mount specification*:
+
+.. code:: yaml
+
+   shell:
+
+     # Mount an arbitrary resolv.conf from the host to
+     # /etc/resolv.conf in the sandbox, and avoid any
+     # warnings if the host resolv.conf doesnt exist.
+     host-files:
+     - host_path: '/usr/local/work/etc/resolv.conf'
+       path: '/etc/resolv.conf'
+       optional: True
+
+Here is an example of using *shorthand mount specifications*:
 
 .. code:: yaml
 
@@ -200,26 +244,18 @@ of filenames to be mirrored into the sandbox at the same location:
 
      # Specify a list of files to mount in the sandbox
      # directory from the host.
+     #
+     # If these do not exist on the host, a warning will
+     # be issued but the shell will still be launched.
      host-files:
-     - '/etc/resolv.conf'
      - '/etc/passwd'
+     - '/etc/group'
+     - '/etc/resolv.conf'
 
-Alternatively, one can specify a dictionary with the ``host`` and ``sandbox``
-attributes for a bit more flexibility, allowing one to mount a file
-from the host to an alternative location in the sandbox:
-
-.. code:: yaml
-
-   shell:
-
-     # Mount the host's resolv.conf in a different location
-     host-files:
-     - host: '/etc/resolv.conf'
-       sandbox: '/usr/local/etc/resolv.conf'
 
 .. note::
 
-   The ``host-files`` configuration is available since :ref:`format version 2 <project_format_version>`
+   The ``host-files`` configuration is available since :ref:`format version 3 <project_format_version>`
 
 
 .. _project_plugins:
