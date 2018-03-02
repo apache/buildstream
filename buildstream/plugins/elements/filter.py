@@ -20,16 +20,17 @@
 
 """Filter element
 
-This element copies a subset of the files in its dependencies.
+This filters another element by producing an output that is a subset of
+the filtered element.
 
-This is normally used to separate out the contents of an artifact
-into multiple artifacts and define separate sets of dependencies,
-in cases where a build produces multiple discrete "packages",
-e.g. systemd and udev; gettext and libintl.
+To specify the element to filter, specify it as the one and only build
+dependency to filter. See :ref:`Dependencies <format_dependencies>`
+for what dependencies are and how to specify them.
 
-This element expects precisely one build dependency, and multiple
-runtime dependencies that are not the element that was the build
-dependency.
+Dependencies aside from the filtered element may be specified, but
+they must be runtime dependencies only. This can be useful to propagate
+runtime dependencies forward from this filter element onto its reverse
+dependencies.
 
 The default configuration and possible options are as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/filter.yaml
