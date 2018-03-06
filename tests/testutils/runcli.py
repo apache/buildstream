@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import shutil
+import tempfile
 import itertools
 import traceback
 import subprocess
@@ -384,17 +385,70 @@ class Cli():
 
 
 class CliIntegration(Cli):
-    def run(self, *args, **kwargs):
 
-        # Set the project_dir variable in our project.conf for
-        # relative tar imports
-        project_conf = os.path.join(kwargs['project'], 'project.conf')
+    # run()
+    #
+    # This supports the same arguments as Cli.run() and additionally
+    # it supports the project_config keyword argument.
+    #
+    # This will first load the project.conf file from the specified
+    # project directory ('project' keyword argument) and perform substitutions
+    # of any {project_dir} specified in the existing project.conf.
+    #
+    # If the project_config parameter is specified, it is expected to
+    # be a dictionary of additional project configuration options, and
+    # will be composited on top of the already loaded project.conf
+    #
+    def run(self, *args, project_config=None, **kwargs):
 
-        with open(project_conf) as f:
+        # First load the project.conf and substitute {project_dir}
+        #
+        # Save the original project.conf, because we will run more than
+        # once in the same temp directory
+        #
+        project_directory = kwargs['project']
+        project_filename = os.path.join(project_directory, 'project.conf')
+        project_backup = os.path.join(project_directory, 'project.conf.backup')
+        project_load_filename = project_filename
+
+        if not os.path.exists(project_backup):
+            shutil.copy(project_filename, project_backup)
+        else:
+            project_load_filename = project_backup
+
+        with open(project_load_filename) as f:
             config = f.read()
-        config = config.format(project_dir=kwargs['project'])
-        with open(project_conf, 'w') as f:
-            f.write(config)
+        config = config.format(project_dir=project_directory)
+
+        if project_config is not None:
+
+            # If a custom project configuration dictionary was
+            # specified, composite it on top of the already
+            # substituted base project configuration
+            #
+            base_config = _yaml.load_data(config)
+
+            # In order to leverage _yaml.composite_dict(), both
+            # dictionaries need to be loaded via _yaml.load_data() first
+            #
+            with tempfile.TemporaryDirectory(dir=project_directory) as scratchdir:
+
+                temp_project = os.path.join(scratchdir, 'project.conf')
+                with open(temp_project, 'w') as f:
+                    yaml.safe_dump(project_config, f)
+
+                project_config = _yaml.load(temp_project)
+
+            _yaml.composite_dict(base_config, project_config)
+
+            base_config = _yaml.node_sanitize(base_config)
+            _yaml.dump(base_config, project_filename)
+
+        else:
+
+            # Otherwise, just dump it as is
+            with open(project_filename, 'w') as f:
+                f.write(config)
 
         return super().run(*args, **kwargs)
 

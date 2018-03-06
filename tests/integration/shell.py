@@ -15,24 +15,6 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_project_conf(project_dir, config):
-    project_file = os.path.join(project_dir, 'project.conf')
-    config['name'] = 'test'
-    config['element-path'] = 'elements'
-    config['aliases'] = {
-        'gnome7': 'https://gnome7.codethink.co.uk/',
-        'project_dir': 'file://{}'.format(project_dir),
-    }
-    config['options'] = {
-        'linux': {
-            'type': 'bool',
-            'description': 'Whether to expect a linux platform',
-            'default': 'True'
-        }
-    }
-    _yaml.dump(config, project_file)
-
-
 # execute_shell()
 #
 # Helper to run `bst shell` and first ensure that the element is built
@@ -41,13 +23,14 @@ def create_project_conf(project_dir, config):
 #    cli (Cli): The cli runner fixture
 #    project (str): The project directory
 #    command (list): The command argv list
+#    config (dict): A project.conf dictionary to composite over the default
 #    mount (tuple): A (host, target) tuple for the `--mount` option
 #    element (str): The element to build and run a shell with
 #    isolate (bool): Whether to pass --isolate to `bst shell`
 #
-def execute_shell(cli, project, command, mount=None, element='base.bst', isolate=False):
+def execute_shell(cli, project, command, *, config=None, mount=None, element='base.bst', isolate=False):
     # Ensure the element is built
-    result = cli.run(project=project, args=['build', element])
+    result = cli.run(project=project, project_config=config, args=['build', element])
     assert result.exit_code == 0
 
     args = ['shell']
@@ -58,7 +41,7 @@ def execute_shell(cli, project, command, mount=None, element='base.bst', isolate
         args += ['--mount', host_path, target_path]
     args += [element, '--'] + command
 
-    return cli.run(project=project, args=args)
+    return cli.run(project=project, project_config=config, args=args)
 
 
 # Test running something through a shell, allowing it to find the
@@ -87,17 +70,17 @@ def test_executable(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_inherit(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    create_project_conf(project, {
-        'shell': {
-            'environment-inherit': ['ANIMAL']
-        }
-    })
 
     # Set the env var, and expect the same with added newline
     os.environ['ANIMAL'] = animal
     expected = animal + '\n'
 
-    result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'])
+    result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], config={
+        'shell': {
+            'environment-inherit': ['ANIMAL']
+        }
+    })
+
     assert result.exit_code == 0
     assert result.output == expected
 
@@ -107,16 +90,15 @@ def test_inherit(cli, tmpdir, datafiles, animal):
 @pytest.mark.datafiles(DATA_DIR)
 def test_isolated_no_inherit(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    create_project_conf(project, {
-        'shell': {
-            'environment-inherit': ['ANIMAL']
-        }
-    })
 
     # Set the env var, but expect that it is not applied
     os.environ['ANIMAL'] = animal
 
-    result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], isolate=True)
+    result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], isolate=True, config={
+        'shell': {
+            'environment-inherit': ['ANIMAL']
+        }
+    })
     assert result.exit_code == 0
     assert result.output == '\n'
 
@@ -159,8 +141,7 @@ def test_no_shell(cli, tmpdir, datafiles):
 def test_host_files(cli, tmpdir, datafiles, path):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
-
-    create_project_conf(project, {
+    result = execute_shell(cli, project, ['cat', path], config={
         'shell': {
             'host-files': [
                 {
@@ -170,8 +151,6 @@ def test_host_files(cli, tmpdir, datafiles, path):
             ]
         }
     })
-
-    result = execute_shell(cli, project, ['cat', path])
     assert result.exit_code == 0
     assert result.output == 'pony\n'
 
@@ -182,8 +161,7 @@ def test_host_files(cli, tmpdir, datafiles, path):
 def test_isolated_no_mount(cli, tmpdir, datafiles, path):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
-
-    create_project_conf(project, {
+    result = execute_shell(cli, project, ['cat', path], isolate=True, config={
         'shell': {
             'host-files': [
                 {
@@ -193,8 +171,6 @@ def test_isolated_no_mount(cli, tmpdir, datafiles, path):
             ]
         }
     })
-
-    result = execute_shell(cli, project, ['cat', path], isolate=True)
     assert result.exit_code != 0
 
 
@@ -211,7 +187,8 @@ def test_host_files_missing(cli, tmpdir, datafiles, optional):
     else:
         option = False
 
-    create_project_conf(project, {
+    # Assert that we did successfully run something in the shell anyway
+    result = execute_shell(cli, project, ['echo', 'Hello'], config={
         'shell': {
             'host-files': [
                 {
@@ -222,9 +199,6 @@ def test_host_files_missing(cli, tmpdir, datafiles, optional):
             ]
         }
     })
-
-    # Assert that we did successfully run something in the shell anyway
-    result = execute_shell(cli, project, ['echo', 'Hello'])
     assert result.exit_code == 0
     assert result.output == 'Hello\n'
 
