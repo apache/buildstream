@@ -1434,12 +1434,7 @@ class Element(Plugin):
                 #
                 flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
 
-                # Use the project defined list of env vars to inherit
-                for inherit in project._shell_env_inherit:
-                    if os.environ.get(inherit) is not None:
-                        environment[inherit] = os.environ.get(inherit)
-
-                # Now add in the explicitly set environment variables
+                # Apply project defined environment vars to set for a shell
                 for key, value in _yaml.node_items(project._shell_environment):
                     environment[key] = value
 

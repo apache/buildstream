@@ -103,7 +103,6 @@ class Project():
 
         # Shell options
         self._shell_command = []      # The default interactive shell command
-        self._shell_env_inherit = []  # Environment vars to inherit when non-isolated
         self._shell_environment = {}  # Statically set environment vars
         self._shell_host_files = []   # A list of HostMount objects
 
@@ -299,11 +298,9 @@ class Project():
 
         # Parse shell options
         shell_options = _yaml.node_get(config, Mapping, 'shell', default_value={})
-        _yaml.node_validate(shell_options, ['command', 'environment-inherit', 'environment', 'host-files'])
+        _yaml.node_validate(shell_options, ['command', 'environment', 'host-files'])
         self._shell_command = _yaml.node_get(shell_options, list, 'command',
                                              default_value=['sh', '-i'])
-        self._shell_env_inherit = _yaml.node_get(shell_options, list, 'environment-inherit',
-                                                 default_value=[])
 
         # Perform environment expansion right away
         shell_environment = _yaml.node_get(shell_options, Mapping, 'environment', default_value={})

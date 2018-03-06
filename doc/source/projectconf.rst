@@ -161,13 +161,20 @@ ensure that the customized prompt is not overwritten:
      command: [ 'bash', '--noprofile', '--norc', '-i' ]
 
 
-.. _project_shell_env_inherit:
-
-Environment Inheritance
+Environment Assignments
 ~~~~~~~~~~~~~~~~~~~~~~~
 In order to cooperate with your host environment, a debugging shell
-sometimes needs to know some of your host environment variables in
-order to be more useful.
+sometimes needs to be configured with some extra knowledge inheriting
+from your host environment.
+
+This can be achieved by setting up the shell ``environment`` configuration,
+which is expressed as a dictionary very similar to the
+:ref:`default environment <project_defaults_environment>`, except that it
+supports host side environment variable expansion in values.
+
+.. note::
+
+   The ``environment`` configuration is available since :ref:`format version 4 <project_format_version>`
 
 For example, to share your host ``DISPLAY`` and ``DBUS_SESSION_BUS_ADDRESS``
 environments with debugging shells for your project, specify the following:
@@ -176,26 +183,13 @@ environments with debugging shells for your project, specify the following:
 
    shell:
 
-     # Environment variables to inherit from the host environment
-     environment-inherit:
-     - DISPLAY
-     - DBUS_SESSION_BUS_ADDRESS
+     # Share some environment variables from the host environment
+     environment:
+       DISPLAY: '$DISPLAY'
+       DBUS_SESSION_BUS_ADDRESS: '$DBUS_SESSION_BUS_ADDRESS'
 
-
-Environment Assignments
-~~~~~~~~~~~~~~~~~~~~~~~
-In addition to :ref:`simple environment inheritance <project_shell_env_inherit>`
-it is also possible to explicitly set environment variables using the ``environment``
-shell configuration.
-
-.. note::
-
-   The ``environment`` configuration is available since :ref:`format version 4 <project_format_version>`
-
-Host side environment variable expansion is also supported in
-the values specified in the ``environment`` dictionary. This can be
-useful for more complex configurations where the shell environment
-needs more explicit setup, example:
+Or, a more complex example is how one might share the host pulseaudio
+server with a ``bst shell`` environment:
 
 .. code:: yaml
 
@@ -631,6 +625,8 @@ project is defined here.
    variables:
      prefix: "/usr"
 
+
+.. _project_defaults_environment:
 
 Environment
 ~~~~~~~~~~~
