@@ -1439,6 +1439,10 @@ class Element(Plugin):
                     if os.environ.get(inherit) is not None:
                         environment[inherit] = os.environ.get(inherit)
 
+                # Now add in the explicitly set environment variables
+                for key, value in _yaml.node_items(project._shell_environment):
+                    environment[key] = value
+
                 # Setup any requested bind mounts
                 if mounts is None:
                     mounts = []

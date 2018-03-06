@@ -39,7 +39,7 @@ from ._sourcefactory import SourceFactory
 # This version is bumped whenever enhancements are made
 # to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 3
+BST_FORMAT_VERSION = 4
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -104,6 +104,7 @@ class Project():
         # Shell options
         self._shell_command = []      # The default interactive shell command
         self._shell_env_inherit = []  # Environment vars to inherit when non-isolated
+        self._shell_environment = {}  # Statically set environment vars
         self._shell_host_files = []   # A list of HostMount objects
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
@@ -298,11 +299,17 @@ class Project():
 
         # Parse shell options
         shell_options = _yaml.node_get(config, Mapping, 'shell', default_value={})
-        _yaml.node_validate(shell_options, ['command', 'environment-inherit', 'host-files'])
+        _yaml.node_validate(shell_options, ['command', 'environment-inherit', 'environment', 'host-files'])
         self._shell_command = _yaml.node_get(shell_options, list, 'command',
                                              default_value=['sh', '-i'])
         self._shell_env_inherit = _yaml.node_get(shell_options, list, 'environment-inherit',
                                                  default_value=[])
+
+        # Perform environment expansion right away
+        shell_environment = _yaml.node_get(shell_options, Mapping, 'environment', default_value={})
+        for key, _ in _yaml.node_items(shell_environment):
+            value = _yaml.node_get(shell_environment, str, key)
+            self._shell_environment[key] = os.path.expandvars(value)
 
         # Host files is parsed as a list for convenience
         host_files = _yaml.node_get(shell_options, list, 'host-files', default_value=[])
