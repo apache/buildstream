@@ -716,6 +716,10 @@ configuration data as shown below.
        config:
          checkout-submodules: False
 
+.. note::
+
+   The ``sources`` override is available since :ref:`format version 1 <project_format_version>`
+
 
 .. _project_builtin_defaults:
 
