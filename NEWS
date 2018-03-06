@@ -6,6 +6,10 @@ buildstream 1.1.1
     when `bst shell` is used; allowing projects to provide a more
     functional shell environment.
 
+  o The `bst shell` command now has a `--mount` option allowing
+    users to mount files and directories into the sandbox for
+    testing purposes.
+
   o Log lines are now configurable with the new "message-format"
     user configuration, allowing one to express optional fields
     such as microsecond precision and wallclock time.
