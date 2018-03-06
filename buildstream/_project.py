@@ -54,6 +54,11 @@ class HostMount():
 
     def __init__(self, path, host_path=None, optional=False):
 
+        # Support environment variable expansion in host mounts
+        path = os.path.expandvars(path)
+        if host_path is not None:
+            host_path = os.path.expandvars(host_path)
+
         self.path = path              # Path inside the sandbox
         self.host_path = host_path    # Path on the host
         self.optional = optional      # Optional mounts do not incur warnings or errors
