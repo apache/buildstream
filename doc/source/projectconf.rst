@@ -161,6 +161,8 @@ ensure that the customized prompt is not overwritten:
      command: [ 'bash', '--noprofile', '--norc', '-i' ]
 
 
+.. _project_shell_env_inherit:
+
 Environment Inheritance
 ~~~~~~~~~~~~~~~~~~~~~~~
 In order to cooperate with your host environment, a debugging shell
@@ -180,6 +182,30 @@ environments with debugging shells for your project, specify the following:
      - DBUS_SESSION_BUS_ADDRESS
 
 
+Environment Assignments
+~~~~~~~~~~~~~~~~~~~~~~~
+In addition to :ref:`simple environment inheritance <project_shell_env_inherit>`
+it is also possible to explicitly set environment variables using the ``environment``
+shell configuration.
+
+.. note::
+
+   The ``environment`` configuration is available since :ref:`format version 4 <project_format_version>`
+
+Host side environment variable expansion is also supported in
+the values specified in the ``environment`` dictionary. This can be
+useful for more complex configurations where the shell environment
+needs more explicit setup, example:
+
+.. code:: yaml
+
+   shell:
+
+     # Set some environment variables explicitly
+     environment:
+       PULSE_SERVER: 'unix:${XDG_RUNTIME_DIR}/pulse/native'
+
+
 Host Files
 ~~~~~~~~~~
 It can be useful to share some files on the host with a shell so that
@@ -187,6 +213,10 @@ it can integrate better with the host environment.
 
 The ``host-files`` configuration allows one to specify files and
 directories on the host to be bind mounted into the sandbox.
+
+.. note::
+
+   The ``host-files`` configuration is available since :ref:`format version 4 <project_format_version>`
 
 .. warning::
 
@@ -252,10 +282,16 @@ Here is an example of using *shorthand mount specifications*:
      - '/etc/group'
      - '/etc/resolv.conf'
 
+Host side environment variable expansion is also supported:
 
-.. note::
+.. code:: yaml
 
-   The ``host-files`` configuration is available since :ref:`format version 3 <project_format_version>`
+   shell:
+
+     # Mount a host side pulseaudio server socket into
+     # the shell environment at the same location.
+     host-files:
+     - '${XDG_RUNTIME_DIR}/pulse/native'
 
 
 .. _project_plugins:
