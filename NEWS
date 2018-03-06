@@ -16,6 +16,16 @@ buildstream 1.1.1
 
   o Newly added filter element
 
+  o Git source plugin now allows disabling of submodule checkouts
+
+  o In the same way we allow overriding element configurations
+    by their 'kind' in project.conf, we now support the same
+    for source plugin configurations.
+
+  o Tar and zip sources now automatically recall an `etag`
+    from the http headers, optimizing tracking of tarballs
+    significantly (issue #62)
+
 
 =================
 buildstream 1.1.0
