@@ -68,7 +68,7 @@ def test_executable(cli, tmpdir, datafiles):
 # Test host environment variable inheritance
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
-def test_inherit(cli, tmpdir, datafiles, animal):
+def test_env_inherit(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Set the env var, and expect the same with added newline
@@ -85,10 +85,50 @@ def test_inherit(cli, tmpdir, datafiles, animal):
     assert result.output == expected
 
 
+# Test shell environment variable explicit assignments
+@pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
+@pytest.mark.datafiles(DATA_DIR)
+def test_env_assign(cli, tmpdir, datafiles, animal):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    expected = animal + '\n'
+
+    result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], config={
+        'shell': {
+            'environment': {
+                'ANIMAL': animal
+            }
+        }
+    })
+
+    assert result.exit_code == 0
+    assert result.output == expected
+
+
+# Test shell environment variable explicit assignments with host env var expansion
+@pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
+@pytest.mark.datafiles(DATA_DIR)
+def test_env_assign_expand_host_environ(cli, tmpdir, datafiles, animal):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    expected = 'The animal is: {}\n'.format(animal)
+
+    os.environ['BEAST'] = animal
+
+    result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], config={
+        'shell': {
+            'environment': {
+                'ANIMAL': 'The animal is: ${BEAST}'
+            }
+        }
+    })
+
+    assert result.exit_code == 0
+    assert result.output == expected
+
+
 # Test that environment variable inheritance is disabled with --isolate
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
-def test_isolated_no_inherit(cli, tmpdir, datafiles, animal):
+def test_env_isolated_no_inherit(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Set the env var, but expect that it is not applied
