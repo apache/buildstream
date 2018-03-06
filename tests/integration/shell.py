@@ -155,6 +155,31 @@ def test_host_files(cli, tmpdir, datafiles, path):
     assert result.output == 'pony\n'
 
 
+# Test that bind mounts defined in project.conf work
+@pytest.mark.parametrize("path", [("/etc"), ("/usr/share/pony")])
+@pytest.mark.datafiles(DATA_DIR)
+def test_host_files_expand_environ(cli, tmpdir, datafiles, path):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    hostpath = os.path.join(project, 'files', 'shell-mount')
+    fullpath = os.path.join(path, 'pony.txt')
+
+    os.environ['BASE_PONY'] = path
+    os.environ['HOST_PONY_PATH'] = hostpath
+
+    result = execute_shell(cli, project, ['cat', fullpath], config={
+        'shell': {
+            'host-files': [
+                {
+                    'host_path': '${HOST_PONY_PATH}/pony.txt',
+                    'path': '${BASE_PONY}/pony.txt'
+                }
+            ]
+        }
+    })
+    assert result.exit_code == 0
+    assert result.output == 'pony\n'
+
+
 # Test that bind mounts defined in project.conf dont mount in isolation
 @pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
 @pytest.mark.datafiles(DATA_DIR)
