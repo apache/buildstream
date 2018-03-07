@@ -338,7 +338,7 @@ class StatusJob():
         self.time_code = TimeCode(content_profile, format_profile)
 
         # Calculate the size needed to display
-        self.size = 10  # Size of time code
+        self.size = 10  # Size of time code with brackets
         self.size += len(action_name)
         self.size += len(element.name)
         self.size += 3  # '[' + ':' + ']'
@@ -352,7 +352,9 @@ class StatusJob():
     #    elapsed (datetime): The session elapsed time offset
     #
     def render(self, padding, elapsed):
-        text = self.time_code.render_time(elapsed - self.offset)
+        text = self.format_profile.fmt('[') + \
+            self.time_code.render_time(elapsed - self.offset) + \
+            self.format_profile.fmt(']')
 
         # Add padding after the display name, before terminating ']'
         name = self.element.name + (' ' * padding)
