@@ -296,7 +296,11 @@ class Source(Plugin):
             return
 
         if self.__consistency < Consistency.CACHED:
-            self.__consistency = self.get_consistency()
+
+            # Source consistency interrogations are silent.
+            context = self._get_context()
+            with context._silence():
+                self.__consistency = self.get_consistency()
 
             if self._has_workspace() and \
                self.__consistency > Consistency.INCONSISTENT:

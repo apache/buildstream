@@ -343,6 +343,19 @@ class Context():
         self._message_handler(message, context=self)
         return
 
+    # _silence()
+    #
+    # A context manager to silence messages, this behaves in
+    # the same way as the `silent_nested` argument of the
+    # Context._timed_activity() context manager: especially
+    # important messages will not be silenced.
+    #
+    @contextmanager
+    def _silence(self):
+        self._push_message_depth(True)
+        yield
+        self._pop_message_depth()
+
     # _timed_activity()
     #
     # Context manager for performing timed activities and logging those
