@@ -353,8 +353,7 @@ class LogLine(Widget):
             "key": CacheKey(content_profile, format_profile, err_profile),
             "element": ElementName(content_profile, format_profile),
             "action": TypeName(content_profile, format_profile),
-            "message": MessageOrLogFile(content_profile, format_profile, err_profile),
-            "sequence": SequenceID(content_profile, format_profile)
+            "message": MessageOrLogFile(content_profile, format_profile, err_profile)
         }
         logfile_tokens = self._parse_logfile_format(logfile_format, content_profile, format_profile)
         self.columns.extend(logfile_tokens)

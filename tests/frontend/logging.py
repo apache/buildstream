@@ -51,7 +51,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     element_path = os.path.join(project, 'elements')
     element_name = 'fetch-test-git.bst'
 
-    custom_log_format = '%{elapsed},%{elapsed-us},%{wallclock},%{key},%{element},%{action},%{message},%{sequence}'
+    custom_log_format = '%{elapsed},%{elapsed-us},%{wallclock},%{key},%{element},%{action},%{message}'
     user_config = {'logging': {'message-format': custom_log_format}}
     user_config_file = str(tmpdir.join('buildstream.conf'))
     _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
@@ -77,5 +77,5 @@ def test_custom_logging(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['-c', user_config_file, 'fetch', element_name])
     result.assert_success()
 
-    m = re.search("\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,,,SUCCESS,Checking sources,\d", result.stderr)
+    m = re.search("\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,,,SUCCESS,Checking sources", result.stderr)
     assert(m is not None)
