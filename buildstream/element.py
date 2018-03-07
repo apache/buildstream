@@ -173,6 +173,7 @@ class Element(Plugin):
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(meta)
+        variables['element-name'] = self.name
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables

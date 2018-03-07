@@ -29,6 +29,10 @@ variables:
   # Note: this value defaults to the number of cores available
   max-jobs: 4
 
+  # Note: These variables are defined later on in element.py and _project.py
+  element-name: ""
+  project-name: ""
+
   # Path configuration, to be used in build instructions.
   #
   prefix: "/usr"
@@ -50,10 +54,10 @@ variables:
 
   # Indicates the default build directory where input is
   # normally staged
-  build-root: /buildstream/build
+  build-root: /buildstream/%{project-name}/%{element-name}
 
   # Indicates the build installation directory in the sandbox
-  install-root: /buildstream/install
+  install-root: /buildstream-install
 
   # Arguments for tooling used when stripping debug symbols
   objcopy-link-args: --add-gnu-debuglink

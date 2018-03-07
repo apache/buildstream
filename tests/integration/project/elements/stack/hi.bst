@@ -4,5 +4,5 @@ depends:
     type: build
 config:
   commands:
-    - "mkdir -p /buildstream/install"
-    - "echo 'Hi' > /buildstream/install/hi"
+    - "mkdir -p %{install-root}"
+    - "echo 'Hi' > %{install-root}/hi"

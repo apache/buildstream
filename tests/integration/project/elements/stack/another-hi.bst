@@ -7,5 +7,5 @@ depends:
 
 config:
   commands:
-    - "mkdir -p /buildstream/install"
-    - "echo 'Another hi' > /buildstream/install/another-hi"
+    - "mkdir -p %{install-root}"
+    - "echo 'Another hi' > %{install-root}/another-hi"

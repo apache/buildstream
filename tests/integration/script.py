@@ -39,8 +39,8 @@ def test_script(cli, tmpdir, datafiles):
     create_script_element(element_name, element_path,
                           config={
                               'commands': [
-                                  "mkdir -p /buildstream/install",
-                                  "echo 'Hi' > /buildstream/install/test"
+                                  "mkdir -p %{install-root}",
+                                  "echo 'Hi' > %{install-root}/test"
                               ],
                           })
 
@@ -69,9 +69,9 @@ def test_script_root(cli, tmpdir, datafiles):
                               # want to check the default here
                               # 'root-read-only': False,
                               'commands': [
-                                  "mkdir -p /buildstream/install",
+                                  "mkdir -p %{install-root}",
                                   "echo 'I can write to root' > /test",
-                                  "cp /test /buildstream/install"
+                                  "cp /test %{install-root}"
                               ],
                           })
 
@@ -97,9 +97,9 @@ def test_script_no_root(cli, tmpdir, datafiles):
                           config={
                               'root-read-only': True,
                               'commands': [
-                                  "mkdir -p /buildstream/install",
+                                  "mkdir -p %{install-root}",
                                   "echo 'I can not write to root' > /test",
-                                  "cp /test /buildstream/install"
+                                  "cp /test %{install-root}"
                               ],
                           })
 

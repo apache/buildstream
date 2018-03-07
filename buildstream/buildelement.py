@@ -90,7 +90,7 @@ of the staged sources.
 Result collection
 ~~~~~~~~~~~~~~~~~
 Finally, the resulting build *artifact* is collected from the the ``%{install-root}``
-directory (which is normally configured as ``/buildstream/install``) inside the sandbox.
+directory (which is normally configured as ``/buildstream-install``) inside the sandbox.
 
 All build elements must install into the ``%{install-root}`` using whatever
 semantic the given build system provides to do this. E.g. for standard autotools
@@ -222,7 +222,7 @@ class BuildElement(Element):
                       "will not be allowed to stage to %{build-root}.")
 
         # Return the payload, this is configurable but is generally
-        # always the /buildstream/install directory
+        # always the /buildstream-install directory
         return self.get_variable('install-root')
 
     def _get_commands(self, node, name):

@@ -1,15 +1,7 @@
 # Common script element variables
 variables:
-  # Defines the directory that output is collected from once commands
-  # have been run.
-  install-root: /buildstream/install
-  #
   # Defines the directory commands will be run from.
   cwd: /
-  #
-  # Not directly used, but expected to be used when staging elements to be
-  # worked on.
-  build-root: /buildstream/build
 
 # Script element configuration
 config:
