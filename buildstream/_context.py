@@ -30,7 +30,6 @@ from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import artifact_cache_specs_from_config_node
-from threading import Lock
 
 
 # Context()
@@ -45,9 +44,6 @@ from threading import Lock
 # in which BuildStream was invoked.
 #
 class Context():
-
-    # Class-level static variable used to distinguish timed activities
-    sequence_ids = 0
 
     def __init__(self, *, fetch_subprojects=False):
 
@@ -368,13 +364,9 @@ class Context():
     #
     @contextmanager
     def _timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
+
         starttime = datetime.datetime.now()
         stopped_time = None
-
-        with Lock():
-            # Atomically increase the sequence counter
-            Context.sequence_ids += 1
-            sequence_id = Context.sequence_ids
 
         def stop_time():
             nonlocal stopped_time
@@ -389,7 +381,7 @@ class Context():
         with _signals.suspendable(stop_time, resume_time):
             try:
                 # Push activity depth for status messages
-                message = Message(unique_id, MessageType.START, activity_name, detail=detail, sequence_id=sequence_id)
+                message = Message(unique_id, MessageType.START, activity_name, detail=detail)
                 self._message(message)
                 self._push_message_depth(silent_nested)
                 yield
@@ -398,13 +390,13 @@ class Context():
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
                 elapsed = datetime.datetime.now() - starttime
-                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed, sequence_id=sequence_id)
+                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
                 self._pop_message_depth()
                 self._message(message)
                 raise
 
             elapsed = datetime.datetime.now() - starttime
-            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed, sequence_id=sequence_id)
+            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
             self._pop_message_depth()
             self._message(message)
 

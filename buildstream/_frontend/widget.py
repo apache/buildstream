@@ -284,18 +284,6 @@ class LogFile(Widget):
         return text
 
 
-class SequenceID(Widget):
-    """ A unique Sequence ID is created for each timed_activity, and can
-        be used to associate all log lines from a particular
-        activity.
-    """
-    def render(self, message):
-        if message.sequence_id is None:
-            return self.content_profile.fmt("-")
-        else:
-            return self.content_profile.fmt(str(message.sequence_id))
-
-
 class MessageOrLogFile(Widget):
     """ START and SUCCESS messages are expected to have no useful
         information in the message text, so we display the logfile name for
