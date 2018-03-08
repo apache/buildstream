@@ -15,9 +15,6 @@ before_script:
   - mount
   - df -h
 
-  - useradd -Um buildstream
-  - chown -R buildstream:buildstream .
-
 #####################################################
 #                  Prepare stage                    #
 #####################################################
@@ -62,12 +59,20 @@ source_dist:
 #                    Test stage                     #
 #####################################################
 
+# This is a YAML anchor to set up users for linux-tests and unix-tests
+# (it will not work on linux-perf-tests).
+.user_setup: &shared_user_setup
+  before_script:
+    - useradd -Um buildstream;
+    - chown -R buildstream:buildstream .;
+
 # Run premerge commits
 #
 linux-tests:
   stage: test
   variables:
     PYTEST_ADDOPTS: "--color=yes"
+  <<: *shared_user_setup # Add the before_script from .user_setup
   script:
 
   - export INTEGRATION_CACHE="$(pwd)/cache/integration-cache"
@@ -99,6 +104,7 @@ unix-tests:
   variables:
     BST_FORCE_BACKEND: "unix"
     PYTEST_ADDOPTS: "--color=yes"
+  <<: *shared_user_setup # Add the before_script from .user_setup
   script:
 
     - export INTEGRATION_CACHE="$(pwd)/cache/integration-cache"
@@ -148,6 +154,46 @@ docs:
   dependencies:
   - source_dist
 
+
+############################################
+#            Performance test              #
+############################################
+
+# This checks out a specific revision of the 'benchmark' repository and uses it to
+# run a benchmark on the version of BuildStream currently under test. It can only run
+# on specific runner hardware matching the 'benchmark' tag. This test is allowed to fail
+# at the moment.
+linux-perf-tests:
+  stage: test
+  allow_failure: true
+  tags:
+    - benchmarks
+  variables:
+    PYTEST_ADDOPTS: "--color=yes"
+  script:
+
+  # No need to install BuildStream here, just tell the benchmarks repo
+  # to use the commit SHA and repository.
+  - git clone https://gitlab.com/BuildStream/benchmarks.git
+  - cd benchmarks
+
+  # Use a fixed version of benchmarks so the results are comparable.
+  - git checkout 4e03d40d638eb2f3e2111d6eac9ec504d9d5737b
+  - |
+    cat > version_under_test.benchmark << EOF
+    version_defaults:
+      buildstream_repo: $CI_REPOSITORY_URL
+
+    versions:
+    - name: version-under-test
+      base_docker_ref: latest
+      buildstream_ref: master
+      buildstream_commit: $CI_COMMIT_SHA
+    EOF
+  - python3 -m bst_benchmarks -c configs/buildstream-ci.benchmark -c version_under_test.benchmark > results.json
+  artifacts:
+    paths:
+    - benchmarks/results.json
 
 #####################################################
 #                    Post stage                     #
