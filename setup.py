@@ -224,6 +224,7 @@ setup(name='BuildStream',
                      'pytest-datafiles',
                      'pytest-env',
                      'pytest-pep8',
+                     'pytest-pylint',
                      'pytest-cov',
                      # Provide option to run tests in parallel, less reliable
                      'pytest-xdist',
