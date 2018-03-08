@@ -366,7 +366,8 @@ class Project():
     #    A tuple in the following format: (element, path).
     def _list_workspaces(self):
         for element, _ in _yaml.node_items(self._workspaces):
-            yield (element, self._workspaces[element])
+            if element != "version":
+                yield (element, self._workspaces[element]["path"])
 
     # _get_workspace()
     #
@@ -381,10 +382,12 @@ class Project():
     #    otherwise
     #
     def _get_workspace(self, element):
-        try:
-            return self._workspaces[element]
-        except KeyError:
+        if element == "version":
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Workspaces for elements named version are not supported.")
+        if element not in self._workspaces:
             return None
+        return self._workspaces[element]["path"]
 
     # _set_workspace()
     #
@@ -396,10 +399,13 @@ class Project():
     #    path (str) - The path to set the workspace to
     #
     def _set_workspace(self, element, path):
+        if element == "version":
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Workspaces for elements named version are not supported.")
         if element.name not in self._workspaces:
             self._workspaces[element.name] = {}
 
-        self._workspaces[element.name] = path
+        self._workspaces[element.name]["path"] = path
         element._set_source_workspaces(path)
 
     # _delete_workspace()
@@ -453,26 +459,39 @@ class Project():
     #
     def _ensure_workspace_config_format(self):
         needs_rewrite = False
-        for element, config in _yaml.node_items(self._workspaces):
-            if isinstance(config, str):
-                pass
 
-            elif isinstance(config, dict):
-                sources = list(_yaml.node_items(config))
-                if len(sources) > 1:
-                    detail = "There are multiple workspaces open for '{}'.\n" + \
-                             "This is not supported anymore.\n" + \
-                             "Please remove this element from '{}'."
+        version = _yaml.node_get(self._workspaces, int, "version", default_value=0)
+        if "version" not in self._workspaces:
+            # Pre-versioning format can be of two forms
+            for element, config in _yaml.node_items(self._workspaces):
+                if isinstance(config, str):
+                    pass
+
+                elif isinstance(config, dict):
+                    sources = list(_yaml.node_items(config))
+                    if len(sources) > 1:
+                        detail = "There are multiple workspaces open for '{}'.\n" + \
+                                 "This is not supported anymore.\n" + \
+                                 "Please remove this element from '{}'."
+                        raise LoadError(LoadErrorReason.INVALID_DATA,
+                                        detail.format(element,
+                                                      os.path.join(self.directory, ".bst", "workspaces.yml")))
+
+                    self._workspaces[element] = sources[0][1]
+                    needs_rewrite = True
+
+                else:
                     raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    detail.format(element,
-                                                  os.path.join(self.directory, ".bst", "workspaces.yml")))
+                                    "Workspace config is in unexpected format.")
 
-                self._workspaces[element] = sources[0][1]
-                needs_rewrite = True
-
-            else:
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Workspace config is in unexpected format.")
+        version = _yaml.node_get(self._workspaces, int, "version", default_value=0)
+        if version < 1:
+            self._workspaces = {
+                element: {"path": config}
+                for element, config in _yaml.node_items(self._workspaces)
+                if element != "version"}
+            self._workspaces["version"] = 1
+            needs_rewrite = True
 
         if needs_rewrite:
             self._save_workspace_config()
