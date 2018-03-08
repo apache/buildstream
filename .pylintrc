@@ -7,7 +7,7 @@ extension-pkg-whitelist=
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore=CVS
+ignore=CVS,tests,doc
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
@@ -174,7 +174,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 # Set the output format. Available formats are text, parseable, colorized, json
 # and msvs (visual studio).You can also give a reporter class, eg
 # mypackage.mymodule.MyReporterClass.
-output-format=text
+output-format=colorized
 
 # Tells whether to display a full report or only the messages
 reports=no
@@ -299,12 +299,7 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,
-           j,
-           k,
-           ex,
-           Run,
-           _
+good-names=i,j,k,ex,Run,_,e,f
 
 # Include a hint for the correct naming format with invalid-name
 include-naming-hint=no
@@ -446,7 +441,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=119
 
 # Maximum number of lines in a module
 max-module-lines=1000
