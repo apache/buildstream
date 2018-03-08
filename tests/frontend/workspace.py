@@ -226,7 +226,10 @@ def test_open_old_format(cli, tmpdir, datafiles):
     }
 
     workspace_dict_expected = {
-        "alpha.bst": "/workspaces/bravo"
+        "version": 1,
+        "alpha.bst": {
+            "path": "/workspaces/bravo",
+        },
     }
 
     _yaml.dump(workspace_dict_old, workspace_config_path)
@@ -241,8 +244,11 @@ def test_open_old_format(cli, tmpdir, datafiles):
     # running a workspace command
     elements = list(_yaml.node_items(loaded_config))
     assert len(elements) == len(workspace_dict_expected)
-    for element, path in workspace_dict_expected.items():
-        assert path == _yaml.node_get(loaded_config, str, element)
+    for element, config in workspace_dict_expected.items():
+        if element == "version":
+            continue
+        assert config["path"] == _yaml.node_get(loaded_config[element], str, "path")
+    assert workspace_dict_expected["version"] == _yaml.node_get(loaded_config, int, "version")
 
 
 @pytest.mark.datafiles(DATA_DIR)
