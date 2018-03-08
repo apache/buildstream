@@ -25,7 +25,7 @@
 usage() {
     cat <<EOF
 
-USAGE: $(basename "$0") [-t] [-T] [-h] [COMMAND] [ARG..]
+USAGE: $(basename "$0") [-t] [-T] [-p] [-h] [COMMAND] [ARG..]
 
 Run a bst command in a new BuildStream contaner.
 
@@ -35,20 +35,24 @@ using "/bin/bash -i".
 OPTIONS:
     -t      Force pseudo-terminal allocation.
     -T      Disable pseudo-terminal allocation.
+    -p      Pull the latest buildstream image before running.
     -h      Print this help text and exit.
 
 EOF
     exit "$1"
 }
 
+BST_IMAGE='buildstream/buildstream-fedora:latest'
+
 is_tty=
+update=false
 
 if test -t 0
 then
     is_tty=y
 fi
 
-while getopts tTh arg
+while getopts tTph arg
 do
     case $arg in
     T)
@@ -56,6 +60,9 @@ do
         ;;
     t)
         is_tty=y
+        ;;
+    p)
+        update=true
         ;;
     h)
         usage 0
@@ -88,6 +95,11 @@ else
     command="/usr/local/bin/bst $@"
 fi
 
+if "$update" == true
+then
+    docker pull "$BST_IMAGE"
+fi
+
 # FIXME: We run with --privileged to allow bwrap to mount system
 #        directories, but this is overkill. We should add the correct
 #        --cap-add calls, or seccomp settings, but we are not sure
@@ -105,5 +117,5 @@ exec docker run --rm -i${is_tty:+ -t} \
                 --volume buildstream-config:/root/.config \
                 --volume "$PWD":/src \
                 --workdir /src \
-                buildstream/buildstream-fedora:latest \
+                "$BST_IMAGE" \
                 $command
