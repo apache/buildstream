@@ -189,6 +189,30 @@ class ArtifactCache():
         raise ImplError("Cache '{kind}' does not implement commit()"
                         .format(kind=type(self).__name__))
 
+    # can_diff():
+    #
+    # Whether this cache implementation can diff (unfortunately
+    # there's no way to tell if an implementation is going to throw
+    # ImplError without abc).
+    #
+    def can_diff(self):
+        return False
+
+    # diff():
+    #
+    # Return a list of files that have been added or modified between
+    # the artifacts described by key_a and key_b.
+    #
+    # Args:
+    #     element (Element): The element whose artifacts to compare
+    #     key_a (str): The first artifact key
+    #     key_b (str): The second artifact key
+    #     subdir (str): A subdirectory to limit the comparison to
+    #
+    def diff(self, element, key_a, key_b, *, subdir=None):
+        raise ImplError("Cache '{kind}' does not implement diff()"
+                        .format(kind=type(self).__name__))
+
     # has_fetch_remotes():
     #
     # Check whether any remote repositories are available for fetching.

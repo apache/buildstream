@@ -269,6 +269,46 @@ class OSTreeCache(ArtifactCache):
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 
+    # can_diff():
+    #
+    # Whether this cache implementation can diff (unfortunately
+    # there's no way to tell if an implementation is going to throw
+    # ImplError without abc).
+    #
+    def can_diff(self):
+        return True
+
+    # diff():
+    #
+    # Return a list of files that have been added or modified between
+    # the artifacts described by key_a and key_b.
+    #
+    # Args:
+    #     element (Element): The element whose artifacts to compare
+    #     key_a (str): The first artifact key
+    #     key_b (str): The second artifact key
+    #     subdir (str): A subdirectory to limit the comparison to
+    #
+    def diff(self, element, key_a, key_b, *, subdir=None):
+        _, a, _ = self.repo.read_commit(buildref(element, key_a))
+        _, b, _ = self.repo.read_commit(buildref(element, key_b))
+
+        if subdir:
+            a = a.get_child(subdir)
+            b = b.get_child(subdir)
+
+            subpath = a.get_path()
+        else:
+            subpath = '/'
+
+        modified, removed, added = _ostree.diff_dirs(a, b)
+
+        modified = [os.path.relpath(item.target.get_path(), subpath) for item in modified]
+        removed = [os.path.relpath(item.get_path(), subpath) for item in removed]
+        added = [os.path.relpath(item.get_path(), subpath) for item in added]
+
+        return modified, removed, added
+
     # pull():
     #
     # Pull artifact from one of the configured remote repositories.
