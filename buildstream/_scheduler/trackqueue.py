@@ -24,6 +24,7 @@ import os
 
 # BuildStream toplevel imports
 from ..plugin import _plugin_lookup
+from .. import SourceError
 from .. import _yaml
 
 # Local imports
@@ -58,28 +59,16 @@ class TrackQueue(Queue):
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
             source = _plugin_lookup(unique_id)
-            if source._set_ref(new_ref, source._Source__origin_node):
-
-                changed = True
-                project = source._get_project()
-                toplevel = source._Source__origin_toplevel
-                filename = source._Source__origin_filename
-                fullname = os.path.join(project.element_path, filename)
-
-                # Here we are in master process, what to do if writing
-                # to the disk fails for some reason ?
-                try:
-                    _yaml.dump(toplevel, fullname)
-                except OSError as e:
-                    # FIXME: We currently dont have a clear path to
-                    #        fail the scheduler from the main process, so
-                    #        this will just warn and BuildStream will exit
-                    #        with a success code.
-                    #
-                    source.warn("Failed to update project file",
-                                detail="{}: Failed to rewrite "
-                                "tracked source to file {}: {}"
-                                .format(source, fullname, e))
+            try:
+                source._save_ref(new_ref)
+            except SourceError as e:
+                # FIXME: We currently dont have a clear path to
+                #        fail the scheduler from the main process, so
+                #        this will just warn and BuildStream will exit
+                #        with a success code.
+                #
+                source.warn("Failed to update project file",
+                            detail="{}".format(e))
 
         context = element._get_context()
         context._push_message_depth(True)

@@ -29,6 +29,7 @@ from contextlib import contextmanager
 from . import Plugin
 from . import _yaml, utils
 from ._exceptions import BstError, ImplError, LoadError, LoadErrorReason, ErrorDomain
+from ._projectrefs import ProjectRefStorage
 
 
 class Consistency():
@@ -80,8 +81,11 @@ class Source(Plugin):
 
     def __init__(self, context, project, meta):
         provenance = _yaml.node_get_provenance(meta.config)
-        super().__init__(meta.name, context, project, provenance, "source")
+        super().__init__("{}-{}".format(meta.element_name, meta.element_index),
+                         context, project, provenance, "source")
 
+        self.__element_name = meta.element_name         # The name of the element owning this source
+        self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__directory = meta.directory               # Staging relative directory
         self.__origin_node = meta.origin_node           # YAML node this Source was loaded from
         self.__origin_toplevel = meta.origin_toplevel   # Toplevel YAML node for the file
@@ -185,6 +189,16 @@ class Source(Plugin):
            (:class:`.Consistency`): The source consistency
         """
         raise ImplError("Source plugin '{}' does not implement get_consistency()".format(self.get_kind()))
+
+    def load_ref(self, node):
+        """Loads the *ref* for this Source from the specified *node*.
+
+        Args:
+           node (dict): The YAML node to load the ref from
+
+        *Since: 1.2*
+        """
+        raise ImplError("Source plugin '{}' does not implement load_ref()".format(self.get_kind()))
 
     def get_ref(self):
         """Fetch the internal ref, however it is represented
@@ -438,12 +452,148 @@ class Source(Plugin):
         # This comparison should work even for tuples and lists,
         # but we're mostly concerned about simple strings anyway.
         if current_ref != ref:
-            self.set_ref(ref, node)
             changed = True
+
+        # Set the ref regardless of whether it changed, the
+        # TrackQueue() will want to update a specific node with
+        # the ref, regardless of whether the original has changed.
+        self.set_ref(ref, node)
 
         self.__tracking = False
 
         return changed
+
+    # _load_ref():
+    #
+    # Loads the ref for the said source.
+    #
+    # Raises:
+    #    (SourceError): If the source does not implement load_ref()
+    #
+    # Returns:
+    #    (ref): A redundant ref specified inline for a project.refs using project
+    #
+    # This is partly a wrapper around `Source.load_ref()`, it will decide
+    # where to load the ref from depending on which project the source belongs
+    # to and whether that project uses a project.refs file.
+    #
+    # Note the return value is used to construct a summarized warning in the
+    # case that the toplevel project uses project.refs and also lists refs
+    # which will be ignored.
+    #
+    def _load_ref(self):
+        context = self._get_context()
+        project = self._get_project()
+        toplevel = context._get_toplevel_project()
+        redundant_ref = None
+
+        element_name = self.__element_name
+        element_idx = self.__element_index
+
+        def do_load_ref(node):
+            try:
+                self.load_ref(ref_node)
+            except ImplError as e:
+                raise SourceError("{}: Storing refs in project.refs is not supported by '{}' sources"
+                                  .format(self, self.get_kind()),
+                                  reason="unsupported-load-ref") from e
+
+        # If the main project overrides the ref, use the override
+        if project is not toplevel and toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+            ref_node = toplevel.refs.lookup_ref(project.name, element_name, element_idx)
+            if ref_node is not None:
+                do_load_ref(ref_node)
+
+        # If the project itself uses project.refs, clear the ref which
+        # was already loaded via Source.configure(), as this would
+        # violate the rule of refs being either in project.refs or in
+        # the elements themselves.
+        #
+        elif project._ref_storage == ProjectRefStorage.PROJECT_REFS:
+
+            # First warn if there is a ref already loaded, and reset it
+            redundant_ref = self.get_ref()
+            if redundant_ref is not None:
+                self.set_ref(None, {})
+
+            # Try to load the ref
+            ref_node = project.refs.lookup_ref(project.name, element_name, element_idx)
+            if ref_node is not None:
+                do_load_ref(ref_node)
+
+        return redundant_ref
+
+    # _save_ref()
+    #
+    # Persists the ref for this source. This will decide where to save the
+    # ref, or refuse to persist it, depending on active ref-storage project
+    # settings.
+    #
+    # Args:
+    #    new_ref (smth): The new reference to save
+    #
+    # Raises:
+    #    (SourceError): In the case we encounter errors saving a file to disk
+    #
+    def _save_ref(self, new_ref):
+
+        context = self._get_context()
+        project = self._get_project()
+        toplevel = context._get_toplevel_project()
+
+        element_name = self.__element_name
+        element_idx = self.__element_index
+
+        #
+        # Step 1 - Obtain the node
+        #
+        if project is toplevel:
+            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+                node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
+            else:
+                node = self.__origin_node
+        else:
+            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+                node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
+            else:
+                node = {}
+
+        #
+        # Step 2 - Set the ref in memory, and determine changed state
+        #
+        changed = self._set_ref(new_ref, node)
+
+        def do_save_refs(refs):
+            try:
+                refs.save()
+            except OSError as e:
+                raise SourceError("{}: Error saving source reference to 'project.refs': {}"
+                                  .format(self, e),
+                                  reason="save-ref-error") from e
+
+        #
+        # Step 3 - Apply the change in project data
+        #
+        if project is toplevel:
+            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+                do_save_refs(toplevel.refs)
+            else:
+                # Save the ref in the originating file
+                #
+                toplevel_node = self.__origin_toplevel
+                filename = self.__origin_filename
+                fullname = os.path.join(toplevel.element_path, filename)
+                try:
+                    _yaml.dump(toplevel_node, fullname)
+                except OSError as e:
+                    raise SourceError("{}: Error saving source reference to '{}': {}"
+                                      .format(self, filename, e),
+                                      reason="save-ref-error") from e
+        else:
+            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+                do_save_refs(toplevel.refs)
+            else:
+                self.warn("{}: Not persisting new reference in junctioned project".format(self))
 
     # Wrapper for track()
     #

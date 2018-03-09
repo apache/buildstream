@@ -37,6 +37,7 @@ from . import Scope
 from . import _site
 from . import utils
 from ._platform import Platform
+from ._project import ProjectRefStorage
 from ._artifactcache.artifactcache import ArtifactCacheSpec, configured_remote_artifact_cache_specs
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
@@ -115,6 +116,7 @@ class Pipeline():
         self.total_elements = 0
         self.unused_workspaces = []
         self._resolved_elements = {}
+        self._redundant_refs = []
 
         # Load selected platform
         Platform._create_instance(context, project)
@@ -130,6 +132,17 @@ class Pipeline():
         with self.timed_activity("Resolving pipeline"):
             resolved_elements = [self.resolve(meta_element)
                                  for meta_element in meta_elements]
+
+        # Now warn about any redundant source references which may have
+        # been discovered in the resolve() phase.
+        if self._redundant_refs:
+            detail = "The following inline specified source references will be ignored:\n\n"
+            lines = [
+                "{}:{}".format(source._get_provenance(), ref)
+                for source, ref in self._redundant_refs
+            ]
+            detail += "\n".join(lines)
+            self.message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
 
         self.targets = resolved_elements[:len(targets)]
         self.exceptions = resolved_elements[len(targets):]
@@ -242,6 +255,43 @@ class Pipeline():
                 detail += "  " + element.name + "\n"
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 
+    # assert_junction_tracking()
+    #
+    # Raises an error if tracking is attempted on junctioned elements and
+    # a project.refs file is not enabled for the toplevel project.
+    #
+    # Args:
+    #    elements (list of Element): The list of elements to be tracked
+    #    build (bool): Whether this is being called for `bst build`, otherwise `bst track`
+    #
+    # The `build` argument is only useful for suggesting an appropriate
+    # alternative to the user
+    #
+    def assert_junction_tracking(self, elements, *, build):
+
+        # We can track anything if the toplevel project uses project.refs
+        #
+        if self.project._ref_storage == ProjectRefStorage.PROJECT_REFS:
+            return
+
+        # Ideally, we would want to report every cross junction element but not
+        # their dependencies, unless those cross junction elements dependencies
+        # were also explicitly requested on the command line.
+        #
+        # But this is too hard, lets shoot for a simple error.
+        for element in elements:
+            element_project = element._get_project()
+            if element_project is not self.project:
+                suggestion = '--except'
+                if build:
+                    suggestion = '--track-except'
+
+                detail = "Requested to track sources across junction boundaries\n" + \
+                         "in a project which does not use separate source references.\n\n" + \
+                         "Try using `{}` arguments to limit the scope of tracking.".format(suggestion)
+
+                raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
+
     # Generator function to iterate over only the elements
     # which are required to build the pipeline target, omitting
     # cached elements. The elements are yielded in a depth sorted
@@ -274,6 +324,9 @@ class Pipeline():
     # Internal: Instantiates plugin-provided Element and Source instances
     # from MetaElement and MetaSource objects
     #
+    # This has a side effect of populating `self._redundant_refs` so
+    # we can later print a warning
+    #
     def resolve(self, meta_element):
         if meta_element in self._resolved_elements:
             return self._resolved_elements[meta_element]
@@ -292,10 +345,13 @@ class Pipeline():
 
         # resolve sources
         for meta_source in meta_element.sources:
-            element._add_source(
-                meta_element.project._create_source(meta_source.kind,
-                                                    meta_source)
-            )
+            source = meta_element.project._create_source(meta_source.kind, meta_source)
+            redundant_ref = source._load_ref()
+            element._add_source(source)
+
+            # Collect redundant refs for a warning message
+            if redundant_ref is not None:
+                self._redundant_refs.append((source, redundant_ref))
 
         return element
 
@@ -321,6 +377,8 @@ class Pipeline():
         track = TrackQueue()
         track.enqueue(dependencies)
         self.session_elements = len(dependencies)
+
+        self.assert_junction_tracking(dependencies, build=False)
 
         self.message(MessageType.START, "Starting track")
         elapsed, status = scheduler.run([track])
@@ -426,6 +484,8 @@ class Pipeline():
         track_plan = []
         if track_first:
             track_plan = self.get_elements_to_track(track_first)
+
+        self.assert_junction_tracking(track_plan, build=True)
 
         if build_all:
             plan = self.dependencies(Scope.ALL)

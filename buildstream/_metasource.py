@@ -26,15 +26,18 @@ class MetaSource():
     # An abstract object holding data suitable for constructing a Source
     #
     # Args:
-    #    name: The name of the source, for display purposes
+    #    element_name: The name of the owning element
+    #    element_index: The index of the source in the owning element's source list
     #    kind: The kind of the source
     #    config: The configuration data for the source
     #    origin_node: The original YAML dictionary node defining this source
     #    origin_toplevel: The toplevel YAML loaded from the original file
     #    origin_filename: The filename in which the node was loaded from
     #
-    def __init__(self, name, kind, config, directory, origin_node, origin_toplevel, origin_filename):
-        self.name = name
+    def __init__(self, element_name, element_index, kind, config, directory,
+                 origin_node, origin_toplevel, origin_filename):
+        self.element_name = element_name
+        self.element_index = element_index
         self.kind = kind
         self.config = config
         self.directory = directory

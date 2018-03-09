@@ -572,9 +572,8 @@ class Loader():
                 directory = None
 
             index = sources.index(source)
-            source_name = "{}-{}".format(element_name, index)
-
-            meta_source = MetaSource(source_name, kind, source, directory,
+            meta_source = MetaSource(element_name, index,
+                                     kind, source, directory,
                                      provenance.node,
                                      provenance.toplevel,
                                      provenance.filename)
