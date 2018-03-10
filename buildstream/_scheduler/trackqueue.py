@@ -38,10 +38,6 @@ class TrackQueue(Queue):
     complete_name = "Tracked"
     queue_type = QueueType.FETCH
 
-    def __init__(self, save=True):
-        super(TrackQueue, self).__init__()
-        self.save = save
-
     def process(self, element):
         return element._track()
 
@@ -72,19 +68,18 @@ class TrackQueue(Queue):
 
                 # Here we are in master process, what to do if writing
                 # to the disk fails for some reason ?
-                if self.save:
-                    try:
-                        _yaml.dump(toplevel, fullname)
-                    except OSError as e:
-                        # FIXME: We currently dont have a clear path to
-                        #        fail the scheduler from the main process, so
-                        #        this will just warn and BuildStream will exit
-                        #        with a success code.
-                        #
-                        source.warn("Failed to update project file",
-                                    detail="{}: Failed to rewrite "
-                                    "tracked source to file {}: {}"
-                                    .format(source, fullname, e))
+                try:
+                    _yaml.dump(toplevel, fullname)
+                except OSError as e:
+                    # FIXME: We currently dont have a clear path to
+                    #        fail the scheduler from the main process, so
+                    #        this will just warn and BuildStream will exit
+                    #        with a success code.
+                    #
+                    source.warn("Failed to update project file",
+                                detail="{}: Failed to rewrite "
+                                "tracked source to file {}: {}"
+                                .format(source, fullname, e))
 
         context = element._get_context()
         context._push_message_depth(True)

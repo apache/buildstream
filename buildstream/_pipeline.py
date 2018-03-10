@@ -318,7 +318,7 @@ class Pipeline():
     def track(self, scheduler, dependencies):
 
         dependencies = list(dependencies)
-        track = TrackQueue(save=True)
+        track = TrackQueue()
         track.enqueue(dependencies)
         self.session_elements = len(dependencies)
 
@@ -409,10 +409,8 @@ class Pipeline():
     #                      which are required to build the target.
     #    track_first (list): Elements whose sources to track prior to
     #                        building
-    #    save (bool): Whether to save the tracking results in the
-    #                 elements
     #
-    def build(self, scheduler, build_all, track_first, save):
+    def build(self, scheduler, build_all, track_first):
         if self.unused_workspaces:
             self.message(MessageType.WARN, "Unused workspaces",
                          detail="\n".join([el for el, _
@@ -450,7 +448,7 @@ class Pipeline():
         push = None
         queues = []
         if track_plan:
-            track = TrackQueue(save=save)
+            track = TrackQueue()
             queues.append(track)
         if self.artifacts.has_fetch_remotes():
             pull = PullQueue()

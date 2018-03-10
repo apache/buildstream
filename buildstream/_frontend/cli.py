@@ -180,7 +180,7 @@ def cli(context, **kwargs):
               type=click.Path(dir_okay=False, readable=True),
               help="Except certain dependencies from tracking")
 @click.option('--track-save', default=False, is_flag=True,
-              help="Write out the tracked references to their element files")
+              help="Deprecated: This is ignored")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
@@ -188,22 +188,25 @@ def build(app, elements, all_, track_, track_save, track_all, track_except):
     """Build elements in a pipeline"""
 
     if track_except and not (track_ or track_all):
-        click.echo("ERROR: --track-except cannot be used without --track or --track-all")
+        click.echo("ERROR: --track-except cannot be used without --track or --track-all", err=True)
         sys.exit(-1)
 
-    if track_save and not (track_ or track_all):
-        click.echo("ERROR: --track-save cannot be used without --track or --track-all")
-        sys.exit(-1)
+    if track_save:
+        click.echo("WARNING: --track-save is deprecated, saving is now unconditional", err=True)
 
     if track_all:
         track_ = elements
 
-    app.initialize(elements, except_=track_except, rewritable=track_save,
+    rewritable = False
+    if track_:
+        rewritable = True
+
+    app.initialize(elements, except_=track_except, rewritable=rewritable,
                    use_configured_remote_caches=True, track_elements=track_,
                    fetch_subprojects=True)
     app.print_heading()
     try:
-        app.pipeline.build(app.scheduler, all_, track_, track_save)
+        app.pipeline.build(app.scheduler, all_, track_)
         app.print_summary()
     except PipelineError as e:
         app.print_error(e)

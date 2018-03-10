@@ -28,7 +28,6 @@ def create_element(repo, name, path, dependencies, ref=None):
     _yaml.dump(element, os.path.join(path, name))
 
 
-@pytest.mark.parametrize("save", [([True]), ([False])])
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 @pytest.mark.parametrize("exceptions,excepted", [
     # Test with no exceptions
@@ -63,7 +62,7 @@ def create_element(repo, name, path, dependencies, ref=None):
     ])
 ])
 def test_build_track(cli, datafiles, tmpdir, track_targets,
-                     exceptions, tracked, excepted, save):
+                     exceptions, tracked, excepted):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
@@ -101,8 +100,6 @@ def test_build_track(cli, datafiles, tmpdir, track_targets,
             create_element(repo, element, element_path, dependencies, ref=ref)
 
     args = ['build']
-    if save:
-        args += ['--track-save']
     args += itertools.chain.from_iterable(zip(itertools.repeat('--track'), track_targets))
     args += itertools.chain.from_iterable(zip(itertools.repeat('--track-except'), exceptions))
     args += ['0.bst']
@@ -119,10 +116,7 @@ def test_build_track(cli, datafiles, tmpdir, track_targets,
         source_dir = os.path.join(project, 'cache', 'sources')
         shutil.rmtree(source_dir)
 
-        if not save:
-            assert cli.get_element_state(project, target) == 'no reference'
-        else:
-            assert cli.get_element_state(project, target) == 'fetch needed'
+        assert cli.get_element_state(project, target) == 'fetch needed'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
