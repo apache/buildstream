@@ -1676,14 +1676,14 @@ class Element(Plugin):
         if self.BST_FORBID_RDEPENDS:
             runtime_deps = list(self.dependencies(Scope.RUN, recurse=False))
             if runtime_deps:
-                raise ElementError("{}: Runtime dependencies are forbidden for elements of type {}"
-                                   .format(self, type(self).__name__), reason="element-forbidden-rdepends")
+                raise ElementError("{}: Runtime dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-rdepends")
 
         if self.BST_FORBID_SOURCES:
             sources = list(self.sources())
             if sources:
-                raise ElementError("{}: Sources are forbidden for elements of type {}"
-                                   .format(self, type(self).__name__), reason="element-forbidden-sources")
+                raise ElementError("{}: Sources are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-sources")
 
         self.preflight()
 
