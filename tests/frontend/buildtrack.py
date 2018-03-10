@@ -28,7 +28,14 @@ def create_element(repo, name, path, dependencies, ref=None):
     _yaml.dump(element, os.path.join(path, name))
 
 
+def configure_project(path, config):
+    config['name'] = 'test'
+    config['element-path'] = 'elements'
+    _yaml.dump(config, os.path.join(path, 'project.conf'))
+
+
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("exceptions,excepted", [
     # Test with no exceptions
     ([], []),
@@ -61,7 +68,7 @@ def create_element(repo, name, path, dependencies, ref=None):
         '5.bst', '6.bst', '7.bst'
     ])
 ])
-def test_build_track(cli, datafiles, tmpdir, track_targets,
+def test_build_track(cli, datafiles, tmpdir, ref_storage, track_targets,
                      exceptions, tracked, excepted):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
@@ -69,6 +76,10 @@ def test_build_track(cli, datafiles, tmpdir, track_targets,
 
     repo = create_repo('git', str(tmpdir))
     ref = repo.create(dev_files_path)
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
 
     create_elements = {
         '0.bst': [
@@ -91,13 +102,33 @@ def test_build_track(cli, datafiles, tmpdir, track_targets,
         ],
         '7.bst': []
     }
+
+    initial_project_refs = {}
     for element, dependencies in create_elements.items():
         # Test the element inconsistency resolution by ensuring that
         # only elements that aren't tracked have refs
         if element in set(tracked) - set(excepted):
+            # Elements which should not have a ref set
+            #
             create_element(repo, element, element_path, dependencies)
+        elif ref_storage == 'project.refs':
+            # Store a ref in project.refs
+            #
+            create_element(repo, element, element_path, dependencies)
+            initial_project_refs[element] = [{'ref': ref}]
         else:
+            # Store a ref in the element itself
+            #
             create_element(repo, element, element_path, dependencies, ref=ref)
+
+    # Generate initial project.refs
+    if ref_storage == 'project.refs':
+        project_refs = {
+            'projects': {
+                'test': initial_project_refs
+            }
+        }
+        _yaml.dump(project_refs, os.path.join(project, 'project.refs'))
 
     args = ['build']
     args += itertools.chain.from_iterable(zip(itertools.repeat('--track'), track_targets))
@@ -109,14 +140,22 @@ def test_build_track(cli, datafiles, tmpdir, track_targets,
 
     assert set(tracked_elements) == set(tracked) - set(excepted)
 
+    # Delete element sources
+    source_dir = os.path.join(project, 'cache', 'sources')
+    shutil.rmtree(source_dir)
+
+    # Delete artifacts one by one and assert element states
     for target in set(tracked) - set(excepted):
         cli.remove_artifact_from_cache(project, target)
 
-        # Delete element sources
-        source_dir = os.path.join(project, 'cache', 'sources')
-        shutil.rmtree(source_dir)
-
+        # Assert that it's tracked
         assert cli.get_element_state(project, target) == 'fetch needed'
+
+    # Assert there was a project.refs created, depending on the configuration
+    if ref_storage == 'project.refs':
+        assert os.path.exists(os.path.join(project, 'project.refs'))
+    else:
+        assert not os.path.exists(os.path.join(project, 'project.refs'))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
