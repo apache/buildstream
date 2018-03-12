@@ -5,7 +5,7 @@ import subprocess
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
 
 repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
 
@@ -213,54 +213,135 @@ def test_build(cli, tmpdir, datafiles, kind):
     assert not os.path.exists(os.path.join(workspace, 'usr', 'bin', 'hello'))
 
 
+# Ensure that various versions that should not be accepted raise a
+# LoadError.INVALID_DATA
 @pytest.mark.datafiles(DATA_DIR)
-def test_open_old_format(cli, tmpdir, datafiles):
+@pytest.mark.parametrize("workspace_cfg", [
+    # Test loading a negative workspace version
+    {"format-version": -1},
+    # Test loading version 0 with two sources
+    {
+        "format-version": 0,
+        "alpha.bst": {
+            0: "/workspaces/bravo",
+            1: "/workspaces/charlie",
+        }
+    },
+    # Test loading a version with decimals
+    {"format-version": 0.5},
+    # Test loading a future version
+    {"format-version": 2}
+])
+def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    bin_files_path = os.path.join(project, 'files', 'bin-files')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'workspace-version.bst'
+    os.makedirs(os.path.join(project, '.bst'))
+    workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
+
+    _yaml.dump(workspace_cfg, workspace_config_path)
+
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+# Ensure that various versions that should be accepted are parsed
+# correctly.
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("workspace_cfg,expected", [
+    # Test loading version 0 without a dict
+    ({
+        "alpha.bst": "/workspaces/bravo"
+    }, {
+        "format-version": 1,
+        "workspaces": {
+            "alpha.bst": {
+                "path": "/workspaces/bravo"
+            }
+        }
+    }),
+    # Test loading version 0 with only one source
+    ({
+        "alpha.bst": {
+            0: "/workspaces/bravo"
+        }
+    }, {
+        "format-version": 1,
+        "workspaces": {
+            "alpha.bst": {
+                "path": "/workspaces/bravo"
+            }
+        }
+    }),
+    # Test loading version 1
+    ({
+        "format-version": 1,
+        "workspaces": {
+            "alpha.bst": {
+                "path": "/workspaces/bravo"
+            }
+        }
+    }, {
+        "format-version": 1,
+        "workspaces": {
+            "alpha.bst": {
+                "path": "/workspaces/bravo"
+            }
+        }
+    })
+])
+def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expected):
+    def parse_dict_as_yaml(node):
+        tempfile = os.path.join(str(tmpdir), 'yaml_dump')
+        _yaml.dump(node, tempfile)
+        return _yaml.node_sanitize(_yaml.load(tempfile))
+
     project = os.path.join(datafiles.dirname, datafiles.basename)
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
 
-    workspace_dict_old = {
-        "alpha.bst": {
-            0: "/workspaces/bravo",
-        }
-    }
-
-    workspace_dict_expected = {
-        "alpha.bst": "/workspaces/bravo"
-    }
-
-    _yaml.dump(workspace_dict_old, workspace_config_path)
+    _yaml.dump(workspace_cfg, workspace_config_path)
 
     # Check that we can still read workspace config that is in old format
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_success()
 
-    loaded_config = _yaml.load(workspace_config_path)
+    loaded_config = _yaml.node_sanitize(_yaml.load(workspace_config_path))
 
-    # Check that workspace config has been converted to the new format after
-    # running a workspace command
-    elements = list(_yaml.node_items(loaded_config))
-    assert len(elements) == len(workspace_dict_expected)
-    for element, path in workspace_dict_expected.items():
-        assert path == _yaml.node_get(loaded_config, str, element)
+    # Check that workspace config remains the same if no modifications
+    # to workspaces were made
+    assert loaded_config == parse_dict_as_yaml(workspace_cfg)
 
+    # Create a test bst file
+    bin_files_path = os.path.join(project, 'files', 'bin-files')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'workspace-test.bst'
+    workspace = os.path.join(str(tmpdir), 'workspace')
 
-@pytest.mark.datafiles(DATA_DIR)
-def test_open_old_format_fail(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-    os.makedirs(os.path.join(project, '.bst'))
-    workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
+    # Create our repo object of the given source type with
+    # the bin files, and then collect the initial ref.
+    #
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(bin_files_path)
 
-    workspace_dict_old = {
-        "alpha.bst": {
-            0: "/workspaces/bravo",
-            1: "/workspaces/charlie",
-        }
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            repo.source_config(ref=ref)
+        ]
     }
+    _yaml.dump(element,
+               os.path.join(element_path,
+                            element_name))
 
-    _yaml.dump(workspace_dict_old, workspace_config_path)
+    # Make a change to the workspaces file
+    result = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    result.assert_success()
+    result = cli.run(project=project, args=['workspace', 'close', '--remove-dir', element_name])
+    result.assert_success()
 
-    # Check that trying to load workspace config in old format raises an error
-    # if there are workspaces open for more than one source for an element
-    result = cli.run(project=project, args=['workspace', 'list'])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+    # Check that workspace config is converted correctly if necessary
+    loaded_config = _yaml.node_sanitize(_yaml.load(workspace_config_path))
+    assert loaded_config == parse_dict_as_yaml(expected)
