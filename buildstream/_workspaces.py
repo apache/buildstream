@@ -25,7 +25,7 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
 
 
-BST_WORKSPACE_FORMAT_VERSION = 1
+BST_WORKSPACE_FORMAT_VERSION = 2
 
 
 # Workspace()
@@ -41,11 +41,15 @@ BST_WORKSPACE_FORMAT_VERSION = 1
 #    path (str): The path that should host this workspace
 #    project (Project): The project this workspace is part of
 #    last_successful (str): The key of the last successful build of this workspace
+#    running_files (dict): A dict mapping dependency elements to files
+#                          changed between failed builds. Should be
+#                          made obsolete with failed build artifacts.
 #
 class Workspace():
-    def __init__(self, path, project, last_successful=None):
+    def __init__(self, path, project, last_successful=None, running_files=None):
         self.last_successful = last_successful
         self.path = path
+        self.running_files = running_files if running_files is not None else {}
 
         self._element = None
         self._project = project
@@ -55,11 +59,14 @@ class Workspace():
     def from_yaml_node(cls, node, project):
         path = _yaml.node_get(node, str, 'path')
         last_successful = _yaml.node_get(node, str, 'last_successful', default_value='')
+        running_files = _yaml.node_get(node, dict, 'running_files', default_value={})
 
         if last_successful == '':
             last_successful = None
+        if running_files == {}:
+            running_files = None
 
-        return cls(path, project, last_successful)
+        return cls(path, project, last_successful, running_files)
 
     # _to_dict()
     #
@@ -69,7 +76,7 @@ class Workspace():
     #     (dict) A dict representation of the workspace
     #
     def _to_dict(self):
-        to_return = ['path', 'last_successful']
+        to_return = ['path', 'last_successful', 'running_files']
 
         return {key: val for key, val in self.__dict__.items()
                 if key in to_return and val is not None}
@@ -115,6 +122,28 @@ class Workspace():
         else:
             destfile = os.path.join(directory, os.path.basename(self.path))
             utils.safe_copy(fullpath, destfile)
+
+    # add_running_files()
+    #
+    # Append a list of files to the running_files for the given
+    # dependency. Duplicate files will be ignored.
+    #
+    # Args:
+    #     dep (Element) - The dependency whose files to append to
+    #     files (str) - A list of files to append
+    #
+    def add_running_files(self, dep, files):
+        if dep.name in self.running_files:
+            self.running_files[dep.name] |= set(files)
+        else:
+            self.running_files[dep.name] = set(files)
+
+    # clear_running_files()
+    #
+    # Clear all running files associated with this workspace.
+    #
+    def clear_running_files(self):
+        self.running_files = {}
 
     # get_key()
     #
@@ -314,7 +343,7 @@ class Workspaces():
                 for element, config in _yaml.node_items(workspaces)
             }
 
-        elif version == BST_WORKSPACE_FORMAT_VERSION:
+        elif version == 1 or version == BST_WORKSPACE_FORMAT_VERSION:
             workspaces = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
             res = {element: Workspace.from_yaml_node(node, self._project)
                    for element, node in _yaml.node_items(workspaces)}

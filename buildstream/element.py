@@ -523,6 +523,9 @@ class Element(Plugin):
                     # files, since removed files will be picked up by
                     # build systems anyway.
                     to_update, _, added = self.__artifacts.diff(dep, key_old, key_new, subdir='files')
+                    workspace.add_running_files(dep, to_update + added)
+                    self._get_project()._workspaces.save_config()
+                    to_update.extend(workspace.running_files[dep.name])
 
             result = dep.stage_artifact(sandbox,
                                         path=path,
@@ -893,10 +896,11 @@ class Element(Plugin):
 
         self._update_state()
 
-        if self._workspaced():
+        if self._workspaced() and self._cached():
             key = self._get_cache_key()
             workspace = self._get_workspace()
             workspace.last_successful = key
+            workspace.clear_running_files()
             self._get_project()._workspaces.save_config()
 
     # _cached():
