@@ -41,6 +41,7 @@ from ._projectrefs import ProjectRefs, ProjectRefStorage
 # to the `project.conf` format or the core element format.
 #
 BST_FORMAT_VERSION = 5
+BST_WORKSPACE_FORMAT_VERSION = 1
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -217,8 +218,8 @@ class Project():
         self.artifact_cache_specs = artifact_cache_specs_from_config_node(config)
 
         # Workspace configurations
-        self._workspaces = self._load_workspace_config()
-        self._ensure_workspace_config_format()
+        workspace_config = self._load_workspace_config()
+        self._workspaces = self._parse_workspace_config(workspace_config)
 
         # Assert project version
         format_version = _yaml.node_get(config, int, 'format-version')
@@ -382,7 +383,7 @@ class Project():
     #    A tuple in the following format: (element, path).
     def _list_workspaces(self):
         for element, _ in _yaml.node_items(self._workspaces):
-            yield (element, self._workspaces[element])
+            yield (element, self._workspaces[element]["path"])
 
     # _get_workspace()
     #
@@ -397,10 +398,9 @@ class Project():
     #    otherwise
     #
     def _get_workspace(self, element):
-        try:
-            return self._workspaces[element]
-        except KeyError:
+        if element not in self._workspaces:
             return None
+        return self._workspaces[element]["path"]
 
     # _set_workspace()
     #
@@ -415,7 +415,7 @@ class Project():
         if element.name not in self._workspaces:
             self._workspaces[element.name] = {}
 
-        self._workspaces[element.name] = path
+        self._workspaces[element.name]["path"] = path
         element._set_source_workspaces(path)
 
     # _delete_workspace()
@@ -454,7 +454,7 @@ class Project():
 
         return _yaml.load(workspace_file)
 
-    # _ensure_workspace_config_format()
+    # _parse_workspace_config()
     #
     # If workspace config is in old-style format, i.e. it is using
     # source-specific workspaces, try to convert it to element-specific
@@ -465,33 +465,52 @@ class Project():
     # Args:
     #    workspaces (dict): current workspace config, usually output of _load_workspace_config()
     #
+    # Returns:
+    #    (bool, dict) Whether the workspace config needs to be
+    #                 rewritten and extracted workspaces
+    #
     # Raises: LoadError if there was a problem with the workspace config
     #
-    def _ensure_workspace_config_format(self):
-        needs_rewrite = False
-        for element, config in _yaml.node_items(self._workspaces):
-            if isinstance(config, str):
-                pass
+    def _parse_workspace_config(self, workspaces):
+        version = _yaml.node_get(workspaces, int, "format-version", default_value=0)
 
-            elif isinstance(config, dict):
-                sources = list(_yaml.node_items(config))
-                if len(sources) > 1:
-                    detail = "There are multiple workspaces open for '{}'.\n" + \
-                             "This is not supported anymore.\n" + \
-                             "Please remove this element from '{}'."
+        if version == 0:
+            # Pre-versioning format can be of two forms
+            for element, config in _yaml.node_items(workspaces):
+                if isinstance(config, str):
+                    pass
+
+                elif isinstance(config, dict):
+                    sources = list(_yaml.node_items(config))
+                    if len(sources) > 1:
+                        detail = "There are multiple workspaces open for '{}'.\n" + \
+                                 "This is not supported anymore.\n" + \
+                                 "Please remove this element from '{}'."
+                        raise LoadError(LoadErrorReason.INVALID_DATA,
+                                        detail.format(element,
+                                                      os.path.join(self.directory, ".bst", "workspaces.yml")))
+
+                    workspaces[element] = sources[0][1]
+
+                else:
                     raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    detail.format(element,
-                                                  os.path.join(self.directory, ".bst", "workspaces.yml")))
+                                    "Workspace config is in unexpected format.")
 
-                self._workspaces[element] = sources[0][1]
-                needs_rewrite = True
+            res = {
+                element: {"path": config}
+                for element, config in _yaml.node_items(workspaces)
+            }
 
-            else:
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Workspace config is in unexpected format.")
+        elif version == BST_WORKSPACE_FORMAT_VERSION:
+            res = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
 
-        if needs_rewrite:
-            self._save_workspace_config()
+        else:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Workspace configuration format version {} not supported."
+                            "Your version of buildstream may be too old. Max supported version: {}"
+                            .format(version, BST_WORKSPACE_FORMAT_VERSION))
+
+        return res
 
     # _save_workspace_config()
     #
@@ -500,8 +519,12 @@ class Project():
     # _set_workspace permanent
     #
     def _save_workspace_config(self):
-        _yaml.dump(_yaml.node_sanitize(self._workspaces),
-                   os.path.join(self.directory, ".bst", "workspaces.yml"))
+        _yaml.dump(
+            {
+                "format-version": BST_WORKSPACE_FORMAT_VERSION,
+                "workspaces": _yaml.node_sanitize(self._workspaces)
+            },
+            os.path.join(self.directory, ".bst", "workspaces.yml"))
 
     def _extract_plugin_paths(self, node, name):
         if not node:
