@@ -834,6 +834,12 @@ class Element(Plugin):
 
         self._update_state()
 
+        if self._workspaced():
+            key = self._get_cache_key()
+            workspace = self._get_workspace()
+            workspace.last_successful = key
+            self._get_project()._workspaces.save_config()
+
     # _cached():
     #
     # Returns:

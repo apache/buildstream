@@ -40,9 +40,11 @@ BST_WORKSPACE_FORMAT_VERSION = 1
 # Args:
 #    path (str): The path that should host this workspace
 #    project (Project): The project this workspace is part of
+#    last_successful (str): The key of the last successful build of this workspace
 #
 class Workspace():
-    def __init__(self, path, project):
+    def __init__(self, path, project, last_successful=None):
+        self.last_successful = last_successful
         self.path = path
 
         self._element = None
@@ -52,8 +54,12 @@ class Workspace():
     @classmethod
     def from_yaml_node(cls, node, project):
         path = _yaml.node_get(node, str, 'path')
+        last_successful = _yaml.node_get(node, str, 'last_successful', default_value='')
 
-        return cls(path, project)
+        if last_successful == '':
+            last_successful = None
+
+        return cls(path, project, last_successful)
 
     # _to_dict()
     #
@@ -63,7 +69,7 @@ class Workspace():
     #     (dict) A dict representation of the workspace
     #
     def _to_dict(self):
-        to_return = ['path']
+        to_return = ['path', 'last_successful']
 
         return {key: val for key, val in self.__dict__.items()
                 if key in to_return and val is not None}
