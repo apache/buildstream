@@ -497,13 +497,39 @@ class Element(Plugin):
         ignored = {}
         overlaps = OrderedDict()
         files_written = {}
+        old_dep_keys = {}
+
+        if self._workspaced():
+            workspace = self._get_workspace()
+
+            if workspace.last_successful:
+                old_meta = self._get_artifact_metadata(workspace.last_successful)
+                old_dep_keys = old_meta['keys']['dependencies']
 
         for dep in self.dependencies(scope):
+            # If we are workspaced, and we therefore perform an
+            # incremental build, we must ensure that we update the mtimes
+            # of any files created by our dependencies since the last
+            # successful build.
+            to_update = None
+            if self._workspaced() and old_dep_keys:
+                dep._assert_cached()
+
+                if dep.name in old_dep_keys:
+                    key_new = dep._get_cache_key()
+                    key_old = old_dep_keys[dep.name]
+
+                    # We only need to worry about modified and added
+                    # files, since removed files will be picked up by
+                    # build systems anyway.
+                    to_update, _, added = self.__artifacts.diff(dep, key_old, key_new, subdir='files')
+
             result = dep.stage_artifact(sandbox,
                                         path=path,
                                         include=include,
                                         exclude=exclude,
-                                        orphans=orphans)
+                                        orphans=orphans,
+                                        update_mtimes=to_update)
             if result.overwritten:
                 for overwrite in result.overwritten:
                     # Completely new overwrite
@@ -746,6 +772,18 @@ class Element(Plugin):
     #
     def _get_workspace(self):
         return self._get_project()._workspaces.get_workspace(self)
+
+    # _get_artifact_metadata():
+    #
+    # Retrieve metadata from the given artifact.
+    #
+    # Args:
+    #     key (str): The artifact key.
+    #
+    def _get_artifact_metadata(self, key):
+        base = self.__artifacts.extract(self, key)
+        meta_file = os.path.join(base, 'meta', 'artifact.yaml')
+        return _yaml.load(os.path.join(meta_file))
 
     # _write_script():
     #
