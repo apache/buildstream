@@ -85,6 +85,18 @@ class FileListResult():
         self.files_written = []
         """List of files that were written."""
 
+    def combine(self, other):
+        """Create a new FileListResult that contains the results of both.
+        """
+        ret = FileListResult()
+
+        ret.overwritten = self.overwritten + other.overwritten
+        ret.ignored = self.ignored + other.ignored
+        ret.failed_attributes = self.failed_attributes + other.failed_attributes
+        ret.files_written = self.files_written + other.files_written
+
+        return ret
+
 
 def list_relative_paths(directory):
     """A generator for walking directory relative paths

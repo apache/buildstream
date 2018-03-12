@@ -31,6 +31,7 @@ from collections import Mapping, OrderedDict
 from contextlib import contextmanager
 from enum import Enum
 import tempfile
+import time
 import shutil
 
 from . import _yaml
@@ -395,7 +396,7 @@ class Element(Plugin):
         self._assert_cached()
         return self.__compute_splits(include, exclude, orphans)
 
-    def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True):
+    def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
         """Stage this element's output artifact in the sandbox
 
         This will stage the files from the artifact to the sandbox at specified location.
@@ -409,6 +410,7 @@ class Element(Plugin):
            include (list): An optional list of domains to include files from
            exclude (list): An optional list of domains to exclude files from
            orphans (bool): Whether to include files not spoken for by split domains
+           update_mtimes (list): An optional list of files whose mtimes to set to the current time.
 
         Raises:
            (:class:`.ElementError`): If the element has not yet produced an artifact.
@@ -431,6 +433,9 @@ class Element(Plugin):
               dep.stage_artifact(sandbox)
         """
 
+        if update_mtimes is None:
+            update_mtimes = []
+
         # Time to use the artifact, check once more that it's there
         self._assert_cached()
 
@@ -445,11 +450,27 @@ class Element(Plugin):
                 if path is None \
                 else os.path.join(basedir, path.lstrip(os.sep))
 
-            files = self.__compute_splits(include, exclude, orphans)
-            result = utils.link_files(artifact, stagedir, files=files,
-                                      report_written=True)
+            files = list(self.__compute_splits(include, exclude, orphans))
 
-        return result
+            # We must not hardlink files whose mtimes we want to update
+            if update_mtimes:
+                link_files = [f for f in files if f not in update_mtimes]
+                copy_files = [f for f in files if f in update_mtimes]
+            else:
+                link_files = files
+                copy_files = []
+
+            link_result = utils.link_files(artifact, stagedir, files=link_files,
+                                           report_written=True)
+            copy_result = utils.copy_files(artifact, stagedir, files=copy_files,
+                                           report_written=True)
+
+            cur_time = time.time()
+
+            for f in copy_result.files_written:
+                os.utime(os.path.join(stagedir, f), times=(cur_time, cur_time))
+
+        return link_result.combine(copy_result)
 
     def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
                                    include=None, exclude=None, orphans=True):
