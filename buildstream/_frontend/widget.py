@@ -405,13 +405,16 @@ class LogLine(Widget):
         # Now add some custom things
         if message.detail is not None:
 
+            # Identify frontend messages, we never abbreviate these
+            frontend_message = not (message.task_id or message.unique_id)
+
             # Split and truncate message detail down to message_lines lines
             lines = message.detail.splitlines(True)
 
             n_lines = len(lines)
             abbrev = False
             if message.message_type not in [MessageType.FAIL, MessageType.BUG] \
-               and n_lines > self.message_lines:
+               and not frontend_message and n_lines > self.message_lines:
                 abbrev = True
                 lines = lines[0:self.message_lines]
             else:
