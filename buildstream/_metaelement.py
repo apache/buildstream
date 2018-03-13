@@ -36,8 +36,10 @@ class MetaElement():
     #    environment: The environment variables declared or overridden on this element
     #    env_nocache: List of environment vars which should not be considered in cache keys
     #    public: Public domain data dictionary
+    #    sandbox: Configuration specific to the sandbox environment
     #
-    def __init__(self, project, name, kind, provenance, sources, config, variables, environment, env_nocache, public):
+    def __init__(self, project, name, kind, provenance, sources, config,
+                 variables, environment, env_nocache, public, sandbox):
         self.project = project
         self.name = name
         self.kind = kind
@@ -48,6 +50,6 @@ class MetaElement():
         self.environment = environment
         self.env_nocache = env_nocache
         self.public = public
-
+        self.sandbox = sandbox
         self.build_dependencies = []
         self.dependencies = []

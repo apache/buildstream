@@ -37,12 +37,13 @@ from . import _yaml
 from ._variables import Variables
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
 from . import Plugin, Consistency
-from . import SandboxFlags
+from . import Sandbox, SandboxFlags
 from . import utils
 from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
+from .sandbox._config import SandboxConfig
 
 
 # The base BuildStream artifact version
@@ -190,6 +191,9 @@ class Element(Plugin):
         # ask the element to configure itself.
         self.__config = self.__extract_config(meta)
         self.configure(self.__config)
+
+        # Extract Sandbox config
+        self.__sandbox_config = self.__extract_sandbox_config(meta)
 
         self.__tainted = None
         self.__workspaced_artifact = None
@@ -1072,7 +1076,7 @@ class Element(Plugin):
                 utils._force_rmtree(rootdir)
 
             with _signals.terminator(cleanup_rootdir), \
-                self.__sandbox(rootdir, output_file, output_file) as sandbox:  # nopep8
+                self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # nopep8
 
                 sandbox_root = sandbox.get_directory()
 
@@ -1376,7 +1380,7 @@ class Element(Plugin):
     @contextmanager
     def _prepare_sandbox(self, scope, directory, integrate=True):
 
-        with self.__sandbox(directory) as sandbox:
+        with self.__sandbox(directory, config=self.__sandbox_config) as sandbox:
 
             # Configure always comes first, and we need it.
             self.configure_sandbox(sandbox)
@@ -1694,7 +1698,7 @@ class Element(Plugin):
     #                   Private Local Methods                   #
     #############################################################
     @contextmanager
-    def __sandbox(self, directory, stdout=None, stderr=None):
+    def __sandbox(self, directory, stdout=None, stderr=None, config=None):
         context = self._get_context()
         project = self._get_project()
         platform = Platform.get_platform()
@@ -1703,7 +1707,8 @@ class Element(Plugin):
             sandbox = platform.create_sandbox(context, project,
                                               directory,
                                               stdout=stdout,
-                                              stderr=stderr)
+                                              stderr=stderr,
+                                              config=config)
             yield sandbox
 
         else:
@@ -1711,7 +1716,7 @@ class Element(Plugin):
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
             # Recursive contextmanager...
-            with self.__sandbox(rootdir, stdout=stdout, stderr=stderr) as sandbox:
+            with self.__sandbox(rootdir, stdout=stdout, stderr=stderr, config=config) as sandbox:
                 yield sandbox
 
             # Cleanup the build dir
@@ -1820,6 +1825,26 @@ class Element(Plugin):
         _yaml.node_final_assertions(config)
 
         return config
+
+    # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
+    #
+    def __extract_sandbox_config(self, meta):
+        project = self._get_project()
+
+        # The default config is already composited with the project overrides
+        sandbox_defaults = _yaml.node_get(self.__defaults, Mapping, 'sandbox', default_value={})
+        sandbox_defaults = _yaml.node_chain_copy(sandbox_defaults)
+
+        sandbox_config = _yaml.node_chain_copy(project._sandbox)
+        _yaml.composite(sandbox_config, sandbox_defaults)
+        _yaml.composite(sandbox_config, meta.sandbox)
+        _yaml.node_final_assertions(sandbox_config)
+
+        # Sandbox config, unlike others, has fixed members so we should validate them
+        _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid'])
+
+        return SandboxConfig(self.node_get_member(sandbox_config, int, 'build-uid'),
+                             self.node_get_member(sandbox_config, int, 'build-gid'))
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.

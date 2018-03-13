@@ -88,12 +88,14 @@ class Sandbox():
     def __init__(self, context, project, directory, **kwargs):
         self.__context = context
         self.__project = project
-        self.__stdout = kwargs['stdout']
-        self.__stderr = kwargs['stderr']
         self.__directories = []
         self.__cwd = None
         self.__env = None
         self.__mount_sources = {}
+        # Configuration from kwargs common to all subclasses
+        self.__config = kwargs['config']
+        self.__stdout = kwargs['stdout']
+        self.__stderr = kwargs['stderr']
 
         # Setup the directories
         self.__directory = directory
@@ -269,3 +271,13 @@ class Sandbox():
     #    (file): The stderr, or None to inherit
     def _get_output(self):
         return (self.__stdout, self.__stderr)
+
+    # _get_config()
+    #
+    # Fetches the sandbox configuration object.
+    #
+    # Returns:
+    #    (SandboxConfig): An object containing the configuration
+    #              data passed in during construction.
+    def _get_config(self):
+        return self.__config

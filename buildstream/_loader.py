@@ -57,6 +57,7 @@ class Symbol():
     ALL = "all"
     DIRECTORY = "directory"
     JUNCTION = "junction"
+    SANDBOX = "sandbox"
 
 
 # A simple dependency object
@@ -91,7 +92,7 @@ class LoadElement():
 
         # Ensure the root node is valid
         _yaml.node_validate(self.data, [
-            'kind', 'depends', 'sources',
+            'kind', 'depends', 'sources', 'sandbox',
             'variables', 'environment', 'environment-nocache',
             'config', 'public', 'description',
         ])
@@ -582,7 +583,8 @@ class Loader():
                                    _yaml.node_get(data, Mapping, Symbol.VARIABLES, default_value={}),
                                    _yaml.node_get(data, Mapping, Symbol.ENVIRONMENT, default_value={}),
                                    _yaml.node_get(data, list, Symbol.ENV_NOCACHE, default_value=[]),
-                                   _yaml.node_get(data, Mapping, Symbol.PUBLIC, default_value={}))
+                                   _yaml.node_get(data, Mapping, Symbol.PUBLIC, default_value={}),
+                                   _yaml.node_get(data, Mapping, Symbol.SANDBOX, default_value={}))
 
         # Cache it now, make sure it's already there before recursing
         self.meta_elements[element_name] = meta_element

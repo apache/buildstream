@@ -149,7 +149,9 @@ class SandboxBwrap(Sandbox):
         if self.user_ns_available:
             bwrap_command += ['--unshare-user']
             if not flags & SandboxFlags.INHERIT_UID:
-                bwrap_command += ['--uid', '0', '--gid', '0']
+                uid = self._get_config().build_uid
+                gid = self._get_config().build_gid
+                bwrap_command += ['--uid', str(uid), '--gid', str(gid)]
 
         # Add the command
         bwrap_command += command

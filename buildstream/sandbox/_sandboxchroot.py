@@ -38,6 +38,13 @@ from . import Sandbox, SandboxFlags
 class SandboxChroot(Sandbox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        uid = self._get_config().build_uid
+        gid = self._get_config().build_gid
+        if uid != 0 or gid != 0:
+            raise SandboxError("Chroot sandboxes cannot specify a non-root uid/gid "
+                               "({},{} were supplied via config)".format(uid, gid))
+
         self.mount_map = None
 
     def run(self, command, flags, *, cwd=None, env=None):

@@ -173,7 +173,7 @@ class Project():
             'aliases', 'name',
             'artifacts', 'options',
             'fail-on-overlap', 'shell',
-            'ref-storage'
+            'ref-storage', 'sandbox'
         ])
 
         # The project name, element path and option declarations
@@ -292,9 +292,12 @@ class Project():
             if option.variable:
                 self._variables[option.variable] = option.get_value()
 
-        # Load sandbox configuration
+        # Load sandbox environment variables
         self._environment = _yaml.node_get(config, Mapping, 'environment')
         self._env_nocache = _yaml.node_get(config, list, 'environment-nocache')
+
+        # Load sandbox configuration
+        self._sandbox = _yaml.node_get(config, Mapping, 'sandbox')
 
         # Load project split rules
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
