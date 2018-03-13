@@ -62,24 +62,23 @@ Below are the various sources of configuration which go into an element or sourc
 order in which they are applied. Configurations which are applied later have a higher
 priority and override configurations which precede them.
 
+1. BuildStream Default Project Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-0. Hard-coded Defaults
-~~~~~~~~~~~~~~~~~~~~~~
-Where a config field is optional, a hard-coded default will
-be present.
-
-
-1. Builtin Default Project Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The :ref:`projectconf` provides a set of default values for *variables*
-and the *environment* which are all documented with your copy of BuildStream. 
+The :ref:`builtin defaults <project_builtin_defaults>` provide a set of default values for *variables*
+and the *environment*.
 
 
 2. Project Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
-The project wide defaults are now applied on top of builtin defaults. If you specify
-anything in the *variables* or *environment* sections in your ``project.conf`` then it
-will override the builtin defaults.
+
+The project wide defaults in ``project.conf`` are now applied on top
+of builtin defaults.  If you specify anything in the *variables* or
+*environment* sections in your ``project.conf`` then it will override
+the builtin defaults.
+
+Note that plugin-specific configuration in ``project.conf`` is not applied
+until later.
 
 
 3. Plugin Defaults
