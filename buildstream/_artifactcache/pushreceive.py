@@ -61,24 +61,24 @@ class PushCommandType(Enum):
     done = 4
 
 
-def msg_byteorder(byteorder=sys.byteorder):
-    if byteorder == 'little':
+def python_to_msg_byteorder(python_byteorder=sys.byteorder):
+    if python_byteorder == 'little':
         return 'l'
-    elif byteorder == 'big':
+    elif python_byteorder == 'big':
         return 'B'
     else:
         raise PushException('Unrecognized system byteorder {}'
-                            .format(byteorder))
+                            .format(python_byteorder))
 
 
-def sys_byteorder(byteorder):
-    if byteorder == 'l':
+def msg_to_python_byteorder(msg_byteorder):
+    if msg_byteorder == 'l':
         return 'little'
-    elif byteorder == 'B':
+    elif msg_byteorder == 'B':
         return 'big'
     else:
         raise PushException('Unrecognized message byteorder {}'
-                            .format(byteorder))
+                            .format(msg_byteorder))
 
 
 def ostree_object_path(repo, obj):
@@ -110,7 +110,7 @@ class PushMessageWriter(object):
     def __init__(self, file, byteorder=sys.byteorder):
         self.file = file
         self.byteorder = byteorder
-        self.msg_byteorder = msg_byteorder(self.byteorder)
+        self.msg_byteorder = python_to_msg_byteorder(self.byteorder)
 
     def encode_header(self, cmdtype, size):
         header = self.msg_byteorder.encode() + \
@@ -227,7 +227,7 @@ class PushMessageReader(object):
     def decode_header(self, header):
         if len(header) != HEADER_SIZE:
             raise Exception('Header is {:d} bytes, not {:d}'.format(len(header), HEADER_SIZE))
-        order = sys_byteorder(chr(header[0]))
+        order = msg_to_python_byteorder(chr(header[0]))
         version = int(header[1])
         if version != PROTO_VERSION:
             raise Exception('Unsupported protocol version {:d}'.format(version))
