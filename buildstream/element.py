@@ -718,6 +718,14 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # _get_workspace():
+    #
+    # Returns:
+    #    (Workspace|None): A workspace associated with this element
+    #
+    def _get_workspace(self):
+        return self._get_project()._workspaces.get_workspace(self)
+
     # _write_script():
     #
     # Writes a script to the given directory.
@@ -1472,11 +1480,12 @@ class Element(Plugin):
     def _stage_sources_in_sandbox(self, sandbox, directory, mount_workspaces=True):
 
         if mount_workspaces:
+            workspace = self._get_workspace()
             # First, mount sources that have an open workspace
             sources_to_mount = [source for source in self.sources() if source._has_workspace()]
             for source in sources_to_mount:
                 mount_point = source._get_staging_path(directory)
-                mount_source = source._get_workspace_path()
+                mount_source = workspace.get_absolute_path()
                 sandbox.mark_directory(mount_point)
                 sandbox._set_mount_source(mount_point, mount_source)
 

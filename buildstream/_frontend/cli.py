@@ -641,7 +641,7 @@ def workspace_close(app, remove_dir, element):
 
     app.initialize((element,))
 
-    if app.pipeline.project._get_workspace(app.pipeline.targets[0].name) is None:
+    if app.pipeline.project._workspaces.get_workspace(app.pipeline.targets[0]) is None:
         click.echo("ERROR: Workspace '{}' does not exist".format(element), err=True)
         sys.exit(-1)
 
@@ -716,13 +716,12 @@ def workspace_list(app):
         sys.exit(-1)
 
     workspaces = []
-    for element_name, directory in project._list_workspaces():
-        workspace_ = {
+    for element_name, workspace_ in project._workspaces.list():
+        workspace_detail = {
             'element': element_name,
-            'directory': directory,
+            'directory': workspace_.path,
         }
-
-        workspaces.append(workspace_)
+        workspaces.append(workspace_detail)
 
     _yaml.dump({
         'workspaces': workspaces

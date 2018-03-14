@@ -188,15 +188,14 @@ class Pipeline():
                 raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
 
     def initialize_workspaces(self):
-        for element_name, workspace in self.project._list_workspaces():
+        for element_name, workspace in self.project._workspaces.list():
             for target in self.targets:
                 element = target.search(Scope.ALL, element_name)
 
                 if element is None:
                     self.unused_workspaces.append((element_name, workspace))
-                    continue
-
-                self.project._set_workspace(element, workspace)
+                else:
+                    workspace.init(element)
 
     def initialize_remote_caches(self):
         def remote_failed(url, error):
@@ -627,7 +626,7 @@ class Pipeline():
             raise PipelineError("The given element has no sources", detail=detail)
 
         # Check for workspace config
-        if self.project._get_workspace(target.name):
+        if self.project._workspaces.get_workspace(target):
             raise PipelineError("Workspace '{}' is already defined."
                                 .format(target.name))
 
@@ -674,18 +673,17 @@ class Pipeline():
         except OSError as e:
             raise PipelineError("Failed to create workspace directory: {}".format(e)) from e
 
+        workspace = self.project._workspaces.create_workspace(target, workdir)
+
         if not no_checkout:
             if not force and os.listdir(directory):
                 raise PipelineError("Checkout directory is not empty: {}".format(directory))
 
             with target.timed_activity("Staging sources to {}".format(directory)):
-                for source in target.sources():
-                    source._init_workspace(directory)
-
-        self.project._set_workspace(target, workdir)
+                workspace.open()
 
         with target.timed_activity("Saving workspace configuration"):
-            self.project._save_workspace_config()
+            self.project._workspaces.save_config()
 
     # close_workspace
     #
@@ -700,26 +698,26 @@ class Pipeline():
 
         # Remove workspace directory if prompted
         if remove_dir:
-            path = self.project._get_workspace(target.name)
-            if path is not None:
+            workspace = self.project._workspaces.get_workspace(target)
+            if workspace is not None:
                 with target.timed_activity("Removing workspace directory {}"
-                                           .format(path)):
+                                           .format(workspace.path)):
                     try:
-                        shutil.rmtree(path)
+                        shutil.rmtree(workspace.path)
                     except OSError as e:
                         raise PipelineError("Could not remove  '{}': {}"
-                                            .format(path, e)) from e
+                                            .format(workspace.path, e)) from e
 
         # Delete the workspace config entry
         with target.timed_activity("Removing workspace"):
             try:
-                self.project._delete_workspace(target.name)
+                self.project._workspaces.delete_workspace(target)
             except KeyError:
                 raise PipelineError("Workspace '{}' is currently not defined"
                                     .format(target.name))
 
         # Update workspace config
-        self.project._save_workspace_config()
+        self.project._workspaces.save_config()
 
         # Reset source to avoid checking out the (now empty) workspace
         for source in target.sources():
@@ -738,15 +736,15 @@ class Pipeline():
     def reset_workspace(self, scheduler, track, no_checkout):
         # When working on workspaces we only have one target
         target = self.targets[0]
-        workspace_dir = self.project._get_workspace(target.name)
+        workspace = self.project._workspaces.get_workspace(target)
 
-        if workspace_dir is None:
+        if workspace is None:
             raise PipelineError("Workspace '{}' is currently not defined"
                                 .format(target.name))
 
         self.close_workspace(True)
 
-        self.open_workspace(scheduler, workspace_dir, no_checkout, track, False)
+        self.open_workspace(scheduler, workspace.path, no_checkout, track, False)
 
     # pull()
     #

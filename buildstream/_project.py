@@ -33,6 +33,7 @@ from ._artifactcache import artifact_cache_specs_from_config_node
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
+from ._workspaces import Workspaces
 
 
 # The base BuildStream format version
@@ -92,7 +93,7 @@ class Project():
         self._elements = {}      # Element specific configurations
         self._sources = {}       # Source specific configurations
         self._aliases = {}       # Aliases dictionary
-        self._workspaces = {}    # Workspaces
+        self._workspaces = None  # Workspaces
         self._plugin_source_origins = []   # Origins of custom sources
         self._plugin_element_origins = []  # Origins of custom elements
         self._options = None    # Project options, the OptionPool
@@ -218,8 +219,7 @@ class Project():
         self.artifact_cache_specs = artifact_cache_specs_from_config_node(config)
 
         # Workspace configurations
-        workspace_config = self._load_workspace_config()
-        self._workspaces = self._parse_workspace_config(workspace_config)
+        self._workspaces = Workspaces(self)
 
         # Assert project version
         format_version = _yaml.node_get(config, int, 'format-version')
@@ -377,157 +377,6 @@ class Project():
                 # paths are passed in relative to the project, but must be absolute
                 origin_dict['path'] = os.path.join(self.directory, origin_dict['path'])
             destination.append(origin_dict)
-
-    # _list_workspaces()
-    #
-    # Generator function to enumerate workspaces.
-    #
-    # Yields:
-    #    A tuple in the following format: (element, path).
-    def _list_workspaces(self):
-        for element, _ in _yaml.node_items(self._workspaces):
-            yield (element, self._workspaces[element]["path"])
-
-    # _get_workspace()
-    #
-    # Get the path of the workspace source associated with the given
-    # element's source at the given index
-    #
-    # Args:
-    #    element (str) - The element name
-    #
-    # Returns:
-    #    None if no workspace is open, the path to the workspace
-    #    otherwise
-    #
-    def _get_workspace(self, element):
-        if element not in self._workspaces:
-            return None
-        return self._workspaces[element]["path"]
-
-    # _set_workspace()
-    #
-    # Set the path of the workspace associated with the given
-    # element's source at the given index
-    #
-    # Args:
-    #    element (str) - The element name
-    #    path (str) - The path to set the workspace to
-    #
-    def _set_workspace(self, element, path):
-        if element.name not in self._workspaces:
-            self._workspaces[element.name] = {}
-
-        self._workspaces[element.name]["path"] = path
-        element._set_source_workspaces(path)
-
-    # _delete_workspace()
-    #
-    # Remove the workspace from the workspace element. Note that this
-    # does *not* remove the workspace from the stored yaml
-    # configuration, call _save_workspace_config() afterwards.
-    #
-    # Args:
-    #    element (str) - The element name
-    #
-    def _delete_workspace(self, element):
-        del self._workspaces[element]
-
-    # _load_workspace_config()
-    #
-    # Load the workspace configuration and return a node containing
-    # all open workspaces for the project
-    #
-    # Returns:
-    #
-    #    A node containing a dict that assigns elements to their
-    #    workspaces. For example:
-    #
-    #        alpha.bst: /home/me/alpha
-    #        bravo.bst: /home/me/bravo
-    #
-    def _load_workspace_config(self):
-        os.makedirs(os.path.join(self.directory, ".bst"), exist_ok=True)
-        workspace_file = os.path.join(self.directory, ".bst", "workspaces.yml")
-        try:
-            open(workspace_file, "a").close()
-        except IOError as e:
-            raise LoadError(LoadErrorReason.MISSING_FILE,
-                            "Could not load workspace config: {}".format(e)) from e
-
-        return _yaml.load(workspace_file)
-
-    # _parse_workspace_config()
-    #
-    # If workspace config is in old-style format, i.e. it is using
-    # source-specific workspaces, try to convert it to element-specific
-    # workspaces.
-    #
-    # This method will rewrite workspace config, if it is in old format.
-    #
-    # Args:
-    #    workspaces (dict): current workspace config, usually output of _load_workspace_config()
-    #
-    # Returns:
-    #    (bool, dict) Whether the workspace config needs to be
-    #                 rewritten and extracted workspaces
-    #
-    # Raises: LoadError if there was a problem with the workspace config
-    #
-    def _parse_workspace_config(self, workspaces):
-        version = _yaml.node_get(workspaces, int, "format-version", default_value=0)
-
-        if version == 0:
-            # Pre-versioning format can be of two forms
-            for element, config in _yaml.node_items(workspaces):
-                if isinstance(config, str):
-                    pass
-
-                elif isinstance(config, dict):
-                    sources = list(_yaml.node_items(config))
-                    if len(sources) > 1:
-                        detail = "There are multiple workspaces open for '{}'.\n" + \
-                                 "This is not supported anymore.\n" + \
-                                 "Please remove this element from '{}'."
-                        raise LoadError(LoadErrorReason.INVALID_DATA,
-                                        detail.format(element,
-                                                      os.path.join(self.directory, ".bst", "workspaces.yml")))
-
-                    workspaces[element] = sources[0][1]
-
-                else:
-                    raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "Workspace config is in unexpected format.")
-
-            res = {
-                element: {"path": config}
-                for element, config in _yaml.node_items(workspaces)
-            }
-
-        elif version == BST_WORKSPACE_FORMAT_VERSION:
-            res = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
-
-        else:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Workspace configuration format version {} not supported."
-                            "Your version of buildstream may be too old. Max supported version: {}"
-                            .format(version, BST_WORKSPACE_FORMAT_VERSION))
-
-        return res
-
-    # _save_workspace_config()
-    #
-    # Dump the current workspace element to the project configuration
-    # file. This makes any changes performed with _delete_workspace or
-    # _set_workspace permanent
-    #
-    def _save_workspace_config(self):
-        _yaml.dump(
-            {
-                "format-version": BST_WORKSPACE_FORMAT_VERSION,
-                "workspaces": _yaml.node_sanitize(self._workspaces)
-            },
-            os.path.join(self.directory, ".bst", "workspaces.yml"))
 
     def _extract_plugin_paths(self, node, name):
         if not node:

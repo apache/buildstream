@@ -28,7 +28,7 @@ from contextlib import contextmanager
 
 from . import Plugin
 from . import _yaml, utils
-from ._exceptions import BstError, ImplError, LoadError, LoadErrorReason, ErrorDomain
+from ._exceptions import BstError, ImplError, ErrorDomain
 from ._projectrefs import ProjectRefStorage
 
 
@@ -91,7 +91,6 @@ class Source(Plugin):
         self.__tracking = False                         # Source is scheduled to be tracked
         self.__assemble_scheduled = False               # Source is scheduled to be assembled
         self.__workspace = None                         # Directory of the currently active workspace
-        self.__workspace_key = None                     # Cached directory content hashes for workspaced source
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -328,7 +327,7 @@ class Source(Plugin):
                 # A workspace is considered inconsistent in the case
                 # that it's directory went missing
                 #
-                fullpath = self._get_workspace_path()
+                fullpath = self.__workspace.get_absolute_path()
                 if not os.path.exists(fullpath):
                     self.__consistency = Consistency.INCONSISTENT
 
@@ -336,11 +335,6 @@ class Source(Plugin):
     #
     def _get_consistency(self):
         return self.__consistency
-
-    # Return the absolute path of the element's workspace
-    #
-    def _get_workspace_path(self):
-        return os.path.join(self.get_project_directory(), self.__workspace)
 
     # Mark a source as scheduled to be tracked
     #
@@ -363,7 +357,8 @@ class Source(Plugin):
         self.__assemble_scheduled = True
 
         # Invalidate workspace key as the build modifies the workspace directory
-        self.__workspace_key = None
+        if self._has_workspace():
+            self.__workspace.invalidate_key()
 
     # _assemble_done():
     #
@@ -413,7 +408,8 @@ class Source(Plugin):
         staging_directory = self._ensure_directory(directory)
 
         if self._has_workspace():
-            self._stage_workspace(staging_directory)
+            with self.timed_activity("Staging local files at {}".format(self.__workspace.path)):
+                self.__workspace.stage(staging_directory)
         else:
             self.stage(staging_directory)
 
@@ -434,7 +430,8 @@ class Source(Plugin):
 
         key['directory'] = self.__directory
         if self._has_workspace():
-            key['workspace'] = self._get_workspace_key()
+            assert not self.__assemble_scheduled
+            key['workspace'] = self.__workspace.get_key()
         else:
             key['unique'] = self.get_unique_key()
 
@@ -615,80 +612,29 @@ class Source(Plugin):
 
         return new_ref
 
-    # Set the current workspace directory
+    # Set the current workspace
     #
-    # Note that this invalidate the workspace key.
+    # Note that this invalidates the workspace key.
     #
-    def _set_workspace(self, directory):
-        self.__workspace = directory
-        self.__workspace_key = None
+    def _set_workspace(self, workspace):
+        if self._has_workspace():
+            self.__workspace.invalidate_key()
+        self.__workspace = workspace
 
     # Return the current workspace directory
     def _get_workspace(self):
-        return self.__workspace
+        return self.__workspace.path
 
     # Delete the workspace
     #
-    # Note that this invalidate the workspace key.
+    # Note that this invalidates the workspace key.
     #
     def _del_workspace(self):
+        if self._has_workspace():
+            self.__workspace.invalidate_key()
         self.__workspace = None
-        self.__workspace_key = None
 
     # Whether the source has a set workspace
     #
     def _has_workspace(self):
         return self.__workspace is not None
-
-    # Stage the workspace
-    #
-    def _stage_workspace(self, directory):
-        fullpath = self._get_workspace_path()
-
-        with self.timed_activity("Staging local files at {}".format(self.__workspace)):
-            if os.path.isdir(fullpath):
-                utils.copy_files(fullpath, directory)
-            else:
-                destfile = os.path.join(directory, os.path.basename(self.__workspace))
-                utils.safe_copy(fullpath, destfile)
-
-    # Get a unique key for the workspace
-    #
-    # Note that to avoid re-traversing the file system if this function is
-    # called multiple times, the workspace key is cached. You can still force a
-    # new calculation to happen by setting the 'recalculate' flag.
-    #
-    def _get_workspace_key(self, recalculate=False):
-        assert not self.__assemble_scheduled
-
-        if recalculate or self.__workspace_key is None:
-            fullpath = self._get_workspace_path()
-
-            # Get a list of tuples of the the project relative paths and fullpaths
-            if os.path.isdir(fullpath):
-                filelist = utils.list_relative_paths(fullpath)
-                filelist = [(relpath, os.path.join(fullpath, relpath)) for relpath in filelist]
-            else:
-                filelist = [(self.__workspace, fullpath)]
-
-            # Return a list of (relative filename, sha256 digest) tuples, a sorted list
-            # has already been returned by list_relative_paths()
-            self.__workspace_key = [(relpath, _unique_key(fullpath)) for relpath, fullpath in filelist]
-
-        return self.__workspace_key
-
-
-# Get the sha256 sum for the content of a file
-def _unique_key(filename):
-
-    # If it's a directory, just return 0 string
-    if os.path.isdir(filename):
-        return "0"
-    elif os.path.islink(filename):
-        return "1"
-
-    try:
-        return utils.sha256sum(filename)
-    except FileNotFoundError as e:
-        raise LoadError(LoadErrorReason.MISSING_FILE,
-                        "Failed loading workspace. Did you remove the workspace directory? {}".format(e))
