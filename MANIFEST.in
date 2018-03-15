@@ -18,3 +18,6 @@ recursive-include tests *.bst
 recursive-include tests *.conf
 recursive-include tests *.sh
 recursive-include tests *.expected
+
+# Protocol Buffers
+recursive-include buildstream/_protos *.proto

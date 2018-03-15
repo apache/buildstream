@@ -6,6 +6,8 @@ include =
 omit =
   # Omit profiling helper module
   */buildstream/_profile.py
+  # Omit generated code
+  */buildstream/_protos/*
   */.eggs/*
 
 [report]

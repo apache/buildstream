@@ -19,6 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -29,7 +30,7 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 4:
     sys.exit(1)
 
 try:
-    from setuptools import setup, find_packages
+    from setuptools import setup, find_packages, Command
     from setuptools.command.easy_install import ScriptWriter
 except ImportError:
     print("BuildStream requires setuptools in order to build. Install it using"
@@ -206,12 +207,66 @@ ScriptWriter.get_args = get_args
 
 
 #####################################################
+#         gRPC command for code generation          #
+#####################################################
+class BuildGRPC(Command):
+    """Command to generate project *_pb2.py modules from proto files."""
+
+    description = 'build gRPC protobuf modules'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        try:
+            import grpc_tools.command
+        except ImportError:
+            print("BuildStream requires grpc_tools in order to build gRPC modules.\n"
+                  "Install it via pip (pip3 install grpcio-tools).")
+            exit(1)
+
+        protos_root = 'buildstream/_protos'
+
+        grpc_tools.command.build_package_protos(protos_root)
+
+        # Postprocess imports in generated code
+        for root, _, files in os.walk(protos_root):
+            for filename in files:
+                if filename.endswith('.py'):
+                    path = os.path.join(root, filename)
+                    with open(path, 'r') as f:
+                        code = f.read()
+
+                    # All protos are in buildstream._protos
+                    code = re.sub(r'^from ', r'from buildstream._protos.',
+                                  code, flags=re.MULTILINE)
+                    # Except for the core google.protobuf protos
+                    code = re.sub(r'^from buildstream._protos.google.protobuf', r'from google.protobuf',
+                                  code, flags=re.MULTILINE)
+
+                    with open(path, 'w') as f:
+                        f.write(code)
+
+
+def get_cmdclass():
+    cmdclass = {
+        'build_grpc': BuildGRPC,
+    }
+    cmdclass.update(versioneer.get_cmdclass())
+    return cmdclass
+
+
+#####################################################
 #             Main setup() Invocation               #
 #####################################################
 setup(name='BuildStream',
       # Use versioneer
       version=versioneer.get_version(),
-      cmdclass=versioneer.get_cmdclass(),
+      cmdclass=get_cmdclass(),
 
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
@@ -243,6 +298,8 @@ setup(name='BuildStream',
           'Click',
           'blessings',
           'jinja2 >= 2.10',
+          'protobuf >= 3.5',
+          'grpcio >= 1.10',
       ],
       entry_points=bst_install_entry_points,
       setup_requires=['pytest-runner'],
