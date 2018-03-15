@@ -5,21 +5,7 @@
 
 Installing BuildStream
 ======================
-Until BuildStream is available in your distro, you will need to install
-it yourself from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
-using python's ``pip`` package manager.
 
-This page has some instructions for installing the dependencies you
-will need using your distribution's package manager, this is followed by
-instructions for installing BuildStream itself :ref:`using pip <installing_pip>`.
-
-If your system cannot provide the base system requirements for BuildStream,
-then we have some instructions which can help you get started
-:ref:`using BuildStream with Docker <docker>`.
-
-
-System requirements
--------------------
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
@@ -27,9 +13,16 @@ BuildStream requires the following base system requirements:
 * PyGObject introspection bindings
 * OSTree >= v2017.8 with introspection data
 
-Note that ``ruamel.yaml`` is a pure python library which is normally
-obtainable via pip, however there seems to be some problems with installing
-this package so we recommend installing it with your package manager first.
+If your system cannot provide the base system requirements for BuildStream,
+then we have some instructions which can help you get started
+:ref:`using BuildStream with Docker <docker>`.
+
+
+Installing from source (recommended)
+------------------------------------
+Until BuildStream is available in your distro, you will need to install
+it yourself from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
+using python's ``pip`` package manager.
 
 For the purpose of installing BuildStream while there are no distro packages,
 you will additionally need:
@@ -38,18 +31,17 @@ you will additionally need:
 * Python 3 development libraries and headers
 * git (to checkout buildstream)
 
-Here are some examples of how to prepare the base requirements on
-some distros.
-
+Installing dependencies
+~~~~~~~~~~~~~~~~~~~~~~~
 Arch Linux
-~~~~~~~~~~
+++++++++++
 Install the dependencies with::
 
   sudo pacman -S fuse2 python python-pip python-gobject git \
                  ostree bubblewrap python-ruamel-yaml
 
 Debian Stretch
-~~~~~~~~~~~~~~
+++++++++++++++
 With stretch, you first need to ensure that you have the backports repository
 setup as described `here <https://backports.debian.org/Instructions/>`_
 
@@ -71,7 +63,7 @@ At this point you should be able to get the system requirements with::
 
 
 Debian Buster or Sid
-~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++
 For debian unstable or testing, only the following line should be enough
 to get the base system requirements installed::
 
@@ -82,7 +74,7 @@ to get the base system requirements installed::
 
 
 Fedora
-~~~~~~
+++++++
 For recent fedora systems, the following line should get you the system
 requirements you need::
 
@@ -90,10 +82,8 @@ requirements you need::
                  python3-psutil ostree python3-ruamel-yaml
 
 
-.. _installing_pip:
-
-Installing with pip
--------------------
+Installing
+~~~~~~~~~~
 Once you have the base system dependencies, you can clone the BuildStream
 git repository and install it as a regular user::
 
@@ -142,8 +132,8 @@ to your ``~/.bash_completion``:
    :language: yaml
 
 
-Upgrading BuildStream with pip
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Upgrading BuildStream
+~~~~~~~~~~~~~~~~~~~~~
 Assuming you have followed the default instructions above, all
 you need to do to upgrade BuildStream is to update your local git
 checkout::
@@ -158,3 +148,7 @@ need to cleanly reinstall BuildStream::
   cd /path/to/buildstream
   git pull --rebase
   pip3 install --user .
+
+
+Installing from distro packages
+-------------------------------
