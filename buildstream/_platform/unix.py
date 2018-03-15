@@ -20,7 +20,7 @@
 
 import os
 
-from .._artifactcache.tarcache import TarCache
+from .._artifactcache.cascache import CASCache
 from .._exceptions import PlatformError
 from ..sandbox import SandboxChroot
 
@@ -32,7 +32,7 @@ class Unix(Platform):
     def __init__(self, context, project):
 
         super().__init__(context, project)
-        self._artifact_cache = TarCache(context)
+        self._artifact_cache = CASCache(context)
 
         # Not necessarily 100% reliable, but we want to fail early.
         if os.geteuid() != 0:
