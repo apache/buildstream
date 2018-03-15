@@ -26,7 +26,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='build/bazel/remote/execution/v2/remote_execution.proto',
   package='build.bazel.remote.execution.v2',
   syntax='proto3',
-  serialized_pb=_b('\n6build/bazel/remote/execution/v2/remote_execution.proto\x12\x1f\x62uild.bazel.remote.execution.v2\x1a\x1f\x62uild/bazel/semver/semver.proto\x1a\x1cgoogle/api/annotations.proto\x1a#google/longrunning/operations.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\"\xd5\x01\n\x06\x41\x63tion\x12?\n\x0e\x63ommand_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x42\n\x11input_root_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12*\n\x07timeout\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x14\n\x0c\x64o_not_cache\x18\x07 \x01(\x08J\x04\x08\x03\x10\x06\"\xb7\x02\n\x07\x43ommand\x12\x11\n\targuments\x18\x01 \x03(\t\x12[\n\x15\x65nvironment_variables\x18\x02 \x03(\x0b\x32<.build.bazel.remote.execution.v2.Command.EnvironmentVariable\x12\x14\n\x0coutput_files\x18\x03 \x03(\t\x12\x1a\n\x12output_directories\x18\x04 \x03(\t\x12;\n\x08platform\x18\x05 \x01(\x0b\x32).build.bazel.remote.execution.v2.Platform\x12\x19\n\x11working_directory\x18\x06 \x01(\t\x1a\x32\n\x13\x45nvironmentVariable\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"{\n\x08Platform\x12\x46\n\nproperties\x18\x01 \x03(\x0b\x32\x32.build.bazel.remote.execution.v2.Platform.Property\x1a\'\n\x08Property\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x8a\x01\n\tDirectory\x12\x38\n\x05\x66iles\x18\x01 \x03(\x0b\x32).build.bazel.remote.execution.v2.FileNode\x12\x43\n\x0b\x64irectories\x18\x02 \x03(\x0b\x32..build.bazel.remote.execution.v2.DirectoryNode\"n\n\x08\x46ileNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x15\n\ris_executable\x18\x04 \x01(\x08J\x04\x08\x03\x10\x04\"V\n\rDirectoryNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"*\n\x06\x44igest\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12\x12\n\nsize_bytes\x18\x02 \x01(\x03\"\xec\x04\n\x16\x45xecutedActionMetadata\x12\x0e\n\x06worker\x18\x01 \x01(\t\x12\x34\n\x10queued_timestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12:\n\x16worker_start_timestamp\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12>\n\x1aworker_completed_timestamp\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12?\n\x1binput_fetch_start_timestamp\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x43\n\x1finput_fetch_completed_timestamp\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12=\n\x19\x65xecution_start_timestamp\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x41\n\x1d\x65xecution_completed_timestamp\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x41\n\x1doutput_upload_start_timestamp\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x45\n!output_upload_completed_timestamp\x18\n \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\xb5\x03\n\x0c\x41\x63tionResult\x12\x41\n\x0coutput_files\x18\x02 \x03(\x0b\x32+.build.bazel.remote.execution.v2.OutputFile\x12L\n\x12output_directories\x18\x03 \x03(\x0b\x32\x30.build.bazel.remote.execution.v2.OutputDirectory\x12\x11\n\texit_code\x18\x04 \x01(\x05\x12\x12\n\nstdout_raw\x18\x05 \x01(\x0c\x12>\n\rstdout_digest\x18\x06 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x12\n\nstderr_raw\x18\x07 \x01(\x0c\x12>\n\rstderr_digest\x18\x08 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12S\n\x12\x65xecution_metadata\x18\t \x01(\x0b\x32\x37.build.bazel.remote.execution.v2.ExecutedActionMetadataJ\x04\x08\x01\x10\x02\"p\n\nOutputFile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x15\n\ris_executable\x18\x04 \x01(\x08J\x04\x08\x03\x10\x04\"~\n\x04Tree\x12\x38\n\x04root\x18\x01 \x01(\x0b\x32*.build.bazel.remote.execution.v2.Directory\x12<\n\x08\x63hildren\x18\x02 \x03(\x0b\x32*.build.bazel.remote.execution.v2.Directory\"c\n\x0fOutputDirectory\x12\x0c\n\x04path\x18\x01 \x01(\t\x12<\n\x0btree_digest\x18\x03 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.DigestJ\x04\x08\x02\x10\x03\"#\n\x0f\x45xecutionPolicy\x12\x10\n\x08priority\x18\x01 \x01(\x05\"&\n\x12ResultsCachePolicy\x12\x10\n\x08priority\x18\x01 \x01(\x05\"\xb3\x02\n\x0e\x45xecuteRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x19\n\x11skip_cache_lookup\x18\x03 \x01(\x08\x12>\n\raction_digest\x18\x06 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12J\n\x10\x65xecution_policy\x18\x07 \x01(\x0b\x32\x30.build.bazel.remote.execution.v2.ExecutionPolicy\x12Q\n\x14results_cache_policy\x18\x08 \x01(\x0b\x32\x33.build.bazel.remote.execution.v2.ResultsCachePolicyJ\x04\x08\x02\x10\x03J\x04\x08\x04\x10\x05J\x04\x08\x05\x10\x06\"Z\n\x07LogFile\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x16\n\x0ehuman_readable\x18\x02 \x01(\x08\"\xbf\x02\n\x0f\x45xecuteResponse\x12=\n\x06result\x18\x01 \x01(\x0b\x32-.build.bazel.remote.execution.v2.ActionResult\x12\x15\n\rcached_result\x18\x02 \x01(\x08\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\x12U\n\x0bserver_logs\x18\x04 \x03(\x0b\x32@.build.bazel.remote.execution.v2.ExecuteResponse.ServerLogsEntry\x1a[\n\x0fServerLogsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x37\n\x05value\x18\x02 \x01(\x0b\x32(.build.bazel.remote.execution.v2.LogFile:\x02\x38\x01\"\xb3\x02\n\x18\x45xecuteOperationMetadata\x12N\n\x05stage\x18\x01 \x01(\x0e\x32?.build.bazel.remote.execution.v2.ExecuteOperationMetadata.Stage\x12>\n\raction_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x1a\n\x12stdout_stream_name\x18\x03 \x01(\t\x12\x1a\n\x12stderr_stream_name\x18\x04 \x01(\t\"O\n\x05Stage\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0b\x43\x41\x43HE_CHECK\x10\x01\x12\n\n\x06QUEUED\x10\x02\x12\r\n\tEXECUTING\x10\x03\x12\r\n\tCOMPLETED\x10\x04\"$\n\x14WaitExecutionRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"o\n\x16GetActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12>\n\raction_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x8b\x02\n\x19UpdateActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12>\n\raction_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x44\n\raction_result\x18\x03 \x01(\x0b\x32-.build.bazel.remote.execution.v2.ActionResult\x12Q\n\x14results_cache_policy\x18\x04 \x01(\x0b\x32\x33.build.bazel.remote.execution.v2.ResultsCachePolicy\"o\n\x17\x46indMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"a\n\x18\x46indMissingBlobsResponse\x12\x45\n\x14missing_blob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"b\n\x11UpdateBlobRequest\x12?\n\x0e\x63ontent_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"v\n\x17\x42\x61tchUpdateBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x44\n\x08requests\x18\x02 \x03(\x0b\x32\x32.build.bazel.remote.execution.v2.UpdateBlobRequest\"\xdf\x01\n\x18\x42\x61tchUpdateBlobsResponse\x12U\n\tresponses\x18\x01 \x03(\x0b\x32\x42.build.bazel.remote.execution.v2.BatchUpdateBlobsResponse.Response\x1al\n\x08Response\x12<\n\x0b\x62lob_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x8c\x01\n\x0eGetTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x11\n\tpage_size\x18\x03 \x01(\x05\x12\x12\n\npage_token\x18\x04 \x01(\t\"k\n\x0fGetTreeResponse\x12?\n\x0b\x64irectories\x18\x01 \x03(\x0b\x32*.build.bazel.remote.execution.v2.Directory\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"/\n\x16GetCapabilitiesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\xe3\x02\n\x12ServerCapabilities\x12N\n\x12\x63\x61\x63he_capabilities\x18\x01 \x01(\x0b\x32\x32.build.bazel.remote.execution.v2.CacheCapabilities\x12V\n\x16\x65xecution_capabilities\x18\x02 \x01(\x0b\x32\x36.build.bazel.remote.execution.v2.ExecutionCapabilities\x12:\n\x16\x64\x65precated_api_version\x18\x03 \x01(\x0b\x32\x1a.build.bazel.semver.SemVer\x12\x33\n\x0flow_api_version\x18\x04 \x01(\x0b\x32\x1a.build.bazel.semver.SemVer\x12\x34\n\x10high_api_version\x18\x05 \x01(\x0b\x32\x1a.build.bazel.semver.SemVer\"7\n\x1d\x41\x63tionCacheUpdateCapabilities\x12\x16\n\x0eupdate_enabled\x18\x01 \x01(\x08\"\xac\x01\n\x14PriorityCapabilities\x12W\n\npriorities\x18\x01 \x03(\x0b\x32\x43.build.bazel.remote.execution.v2.PriorityCapabilities.PriorityRange\x1a;\n\rPriorityRange\x12\x14\n\x0cmin_priority\x18\x01 \x01(\x05\x12\x14\n\x0cmax_priority\x18\x02 \x01(\x05\"\xa3\x02\n\x11\x43\x61\x63heCapabilities\x12H\n\x0f\x64igest_function\x18\x01 \x03(\x0e\x32/.build.bazel.remote.execution.v2.DigestFunction\x12h\n action_cache_update_capabilities\x18\x02 \x01(\x0b\x32>.build.bazel.remote.execution.v2.ActionCacheUpdateCapabilities\x12Z\n\x1b\x63\x61\x63he_priority_capabilities\x18\x03 \x01(\x0b\x32\x35.build.bazel.remote.execution.v2.PriorityCapabilities\"\xd7\x01\n\x15\x45xecutionCapabilities\x12H\n\x0f\x64igest_function\x18\x01 \x01(\x0e\x32/.build.bazel.remote.execution.v2.DigestFunction\x12\x14\n\x0c\x65xec_enabled\x18\x02 \x01(\x08\x12^\n\x1f\x65xecution_priority_capabilities\x18\x03 \x01(\x0b\x32\x35.build.bazel.remote.execution.v2.PriorityCapabilities\"6\n\x0bToolDetails\x12\x11\n\ttool_name\x18\x01 \x01(\t\x12\x14\n\x0ctool_version\x18\x02 \x01(\t\"\xa7\x01\n\x0fRequestMetadata\x12\x42\n\x0ctool_details\x18\x01 \x01(\x0b\x32,.build.bazel.remote.execution.v2.ToolDetails\x12\x11\n\taction_id\x18\x02 \x01(\t\x12\x1a\n\x12tool_invocation_id\x18\x03 \x01(\t\x12!\n\x19\x63orrelated_invocations_id\x18\x04 \x01(\t*<\n\x0e\x44igestFunction\x12\x0b\n\x07UNKNOWN\x10\x00\x12\n\n\x06SHA256\x10\x01\x12\x08\n\x04SHA1\x10\x02\x12\x07\n\x03MD5\x10\x03\x32\xb9\x02\n\tExecution\x12\x8e\x01\n\x07\x45xecute\x12/.build.bazel.remote.execution.v2.ExecuteRequest\x1a\x1d.google.longrunning.Operation\"1\x82\xd3\xe4\x93\x02+\"&/v2/{instance_name=**}/actions:execute:\x01*0\x01\x12\x9a\x01\n\rWaitExecution\x12\x35.build.bazel.remote.execution.v2.WaitExecutionRequest\x1a\x1d.google.longrunning.Operation\"1\x82\xd3\xe4\x93\x02+\"&/v2/{name=operations/**}:waitExecution:\x01*0\x01\x32\xd6\x03\n\x0b\x41\x63tionCache\x12\xd7\x01\n\x0fGetActionResult\x12\x37.build.bazel.remote.execution.v2.GetActionResultRequest\x1a-.build.bazel.remote.execution.v2.ActionResult\"\\\x82\xd3\xe4\x93\x02V\x12T/v2/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}\x12\xec\x01\n\x12UpdateActionResult\x12:.build.bazel.remote.execution.v2.UpdateActionResultRequest\x1a-.build.bazel.remote.execution.v2.ActionResult\"k\x82\xd3\xe4\x93\x02\x65\x1aT/v2/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}:\raction_result2\xe4\x04\n\x19\x43ontentAddressableStorage\x12\xbc\x01\n\x10\x46indMissingBlobs\x12\x38.build.bazel.remote.execution.v2.FindMissingBlobsRequest\x1a\x39.build.bazel.remote.execution.v2.FindMissingBlobsResponse\"3\x82\xd3\xe4\x93\x02-\"(/v2/{instance_name=**}/blobs:findMissing:\x01*\x12\xbc\x01\n\x10\x42\x61tchUpdateBlobs\x12\x38.build.bazel.remote.execution.v2.BatchUpdateBlobsRequest\x1a\x39.build.bazel.remote.execution.v2.BatchUpdateBlobsResponse\"3\x82\xd3\xe4\x93\x02-\"(/v2/{instance_name=**}/blobs:batchUpdate:\x01*\x12\xc8\x01\n\x07GetTree\x12/.build.bazel.remote.execution.v2.GetTreeRequest\x1a\x30.build.bazel.remote.execution.v2.GetTreeResponse\"X\x82\xd3\xe4\x93\x02R\x12P/v2/{instance_name=**}/blobs/{root_digest.hash}/{root_digest.size_bytes}:getTree0\x01\x32\xbd\x01\n\x0c\x43\x61pabilities\x12\xac\x01\n\x0fGetCapabilities\x12\x37.build.bazel.remote.execution.v2.GetCapabilitiesRequest\x1a\x33.build.bazel.remote.execution.v2.ServerCapabilities\"+\x82\xd3\xe4\x93\x02%\x12#/v2/{instance_name=**}/capabilitiesBr\n\x1f\x62uild.bazel.remote.execution.v2B\x14RemoteExecutionProtoP\x01Z\x0fremoteexecution\xa2\x02\x03REX\xaa\x02\x1f\x42uild.Bazel.Remote.Execution.V2b\x06proto3')
+  serialized_pb=_b('\n6build/bazel/remote/execution/v2/remote_execution.proto\x12\x1f\x62uild.bazel.remote.execution.v2\x1a\x1f\x62uild/bazel/semver/semver.proto\x1a\x1cgoogle/api/annotations.proto\x1a#google/longrunning/operations.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\"\xd5\x01\n\x06\x41\x63tion\x12?\n\x0e\x63ommand_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x42\n\x11input_root_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12*\n\x07timeout\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x14\n\x0c\x64o_not_cache\x18\x07 \x01(\x08J\x04\x08\x03\x10\x06\"\xb7\x02\n\x07\x43ommand\x12\x11\n\targuments\x18\x01 \x03(\t\x12[\n\x15\x65nvironment_variables\x18\x02 \x03(\x0b\x32<.build.bazel.remote.execution.v2.Command.EnvironmentVariable\x12\x14\n\x0coutput_files\x18\x03 \x03(\t\x12\x1a\n\x12output_directories\x18\x04 \x03(\t\x12;\n\x08platform\x18\x05 \x01(\x0b\x32).build.bazel.remote.execution.v2.Platform\x12\x19\n\x11working_directory\x18\x06 \x01(\t\x1a\x32\n\x13\x45nvironmentVariable\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"{\n\x08Platform\x12\x46\n\nproperties\x18\x01 \x03(\x0b\x32\x32.build.bazel.remote.execution.v2.Platform.Property\x1a\'\n\x08Property\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xca\x01\n\tDirectory\x12\x38\n\x05\x66iles\x18\x01 \x03(\x0b\x32).build.bazel.remote.execution.v2.FileNode\x12\x43\n\x0b\x64irectories\x18\x02 \x03(\x0b\x32..build.bazel.remote.execution.v2.DirectoryNode\x12>\n\x08symlinks\x18\x03 \x03(\x0b\x32,.build.bazel.remote.execution.v2.SymlinkNode\"n\n\x08\x46ileNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x15\n\ris_executable\x18\x04 \x01(\x08J\x04\x08\x03\x10\x04\"V\n\rDirectoryNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"+\n\x0bSymlinkNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\"*\n\x06\x44igest\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12\x12\n\nsize_bytes\x18\x02 \x01(\x03\"\xec\x04\n\x16\x45xecutedActionMetadata\x12\x0e\n\x06worker\x18\x01 \x01(\t\x12\x34\n\x10queued_timestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12:\n\x16worker_start_timestamp\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12>\n\x1aworker_completed_timestamp\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12?\n\x1binput_fetch_start_timestamp\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x43\n\x1finput_fetch_completed_timestamp\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12=\n\x19\x65xecution_start_timestamp\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x41\n\x1d\x65xecution_completed_timestamp\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x41\n\x1doutput_upload_start_timestamp\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x45\n!output_upload_completed_timestamp\x18\n \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\xb5\x03\n\x0c\x41\x63tionResult\x12\x41\n\x0coutput_files\x18\x02 \x03(\x0b\x32+.build.bazel.remote.execution.v2.OutputFile\x12L\n\x12output_directories\x18\x03 \x03(\x0b\x32\x30.build.bazel.remote.execution.v2.OutputDirectory\x12\x11\n\texit_code\x18\x04 \x01(\x05\x12\x12\n\nstdout_raw\x18\x05 \x01(\x0c\x12>\n\rstdout_digest\x18\x06 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x12\n\nstderr_raw\x18\x07 \x01(\x0c\x12>\n\rstderr_digest\x18\x08 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12S\n\x12\x65xecution_metadata\x18\t \x01(\x0b\x32\x37.build.bazel.remote.execution.v2.ExecutedActionMetadataJ\x04\x08\x01\x10\x02\"p\n\nOutputFile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x15\n\ris_executable\x18\x04 \x01(\x08J\x04\x08\x03\x10\x04\"~\n\x04Tree\x12\x38\n\x04root\x18\x01 \x01(\x0b\x32*.build.bazel.remote.execution.v2.Directory\x12<\n\x08\x63hildren\x18\x02 \x03(\x0b\x32*.build.bazel.remote.execution.v2.Directory\"c\n\x0fOutputDirectory\x12\x0c\n\x04path\x18\x01 \x01(\t\x12<\n\x0btree_digest\x18\x03 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.DigestJ\x04\x08\x02\x10\x03\"#\n\x0f\x45xecutionPolicy\x12\x10\n\x08priority\x18\x01 \x01(\x05\"&\n\x12ResultsCachePolicy\x12\x10\n\x08priority\x18\x01 \x01(\x05\"\xb3\x02\n\x0e\x45xecuteRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x19\n\x11skip_cache_lookup\x18\x03 \x01(\x08\x12>\n\raction_digest\x18\x06 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12J\n\x10\x65xecution_policy\x18\x07 \x01(\x0b\x32\x30.build.bazel.remote.execution.v2.ExecutionPolicy\x12Q\n\x14results_cache_policy\x18\x08 \x01(\x0b\x32\x33.build.bazel.remote.execution.v2.ResultsCachePolicyJ\x04\x08\x02\x10\x03J\x04\x08\x04\x10\x05J\x04\x08\x05\x10\x06\"Z\n\x07LogFile\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x16\n\x0ehuman_readable\x18\x02 \x01(\x08\"\xbf\x02\n\x0f\x45xecuteResponse\x12=\n\x06result\x18\x01 \x01(\x0b\x32-.build.bazel.remote.execution.v2.ActionResult\x12\x15\n\rcached_result\x18\x02 \x01(\x08\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\x12U\n\x0bserver_logs\x18\x04 \x03(\x0b\x32@.build.bazel.remote.execution.v2.ExecuteResponse.ServerLogsEntry\x1a[\n\x0fServerLogsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x37\n\x05value\x18\x02 \x01(\x0b\x32(.build.bazel.remote.execution.v2.LogFile:\x02\x38\x01\"\xb3\x02\n\x18\x45xecuteOperationMetadata\x12N\n\x05stage\x18\x01 \x01(\x0e\x32?.build.bazel.remote.execution.v2.ExecuteOperationMetadata.Stage\x12>\n\raction_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x1a\n\x12stdout_stream_name\x18\x03 \x01(\t\x12\x1a\n\x12stderr_stream_name\x18\x04 \x01(\t\"O\n\x05Stage\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0b\x43\x41\x43HE_CHECK\x10\x01\x12\n\n\x06QUEUED\x10\x02\x12\r\n\tEXECUTING\x10\x03\x12\r\n\tCOMPLETED\x10\x04\"$\n\x14WaitExecutionRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"o\n\x16GetActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12>\n\raction_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x8b\x02\n\x19UpdateActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12>\n\raction_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x44\n\raction_result\x18\x03 \x01(\x0b\x32-.build.bazel.remote.execution.v2.ActionResult\x12Q\n\x14results_cache_policy\x18\x04 \x01(\x0b\x32\x33.build.bazel.remote.execution.v2.ResultsCachePolicy\"o\n\x17\x46indMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"a\n\x18\x46indMissingBlobsResponse\x12\x45\n\x14missing_blob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"b\n\x11UpdateBlobRequest\x12?\n\x0e\x63ontent_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"v\n\x17\x42\x61tchUpdateBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x44\n\x08requests\x18\x02 \x03(\x0b\x32\x32.build.bazel.remote.execution.v2.UpdateBlobRequest\"\xdf\x01\n\x18\x42\x61tchUpdateBlobsResponse\x12U\n\tresponses\x18\x01 \x03(\x0b\x32\x42.build.bazel.remote.execution.v2.BatchUpdateBlobsResponse.Response\x1al\n\x08Response\x12<\n\x0b\x62lob_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x8c\x01\n\x0eGetTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x11\n\tpage_size\x18\x03 \x01(\x05\x12\x12\n\npage_token\x18\x04 \x01(\t\"k\n\x0fGetTreeResponse\x12?\n\x0b\x64irectories\x18\x01 \x03(\x0b\x32*.build.bazel.remote.execution.v2.Directory\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"/\n\x16GetCapabilitiesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\xe3\x02\n\x12ServerCapabilities\x12N\n\x12\x63\x61\x63he_capabilities\x18\x01 \x01(\x0b\x32\x32.build.bazel.remote.execution.v2.CacheCapabilities\x12V\n\x16\x65xecution_capabilities\x18\x02 \x01(\x0b\x32\x36.build.bazel.remote.execution.v2.ExecutionCapabilities\x12:\n\x16\x64\x65precated_api_version\x18\x03 \x01(\x0b\x32\x1a.build.bazel.semver.SemVer\x12\x33\n\x0flow_api_version\x18\x04 \x01(\x0b\x32\x1a.build.bazel.semver.SemVer\x12\x34\n\x10high_api_version\x18\x05 \x01(\x0b\x32\x1a.build.bazel.semver.SemVer\"7\n\x1d\x41\x63tionCacheUpdateCapabilities\x12\x16\n\x0eupdate_enabled\x18\x01 \x01(\x08\"\xac\x01\n\x14PriorityCapabilities\x12W\n\npriorities\x18\x01 \x03(\x0b\x32\x43.build.bazel.remote.execution.v2.PriorityCapabilities.PriorityRange\x1a;\n\rPriorityRange\x12\x14\n\x0cmin_priority\x18\x01 \x01(\x05\x12\x14\n\x0cmax_priority\x18\x02 \x01(\x05\"\xa3\x02\n\x11\x43\x61\x63heCapabilities\x12H\n\x0f\x64igest_function\x18\x01 \x03(\x0e\x32/.build.bazel.remote.execution.v2.DigestFunction\x12h\n action_cache_update_capabilities\x18\x02 \x01(\x0b\x32>.build.bazel.remote.execution.v2.ActionCacheUpdateCapabilities\x12Z\n\x1b\x63\x61\x63he_priority_capabilities\x18\x03 \x01(\x0b\x32\x35.build.bazel.remote.execution.v2.PriorityCapabilities\"\xd7\x01\n\x15\x45xecutionCapabilities\x12H\n\x0f\x64igest_function\x18\x01 \x01(\x0e\x32/.build.bazel.remote.execution.v2.DigestFunction\x12\x14\n\x0c\x65xec_enabled\x18\x02 \x01(\x08\x12^\n\x1f\x65xecution_priority_capabilities\x18\x03 \x01(\x0b\x32\x35.build.bazel.remote.execution.v2.PriorityCapabilities\"6\n\x0bToolDetails\x12\x11\n\ttool_name\x18\x01 \x01(\t\x12\x14\n\x0ctool_version\x18\x02 \x01(\t\"\xa7\x01\n\x0fRequestMetadata\x12\x42\n\x0ctool_details\x18\x01 \x01(\x0b\x32,.build.bazel.remote.execution.v2.ToolDetails\x12\x11\n\taction_id\x18\x02 \x01(\t\x12\x1a\n\x12tool_invocation_id\x18\x03 \x01(\t\x12!\n\x19\x63orrelated_invocations_id\x18\x04 \x01(\t*<\n\x0e\x44igestFunction\x12\x0b\n\x07UNKNOWN\x10\x00\x12\n\n\x06SHA256\x10\x01\x12\x08\n\x04SHA1\x10\x02\x12\x07\n\x03MD5\x10\x03\x32\xb9\x02\n\tExecution\x12\x8e\x01\n\x07\x45xecute\x12/.build.bazel.remote.execution.v2.ExecuteRequest\x1a\x1d.google.longrunning.Operation\"1\x82\xd3\xe4\x93\x02+\"&/v2/{instance_name=**}/actions:execute:\x01*0\x01\x12\x9a\x01\n\rWaitExecution\x12\x35.build.bazel.remote.execution.v2.WaitExecutionRequest\x1a\x1d.google.longrunning.Operation\"1\x82\xd3\xe4\x93\x02+\"&/v2/{name=operations/**}:waitExecution:\x01*0\x01\x32\xd6\x03\n\x0b\x41\x63tionCache\x12\xd7\x01\n\x0fGetActionResult\x12\x37.build.bazel.remote.execution.v2.GetActionResultRequest\x1a-.build.bazel.remote.execution.v2.ActionResult\"\\\x82\xd3\xe4\x93\x02V\x12T/v2/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}\x12\xec\x01\n\x12UpdateActionResult\x12:.build.bazel.remote.execution.v2.UpdateActionResultRequest\x1a-.build.bazel.remote.execution.v2.ActionResult\"k\x82\xd3\xe4\x93\x02\x65\x1aT/v2/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}:\raction_result2\xe4\x04\n\x19\x43ontentAddressableStorage\x12\xbc\x01\n\x10\x46indMissingBlobs\x12\x38.build.bazel.remote.execution.v2.FindMissingBlobsRequest\x1a\x39.build.bazel.remote.execution.v2.FindMissingBlobsResponse\"3\x82\xd3\xe4\x93\x02-\"(/v2/{instance_name=**}/blobs:findMissing:\x01*\x12\xbc\x01\n\x10\x42\x61tchUpdateBlobs\x12\x38.build.bazel.remote.execution.v2.BatchUpdateBlobsRequest\x1a\x39.build.bazel.remote.execution.v2.BatchUpdateBlobsResponse\"3\x82\xd3\xe4\x93\x02-\"(/v2/{instance_name=**}/blobs:batchUpdate:\x01*\x12\xc8\x01\n\x07GetTree\x12/.build.bazel.remote.execution.v2.GetTreeRequest\x1a\x30.build.bazel.remote.execution.v2.GetTreeResponse\"X\x82\xd3\xe4\x93\x02R\x12P/v2/{instance_name=**}/blobs/{root_digest.hash}/{root_digest.size_bytes}:getTree0\x01\x32\xbd\x01\n\x0c\x43\x61pabilities\x12\xac\x01\n\x0fGetCapabilities\x12\x37.build.bazel.remote.execution.v2.GetCapabilitiesRequest\x1a\x33.build.bazel.remote.execution.v2.ServerCapabilities\"+\x82\xd3\xe4\x93\x02%\x12#/v2/{instance_name=**}/capabilitiesBr\n\x1f\x62uild.bazel.remote.execution.v2B\x14RemoteExecutionProtoP\x01Z\x0fremoteexecution\xa2\x02\x03REX\xaa\x02\x1f\x42uild.Bazel.Remote.Execution.V2b\x06proto3')
   ,
   dependencies=[build_dot_bazel_dot_semver_dot_semver__pb2.DESCRIPTOR,google_dot_api_dot_annotations__pb2.DESCRIPTOR,google_dot_longrunning_dot_operations__pb2.DESCRIPTOR,google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,google_dot_rpc_dot_status__pb2.DESCRIPTOR,])
 
@@ -55,8 +55,8 @@ _DIGESTFUNCTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=6546,
-  serialized_end=6606,
+  serialized_start=6655,
+  serialized_end=6715,
 )
 _sym_db.RegisterEnumDescriptor(_DIGESTFUNCTION)
 
@@ -96,8 +96,8 @@ _EXECUTEOPERATIONMETADATA_STAGE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3757,
-  serialized_end=3836,
+  serialized_start=3866,
+  serialized_end=3945,
 )
 _sym_db.RegisterEnumDescriptor(_EXECUTEOPERATIONMETADATA_STAGE)
 
@@ -346,6 +346,13 @@ _DIRECTORY = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='symlinks', full_name='build.bazel.remote.execution.v2.Directory.symlinks', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -359,7 +366,7 @@ _DIRECTORY = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=937,
-  serialized_end=1075,
+  serialized_end=1139,
 )
 
 
@@ -403,8 +410,8 @@ _FILENODE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1077,
-  serialized_end=1187,
+  serialized_start=1141,
+  serialized_end=1251,
 )
 
 
@@ -441,8 +448,46 @@ _DIRECTORYNODE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1189,
-  serialized_end=1275,
+  serialized_start=1253,
+  serialized_end=1339,
+)
+
+
+_SYMLINKNODE = _descriptor.Descriptor(
+  name='SymlinkNode',
+  full_name='build.bazel.remote.execution.v2.SymlinkNode',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='name', full_name='build.bazel.remote.execution.v2.SymlinkNode.name', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='target', full_name='build.bazel.remote.execution.v2.SymlinkNode.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1341,
+  serialized_end=1384,
 )
 
 
@@ -479,8 +524,8 @@ _DIGEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1277,
-  serialized_end=1319,
+  serialized_start=1386,
+  serialized_end=1428,
 )
 
 
@@ -573,8 +618,8 @@ _EXECUTEDACTIONMETADATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1322,
-  serialized_end=1942,
+  serialized_start=1431,
+  serialized_end=2051,
 )
 
 
@@ -653,8 +698,8 @@ _ACTIONRESULT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1945,
-  serialized_end=2382,
+  serialized_start=2054,
+  serialized_end=2491,
 )
 
 
@@ -698,8 +743,8 @@ _OUTPUTFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2384,
-  serialized_end=2496,
+  serialized_start=2493,
+  serialized_end=2605,
 )
 
 
@@ -736,8 +781,8 @@ _TREE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2498,
-  serialized_end=2624,
+  serialized_start=2607,
+  serialized_end=2733,
 )
 
 
@@ -774,8 +819,8 @@ _OUTPUTDIRECTORY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2626,
-  serialized_end=2725,
+  serialized_start=2735,
+  serialized_end=2834,
 )
 
 
@@ -805,8 +850,8 @@ _EXECUTIONPOLICY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2727,
-  serialized_end=2762,
+  serialized_start=2836,
+  serialized_end=2871,
 )
 
 
@@ -836,8 +881,8 @@ _RESULTSCACHEPOLICY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2764,
-  serialized_end=2802,
+  serialized_start=2873,
+  serialized_end=2911,
 )
 
 
@@ -895,8 +940,8 @@ _EXECUTEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2805,
-  serialized_end=3112,
+  serialized_start=2914,
+  serialized_end=3221,
 )
 
 
@@ -933,8 +978,8 @@ _LOGFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3114,
-  serialized_end=3204,
+  serialized_start=3223,
+  serialized_end=3313,
 )
 
 
@@ -971,8 +1016,8 @@ _EXECUTERESPONSE_SERVERLOGSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3435,
-  serialized_end=3526,
+  serialized_start=3544,
+  serialized_end=3635,
 )
 
 _EXECUTERESPONSE = _descriptor.Descriptor(
@@ -1022,8 +1067,8 @@ _EXECUTERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3207,
-  serialized_end=3526,
+  serialized_start=3316,
+  serialized_end=3635,
 )
 
 
@@ -1075,8 +1120,8 @@ _EXECUTEOPERATIONMETADATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3529,
-  serialized_end=3836,
+  serialized_start=3638,
+  serialized_end=3945,
 )
 
 
@@ -1106,8 +1151,8 @@ _WAITEXECUTIONREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3838,
-  serialized_end=3874,
+  serialized_start=3947,
+  serialized_end=3983,
 )
 
 
@@ -1144,8 +1189,8 @@ _GETACTIONRESULTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3876,
-  serialized_end=3987,
+  serialized_start=3985,
+  serialized_end=4096,
 )
 
 
@@ -1196,8 +1241,8 @@ _UPDATEACTIONRESULTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3990,
-  serialized_end=4257,
+  serialized_start=4099,
+  serialized_end=4366,
 )
 
 
@@ -1234,8 +1279,8 @@ _FINDMISSINGBLOBSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4259,
-  serialized_end=4370,
+  serialized_start=4368,
+  serialized_end=4479,
 )
 
 
@@ -1265,8 +1310,8 @@ _FINDMISSINGBLOBSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4372,
-  serialized_end=4469,
+  serialized_start=4481,
+  serialized_end=4578,
 )
 
 
@@ -1303,8 +1348,8 @@ _UPDATEBLOBREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4471,
-  serialized_end=4569,
+  serialized_start=4580,
+  serialized_end=4678,
 )
 
 
@@ -1341,8 +1386,8 @@ _BATCHUPDATEBLOBSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4571,
-  serialized_end=4689,
+  serialized_start=4680,
+  serialized_end=4798,
 )
 
 
@@ -1379,8 +1424,8 @@ _BATCHUPDATEBLOBSRESPONSE_RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4807,
-  serialized_end=4915,
+  serialized_start=4916,
+  serialized_end=5024,
 )
 
 _BATCHUPDATEBLOBSRESPONSE = _descriptor.Descriptor(
@@ -1409,8 +1454,8 @@ _BATCHUPDATEBLOBSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4692,
-  serialized_end=4915,
+  serialized_start=4801,
+  serialized_end=5024,
 )
 
 
@@ -1461,8 +1506,8 @@ _GETTREEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4918,
-  serialized_end=5058,
+  serialized_start=5027,
+  serialized_end=5167,
 )
 
 
@@ -1499,8 +1544,8 @@ _GETTREERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5060,
-  serialized_end=5167,
+  serialized_start=5169,
+  serialized_end=5276,
 )
 
 
@@ -1530,8 +1575,8 @@ _GETCAPABILITIESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5169,
-  serialized_end=5216,
+  serialized_start=5278,
+  serialized_end=5325,
 )
 
 
@@ -1589,8 +1634,8 @@ _SERVERCAPABILITIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5219,
-  serialized_end=5574,
+  serialized_start=5328,
+  serialized_end=5683,
 )
 
 
@@ -1620,8 +1665,8 @@ _ACTIONCACHEUPDATECAPABILITIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5576,
-  serialized_end=5631,
+  serialized_start=5685,
+  serialized_end=5740,
 )
 
 
@@ -1658,8 +1703,8 @@ _PRIORITYCAPABILITIES_PRIORITYRANGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5747,
-  serialized_end=5806,
+  serialized_start=5856,
+  serialized_end=5915,
 )
 
 _PRIORITYCAPABILITIES = _descriptor.Descriptor(
@@ -1688,8 +1733,8 @@ _PRIORITYCAPABILITIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5634,
-  serialized_end=5806,
+  serialized_start=5743,
+  serialized_end=5915,
 )
 
 
@@ -1733,8 +1778,8 @@ _CACHECAPABILITIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5809,
-  serialized_end=6100,
+  serialized_start=5918,
+  serialized_end=6209,
 )
 
 
@@ -1778,8 +1823,8 @@ _EXECUTIONCAPABILITIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6103,
-  serialized_end=6318,
+  serialized_start=6212,
+  serialized_end=6427,
 )
 
 
@@ -1816,8 +1861,8 @@ _TOOLDETAILS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6320,
-  serialized_end=6374,
+  serialized_start=6429,
+  serialized_end=6483,
 )
 
 
@@ -1868,8 +1913,8 @@ _REQUESTMETADATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6377,
-  serialized_end=6544,
+  serialized_start=6486,
+  serialized_end=6653,
 )
 
 _ACTION.fields_by_name['command_digest'].message_type = _DIGEST
@@ -1882,6 +1927,7 @@ _PLATFORM_PROPERTY.containing_type = _PLATFORM
 _PLATFORM.fields_by_name['properties'].message_type = _PLATFORM_PROPERTY
 _DIRECTORY.fields_by_name['files'].message_type = _FILENODE
 _DIRECTORY.fields_by_name['directories'].message_type = _DIRECTORYNODE
+_DIRECTORY.fields_by_name['symlinks'].message_type = _SYMLINKNODE
 _FILENODE.fields_by_name['digest'].message_type = _DIGEST
 _DIRECTORYNODE.fields_by_name['digest'].message_type = _DIGEST
 _EXECUTEDACTIONMETADATA.fields_by_name['queued_timestamp'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
@@ -1947,6 +1993,7 @@ DESCRIPTOR.message_types_by_name['Platform'] = _PLATFORM
 DESCRIPTOR.message_types_by_name['Directory'] = _DIRECTORY
 DESCRIPTOR.message_types_by_name['FileNode'] = _FILENODE
 DESCRIPTOR.message_types_by_name['DirectoryNode'] = _DIRECTORYNODE
+DESCRIPTOR.message_types_by_name['SymlinkNode'] = _SYMLINKNODE
 DESCRIPTOR.message_types_by_name['Digest'] = _DIGEST
 DESCRIPTOR.message_types_by_name['ExecutedActionMetadata'] = _EXECUTEDACTIONMETADATA
 DESCRIPTOR.message_types_by_name['ActionResult'] = _ACTIONRESULT
@@ -2037,6 +2084,13 @@ DirectoryNode = _reflection.GeneratedProtocolMessageType('DirectoryNode', (_mess
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.DirectoryNode)
   ))
 _sym_db.RegisterMessage(DirectoryNode)
+
+SymlinkNode = _reflection.GeneratedProtocolMessageType('SymlinkNode', (_message.Message,), dict(
+  DESCRIPTOR = _SYMLINKNODE,
+  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.SymlinkNode)
+  ))
+_sym_db.RegisterMessage(SymlinkNode)
 
 Digest = _reflection.GeneratedProtocolMessageType('Digest', (_message.Message,), dict(
   DESCRIPTOR = _DIGEST,
@@ -2284,8 +2338,8 @@ _EXECUTION = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=6609,
-  serialized_end=6922,
+  serialized_start=6718,
+  serialized_end=7031,
   methods=[
   _descriptor.MethodDescriptor(
     name='Execute',
@@ -2317,8 +2371,8 @@ _ACTIONCACHE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   options=None,
-  serialized_start=6925,
-  serialized_end=7395,
+  serialized_start=7034,
+  serialized_end=7504,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetActionResult',
@@ -2350,8 +2404,8 @@ _CONTENTADDRESSABLESTORAGE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=2,
   options=None,
-  serialized_start=7398,
-  serialized_end=8010,
+  serialized_start=7507,
+  serialized_end=8119,
   methods=[
   _descriptor.MethodDescriptor(
     name='FindMissingBlobs',
@@ -2392,8 +2446,8 @@ _CAPABILITIES = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=3,
   options=None,
-  serialized_start=8013,
-  serialized_end=8202,
+  serialized_start=8122,
+  serialized_end=8311,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetCapabilities',
