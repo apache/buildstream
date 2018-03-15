@@ -19,8 +19,9 @@ dependencies.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Installing
+   :caption: Getting started
 
+   main_quickstart
    install
    docker
 
