@@ -40,7 +40,7 @@ from ._projectrefs import ProjectRefs, ProjectRefStorage
 # This version is bumped whenever enhancements are made
 # to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 5
+BST_FORMAT_VERSION = 6
 BST_WORKSPACE_FORMAT_VERSION = 1
 
 # The separator we use for user specified aliases
