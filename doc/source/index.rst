@@ -25,6 +25,7 @@ dependencies.
    install
    docker
    first_project
+   examples
 
 
 .. toctree::
