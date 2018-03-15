@@ -296,7 +296,7 @@ class Project():
         #
 
         # Load artifacts pull/push configuration for this project
-        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config)
+        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
 
         # Plugin origins and versions
         origins = _yaml.node_get(config, list, 'plugins', default_value=[])
