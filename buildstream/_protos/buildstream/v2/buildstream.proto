@@ -1,0 +1,95 @@
+// Copyright 2018 Codethink Limited
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package buildstream.v2;
+
+import "build/bazel/remote/execution/v2/remote_execution.proto";
+import "google/api/annotations.proto";
+
+service ReferenceStorage {
+  // Retrieve a CAS [Directory][build.bazel.remote.execution.v2.Directory]
+  // digest by name.
+  //
+  // Errors:
+  // * `NOT_FOUND`: The requested reference is not in the cache.
+  rpc GetReference(GetReferenceRequest) returns (GetReferenceResponse) {
+    option (google.api.http) = { get: "/v2/{instance_name=**}/buildstream/refs/{key}" };
+  }
+
+  // Associate a name with a CAS [Directory][build.bazel.remote.execution.v2.Directory]
+  // digest.
+  //
+  // Errors:
+  // * `RESOURCE_EXHAUSTED`: There is insufficient storage space to add the
+  //   entry to the cache.
+  rpc UpdateReference(UpdateReferenceRequest) returns (UpdateReferenceResponse) {
+    option (google.api.http) = { put: "/v2/{instance_name=**}/buildstream/refs/{key}" body: "digest" };
+  }
+
+  rpc Status(StatusRequest) returns (StatusResponse) {
+    option (google.api.http) = { put: "/v2/{instance_name=**}/buildstream/refs:status" };
+  }
+}
+
+message GetReferenceRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 1;
+
+  // The name of the reference.
+  string key = 2;
+}
+
+message GetReferenceResponse {
+  // The digest of the CAS [Directory][build.bazel.remote.execution.v2.Directory].
+  build.bazel.remote.execution.v2.Digest digest = 1;
+}
+
+message UpdateReferenceRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 1;
+
+  // The name of the reference.
+  repeated string keys = 2;
+
+  // The digest of the CAS [Directory][build.bazel.remote.execution.v2.Directory]
+  // to store in the cache.
+  build.bazel.remote.execution.v2.Digest digest = 3;
+}
+
+message UpdateReferenceResponse {
+}
+
+message StatusRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 1;
+}
+
+message StatusResponse {
+  // Whether reference updates are allowed for the connected client.
+  bool allow_updates = 1;
+}
