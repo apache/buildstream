@@ -440,11 +440,12 @@ message Platform {
 }
 
 // A `Directory` represents a directory node in a file tree, containing zero or
-// more children [FileNodes][google.devtools.remoteexecution.v1test.FileNode]
-// and [DirectoryNodes][google.devtools.remoteexecution.v1test.DirectoryNode].
-// Each `Node` contains its name in the directory, the digest of its content
-// (either a file blob or a `Directory` proto), as well as possibly some
-// metadata about the file or directory.
+// more children [FileNodes][google.devtools.remoteexecution.v1test.FileNode],
+// [DirectoryNodes][google.devtools.remoteexecution.v1test.DirectoryNode] and
+// [SymlinkNodes][google.devtools.remoteexecution.v1test.SymlinkNode].
+// Each `Node` contains its name in the directory, either the digest of its
+// content (either a file blob or a `Directory` proto) or a symlink target, as
+// well as possibly some metadata about the file or directory.
 //
 // In order to ensure that two equivalent directory trees hash to the same
 // value, the following restrictions MUST be obeyed when constructing a
@@ -452,8 +453,8 @@ message Platform {
 //   - Every child in the directory must have a path of exactly one segment.
 //     Multiple levels of directory hierarchy may not be collapsed.
 //   - Each child in the directory must have a unique path segment (file name).
-//   - The files and directories in the directory must each be sorted in
-//     lexicographical order by path. The path strings must be sorted by code
+//   - The files, directories, and symlinks in the directory must each be sorted
+//     in lexicographical order by path. The path strings must be sorted by code
 //     point, equivalently, by UTF-8 bytes.
 //
 // A `Directory` that obeys the restrictions is said to be in canonical form.
@@ -505,6 +506,9 @@ message Directory {
 
   // The subdirectories in the directory.
   repeated DirectoryNode directories = 2;
+
+  // The symlinks in the directory.
+  repeated SymlinkNode symlinks = 3;
 }
 
 // A `FileNode` represents a single file and associated metadata.
@@ -531,6 +535,15 @@ message DirectoryNode {
   // represented. See [Digest][google.devtools.remoteexecution.v1test.Digest]
   // for information about how to take the digest of a proto message.
   Digest digest = 2;
+}
+
+// A `SymlinkNode` represents a symbolic link.
+message SymlinkNode {
+  // The name of the symlink.
+  string name = 1;
+
+  // The target path of the symlink.
+  string target = 2;
 }
 
 // A content digest. A digest for a given blob consists of the size of the blob
