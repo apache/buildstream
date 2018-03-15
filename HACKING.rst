@@ -321,6 +321,20 @@ the frontend tests you can do::
 
   ./setup.py test --addopts '-k tests/frontend/'
 
+We also have a set of slow integration tests that are disabled by
+default - you will notice most of them marked with SKIP in the pytest
+output. To run them, you can use::
+
+  ./setup.py test --addopts '--integration'
+
+By default, buildstream also runs pylint on all files. Should you want
+to run just pylint (these checks are a lot faster), you can do so
+with::
+
+  ./setup.py test --addopts '-m pylint'
+
+Alternatively, any IDE plugin that uses pytest should automatically
+detect the ``.pylintrc`` in the project's root directory.
 
 Adding Tests
 ~~~~~~~~~~~~
@@ -342,6 +356,11 @@ to decorate your test case (again, examples exist in the existing
 tests for this), documentation on the datafiles extension can
 be found here: https://pypi.python.org/pypi/pytest-datafiles
 
+Tests that run a sandbox should be decorated with::
+
+  @pytest.mark.integration
+
+and use the integration cli helper.
 
 Measuring BuildStream performance
 ---------------------------------
