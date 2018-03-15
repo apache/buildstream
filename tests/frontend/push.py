@@ -41,6 +41,7 @@ def assert_not_shared(cli, share, project, element_name):
 #  * `bst push` fails if there are no remotes configured for pushing
 #  * `bst push` successfully pushes to any remote that is configured for pushing
 #
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push(cli, tmpdir, datafiles):
     project = str(datafiles)
