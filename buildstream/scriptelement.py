@@ -211,6 +211,9 @@ class ScriptElement(Element):
                 else:
                     sandbox.mark_directory(item['destination'])
 
+        # Tell the sandbox to mount the install root
+        sandbox.mark_directory(self.__install_root)
+
     def stage(self, sandbox):
 
         # Stage the elements, and run integration commands where appropriate.
