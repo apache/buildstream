@@ -296,7 +296,7 @@ class Project():
         #
 
         # Load artifacts pull/push configuration for this project
-        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config)
+        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
 
         # Workspace configurations
         self.workspaces = Workspaces(self)
