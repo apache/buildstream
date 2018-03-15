@@ -36,22 +36,38 @@ from .. import _yaml
 #     push (bool): Whether we should attempt to push artifacts to this cache,
 #                  in addition to pulling from it.
 #
-class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push')):
+class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push server_cert client_key client_cert')):
 
     # _new_from_config_node
     #
     # Creates an ArtifactCacheSpec() from a YAML loaded node
     #
     @staticmethod
-    def _new_from_config_node(spec_node):
-        _yaml.node_validate(spec_node, ['url', 'push'])
+    def _new_from_config_node(spec_node, basedir=None):
+        _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert'])
         url = _yaml.node_get(spec_node, str, 'url')
         push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
         if not url:
             provenance = _yaml.node_get_provenance(spec_node)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: empty artifact cache URL".format(provenance))
-        return ArtifactCacheSpec(url, push)
+
+        server_cert = _yaml.node_get(spec_node, str, 'server-cert', default_value=None)
+        if server_cert and basedir:
+            server_cert = os.path.join(basedir, server_cert)
+
+        client_key = _yaml.node_get(spec_node, str, 'client-key', default_value=None)
+        if client_key and basedir:
+            client_key = os.path.join(basedir, client_key)
+
+        client_cert = _yaml.node_get(spec_node, str, 'client-cert', default_value=None)
+        if client_cert and basedir:
+            client_cert = os.path.join(basedir, client_cert)
+
+        return ArtifactCacheSpec(url, push, server_cert, client_key, client_cert)
+
+
+ArtifactCacheSpec.__new__.__defaults__ = (None, None, None)
 
 
 # An ArtifactCache manages artifacts.
@@ -139,6 +155,7 @@ class ArtifactCache():
     #
     # Args:
     #   config_node (dict): The config block, which may contain the 'artifacts' key
+    #   basedir (str): The base directory for relative paths
     #
     # Returns:
     #   A list of ArtifactCacheSpec instances.
@@ -147,15 +164,15 @@ class ArtifactCache():
     #   LoadError, if the config block contains invalid keys.
     #
     @staticmethod
-    def specs_from_config_node(config_node):
+    def specs_from_config_node(config_node, basedir=None):
         cache_specs = []
 
         artifacts = config_node.get('artifacts', [])
         if isinstance(artifacts, Mapping):
-            cache_specs.append(ArtifactCacheSpec._new_from_config_node(artifacts))
+            cache_specs.append(ArtifactCacheSpec._new_from_config_node(artifacts, basedir))
         elif isinstance(artifacts, list):
             for spec_node in artifacts:
-                cache_specs.append(ArtifactCacheSpec._new_from_config_node(spec_node))
+                cache_specs.append(ArtifactCacheSpec._new_from_config_node(spec_node, basedir))
         else:
             provenance = _yaml.node_get_provenance(config_node, key='artifacts')
             raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
