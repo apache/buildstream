@@ -41,8 +41,8 @@ you will additionally need:
 Here are some examples of how to prepare the base requirements on
 some distros.
 
-Arch
-~~~~
+Arch Linux
+~~~~~~~~~~
 Install the dependencies with:
 
   sudo pacman -S fuse2 python python-pip python-gobject git \
