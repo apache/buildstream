@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='google/devtools/remoteexecution/v1test/remote_execution.proto',
   package='google.devtools.remoteexecution.v1test',
   syntax='proto3',
-  serialized_pb=_b('\n=google/devtools/remoteexecution/v1test/remote_execution.proto\x12&google.devtools.remoteexecution.v1test\x1a\x1cgoogle/api/annotations.proto\x1a#google/longrunning/operations.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xd3\x02\n\x06\x41\x63tion\x12\x46\n\x0e\x63ommand_digest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12I\n\x11input_root_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x14\n\x0coutput_files\x18\x03 \x03(\t\x12\x1a\n\x12output_directories\x18\x04 \x03(\t\x12\x42\n\x08platform\x18\x05 \x01(\x0b\x32\x30.google.devtools.remoteexecution.v1test.Platform\x12*\n\x07timeout\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x14\n\x0c\x64o_not_cache\x18\x07 \x01(\x08\"\xb4\x01\n\x07\x43ommand\x12\x11\n\targuments\x18\x01 \x03(\t\x12\x62\n\x15\x65nvironment_variables\x18\x02 \x03(\x0b\x32\x43.google.devtools.remoteexecution.v1test.Command.EnvironmentVariable\x1a\x32\n\x13\x45nvironmentVariable\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x82\x01\n\x08Platform\x12M\n\nproperties\x18\x01 \x03(\x0b\x32\x39.google.devtools.remoteexecution.v1test.Platform.Property\x1a\'\n\x08Property\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x98\x01\n\tDirectory\x12?\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x30.google.devtools.remoteexecution.v1test.FileNode\x12J\n\x0b\x64irectories\x18\x02 \x03(\x0b\x32\x35.google.devtools.remoteexecution.v1test.DirectoryNode\"o\n\x08\x46ileNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x15\n\ris_executable\x18\x04 \x01(\x08\"]\n\rDirectoryNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"*\n\x06\x44igest\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12\x12\n\nsize_bytes\x18\x02 \x01(\x03\"\xf6\x02\n\x0c\x41\x63tionResult\x12H\n\x0coutput_files\x18\x02 \x03(\x0b\x32\x32.google.devtools.remoteexecution.v1test.OutputFile\x12S\n\x12output_directories\x18\x03 \x03(\x0b\x32\x37.google.devtools.remoteexecution.v1test.OutputDirectory\x12\x11\n\texit_code\x18\x04 \x01(\x05\x12\x12\n\nstdout_raw\x18\x05 \x01(\x0c\x12\x45\n\rstdout_digest\x18\x06 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x12\n\nstderr_raw\x18\x07 \x01(\x0c\x12\x45\n\rstderr_digest\x18\x08 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"\x82\x01\n\nOutputFile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\x0c\x12\x15\n\ris_executable\x18\x04 \x01(\x08\"\x8c\x01\n\x04Tree\x12?\n\x04root\x18\x01 \x01(\x0b\x32\x31.google.devtools.remoteexecution.v1test.Directory\x12\x43\n\x08\x63hildren\x18\x02 \x03(\x0b\x32\x31.google.devtools.remoteexecution.v1test.Directory\"\xa4\x01\n\x0fOutputDirectory\x12\x0c\n\x04path\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x43\n\x0btree_digest\x18\x03 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"\xc2\x01\n\x0e\x45xecuteRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12>\n\x06\x61\x63tion\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Action\x12\x19\n\x11skip_cache_lookup\x18\x03 \x01(\x08\x12\x1e\n\x16total_input_file_count\x18\x04 \x01(\x05\x12\x1e\n\x16total_input_file_bytes\x18\x05 \x01(\x03\"a\n\x07LogFile\x12>\n\x06\x64igest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x16\n\x0ehuman_readable\x18\x02 \x01(\x08\"\xd4\x02\n\x0f\x45xecuteResponse\x12\x44\n\x06result\x18\x01 \x01(\x0b\x32\x34.google.devtools.remoteexecution.v1test.ActionResult\x12\x15\n\rcached_result\x18\x02 \x01(\x08\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\x12\\\n\x0bserver_logs\x18\x04 \x03(\x0b\x32G.google.devtools.remoteexecution.v1test.ExecuteResponse.ServerLogsEntry\x1a\x62\n\x0fServerLogsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12>\n\x05value\x18\x02 \x01(\x0b\x32/.google.devtools.remoteexecution.v1test.LogFile:\x02\x38\x01\"\xc1\x02\n\x18\x45xecuteOperationMetadata\x12U\n\x05stage\x18\x01 \x01(\x0e\x32\x46.google.devtools.remoteexecution.v1test.ExecuteOperationMetadata.Stage\x12\x45\n\raction_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x1a\n\x12stdout_stream_name\x18\x03 \x01(\t\x12\x1a\n\x12stderr_stream_name\x18\x04 \x01(\t\"O\n\x05Stage\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0b\x43\x41\x43HE_CHECK\x10\x01\x12\n\n\x06QUEUED\x10\x02\x12\r\n\tEXECUTING\x10\x03\x12\r\n\tCOMPLETED\x10\x04\"v\n\x16GetActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x45\n\raction_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"\xc6\x01\n\x19UpdateActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x45\n\raction_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12K\n\raction_result\x18\x03 \x01(\x0b\x32\x34.google.devtools.remoteexecution.v1test.ActionResult\"v\n\x17\x46indMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x44\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"h\n\x18\x46indMissingBlobsResponse\x12L\n\x14missing_blob_digests\x18\x02 \x03(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"i\n\x11UpdateBlobRequest\x12\x46\n\x0e\x63ontent_digest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"}\n\x17\x42\x61tchUpdateBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12K\n\x08requests\x18\x02 \x03(\x0b\x32\x39.google.devtools.remoteexecution.v1test.UpdateBlobRequest\"\xed\x01\n\x18\x42\x61tchUpdateBlobsResponse\x12\\\n\tresponses\x18\x01 \x03(\x0b\x32I.google.devtools.remoteexecution.v1test.BatchUpdateBlobsResponse.Response\x1as\n\x08Response\x12\x43\n\x0b\x62lob_digest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x93\x01\n\x0eGetTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x43\n\x0broot_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x11\n\tpage_size\x18\x03 \x01(\x05\x12\x12\n\npage_token\x18\x04 \x01(\t\"r\n\x0fGetTreeResponse\x12\x46\n\x0b\x64irectories\x18\x01 \x03(\x0b\x32\x31.google.devtools.remoteexecution.v1test.Directory\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"6\n\x0bToolDetails\x12\x11\n\ttool_name\x18\x01 \x01(\t\x12\x14\n\x0ctool_version\x18\x02 \x01(\t\"\xae\x01\n\x0fRequestMetadata\x12I\n\x0ctool_details\x18\x01 \x01(\x0b\x32\x33.google.devtools.remoteexecution.v1test.ToolDetails\x12\x11\n\taction_id\x18\x02 \x01(\t\x12\x1a\n\x12tool_invocation_id\x18\x03 \x01(\t\x12!\n\x19\x63orrelated_invocations_id\x18\x04 \x01(\t2\xa5\x01\n\tExecution\x12\x97\x01\n\x07\x45xecute\x12\x36.google.devtools.remoteexecution.v1test.ExecuteRequest\x1a\x1d.google.longrunning.Operation\"5\x82\xd3\xe4\x93\x02/\"*/v1test/{instance_name=**}/actions:execute:\x01*2\xfa\x03\n\x0b\x41\x63tionCache\x12\xe9\x01\n\x0fGetActionResult\x12>.google.devtools.remoteexecution.v1test.GetActionResultRequest\x1a\x34.google.devtools.remoteexecution.v1test.ActionResult\"`\x82\xd3\xe4\x93\x02Z\x12X/v1test/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}\x12\xfe\x01\n\x12UpdateActionResult\x12\x41.google.devtools.remoteexecution.v1test.UpdateActionResultRequest\x1a\x34.google.devtools.remoteexecution.v1test.ActionResult\"o\x82\xd3\xe4\x93\x02i\x1aX/v1test/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}:\raction_result2\x98\x05\n\x19\x43ontentAddressableStorage\x12\xce\x01\n\x10\x46indMissingBlobs\x12?.google.devtools.remoteexecution.v1test.FindMissingBlobsRequest\x1a@.google.devtools.remoteexecution.v1test.FindMissingBlobsResponse\"7\x82\xd3\xe4\x93\x02\x31\",/v1test/{instance_name=**}/blobs:findMissing:\x01*\x12\xce\x01\n\x10\x42\x61tchUpdateBlobs\x12?.google.devtools.remoteexecution.v1test.BatchUpdateBlobsRequest\x1a@.google.devtools.remoteexecution.v1test.BatchUpdateBlobsResponse\"7\x82\xd3\xe4\x93\x02\x31\",/v1test/{instance_name=**}/blobs:batchUpdate:\x01*\x12\xd8\x01\n\x07GetTree\x12\x36.google.devtools.remoteexecution.v1test.GetTreeRequest\x1a\x37.google.devtools.remoteexecution.v1test.GetTreeResponse\"\\\x82\xd3\xe4\x93\x02V\x12T/v1test/{instance_name=**}/blobs/{root_digest.hash}/{root_digest.size_bytes}:getTreeB\xc1\x01\n*com.google.devtools.remoteexecution.v1testB\x14RemoteExecutionProtoP\x01ZUgoogle.golang.org/genproto/googleapis/devtools/remoteexecution/v1test;remoteexecution\xa2\x02\x03REX\xaa\x02\x1dGoogle.RemoteExecution.V1Testb\x06proto3')
+  serialized_pb=_b('\n=google/devtools/remoteexecution/v1test/remote_execution.proto\x12&google.devtools.remoteexecution.v1test\x1a\x1cgoogle/api/annotations.proto\x1a#google/longrunning/operations.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xd3\x02\n\x06\x41\x63tion\x12\x46\n\x0e\x63ommand_digest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12I\n\x11input_root_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x14\n\x0coutput_files\x18\x03 \x03(\t\x12\x1a\n\x12output_directories\x18\x04 \x03(\t\x12\x42\n\x08platform\x18\x05 \x01(\x0b\x32\x30.google.devtools.remoteexecution.v1test.Platform\x12*\n\x07timeout\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x14\n\x0c\x64o_not_cache\x18\x07 \x01(\x08\"\xb4\x01\n\x07\x43ommand\x12\x11\n\targuments\x18\x01 \x03(\t\x12\x62\n\x15\x65nvironment_variables\x18\x02 \x03(\x0b\x32\x43.google.devtools.remoteexecution.v1test.Command.EnvironmentVariable\x1a\x32\n\x13\x45nvironmentVariable\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x82\x01\n\x08Platform\x12M\n\nproperties\x18\x01 \x03(\x0b\x32\x39.google.devtools.remoteexecution.v1test.Platform.Property\x1a\'\n\x08Property\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xdf\x01\n\tDirectory\x12?\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x30.google.devtools.remoteexecution.v1test.FileNode\x12J\n\x0b\x64irectories\x18\x02 \x03(\x0b\x32\x35.google.devtools.remoteexecution.v1test.DirectoryNode\x12\x45\n\x08symlinks\x18\x03 \x03(\x0b\x32\x33.google.devtools.remoteexecution.v1test.SymlinkNode\"o\n\x08\x46ileNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x15\n\ris_executable\x18\x04 \x01(\x08\"]\n\rDirectoryNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"+\n\x0bSymlinkNode\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\"*\n\x06\x44igest\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12\x12\n\nsize_bytes\x18\x02 \x01(\x03\"\xf6\x02\n\x0c\x41\x63tionResult\x12H\n\x0coutput_files\x18\x02 \x03(\x0b\x32\x32.google.devtools.remoteexecution.v1test.OutputFile\x12S\n\x12output_directories\x18\x03 \x03(\x0b\x32\x37.google.devtools.remoteexecution.v1test.OutputDirectory\x12\x11\n\texit_code\x18\x04 \x01(\x05\x12\x12\n\nstdout_raw\x18\x05 \x01(\x0c\x12\x45\n\rstdout_digest\x18\x06 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x12\n\nstderr_raw\x18\x07 \x01(\x0c\x12\x45\n\rstderr_digest\x18\x08 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"\x82\x01\n\nOutputFile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\x0c\x12\x15\n\ris_executable\x18\x04 \x01(\x08\"\x8c\x01\n\x04Tree\x12?\n\x04root\x18\x01 \x01(\x0b\x32\x31.google.devtools.remoteexecution.v1test.Directory\x12\x43\n\x08\x63hildren\x18\x02 \x03(\x0b\x32\x31.google.devtools.remoteexecution.v1test.Directory\"\xa4\x01\n\x0fOutputDirectory\x12\x0c\n\x04path\x18\x01 \x01(\t\x12>\n\x06\x64igest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x43\n\x0btree_digest\x18\x03 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"\xc2\x01\n\x0e\x45xecuteRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12>\n\x06\x61\x63tion\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Action\x12\x19\n\x11skip_cache_lookup\x18\x03 \x01(\x08\x12\x1e\n\x16total_input_file_count\x18\x04 \x01(\x05\x12\x1e\n\x16total_input_file_bytes\x18\x05 \x01(\x03\"a\n\x07LogFile\x12>\n\x06\x64igest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x16\n\x0ehuman_readable\x18\x02 \x01(\x08\"\xd4\x02\n\x0f\x45xecuteResponse\x12\x44\n\x06result\x18\x01 \x01(\x0b\x32\x34.google.devtools.remoteexecution.v1test.ActionResult\x12\x15\n\rcached_result\x18\x02 \x01(\x08\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\x12\\\n\x0bserver_logs\x18\x04 \x03(\x0b\x32G.google.devtools.remoteexecution.v1test.ExecuteResponse.ServerLogsEntry\x1a\x62\n\x0fServerLogsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12>\n\x05value\x18\x02 \x01(\x0b\x32/.google.devtools.remoteexecution.v1test.LogFile:\x02\x38\x01\"\xc1\x02\n\x18\x45xecuteOperationMetadata\x12U\n\x05stage\x18\x01 \x01(\x0e\x32\x46.google.devtools.remoteexecution.v1test.ExecuteOperationMetadata.Stage\x12\x45\n\raction_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x1a\n\x12stdout_stream_name\x18\x03 \x01(\t\x12\x1a\n\x12stderr_stream_name\x18\x04 \x01(\t\"O\n\x05Stage\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0b\x43\x41\x43HE_CHECK\x10\x01\x12\n\n\x06QUEUED\x10\x02\x12\r\n\tEXECUTING\x10\x03\x12\r\n\tCOMPLETED\x10\x04\"v\n\x16GetActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x45\n\raction_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"\xc6\x01\n\x19UpdateActionResultRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x45\n\raction_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12K\n\raction_result\x18\x03 \x01(\x0b\x32\x34.google.devtools.remoteexecution.v1test.ActionResult\"v\n\x17\x46indMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x44\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"h\n\x18\x46indMissingBlobsResponse\x12L\n\x14missing_blob_digests\x18\x02 \x03(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\"i\n\x11UpdateBlobRequest\x12\x46\n\x0e\x63ontent_digest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"}\n\x17\x42\x61tchUpdateBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12K\n\x08requests\x18\x02 \x03(\x0b\x32\x39.google.devtools.remoteexecution.v1test.UpdateBlobRequest\"\xed\x01\n\x18\x42\x61tchUpdateBlobsResponse\x12\\\n\tresponses\x18\x01 \x03(\x0b\x32I.google.devtools.remoteexecution.v1test.BatchUpdateBlobsResponse.Response\x1as\n\x08Response\x12\x43\n\x0b\x62lob_digest\x18\x01 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x93\x01\n\x0eGetTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x43\n\x0broot_digest\x18\x02 \x01(\x0b\x32..google.devtools.remoteexecution.v1test.Digest\x12\x11\n\tpage_size\x18\x03 \x01(\x05\x12\x12\n\npage_token\x18\x04 \x01(\t\"r\n\x0fGetTreeResponse\x12\x46\n\x0b\x64irectories\x18\x01 \x03(\x0b\x32\x31.google.devtools.remoteexecution.v1test.Directory\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"6\n\x0bToolDetails\x12\x11\n\ttool_name\x18\x01 \x01(\t\x12\x14\n\x0ctool_version\x18\x02 \x01(\t\"\xae\x01\n\x0fRequestMetadata\x12I\n\x0ctool_details\x18\x01 \x01(\x0b\x32\x33.google.devtools.remoteexecution.v1test.ToolDetails\x12\x11\n\taction_id\x18\x02 \x01(\t\x12\x1a\n\x12tool_invocation_id\x18\x03 \x01(\t\x12!\n\x19\x63orrelated_invocations_id\x18\x04 \x01(\t2\xa5\x01\n\tExecution\x12\x97\x01\n\x07\x45xecute\x12\x36.google.devtools.remoteexecution.v1test.ExecuteRequest\x1a\x1d.google.longrunning.Operation\"5\x82\xd3\xe4\x93\x02/\"*/v1test/{instance_name=**}/actions:execute:\x01*2\xfa\x03\n\x0b\x41\x63tionCache\x12\xe9\x01\n\x0fGetActionResult\x12>.google.devtools.remoteexecution.v1test.GetActionResultRequest\x1a\x34.google.devtools.remoteexecution.v1test.ActionResult\"`\x82\xd3\xe4\x93\x02Z\x12X/v1test/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}\x12\xfe\x01\n\x12UpdateActionResult\x12\x41.google.devtools.remoteexecution.v1test.UpdateActionResultRequest\x1a\x34.google.devtools.remoteexecution.v1test.ActionResult\"o\x82\xd3\xe4\x93\x02i\x1aX/v1test/{instance_name=**}/actionResults/{action_digest.hash}/{action_digest.size_bytes}:\raction_result2\x98\x05\n\x19\x43ontentAddressableStorage\x12\xce\x01\n\x10\x46indMissingBlobs\x12?.google.devtools.remoteexecution.v1test.FindMissingBlobsRequest\x1a@.google.devtools.remoteexecution.v1test.FindMissingBlobsResponse\"7\x82\xd3\xe4\x93\x02\x31\",/v1test/{instance_name=**}/blobs:findMissing:\x01*\x12\xce\x01\n\x10\x42\x61tchUpdateBlobs\x12?.google.devtools.remoteexecution.v1test.BatchUpdateBlobsRequest\x1a@.google.devtools.remoteexecution.v1test.BatchUpdateBlobsResponse\"7\x82\xd3\xe4\x93\x02\x31\",/v1test/{instance_name=**}/blobs:batchUpdate:\x01*\x12\xd8\x01\n\x07GetTree\x12\x36.google.devtools.remoteexecution.v1test.GetTreeRequest\x1a\x37.google.devtools.remoteexecution.v1test.GetTreeResponse\"\\\x82\xd3\xe4\x93\x02V\x12T/v1test/{instance_name=**}/blobs/{root_digest.hash}/{root_digest.size_bytes}:getTreeB\xc1\x01\n*com.google.devtools.remoteexecution.v1testB\x14RemoteExecutionProtoP\x01ZUgoogle.golang.org/genproto/googleapis/devtools/remoteexecution/v1test;remoteexecution\xa2\x02\x03REX\xaa\x02\x1dGoogle.RemoteExecution.V1Testb\x06proto3')
   ,
   dependencies=[google_dot_api_dot_annotations__pb2.DESCRIPTOR,google_dot_longrunning_dot_operations__pb2.DESCRIPTOR,google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,google_dot_rpc_dot_status__pb2.DESCRIPTOR,])
 
@@ -58,8 +58,8 @@ _EXECUTEOPERATIONMETADATA_STAGE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2996,
-  serialized_end=3075,
+  serialized_start=3112,
+  serialized_end=3191,
 )
 _sym_db.RegisterEnumDescriptor(_EXECUTEOPERATIONMETADATA_STAGE)
 
@@ -301,6 +301,13 @@ _DIRECTORY = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='symlinks', full_name='google.devtools.remoteexecution.v1test.Directory.symlinks', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -314,7 +321,7 @@ _DIRECTORY = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=888,
-  serialized_end=1040,
+  serialized_end=1111,
 )
 
 
@@ -358,8 +365,8 @@ _FILENODE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1042,
-  serialized_end=1153,
+  serialized_start=1113,
+  serialized_end=1224,
 )
 
 
@@ -396,8 +403,46 @@ _DIRECTORYNODE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1155,
-  serialized_end=1248,
+  serialized_start=1226,
+  serialized_end=1319,
+)
+
+
+_SYMLINKNODE = _descriptor.Descriptor(
+  name='SymlinkNode',
+  full_name='google.devtools.remoteexecution.v1test.SymlinkNode',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='name', full_name='google.devtools.remoteexecution.v1test.SymlinkNode.name', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='target', full_name='google.devtools.remoteexecution.v1test.SymlinkNode.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1321,
+  serialized_end=1364,
 )
 
 
@@ -434,8 +479,8 @@ _DIGEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1250,
-  serialized_end=1292,
+  serialized_start=1366,
+  serialized_end=1408,
 )
 
 
@@ -507,8 +552,8 @@ _ACTIONRESULT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1295,
-  serialized_end=1669,
+  serialized_start=1411,
+  serialized_end=1785,
 )
 
 
@@ -559,8 +604,8 @@ _OUTPUTFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1672,
-  serialized_end=1802,
+  serialized_start=1788,
+  serialized_end=1918,
 )
 
 
@@ -597,8 +642,8 @@ _TREE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1805,
-  serialized_end=1945,
+  serialized_start=1921,
+  serialized_end=2061,
 )
 
 
@@ -642,8 +687,8 @@ _OUTPUTDIRECTORY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1948,
-  serialized_end=2112,
+  serialized_start=2064,
+  serialized_end=2228,
 )
 
 
@@ -701,8 +746,8 @@ _EXECUTEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2115,
-  serialized_end=2309,
+  serialized_start=2231,
+  serialized_end=2425,
 )
 
 
@@ -739,8 +784,8 @@ _LOGFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2311,
-  serialized_end=2408,
+  serialized_start=2427,
+  serialized_end=2524,
 )
 
 
@@ -777,8 +822,8 @@ _EXECUTERESPONSE_SERVERLOGSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2653,
-  serialized_end=2751,
+  serialized_start=2769,
+  serialized_end=2867,
 )
 
 _EXECUTERESPONSE = _descriptor.Descriptor(
@@ -828,8 +873,8 @@ _EXECUTERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2411,
-  serialized_end=2751,
+  serialized_start=2527,
+  serialized_end=2867,
 )
 
 
@@ -881,8 +926,8 @@ _EXECUTEOPERATIONMETADATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2754,
-  serialized_end=3075,
+  serialized_start=2870,
+  serialized_end=3191,
 )
 
 
@@ -919,8 +964,8 @@ _GETACTIONRESULTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3077,
-  serialized_end=3195,
+  serialized_start=3193,
+  serialized_end=3311,
 )
 
 
@@ -964,8 +1009,8 @@ _UPDATEACTIONRESULTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3198,
-  serialized_end=3396,
+  serialized_start=3314,
+  serialized_end=3512,
 )
 
 
@@ -1002,8 +1047,8 @@ _FINDMISSINGBLOBSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3398,
-  serialized_end=3516,
+  serialized_start=3514,
+  serialized_end=3632,
 )
 
 
@@ -1033,8 +1078,8 @@ _FINDMISSINGBLOBSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3518,
-  serialized_end=3622,
+  serialized_start=3634,
+  serialized_end=3738,
 )
 
 
@@ -1071,8 +1116,8 @@ _UPDATEBLOBREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3624,
-  serialized_end=3729,
+  serialized_start=3740,
+  serialized_end=3845,
 )
 
 
@@ -1109,8 +1154,8 @@ _BATCHUPDATEBLOBSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3731,
-  serialized_end=3856,
+  serialized_start=3847,
+  serialized_end=3972,
 )
 
 
@@ -1147,8 +1192,8 @@ _BATCHUPDATEBLOBSRESPONSE_RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3981,
-  serialized_end=4096,
+  serialized_start=4097,
+  serialized_end=4212,
 )
 
 _BATCHUPDATEBLOBSRESPONSE = _descriptor.Descriptor(
@@ -1177,8 +1222,8 @@ _BATCHUPDATEBLOBSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3859,
-  serialized_end=4096,
+  serialized_start=3975,
+  serialized_end=4212,
 )
 
 
@@ -1229,8 +1274,8 @@ _GETTREEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4099,
-  serialized_end=4246,
+  serialized_start=4215,
+  serialized_end=4362,
 )
 
 
@@ -1267,8 +1312,8 @@ _GETTREERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4248,
-  serialized_end=4362,
+  serialized_start=4364,
+  serialized_end=4478,
 )
 
 
@@ -1305,8 +1350,8 @@ _TOOLDETAILS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4364,
-  serialized_end=4418,
+  serialized_start=4480,
+  serialized_end=4534,
 )
 
 
@@ -1357,8 +1402,8 @@ _REQUESTMETADATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4421,
-  serialized_end=4595,
+  serialized_start=4537,
+  serialized_end=4711,
 )
 
 _ACTION.fields_by_name['command_digest'].message_type = _DIGEST
@@ -1371,6 +1416,7 @@ _PLATFORM_PROPERTY.containing_type = _PLATFORM
 _PLATFORM.fields_by_name['properties'].message_type = _PLATFORM_PROPERTY
 _DIRECTORY.fields_by_name['files'].message_type = _FILENODE
 _DIRECTORY.fields_by_name['directories'].message_type = _DIRECTORYNODE
+_DIRECTORY.fields_by_name['symlinks'].message_type = _SYMLINKNODE
 _FILENODE.fields_by_name['digest'].message_type = _DIGEST
 _DIRECTORYNODE.fields_by_name['digest'].message_type = _DIGEST
 _ACTIONRESULT.fields_by_name['output_files'].message_type = _OUTPUTFILE
@@ -1412,6 +1458,7 @@ DESCRIPTOR.message_types_by_name['Platform'] = _PLATFORM
 DESCRIPTOR.message_types_by_name['Directory'] = _DIRECTORY
 DESCRIPTOR.message_types_by_name['FileNode'] = _FILENODE
 DESCRIPTOR.message_types_by_name['DirectoryNode'] = _DIRECTORYNODE
+DESCRIPTOR.message_types_by_name['SymlinkNode'] = _SYMLINKNODE
 DESCRIPTOR.message_types_by_name['Digest'] = _DIGEST
 DESCRIPTOR.message_types_by_name['ActionResult'] = _ACTIONRESULT
 DESCRIPTOR.message_types_by_name['OutputFile'] = _OUTPUTFILE
@@ -1491,6 +1538,13 @@ DirectoryNode = _reflection.GeneratedProtocolMessageType('DirectoryNode', (_mess
   # @@protoc_insertion_point(class_scope:google.devtools.remoteexecution.v1test.DirectoryNode)
   ))
 _sym_db.RegisterMessage(DirectoryNode)
+
+SymlinkNode = _reflection.GeneratedProtocolMessageType('SymlinkNode', (_message.Message,), dict(
+  DESCRIPTOR = _SYMLINKNODE,
+  __module__ = 'google.devtools.remoteexecution.v1test.remote_execution_pb2'
+  # @@protoc_insertion_point(class_scope:google.devtools.remoteexecution.v1test.SymlinkNode)
+  ))
+_sym_db.RegisterMessage(SymlinkNode)
 
 Digest = _reflection.GeneratedProtocolMessageType('Digest', (_message.Message,), dict(
   DESCRIPTOR = _DIGEST,
@@ -1660,8 +1714,8 @@ _EXECUTION = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=4598,
-  serialized_end=4763,
+  serialized_start=4714,
+  serialized_end=4879,
   methods=[
   _descriptor.MethodDescriptor(
     name='Execute',
@@ -1684,8 +1738,8 @@ _ACTIONCACHE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   options=None,
-  serialized_start=4766,
-  serialized_end=5272,
+  serialized_start=4882,
+  serialized_end=5388,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetActionResult',
@@ -1717,8 +1771,8 @@ _CONTENTADDRESSABLESTORAGE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=2,
   options=None,
-  serialized_start=5275,
-  serialized_end=5939,
+  serialized_start=5391,
+  serialized_end=6055,
   methods=[
   _descriptor.MethodDescriptor(
     name='FindMissingBlobs',
