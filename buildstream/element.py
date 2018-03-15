@@ -892,6 +892,9 @@ class Element(Plugin):
             if not dependency._cached():
                 return False
 
+        if not self.__assemble_scheduled:
+            return False
+
         return True
 
     # __calculate_cache_key():
