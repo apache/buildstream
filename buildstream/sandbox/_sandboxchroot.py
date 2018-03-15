@@ -61,6 +61,7 @@ class SandboxChroot(Sandbox):
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
         self.mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY)
+        root_mount_source = self.mount_map.get_mount_source('/')
 
         # Create a sysroot and run the command inside it
         with ExitStack() as stack:
@@ -85,6 +86,11 @@ class SandboxChroot(Sandbox):
                 stdin = sys.stdin
             else:
                 stdin = stack.enter_context(open(os.devnull, 'r'))
+
+            # Ensure the cwd exists
+            if cwd is not None:
+                workdir = os.path.join(root_mount_source, cwd.lstrip(os.sep))
+                os.makedirs(workdir, exist_ok=True)
 
             status = self.chroot(rootfs, command, stdin, stdout,
                                  stderr, cwd, env, flags)
