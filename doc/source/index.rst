@@ -24,6 +24,7 @@ dependencies.
    main_quickstart
    install
    docker
+   first_project
 
 
 .. toctree::
