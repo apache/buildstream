@@ -1,4 +1,4 @@
-image: buildstream/buildstream-fedora:master-56-5d7ee17
+image: buildstream/testsuite-debian:8-master-57-be5a863
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -15,7 +15,7 @@ before_script:
   - mount
   - df -h
 
-  - adduser -m buildstream
+  - useradd -Um buildstream
   - chown -R buildstream:buildstream .
 
 #####################################################
@@ -92,6 +92,9 @@ linux-tests:
   - source_dist
 
 unix-tests:
+  # Use fedora here, to a) run a test on fedora and b) ensure that we
+  # can get rid of ostree - this is not possible with debian-8
+  image: buildstream/buildstream-fedora:master-56-5d7ee17
   stage: test
   variables:
     BST_FORCE_BACKEND: "unix"
