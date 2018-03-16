@@ -21,6 +21,8 @@ Essentials
 ----------
 
 
+.. _project_format_name:
+
 Project Name
 ~~~~~~~~~~~~
 The first thing to setup in your ``project.conf`` should be the name
@@ -74,6 +76,60 @@ Note that elements are referred to by their relative paths, whenever
 elements are referred to in a ``.bst`` file or on the command line.
 
 
+.. _project_format_ref_storage:
+
+Ref Storage
+~~~~~~~~~~~
+By default, BuildStream expects to read and write source references
+directly in the :ref:`source declaration <format_sources>`, but this
+can be inconvenient and prohibitive in some workflows.
+
+Alternatively, BuildStream allows source references to be stored
+centrally in a :ref:`project.refs file <projectrefs>` in the toplevel
+:ref:`project directory <format_structure>`.
+
+This can be controlled with the ``ref-storage`` option, which is
+allowed to be configured with the following values:
+
+* ``inline``
+
+  Source references are stored directly in the
+  :ref:`source declaration <format_sources>`
+
+* ``project.refs``
+
+  Source references are stored in the ``project.refs`` file.
+
+To enable storing of source references in ``project.refs``, add the
+following to your ``project.conf``:
+
+.. code:: yaml
+
+  ref-storage: project.refs
+
+.. note::
+
+   The ``ref-storage`` configuration is available since :ref:`format version 5 <project_format_version>`
+
+
+Fail on Overlaps
+~~~~~~~~~~~~~~~~
+When multiple elements are staged, there's a possibility that different
+elements will try and stage different versions of the same file.
+
+When ``fail-on-overlap`` is true, if an overlap is detected
+that hasn't been allowed by the element's
+:ref:`overlap whitelist<public_overlap_whitelist>`,
+then an error will be raised and the build will fail.
+
+otherwise, a warning will be raised indicating which files had overlaps,
+and the order that the elements were overlapped.
+
+.. code:: yaml
+
+  fail-on-overlap: true
+
+
 Source Aliases
 ~~~~~~~~~~~~~~
 In order to abstract the download location of source code and
@@ -106,24 +162,6 @@ with an artifact share.
 
 You can also specify a list of caches here; earlier entries in the list
 will have higher priority than later ones.
-
-
-Fail on Overlaps
-~~~~~~~~~~~~~~~~
-When multiple elements are staged, there's a possibility that different
-elements will try and stage different versions of the same file.
-
-When ``fail-on-overlap`` is true, if an overlap is detected
-that hasn't been allowed by the element's
-:ref:`overlap whitelist<public_overlap_whitelist>`,
-then an error will be raised and the build will fail.
-
-otherwise, a warning will be raised indicating which files had overlaps,
-and the order that the elements were overlapped.
-
-.. code:: yaml
-
-  fail-on-overlap: true
 
 
 .. _project_plugins:

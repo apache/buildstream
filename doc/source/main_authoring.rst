@@ -34,14 +34,23 @@ Project format
 
 * :ref:`public`
 
+  * :ref:`public_integration`
+  * :ref:`public_split_rules`
+  * :ref:`public_overlap_whitelist`
+
+* :ref:`projectrefs`
+
+  * :ref:`projectrefs_basics`
+  * :ref:`projectrefs_format`
+
 
 Plugins
 -------
 Plugins provide their own individual plugin specific YAML configurations,
 The element ``.bst`` files can specify plugin specific configuration in
 the :ref:`config section <format_config>`, while sources declared on a
-given element specify their plugin specific configuration
-:ref:`directly on their main dictionary <format_sources>`.
+given element specify their plugin specific configuration directly
+:ref:`in their source declarations <format_sources>`.
 
 
 Elements

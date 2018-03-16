@@ -28,11 +28,13 @@ A BuildStream project is a directory consisting of:
 
 * A project configuration file
 * BuildStream element files
-* User defined Plugins
+* Optional user defined plugins
+* An optional project.refs file
 
 A typical project structure may look like this::
 
   myproject/project.conf
+  myproject/project.refs
   myproject/elements/element1.bst
   myproject/elements/element2.bst
   myproject/elements/...
