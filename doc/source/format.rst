@@ -129,7 +129,7 @@ in order to build itself, in this case the sources might be listed as:
    - kind: tarball
      directory: src/frobdir
      url: data:frobs.tgz
-     sha256sum: 9d4b1147f8cf244b0002ba74bfb0b8dfb3...
+     ref: 9d4b1147f8cf244b0002ba74bfb0b8dfb3...
 
 Like Elements, Source types are plugins which are indicated by the ``kind`` attribute.
 Asides from the common ``kind`` and ``directory`` attributes which may be applied to all
