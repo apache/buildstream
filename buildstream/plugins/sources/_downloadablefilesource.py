@@ -37,9 +37,16 @@ class DownloadableFileSource(Source):
             return Consistency.RESOLVED
 
     def get_ref(self):
+        # Report `None` value if we dont have a ref
+        if self.ref is None:
+            return None
         return (self.ref, self.etag)
 
     def set_ref(self, ref, node):
+        # Always support `None` value for ref
+        if ref is None:
+            ref = (None, None)
+
         self.ref, self.etag = ref
 
         node['ref'] = self.ref
