@@ -88,7 +88,7 @@ linux-tests:
 
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
+  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration -m "not (pep8 or pylint)"'
 
   # Go back to the toplevel and collect our reports
   - cd ../..
@@ -119,7 +119,7 @@ unix-tests:
     - cd dist && ./unpack.sh && cd buildstream
 
     # Since the unix platform is required to run as root, no user change required
-    - python3 setup.py test --index-url invalid://uri --addopts --integration
+    - python3 setup.py test --index-url invalid://uri --addopts --integration -m "not (pep8 or pylint)"
 
     # Go back to the toplevel and collect our reports
     - cd ../..
