@@ -64,13 +64,6 @@ source_dist:
 #                    Test stage                     #
 #####################################################
 
-linting:
-  stage: test
-  variables:
-    PYTEST_ADDOPTS: "--color=yes"
-  script:
-    - python3 setup.py test --addopts '--no-cov --pylint --pep8 -m "pep8 or pylint"'
-
 # Run premerge commits
 #
 linux-tests:
