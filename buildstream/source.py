@@ -190,13 +190,17 @@ class Source(Plugin):
         """Fetch the internal ref, however it is represented
 
         Returns:
-           (simple object): The internal source reference
+           (simple object): The internal source reference, or ``None``
 
-        Note:
+        .. note::
+
            The reference is the user provided (or track resolved) value
            the plugin uses to represent a specific input, like a commit
            in a VCS or a tarball's checksum. Usually the reference is a string,
            but the plugin may choose to represent it with a tuple or such.
+
+           Implementations *must* return a ``None`` value in the case that
+           the ref was not loaded. E.g. a ``(None, None)`` tuple is not acceptable.
         """
         raise ImplError("Source plugin '{}' does not implement get_ref()".format(self.get_kind()))
 
@@ -204,12 +208,17 @@ class Source(Plugin):
         """Applies the internal ref, however it is represented
 
         Args:
-           ref (simple object): The internal source reference to set
+           ref (simple object): The internal source reference to set, or ``None``
            node (dict): The same dictionary which was previously passed
                         to :func:`~buildstream.source.Source.configure`
 
         See :func:`~buildstream.source.Source.get_ref` for a discussion on
         the *ref* parameter.
+
+        .. note::
+
+           Implementors must support the special ``None`` value here to
+           allow clearing any existing ref.
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
