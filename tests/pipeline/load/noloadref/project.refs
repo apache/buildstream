@@ -1,0 +1,6 @@
+# A project.refs file with an existing ref for the noloadref element
+#
+projects:
+  test:
+    noloadref.bst:
+    - ref: dummy
