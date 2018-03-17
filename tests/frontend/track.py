@@ -24,13 +24,24 @@ def generate_element(repo, element_path, dep_name=None):
     _yaml.dump(element, element_path)
 
 
+def configure_project(path, config):
+    config['name'] = 'test'
+    config['element-path'] = 'elements'
+    _yaml.dump(config, os.path.join(path, 'project.conf'))
+
+
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
-def test_track(cli, tmpdir, datafiles, kind):
+def test_track(cli, tmpdir, datafiles, ref_storage, kind):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'track-test-{}.bst'.format(kind)
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
 
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
@@ -58,6 +69,12 @@ def test_track(cli, tmpdir, datafiles, kind):
     # Assert that we are now buildable because the source is
     # now cached.
     assert cli.get_element_state(project, element_name) == 'buildable'
+
+    # Assert there was a project.refs created, depending on the configuration
+    if ref_storage == 'project.refs':
+        assert os.path.exists(os.path.join(project, 'project.refs'))
+    else:
+        assert not os.path.exists(os.path.join(project, 'project.refs'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
