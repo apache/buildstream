@@ -1,0 +1,12 @@
+# A project.refs file with a conditional statement
+#
+projects:
+  test:
+    target.bst:
+    - ref: pony
+
+    # Optionally override the ref
+    (?):
+    - test:
+        target.bst:
+        - ref: horsy
