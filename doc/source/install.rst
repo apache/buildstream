@@ -44,8 +44,12 @@ Install the dependencies with::
                  ostree bubblewrap python-ruamel-yaml
 
 
-Debian Stretch
-++++++++++++++
+Debian
+++++++
+
+
+Stretch
+^^^^^^^
 With stretch, you first need to ensure that you have the backports repository
 setup as described `here <https://backports.debian.org/Instructions/>`_
 
@@ -66,8 +70,8 @@ At this point you should be able to get the system requirements with::
       gir1.2-ostree-1.0 ostree
 
 
-Debian Buster or Sid
-++++++++++++++++++++
+Buster or Sid
+^^^^^^^^^^^^^
 For debian unstable or testing, only the following line should be enough
 to get the base system requirements installed::
 
