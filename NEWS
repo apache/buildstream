@@ -1,4 +1,16 @@
 =================
+buildstream 1.1.2
+=================
+
+  o New ref-storage option allows one to store source refs, such
+    as git shas, in one central project.refs file instead of inline
+    with the source declarations.
+
+  o Deprecated `--track-save` optionality in `bst build`, this
+    does not make sense to support now that we have project.refs.
+
+
+=================
 buildstream 1.1.1
 =================
 
