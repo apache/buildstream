@@ -18,8 +18,6 @@ before_script:
   - adduser -m buildstream
   - chown -R buildstream:buildstream .
 
-  - pip3 install pytest-pylint
-
 #####################################################
 #                  Prepare stage                    #
 #####################################################
