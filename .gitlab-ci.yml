@@ -136,8 +136,7 @@ docs:
   stage: test
   script:
   - dnf install -y python2
-  - pip3 install sphinx
-  - pip3 install sphinx-click
+  - dnf install -y sphinx python-sphinx-click
   - cd dist && ./unpack.sh && cd buildstream
   - pip3 install .
   - make -C doc
