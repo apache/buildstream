@@ -1,0 +1,9 @@
+projects:
+  test:
+    (?):
+    - test:
+        target.bst:
+        - ref: ''
+    - not test:
+        target.bst:
+        - ref: ''

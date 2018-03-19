@@ -5,10 +5,8 @@ from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 from buildstream import _yaml
 
 # Project directory
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "project",
-)
+TOP_DIR = os.path.dirname(os.path.realpath(__file__))
+DATA_DIR = os.path.join(TOP_DIR, 'project')
 
 
 def generate_element(repo, element_path, dep_name=None):
@@ -163,3 +161,57 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     # Assert that the dependency is buildable and the target is waiting
     assert cli.get_element_state(project, element_dep_name) == 'no reference'
     assert cli.get_element_state(project, element_target_name) == 'waiting'
+
+
+@pytest.mark.datafiles(os.path.join(TOP_DIR))
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project-refs')])
+def test_track_optional(cli, tmpdir, datafiles, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'track-optional-' + ref_storage)
+    dev_files_path = os.path.join(project, 'files')
+    element_path = os.path.join(project, 'target.bst')
+
+    # Create our repo object of the given source type with
+    # the dev files, and then collect the initial ref.
+    #
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    # Now create an optional test branch and add a commit to that,
+    # so two branches with different heads now exist.
+    #
+    repo.branch('test')
+    repo.add_commit()
+
+    # Substitute the {repo} for the git repo we created
+    with open(element_path) as f:
+        target_bst = f.read()
+    target_bst = target_bst.format(repo=repo.repo)
+    with open(element_path, 'w') as f:
+        f.write(target_bst)
+
+    # First track for both options
+    #
+    # We want to track and persist the ref separately in this test
+    #
+    result = cli.run(project=project, args=['--option', 'test', 'False', 'track', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['--option', 'test', 'True', 'track', 'target.bst'])
+    result.assert_success()
+
+    # Now fetch the key for both options
+    #
+    result = cli.run(project=project, args=[
+        '--option', 'test', 'False', 'show', '--deps', 'none', '--format', '%{key}', 'target.bst'
+    ])
+    result.assert_success()
+    master_key = result.output
+
+    result = cli.run(project=project, args=[
+        '--option', 'test', 'True', 'show', '--deps', 'none', '--format', '%{key}', 'target.bst'
+    ])
+    result.assert_success()
+    test_key = result.output
+
+    # Assert that the keys are different when having
+    # tracked separate branches
+    assert test_key != master_key
