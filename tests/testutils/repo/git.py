@@ -68,3 +68,6 @@ class Git(Repo):
             'git', 'rev-parse', 'master'
         ], env=GIT_ENV, cwd=self.repo)
         return output.decode('UTF-8').strip()
+
+    def branch(self, branch_name):
+        subprocess.call(['git', 'checkout', '-b', branch_name], env=GIT_ENV, cwd=self.repo)
