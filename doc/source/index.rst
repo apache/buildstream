@@ -3,11 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-
-   modules
 
 BuildStream Documentation
 =========================
@@ -22,22 +17,26 @@ on *filesystem data* as input and output, and are related to eachother by their
 dependencies.
 
 
-Installing
-----------
-* :ref:`installing`
-* :ref:`docker`
-* :ref:`artifacts`
+.. toctree::
+   :maxdepth: 2
+   :caption: Installing
+
+   install
+   docker
+   artifacts
 
 
-Documentation
--------------
+.. toctree::
+   :maxdepth: 2
+   :caption: Reference documentation
 
-* :ref:`main_using`
-* :ref:`main_authoring`
-* :ref:`main_core`
+   main_using
+   main_authoring
+   main_core
 
 
-Indices and tables
-------------------
-* :ref:`modindex`
-* :ref:`genindex`
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   modules

@@ -132,6 +132,7 @@ other mechanism::
 
   pip install --user sphinx
   pip install --user sphinx-click
+  pip install --user sphinx_rtd_theme
 
 Furthermore, the documentation build requires that BuildStream itself
 be installed.

@@ -136,6 +136,7 @@ docs:
   - dnf install -y python2
   - pip3 install sphinx
   - pip3 install sphinx-click
+  - pip3 install sphinx_rtd_theme
   - cd dist && ./unpack.sh && cd buildstream
   - pip3 install .
   - make -C doc
