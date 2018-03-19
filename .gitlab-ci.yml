@@ -1,4 +1,4 @@
-image: buildstream/buildstream-fedora:master-42-571406d
+image: buildstream/buildstream-fedora:master-54-5d7ee17
 
 cache:
   key: "$CI_JOB_NAME-"
