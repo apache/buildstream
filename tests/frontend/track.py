@@ -2,6 +2,7 @@ import os
 import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
+from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 
 # Project directory
@@ -215,3 +216,76 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     # Assert that the keys are different when having
     # tracked separate branches
     assert test_key != master_key
+
+
+@pytest.mark.datafiles(os.path.join(TOP_DIR, 'track-cross-junction'))
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_track_cross_junction(cli, tmpdir, datafiles, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    dev_files_path = os.path.join(project, 'files')
+    target_path = os.path.join(project, 'target.bst')
+    subtarget_path = os.path.join(project, 'subproject', 'subtarget.bst')
+
+    # Create our repo object of the given source type with
+    # the dev files, and then collect the initial ref.
+    #
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    # Generate two elements using the git source, one in
+    # the main project and one in the subproject.
+    generate_element(repo, target_path, dep_name='subproject.bst')
+    generate_element(repo, subtarget_path)
+
+    # Generate project.conf
+    #
+    project_conf = {
+        'name': 'test',
+        'ref-storage': ref_storage
+    }
+    _yaml.dump(project_conf, os.path.join(project, 'project.conf'))
+
+    #
+    # FIXME: This can be simplified when we have support
+    #        for addressing of junctioned elements.
+    #
+    def get_subproject_element_state():
+        result = cli.run(project=project, args=[
+            'show', '--deps', 'all',
+            '--format', '%{name}|%{state}', 'target.bst'
+        ])
+        result.assert_success()
+
+        # Create two dimentional list of the result,
+        # first line should be the junctioned element
+        lines = [
+            line.split('|')
+            for line in result.output.splitlines()
+        ]
+        assert lines[0][0] == 'subproject-junction.bst:subtarget.bst'
+        return lines[0][1]
+
+    #
+    # Assert that we have no reference yet for the cross junction element
+    #
+    assert get_subproject_element_state() == 'no reference'
+
+    # Track recursively across the junction
+    result = cli.run(project=project, args=['track', '--deps', 'all', 'target.bst'])
+
+    if ref_storage == 'inline':
+        #
+        # Cross junction tracking is not allowed when the toplevel project
+        # is using inline ref storage.
+        #
+        result.assert_main_error(ErrorDomain.PIPELINE, 'untrackable-sources')
+    else:
+        #
+        # Tracking is allowed with project.refs ref storage
+        #
+        result.assert_success()
+
+        #
+        # Assert that we now have a ref for the subproject element
+        #
+        assert get_subproject_element_state() == 'buildable'
