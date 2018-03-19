@@ -23,6 +23,14 @@ dependencies.
 
    install
    docker
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: General documentation
+
+   main_using
+   main_authoring
    artifacts
 
 
@@ -30,13 +38,5 @@ dependencies.
    :maxdepth: 2
    :caption: Reference documentation
 
-   main_using
-   main_authoring
    main_core
-
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-
    modules
