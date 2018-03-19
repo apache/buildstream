@@ -58,6 +58,8 @@ Build Elements
 * :mod:`pip <elements.pip>` - Pip build element
 
 
+.. _sources-section:
+
 Sources
 ~~~~~~~
 The following source types are provided with BuildStream:

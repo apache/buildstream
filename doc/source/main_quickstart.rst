@@ -57,14 +57,12 @@ You can see at a glance that the upstream source tarball is referenced in the so
 Note that the ref field here stores the SHA256 checksum of the contents of the file,
 which BuildStream uses to validate the tarball after fetching it.
 The source declares that is of kind: tar. BuildStream supports various other types of sources too.
-The list of built-in sources can be found here. Support for more types of source can be added by 
-writing plugins.
+The list of built-in sources can be found :ref:`here <sources-section>`. Support for more types of source can be added by writing plugins.
 
 There are no build instructions written here because GNU Nano uses a standard build system
 that BuildStream already supports. The first line (kind: autotools) instructs BuildStream
 that it should fill in the build instructions for this element using the autotools element plugin.
-There are various ways to override the defaults which are described in the "Composition"
-section of the reference manual.
+There are various ways to override the defaults which are described in the :ref:`"Composition" <format_composition>` section of the reference manual.
 
 The depends section is a little harder to read at a glance. The filenames listed here are
 other elements within the same project. One of these provides the pkg-config tool which is built
