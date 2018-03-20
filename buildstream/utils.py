@@ -536,6 +536,33 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
         raise
 
 
+# _get_dir_size():
+#
+# Get the disk usage of a given directory in bytes.
+#
+# Arguments:
+#     (str) The path whose size to check.
+#
+# Returns:
+#     (int) The size on disk.
+#
+def _get_dir_size(path):
+    path = os.path.abspath(path)
+
+    def get_size(path):
+        total = 0
+
+        for f in os.scandir(path):
+            total += f.stat(follow_symlinks=False).st_size
+
+            if f.is_dir(follow_symlinks=False):
+                total += get_size(f.path)
+
+        return total
+
+    return get_size(path)
+
+
 # A sentinel to be used as a default argument for functions that need
 # to distinguish between a kwarg set to None and an unset kwarg.
 _sentinel = object()
