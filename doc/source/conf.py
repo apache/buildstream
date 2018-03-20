@@ -56,7 +56,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'BuildStream'
-copyright = '2017-2018, The BuildStream Contributors'
+copyright = '2017-2018, BuildStream Team. Licensed under Creative Commons Attribution 4.0 International License'
 author = 'The BuildStream Contributors'
 
 # The version info for the project you're documenting, acts as replacement for
