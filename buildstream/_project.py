@@ -249,7 +249,8 @@ class Project():
             'aliases', 'name',
             'artifacts', 'options',
             'fail-on-overlap', 'shell',
-            'ref-storage', 'sandbox'
+            'ref-storage', 'sandbox',
+            'cache-build-tree'
         ])
 
         # The project name, element path and option declarations

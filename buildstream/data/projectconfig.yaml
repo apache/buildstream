@@ -33,6 +33,9 @@ variables:
   element-name: ""
   project-name: ""
 
+  # Whether or not to cache build trees
+  cache-build-tree: True
+
   # Path configuration, to be used in build instructions.
   #
   prefix: "/usr"

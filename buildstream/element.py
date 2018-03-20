@@ -928,6 +928,17 @@ class Element(Plugin):
     def _get_redundant_source_refs(cls):
         return cls.__redundant_source_refs
 
+    # _build_tree_path():
+    #    
+    # Returns the path of the cached build tree if it exists
+    #    
+    def _build_tree_path(self):
+        build_tree_path = os.path.join(self.__extract()[0], 'buildtree')
+        if os.path.isdir(build_tree_path):
+            return build_tree_path
+        else:
+            return None 
+
     # _reset_load_state()
     #
     # This is called by Pipeline.cleanup() and is used to
@@ -1479,6 +1490,12 @@ class Element(Plugin):
                 # Hard link files from collect dir to files directory
                 utils.link_files(collectdir, filesdir)
 
+                # Copy build tree contents
+                if self.get_variable('cache-build-tree'):
+                    sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root'))
+                    if os.path.isdir(sandbox_build_dir):
+                        shutil.copytree(sandbox_build_dir, os.path.join(assembledir, 'buildtree'))
+
                 # Copy build log
                 if self.__log_path:
                     shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
@@ -1905,7 +1922,8 @@ class Element(Plugin):
                 'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
                 'workspace': '' if workspace is None else workspace.get_key(),
                 'public': self.__public,
-                'cache': type(self.__artifacts).__name__
+                'cache': type(self.__artifacts).__name__,
+                'cache-build-tree': self.get_variable('cache-build-tree')
             }
 
         cache_key_dict = self.__cache_key_dict.copy()

@@ -655,10 +655,13 @@ def workspace_close(app, remove_dir, all_, elements):
               help="Track and fetch the latest source before resetting")
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Reset all open workspaces")
+@click.option('--no-cache', 'no_cache', default=False, is_flag=True,
+              help="Use Cached build tree if available")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_reset(app, track_, all_, elements):
+def workspace_reset(app, track_, all_, element, no_cache):
+                type=click.Path(dir_okay=False, readable=True))
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
