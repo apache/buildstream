@@ -53,12 +53,17 @@ class PullQueue(Queue):
         else:
             return QueueStatus.SKIP
 
-    def done(self, element, result, success):
+    def done(self, _, element, result, success):
 
         if not success:
             return False
 
         element._pull_done()
+
+        # Build jobs will check the "approximate" size first. Since we
+        # do not get an artifact size from pull jobs, we have to
+        # actually check the cache size.
+        self._scheduler._check_cache_size_real()
 
         # Element._pull() returns True if it downloaded an artifact,
         # here we want to appear skipped if we did not download.

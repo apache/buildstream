@@ -36,6 +36,7 @@ class TarCache(ArtifactCache):
 
         self.tardir = os.path.join(context.artifactdir, 'tar')
         os.makedirs(self.tardir, exist_ok=True)
+        self.cache_size = None
 
     ################################################
     #     Implementation of abstract methods       #
@@ -52,7 +53,7 @@ class TarCache(ArtifactCache):
         artifact = os.path.join(self.tardir, artifact_name + '.tar.bz2')
         size = os.stat(artifact, follow_symlinks=False).st_size
         os.remove(artifact)
-        return size
+        self.cache_size -= size
 
     def commit(self, element, content, keys):
         os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
@@ -65,6 +66,8 @@ class TarCache(ArtifactCache):
                 shutil.copytree(content, refdir, symlinks=True)
 
                 _Tar.archive(os.path.join(self.tardir, ref), key, temp)
+
+            self.cache_size = None
 
     def extract(self, element, key):
 
@@ -99,6 +102,21 @@ class TarCache(ArtifactCache):
                                         .format(fullname, e)) from e
 
         return dest
+
+    # get_cache_size()
+    #
+    # Return the artifact cache size.
+    #
+    # Returns:
+    #
+    # (int) The size of the artifact cache.
+    #
+    def calculate_cache_size(self):
+        if self.cache_size is None:
+            self.cache_size = utils._get_dir_size(self.tardir)
+            self.estimated_size = self.cache_size
+
+        return self.cache_size
 
 
 # _tarpath()

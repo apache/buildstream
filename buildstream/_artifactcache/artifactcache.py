@@ -62,6 +62,9 @@ class ArtifactCache():
     def __init__(self, context):
         self.context = context
         self.extractdir = os.path.join(context.artifactdir, 'extract')
+        self.max_size = context.cache_quota
+        self.estimated_size = None
+
         self.global_remote_specs = []
         self.project_remote_specs = {}
 
@@ -161,6 +164,35 @@ class ArtifactCache():
                                   "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
                                   (str(provenance)))
         return cache_specs
+
+    # get_approximate_cache_size()
+    #
+    # A cheap method that aims to serve as an upper limit on the
+    # artifact cache size.
+    #
+    # The cache size reported by this function will normally be larger
+    # than the real cache size, since it is calculated using the
+    # pre-commit artifact size, but for very small artifacts in
+    # certain caches additional overhead could cause this to be
+    # smaller than, but close to, the actual size.
+    #
+    # Nonetheless, in practice this should be safe to use as an upper
+    # limit on the cache size.
+    #
+    # If the cache has built-in constant-time size reporting, please
+    # feel free to override this method with a more accurate
+    # implementation.
+    #
+    # Returns:
+    #     (int) An approximation of the artifact cache size.
+    #
+    def get_approximate_cache_size(self):
+        # If we don't currently have an estimate, figure out the real
+        # cache size.
+        if self.estimated_size is None:
+            self.estimated_size = self.calculate_cache_size()
+
+        return self.estimated_size
 
     ################################################
     # Abstract methods for subclasses to implement #
@@ -334,6 +366,20 @@ class ArtifactCache():
         raise ImplError("Cache '{kind}' does not implement link_key()"
                         .format(kind=type(self).__name__))
 
+    # calculate_cache_size()
+    #
+    # Return the real artifact cache size.
+    #
+    # Implementations should also use this to update estimated_size.
+    #
+    # Returns:
+    #
+    # (int) The size of the artifact cache.
+    #
+    def calculate_cache_size(self):
+        raise ImplError("Cache '{kind}' does not implement calculate_cache_size()"
+                        .format(kind=type(self).__name__))
+
     ################################################
     #               Local Private Methods          #
     ################################################
@@ -374,6 +420,30 @@ class ArtifactCache():
 
         with self.context.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)
+
+    # _add_artifact_size()
+    #
+    # Since we cannot keep track of the cache size between threads,
+    # this method will be called by the main process every time a
+    # process that added something to the cache finishes.
+    #
+    # This will then add the reported size to
+    # ArtifactCache.estimated_size.
+    #
+    def _add_artifact_size(self, artifact_size):
+        if not self.estimated_size:
+            self.estimated_size = self.calculate_cache_size()
+
+        self.estimated_size += artifact_size
+
+    # _set_cache_size()
+    #
+    # Similarly to the above method, when we calculate the actual size
+    # in a child thread, we can't update it. We instead pass the value
+    # back to the main thread and update it there.
+    #
+    def _set_cache_size(self, cache_size):
+        self.estimated_size = cache_size
 
 
 # _configured_remote_artifact_cache_specs():

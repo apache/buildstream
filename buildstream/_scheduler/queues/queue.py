@@ -145,6 +145,7 @@ class Queue():
     # Abstract method for handling a successful job completion.
     #
     # Args:
+    #    job (Job): The job which completed processing
     #    element (Element): The element which completed processing
     #    result (any): The return value of the process() implementation
     #    success (bool): True if the process() implementation did not
@@ -154,7 +155,7 @@ class Queue():
     #    (bool): True if the element should appear to be processsed,
     #            Otherwise False will count the element as "skipped"
     #
-    def done(self, element, result, success):
+    def done(self, job, element, result, success):
         pass
 
     #####################################################
@@ -224,6 +225,7 @@ class Queue():
     def process_ready(self):
         scheduler = self._scheduler
         unready = []
+        ready = []
 
         while self._wait_queue and scheduler.get_job_token(self.queue_type):
             element = self._wait_queue.popleft()
@@ -248,11 +250,13 @@ class Queue():
                              action_cb=self.process,
                              complete_cb=self._job_done,
                              max_retries=self._max_retries)
-            scheduler.job_starting(job, element)
+            ready.append(job)
 
         # These were not ready but were in the beginning, give em
         # first priority again next time around
         self._wait_queue.extendleft(unready)
+
+        return ready
 
     #####################################################
     #                 Private Methods                   #
@@ -270,7 +274,7 @@ class Queue():
     def _update_workspaces(self, element, job):
         workspace_dict = None
         if job.child_data:
-            workspace_dict = job.child_data['workspace']
+            workspace_dict = job.child_data.get('workspace', None)
 
         # Handle any workspace modifications now
         #
@@ -298,17 +302,17 @@ class Queue():
     #
     def _job_done(self, job, element, success, result):
 
-        # Remove from our jobs
-        self.active_jobs.remove(job)
-
-        # Update workspaces in the main task before calling any queue implementation
+        # Update values that need to be synchronized in the main task
+        # before calling any queue implementation
         self._update_workspaces(element, job)
+        if job.child_data:
+            element._get_artifact_cache().cache_size = job.child_data.get('cache_size')
 
         # Give the result of the job to the Queue implementor,
         # and determine if it should be considered as processed
         # or skipped.
         try:
-            processed = self.done(element, result, success)
+            processed = self.done(job, element, result, success)
 
         except BstError as e:
 
@@ -346,7 +350,6 @@ class Queue():
                 self.failed_elements.append(element)
 
         # Give the token for this job back to the scheduler
-        # immediately before invoking another round of scheduling
         self._scheduler.put_job_token(self.queue_type)
 
     # Convenience wrapper for Queue implementations to send

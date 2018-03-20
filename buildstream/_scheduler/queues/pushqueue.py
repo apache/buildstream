@@ -42,7 +42,7 @@ class PushQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, element, result, success):
+    def done(self, _, element, result, success):
 
         if not success:
             return False

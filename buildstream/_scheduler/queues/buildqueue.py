@@ -20,7 +20,7 @@
 
 import os
 from . import Queue, QueueStatus, QueueType
-from ..jobs import JobType
+from ..jobs import CacheSizeJob, JobType
 
 
 # A queue which assembles elements
@@ -53,10 +53,25 @@ class BuildQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, element, result, success):
+    def _check_cache_size(self, job, element):
+        if not job.child_data:
+            return
+
+        artifact_size = job.child_data.get('artifact_size', False)
+
+        if artifact_size:
+            cache = element._get_artifact_cache()
+            cache._add_artifact_size(artifact_size)
+
+            if cache.get_approximate_cache_size() > self._scheduler.context.cache_quota:
+                self._scheduler._check_cache_size_real()
+
+    def done(self, job, element, result, success):
 
         if success:
             # Inform element in main process that assembly is done
             element._assemble_done()
+
+        self._check_cache_size(job, element)
 
         return True

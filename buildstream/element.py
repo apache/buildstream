@@ -225,6 +225,7 @@ class Element(Plugin):
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
         self.__required = False                 # Whether the artifact is required in the current session
+        self.__artifact_size = None             # The size of data committed to the artifact cache
 
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
@@ -1524,7 +1525,8 @@ class Element(Plugin):
                 }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
                 with self.timed_activity("Caching artifact"):
-                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+                    self.__artifacts._commit(self, assembledir, self.__get_cache_keys_for_commit())
+                    self.__artifact_size = utils._get_dir_size(assembledir)
 
             # Finally cleanup the build dir
             cleanup_rootdir()
@@ -1762,6 +1764,25 @@ class Element(Plugin):
     def _get_workspace(self):
         workspaces = self._get_context().get_workspaces()
         return workspaces.get_workspace(self._get_full_name())
+
+    # _get_artifact_size()
+    #
+    # Get the size of the artifact produced by this element in the
+    # current pipeline - if this element has not been assembled or
+    # pulled, this will be None.
+    #
+    # Note that this is the size of an artifact *before* committing it
+    # to the cache, the size on disk may differ. It can act as an
+    # approximate guide for when to do a proper size calculation.
+    #
+    # Returns:
+    #    (int|None): The size of the artifact
+    #
+    def _get_artifact_size(self):
+        return self.__artifact_size
+
+    def _get_artifact_cache(self):
+        return self.__artifacts
 
     # _write_script():
     #
