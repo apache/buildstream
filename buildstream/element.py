@@ -1287,7 +1287,7 @@ class Element(Plugin):
                 }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
                 with self.timed_activity("Caching artifact"):
-                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+                    self.__artifacts._commit(self, assembledir, self.__get_cache_keys_for_commit())
 
             # Finally cleanup the build dir
             cleanup_rootdir()

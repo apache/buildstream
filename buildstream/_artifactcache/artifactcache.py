@@ -112,6 +112,8 @@ class ArtifactCache():
     def __init__(self, context):
         self.context = context
         self.extractdir = os.path.join(context.artifactdir, 'extract')
+        self.max_size = context.cache_quota
+
         self.global_remote_specs = []
         self.project_remote_specs = {}
 
@@ -169,6 +171,23 @@ class ArtifactCache():
             self.global_remote_specs = remote_specs
         else:
             self.project_remote_specs[project] = remote_specs
+
+    # _commit():
+    #
+    # Internal method for calling abstract commit() method.  This will
+    # perform cache quota operations.
+    #
+    # Args:
+    #     element (Element): The Element commit an artifact for
+    #     content (str): The element's content directory
+    #     keys (list): The cache keys to use
+    #
+    def _commit(self, element, content, keys):
+        if utils._get_dir_size(content) + self.get_cache_size() > self.max_size:
+            # Expire artifact
+            pass
+
+        self.commit(element, content, keys)
 
     ################################################
     # Abstract methods for subclasses to implement #
@@ -367,4 +386,16 @@ class ArtifactCache():
     #
     def link_key(self, element, oldkey, newkey):
         raise ImplError("Cache '{kind}' does not implement link_key()"
+                        .format(kind=type(self).__name__))
+
+    # get_cache_size()
+    #
+    # Return the artifact cache size.
+    #
+    # Returns:
+    #
+    # (int) The size of the artifact cache.
+    #
+    def get_cache_size(self):
+        raise ImplError("Cache '{kind}' does not implement get_cache_size()"
                         .format(kind=type(self).__name__))

@@ -61,6 +61,9 @@ class OSTreeCache(ArtifactCache):
         self._has_fetch_remotes = False
         self._has_push_remotes = False
 
+        # A cached artifact cache size (irony?)
+        self.__cache_size = None
+
     ################################################
     #     Implementation of abstract methods       #
     ################################################
@@ -142,6 +145,8 @@ class OSTreeCache(ArtifactCache):
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 
+        self.__cache_size = None
+
     def can_diff(self):
         return True
 
@@ -181,6 +186,8 @@ class OSTreeCache(ArtifactCache):
             raise ArtifactError("Failed to pull artifact for element {}: {}"
                                 .format(element.name, e)) from e
 
+        self.__cache_size = None
+
     def link_key(self, element, oldkey, newkey):
         oldref = self.get_artifact_fullname(element, oldkey)
         newref = self.get_artifact_fullname(element, newkey)
@@ -211,6 +218,12 @@ class OSTreeCache(ArtifactCache):
                 any_pushed |= self._push_to_remote(remote, element, refs)
 
         return any_pushed
+
+    def get_cache_size(self):
+        if self.__cache_size is None:
+            self.__cache_size = utils._get_dir_size(self.repo.get_path().get_path())
+
+        return self.__cache_size
 
     def initialize_remotes(self, *, on_failure=None):
         remote_specs = self.global_remote_specs
