@@ -572,11 +572,7 @@ class Loader():
                 directory = None
 
             index = sources.index(source)
-            meta_source = MetaSource(element_name, index,
-                                     kind, source, directory,
-                                     provenance.node,
-                                     provenance.toplevel,
-                                     provenance.filename)
+            meta_source = MetaSource(element_name, index, kind, source, directory)
             meta_sources.append(meta_source)
 
         kind = _yaml.node_get(data, str, Symbol.KIND)

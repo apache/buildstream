@@ -30,17 +30,10 @@ class MetaSource():
     #    element_index: The index of the source in the owning element's source list
     #    kind: The kind of the source
     #    config: The configuration data for the source
-    #    origin_node: The original YAML dictionary node defining this source
-    #    origin_toplevel: The toplevel YAML loaded from the original file
-    #    origin_filename: The filename in which the node was loaded from
     #
-    def __init__(self, element_name, element_index, kind, config, directory,
-                 origin_node, origin_toplevel, origin_filename):
+    def __init__(self, element_name, element_index, kind, config, directory):
         self.element_name = element_name
         self.element_index = element_index
         self.kind = kind
         self.config = config
         self.directory = directory
-        self.origin_node = origin_node
-        self.origin_toplevel = origin_toplevel
-        self.origin_filename = origin_filename

@@ -87,9 +87,6 @@ class Source(Plugin):
         self.__element_name = meta.element_name         # The name of the element owning this source
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__directory = meta.directory               # Staging relative directory
-        self.__origin_node = meta.origin_node           # YAML node this Source was loaded from
-        self.__origin_toplevel = meta.origin_toplevel   # Toplevel YAML node for the file
-        self.__origin_filename = meta.origin_filename   # Filename of the file the source was loaded from
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
         self.__tracking = False                         # Source is scheduled to be tracked
         self.__assemble_scheduled = False               # Source is scheduled to be assembled
@@ -540,6 +537,7 @@ class Source(Plugin):
         context = self._get_context()
         project = self._get_project()
         toplevel = context._get_toplevel_project()
+        provenance = self._get_provenance()
 
         element_name = self.__element_name
         element_idx = self.__element_index
@@ -551,7 +549,7 @@ class Source(Plugin):
             if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
                 node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
             else:
-                node = self.__origin_node
+                node = provenance.node
         else:
             if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
                 node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
@@ -580,14 +578,12 @@ class Source(Plugin):
             else:
                 # Save the ref in the originating file
                 #
-                toplevel_node = self.__origin_toplevel
-                filename = self.__origin_filename
-                fullname = os.path.join(toplevel.element_path, filename)
+                fullname = os.path.join(toplevel.element_path, provenance.filename)
                 try:
-                    _yaml.dump(toplevel_node, fullname)
+                    _yaml.dump(provenance.toplevel, fullname)
                 except OSError as e:
                     raise SourceError("{}: Error saving source reference to '{}': {}"
-                                      .format(self, filename, e),
+                                      .format(self, provenance.filename, e),
                                       reason="save-ref-error") from e
         else:
             if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
