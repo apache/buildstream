@@ -532,6 +532,70 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
         raise
 
 
+# _get_dir_size():
+#
+# Get the disk usage of a given directory in bytes.
+#
+# Arguments:
+#     (str) The path whose size to check.
+#
+# Returns:
+#     (int) The size on disk.
+#
+def _get_dir_size(path):
+    scandir = None
+    size = 0
+
+    # python3.4 does not have scandir, but it is significantly
+    # faster for this type of work.
+    if hasattr(os, 'scandir'):
+        from os import scandir               # pylint: disable=no-name-in-module
+    else:
+        # If our user has scandir for python<3.5 installed, we use
+        # that, because why not?
+        try:
+            from scandir import scandir
+        except ImportError:
+            pass
+
+    def get_scandir_dir_size(path):
+        path = os.path.abspath(path)
+        total = 0
+
+        for f in scandir(path):
+            if f.is_dir(follow_symlinks=False):
+                total += f.stat(follow_symlinks=False).st_size
+                total += get_scandir_dir_size(f.path)
+            elif f.is_file(follow_symlinks=False):
+                total += f.stat(follow_symlinks=False).st_size
+
+        return total
+
+    def get_walk_dir_size(path):
+        path = os.path.abspath(path)
+        total = 0
+
+        for dirpath, dirs, files in os.walk(path):
+            for d in dirs:
+                path = os.path.join(dirpath, d)
+                if os.path.exists(path):
+                    total += os.stat(path, follow_symlinks=False).st_size
+
+            for f in files:
+                path = os.path.join(dirpath, f)
+                if os.path.exists(path):
+                    total += os.stat(path, follow_symlinks=False).st_size
+
+        return total
+
+    if scandir:
+        artifact_size = get_scandir_dir_size(path)
+    else:
+        artifact_size = get_walk_dir_size(path)
+
+    return artifact_size
+
+
 # A sentinel to be used as a default argument for functions that need
 # to distinguish between a kwarg set to None and an unset kwarg.
 _sentinel = object()
