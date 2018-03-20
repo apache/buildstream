@@ -62,6 +62,9 @@ class Context():
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = []
 
+        # The artifact cache quota
+        self.cache_quota = None
+
         # The directory to store build logs
         self.logdir = None
 
@@ -151,6 +154,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
+            'cache-quota'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -161,6 +165,11 @@ class Context():
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
             setattr(self, directory, path)
+
+        # FIXME: We probably want to convert from something like 2GB
+        # to 2000000000, this looks like it could help:
+        # https://pypi.python.org/pypi/humanfriendly
+        self.cache_quota = _yaml.node_get(defaults, int, 'cache-quota', default_value=None)
 
         # Load artifact share configuration
         self.artifact_cache_specs = artifact_cache_specs_from_config_node(defaults)
