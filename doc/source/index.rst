@@ -40,3 +40,9 @@ dependencies.
 
    main_core
    modules
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contributing
+
+   HACKING
