@@ -72,10 +72,7 @@ class TrackQueue(Queue):
                 source.warn("Failed to update project file",
                             detail="{}".format(e))
 
-        context = element._get_context()
-        context._push_message_depth(True)
         element._update_state()
-        context._pop_message_depth()
 
         # We'll appear as a skipped element if tracking resulted in no change
         return changed
