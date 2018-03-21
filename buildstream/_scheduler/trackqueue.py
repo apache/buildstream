@@ -60,7 +60,9 @@ class TrackQueue(Queue):
         for unique_id, new_ref in result:
             source = _plugin_lookup(unique_id)
             try:
-                source._save_ref(new_ref)
+                # We appear processed if at least one source has changed
+                if source._save_ref(new_ref):
+                    changed = True
             except SourceError as e:
                 # FIXME: We currently dont have a clear path to
                 #        fail the scheduler from the main process, so
