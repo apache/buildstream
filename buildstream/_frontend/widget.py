@@ -35,6 +35,10 @@ from .._message import MessageType
 from ..plugin import _plugin_lookup
 
 
+# These messages are printed a bit differently
+ERROR_MESSAGES = [MessageType.FAIL, MessageType.ERROR, MessageType.BUG]
+
+
 # Widget()
 #
 # Args:
@@ -164,6 +168,7 @@ class TypeName(Widget):
         MessageType.START: "blue",
         MessageType.SUCCESS: "green",
         MessageType.FAIL: "red",
+        MessageType.ERROR: "red",
         MessageType.BUG: "red",
     }
 
@@ -244,7 +249,7 @@ class CacheKey(Widget):
         if isinstance(plugin, Element):
             _, key, missing = plugin._get_full_display_key()
 
-        if message.message_type in [MessageType.FAIL, MessageType.BUG]:
+        if message.message_type in ERROR_MESSAGES:
             text = self.err_profile.fmt(key)
         else:
             text = self.content_profile.fmt(key, dim=missing)
@@ -274,7 +279,7 @@ class LogFile(Widget):
             if logfile.startswith(self.logdir) and abbrev:
                 logfile = logfile[len(self.logdir) + 1:]
 
-            if message.message_type in [MessageType.FAIL, MessageType.BUG]:
+            if message.message_type in ERROR_MESSAGES:
                 text = self.err_profile.fmt(logfile)
             else:
                 text = self.content_profile.fmt(logfile, dim=True)
@@ -400,7 +405,7 @@ class LogLine(Widget):
 
             n_lines = len(lines)
             abbrev = False
-            if message.message_type not in [MessageType.FAIL, MessageType.BUG] \
+            if message.message_type not in ERROR_MESSAGES \
                and not frontend_message and n_lines > self.message_lines:
                 abbrev = True
                 lines = lines[0:self.message_lines]
@@ -410,7 +415,7 @@ class LogLine(Widget):
             detail = self.indent + self.indent.join(lines)
 
             text += '\n'
-            if message.message_type in [MessageType.FAIL, MessageType.BUG]:
+            if message.message_type in ERROR_MESSAGES:
                 text += self.err_profile.fmt(detail, bold=True)
             else:
                 text += self.detail_profile.fmt(detail)
