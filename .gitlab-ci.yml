@@ -126,14 +126,11 @@ unix-tests:
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
-#
-# Note: We still do not enforce a consistent installation of python2
-#       or sphinx, as python2 will significantly grow the backing image.
-#
+# Note: We still do not enforce a consistent installation of python3-sphinx,
+#       as it will significantly grow the backing image.
 docs:
   stage: test
   script:
-  - dnf install -y python2
   - pip3 install sphinx==1.7.1
   - pip3 install sphinx-click
   - pip3 install sphinx_rtd_theme
