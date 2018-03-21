@@ -349,8 +349,10 @@ class Context():
     @contextmanager
     def _silence(self):
         self._push_message_depth(True)
-        yield
-        self._pop_message_depth()
+        try:
+            yield
+        finally:
+            self._pop_message_depth()
 
     # _timed_activity()
     #
