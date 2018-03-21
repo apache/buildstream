@@ -529,6 +529,9 @@ class Source(Plugin):
     # Args:
     #    new_ref (smth): The new reference to save
     #
+    # Returns:
+    #    (bool): Whether the ref has changed
+    #
     # Raises:
     #    (SourceError): In the case we encounter errors saving a file to disk
     #
@@ -590,6 +593,8 @@ class Source(Plugin):
                 do_save_refs(toplevel.refs)
             else:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))
+
+        return changed
 
     # Wrapper for track()
     #
