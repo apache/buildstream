@@ -144,6 +144,24 @@ URLs which are to be used in the individual ``.bst`` files.
      bar: http://bar.com/downloads/
 
 
+Sandbox options
+~~~~~~~~~~~~~~~
+Sandbox options for the whole project can be supplied in
+``project.conf`` in the same way as in an element. See :ref:`element configuration <format_sandbox>`
+for more detail.
+
+.. code:: yaml
+
+   # Specify a user id and group id to use in the build sandbox.
+   sandbox:
+     build-uid: 1003
+     build-gid: 1001
+
+.. note::
+
+   The ``sandbox`` configuration is available since :ref:`format version 6 <project_format_version>`
+
+
 .. _project_essentials_artifacts:
 
 Artifact Server

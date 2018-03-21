@@ -50,6 +50,12 @@ Here is a rather complete example using the autotools element kind and git sourc
        integration-commands:
        - /usr/bin/update-fancy-feature-cache
 
+   # Specify a user id and group id to use in the build sandbox.
+   sandbox:
+     build-uid: 0
+     build-gid: 0
+
+
 For most use cases you would not need to specify this much detail, we've provided
 details here in order to have a more complete initial example.
 
@@ -152,6 +158,8 @@ declared and overridden in the :ref:`projectconf`
 See `Using Variables`_ below for a more in depth discussion on variables in BuildStream.
 
 
+.. _format_environment:
+
 Environment
 ~~~~~~~~~~~
 
@@ -213,6 +221,33 @@ environment where the given element is installed but before anything should be r
 An element is allowed to read domain data from any element it depends on, and users
 may specify additional domains to be understood and processed by their own element
 plugins.
+
+
+.. _format_sandbox:
+
+Sandbox
+~~~~~~~
+Configuration for the build sandbox (other than :ref:`environment variables <format_environment>`)
+can be placed in the ``sandbox`` configuration. At present, only the
+UID and GID used by the user in the group can be specified.
+
+.. code:: yaml
+
+   # Specify a user id and group id to use in the build sandbox.
+   sandbox:
+     build-uid: 1003
+     build-gid: 1001
+
+BuildStream normally uses uid 0 and gid 0 (root) to perform all
+builds. However, the behaviour of certain tools depends on user id,
+behaving differently when run as non-root. To support those builds,
+you can supply a different uid or gid for the sandbox. Only
+bwrap-style sandboxes support custom user IDs at the moment, and hence
+this will only work on Linux host platforms.
+
+.. note::
+
+   The ``sandbox`` configuration is available since :ref:`format version 6 <project_format_version>`
 
 
 .. _format_dependencies:
