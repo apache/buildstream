@@ -1958,6 +1958,9 @@ class Element(Plugin):
     def _subst_string(self, value):
         return self.__variables.subst(value)
 
+    def _get_real_element(self):
+        return self
+
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
     if forbidden_overlap_elements:

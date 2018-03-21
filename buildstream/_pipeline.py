@@ -616,6 +616,15 @@ class Pipeline():
     def open_workspace(self, scheduler, directory, no_checkout, track_first, force):
         # When working on workspaces we only have one target
         target = self.targets[0]
+
+        # Some elements act as proxies for other elements
+        target = target._get_real_element()
+
+        # Ordinarily, this would be done by pipeline initialization, but we need the
+        # elements initialized before we know which ones to track.
+        if track_first:
+            self.resolve_cache_keys([target.name])
+
         workdir = os.path.abspath(directory)
 
         if not list(target.sources()):
@@ -698,6 +707,9 @@ class Pipeline():
         # When working on workspaces we only have one target
         target = self.targets[0]
 
+        # Some elements act as proxies for other elements
+        target = target._get_real_element()
+
         # Remove workspace directory if prompted
         if remove_dir:
             path = self.project._get_workspace(target.name)
@@ -738,6 +750,10 @@ class Pipeline():
     def reset_workspace(self, scheduler, track, no_checkout):
         # When working on workspaces we only have one target
         target = self.targets[0]
+
+        # Some elements act as proxies for other elements
+        target = target._get_real_element()
+
         workspace_dir = self.project._get_workspace(target.name)
 
         if workspace_dir is None:

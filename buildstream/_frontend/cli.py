@@ -618,7 +618,7 @@ def workspace():
 def workspace_open(app, no_checkout, force, track_, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize((element,), rewritable=track_, track_elements=[element] if track_ else None)
+    app.initialize((element,), rewritable=track_)
     try:
         app.pipeline.open_workspace(app.scheduler, directory, no_checkout, track_, force)
         click.echo("", err=True)
@@ -641,7 +641,10 @@ def workspace_close(app, remove_dir, element):
 
     app.initialize((element,))
 
-    if app.pipeline.project._get_workspace(app.pipeline.targets[0].name) is None:
+    target = app.pipeline.targets[0]
+    target = target._get_real_element()
+
+    if app.pipeline.project._get_workspace(target.name) is None:
         click.echo("ERROR: Workspace '{}' does not exist".format(element), err=True)
         sys.exit(-1)
 
