@@ -289,3 +289,24 @@ def test_track_cross_junction(cli, tmpdir, datafiles, ref_storage):
         # Assert that we now have a ref for the subproject element
         #
         assert get_subproject_element_state() == 'buildable'
+
+
+@pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
+def test_track_consistency_error(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Track the element causing a consistency error
+    result = cli.run(project=project, args=['track', 'error.bst'])
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_task_error(ErrorDomain.SOURCE, 'the-consistency-error')
+
+
+@pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
+def test_track_consistency_bug(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Track the element causing an unhandled exception
+    result = cli.run(project=project, args=['track', 'bug.bst'])
+
+    # We expect BuildStream to fail gracefully, with no recorded exception.
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
