@@ -1,5 +1,7 @@
-import subprocess
+import os
 import pytest
+import shutil
+import subprocess
 
 from .repo import Repo
 from ..site import HAVE_GIT
@@ -34,6 +36,14 @@ class Git(Repo):
     def add_commit(self):
         subprocess.call(['git', 'commit', '--allow-empty', '-m', 'Additional commit'],
                         env=GIT_ENV, cwd=self.repo)
+        return self.latest_commit()
+
+    def add_file(self, filename):
+        shutil.copy(filename, self.repo)
+        subprocess.call(['git', 'add', os.path.basename(filename)], env=GIT_ENV, cwd=self.repo)
+        subprocess.call([
+            'git', 'commit', '-m', 'Added {}'.format(os.path.basename(filename))
+        ], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
     def add_submodule(self, subdir, url=None, checkout=None):
