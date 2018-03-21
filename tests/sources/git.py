@@ -322,3 +322,40 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
     # Assert we checked out both files at their expected location
     assert os.path.exists(os.path.join(checkoutdir, 'file.txt'))
     assert not os.path.exists(os.path.join(checkoutdir, 'subdir', 'ponyfile.txt'))
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project, 'repofiles'))
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            repo.source_config(ref=ref)
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    # Now add a .gitmodules file with an inconsistent submodule,
+    # we are calling this inconsistent because the file was created
+    # but `git submodule add` was never called, so there is no reference
+    # associated to the submodule.
+    #
+    repo.add_file(os.path.join(project, 'inconsistent-submodule', '.gitmodules'))
+
+    # Fetch should work, we're not yet at the offending ref
+    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result.assert_success()
+
+    # Track will encounter an inconsistent submodule without any ref
+    result = cli.run(project=project, args=['track', 'target.bst'])
+    result.assert_success()
+
+    # Assert that we are just fine without it, and emit a warning to the user.
+    assert "Ignoring inconsistent submodule" in result.stderr
