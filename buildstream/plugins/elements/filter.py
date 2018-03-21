@@ -32,6 +32,11 @@ they must be runtime dependencies only. This can be useful to propagate
 runtime dependencies forward from this filter element onto its reverse
 dependencies.
 
+When workspaces are opened, closed or reset on this element, instead
+of erroring due to a lack of sources, this element will transparently
+pass on the workspace opening/closing/resetting to its sole
+build-dependency.
+
 The default configuration and possible options are as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/filter.yaml
      :language: yaml
@@ -101,6 +106,13 @@ class FilterElement(Element):
                 dep.stage_artifact(sandbox, include=self.include,
                                    exclude=self.exclude, orphans=self.include_orphans)
         return ""
+
+    def _get_real_element(self):
+        # Filter elements act as proxies for their sole build-dependency
+        build_deps = list(self.dependencies(Scope.BUILD, recurse=False))
+        assert len(build_deps) == 1
+        output_elm = build_deps[0]._get_real_element()
+        return output_elm
 
 
 def setup():
