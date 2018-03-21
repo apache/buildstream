@@ -227,8 +227,14 @@ class GitMirror():
             return submodule_commit
 
         else:
-            raise SourceError("{}: Failed to read commit information for submodule '{}'"
-                              .format(self.source, submodule))
+            detail = "The submodule '{}' is defined either in the BuildStream source\n".format(submodule) + \
+                     "definition, or in a .gitmodules file. But the submodule was never added to the\n" + \
+                     "underlying git repository with `git submodule add`."
+
+            self.source.warn("{}: Ignoring inconsistent submodule '{}'"
+                             .format(self.source, submodule), detail=detail)
+
+            return None
 
 
 class GitSource(Source):
@@ -401,8 +407,9 @@ class GitSource(Source):
                 url = override_url
 
             ref = self.mirror.submodule_ref(path)
-            mirror = GitMirror(self, path, url, ref)
-            submodules.append(mirror)
+            if ref is not None:
+                mirror = GitMirror(self, path, url, ref)
+                submodules.append(mirror)
 
         self.submodules = submodules
 
