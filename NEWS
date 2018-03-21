@@ -9,6 +9,9 @@ buildstream 1.1.2
   o Deprecated `--track-save` optionality in `bst build`, this
     does not make sense to support now that we have project.refs.
 
+  o Added the `sandbox` configuration option which can be used in
+    `project.conf` and elements, to control the user ID and group ID
+    used in build sandboxes.
 
 =================
 buildstream 1.1.1
