@@ -44,8 +44,7 @@ def buildref(element, key):
         for x in element.normal_name
     ])
 
-    if key is None:
-        raise ArtifactError('Cache key missing')
+    assert key is not None
 
     # assume project and element names are not allowed to contain slashes
     return '{0}/{1}/{2}'.format(project.name, element_name, key)
