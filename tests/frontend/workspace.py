@@ -2,6 +2,7 @@ import os
 import pytest
 import shutil
 import subprocess
+from ruamel.yaml.comments import CommentedSet
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
@@ -230,7 +231,7 @@ def test_build(cli, tmpdir, datafiles, kind):
     # Test loading a version with decimals
     {"format-version": 0.5},
     # Test loading a future version
-    {"format-version": 2}
+    {"format-version": 3}
 ])
 def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -254,10 +255,11 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
     ({
         "alpha.bst": "/workspaces/bravo"
     }, {
-        "format-version": 1,
+        "format-version": 2,
         "workspaces": {
             "alpha.bst": {
-                "path": "/workspaces/bravo"
+                "path": "/workspaces/bravo",
+                "running_files": {}
             }
         }
     }),
@@ -267,10 +269,11 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             0: "/workspaces/bravo"
         }
     }, {
-        "format-version": 1,
+        "format-version": 2,
         "workspaces": {
             "alpha.bst": {
-                "path": "/workspaces/bravo"
+                "path": "/workspaces/bravo",
+                "running_files": {}
             }
         }
     }),
@@ -283,10 +286,35 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             }
         }
     }, {
-        "format-version": 1,
+        "format-version": 2,
         "workspaces": {
             "alpha.bst": {
-                "path": "/workspaces/bravo"
+                "path": "/workspaces/bravo",
+                "running_files": {}
+            }
+        }
+    }),
+    # Test loading version 2
+    ({
+        "format-version": 2,
+        "workspaces": {
+            "alpha.bst": {
+                "path": "/workspaces/bravo",
+                "last_successful": "some_key",
+                "running_files": {
+                    "beta.bst": set(["some_file"])
+                }
+            }
+        }
+    }, {
+        "format-version": 2,
+        "workspaces": {
+            "alpha.bst": {
+                "path": "/workspaces/bravo",
+                "last_successful": "some_key",
+                "running_files": {
+                    "beta.bst": set(["some_file"])
+                }
             }
         }
     })
