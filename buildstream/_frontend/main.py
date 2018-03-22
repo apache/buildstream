@@ -21,12 +21,12 @@
 import os
 import sys
 import resource
+import traceback
 from contextlib import contextmanager
 from blessings import Terminal
 
 import click
 from click import UsageError
-import traceback
 
 from .cli import cli
 
