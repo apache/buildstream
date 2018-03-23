@@ -499,7 +499,8 @@ class Element(Plugin):
         files_written = {}
         old_dep_keys = {}
 
-        if self._workspaced():
+        if self._can_build_incrementally():
+            project = self._get_project()
             workspace = self._get_workspace()
 
             if workspace.last_successful:
@@ -1537,6 +1538,9 @@ class Element(Plugin):
             # Run shells with network enabled and readonly root.
             return sandbox.run(argv, flags, env=environment)
 
+    def _can_build_incrementally(self):
+        return self._workspaced() and self.__artifacts.can_diff()
+
     # _stage_sources_in_sandbox():
     #
     # Stage this element's sources to a directory inside sandbox
@@ -1548,7 +1552,9 @@ class Element(Plugin):
     #
     def _stage_sources_in_sandbox(self, sandbox, directory, mount_workspaces=True):
 
-        if mount_workspaces:
+        # Only artifact caches that implement diff() are allowed to
+        # perform incremental builds.
+        if mount_workspaces and self._can_build_incrementally():
             workspace = self._get_workspace()
             # First, mount sources that have an open workspace
             sources_to_mount = [source for source in self.sources() if source._has_workspace()]
@@ -1579,7 +1585,7 @@ class Element(Plugin):
 
             # If mount_workspaces is set, sources with workspace are mounted
             # directly inside the sandbox so no need to stage them here.
-            if mount_workspaces:
+            if mount_workspaces and self._can_build_incrementally():
                 sources = [source for source in self.sources() if not source._has_workspace()]
             else:
                 sources = self.sources()
