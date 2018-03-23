@@ -90,6 +90,9 @@ class OSTreeCache(ArtifactCache):
         ref = self.get_artifact_fullname(element, key)
         return _ostree.exists(self.repo, ref)
 
+    def remove(self, ref):
+        return _ostree.remove(self.repo, ref)
+
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
 
