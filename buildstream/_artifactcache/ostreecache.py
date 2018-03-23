@@ -95,6 +95,9 @@ class OSTreeCache(ArtifactCache):
         push_remotes_for_project = set(self._remotes[element._get_project()])
         return not push_remotes_for_project.issubset(push_remotes_with_artifact)
 
+    def remove(self, ref):
+        return _ostree.remove(self.repo, ref)
+
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
 

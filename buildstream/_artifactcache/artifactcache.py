@@ -199,6 +199,18 @@ class ArtifactCache():
         raise ImplError("Cache '{kind}' does not implement contains()"
                         .format(kind=type(self).__name__))
 
+    # remove():
+    #
+    # Removes the artifact for the specified ref from the local
+    # artifact cache.
+    #
+    # Args:
+    #     ref (str): The ref of the element to remove
+    #
+    def remove(self, ref):
+        raise ImplError("Cache '{kind}' does not implement remove()"
+                        .format(kind=type(self).__name__))
+
     # extract():
     #
     # Extract cached artifact for the specified Element if it hasn't
