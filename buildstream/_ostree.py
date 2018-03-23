@@ -225,6 +225,42 @@ def exists(repo, ref):
     return has_object
 
 
+# remove():
+#
+# Removes the given commit or symbolic ref from the repo.
+#
+# Args:
+#    repo (OSTree.Repo): The repo
+#    ref (str): A commit checksum or symbolic ref
+#    defer_prune (bool): Whether to defer pruning to the caller. NOTE:
+#                        The space won't be freed until you manually
+#                        call repo.prune.
+#
+# Returns:
+#    (int|None) The amount of space pruned from the repository in
+#               Bytes, or None if defer_prune is True
+#
+def remove(repo, ref, *, defer_prune=False):
+
+    # Get the commit checksum, this will:
+    #
+    #  o Return a commit checksum if ref is a symbolic branch
+    #  o Return the same commit checksum if ref is a valid commit checksum
+    #  o Return None if the ostree repo doesnt know this ref.
+    #
+    check = checksum(repo, ref)
+    if check is None:
+        raise OSTreeError("Could not find artifact for ref '{}'".format(ref))
+
+    repo.set_ref_immediate(None, ref, None)
+
+    if not defer_prune:
+        _, _, _, pruned = repo.prune(OSTree.RepoPruneFlags.REFS_ONLY, -1)
+        return pruned
+
+    return None
+
+
 # checksum():
 #
 # Returns the commit checksum for a given symbolic ref,
