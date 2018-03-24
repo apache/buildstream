@@ -45,6 +45,16 @@ class TarCache(ArtifactCache):
         path = os.path.join(self.tardir, _tarpath(element, key))
         return os.path.isfile(path)
 
+    # remove()
+    #
+    # Implements artifactcache.remove().
+    #
+    def remove(self, ref):
+        artifact = os.path.join(self.tardir, ref + '.tar.bz2')
+        size = os.stat(artifact, follow_symlinks=False).st_size
+        os.remove(artifact)
+        return size
+
     def commit(self, element, content, keys):
         os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
 
