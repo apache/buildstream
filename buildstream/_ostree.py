@@ -552,3 +552,47 @@ def configure_remote(repo, remote, url, key_url=None):
             repo.remote_gpg_import(remote, stream, None, 0, None)
         except GLib.GError as e:
             raise OSTreeError("Failed to add gpg key from url '{}': {}".format(key_url, e.message)) from e
+
+
+# list_artifacts():
+#
+# List cached artifacts in Least Recently Modified (LRM) order.
+#
+# Returns:
+#     (list) - A list of refs in LRM order
+#
+def list_artifacts(repo):
+    # string of: /path/to/repo/refs/heads
+    ref_heads = os.path.join(repo.get_path().get_path(), 'refs', 'heads')
+
+    # obtain list of <project>/<element>/<key>
+    refs = _list_all_refs(repo).keys()
+
+    mtimes = []
+    for ref in refs:
+        ref_path = os.path.join(ref_heads, ref)
+        if os.path.exists(ref_path):
+            # Obtain the mtime (the time a file was last modified)
+            mtimes.append(os.path.getmtime(ref_path))
+
+    # NOTE: Sorted will sort from earliest to latest, thus the
+    # first element of this list will be the file modified earliest.
+    return [ref for _, ref in sorted(zip(mtimes, refs))]
+
+
+# _list_all_refs():
+#
+# Create a list of all refs.
+#
+# Args:
+#    repo (OSTree.Repo): The repo
+#
+# Returns:
+#    (dict): A dict of refs to checksums.
+#
+def _list_all_refs(repo):
+    try:
+        _, refs = repo.list_refs(None)
+        return refs
+    except GLib.GError as e:
+        raise OSTreeError(message=e.message) from e
