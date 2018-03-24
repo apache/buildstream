@@ -20,7 +20,7 @@
 
 import os
 from . import Queue, QueueStatus, QueueType
-from ..jobs import CacheSizeJob, JobType
+from ..jobs import CacheSizeJob, CleanupJob, JobType
 
 
 # A queue which assembles elements

@@ -146,6 +146,7 @@ class Scheduler():
         self._starttime = start_time
         self._suspendtime = None
         self._queue_jobs = True      # Whether we should continue to queue jobs
+        self._start_cleanup = False  # Whether we would like to launch a cleanup job
 
         # Initialize task tokens with the number allowed by
         # the user configuration

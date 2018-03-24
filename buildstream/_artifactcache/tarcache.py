@@ -45,6 +45,24 @@ class TarCache(ArtifactCache):
         path = os.path.join(self.tardir, _tarpath(element, key))
         return os.path.isfile(path)
 
+    # list_artifacts():
+    #
+    # List artifacts in this cache in LRU order.
+    #
+    # Returns:
+    #     (list) - A list of refs in LRU order
+    #
+    def list_artifacts(self):
+        artifacts = list(utils.list_relative_paths(self.tardir, list_dirs=False))
+        mtimes = [os.path.getmtime(os.path.join(self.tardir, artifact))
+                  for artifact in artifacts if artifact]
+
+        # We need to get rid of the tarfile extension to get a proper
+        # ref - os.splitext doesn't do this properly, unfortunately.
+        artifacts = [artifact[:-len('.tar.bz2')] for artifact in artifacts]
+
+        return [name for _, name in sorted(zip(mtimes, artifacts))]
+
     # remove()
     #
     # Implements artifactcache.remove().
@@ -68,6 +86,19 @@ class TarCache(ArtifactCache):
                 _Tar.archive(os.path.join(self.tardir, ref), key, temp)
 
             self.cache_size = None
+            os.utime(os.path.join(self.tardir, ref))
+
+    # update_atime():
+    #
+    # Update the access time of an element.
+    #
+    # Args:
+    #     element (Element): The Element to mark
+    #     key (str): The cache key to use
+    #
+    def update_atime(self, element, key):
+        path = _tarpath(element, key)
+        os.utime(os.path.join(self.tardir, path))
 
     def extract(self, element, key):
 

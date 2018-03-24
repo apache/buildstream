@@ -59,6 +59,7 @@ class JobType():
     PULL = 4
     PUSH = 5
     SIZE = 6
+    CLEAN = 7
 
 
 # Job()

@@ -93,8 +93,15 @@ class OSTreeCache(ArtifactCache):
         ref = self.get_artifact_fullname(element, key)
         return _ostree.exists(self.repo, ref)
 
-    def remove(self, ref):
-        return _ostree.remove(self.repo, ref)
+    def list_artifacts(self):
+        return _ostree.list_artifacts(self.repo)
+
+    def remove(self, artifact_name):
+        # We cannot defer pruning, unfortunately, because we could
+        # otherwise not figure out how much space was freed by the
+        # removal, and would therefore not be able to expire the
+        # correct number of artifacts.
+        self.cache_size -= _ostree.remove(self.repo, artifact_name, defer_prune=False)
 
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
@@ -104,6 +111,9 @@ class OSTreeCache(ArtifactCache):
 
         # Extracting a nonexistent artifact is a bug
         assert rev, "Artifact missing for {}".format(ref)
+
+        ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+        os.utime(ref_file)
 
         dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, rev)
         if os.path.isdir(dest):
@@ -139,6 +149,10 @@ class OSTreeCache(ArtifactCache):
             _ostree.commit(self.repo, content, refs)
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
+
+        for ref in refs:
+            ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+            os.utime(ref_file)
 
         self.cache_size = None
 
