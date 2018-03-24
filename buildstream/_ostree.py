@@ -554,6 +554,24 @@ def configure_remote(repo, remote, url, key_url=None):
             raise OSTreeError("Failed to add gpg key from url '{}': {}".format(key_url, e.message)) from e
 
 
+# list_all_refs():
+#
+# Create a list of all refs.
+#
+# Args:
+#    repo (OSTree.Repo): The repo
+#
+# Returns:
+#    (dict): A dict of refs to checksums.
+#
+def list_all_refs(repo):
+    try:
+        _, refs = repo.list_refs(None)
+        return refs
+    except GLib.GError as e:
+        raise OSTreeError(message=e.message) from e
+
+
 # list_remote_refs():
 #
 # Fetch list of refs from a remote.

@@ -98,7 +98,7 @@ class FileListResult():
         return ret
 
 
-def list_relative_paths(directory):
+def list_relative_paths(directory, *, list_dirs=True):
     """A generator for walking directory relative paths
 
     This generator is useful for checking the full manifest of
@@ -112,6 +112,7 @@ def list_relative_paths(directory):
 
     Args:
        directory (str): The directory to list files in
+       list_dirs (bool): Whether to list directories
 
     Yields:
        Relative filenames in `directory`
@@ -138,15 +139,16 @@ def list_relative_paths(directory):
         # subdirectories in the walked `dirpath`, so we extract
         # these symlinks from `dirnames`
         #
-        for d in dirnames:
-            fullpath = os.path.join(dirpath, d)
-            if os.path.islink(fullpath):
-                yield os.path.join(basepath, d)
+        if list_dirs:
+            for d in dirnames:
+                fullpath = os.path.join(dirpath, d)
+                if os.path.islink(fullpath):
+                    yield os.path.join(basepath, d)
 
         # We've decended into an empty directory, in this case we
         # want to include the directory itself, but not in any other
         # case.
-        if not filenames:
+        if list_dirs and not filenames:
             yield relpath
 
         # List the filenames in the walked directory
@@ -544,7 +546,6 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
 #
 def _get_dir_size(path):
     scandir = None
-    size = 0
 
     # python3.4 does not have scandir, but it is significantly
     # faster for this type of work.
@@ -576,15 +577,10 @@ def _get_dir_size(path):
         total = 0
 
         for dirpath, dirs, files in os.walk(path):
-            for d in dirs:
-                path = os.path.join(dirpath, d)
-                if os.path.exists(path):
-                    total += os.stat(path, follow_symlinks=False).st_size
-
-            for f in files:
-                path = os.path.join(dirpath, f)
-                if os.path.exists(path):
-                    total += os.stat(path, follow_symlinks=False).st_size
+            for file_path in dirs + files:
+                abspath = os.path.join(dirpath, file_path)
+                if os.path.exists(abspath):
+                    total += os.stat(abspath, follow_symlinks=False).st_size
 
         return total
 

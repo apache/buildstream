@@ -86,6 +86,21 @@ class OSTreeCache(ArtifactCache):
         ref = self.get_artifact_fullname(element, key)
         return _ostree.exists(self.repo, ref)
 
+    def list_artifacts(self):
+        ref_heads = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads')
+
+        # FIXME: ostree 2017.11+ supports a flag that would allow
+        #        listing only local refs.
+        refs = _ostree.list_all_refs(self.repo).keys()
+        mtimes = []
+
+        for ref in refs:
+            ref_path = os.path.join(ref_heads, ref)
+            if os.path.exists(ref_path):
+                mtimes.append(os.path.getmtime(ref_path))
+
+        return [ref for _, ref in sorted(zip(mtimes, refs))]
+
     def remote_contains(self, element, key):
         remotes = self._remotes_containing_key(element, key)
         return len(remotes) > 0
@@ -99,7 +114,11 @@ class OSTreeCache(ArtifactCache):
         return not push_remotes_for_project.issubset(push_remotes_with_artifact)
 
     def remove(self, ref):
-        return _ostree.remove(self.repo, ref)
+        # We cannot defer pruning, unfortunately, because we could
+        # otherwise not figure out how much space was freed by the
+        # removal, and would therefore not be able to expire the
+        # correct number of artifacts.
+        self.__cache_size -= _ostree.remove(self.repo, ref, defer_prune=False)
 
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
@@ -109,6 +128,9 @@ class OSTreeCache(ArtifactCache):
 
         if not rev:
             raise ArtifactError("Artifact missing for {}".format(ref))
+
+        ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+        os.utime(ref_file)
 
         dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, rev)
         if os.path.isdir(dest):
@@ -144,6 +166,10 @@ class OSTreeCache(ArtifactCache):
             _ostree.commit(self.repo, content, refs)
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
+
+        for ref in refs:
+            ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+            os.utime(ref_file)
 
         self.__cache_size = None
 

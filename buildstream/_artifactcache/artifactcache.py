@@ -22,7 +22,7 @@ import os
 import string
 from collections import Mapping, namedtuple
 
-from .._exceptions import ImplError, LoadError, LoadErrorReason
+from .._exceptions import ArtifactError, ImplError, LoadError, LoadErrorReason
 from .. import utils
 from .. import _yaml
 
@@ -183,9 +183,29 @@ class ArtifactCache():
     #     keys (list): The cache keys to use
     #
     def _commit(self, element, content, keys):
-        if utils._get_dir_size(content) + self.get_cache_size() > self.max_size:
-            # Expire artifact
-            pass
+        artifact_size = utils._get_dir_size(content)
+
+        # If our artifact is larger than our max size we need to abort
+        # before we clear the whole cache.
+        if self.max_size and artifact_size > self.max_size:
+            raise ArtifactError("The artifact is too large for the cache with current restrictions.")
+
+        artifacts = None
+        cache_size = self.get_cache_size()
+
+        # Technically an element could be committed to some artifact
+        # caches even if its size exceeds the quota. This is because
+        # the cache will almost always use compression techniques to
+        # reduce the size of the artifact.
+        #
+        # Nonetheless, in real-world cases this should not matter
+        # much, artifacts will just be cleaned slightly earlier than
+        # technically necessary.
+        #
+        while self.max_size and artifact_size + self.get_cache_size() > self.max_size:
+            if artifacts is None:
+                artifacts = self.list_artifacts()
+            self.remove(artifacts.pop(0))
 
         self.commit(element, content, keys)
 
@@ -216,6 +236,17 @@ class ArtifactCache():
     #
     def contains(self, element, key):
         raise ImplError("Cache '{kind}' does not implement contains()"
+                        .format(kind=type(self).__name__))
+
+    # list_artifacts():
+    #
+    # List artifacts in this cache in LRU order.
+    #
+    # Returns:
+    #     (list) - A list of refs in LRU order
+    #
+    def list_artifacts(self):
+        raise ImplError("Cache '{kind}' does not implement list_artifacts()"
                         .format(kind=type(self).__name__))
 
     # remove():

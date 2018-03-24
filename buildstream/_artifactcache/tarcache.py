@@ -46,6 +46,24 @@ class TarCache(ArtifactCache):
         path = os.path.join(self.tardir, _tarpath(element, key))
         return os.path.isfile(path)
 
+    # list_artifacts():
+    #
+    # List artifacts in this cache in LRU order.
+    #
+    # Returns:
+    #     (list) - A list of refs in LRU order
+    #
+    def list_artifacts(self):
+        artifacts = list(utils.list_relative_paths(self.tardir, list_dirs=False))
+        mtimes = [os.path.getmtime(os.path.join(self.tardir, artifact))
+                  for artifact in artifacts if artifact]
+
+        # We need to get rid of the tarfile extension to get a proper
+        # ref - os.splitext doesn't do this properly, unfortunately.
+        artifacts = [artifact[:-len('.tar.bz2')] for artifact in artifacts]
+
+        return [ref for _, ref in sorted(zip(mtimes, artifacts))]
+
     # remove()
     #
     # Implements artifactcache.remove().
@@ -54,8 +72,7 @@ class TarCache(ArtifactCache):
         artifact = os.path.join(self.tardir, ref + '.tar.bz2')
         size = os.stat(artifact, follow_symlinks=False).st_size
         os.remove(artifact)
-        self.__cache_size = None
-        return size
+        self.__cache_size -= size
 
     def commit(self, element, content, keys):
         os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
@@ -70,6 +87,7 @@ class TarCache(ArtifactCache):
                 _Tar.archive(os.path.join(self.tardir, ref), key, temp)
 
             self.__cache_size = None
+            os.utime(os.path.join(self.tardir, ref))
 
     def extract(self, element, key):
 
@@ -102,6 +120,8 @@ class TarCache(ArtifactCache):
                 if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
                     raise ArtifactError("Failed to extract artifact '{}': {}"
                                         .format(fullname, e)) from e
+
+        os.utime(os.path.join(self.tardir, path))
 
         return dest
 
