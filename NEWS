@@ -13,6 +13,10 @@ buildstream 1.1.2
     `project.conf` and elements, to control the user ID and group ID
     used in build sandboxes.
 
+  o Added new `deb` source implementation, for staging of downloaded
+    deb package files.
+
+
 =================
 buildstream 1.1.1
 =================
