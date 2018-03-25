@@ -19,11 +19,10 @@
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
 
 
-"""A container for sandbox configuration data. We want the internals
-of this to be opaque, hence putting it in its own private file.
-"""
-
-
+# SandboxConfig
+#
+# A container for sandbox configuration data. We want the internals
+# of this to be opaque, hence putting it in its own private file.
 class SandboxConfig():
     def __init__(self, build_uid, build_gid):
         self.build_uid = build_uid
