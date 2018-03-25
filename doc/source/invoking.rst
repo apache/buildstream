@@ -5,6 +5,6 @@
 Invoking BuildStream
 ====================
 
-.. click:: buildstream._frontend.main:cli
+.. click:: buildstream._frontend:cli
    :prog: bst
    :show-nested:

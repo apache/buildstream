@@ -18,7 +18,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import os
-from collections import Mapping
 
 from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason

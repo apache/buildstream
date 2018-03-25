@@ -19,13 +19,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-# System imports
-import os
-
 # BuildStream toplevel imports
 from ..plugin import _plugin_lookup
 from .. import SourceError
-from .. import _yaml
 
 # Local imports
 from . import Queue, QueueStatus, QueueType

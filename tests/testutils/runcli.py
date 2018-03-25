@@ -22,7 +22,7 @@ from _pytest.capture import MultiCapture, FDCapture
 from tests.testutils.site import IS_LINUX
 
 # Import the main cli entrypoint
-from buildstream._frontend.main import cli as bst_cli
+from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml
 
 # Special private exception accessor, for test case purposes

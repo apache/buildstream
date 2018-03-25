@@ -29,7 +29,7 @@ from contextlib import contextmanager
 from operator import itemgetter
 from tempfile import TemporaryDirectory
 
-from ._exceptions import PipelineError, ArtifactError, ImplError, BstError
+from ._exceptions import PipelineError, ImplError, BstError
 from ._message import Message, MessageType
 from ._loader import Loader
 from . import Consistency

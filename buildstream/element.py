@@ -37,7 +37,7 @@ from . import _yaml
 from ._variables import Variables
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
 from . import Plugin, Consistency
-from . import Sandbox, SandboxFlags
+from . import SandboxFlags
 from . import utils
 from . import _cachekey
 from . import _signals

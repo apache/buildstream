@@ -72,7 +72,7 @@ import subprocess
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
-from . import _yaml, _signals
+from . import _yaml
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType

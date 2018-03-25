@@ -35,7 +35,7 @@ The default configuration and possible options are as such:
 
 import os
 from buildstream import utils
-from buildstream import Element, ElementError, Scope
+from buildstream import Element, Scope
 
 
 # Element implementation for the 'compose' kind.

@@ -27,25 +27,21 @@ from blessings import Terminal
 import click
 from click import UsageError
 
-from .cli import cli
-
 # Import buildstream public symbols
 from .. import Scope
 
 # Import various buildstream internals
 from .._context import Context
 from .._project import Project
-from .._exceptions import BstError, LoadError
+from .._exceptions import BstError
 from .._message import MessageType, unconditional_messages
-from .._pipeline import Pipeline, PipelineError
+from .._pipeline import Pipeline
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
-from .. import _yaml
 from .. import __version__ as build_stream_version
 
 # Import frontend assets
 from . import Profile, LogLine, Status
-from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
 # Intendation for all logging
 INDENT = 4
