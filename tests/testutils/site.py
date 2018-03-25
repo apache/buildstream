@@ -42,4 +42,10 @@ try:
 except ProgramNotFoundError:
     HAVE_LZIP = False
 
+try:
+    import arpy
+    HAVE_ARPY = True
+except ImportError:
+    HAVE_ARPY = False
+
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
