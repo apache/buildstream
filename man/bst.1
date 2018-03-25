@@ -1,4 +1,4 @@
-.TH "BST" "1" "06-Mar-2018" "" "bst Manual"
+.TH "BST" "1" "25-Mar-2018" "" "bst Manual"
 .SH NAME
 bst \- Build and manipulate BuildStream projects...
 .SH SYNOPSIS
@@ -63,34 +63,19 @@ Elements must be rebuilt when their dependencies have changed
 Specify a project option
 .SH COMMANDS
 .PP
-\fBshow\fP
-  Show elements in the pipeline
-  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
-
-.PP
 \fBtrack\fP
   Track new source references
   See \fBbst-track(1)\fP for full documentation on the \fBtrack\fP command.
 
 .PP
-\fBpush\fP
-  Push a built artifact
-  See \fBbst-push(1)\fP for full documentation on the \fBpush\fP command.
+\fBshow\fP
+  Show elements in the pipeline
+  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
 
 .PP
-\fBworkspace\fP
-  Manipulate developer workspaces
-  See \fBbst-workspace(1)\fP for full documentation on the \fBworkspace\fP command.
-
-.PP
-\fBbuild\fP
-  Build elements in a pipeline
-  See \fBbst-build(1)\fP for full documentation on the \fBbuild\fP command.
-
-.PP
-\fBfetch\fP
-  Fetch sources in a pipeline
-  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
+\fBpull\fP
+  Pull a built artifact
+  See \fBbst-pull(1)\fP for full documentation on the \fBpull\fP command.
 
 .PP
 \fBcheckout\fP
@@ -103,11 +88,26 @@ Specify a project option
   See \fBbst-shell(1)\fP for full documentation on the \fBshell\fP command.
 
 .PP
+\fBworkspace\fP
+  Manipulate developer workspaces
+  See \fBbst-workspace(1)\fP for full documentation on the \fBworkspace\fP command.
+
+.PP
 \fBsource-bundle\fP
   Produce a build bundle to be manually executed
   See \fBbst-source-bundle(1)\fP for full documentation on the \fBsource-bundle\fP command.
 
 .PP
-\fBpull\fP
-  Pull a built artifact
-  See \fBbst-pull(1)\fP for full documentation on the \fBpull\fP command.
+\fBpush\fP
+  Push a built artifact
+  See \fBbst-push(1)\fP for full documentation on the \fBpush\fP command.
+
+.PP
+\fBfetch\fP
+  Fetch sources in a pipeline
+  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
+
+.PP
+\fBbuild\fP
+  Build elements in a pipeline
+  See \fBbst-build(1)\fP for full documentation on the \fBbuild\fP command.
