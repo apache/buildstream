@@ -94,7 +94,7 @@ The following source types are provided with BuildStream:
 * :mod:`bzr <sources.bzr>` - A Source implementation for bazaar
 * :mod:`ostree <sources.ostree>` - A Source implementation for ostree
 * :mod:`patch <sources.patch>` - A Source implementation for applying local patches
-
+* :mod:`deb <sources.deb>` - A Source implementation for deb packages
 
 
 External Plugins
