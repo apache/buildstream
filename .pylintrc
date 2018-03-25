@@ -105,7 +105,6 @@ disable=#####################################
         invalid-name,
 
         unused-argument,
-        unused-import,
         unused-variable,
 
         ###########################################################
