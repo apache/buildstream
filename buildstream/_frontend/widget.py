@@ -328,6 +328,7 @@ class LogLine(Widget):
 
         self.columns = []
         self._failure_messages = defaultdict(list)
+        self._context = None
         self.success_profile = success_profile
         self.err_profile = err_profile
         self.detail_profile = detail_profile
@@ -389,6 +390,8 @@ class LogLine(Widget):
 
         self.space_widget.size_request(pipeline)
         self.logfile_widget.size_request(pipeline)
+
+        self._context = pipeline.context
 
     def render(self, message):
 
@@ -458,16 +461,21 @@ class LogLine(Widget):
 
         if message.scheduler and message.message_type == MessageType.FAIL:
             text += '\n'
-            text += self.indent + self.err_profile.fmt("Printing the last {} lines from log file:"
-                                                       .format(self.log_lines)) + '\n'
-            text += self.indent + self.logfile_widget.render(message, abbrev=False) + '\n'
-            text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
 
-            log_content = self.read_last_lines(message.logfile)
-            log_content = textwrap.indent(log_content, self.indent)
-            text += self.detail_profile.fmt(log_content)
-            text += '\n'
-            text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
+            if self._context is not None and not self._context.log_verbose:
+                text += self.indent + self.err_profile.fmt("Log file: ")
+                text += self.indent + self.logfile_widget.render(message) + '\n'
+            else:
+                text += self.indent + self.err_profile.fmt("Printing the last {} lines from log file:"
+                                                           .format(self.log_lines)) + '\n'
+                text += self.indent + self.logfile_widget.render(message, abbrev=False) + '\n'
+                text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
+
+                log_content = self.read_last_lines(message.logfile)
+                log_content = textwrap.indent(log_content, self.indent)
+                text += self.detail_profile.fmt(log_content)
+                text += '\n'
+                text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
             extra_nl = True
 
         if extra_nl:
