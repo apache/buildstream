@@ -658,6 +658,11 @@ class LogLine(Widget):
             max_key_len = max(len(key), max_key_len)
 
         for key, value in values.items():
+            if isinstance(value, str) and '\n' in value:
+                text += self.format_profile.fmt("  {}:\n".format(key))
+                text += textwrap.indent(value, self.indent)
+                continue
+
             text += self.format_profile.fmt("  {}: {}".format(key, ' ' * (max_key_len - len(key))))
             if style_value:
                 text += self.content_profile.fmt(str(value))
