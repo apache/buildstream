@@ -23,6 +23,7 @@ from collections import defaultdict, OrderedDict
 from contextlib import ExitStack
 from mmap import mmap
 import re
+import textwrap
 import click
 from ruamel import yaml
 
@@ -463,7 +464,7 @@ class LogLine(Widget):
             text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
 
             log_content = self.read_last_lines(message.logfile)
-            log_content = self.indent + self.indent.join(log_content.splitlines(True))
+            log_content = textwrap.indent(log_content, self.indent)
             text += self.detail_profile.fmt(log_content)
             text += '\n'
             text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
