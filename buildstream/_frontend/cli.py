@@ -690,7 +690,13 @@ def workspace_reset(app, track_, all_, elements, no_cache):
         if all_:
             elements = tuple(element_name for element_name, _ in app.project.workspaces.list())
 
+<<<<<<< HEAD
         app.stream.workspace_reset(elements, track_first=track_, no_cache)
+=======
+    with app.initialized(elements):
+        for target in app.pipeline.targets:
+            app.reset_workspace(target, track_, no_cache)
+>>>>>>> Original commit required additional functionality to test
 
 
 ##################################################################

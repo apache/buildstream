@@ -492,7 +492,6 @@ class App():
 
         self.close_workspace(target.name, True)
         self.open_workspace(target, workspace.path, False, track, False, no_cache)
->>>>>>> Original commit required additional functionality to test
 
     ############################################################
     #                      Local Functions                     #
