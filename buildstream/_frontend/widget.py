@@ -19,7 +19,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import datetime
 import os
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 from contextlib import ExitStack
 from mmap import mmap
 import re
@@ -326,6 +326,7 @@ class LogLine(Widget):
         super(LogLine, self).__init__(content_profile, format_profile)
 
         self.columns = []
+        self._failure_messages = defaultdict(list)
         self.success_profile = success_profile
         self.err_profile = err_profile
         self.detail_profile = detail_profile
@@ -389,6 +390,16 @@ class LogLine(Widget):
         self.logfile_widget.size_request(pipeline)
 
     def render(self, message):
+
+        # Track logfiles for later use
+        element_id = message.task_id or message.unique_id
+        if message.message_type in ERROR_MESSAGES and element_id is not None:
+            plugin = _plugin_lookup(element_id)
+            self._failure_messages[plugin].append(message)
+
+        return self._render(message)
+
+    def _render(self, message):
 
         # Render the column widgets first
         text = ''
