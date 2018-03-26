@@ -4,6 +4,7 @@ import re
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
+from buildstream._exceptions import ErrorDomain
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -79,3 +80,30 @@ def test_custom_logging(cli, tmpdir, datafiles):
 
     m = re.search("\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,,,SUCCESS,Checking sources", result.stderr)
     assert(m is not None)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_failed_build_listing(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_names = []
+    for i in range(3):
+        element_name = 'testfail-{}.bst'.format(i)
+        element_path = os.path.join('elements', element_name)
+        element = {
+            'kind': 'script',
+            'config': {
+                'commands': [
+                    'false'
+                ]
+            }
+        }
+        _yaml.dump(element, os.path.join(project, element_path))
+        element_names.append(element_name)
+    result = cli.run(project=project, args=['--on-error=continue', 'build'] + element_names)
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+
+    failure_heading_pos = re.search(r'^Failure Summary$', result.stderr, re.MULTILINE).start()
+    pipeline_heading_pos = re.search(r'^Pipeline Summary$', result.stderr, re.MULTILINE).start()
+    failure_summary_range = range(failure_heading_pos, pipeline_heading_pos)
+    assert all(m.start() in failure_summary_range and m.end() in failure_summary_range
+               for m in re.finditer(r'^\s+testfail-.\.bst.+?\s+Log file', result.stderr, re.MULTILINE))
