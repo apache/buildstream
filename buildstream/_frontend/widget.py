@@ -589,8 +589,19 @@ class LogLine(Widget):
         if scheduler.queues is None:
             return
 
-        text = self.content_profile.fmt("Pipeline Summary\n", bold=True)
+        text = ''
+
+        if self._failure_messages:
+            text += self.content_profile.fmt("Failure Summary\n", bold=True)
+            values = OrderedDict()
+
+            for element, messages in sorted(self._failure_messages.items(), key=lambda x: x[0].name):
+                values[element.name] = ''.join(self._render(v) for v in messages)
+            text += self.format_values(values, style_value=False)
+
+        text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
         values = OrderedDict()
+
         values['Total'] = self.content_profile.fmt(str(pipeline.total_elements))
         values['Session'] = self.content_profile.fmt(str(pipeline.session_elements))
 
