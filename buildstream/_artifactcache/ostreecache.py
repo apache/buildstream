@@ -162,6 +162,10 @@ class OSTreeCache(ArtifactCache):
 
         return modified, removed, added
 
+    def does_artifact_directory_exist(self, element, key, directory):
+        _, a, _ = self.repo.read_commit(self.get_artifact_fullname(element, key))
+        return bool(a.get_child(directory))
+
     def pull(self, element, key, *, progress=None):
         project = element._get_project()
 

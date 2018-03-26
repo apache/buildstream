@@ -1,0 +1,2 @@
+test:
+	touch test.o

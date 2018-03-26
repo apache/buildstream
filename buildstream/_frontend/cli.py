@@ -579,11 +579,13 @@ def workspace():
               help="Overwrite files existing in checkout directory")
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
+@click.option('--no-cache', 'no_cache', default=False, is_flag=True,
+              help="Use Cached build tree if available")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track_, element, directory):
+def workspace_open(app, no_checkout, force, track_, no_cache, element, directory):
     """Open a workspace for manual source modification"""
 
     if os.path.exists(directory):
@@ -600,7 +602,8 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
         app.stream.workspace_open(element, directory,
                                   no_checkout=no_checkout,
                                   track_first=track_,
-                                  force=force)
+                                  force=force,
+                                  no_cache)
 
 
 ##################################################################
@@ -660,8 +663,7 @@ def workspace_close(app, remove_dir, all_, elements):
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_reset(app, track_, all_, element, no_cache):
-                type=click.Path(dir_okay=False, readable=True))
+def workspace_reset(app, track_, all_, elements, no_cache):
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
@@ -688,7 +690,7 @@ def workspace_reset(app, track_, all_, element, no_cache):
         if all_:
             elements = tuple(element_name for element_name, _ in app.project.workspaces.list())
 
-        app.stream.workspace_reset(elements, track_first=track_)
+        app.stream.workspace_reset(elements, track_first=track_, no_cache)
 
 
 ##################################################################

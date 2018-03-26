@@ -929,15 +929,14 @@ class Element(Plugin):
         return cls.__redundant_source_refs
 
     # _build_tree_path():
-    #    
+    #
     # Returns the path of the cached build tree if it exists
-    #    
-    def _build_tree_path(self):
-        build_tree_path = os.path.join(self.__extract()[0], 'buildtree')
-        if os.path.isdir(build_tree_path):
-            return build_tree_path
+    #
+    def _build_tree_path(self, key):
+        if self.__artifacts.does_artifact_directory_exist(self, key, "buildtree"):
+            return os.path.join(self.__extract()[0], 'buildtree')
         else:
-            return None 
+            return None
 
     # _reset_load_state()
     #
@@ -1492,7 +1491,7 @@ class Element(Plugin):
 
                 # Copy build tree contents
                 if self.get_variable('cache-build-tree'):
-                    sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root'))
+                    sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root').lstrip(os.sep))
                     if os.path.isdir(sandbox_build_dir):
                         shutil.copytree(sandbox_build_dir, os.path.join(assembledir, 'buildtree'))
 
