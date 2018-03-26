@@ -124,6 +124,10 @@ A regular way to do this is to add the following line to the end of your ``~/.ba
 
   export PATH=${PATH}:~/.local/bin
 
+.. note::
+
+   You will have to restart your terminal in order for these changes to take effect.
+
 
 Bash Completions
 ~~~~~~~~~~~~~~~~
