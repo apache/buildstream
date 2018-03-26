@@ -122,7 +122,7 @@ you need to ensure that ``PATH`` is adjusted.
 
 A regular way to do this is to add the following line to the end of your ``~/.bashrc``::
 
-  export PATH=${PATH}:~/.local/bin
+  export PATH="${PATH}:${HOME}/.local/bin"
 
 .. note::
 
