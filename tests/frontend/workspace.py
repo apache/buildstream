@@ -302,7 +302,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
                 "path": "/workspaces/bravo",
                 "last_successful": "some_key",
                 "running_files": {
-                    "beta.bst": set(["some_file"])
+                    "beta.bst": ["some_file"]
                 }
             }
         }
@@ -313,7 +313,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
                 "path": "/workspaces/bravo",
                 "last_successful": "some_key",
                 "running_files": {
-                    "beta.bst": set(["some_file"])
+                    "beta.bst": ["some_file"]
                 }
             }
         }

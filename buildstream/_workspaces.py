@@ -134,9 +134,11 @@ class Workspace():
     #
     def add_running_files(self, dep, files):
         if dep.name in self.running_files:
-            self.running_files[dep.name] |= set(files)
+            # ruamel.py cannot serialize sets in python3.4
+            to_add = set(files) - set(self.running_files[dep.name])
+            self.running_files[dep.name].extend(to_add)
         else:
-            self.running_files[dep.name] = set(files)
+            self.running_files[dep.name] = list(files)
 
     # clear_running_files()
     #
