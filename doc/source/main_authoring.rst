@@ -9,39 +9,15 @@ This section details how to use the BuildStream YAML format to
 create your own project or modify existing projects.
 
 
-Project format
---------------
-* :ref:`formatintro`
+.. toctree::
+   :maxdepth: 2
+   :caption: Project format
 
-  * :ref:`format_structure`
-  * :ref:`format_composition`
-  * :ref:`format_directives`
-
-* :ref:`projectconf`
-
-  * :ref:`project_essentials`
-  * :ref:`project_shell`
-  * :ref:`project_plugins`
-  * :ref:`project_options`
-  * :ref:`project_defaults`
-  * :ref:`project_builtin_defaults`
-
-* :ref:`format`
-
-  * :ref:`format_basics`
-  * :ref:`format_dependencies`
-  * :ref:`format_variables`
-
-* :ref:`public`
-
-  * :ref:`public_integration`
-  * :ref:`public_split_rules`
-  * :ref:`public_overlap_whitelist`
-
-* :ref:`projectrefs`
-
-  * :ref:`projectrefs_basics`
-  * :ref:`projectrefs_format`
+   formatintro
+   projectconf
+   format
+   public
+   projectrefs
 
 
 Plugins
