@@ -11,6 +11,8 @@ and work with existing BuildStream projects.
 For details on how to modify an existing BuildStream project or create
 a new one, refer to :ref:`main_authoring`.
 
-  
-* :ref:`invoking`
-* :ref:`config`
+.. toctree::
+   :maxdepth: 2
+
+   invoking
+   config
