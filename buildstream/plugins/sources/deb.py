@@ -46,7 +46,7 @@
 
 import tarfile
 from contextlib import contextmanager, ExitStack
-import arpy
+import arpy                                       # pylint: disable=import-error
 
 from .tar import TarSource
 
