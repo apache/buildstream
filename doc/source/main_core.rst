@@ -26,8 +26,9 @@ useful for working on BuildStream itself.
 * :mod:`Sandbox <buildstream.sandbox.sandbox>` - Build Sandbox
 * :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Internals
 
-Internals
----------
-* :ref:`cachekeys`
-* :ref:`sandboxing`
+   cachekeys
+   sandboxing
