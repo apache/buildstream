@@ -45,4 +45,5 @@ dependencies.
    :maxdepth: 2
    :caption: Contributing
 
+   resources
    HACKING
