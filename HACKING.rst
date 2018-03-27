@@ -243,12 +243,18 @@ difficult (or impossible) to do so, so there is a little bit of setup
 you need to take care of first.
 
 Before you can build the BuildStream documentation yourself, you need
-to first install ``sphinx`` and ``sphinx-click``, using pip or some
-other mechanism::
+to first install ``sphinx`` along with some additional plugins and dependencies,
+using pip or some other mechanism::
 
+  # Install sphinx
   pip3 install --user sphinx
+
+  # Install some sphinx extensions
   pip3 install --user sphinx-click
   pip3 install --user sphinx_rtd_theme
+
+  # Additional optional dependencies required
+  pip3 install --user arpy
 
 Furthermore, the documentation build requires that BuildStream itself
 be installed.
