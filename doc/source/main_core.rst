@@ -1,4 +1,3 @@
-:orphan:
 
 
 .. _main_core:
