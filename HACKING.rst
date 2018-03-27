@@ -137,6 +137,12 @@ other mechanism::
 Furthermore, the documentation build requires that BuildStream itself
 be installed.
 
+You will also need any dependencies required for plugins, even if
+these aren't otherwise hard dependencies. This currently applies to
+``arpy``::
+
+  pip install --user arpy
+
 To build the documentation, just run the following::
 
   make -C doc
