@@ -162,6 +162,8 @@ class Pipeline():
 
         # Now resolve the cache keys once tracking elements have been resolved
         self._resolve_cache_keys()
+        self._artifacts.set_required_artifacts((e for e in self.dependencies(Scope.ALL)
+                                                if e._cached()))
 
     # cleanup()
     #

@@ -120,6 +120,11 @@ class OSTreeCache(ArtifactCache):
         # correct number of artifacts.
         self.__cache_size -= _ostree.remove(self.repo, ref, defer_prune=False)
 
+    def update_atime(self, element, key):
+        ref = self.get_artifact_fullname(element, key)
+        ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+        os.utime(ref_file)
+
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
 
@@ -167,9 +172,7 @@ class OSTreeCache(ArtifactCache):
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 
-        for ref in refs:
-            ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
-            os.utime(ref_file)
+        self.set_required_artifacts([element])
 
         self.__cache_size = None
 
@@ -212,6 +215,7 @@ class OSTreeCache(ArtifactCache):
             raise ArtifactError("Failed to pull artifact for element {}: {}"
                                 .format(element.name, e)) from e
 
+        self.set_required_artifacts([element])
         self.__cache_size = None
 
     def link_key(self, element, oldkey, newkey):

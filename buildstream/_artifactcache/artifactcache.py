@@ -22,6 +22,7 @@ import os
 import string
 from collections import Mapping, namedtuple
 
+from ..element import _KeyStrength
 from .._exceptions import ArtifactError, ImplError, LoadError, LoadErrorReason
 from .. import utils
 from .. import _yaml
@@ -111,6 +112,7 @@ def configured_remote_artifact_cache_specs(context, project):
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
+        self.required_artifacts = set()
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.max_size = context.cache_quota
 
@@ -172,6 +174,34 @@ class ArtifactCache():
         else:
             self.project_remote_specs[project] = remote_specs
 
+    # set_required_artifacts():
+    #
+    # Set a set of artifacts required for the current run. These
+    # artifacts will be locked by the artifact cache and not touched
+    # for the duration of the current pipeline.
+    #
+    # Args:
+    #     artifacts (iterable): A set of artifacts to mark as required
+    #
+    def set_required_artifacts(self, artifacts):
+        # We lock both strong and weak keys - deleting one but not the
+        # other won't save space in most cases anyway, but would be a
+        # user iconvenience.
+
+        for artifact in artifacts:
+            strong_key = artifact._get_cache_key(strength=_KeyStrength.STRONG)
+            weak_key = artifact._get_cache_key(strength=_KeyStrength.WEAK)
+
+            for key in (strong_key, weak_key):
+                if key and self.contains(artifact, key):
+                    self.required_artifacts.add(key)
+
+                    # We also update the usage times of any artifacts
+                    # we will be using, which helps preventing a
+                    # buildstream process that runs in parallel with
+                    # this one from removing artifacts in-use.
+                    self.update_atime(artifact, key)
+
     # _commit():
     #
     # Internal method for calling abstract commit() method.  This will
@@ -205,7 +235,21 @@ class ArtifactCache():
         while self.max_size and artifact_size + self.get_cache_size() > self.max_size:
             if artifacts is None:
                 artifacts = self.list_artifacts()
-            self.remove(artifacts.pop(0))
+
+            # We can't guard the cache against a situation in which
+            # too many cached elements are required for the current
+            # build, causing any non-required elements to be expired.
+            #
+            # This is because we cannot know ahead of time how much
+            # size is in required artifacts.
+            try:
+                to_remove = artifacts.pop(0)
+            except IndexError:
+                raise ArtifactError("The artifact is too large for the cache with current restrictions.")
+
+            key = to_remove.rpartition('/')[2]
+            if key not in self.required_artifacts:
+                self.remove(to_remove)
 
         self.commit(element, content, keys)
 
@@ -259,6 +303,18 @@ class ArtifactCache():
     #
     def remove(self, ref):
         raise ImplError("Cache '{kind}' does not implement remove()"
+                        .format(kind=type(self).__name__))
+
+    # update_atime():
+    #
+    # Update the access time of an element.
+    #
+    # Args:
+    #     element (Element): The Element to mark
+    #     key (str): The cache key to use
+    #
+    def update_atime(self, element, key):
+        raise ImplError("Cache '{kind}' does not implement update_atime()"
                         .format(kind=type(self).__name__))
 
     # extract():

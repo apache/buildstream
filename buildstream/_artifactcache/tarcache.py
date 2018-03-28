@@ -87,7 +87,19 @@ class TarCache(ArtifactCache):
                 _Tar.archive(os.path.join(self.tardir, ref), key, temp)
 
             self.__cache_size = None
-            os.utime(os.path.join(self.tardir, ref))
+            self.set_required_artifacts([element])
+
+    # update_atime():
+    #
+    # Update the access time of an element.
+    #
+    # Args:
+    #     element (Element): The Element to mark
+    #     key (str): The cache key to use
+    #
+    def update_atime(self, element, key):
+        path = _tarpath(element, key)
+        os.utime(os.path.join(self.tardir, path))
 
     def extract(self, element, key):
 
