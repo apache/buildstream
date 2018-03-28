@@ -166,6 +166,16 @@ class Project():
         config.pop('elements', None)
         config.pop('sources', None)
         _yaml.node_final_assertions(config)
+
+        # Assert project's format version early, before validating toplevel keys
+        format_version = _yaml.node_get(config, int, 'format-version')
+        if BST_FORMAT_VERSION < format_version:
+            major, minor = utils.get_bst_version()
+            raise LoadError(
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+                "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
+                .format(format_version, major, minor, BST_FORMAT_VERSION))
+
         _yaml.node_validate(config, [
             'format-version',
             'element-path', 'variables',
@@ -220,15 +230,6 @@ class Project():
 
         # Workspace configurations
         self._workspaces = Workspaces(self)
-
-        # Assert project version
-        format_version = _yaml.node_get(config, int, 'format-version')
-        if BST_FORMAT_VERSION < format_version:
-            major, minor = utils.get_bst_version()
-            raise LoadError(
-                LoadErrorReason.UNSUPPORTED_PROJECT,
-                "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
-                .format(format_version, major, minor, BST_FORMAT_VERSION))
 
         # Plugin origins and versions
         origins = _yaml.node_get(config, list, 'plugins', default_value=[])
