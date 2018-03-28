@@ -21,6 +21,7 @@ import os
 import string
 from collections import Mapping, namedtuple
 
+from ..element import _KeyStrength
 from .._exceptions import ArtifactError, ImplError, LoadError, LoadErrorReason
 from .._message import Message, MessageType
 from .. import utils
@@ -61,6 +62,7 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push')):
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
+        self.required_artifacts = set()
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.max_size = context.cache_quota
         self.estimated_size = None
@@ -165,6 +167,38 @@ class ArtifactCache():
                                   (str(provenance)))
         return cache_specs
 
+    # append_required_artifacts():
+    #
+    # Append to the list of elements whose artifacts are required for
+    # the current run. Artifacts whose elements are in this list will
+    # be locked by the artifact cache and not touched for the duration
+    # of the current pipeline.
+    #
+    # Args:
+    #     elements (iterable): A set of elements to mark as required
+    #
+    def append_required_artifacts(self, elements):
+        # We lock both strong and weak keys - deleting one but not the
+        # other won't save space in most cases anyway, but would be a
+        # user inconvenience.
+
+        for element in elements:
+            strong_key = element._get_cache_key(strength=_KeyStrength.STRONG)
+            weak_key = element._get_cache_key(strength=_KeyStrength.WEAK)
+
+            for key in (strong_key, weak_key):
+                if key and key not in self.required_artifacts:
+                    self.required_artifacts.add(key)
+
+                    # We also update the usage times of any artifacts
+                    # we will be using, which helps preventing a
+                    # buildstream process that runs in parallel with
+                    # this one from removing artifacts in-use.
+                    try:
+                        self.update_atime(element, key)
+                    except FileNotFoundError:
+                        pass
+
     # clean():
     #
     # Clean the artifact cache as much as possible.
@@ -193,7 +227,9 @@ class ArtifactCache():
                 else:
                     break
 
-            self.remove(to_remove)
+            key = to_remove.rpartition('/')[2]
+            if key not in self.required_artifacts:
+                self.remove(to_remove)
 
         # This should be O(1) if implemented correctly
         return self.calculate_cache_size()
@@ -280,6 +316,18 @@ class ArtifactCache():
     #
     def remove(self, artifact_name):
         raise ImplError("Cache '{kind}' does not implement remove()"
+                        .format(kind=type(self).__name__))
+
+    # update_atime():
+    #
+    # Update the access time of an element.
+    #
+    # Args:
+    #     element (Element): The Element to mark
+    #     key (str): The cache key to use
+    #
+    def update_atime(self, element, key):
+        raise ImplError("Cache '{kind}' does not implement update_atime()"
                         .format(kind=type(self).__name__))
 
     # extract():

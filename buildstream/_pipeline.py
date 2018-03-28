@@ -159,6 +159,8 @@ class Pipeline():
                 # Determine initial element state.
                 element._update_state()
 
+            self._artifacts.append_required_artifacts((e for e in self.dependencies(targets, Scope.ALL)))
+
     # dependencies()
     #
     # Generator function to iterate over elements and optionally

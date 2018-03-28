@@ -103,6 +103,11 @@ class OSTreeCache(ArtifactCache):
         # correct number of artifacts.
         self.cache_size -= _ostree.remove(self.repo, artifact_name, defer_prune=False)
 
+    def update_atime(self, element, key):
+        ref = self.get_artifact_fullname(element, key)
+        ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+        os.utime(ref_file)
+
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
 
@@ -150,9 +155,7 @@ class OSTreeCache(ArtifactCache):
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 
-        for ref in refs:
-            ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
-            os.utime(ref_file)
+        self.append_required_artifacts([element])
 
         self.cache_size = None
 
@@ -189,6 +192,9 @@ class OSTreeCache(ArtifactCache):
                 # fetch the artifact from highest priority remote using the specified cache key
                 remote_name = self._ensure_remote(self.repo, remote.pull_url)
                 _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
+
+                self.append_required_artifacts([element])
+
                 return True
             except OSTreeError:
                 # Try next remote

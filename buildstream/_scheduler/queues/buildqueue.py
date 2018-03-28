@@ -72,6 +72,8 @@ class BuildQueue(Queue):
             # Inform element in main process that assembly is done
             element._assemble_done()
 
+        # This has to be done after _assemble_done, such that the
+        # element may register its cache key as required
         self._check_cache_size(job, element)
 
         return True

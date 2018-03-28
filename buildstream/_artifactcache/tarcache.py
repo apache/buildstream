@@ -86,7 +86,7 @@ class TarCache(ArtifactCache):
                 _Tar.archive(os.path.join(self.tardir, ref), key, temp)
 
             self.cache_size = None
-            os.utime(os.path.join(self.tardir, ref))
+            self.append_required_artifacts([element])
 
     # update_atime():
     #

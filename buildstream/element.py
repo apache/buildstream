@@ -1398,6 +1398,16 @@ class Element(Plugin):
             workspace.clear_running_files()
             self._get_context().get_workspaces().save_config()
 
+            # We also need to update the required artifacts, since
+            # workspaced dependencies do not have a fixed cache key
+            # when the build starts.
+            #
+            # This does *not* cause a race condition, because
+            # _assemble_done is called before a cleanup job may be
+            # launched.
+            #
+            self.__artifacts.append_required_artifacts([self])
+
     # _assemble():
     #
     # Internal method for running the entire build phase.
