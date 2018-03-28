@@ -1220,7 +1220,7 @@ class Element(Plugin):
                 }
                 _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
 
-                with self.timed_activity("Caching Artifact"):
+                with self.timed_activity("Caching artifact"):
                     self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
 
             # Finally cleanup the build dir
@@ -1308,7 +1308,7 @@ class Element(Plugin):
             self.warn("Not pushing tainted artifact.")
             return False
 
-        with self.timed_activity("Pushing Artifact"):
+        with self.timed_activity("Pushing artifact"):
             # Push all keys used for local commit
             return self.__artifacts.push(self, self.__get_cache_keys_for_commit())
 

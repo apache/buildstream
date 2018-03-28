@@ -159,7 +159,7 @@ class Result():
         return list(tracked)
 
     def get_pushed_elements(self):
-        pushed = re.findall(r'\[\s*push:(\S+)\s*\]\s*START\s*Pushing Artifact', self.stderr)
+        pushed = re.findall(r'\[\s*push:(\S+)\s*\]\s*START\s*Pushing artifact', self.stderr)
         if pushed is None:
             return []
 
