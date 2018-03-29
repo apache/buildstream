@@ -33,6 +33,7 @@ import click
 import gi
 
 from .. import _signals  # nopep8
+from .. import utils
 
 gi.require_version('OSTree', '1.0')
 # pylint: disable=wrong-import-position,wrong-import-order
@@ -153,6 +154,7 @@ class PushMessageWriter(object):
         for ref in refs:
             _, checksum = repo.resolve_rev(ref, True)
             if checksum:
+                # Returns true if the repo contains the object
                 _, has_object = repo.has_object(OSTree.ObjectType.COMMIT, ref, None)
                 if has_object:
                     ref_map[ref] = checksum
@@ -316,7 +318,15 @@ class PushMessageReader(object):
 
 
 def parse_remote_location(remotepath):
-    """Parse remote artifact cache URL that's been specified in our config."""
+    """Parse remote artifact cache URL that's been specified in our config.
+    Example cache: ssh://artifacts@localhost:22200/artifacts
+    scheme: ssh
+    hostname: localhost
+    username: artifacts
+    path: /artifacts
+    port: 22200
+    """
+
     remote_host = remote_user = remote_repo = None
 
     url = urlparse(remotepath, scheme='file')
@@ -349,7 +359,21 @@ def parse_remote_location(remotepath):
     return remote_host, remote_user, remote_repo, remote_port
 
 
+# ssh_commandline()
+#
+# Obtain the ssh command to connect to the remote host
+#
+# Args:
+#  remote_host: The hostname of the remote
+#  remote_user: Username of the remote
+#  remote_port: The port (defaults to 22)
+#
+# Returns:
+#  A list of strings representing an ssh command when concatenated
+#  e.g. "ssh -l username -p port hostname"
+#
 def ssh_commandline(remote_host, remote_user=None, remote_port=22):
+
     if remote_host is None:
         return []
 
@@ -410,6 +434,8 @@ class OSTreePusher(object):
             self.repo = OSTree.Repo.new(Gio.File.new_for_path(self.repopath))
         self.repo.open(None)
 
+        # Obtain dictionary of refspecs to checksums for the client side repo
+        #  refspec = {project}/{element}/{cache_key}
         # Enumerate branches to push
         if branches is None:
             _, self.refs = self.repo.list_refs(None, None)
@@ -430,6 +456,8 @@ class OSTreePusher(object):
         if not self.remote_host:
             ssh_cmd += ['--pull-url', self.remote_repo]
         ssh_cmd += [self.remote_repo]
+        # We now have:
+        # ssh -l username -p port hostname bst-artifact-receive --verbose --debug repo_path
 
         logging.info('Executing {}'.format(' '.join(ssh_cmd)))
 
@@ -444,29 +472,31 @@ class OSTreePusher(object):
         self.writer = PushMessageWriter(self.ssh.stdin)
         self.reader = PushMessageReader(self.ssh.stdout)
 
-    def needed_commits(self, remote, local, needed):
-        parent = local
-        if remote == '0' * 64:
+    def needed_commits(self, remote_refs, local_refs, needed):
+        parent = local_refs
+        if remote_refs == '0' * 64:
             # Nonexistent remote branch, use None for convenience
-            remote = None
-        while parent != remote:
+            remote_refs = None
+        while parent != remote_refs:
             needed.add(parent)
+            # load_variant_if_exists() returns: (bool, out_variant: Glib.Variant)
             _, commit = self.repo.load_variant_if_exists(OSTree.ObjectType.COMMIT,
                                                          parent)
             if commit is None:
                 raise PushException('Shallow history from commit {} does '
-                                    'not contain remote commit {}'.format(local, remote))
+                                    'not contain remote commit {}'.format(local_refs, remote_refs))
             parent = OSTree.commit_get_parent(commit)
             if parent is None:
                 break
-        if remote is not None and parent != remote:
+        if remote_refs is not None and parent != remote_refs:
             self.writer.send_done()
             raise PushExistsException('Remote commit {} not descendent of '
-                                      'commit {}'.format(remote, local))
+                                      'commit {}'.format(remote_refs, local_refs))
 
     def needed_objects(self, commits):
         objects = set()
         for rev in commits:
+            # traverse_commit() returns: (bool, outreachable: {Glib.Variant: Glib.Variant})
             _, reachable = self.repo.traverse_commit(rev, 0, None)
             for obj in reachable:
                 objname = OSTree.object_to_string(obj[0], obj[1])
@@ -502,13 +532,21 @@ class OSTreePusher(object):
 
         # Receive remote info
         logging.info('Receiving repository information')
+
+        # args is a dictionary with keys "mode" and refs"
+        # "mode": BARE=0 (Files are stored as themselves)or ARCHIVE=1
+        # (files are compressed).
+        # "refs" A dict of refs to checksums
         args = self.reader.receive_info()
         remote_mode = args['mode']
         if remote_mode != OSTree.RepoMode.ARCHIVE_Z2:
             raise PushException('Can only push to archive-z2 repos')
         remote_refs = args['refs']
         for branch, rev in self.refs.items():
+            #check if the ref is in remote_refs then get its checksum, if not, return 64 0's
             remote_rev = remote_refs.get(branch, '0' * 64)
+
+            # If the checksums aren't equal, add the two checksums as a tuple
             if rev != remote_rev:
                 update_refs[branch] = remote_rev, rev
         if not update_refs:
@@ -533,6 +571,7 @@ class OSTreePusher(object):
         for branch, revs in update_refs.items():
             logging.info('Updating {} {} to {}'.format(branch, revs[0], revs[1]))
             try:
+                # This function will populate commits with what is missing in the remote cache
                 self.needed_commits(revs[0], revs[1], commits)
                 ref_count += 1
             except PushExistsException:
@@ -571,6 +610,9 @@ class OSTreeReceiver(object):
 
         if self.repopath is None:
             self.repo = OSTree.Repo.new_default()
+            self.repopath = self.repo.get_path().get_path()
+            # NOTE: OSTree.Repo.get_path() returns a Gio.File
+            # Gio.File.get_path() returns a string
         else:
             self.repo = OSTree.Repo.new(Gio.File.new_for_path(self.repopath))
         self.repo.open(None)
@@ -602,11 +644,22 @@ class OSTreeReceiver(object):
 
     def do_run(self):
         # Receive remote info
+        # args is a dictionary with keys "mode" and refs"
+        #  - mode is OSTree.RepoMode, which is a BARE=0 (files stored as themselves)
+        #  or ARCHIVE=1 (files are compressed, should be owned by non-root) enum.
+        #  we can only push to archive-z2 repos which is what we use on the server side
+        #  - refs is a dictionary of refs to checksums
         args = self.reader.receive_info()
-        remote_refs = args['refs']
 
-        # Send info back
-        self.writer.send_info(self.repo, list(remote_refs.keys()),
+        # args['refs'] is a dict of refs to checksums
+        # These are refs received from the client.
+        remote_ref_map = args['refs']
+
+        # Send info back to the client
+        # We have the clients ref map. Now let's use this info to
+        # generate the ref_map with the SAME refs but using the
+        # server repo.
+        self.writer.send_info(self.repo, list(remote_ref_map.keys()),
                               pull_url=self.pull_url)
 
         # Wait for update or done command
@@ -627,6 +680,9 @@ class OSTreeReceiver(object):
             return 0
 
         # Receive the actual objects
+        # This is just a list of the files that HAVE already been received
+        # It contains the check sums as we read the file names
+        # from a tar stream of ostree objects (who's filename is the hash)
         received_objects = self.reader.receive_putobjects(self.repo)
 
         # Ensure that pusher has sent all objects
@@ -635,6 +691,9 @@ class OSTreeReceiver(object):
         # If we didn't get any objects, we're done
         if not received_objects:
             return 0
+
+        # Determine size of remote repo
+        reposize = utils.get_dir_size(self.repopath)
 
         # Got all objects, move them to the object store
         for obj in received_objects:
