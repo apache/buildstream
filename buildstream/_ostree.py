@@ -47,6 +47,8 @@ class OSTreeError(BstError):
 
 # ensure()
 #
+# Ensure that we have an instance of an OSTree.Repo object
+#
 # Args:
 #    path (str): The file path to where the desired repo should be
 #    compress (bool): use compression or not when creating
