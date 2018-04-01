@@ -549,7 +549,7 @@ class LogLine(Widget):
         text += '\n'
 
         # Separator line before following output
-        text += self.format_profile.fmt("~" * 79 + '\n')
+        text += self.format_profile.fmt("=" * 79 + '\n')
 
         click.echo(text, color=styling, nl=False, err=True)
         if log_file:
