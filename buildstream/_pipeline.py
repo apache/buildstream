@@ -379,22 +379,11 @@ class Pipeline():
 
         self.assert_junction_tracking(dependencies, build=False)
 
-        self.message(MessageType.START, "Starting track")
-        elapsed, status = scheduler.run([track])
-        changed = len(track.processed_elements)
-
+        _, status = scheduler.run([track])
         if status == SchedStatus.ERROR:
-            self.message(MessageType.FAIL, "Track failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
-            self.message(MessageType.WARN,
-                         "Terminated after updating {} source references".format(changed),
-                         elapsed=elapsed)
-            raise PipelineError()
-        else:
-            self.message(MessageType.SUCCESS,
-                         "Updated {} source references".format(changed),
-                         elapsed=elapsed)
+            raise PipelineError(terminated=True)
 
     # fetch()
     #
@@ -430,22 +419,11 @@ class Pipeline():
             fetch.enqueue(plan)
             queues = [fetch]
 
-        self.message(MessageType.START, "Fetching {} elements".format(len(plan)))
-        elapsed, status = scheduler.run(queues)
-        fetched = len(fetch.processed_elements)
-
+        _, status = scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            self.message(MessageType.FAIL, "Fetch failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
-            self.message(MessageType.WARN,
-                         "Terminated after fetching {} elements".format(fetched),
-                         elapsed=elapsed)
-            raise PipelineError()
-        else:
-            self.message(MessageType.SUCCESS,
-                         "Fetched {} elements".format(fetched),
-                         elapsed=elapsed)
+            raise PipelineError(terminated=True)
 
     def get_elements_to_track(self, track_targets):
         planner = Planner()
@@ -526,17 +504,11 @@ class Pipeline():
 
         self.session_elements = len(track_plan) + len(plan)
 
-        self.message(MessageType.START, "Starting build")
-        elapsed, status = scheduler.run(queues)
-
+        _, status = scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            self.message(MessageType.FAIL, "Build failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
-            self.message(MessageType.WARN, "Terminated", elapsed=elapsed)
-            raise PipelineError()
-        else:
-            self.message(MessageType.SUCCESS, "Build Complete", elapsed=elapsed)
+            raise PipelineError(terminated=True)
 
     # checkout()
     #
@@ -646,20 +618,11 @@ class Pipeline():
         if queues:
             queues[0].enqueue(plan)
 
-            elapsed, status = scheduler.run(queues)
-            fetched = len(fetch.processed_elements)
-
+            _, status = scheduler.run(queues)
             if status == SchedStatus.ERROR:
-                self.message(MessageType.FAIL, "Tracking failed", elapsed=elapsed)
                 raise PipelineError()
             elif status == SchedStatus.TERMINATED:
-                self.message(MessageType.WARN,
-                             "Terminated after fetching {} elements".format(fetched),
-                             elapsed=elapsed)
-                raise PipelineError()
-            else:
-                self.message(MessageType.SUCCESS,
-                             "Fetched {} elements".format(fetched), elapsed=elapsed)
+                raise PipelineError(terminated=True)
 
         if not no_checkout and target._consistency() != Consistency.CACHED:
             raise PipelineError("Could not stage uncached source. " +
@@ -767,22 +730,11 @@ class Pipeline():
         pull.enqueue(plan)
         queues = [pull]
 
-        self.message(MessageType.START, "Pulling {} artifacts".format(len(plan)))
-        elapsed, status = scheduler.run(queues)
-        pulled = len(pull.processed_elements)
-
+        _, status = scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            self.message(MessageType.FAIL, "Pull failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
-            self.message(MessageType.WARN,
-                         "Terminated after pulling {} elements".format(pulled),
-                         elapsed=elapsed)
-            raise PipelineError()
-        else:
-            self.message(MessageType.SUCCESS,
-                         "Pulled {} complete".format(pulled),
-                         elapsed=elapsed)
+            raise PipelineError(terminated=True)
 
     # push()
     #
@@ -805,22 +757,11 @@ class Pipeline():
         push.enqueue(plan)
         queues = [push]
 
-        self.message(MessageType.START, "Pushing {} artifacts".format(len(plan)))
-        elapsed, status = scheduler.run(queues)
-        pushed = len(push.processed_elements)
-
+        _, status = scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            self.message(MessageType.FAIL, "Push failed", elapsed=elapsed)
             raise PipelineError()
         elif status == SchedStatus.TERMINATED:
-            self.message(MessageType.WARN,
-                         "Terminated after pushing {} elements".format(pushed),
-                         elapsed=elapsed)
-            raise PipelineError()
-        else:
-            self.message(MessageType.SUCCESS,
-                         "Pushed {} complete".format(pushed),
-                         elapsed=elapsed)
+            raise PipelineError(terminated=True)
 
     # remove_elements():
     #

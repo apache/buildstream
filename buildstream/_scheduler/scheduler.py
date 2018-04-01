@@ -51,6 +51,7 @@ class SchedStatus():
 #
 # Args:
 #    context: The Context in the parent scheduling process
+#    start_time: The time at which the session started
 #    interrupt_callback: A callback to handle ^C
 #    ticker_callback: A callback call once per second
 #    job_start_callback: A callback call when each job starts
@@ -59,6 +60,7 @@ class SchedStatus():
 class Scheduler():
 
     def __init__(self, context,
+                 start_time,
                  interrupt_callback=None,
                  ticker_callback=None,
                  job_start_callback=None,
@@ -70,7 +72,7 @@ class Scheduler():
         self.job_complete_callback = job_complete_callback
         self.context = context
         self.queues = None
-        self.starttime = None
+        self.starttime = start_time
         self.suspendtime = None
 
         # Initialize task tokens with the number allowed by
@@ -101,8 +103,6 @@ class Scheduler():
     # an error arises
     #
     def run(self, queues):
-
-        self.starttime = datetime.datetime.now()
 
         # Attach the queues
         self.queues = queues

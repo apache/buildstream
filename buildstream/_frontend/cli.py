@@ -3,7 +3,7 @@ import sys
 
 import click
 from .. import _yaml
-from .._exceptions import BstError, PipelineError, LoadError
+from .._exceptions import BstError, LoadError
 from ..__version__ import __version__ as build_stream_version
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
@@ -201,17 +201,10 @@ def build(app, elements, all_, track_, track_save, track_all, track_except):
     if track_:
         rewritable = True
 
-    app.initialize(elements, except_=track_except, rewritable=rewritable,
-                   use_configured_remote_caches=True, track_elements=track_,
-                   fetch_subprojects=True)
-    app.print_heading()
-    try:
+    with app.initialized(elements, session_name="Build", except_=track_except, rewritable=rewritable,
+                         use_configured_remote_caches=True, track_elements=track_,
+                         fetch_subprojects=True):
         app.pipeline.build(app.scheduler, all_, track_)
-        app.print_summary()
-    except PipelineError as e:
-        app.print_error(e)
-        app.print_summary()
-        sys.exit(-1)
 
 
 ##################################################################
@@ -244,19 +237,11 @@ def fetch(app, elements, deps, track_, except_):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-
-    app.initialize(elements, except_=except_, rewritable=track_,
-                   track_elements=elements if track_ else None,
-                   fetch_subprojects=True)
-    try:
+    with app.initialized(elements, session_name="Fetch", except_=except_, rewritable=track_,
+                         track_elements=elements if track_ else None,
+                         fetch_subprojects=True):
         dependencies = app.pipeline.deps_elements(deps)
-        app.print_heading(deps=dependencies)
         app.pipeline.fetch(app.scheduler, dependencies, track_)
-        app.print_summary()
-    except PipelineError as e:
-        app.print_error(e)
-        app.print_summary()
-        sys.exit(-1)
 
 
 ##################################################################
@@ -285,17 +270,10 @@ def track(app, elements, deps, except_):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, except_=except_, rewritable=True, track_elements=elements,
-                   fetch_subprojects=True)
-    try:
+    with app.initialized(elements, session_name="Track", except_=except_, rewritable=True,
+                         track_elements=elements, fetch_subprojects=True):
         dependencies = app.pipeline.deps_elements(deps)
-        app.print_heading(deps=dependencies)
         app.pipeline.track(app.scheduler, dependencies)
-        app.print_summary()
-    except PipelineError as e:
-        app.print_error(e)
-        app.print_summary()
-        sys.exit(-1)
 
 
 ##################################################################
@@ -323,16 +301,10 @@ def pull(app, elements, deps, remote):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, use_configured_remote_caches=(remote is None),
-                   add_remote_cache=remote, fetch_subprojects=True)
-    try:
+    with app.initialized(elements, session_name="Pull", use_configured_remote_caches=(remote is None),
+                         add_remote_cache=remote, fetch_subprojects=True):
         to_pull = app.pipeline.deps_elements(deps)
         app.pipeline.pull(app.scheduler, to_pull)
-        app.print_summary()
-    except BstError as e:
-        app.print_error(e)
-        app.print_summary()
-        sys.exit(-1)
 
 
 ##################################################################
@@ -359,16 +331,11 @@ def push(app, elements, deps, remote):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    app.initialize(elements, use_configured_remote_caches=(remote is None),
-                   add_remote_cache=remote, fetch_subprojects=True)
-    try:
+    with app.initialized(elements, session_name="Push",
+                         use_configured_remote_caches=(remote is None),
+                         add_remote_cache=remote, fetch_subprojects=True):
         to_push = app.pipeline.deps_elements(deps)
         app.pipeline.push(app.scheduler, to_push)
-        app.print_summary()
-    except BstError as e:
-        app.print_error(e)
-        app.print_summary()
-        sys.exit(-1)
 
 
 ##################################################################
@@ -439,20 +406,17 @@ def show(app, elements, deps, except_, order, format_, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    app.initialize(elements, except_=except_, use_configured_remote_caches=downloadable)
-    try:
+    with app.initialized(elements, except_=except_, use_configured_remote_caches=downloadable):
+
         dependencies = app.pipeline.deps_elements(deps)
-    except PipelineError as e:
-        click.echo("{}".format(e), err=True)
-        sys.exit(-1)
+        if order == "alpha":
+            dependencies = sorted(dependencies)
 
-    if order == "alpha":
-        dependencies = sorted(dependencies)
+        if not format_:
+            format_ = app.context.log_element_format
 
-    if not format_:
-        format_ = app.context.log_element_format
+        report = app.logger.show_pipeline(dependencies, format_)
 
-    report = app.logger.show_pipeline(dependencies, format_)
     click.echo(report, color=app.colors)
 
 
@@ -498,7 +462,8 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
     else:
         scope = Scope.RUN
 
-    app.initialize((element,))
+    with app.initialized((element,)):
+        pass
 
     # Assert we have everything we need built.
     missing_deps = []
@@ -548,13 +513,8 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 def checkout(app, element, directory, force, integrate, hardlinks):
     """Checkout a built artifact to the specified directory
     """
-    app.initialize((element,))
-    try:
+    with app.initialized((element,)):
         app.pipeline.checkout(directory, force, integrate, hardlinks)
-        click.echo("", err=True)
-    except BstError as e:
-        app.print_error(e)
-        sys.exit(-1)
 
 
 ##################################################################
@@ -578,18 +538,12 @@ def checkout(app, element, directory, force, integrate, hardlinks):
 @click.pass_obj
 def source_bundle(app, target, force, directory,
                   track_, compression, except_):
-    """Produce a source bundle to be manually executed"""
-    app.initialize((target,), rewritable=track_, track_elements=[target] if track_ else None)
-    try:
+    """Produce a source bundle to be manually executed
+    """
+    with app.initialized((target,), rewritable=track_, track_elements=[target] if track_ else None):
         dependencies = app.pipeline.deps_elements('all')
-        app.print_heading(dependencies)
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track_,
                                    compression, directory)
-        click.echo("", err=True)
-    except BstError as e:
-        click.echo("", err=True)
-        click.echo("ERROR: {}".format(e), err=True)
-        sys.exit(-1)
 
 
 ##################################################################
@@ -618,13 +572,8 @@ def workspace():
 def workspace_open(app, no_checkout, force, track_, element, directory):
     """Open a workspace for manual source modification"""
 
-    app.initialize((element,), rewritable=track_, track_elements=[element] if track_ else None)
-    try:
+    with app.initialized((element,), rewritable=track_, track_elements=[element] if track_ else None):
         app.pipeline.open_workspace(app.scheduler, directory, no_checkout, track_, force)
-        click.echo("", err=True)
-    except BstError as e:
-        app.print_error(e)
-        sys.exit(-1)
 
 
 ##################################################################
@@ -639,24 +588,18 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
 def workspace_close(app, remove_dir, element):
     """Close a workspace"""
 
-    app.initialize((element,))
+    with app.initialized((element,)):
 
-    if app.pipeline.project._workspaces.get_workspace(app.pipeline.targets[0]) is None:
-        click.echo("ERROR: Workspace '{}' does not exist".format(element), err=True)
-        sys.exit(-1)
-
-    if app.interactive and remove_dir:
-        if not click.confirm('This will remove all your changes, are you sure?'):
-            click.echo('Aborting', err=True)
+        if app.pipeline.project._workspaces.get_workspace(app.pipeline.targets[0]) is None:
+            click.echo("ERROR: Workspace '{}' does not exist".format(element), err=True)
             sys.exit(-1)
 
-    try:
+        if app.interactive and remove_dir:
+            if not click.confirm('This will remove all your changes, are you sure?'):
+                click.echo('Aborting', err=True)
+                sys.exit(-1)
+
         app.pipeline.close_workspace(remove_dir)
-        click.echo("", err=True)
-    except BstError as e:
-        click.echo("", err=True)
-        click.echo("ERROR: {}".format(e), err=True)
-        sys.exit(-1)
 
 
 ##################################################################
@@ -672,19 +615,13 @@ def workspace_close(app, remove_dir, element):
 @click.pass_obj
 def workspace_reset(app, track_, no_checkout, element):
     """Reset a workspace to its original state"""
-    app.initialize((element,))
-    if app.interactive:
-        if not click.confirm('This will remove all your changes, are you sure?'):
-            click.echo('Aborting', err=True)
-            sys.exit(-1)
+    with app.initialized((element,)):
+        if app.interactive:
+            if not click.confirm('This will remove all your changes, are you sure?'):
+                click.echo('Aborting', err=True)
+                sys.exit(-1)
 
-    try:
         app.pipeline.reset_workspace(app.scheduler, track_, no_checkout)
-        click.echo("", err=True)
-    except BstError as e:
-        click.echo("", err=True)
-        click.echo("ERROR: {}".format(e), err=True)
-        sys.exit(-1)
 
 
 ##################################################################

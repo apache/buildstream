@@ -220,7 +220,7 @@ class ArtifactError(BstError):
 #
 class PipelineError(BstError):
 
-    def __init__(self, message=None, *, detail=None, reason=None):
+    def __init__(self, message=None, *, detail=None, reason=None, terminated=False):
 
         # The empty string should never appear to a user,
         # this only allows us to treat this internal error as
@@ -229,3 +229,5 @@ class PipelineError(BstError):
             message = ""
 
         super().__init__(message, detail=detail, domain=ErrorDomain.PIPELINE, reason=reason)
+
+        self.terminated = terminated
