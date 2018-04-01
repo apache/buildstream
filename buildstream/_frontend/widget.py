@@ -520,6 +520,7 @@ class LogLine(Widget):
         values["Source Mirrors"] = context.sourcedir
         values["Build Area"] = context.builddir
         values["Artifact Cache"] = context.artifactdir
+        values["Strict Build Plan"] = "Yes" if context.strict_build_plan else "No"
         values["Maximum Fetch Tasks"] = context.sched_fetchers
         values["Maximum Build Tasks"] = context.sched_builders
         values["Maximum Push Tasks"] = context.sched_pushers
