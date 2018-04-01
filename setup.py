@@ -20,6 +20,7 @@
 
 import os
 import shutil
+import subprocess
 import sys
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 4:
@@ -39,15 +40,45 @@ except ImportError:
 ##################################################################
 # Bubblewrap requirements
 ##################################################################
+REQUIRED_BWRAP_MAJOR = 0
+REQUIRED_BWRAP_MINOR = 1
+REQUIRED_BWRAP_PATCH = 2
+
+
+def exit_bwrap(reason):
+    print(reason +
+          "\nBuildStream requires Bubblewrap (bwrap) for"
+          " sandboxing the build environment. Install it using your package manager"
+          " (usually bwrap or bubblewrap)")
+    sys.exit(1)
+
+
+def bwrap_too_old(major, minor, patch):
+    if major < REQUIRED_BWRAP_MAJOR:
+        return True
+    elif major == REQUIRED_BWRAP_MAJOR:
+        if minor < REQUIRED_BWRAP_MINOR:
+            return True
+        elif minor == REQUIRED_BWRAP_MINOR:
+            return patch < REQUIRED_BWRAP_PATCH
+        else:
+            return False
+    else:
+        return False
+
+
 def assert_bwrap():
     platform = os.environ.get('BST_FORCE_BACKEND', '') or sys.platform
     if platform.startswith('linux'):
         bwrap_path = shutil.which('bwrap')
         if not bwrap_path:
-            print("Bubblewrap not found: BuildStream requires Bubblewrap (bwrap) for"
-                  " sandboxing the build environment. Install it using your package manager"
-                  " (usually bwrap or bubblewrap)")
-            sys.exit(1)
+            exit_bwrap("Bubblewrap not found")
+
+        version_bytes = subprocess.check_output([bwrap_path, "--version"]).split()[1]
+        version_string = str(version_bytes, "utf-8")
+        major, minor, patch = map(int, version_string.split("."))
+        if bwrap_too_old(major, minor, patch):
+            exit_bwrap("Bubblewrap too old")
 
 
 ##################################################################
