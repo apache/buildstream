@@ -11,6 +11,7 @@ BuildStream requires the following base system requirements:
 * ruamel.yaml python library
 * PyGObject introspection bindings
 * OSTree >= v2017.8 with introspection data
+* Bubblewrap >= 0.1.2 sandboxing tool
 
 If your system cannot provide the base system requirements for BuildStream,
 then we have some instructions which can help you get started
