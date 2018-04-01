@@ -273,7 +273,7 @@ class Workspaces():
                 for element, workspace in _yaml.node_items(self._workspaces)
             }
         }
-
+        os.makedirs(os.path.join(self._project.directory, ".bst"), exist_ok=True)
         _yaml.dump(_yaml.node_sanitize(config),
                    os.path.join(self._project.directory, ".bst", "workspaces.yml"))
 
@@ -291,15 +291,17 @@ class Workspaces():
     #        bravo.bst: /home/me/bravo
     #
     def __load_config(self):
-        os.makedirs(os.path.join(self._project.directory, ".bst"), exist_ok=True)
         workspace_file = os.path.join(self._project.directory, ".bst", "workspaces.yml")
         try:
-            open(workspace_file, "a").close()
-        except IOError as e:
-            raise LoadError(LoadErrorReason.MISSING_FILE,
-                            "Could not load workspace config: {}".format(e)) from e
+            node = _yaml.load(workspace_file)
+        except LoadError as e:
+            if e.reason == LoadErrorReason.MISSING_FILE:
+                # Return an empty dict if there was no workspace file
+                return {}
 
-        return _yaml.load(workspace_file)
+            raise
+
+        return node
 
     # __parse_workspace_config_format()
     #
