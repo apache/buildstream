@@ -203,8 +203,8 @@ class Workspace():
 class Workspaces():
     def __init__(self, project):
         self._project = project
-        workspace_config = self.__load_config()
-        self._workspaces = self.__parse_workspace_config(workspace_config)
+        workspace_config = self._load_config()
+        self._workspaces = self._parse_workspace_config(workspace_config)
 
     # _list_workspaces()
     #
@@ -290,7 +290,7 @@ class Workspaces():
     #        alpha.bst: /home/me/alpha
     #        bravo.bst: /home/me/bravo
     #
-    def __load_config(self):
+    def _load_config(self):
         workspace_file = os.path.join(self._project.directory, ".bst", "workspaces.yml")
         try:
             node = _yaml.load(workspace_file)
@@ -303,7 +303,7 @@ class Workspaces():
 
         return node
 
-    # __parse_workspace_config_format()
+    # _parse_workspace_config_format()
     #
     # If workspace config is in old-style format, i.e. it is using
     # source-specific workspaces, try to convert it to element-specific
@@ -317,7 +317,7 @@ class Workspaces():
     #
     # Raises: LoadError if there was a problem with the workspace config
     #
-    def __parse_workspace_config(self, workspaces):
+    def _parse_workspace_config(self, workspaces):
         version = _yaml.node_get(workspaces, int, "format-version", default_value=0)
 
         if version == 0:
