@@ -109,41 +109,20 @@ class App():
             # Set soft limit to hard limit
             resource.setrlimit(resource.RLIMIT_NOFILE, (limits[1], limits[1]))
 
-    # initialized()
+    # partially_initialized()
     #
-    # Context manager to initialize the application and optionally run a session
-    # within the context manager.
+    # Early stage initialization context manager which only initializes the
+    # Context, Project and the logger.
     #
-    # This context manager will take care of catching errors from within the
-    # context and report them consistently, so the CLI need not take care of
-    # reporting the errors and exiting with a consistent error status.
+    # partial initialization is useful for some contexts where we dont
+    # want to load the pipeline, such as executing workspace commands.
     #
     # Args:
-    #    elements (list of elements): The elements to load recursively
-    #    session_name (str): The name of the session, or None for no session
-    #    except_ (list of elements): The elements to except
-    #    rewritable (bool): Whether we should load the YAML files for roundtripping
-    #    use_configured_remote_caches (bool): Whether we should contact remotes
-    #    add_remote_cache (str): The URL for an explicitly mentioned remote cache
-    #    track_elements (list of elements): Elements which are to be tracked
     #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
     #                              loading process, if they are not yet locally cached
     #
-    # Note that the except_ argument may have a subtly different meaning depending
-    # on the activity performed on the Pipeline. In normal circumstances the except_
-    # argument excludes elements from the `elements` list. In a build session, the
-    # except_ elements are excluded from the tracking plan.
-    #
-    # If a session_name is provided, we treat the block as a session, and print
-    # the session header and summary, and time the main session from startup time.
-    #
     @contextmanager
-    def initialized(self, elements, *, session_name=None,
-                    except_=tuple(), rewritable=False,
-                    use_configured_remote_caches=False, add_remote_cache=None,
-                    track_elements=None, fetch_subprojects=False):
-        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
-
+    def partially_initialized(self, *, fetch_subprojects=False):
         directory = self.main_options['directory']
         config = self.main_options['config']
 
@@ -180,13 +159,6 @@ class App():
         if self.main_options.get('on_error') is not None:
             self.interactive_failures = False
 
-        # Create the application's scheduler
-        self.scheduler = Scheduler(self.context, self.session_start,
-                                   interrupt_callback=self.interrupt_handler,
-                                   ticker_callback=self.tick,
-                                   job_start_callback=self.job_started,
-                                   job_complete_callback=self.job_completed)
-
         # Create the logger right before setting the message handler
         self.logger = LogLine(
             self.content_profile,
@@ -207,72 +179,123 @@ class App():
         # Propagate pipeline feedback to the user
         self.context._set_message_handler(self.message_handler)
 
-        if session_name:
-            self.message(MessageType.START, session_name)
-
         try:
             self.project = Project(directory, self.context, cli_options=self.main_options['option'])
         except BstError as e:
             click.echo("Error loading project: {}".format(e), err=True)
             sys.exit(-1)
 
-        try:
-            self.pipeline = Pipeline(self.context, self.project, elements, except_,
-                                     rewritable=rewritable)
-        except BstError as e:
-            click.echo("Error loading pipeline: {}".format(e), err=True)
-            sys.exit(-1)
-
-        # Create our status printer, only available in interactive
-        self.status = Status(self.content_profile, self.format_profile,
-                             self.success_profile, self.error_profile,
-                             self.pipeline, self.scheduler,
-                             colors=self.colors)
-
-        # Initialize pipeline
-        try:
-            self.pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
-                                     add_remote_cache=add_remote_cache,
-                                     track_elements=track_elements)
-        except BstError as e:
-            click.echo("Error initializing pipeline: {}".format(e), err=True)
-            sys.exit(-1)
-
-        # Pipeline is loaded, lets start displaying pipeline messages from tasks
-        self.logger.size_request(self.pipeline)
-
-        profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
-
-        # Print the heading
-        if session_name:
-            self.print_heading()
-
         # Run the body of the session here, once everything is loaded
         try:
             yield
-
-        # Catch the error outside of the session timer and summarize what happened
         except BstError as e:
-            elapsed = self.scheduler.elapsed_time()
-
-            if session_name:
-                if isinstance(e, PipelineError) and e.terminated:  # pylint: disable=no-member
-                    self.message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
-                else:
-                    self.message(MessageType.FAIL, session_name, elapsed=elapsed)
-
             self.print_error(e)
-
-            if session_name:
-                self.print_summary()
-
             sys.exit(-1)
 
-        # No exceptions occurred, print the summary
-        else:
+    # initialized()
+    #
+    # Context manager to initialize the application and optionally run a session
+    # within the context manager.
+    #
+    # This context manager will take care of catching errors from within the
+    # context and report them consistently, so the CLI need not take care of
+    # reporting the errors and exiting with a consistent error status.
+    #
+    # Args:
+    #    elements (list of elements): The elements to load recursively
+    #    session_name (str): The name of the session, or None for no session
+    #    except_ (list of elements): The elements to except
+    #    rewritable (bool): Whether we should load the YAML files for roundtripping
+    #    use_configured_remote_caches (bool): Whether we should contact remotes
+    #    add_remote_cache (str): The URL for an explicitly mentioned remote cache
+    #    track_elements (list of elements): Elements which are to be tracked
+    #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
+    #                              loading process, if they are not yet locally cached
+    #
+    # Note that the except_ argument may have a subtly different meaning depending
+    # on the activity performed on the Pipeline. In normal circumstances the except_
+    # argument excludes elements from the `elements` list. In a build session, the
+    # except_ elements are excluded from the tracking plan.
+    #
+    # If a session_name is provided, we treat the block as a session, and print
+    # the session header and summary, and time the main session from startup time.
+    #
+    @contextmanager
+    def initialized(self, elements, *, session_name=None,
+                    except_=tuple(), rewritable=False,
+                    use_configured_remote_caches=False, add_remote_cache=None,
+                    track_elements=None, fetch_subprojects=False):
+        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
+
+        # Start with the early stage init, this enables logging right away
+        with self.partially_initialized(fetch_subprojects=fetch_subprojects):
+
+            # Mark the beginning of the session
             if session_name:
-                self.message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
-                self.print_summary()
+                self.message(MessageType.START, session_name)
+
+            # Create the application's scheduler
+            self.scheduler = Scheduler(self.context, self.session_start,
+                                       interrupt_callback=self.interrupt_handler,
+                                       ticker_callback=self.tick,
+                                       job_start_callback=self.job_started,
+                                       job_complete_callback=self.job_completed)
+
+            try:
+                self.pipeline = Pipeline(self.context, self.project, elements, except_,
+                                         rewritable=rewritable)
+            except BstError as e:
+                click.echo("Error loading pipeline: {}".format(e), err=True)
+                sys.exit(-1)
+
+            # Create our status printer, only available in interactive
+            self.status = Status(self.content_profile, self.format_profile,
+                                 self.success_profile, self.error_profile,
+                                 self.pipeline, self.scheduler,
+                                 colors=self.colors)
+
+            # Initialize pipeline
+            try:
+                self.pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
+                                         add_remote_cache=add_remote_cache,
+                                         track_elements=track_elements)
+            except BstError as e:
+                click.echo("Error initializing pipeline: {}".format(e), err=True)
+                sys.exit(-1)
+
+            # Pipeline is loaded, now we can tell the logger about it
+            self.logger.size_request(self.pipeline)
+
+            profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
+
+            # Print the heading
+            if session_name:
+                self.print_heading()
+
+            # Run the body of the session here, once everything is loaded
+            try:
+                yield
+            except BstError as e:
+
+                # Catch the error and summarize what happened
+                elapsed = self.scheduler.elapsed_time()
+
+                if session_name:
+                    if isinstance(e, PipelineError) and e.terminated:  # pylint: disable=no-member
+                        self.message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
+                    else:
+                        self.message(MessageType.FAIL, session_name, elapsed=elapsed)
+
+                if session_name:
+                    self.print_summary()
+
+                # Let the outer context manager print the error and exit
+                raise
+            else:
+                # No exceptions occurred, print session time and summary
+                if session_name:
+                    self.message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
+                    self.print_summary()
 
     # Local message propagator
     #
