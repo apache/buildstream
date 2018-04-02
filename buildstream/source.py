@@ -625,15 +625,6 @@ class Source(Plugin):
     def _get_workspace(self):
         return self.__workspace.path
 
-    # Delete the workspace
-    #
-    # Note that this invalidates the workspace key.
-    #
-    def _del_workspace(self):
-        if self._has_workspace():
-            self.__workspace.invalidate_key()
-        self.__workspace = None
-
     # Whether the source has a set workspace
     #
     def _has_workspace(self):
