@@ -135,6 +135,26 @@ def test_close_removed(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_close_nonexistant_element(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
+    element_path = os.path.join(datafiles.dirname, datafiles.basename, 'elements', element_name)
+
+    # First brutally remove the element.bst file, ensuring that
+    # the element does not exist anymore in the project where
+    # we want to close the workspace.
+    os.remove(element_path)
+
+    # Close the workspace
+    result = cli.run(project=project, args=[
+        'workspace', 'close', '--remove-dir', element_name
+    ])
+    result.assert_success()
+
+    # Assert the workspace dir has been deleted
+    assert not os.path.exists(workspace)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
 def test_reset(cli, tmpdir, datafiles, kind):
     # Open the workspace
