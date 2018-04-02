@@ -78,7 +78,7 @@ def test_open(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_open_bzr(cli, tmpdir, datafiles):
+def test_open_bzr_customize(cli, tmpdir, datafiles):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "bzr", False)
 
     # Check that the .bzr dir exists
@@ -117,9 +117,8 @@ def test_close(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_close_removed(cli, tmpdir, datafiles, kind):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+def test_close_removed(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
     # Remove it first, closing the workspace should work
     shutil.rmtree(workspace)
@@ -155,10 +154,9 @@ def test_close_nonexistant_element(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_reset(cli, tmpdir, datafiles, kind):
+def test_reset(cli, tmpdir, datafiles):
     # Open the workspace
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
@@ -177,9 +175,8 @@ def test_reset(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_list(cli, tmpdir, datafiles, kind):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+def test_list(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
     # Now list the workspaces
     result = cli.run(project=project, args=[
