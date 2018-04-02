@@ -70,6 +70,7 @@ class ErrorDomain(Enum):
     PROG_NOT_FOUND = 12
     SOURCE = 10
     ELEMENT = 11
+    APP = 12
 
 
 # BstError is an internal base exception class for BuildSream
@@ -231,3 +232,12 @@ class PipelineError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.PIPELINE, reason=reason)
 
         self.terminated = terminated
+
+
+# AppError
+#
+# Raised from the frontend App directly
+#
+class AppError(BstError):
+    def __init__(self, message, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.APP, reason=reason)
