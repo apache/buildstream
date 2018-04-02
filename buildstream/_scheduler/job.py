@@ -210,7 +210,7 @@ class Job():
     def message(self, plugin, message_type, message, **kwargs):
         args = dict(kwargs)
         args['scheduler'] = True
-        self.scheduler.context._message(
+        self.scheduler.context.message(
             Message(plugin._get_unique_id(),
                     message_type,
                     message,
@@ -230,7 +230,7 @@ class Job():
         # Set the global message handler in this child
         # process to forward messages to the parent process
         self.queue = queue
-        self.scheduler.context._set_message_handler(self.child_message_handler)
+        self.scheduler.context.set_message_handler(self.child_message_handler)
 
         starttime = datetime.datetime.now()
         stopped_time = None
@@ -378,7 +378,7 @@ class Job():
             message.message_type = MessageType.WARN
 
         # Send to frontend if appropriate
-        if context._silent_messages() and (message.message_type not in unconditional_messages):
+        if context.silent_messages() and (message.message_type not in unconditional_messages):
             return
 
         if message.message_type == MessageType.LOG:
@@ -396,7 +396,7 @@ class Job():
         if envelope.message_type == 'message':
             # Propagate received messages from children
             # back through the context.
-            self.scheduler.context._message(envelope.message)
+            self.scheduler.context.message(envelope.message)
         elif envelope.message_type == 'error':
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state

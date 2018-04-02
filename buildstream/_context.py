@@ -50,9 +50,6 @@ class Context():
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
 
-        # Whether elements must be rebuilt when their dependencies have changed
-        self.strict_build_plan = None
-
         # The directory where various sources are stored
         self.sourcedir = None
 
@@ -100,6 +97,9 @@ class Context():
 
         # What to do when a build fails in non interactive mode
         self.sched_error_action = 'continue'
+
+        # Whether elements must be rebuilt when their dependencies have changed
+        self._strict_build_plan = None
 
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
@@ -209,27 +209,27 @@ class Context():
                             "{}: on-error should be one of: {}".format(
                                 provenance, ", ".join(valid_actions)))
 
-    # _add_project():
+    # add_project():
     #
     # Add a project to the context.
     #
     # Args:
     #    project (Project): The project to add
     #
-    def _add_project(self, project):
+    def add_project(self, project):
         self._projects.append(project)
 
-    # _get_projects():
+    # get_projects():
     #
     # Return the list of projects in the context.
     #
     # Returns:
     #    (list): The list of projects
     #
-    def _get_projects(self):
+    def get_projects(self):
         return self._projects
 
-    # _get_toplevel_project():
+    # get_toplevel_project():
     #
     # Return the toplevel project, the one which BuildStream was
     # invoked with as opposed to a junctioned subproject.
@@ -237,10 +237,10 @@ class Context():
     # Returns:
     #    (list): The list of projects
     #
-    def _get_toplevel_project(self):
+    def get_toplevel_project(self):
         return self._projects[0]
 
-    # _get_overrides():
+    # get_overrides():
     #
     # Fetch the override dictionary for the active project. This returns
     # a node loaded from YAML and as such, values loaded from the returned
@@ -252,10 +252,10 @@ class Context():
     # Returns:
     #    (Mapping): The overrides dictionary for the specified project
     #
-    def _get_overrides(self, project_name):
+    def get_overrides(self, project_name):
         return _yaml.node_get(self._project_overrides, Mapping, project_name, default_value={})
 
-    # _get_strict():
+    # get_strict():
     #
     # Fetch whether we are strict or not
     #
@@ -265,23 +265,23 @@ class Context():
     # Returns:
     #    (bool): Whether or not to use strict build plan
     #
-    def _get_strict(self, project_name):
+    def get_strict(self, project_name):
 
         # If it was set by the CLI, it overrides any config
-        if self.strict_build_plan is not None:
-            return self.strict_build_plan
+        if self._strict_build_plan is not None:
+            return self._strict_build_plan
 
-        overrides = self._get_overrides(project_name)
+        overrides = self.get_overrides(project_name)
         return _yaml.node_get(overrides, bool, 'strict', default_value=True)
 
-    # _get_cache_key():
+    # get_cache_key():
     #
     # Returns the cache key, calculating it if necessary
     #
     # Returns:
     #    (str): A hex digest cache key for the Context
     #
-    def _get_cache_key(self):
+    def get_cache_key(self):
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
@@ -289,35 +289,28 @@ class Context():
 
         return self._cache_key
 
-    # _set_message_handler()
+    # set_message_handler()
     #
     # Sets the handler for any status messages propagated through
     # the context.
     #
     # The message handler should have the same signature as
-    # the _message() method
-    def _set_message_handler(self, handler):
+    # the message() method
+    def set_message_handler(self, handler):
         self._message_handler = handler
 
-    # _push_message_depth() / _pop_message_depth()
+    # silent_messages():
     #
-    # For status messages, send the depth of timed
-    # activities inside a given task through the message
+    # Returns:
+    #    (bool): Whether messages are currently being silenced
     #
-    def _push_message_depth(self, silent_nested):
-        self._message_depth.appendleft(silent_nested)
-
-    def _pop_message_depth(self):
-        assert self._message_depth
-        self._message_depth.popleft()
-
-    def _silent_messages(self):
+    def silent_messages(self):
         for silent in self._message_depth:
             if silent:
                 return True
         return False
 
-    # _message():
+    # message():
     #
     # Proxies a message back to the caller, this is the central
     # point through which all messages pass.
@@ -325,7 +318,7 @@ class Context():
     # Args:
     #    message: A Message object
     #
-    def _message(self, message):
+    def message(self, message):
 
         # Tag message only once
         if message.depth is None:
@@ -339,7 +332,7 @@ class Context():
         self._message_handler(message, context=self)
         return
 
-    # _silence()
+    # silence()
     #
     # A context manager to silence messages, this behaves in
     # the same way as the `silent_nested` argument of the
@@ -347,14 +340,14 @@ class Context():
     # important messages will not be silenced.
     #
     @contextmanager
-    def _silence(self):
+    def silence(self):
         self._push_message_depth(True)
         try:
             yield
         finally:
             self._pop_message_depth()
 
-    # _timed_activity()
+    # timed_activity()
     #
     # Context manager for performing timed activities and logging those
     #
@@ -365,7 +358,7 @@ class Context():
     #    silent_nested (bool): If specified, nested messages will be silenced
     #
     @contextmanager
-    def _timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
+    def timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
 
         starttime = datetime.datetime.now()
         stopped_time = None
@@ -384,7 +377,7 @@ class Context():
             try:
                 # Push activity depth for status messages
                 message = Message(unique_id, MessageType.START, activity_name, detail=detail)
-                self._message(message)
+                self.message(message)
                 self._push_message_depth(silent_nested)
                 yield
 
@@ -394,13 +387,25 @@ class Context():
                 elapsed = datetime.datetime.now() - starttime
                 message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
                 self._pop_message_depth()
-                self._message(message)
+                self.message(message)
                 raise
 
             elapsed = datetime.datetime.now() - starttime
             message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
             self._pop_message_depth()
-            self._message(message)
+            self.message(message)
+
+    # _push_message_depth() / _pop_message_depth()
+    #
+    # For status messages, send the depth of timed
+    # activities inside a given task through the message
+    #
+    def _push_message_depth(self, silent_nested):
+        self._message_depth.appendleft(silent_nested)
+
+    def _pop_message_depth(self):
+        assert self._message_depth
+        self._message_depth.popleft()
 
     # Force the resolved XDG variables into the environment,
     # this is so that they can be used directly to specify

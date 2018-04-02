@@ -90,7 +90,7 @@ def artifact_cache_specs_from_config_node(config_node):
 #   A list of ArtifactCacheSpec instances describing the remote artifact caches.
 #
 def configured_remote_artifact_cache_specs(context, project):
-    project_overrides = context._get_overrides(project.name)
+    project_overrides = context.get_overrides(project.name)
     project_extra_specs = artifact_cache_specs_from_config_node(project_overrides)
 
     return list(utils._deduplicate(

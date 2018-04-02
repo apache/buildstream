@@ -163,7 +163,7 @@ class Pipeline():
             self.artifacts.set_remotes([ArtifactCacheSpec(add_remote_cache, push=True)])
             has_remote_caches = True
         if use_configured_remote_caches:
-            for project in self.context._get_projects():
+            for project in self.context.get_projects():
                 artifact_caches = configured_remote_artifact_cache_specs(self.context, project)
                 if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
                     self.artifacts.set_remotes(artifact_caches, project=project)
@@ -307,16 +307,16 @@ class Pipeline():
     #
     def message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self.context._message(
+        self.context.message(
             Message(None, message_type, message, **args))
 
     # Local timed activities, announces the jobs as well
     #
     @contextmanager
     def timed_activity(self, activity_name, *, detail=None, silent_nested=False):
-        with self.context._timed_activity(activity_name,
-                                          detail=detail,
-                                          silent_nested=silent_nested):
+        with self.context.timed_activity(activity_name,
+                                         detail=detail,
+                                         silent_nested=silent_nested):
             yield
 
     # Internal: Instantiates plugin-provided Element and Source instances

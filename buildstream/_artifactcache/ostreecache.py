@@ -505,7 +505,7 @@ class OSTreeCache(ArtifactCache):
                 remote_results[remote_spec.url] = (push_url, pull_url, remote_refs)
 
         # Prepare push_urls, pull_urls, and remote_refs for each project
-        for project in self.context._get_projects():
+        for project in self.context.get_projects():
             remote_specs = self.global_remote_specs
             if project in self.project_remote_specs:
                 remote_specs = list(utils._deduplicate(remote_specs + self.project_remote_specs[project]))

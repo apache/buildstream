@@ -266,4 +266,4 @@ class Queue():
     def message(self, element, message_type, brief, **kwargs):
         context = element._get_context()
         message = Message(element._get_unique_id(), message_type, brief, **kwargs)
-        context._message(message)
+        context.message(message)

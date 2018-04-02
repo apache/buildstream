@@ -19,7 +19,7 @@ def create_pipeline(tmpdir, basedir, target):
     def dummy_handler(message, context):
         pass
 
-    context._set_message_handler(dummy_handler)
+    context.set_message_handler(dummy_handler)
 
     return Pipeline(context, project, [target], [])
 

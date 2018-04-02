@@ -318,7 +318,7 @@ class Source(Plugin):
 
             # Source consistency interrogations are silent.
             context = self._get_context()
-            with context._silence():
+            with context.silence():
                 self.__consistency = self.get_consistency()
 
             if self._has_workspace() and \
@@ -478,7 +478,7 @@ class Source(Plugin):
     def _load_ref(self):
         context = self._get_context()
         project = self._get_project()
-        toplevel = context._get_toplevel_project()
+        toplevel = context.get_toplevel_project()
         redundant_ref = None
 
         element_name = self.__element_name
@@ -536,7 +536,7 @@ class Source(Plugin):
 
         context = self._get_context()
         project = self._get_project()
-        toplevel = context._get_toplevel_project()
+        toplevel = context.get_toplevel_project()
         provenance = self._get_provenance()
 
         element_name = self.__element_name

@@ -117,7 +117,7 @@ class Project():
         self._load()
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
-        self._context._add_project(self)
+        self._context.add_project(self)
 
     # translate_url():
     #
@@ -204,7 +204,7 @@ class Project():
             self._options.load_yaml_values(self._junction.options, transform=self._junction._subst_string)
 
         # Collect option values specified in the user configuration
-        overrides = self._context._get_overrides(self.name)
+        overrides = self._context.get_overrides(self.name)
         override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
         self._options.load_yaml_values(override_options)
         if self._cli_options:

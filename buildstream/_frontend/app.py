@@ -138,7 +138,7 @@ class App():
         # the command line when used, trumps the config files.
         #
         override_map = {
-            'strict': 'strict_build_plan',
+            'strict': '_strict_build_plan',
             'debug': 'log_debug',
             'verbose': 'log_verbose',
             'error_lines': 'log_error_lines',
@@ -178,7 +178,7 @@ class App():
             message_format=self.context.log_message_format)
 
         # Propagate pipeline feedback to the user
-        self.context._set_message_handler(self.message_handler)
+        self.context.set_message_handler(self.message_handler)
 
         try:
             self.project = Project(directory, self.context, cli_options=self.main_options['option'])
@@ -375,8 +375,8 @@ class App():
 
         # Remove workspace directory if prompted
         if remove_dir:
-            with self.context._timed_activity("Removing workspace directory {}"
-                                              .format(workspace.path)):
+            with self.context.timed_activity("Removing workspace directory {}"
+                                             .format(workspace.path)):
                 try:
                     shutil.rmtree(workspace.path)
                 except OSError as e:
@@ -417,7 +417,7 @@ class App():
     #
     def message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self.context._message(
+        self.context.message(
             Message(None, message_type, message, **args))
 
     #
@@ -639,7 +639,7 @@ class App():
             self.fail_messages[message.unique_id] = message
 
         # Send to frontend if appropriate
-        if self.context._silent_messages() and (message.message_type not in unconditional_messages):
+        if self.context.silent_messages() and (message.message_type not in unconditional_messages):
             return
 
         if self.status:

@@ -1009,7 +1009,7 @@ class Element(Plugin):
             self.__cache_key_dict = {
                 'artifact-version': "{}.{}".format(_BST_CORE_ARTIFACT_VERSION,
                                                    self.BST_ARTIFACT_VERSION),
-                'context': context._get_cache_key(),
+                'context': context.get_cache_key(),
                 'project': project._get_cache_key(),
                 'element': self.get_unique_key(),
                 'execution-environment': self.__sandbox_config.get_unique_key(),
@@ -1500,7 +1500,7 @@ class Element(Plugin):
             # Fetch the main toplevel project, in case this is a junctioned
             # subproject, we want to use the rules defined by the main one.
             context = self._get_context()
-            project = context._get_toplevel_project()
+            project = context.get_toplevel_project()
 
             if prompt is not None:
                 environment['PS1'] = prompt
@@ -1609,7 +1609,7 @@ class Element(Plugin):
     def _get_strict(self):
         project = self._get_project()
         context = self._get_context()
-        return context._get_strict(project.name)
+        return context.get_strict(project.name)
 
     # _pull_pending()
     #
