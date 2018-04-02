@@ -106,8 +106,7 @@ def test_open_track(cli, tmpdir, datafiles, kind):
 def test_close(cli, tmpdir, datafiles, kind):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
 
-    # Now open the workspace, this should have the
-    # effect of automatically fetching the source from the repo.
+    # Close the workspace
     result = cli.run(project=project, args=[
         'workspace', 'close', '--remove-dir', element_name
     ])
@@ -125,8 +124,7 @@ def test_close_removed(cli, tmpdir, datafiles, kind):
     # Remove it first, closing the workspace should work
     shutil.rmtree(workspace)
 
-    # Now open the workspace, this should have the
-    # effect of automatically fetching the source from the repo.
+    # Close the workspace
     result = cli.run(project=project, args=[
         'workspace', 'close', element_name
     ])
@@ -163,8 +161,7 @@ def test_reset(cli, tmpdir, datafiles, kind):
 def test_list(cli, tmpdir, datafiles, kind):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
 
-    # Now reset the open workspace, this should have the
-    # effect of reverting our changes.
+    # Now list the workspaces
     result = cli.run(project=project, args=[
         'workspace', 'list'
     ])
