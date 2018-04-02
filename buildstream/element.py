@@ -775,7 +775,7 @@ class Element(Plugin):
     #    (Workspace|None): A workspace associated with this element
     #
     def _get_workspace(self):
-        return self._get_project()._workspaces.get_workspace(self)
+        return self._get_project()._workspaces.get_workspace(self.name)
 
     # _get_artifact_metadata():
     #

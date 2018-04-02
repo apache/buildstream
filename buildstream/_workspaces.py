@@ -237,15 +237,15 @@ class Workspaces():
     # element's source at the given index
     #
     # Args:
-    #    element (Element) - The element whose workspace to return
+    #    element_name (str) - The element name whose workspace to return
     #
     # Returns:
     #    (None|Workspace)
     #
-    def get_workspace(self, element):
-        if element.name not in self._workspaces:
+    def get_workspace(self, element_name):
+        if element_name not in self._workspaces:
             return None
-        return self._workspaces[element.name]
+        return self._workspaces[element_name]
 
     # delete_workspace()
     #
@@ -254,10 +254,10 @@ class Workspaces():
     # configuration, call save_config() afterwards.
     #
     # Args:
-    #    element (Element) - The element whose workspace to delete
+    #    element_name (str) - The element name whose workspace to delete
     #
-    def delete_workspace(self, element):
-        del self._workspaces[element.name]
+    def delete_workspace(self, element_name):
+        del self._workspaces[element_name]
 
     # save_config()
     #

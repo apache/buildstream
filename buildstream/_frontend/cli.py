@@ -573,7 +573,7 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
     """Open a workspace for manual source modification"""
 
     with app.initialized((element,), rewritable=track_, track_elements=[element] if track_ else None):
-        app.pipeline.open_workspace(app.scheduler, directory, no_checkout, track_, force)
+        app.open_workspace(directory, no_checkout, track_, force)
 
 
 ##################################################################
@@ -588,18 +588,13 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
 def workspace_close(app, remove_dir, element):
     """Close a workspace"""
 
-    with app.initialized((element,)):
-
-        if app.pipeline.project._workspaces.get_workspace(app.pipeline.targets[0]) is None:
-            click.echo("ERROR: Workspace '{}' does not exist".format(element), err=True)
+    if app.interactive and remove_dir:
+        if not click.confirm('This will remove all your changes, are you sure?'):
+            click.echo('Aborting', err=True)
             sys.exit(-1)
 
-        if app.interactive and remove_dir:
-            if not click.confirm('This will remove all your changes, are you sure?'):
-                click.echo('Aborting', err=True)
-                sys.exit(-1)
-
-        app.pipeline.close_workspace(remove_dir)
+    with app.partially_initialized():
+        app.close_workspace(element, remove_dir)
 
 
 ##################################################################
@@ -615,13 +610,13 @@ def workspace_close(app, remove_dir, element):
 @click.pass_obj
 def workspace_reset(app, track_, no_checkout, element):
     """Reset a workspace to its original state"""
-    with app.initialized((element,)):
-        if app.interactive:
-            if not click.confirm('This will remove all your changes, are you sure?'):
-                click.echo('Aborting', err=True)
-                sys.exit(-1)
+    if app.interactive:
+        if not click.confirm('This will remove all your changes, are you sure?'):
+            click.echo('Aborting', err=True)
+            sys.exit(-1)
 
-        app.pipeline.reset_workspace(app.scheduler, track_, no_checkout)
+    with app.initialized((element,)):
+        app.reset_workspace(track_, no_checkout)
 
 
 ##################################################################
@@ -632,34 +627,15 @@ def workspace_reset(app, track_, no_checkout, element):
 def workspace_list(app):
     """List open workspaces"""
 
-    from .. import _yaml
-    from .._context import Context
-    from .._project import Project
+    with app.partially_initialized():
+        workspaces = []
+        for element_name, workspace_ in app.project._workspaces.list():
+            workspace_detail = {
+                'element': element_name,
+                'directory': workspace_.path,
+            }
+            workspaces.append(workspace_detail)
 
-    directory = app.main_options['directory']
-    config = app.main_options['config']
-
-    try:
-        context = Context()
-        context.load(config)
-    except BstError as e:
-        click.echo("Error loading user configuration: {}".format(e), err=True)
-        sys.exit(-1)
-
-    try:
-        project = Project(directory, context, cli_options=app.main_options['option'])
-    except BstError as e:
-        click.echo("Error loading project: {}".format(e), err=True)
-        sys.exit(-1)
-
-    workspaces = []
-    for element_name, workspace_ in project._workspaces.list():
-        workspace_detail = {
-            'element': element_name,
-            'directory': workspace_.path,
-        }
-        workspaces.append(workspace_detail)
-
-    _yaml.dump({
-        'workspaces': workspaces
-    })
+        _yaml.dump({
+            'workspaces': workspaces
+        })

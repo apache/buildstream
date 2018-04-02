@@ -20,6 +20,7 @@
 
 import os
 import sys
+import shutil
 import resource
 import datetime
 from contextlib import contextmanager
@@ -29,12 +30,12 @@ import click
 from click import UsageError
 
 # Import buildstream public symbols
-from .. import Scope
+from .. import Scope, Consistency
 
 # Import various buildstream internals
 from .._context import Context
 from .._project import Project
-from .._exceptions import BstError, PipelineError
+from .._exceptions import BstError, PipelineError, AppError
 from .._message import Message, MessageType, unconditional_messages
 from .._pipeline import Pipeline
 from .._scheduler import Scheduler
@@ -296,6 +297,121 @@ class App():
                 if session_name:
                     self.message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
                     self.print_summary()
+
+    ############################################################
+    #                   Workspace Commands                     #
+    ############################################################
+
+    # open_workspace
+    #
+    # Open a project workspace - this requires full initialization
+    #
+    # Args:
+    #    directory (str): The directory to stage the source in
+    #    no_checkout (bool): Whether to skip checking out the source
+    #    track_first (bool): Whether to track and fetch first
+    #    force (bool): Whether to ignore contents in an existing directory
+    #
+    def open_workspace(self, directory, no_checkout, track_first, force):
+
+        # When working on workspaces we only have one target
+        target = self.pipeline.targets[0]
+        workdir = os.path.abspath(directory)
+
+        if not list(target.sources()):
+            build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
+            if not build_depends:
+                raise AppError("The given element has no sources")
+            detail = "Try opening a workspace on one of its dependencies instead:\n"
+            detail += "  \n".join(build_depends)
+            raise AppError("The given element has no sources", detail=detail)
+
+        # Check for workspace config
+        if self.project._workspaces.get_workspace(target):
+            raise AppError("Workspace '{}' is already defined.".format(target.name))
+
+        # If we're going to checkout, we need at least a fetch,
+        # if we were asked to track first, we're going to fetch anyway.
+        if not no_checkout or track_first:
+            self.pipeline.fetch(self.scheduler, [target], track_first)
+
+        if not no_checkout and target._consistency() != Consistency.CACHED:
+            raise PipelineError("Could not stage uncached source. " +
+                                "Use `--track` to track and " +
+                                "fetch the latest version of the " +
+                                "source.")
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as e:
+            raise AppError("Failed to create workspace directory: {}".format(e)) from e
+
+        workspace = self.project._workspaces.create_workspace(target, workdir)
+
+        if not no_checkout:
+            if not force and os.listdir(directory):
+                raise AppError("Checkout directory is not empty: {}".format(directory))
+
+            with target.timed_activity("Staging sources to {}".format(directory)):
+                workspace.open()
+
+        self.project._workspaces.save_config()
+        self.message(MessageType.INFO, "Saved workspace configuration")
+
+    # close_workspace
+    #
+    # Close a project workspace - this requires only partial initialization
+    #
+    # Args:
+    #    element_name (str): The element name to close the workspace for
+    #    remove_dir (bool): Whether to remove the associated directory
+    #
+    def close_workspace(self, element_name, remove_dir):
+
+        workspace = self.project._workspaces.get_workspace(element_name)
+
+        if workspace is None:
+            raise AppError("Workspace '{}' does not exist".format(element_name))
+
+        # Remove workspace directory if prompted
+        if remove_dir:
+            with self.context._timed_activity("Removing workspace directory {}"
+                                              .format(workspace.path)):
+                try:
+                    shutil.rmtree(workspace.path)
+                except OSError as e:
+                    raise AppError("Could not remove  '{}': {}"
+                                   .format(workspace.path, e)) from e
+
+        # Delete the workspace and save the configuration
+        self.project._workspaces.delete_workspace(element_name)
+        self.project._workspaces.save_config()
+        self.message(MessageType.INFO, "Saved workspace configuration")
+
+    # reset_workspace
+    #
+    # Reset a workspace to its original state, discarding any user
+    # changes.
+    #
+    # Args:
+    #    track (bool): Whether to also track the source
+    #    no_checkout (bool): Whether to check out the source (at all)
+    #
+    def reset_workspace(self, track, no_checkout):
+        # When working on workspaces we only have one target
+        target = self.pipeline.targets[0]
+        workspace = self.project._workspaces.get_workspace(target.name)
+
+        if workspace is None:
+            raise AppError("Workspace '{}' is currently not defined"
+                           .format(target.name))
+
+        self.close_workspace(target.name, True)
+        self.open_workspace(workspace.path, no_checkout, track, False)
+
+    ############################################################
+    #                      Local Functions                     #
+    ############################################################
 
     # Local message propagator
     #
