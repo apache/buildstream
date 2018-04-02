@@ -109,6 +109,101 @@ This makes things clear when reading code that said functions
 are not defined in the same file but come from utils.py for example.
 
 
+Policy for private symbols
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Private symbols are expressed via a leading ``_`` single underscore, or
+in some special circumstances with a leading ``__`` double underscore.
+
+Before understanding the naming policy, it is first important to understand
+that in BuildStream, there are two levels of privateness which need to be
+considered.
+
+These are treated subtly differently and thus need to be understood:
+
+* API Private
+
+  A symbol is considered to be *API private* if it is not exposed in the *public API*.
+
+  Even if a symbol does not have any leading underscore, it may still be *API private*
+  if the containing *class* or *module* is named with a leading underscore.
+
+* Local private
+
+  A symbol is considered to be *local private* if it is not intended for access
+  outside of the defining *scope*.
+
+  If a symbol has a leading underscore, it might not be *local private* if it is
+  declared on a publicly visible class, but needs to be accessed internally by
+  other modules in the BuildStream core.
+
+
+Ordering
+''''''''
+For better readability and consistency, we try to keep private symbols below
+public symbols. In the case of public modules where we may have a mix of
+*API private* and *local private* symbols, *API private* symbols should come
+before *local private* symbols.
+
+
+Symbol Naming
+'''''''''''''
+Any private symbol must start with a single leading underscore for two reasons:
+
+* So that it does not bleed into documentation and *public API*.
+
+* So that it is clear to developers which symbols are not used outside of the declaring *scope*
+
+Remember that with python, the modules (python files) are also symbols
+within their containing *package*, as such; modules which are entirely
+private to BuildStream are named as such, e.g. ``_thismodule.py``.
+
+
+Cases for double underscores
+''''''''''''''''''''''''''''
+The double underscore in python has a special function. When declaring
+a symbol in class scope which has a leading underscore, it can only be
+accessed within the class scope using the same name. Outside of class
+scope, it can only be accessed with a *cheat*.
+
+We use the double underscore in cases where the type of privateness can be
+ambiguous.
+
+* For private modules and classes
+
+  We never need to disambiguate with a double underscore
+
+* For private symbols declared in a public *scope*
+
+  In the case that we declare a private method on a public object, it
+  becomes ambiguous whether:
+
+  * The symbol is *local private*, and only used within the given scope
+
+  * The symbol is *API private*, and will be used internally by BuildStream
+    from other parts of the codebase.
+
+  In this case, we use a single underscore for *API private* methods which
+  are not *local private*, and we use a double underscore for *local private*
+  methods declared in public scope.
+
+
+Documenting Private Symbols
+'''''''''''''''''''''''''''
+Any symbol which is *API Private* (regardless of whether it is also
+*local private*), should have some documentation for developers to
+better understand the codebase.
+
+Contrary to many other python projects, we do not use docstrings to
+document private symbols, but prefer to keep *API Private* symbols
+documented in code comments placed *above* the symbol (or *beside* the
+symbol in some cases, such as variable declarations in a class where
+a shorter comment is more desirable), rather than docstrings placed *below*
+the symbols being documented.
+
+Other than this detail, follow the same guidelines for documenting
+symbols as described below.
+
+
 Documenting BuildStream
 -----------------------
 BuildStream starts out as a documented project from day one and uses
