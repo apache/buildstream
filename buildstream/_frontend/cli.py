@@ -157,7 +157,7 @@ def cli(context, **kwargs):
     user preferences configuration file.
     """
 
-    from .main import App
+    from .app import App
 
     # Create the App, giving it the main arguments
     context.obj = App(dict(kwargs))
