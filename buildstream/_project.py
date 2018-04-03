@@ -87,28 +87,31 @@ class Project():
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
 
+        self.workspaces = None                   # Workspaces
+        self.refs = ProjectRefs(self.directory)  # ProjectRefs
+        self.options = None                      # OptionPool
+        self.junction = junction                 # The junction Element object, if this is a subproject
+        self.fail_on_overlap = False             # Whether overlaps are treated as errors
+        self.ref_storage = None                  # ProjectRefStorage setting
+        self.base_variables = {}                 # The base set of variables
+        self.base_environment = {}               # The base set of environment variables
+        self.base_env_nocache = None             # The base nocache mask (list) for the environment
+        self.element_overrides = {}              # Element specific configurations
+        self.source_overrides = {}               # Source specific configurations
+
+        #
+        # Private Members
+        #
         self._context = context  # The invocation Context
-        self._variables = {}     # The default variables overridden with project wide overrides
-        self._environment = {}   # The base sandbox environment
-        self._elements = {}      # Element specific configurations
-        self._sources = {}       # Source specific configurations
         self._aliases = {}       # Aliases dictionary
-        self._workspaces = None  # Workspaces
         self._plugin_source_origins = []   # Origins of custom sources
         self._plugin_element_origins = []  # Origins of custom elements
-        self._options = None    # Project options, the OptionPool
-        self._junction = junction   # The junction element, if this is a subproject
+
         self._cli_options = cli_options
         self._cache_key = None
         self._source_format_versions = {}
         self._element_format_versions = {}
-        self._fail_on_overlap = False
-        self._ref_storage = None  # The ProjectRefStorage setting
 
-        # The project.refs management object for this project
-        self.refs = ProjectRefs(self.directory)
-
-        # Shell options
         self._shell_command = []      # The default interactive shell command
         self._shell_environment = {}  # Statically set environment vars
         self._shell_host_files = []   # A list of HostMount objects
@@ -142,6 +145,69 @@ class Project():
 
         return url
 
+    # get_shell_config()
+    #
+    # Gets the project specified shell configuration
+    #
+    # Returns:
+    #    (list): The shell command
+    #    (dict): The shell environment
+    #    (list): The list of HostMount objects
+    #
+    def get_shell_config(self):
+        return (self._shell_command, self._shell_environment, self._shell_host_files)
+
+    # get_cache_key():
+    #
+    # Returns the cache key, calculating it if necessary
+    #
+    # Returns:
+    #    (str): A hex digest cache key for the Context
+    #
+    def get_cache_key(self):
+        if self._cache_key is None:
+
+            # Anything that alters the build goes into the unique key
+            # (currently nothing here)
+            self._cache_key = _cachekey.generate_key({})
+
+        return self._cache_key
+
+    # create_element()
+    #
+    # Instantiate and return an element
+    #
+    # Args:
+    #    kind (str): The kind of Element to create
+    #    artifacts (ArtifactCache): The artifact cache
+    #    meta (object): The loaded MetaElement
+    #
+    # Returns:
+    #    (Element): A newly created Element object of the appropriate kind
+    #
+    def create_element(self, kind, artifacts, meta):
+        element = self._element_factory.create(kind, self._context, self, artifacts, meta)
+        version = self._element_format_versions.get(kind, 0)
+        self._assert_plugin_format(element, version)
+        return element
+
+    # create_source()
+    #
+    # Instantiate and return a Source
+    #
+    # Args:
+    #    kind (str): The kind of Source to create
+    #    meta (object): The loaded MetaSource
+    #
+    # Returns:
+    #    (Source): A newly created Source object of the appropriate kind
+    #
+    def create_source(self, kind, meta):
+        source = self._source_factory.create(kind, self._context, self, meta)
+        version = self._source_format_versions.get(kind, 0)
+        self._assert_plugin_format(source, version)
+        return source
+
     # _load():
     #
     # Loads the project configuration file in the project directory.
@@ -161,8 +227,8 @@ class Project():
         # Element and Source  type configurations will be composited later onto
         # element/source types, so we delete it from here and run our final
         # assertion after.
-        self._elements = _yaml.node_get(config, Mapping, 'elements', default_value={})
-        self._sources = _yaml.node_get(config, Mapping, 'sources', default_value={})
+        self.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
+        self.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
         config.pop('elements', None)
         config.pop('sources', None)
         _yaml.node_final_assertions(config)
@@ -197,28 +263,28 @@ class Project():
 
         # Load project options
         options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
-        self._options = OptionPool(self.element_path)
-        self._options.load(options_node)
-        if self._junction:
+        self.options = OptionPool(self.element_path)
+        self.options.load(options_node)
+        if self.junction:
             # load before user configuration
-            self._options.load_yaml_values(self._junction.options, transform=self._junction._subst_string)
+            self.options.load_yaml_values(self.junction.options, transform=self.junction._subst_string)
 
         # Collect option values specified in the user configuration
         overrides = self._context.get_overrides(self.name)
         override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
-        self._options.load_yaml_values(override_options)
+        self.options.load_yaml_values(override_options)
         if self._cli_options:
-            self._options.load_cli_values(self._cli_options)
+            self.options.load_cli_values(self._cli_options)
 
         # We're done modifying options, now we can use them for substitutions
-        self._options.resolve()
+        self.options.resolve()
 
         #
         # Now resolve any conditionals in the remaining configuration,
         # any conditionals specified for project option declarations,
         # or conditionally specifying the project name; will be ignored.
         #
-        self._options.process_node(config)
+        self.options.process_node(config)
 
         #
         # Now all YAML composition is done, from here on we just load
@@ -229,7 +295,7 @@ class Project():
         self.artifact_cache_specs = artifact_cache_specs_from_config_node(config)
 
         # Workspace configurations
-        self._workspaces = Workspaces(self)
+        self.workspaces = Workspaces(self)
 
         # Plugin origins and versions
         origins = _yaml.node_get(config, list, 'plugins', default_value=[])
@@ -279,23 +345,23 @@ class Project():
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
 
         # Load base variables
-        self._variables = _yaml.node_get(config, Mapping, 'variables')
+        self.base_variables = _yaml.node_get(config, Mapping, 'variables')
 
         # Add the project name as a default variable
-        self._variables['project-name'] = self.name
+        self.base_variables['project-name'] = self.name
 
         # Extend variables with automatic variables and option exports
         # Initialize it as a string as all variables are processed as strings.
-        self._variables['max-jobs'] = str(multiprocessing.cpu_count())
+        self.base_variables['max-jobs'] = str(multiprocessing.cpu_count())
 
         # Export options into variables, if that was requested
-        for _, option in self._options.options.items():
+        for _, option in self.options.options.items():
             if option.variable:
-                self._variables[option.variable] = option.get_value()
+                self.base_variables[option.variable] = option.get_value()
 
         # Load sandbox environment variables
-        self._environment = _yaml.node_get(config, Mapping, 'environment')
-        self._env_nocache = _yaml.node_get(config, list, 'environment-nocache')
+        self.base_environment = _yaml.node_get(config, Mapping, 'environment')
+        self.base_env_nocache = _yaml.node_get(config, list, 'environment-nocache')
 
         # Load sandbox configuration
         self._sandbox = _yaml.node_get(config, Mapping, 'sandbox')
@@ -304,19 +370,19 @@ class Project():
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
 
         # Fail on overlap
-        self._fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap')
+        self.fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap')
 
         # Use separate file for storing source references
-        self._ref_storage = _yaml.node_get(config, str, 'ref-storage')
-        if self._ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
+        self.ref_storage = _yaml.node_get(config, str, 'ref-storage')
+        if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
             p = _yaml.node_get_provenance(config, 'ref-storage')
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Invalid value '{}' specified for ref-storage"
-                            .format(p, self._ref_storage))
+                            .format(p, self.ref_storage))
 
         # Load project.refs if it exists, this may be ignored.
-        if self._ref_storage == ProjectRefStorage.PROJECT_REFS:
-            self.refs.load(self._options)
+        if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            self.refs.load(self.options)
 
         # Parse shell options
         shell_options = _yaml.node_get(config, Mapping, 'shell')
@@ -347,6 +413,17 @@ class Project():
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
+
+    # _assert_plugin_format()
+    #
+    # Helper to raise a PluginError if the loaded plugin is of a lesser version then
+    # the required version for this plugin
+    #
+    def _assert_plugin_format(self, plugin, version):
+        if plugin.BST_FORMAT_VERSION < version:
+            raise LoadError(LoadErrorReason.UNSUPPORTED_PLUGIN,
+                            "{}: Format version {} is too old for requested version {}"
+                            .format(plugin, plugin.BST_FORMAT_VERSION, version))
 
     # _store_origin()
     #
@@ -386,25 +463,3 @@ class Project():
         for i in range(len(path_list)):
             path = _yaml.node_get(node, str, name, indices=[i])
             yield path
-
-    # _get_cache_key():
-    #
-    # Returns the cache key, calculating it if necessary
-    #
-    # Returns:
-    #    (str): A hex digest cache key for the Context
-    #
-    def _get_cache_key(self):
-        if self._cache_key is None:
-
-            # Anything that alters the build goes into the unique key
-            # (currently nothing here)
-            self._cache_key = _cachekey.generate_key({})
-
-        return self._cache_key
-
-    def _create_element(self, kind, artifacts, meta):
-        return self._element_factory.create(kind, self._context, self, artifacts, meta)
-
-    def _create_source(self, kind, meta):
-        return self._source_factory.create(kind, self._context, self, meta)

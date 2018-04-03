@@ -629,7 +629,7 @@ def workspace_list(app):
 
     with app.partially_initialized():
         workspaces = []
-        for element_name, workspace_ in app.project._workspaces.list():
+        for element_name, workspace_ in app.project.workspaces.list():
             workspace_detail = {
                 'element': element_name,
                 'directory': workspace_.path,

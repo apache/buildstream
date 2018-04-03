@@ -139,18 +139,6 @@ class Plugin():
         modulename = type(self).__module__
         self.__kind = modulename.split('.')[-1]
 
-        # Ugly special case to determine the minimum required version
-        # from the project.
-        if type_tag == 'element':
-            version = project._element_format_versions.get(self.get_kind(), 0)
-        else:
-            version = project._source_format_versions.get(self.get_kind(), 0)
-
-        # Raise PluginError on format version mismatch here
-        if self.BST_FORMAT_VERSION < version:
-            raise PluginError("{}: Format version {} is too old for requested version {}"
-                              .format(self, self.BST_FORMAT_VERSION, version))
-
         self.debug("Created: {}".format(self))
 
     def __del__(self):
@@ -628,8 +616,8 @@ class Plugin():
 
     def _get_full_name(self):
         project = self.__project
-        if project._junction:
-            return '{}:{}'.format(project._junction.name, self.name)
+        if project.junction:
+            return '{}:{}'.format(project.junction.name, self.name)
         else:
             return self.name
 

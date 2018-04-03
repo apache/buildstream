@@ -122,7 +122,7 @@ class Pipeline():
         self.platform = Platform.get_platform()
         self.artifacts = self.platform.artifactcache
 
-        self.loader = Loader(self.project, targets + except_)
+        self.loader = Loader(self.context, self.project, targets + except_)
 
         with self.timed_activity("Loading pipeline", silent_nested=True):
             meta_elements = self.loader.load(rewritable, None)
@@ -187,7 +187,7 @@ class Pipeline():
                 raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
 
     def initialize_workspaces(self):
-        for element_name, workspace in self.project._workspaces.list():
+        for element_name, workspace in self.project.workspaces.list():
             for target in self.targets:
                 element = target.search(Scope.ALL, element_name)
 
@@ -269,7 +269,7 @@ class Pipeline():
 
         # We can track anything if the toplevel project uses project.refs
         #
-        if self.project._ref_storage == ProjectRefStorage.PROJECT_REFS:
+        if self.project.ref_storage == ProjectRefStorage.PROJECT_REFS:
             return
 
         # Ideally, we would want to report every cross junction element but not
@@ -329,9 +329,9 @@ class Pipeline():
         if meta_element in self._resolved_elements:
             return self._resolved_elements[meta_element]
 
-        element = meta_element.project._create_element(meta_element.kind,
-                                                       self.artifacts,
-                                                       meta_element)
+        element = meta_element.project.create_element(meta_element.kind,
+                                                      self.artifacts,
+                                                      meta_element)
 
         self._resolved_elements[meta_element] = element
 
@@ -343,7 +343,7 @@ class Pipeline():
 
         # resolve sources
         for meta_source in meta_element.sources:
-            source = meta_element.project._create_source(meta_source.kind, meta_source)
+            source = meta_element.project.create_source(meta_source.kind, meta_source)
             redundant_ref = source._load_ref()
             element._add_source(source)
 

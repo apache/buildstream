@@ -108,7 +108,7 @@ class Source(Plugin):
     def __init_defaults(self):
         if not self.__defaults_set:
             project = self._get_project()
-            sources = project._sources
+            sources = project.source_overrides
             type(self).__defaults = sources.get(self.get_kind(), {})
             type(self).__defaults_set = True
 
@@ -493,7 +493,7 @@ class Source(Plugin):
                                   reason="unsupported-load-ref") from e
 
         # If the main project overrides the ref, use the override
-        if project is not toplevel and toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+        if project is not toplevel and toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
             ref_node = toplevel.refs.lookup_ref(project.name, element_name, element_idx)
             if ref_node is not None:
                 do_load_ref(ref_node)
@@ -503,7 +503,7 @@ class Source(Plugin):
         # violate the rule of refs being either in project.refs or in
         # the elements themselves.
         #
-        elif project._ref_storage == ProjectRefStorage.PROJECT_REFS:
+        elif project.ref_storage == ProjectRefStorage.PROJECT_REFS:
 
             # First warn if there is a ref already loaded, and reset it
             redundant_ref = self.get_ref()
@@ -546,12 +546,12 @@ class Source(Plugin):
         # Step 1 - Obtain the node
         #
         if project is toplevel:
-            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
                 node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
             else:
                 node = provenance.node
         else:
-            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
                 node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
             else:
                 node = {}
@@ -573,7 +573,7 @@ class Source(Plugin):
         # Step 3 - Apply the change in project data
         #
         if project is toplevel:
-            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
                 do_save_refs(toplevel.refs)
             else:
                 # Save the ref in the originating file
@@ -586,7 +586,7 @@ class Source(Plugin):
                                       .format(self, provenance.filename, e),
                                       reason="save-ref-error") from e
         else:
-            if toplevel._ref_storage == ProjectRefStorage.PROJECT_REFS:
+            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
                 do_save_refs(toplevel.refs)
             else:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))

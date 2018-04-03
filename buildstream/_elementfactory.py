@@ -45,6 +45,7 @@ class ElementFactory(PluginContext):
     #    kind (str): The kind of Element to create
     #    context (object): The Context object for processing
     #    project (object): The project object
+    #    artifacts (ArtifactCache): The artifact cache
     #    meta (object): The loaded MetaElement
     #
     # Returns: A newly created Element object of the appropriate kind

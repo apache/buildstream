@@ -3,7 +3,7 @@ import pytest
 
 from buildstream._context import Context
 from buildstream._project import Project
-from buildstream._exceptions import PluginError
+from buildstream._exceptions import LoadError, LoadErrorReason
 from buildstream._pipeline import Pipeline
 
 DATA_DIR = os.path.join(
@@ -46,13 +46,17 @@ def test_customelement(datafiles, tmpdir):
 def test_badversionsource(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
-    with pytest.raises(PluginError) as exc:
+    with pytest.raises(LoadError) as exc:
         pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
+
+    assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionelement'))
 def test_badversionelement(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
-    with pytest.raises(PluginError) as exc:
+    with pytest.raises(LoadError) as exc:
         pipeline = create_pipeline(tmpdir, basedir, 'simple.bst')
+
+    assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN

@@ -529,11 +529,11 @@ class LogLine(Widget):
         text += '\n'
 
         # Project Options
-        if project._options.variables:
+        if project.options.variables:
             text += self.content_profile.fmt("Project Options\n", bold=True)
             values = OrderedDict()
-            for key in sorted(project._options.variables):
-                values[key] = project._options.variables[key]
+            for key in sorted(project.options.variables):
+                values[key] = project.options.variables[key]
             text += self.format_values(values)
             text += '\n'
 

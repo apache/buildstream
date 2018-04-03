@@ -1,5 +1,6 @@
 from buildstream._context import Context
 from buildstream._project import Project
+from buildstream._loader import Loader
 
 
 #
@@ -7,5 +8,7 @@ from buildstream._project import Project
 # be removed in favor of testing the functionality via
 # the CLI like in the frontend tests anyway.
 #
-def make_project(basedir):
-    return Project(basedir, Context())
+def make_loader(basedir, targets):
+    context = Context()
+    project = Project(basedir, context)
+    return Loader(context, project, targets)

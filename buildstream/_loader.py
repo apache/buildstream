@@ -83,9 +83,9 @@ class LoadElement():
         self.name = filename
         self.loader = loader
 
-        if loader.project._junction:
+        if loader.project.junction:
             # dependency is in subproject, qualify name
-            self.full_name = '{}:{}'.format(loader.project._junction.name, self.name)
+            self.full_name = '{}:{}'.format(loader.project.junction.name, self.name)
         else:
             # dependency is in top-level project
             self.full_name = self.name
@@ -199,7 +199,7 @@ def extract_depends_from_node(data):
 #
 class Loader():
 
-    def __init__(self, project, filenames, *, parent=None, tempdir=None):
+    def __init__(self, context, project, filenames, *, parent=None, tempdir=None):
 
         basedir = project.element_path
 
@@ -217,9 +217,9 @@ class Loader():
                                 "path to the base project directory: {}"
                                 .format(filename, basedir))
 
+        self.context = context
         self.project = project
-        self.context = project._context
-        self.options = project._options     # Project options (OptionPool)
+        self.options = project.options      # Project options (OptionPool)
         self.basedir = basedir              # Base project directory
         self.targets = filenames            # Target bst elements
         self.tempdir = tempdir
@@ -340,16 +340,16 @@ class Loader():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
 
-        element = meta_element.project._create_element(meta_element.kind,
-                                                       self.artifacts,
-                                                       meta_element)
+        element = meta_element.project.create_element(meta_element.kind,
+                                                      self.artifacts,
+                                                      meta_element)
 
         os.makedirs(self.context.builddir, exist_ok=True)
         basedir = tempfile.mkdtemp(prefix="{}-".format(element.normal_name), dir=self.context.builddir)
 
         for meta_source in meta_element.sources:
-            source = meta_element.project._create_source(meta_source.kind,
-                                                         meta_source)
+            source = meta_element.project.create_source(meta_source.kind,
+                                                        meta_source)
 
             source._preflight()
 
@@ -376,7 +376,7 @@ class Loader():
             else:
                 raise
 
-        loader = Loader(project, [], parent=self, tempdir=basedir)
+        loader = Loader(self.context, project, [], parent=self, tempdir=basedir)
 
         self.loaders[filename] = loader
 

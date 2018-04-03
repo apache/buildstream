@@ -498,9 +498,9 @@ class Element(Plugin):
         overlaps = OrderedDict()
         files_written = {}
         old_dep_keys = {}
+        project = self._get_project()
 
         if self._can_build_incrementally():
-            project = self._get_project()
             workspace = self._get_workspace()
 
             if workspace.last_successful:
@@ -525,7 +525,7 @@ class Element(Plugin):
                     # build systems anyway.
                     to_update, _, added = self.__artifacts.diff(dep, key_old, key_new, subdir='files')
                     workspace.add_running_files(dep, to_update + added)
-                    self._get_project()._workspaces.save_config()
+                    project.workspaces.save_config()
                     to_update.extend(workspace.running_files[dep.name])
 
             result = dep.stage_artifact(sandbox,
@@ -562,7 +562,7 @@ class Element(Plugin):
                     element = self.search(scope, elm)
                     element_project = element._get_project()
                     if not element.__file_is_whitelisted(f):
-                        if element_project._fail_on_overlap:
+                        if element_project.fail_on_overlap:
                             overlap_error_elements.append(elm)
                             overlap_error = True
                         else:
@@ -775,7 +775,8 @@ class Element(Plugin):
     #    (Workspace|None): A workspace associated with this element
     #
     def _get_workspace(self):
-        return self._get_project()._workspaces.get_workspace(self.name)
+        project = self._get_project()
+        return project.workspaces.get_workspace(self.name)
 
     # _get_artifact_metadata():
     #
@@ -898,11 +899,12 @@ class Element(Plugin):
         self._update_state()
 
         if self._workspaced() and self._cached():
+            project = self._get_project()
             key = self._get_cache_key()
             workspace = self._get_workspace()
             workspace.last_successful = key
             workspace.clear_running_files()
-            self._get_project()._workspaces.save_config()
+            project.workspaces.save_config()
 
     # _cached():
     #
@@ -1010,7 +1012,7 @@ class Element(Plugin):
                 'artifact-version': "{}.{}".format(_BST_CORE_ARTIFACT_VERSION,
                                                    self.BST_ARTIFACT_VERSION),
                 'context': context.get_cache_key(),
-                'project': project._get_cache_key(),
+                'project': project.get_cache_key(),
                 'element': self.get_unique_key(),
                 'execution-environment': self.__sandbox_config.get_unique_key(),
                 'environment': cache_env,
@@ -1501,6 +1503,7 @@ class Element(Plugin):
             # subproject, we want to use the rules defined by the main one.
             context = self._get_context()
             project = context.get_toplevel_project()
+            shell_command, shell_environment, shell_host_files = project.get_shell_config()
 
             if prompt is not None:
                 environment['PS1'] = prompt
@@ -1513,14 +1516,14 @@ class Element(Plugin):
                 flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
 
                 # Apply project defined environment vars to set for a shell
-                for key, value in _yaml.node_items(project._shell_environment):
+                for key, value in _yaml.node_items(shell_environment):
                     environment[key] = value
 
                 # Setup any requested bind mounts
                 if mounts is None:
                     mounts = []
 
-                for mount in project._shell_host_files + mounts:
+                for mount in shell_host_files + mounts:
                     if not os.path.exists(mount.host_path):
                         if not mount.optional:
                             self.warn("Not mounting non-existing host file: {}".format(mount.host_path))
@@ -1531,7 +1534,7 @@ class Element(Plugin):
             if command:
                 argv = [arg for arg in command]
             else:
-                argv = project._shell_command
+                argv = shell_command
 
             self.status("Running command", detail=" ".join(argv))
 
@@ -1834,7 +1837,7 @@ class Element(Plugin):
             # Override the element's defaults with element specific
             # overrides from the project.conf
             project = self._get_project()
-            elements = project._elements
+            elements = project.element_overrides
             overrides = elements.get(self.get_kind())
             if overrides:
                 _yaml.composite(defaults, overrides)
@@ -1850,7 +1853,7 @@ class Element(Plugin):
         project = self._get_project()
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
-        environment = _yaml.node_chain_copy(project._environment)
+        environment = _yaml.node_chain_copy(project.base_environment)
         _yaml.composite(environment, default_env)
         _yaml.composite(environment, meta.environment)
         _yaml.node_final_assertions(environment)
@@ -1864,7 +1867,7 @@ class Element(Plugin):
 
     def __extract_env_nocache(self, meta):
         project = self._get_project()
-        project_nocache = project._env_nocache
+        project_nocache = project.base_env_nocache
         default_nocache = _yaml.node_get(self.__defaults, list, 'environment-nocache', default_value=[])
         element_nocache = meta.env_nocache
 
@@ -1882,7 +1885,7 @@ class Element(Plugin):
         project = self._get_project()
         default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
 
-        variables = _yaml.node_chain_copy(project._variables)
+        variables = _yaml.node_chain_copy(project.base_variables)
         _yaml.composite(variables, default_vars)
         _yaml.composite(variables, meta.variables)
         _yaml.node_final_assertions(variables)

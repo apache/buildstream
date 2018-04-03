@@ -327,7 +327,7 @@ class App():
             raise AppError("The given element has no sources", detail=detail)
 
         # Check for workspace config
-        if self.project._workspaces.get_workspace(target):
+        if self.project.workspaces.get_workspace(target):
             raise AppError("Workspace '{}' is already defined.".format(target.name))
 
         # If we're going to checkout, we need at least a fetch,
@@ -346,7 +346,7 @@ class App():
         except OSError as e:
             raise AppError("Failed to create workspace directory: {}".format(e)) from e
 
-        workspace = self.project._workspaces.create_workspace(target, workdir)
+        workspace = self.project.workspaces.create_workspace(target, workdir)
 
         if not no_checkout:
             if not force and os.listdir(directory):
@@ -355,7 +355,7 @@ class App():
             with target.timed_activity("Staging sources to {}".format(directory)):
                 workspace.open()
 
-        self.project._workspaces.save_config()
+        self.project.workspaces.save_config()
         self.message(MessageType.INFO, "Saved workspace configuration")
 
     # close_workspace
@@ -368,7 +368,7 @@ class App():
     #
     def close_workspace(self, element_name, remove_dir):
 
-        workspace = self.project._workspaces.get_workspace(element_name)
+        workspace = self.project.workspaces.get_workspace(element_name)
 
         if workspace is None:
             raise AppError("Workspace '{}' does not exist".format(element_name))
@@ -384,8 +384,8 @@ class App():
                                    .format(workspace.path, e)) from e
 
         # Delete the workspace and save the configuration
-        self.project._workspaces.delete_workspace(element_name)
-        self.project._workspaces.save_config()
+        self.project.workspaces.delete_workspace(element_name)
+        self.project.workspaces.save_config()
         self.message(MessageType.INFO, "Saved workspace configuration")
 
     # reset_workspace
@@ -400,7 +400,7 @@ class App():
     def reset_workspace(self, track, no_checkout):
         # When working on workspaces we only have one target
         target = self.pipeline.targets[0]
-        workspace = self.project._workspaces.get_workspace(target.name)
+        workspace = self.project.workspaces.get_workspace(target.name)
 
         if workspace is None:
             raise AppError("Workspace '{}' is currently not defined"
