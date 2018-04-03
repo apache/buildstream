@@ -24,7 +24,6 @@ import stat
 import shlex
 import tarfile
 import itertools
-from contextlib import contextmanager
 from operator import itemgetter
 from tempfile import TemporaryDirectory
 
@@ -40,44 +39,6 @@ from ._project import ProjectRefStorage
 from ._artifactcache.artifactcache import ArtifactCacheSpec, configured_remote_artifact_cache_specs
 
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
-
-
-class Planner():
-    def __init__(self):
-        self.depth_map = {}
-        self.visiting_elements = set()
-
-    # Here we want to traverse the same element more than once when
-    # it is reachable from multiple places, with the interest of finding
-    # the deepest occurance of every element
-    def plan_element(self, element, depth, ignore_cache):
-        if element in self.visiting_elements:
-            # circular dependency, already being processed
-            return
-
-        prev_depth = self.depth_map.get(element)
-        if prev_depth is not None and prev_depth >= depth:
-            # element and dependencies already processed at equal or greater depth
-            return
-
-        self.visiting_elements.add(element)
-        for dep in element.dependencies(Scope.RUN, recurse=False):
-            self.plan_element(dep, depth, ignore_cache)
-
-        # Dont try to plan builds of elements that are cached already
-        if ignore_cache or (not element._cached() and not element._remotely_cached()):
-            for dep in element.dependencies(Scope.BUILD, recurse=False):
-                self.plan_element(dep, depth + 1, ignore_cache)
-
-        self.depth_map[element] = depth
-        self.visiting_elements.remove(element)
-
-    def plan(self, roots, ignore_cache=False):
-        for root in roots:
-            self.plan_element(root, 0, ignore_cache)
-
-        depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
-        return [item[0] for item in depth_sorted if ignore_cache or not item[0]._cached()]
 
 
 # Pipeline()
@@ -109,27 +70,39 @@ class Planner():
 class Pipeline():
 
     def __init__(self, context, project, targets, except_, rewritable=False):
-        self.context = context
-        self.project = project
-        self.session_elements = 0
-        self.total_elements = 0
-        self.unused_workspaces = []
+
+        self.context = context     # The Context
+        self.project = project     # The toplevel project
+        self.session_elements = 0  # Number of elements to process in this session
+        self.total_elements = 0    # Number of total potential elements for this pipeline
+        self.targets = []          # List of toplevel target Element objects
+
+        #
+        # Private members
+        #
+        self._unused_workspaces = []
         self._resolved_elements = {}
         self._redundant_refs = []
+        self._artifacts = None
+        self._loader = None
+        self._exceptions = None
+
+        #
+        # Early initialization
+        #
 
         # Load selected platform
         Platform._create_instance(context, project)
-        self.platform = Platform.get_platform()
-        self.artifacts = self.platform.artifactcache
+        platform = Platform.get_platform()
+        self._artifacts = platform.artifactcache
+        self._loader = Loader(self.context, self.project, targets + except_)
 
-        self.loader = Loader(self.context, self.project, targets + except_)
-
-        with self.timed_activity("Loading pipeline", silent_nested=True):
-            meta_elements = self.loader.load(rewritable, None)
+        with self.context.timed_activity("Loading pipeline", silent_nested=True):
+            meta_elements = self._loader.load(rewritable, None)
 
         # Resolve the real elements now that we've resolved the project
-        with self.timed_activity("Resolving pipeline"):
-            resolved_elements = [self.resolve(meta_element)
+        with self.context.timed_activity("Resolving pipeline"):
+            resolved_elements = [self._resolve(meta_element)
                                  for meta_element in meta_elements]
 
         # Now warn about any redundant source references which may have
@@ -141,217 +114,104 @@ class Pipeline():
                 for source, ref in self._redundant_refs
             ]
             detail += "\n".join(lines)
-            self.message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
+            self._message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
 
         self.targets = resolved_elements[:len(targets)]
-        self.exceptions = resolved_elements[len(targets):]
+        self._exceptions = resolved_elements[len(targets):]
 
+    # initialize()
+    #
+    # Initialize the pipeline
+    #
+    # Args:
+    #    use_configured_remote_caches (bool): Whether to contact configured remote artifact caches
+    #    add_remote_cache (str): The URL for an additional remote artifact cache
+    #    track_element (list of Elements): List of elements specified by the frontend for tracking
+    #
     def initialize(self, use_configured_remote_caches=False,
                    add_remote_cache=None, track_elements=None):
-        # Preflight directly, before ever interrogating caches or
-        # anything.
-        self.preflight()
+
+        # Preflight directly, before ever interrogating caches or anything.
+        self._preflight()
 
         self.total_elements = len(list(self.dependencies(Scope.ALL)))
 
-        self.initialize_workspaces()
+        self._initialize_workspaces()
 
         # Initialize remote artifact caches. We allow the commandline to override
         # the user config in some cases (for example `bst push --remote=...`).
         has_remote_caches = False
         if add_remote_cache:
-            self.artifacts.set_remotes([ArtifactCacheSpec(add_remote_cache, push=True)])
+            self._artifacts.set_remotes([ArtifactCacheSpec(add_remote_cache, push=True)])
             has_remote_caches = True
         if use_configured_remote_caches:
             for project in self.context.get_projects():
                 artifact_caches = configured_remote_artifact_cache_specs(self.context, project)
                 if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
-                    self.artifacts.set_remotes(artifact_caches, project=project)
+                    self._artifacts.set_remotes(artifact_caches, project=project)
                     has_remote_caches = True
         if has_remote_caches:
-            self.initialize_remote_caches()
+            self._initialize_remote_caches()
 
-        self.resolve_cache_keys(track_elements)
+        self._resolve_cache_keys(track_elements)
 
-    def preflight(self):
-        for plugin in self.dependencies(Scope.ALL, include_sources=True):
-            try:
-                plugin._preflight()
-            except BstError as e:
-                # Prepend the plugin identifier string to the error raised by
-                # the plugin so that users can more quickly identify the issue
-                # that a given plugin is encountering.
-                #
-                # Propagate the original error reason for test case purposes
-                #
-                raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
+    # cleanup()
+    #
+    # Cleans up resources used by the Pipeline.
+    #
+    def cleanup(self):
+        if self._loader:
+            self._loader.cleanup()
 
-    def initialize_workspaces(self):
-        for element_name, workspace in self.project.workspaces.list():
-            for target in self.targets:
-                element = target.search(Scope.ALL, element_name)
+    # deps_elements()
+    #
+    # Args:
+    #    mode (str): A specific mode of resolving deps
+    #
+    # Various commands define a --deps option to specify what elements to
+    # use in the result, this function reports a list that is appropriate for
+    # the selected option.
+    #
+    def deps_elements(self, mode):
 
-                if element is None:
-                    self.unused_workspaces.append((element_name, workspace))
-                else:
-                    workspace.init(element)
+        elements = None
+        if mode == 'none':
+            elements = self.targets
+        elif mode == 'plan':
+            elements = list(self._plan())
+        else:
+            if mode == 'all':
+                scope = Scope.ALL
+            elif mode == 'build':
+                scope = Scope.BUILD
+            elif mode == 'run':
+                scope = Scope.RUN
 
-    def initialize_remote_caches(self):
-        def remote_failed(url, error):
-            self.message(MessageType.WARN, "Failed to fetch remote refs from {}: {}".format(url, error))
+            elements = list(self.dependencies(scope))
 
-        with self.timed_activity("Initializing remote caches", silent_nested=True):
-            self.artifacts.initialize_remotes(on_failure=remote_failed)
+        return self.remove_elements(elements)
 
-    def resolve_cache_keys(self, track_elements):
-        if track_elements:
-            track_elements = self.get_elements_to_track(track_elements)
-
-        with self.timed_activity("Resolving cached state", silent_nested=True):
-            for element in self.dependencies(Scope.ALL):
-                if track_elements and element in track_elements:
-                    # Load the pipeline in an explicitly inconsistent state, use
-                    # this for pipelines with tracking queues enabled.
-                    element._schedule_tracking()
-
-                # Determine initial element state. This may resolve cache keys
-                # and interrogate the artifact cache.
-                element._update_state()
-
+    # dependencies()
+    #
     # Generator function to iterate over elements and optionally
     # also iterate over sources.
     #
-    def dependencies(self, scope, include_sources=False):
+    # Args:
+    #    scope (Scope): The scope to iterate over
+    #    recurse (bool): Whether to recurse into dependencies
+    #    include_sources (bool): Whether to include element sources in iteration
+    #
+    def dependencies(self, scope, *, recurse=True, include_sources=False):
         # Keep track of 'visited' in this scope, so that all targets
         # share the same context.
         visited = {}
 
         for target in self.targets:
-            for element in target.dependencies(scope, visited=visited):
+            for element in target.dependencies(scope, recurse=recurse, visited=visited):
                 if include_sources:
                     for source in element.sources():
                         yield source
                 yield element
-
-    # Asserts that the pipeline is in a consistent state, that
-    # is to say that all sources are consistent and can at least
-    # be fetched.
-    #
-    # Consequently it also means that cache keys can be resolved.
-    #
-    def assert_consistent(self, toplevel):
-        inconsistent = []
-        with self.timed_activity("Checking sources"):
-            for element in toplevel:
-                if element._consistency() == Consistency.INCONSISTENT:
-                    inconsistent.append(element)
-
-        if inconsistent:
-            detail = "Exact versions are missing for the following elements\n" + \
-                     "Try tracking these elements first with `bst track`\n\n"
-            for element in inconsistent:
-                detail += "  " + element.name + "\n"
-            raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
-
-    # assert_junction_tracking()
-    #
-    # Raises an error if tracking is attempted on junctioned elements and
-    # a project.refs file is not enabled for the toplevel project.
-    #
-    # Args:
-    #    elements (list of Element): The list of elements to be tracked
-    #    build (bool): Whether this is being called for `bst build`, otherwise `bst track`
-    #
-    # The `build` argument is only useful for suggesting an appropriate
-    # alternative to the user
-    #
-    def assert_junction_tracking(self, elements, *, build):
-
-        # We can track anything if the toplevel project uses project.refs
-        #
-        if self.project.ref_storage == ProjectRefStorage.PROJECT_REFS:
-            return
-
-        # Ideally, we would want to report every cross junction element but not
-        # their dependencies, unless those cross junction elements dependencies
-        # were also explicitly requested on the command line.
-        #
-        # But this is too hard, lets shoot for a simple error.
-        for element in elements:
-            element_project = element._get_project()
-            if element_project is not self.project:
-                suggestion = '--except'
-                if build:
-                    suggestion = '--track-except'
-
-                detail = "Requested to track sources across junction boundaries\n" + \
-                         "in a project which does not use separate source references.\n\n" + \
-                         "Try using `{}` arguments to limit the scope of tracking.".format(suggestion)
-
-                raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
-
-    # Generator function to iterate over only the elements
-    # which are required to build the pipeline target, omitting
-    # cached elements. The elements are yielded in a depth sorted
-    # ordering for optimal build plans
-    def plan(self, except_=True):
-        build_plan = Planner().plan(self.targets)
-
-        if except_:
-            build_plan = self.remove_elements(build_plan)
-
-        for element in build_plan:
-            yield element
-
-    # Local message propagator
-    #
-    def message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.message(
-            Message(None, message_type, message, **args))
-
-    # Local timed activities, announces the jobs as well
-    #
-    @contextmanager
-    def timed_activity(self, activity_name, *, detail=None, silent_nested=False):
-        with self.context.timed_activity(activity_name,
-                                         detail=detail,
-                                         silent_nested=silent_nested):
-            yield
-
-    # Internal: Instantiates plugin-provided Element and Source instances
-    # from MetaElement and MetaSource objects
-    #
-    # This has a side effect of populating `self._redundant_refs` so
-    # we can later print a warning
-    #
-    def resolve(self, meta_element):
-        if meta_element in self._resolved_elements:
-            return self._resolved_elements[meta_element]
-
-        element = meta_element.project.create_element(meta_element.kind,
-                                                      self.artifacts,
-                                                      meta_element)
-
-        self._resolved_elements[meta_element] = element
-
-        # resolve dependencies
-        for dep in meta_element.dependencies:
-            element._add_dependency(self.resolve(dep), Scope.RUN)
-        for dep in meta_element.build_dependencies:
-            element._add_dependency(self.resolve(dep), Scope.BUILD)
-
-        # resolve sources
-        for meta_source in meta_element.sources:
-            source = meta_element.project.create_source(meta_source.kind, meta_source)
-            redundant_ref = source._load_ref()
-            element._add_source(source)
-
-            # Collect redundant refs for a warning message
-            if redundant_ref is not None:
-                self._redundant_refs.append((source, redundant_ref))
-
-        return element
 
     #############################################################
     #                         Commands                          #
@@ -376,7 +236,7 @@ class Pipeline():
         track.enqueue(dependencies)
         self.session_elements = len(dependencies)
 
-        self.assert_junction_tracking(dependencies, build=False)
+        self._assert_junction_tracking(dependencies, build=False)
 
         _, status = scheduler.run([track])
         if status == SchedStatus.ERROR:
@@ -400,7 +260,7 @@ class Pipeline():
         # Assert that we have a consistent pipeline, or that
         # the track option will make it consistent
         if not track_first:
-            self.assert_consistent(plan)
+            self._assert_consistent(plan)
 
         # Filter out elements with cached sources, we already have them.
         cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
@@ -425,7 +285,7 @@ class Pipeline():
             raise PipelineError(terminated=True)
 
     def get_elements_to_track(self, track_targets):
-        planner = Planner()
+        planner = _Planner()
 
         target_elements = [e for e in self.dependencies(Scope.ALL)
                            if e.name in track_targets]
@@ -445,10 +305,10 @@ class Pipeline():
     #                        building
     #
     def build(self, scheduler, build_all, track_first):
-        if self.unused_workspaces:
-            self.message(MessageType.WARN, "Unused workspaces",
-                         detail="\n".join([el for el, _
-                                           in self.unused_workspaces]))
+        if self._unused_workspaces:
+            self._message(MessageType.WARN, "Unused workspaces",
+                          detail="\n".join([el for el, _
+                                            in self._unused_workspaces]))
 
         # We set up two plans; one to track elements, the other to
         # build them once tracking has finished. The first plan
@@ -461,12 +321,12 @@ class Pipeline():
         if track_first:
             track_plan = self.get_elements_to_track(track_first)
 
-        self.assert_junction_tracking(track_plan, build=True)
+        self._assert_junction_tracking(track_plan, build=True)
 
         if build_all:
             plan = self.dependencies(Scope.ALL)
         else:
-            plan = self.plan(except_=False)
+            plan = self._plan(except_=False)
 
         # We want to start the build queue with any elements that are
         # not being tracked first
@@ -475,7 +335,7 @@ class Pipeline():
 
         # Assert that we have a consistent pipeline now (elements in
         # track_plan will be made consistent)
-        self.assert_consistent(plan)
+        self._assert_consistent(plan)
 
         fetch = FetchQueue(skip_cached=True)
         build = BuildQueue()
@@ -486,12 +346,12 @@ class Pipeline():
         if track_plan:
             track = TrackQueue()
             queues.append(track)
-        if self.artifacts.has_fetch_remotes():
+        if self._artifacts.has_fetch_remotes():
             pull = PullQueue()
             queues.append(pull)
         queues.append(fetch)
         queues.append(build)
-        if self.artifacts.has_push_remotes():
+        if self._artifacts.has_push_remotes():
             push = PushQueue()
             queues.append(push)
 
@@ -583,11 +443,11 @@ class Pipeline():
     #
     def pull(self, scheduler, elements):
 
-        if not self.artifacts.has_fetch_remotes():
+        if not self._artifacts.has_fetch_remotes():
             raise PipelineError("Not artifact caches available for pulling artifacts")
 
         plan = elements
-        self.assert_consistent(plan)
+        self._assert_consistent(plan)
         self.session_elements = len(plan)
 
         pull = PullQueue()
@@ -610,11 +470,11 @@ class Pipeline():
     #
     def push(self, scheduler, elements):
 
-        if not self.artifacts.has_push_remotes():
+        if not self._artifacts.has_push_remotes():
             raise PipelineError("No artifact caches available for pushing artifacts")
 
         plan = elements
-        self.assert_consistent(plan)
+        self._assert_consistent(plan)
         self.session_elements = len(plan)
 
         push = PushQueue()
@@ -659,7 +519,7 @@ class Pipeline():
         # elements that lie on the border closest to excepted elements
         # between excepted and target elements.
         intersection = list(itertools.chain.from_iterable(
-            find_intersection(element) for element in self.exceptions
+            find_intersection(element) for element in self._exceptions
         ))
 
         # Now use this set of elements to traverse the targeted
@@ -685,29 +545,6 @@ class Pipeline():
         # Ensure that we return elements in the same order they were
         # in before.
         return [element for element in elements if element in visited]
-
-    # Various commands define a --deps option to specify what elements to
-    # use in the result, this function reports a list that is appropriate for
-    # the selected option.
-    #
-    def deps_elements(self, mode):
-
-        elements = None
-        if mode == 'none':
-            elements = self.targets
-        elif mode == 'plan':
-            elements = list(self.plan())
-        else:
-            if mode == 'all':
-                scope = Scope.ALL
-            elif mode == 'build':
-                scope = Scope.BUILD
-            elif mode == 'run':
-                scope = Scope.RUN
-
-            elements = list(self.dependencies(scope))
-
-        return self.remove_elements(elements)
 
     # source_bundle()
     #
@@ -766,6 +603,195 @@ class Pipeline():
             self._collect_sources(tempdir, tar_location,
                                   target.normal_name, compression)
 
+    #############################################################
+    #                     Private Methods                       #
+    #############################################################
+
+    # _resolve()
+    #
+    # Instantiates plugin-provided Element and Source instances
+    # from MetaElement and MetaSource objects
+    #
+    # This has a side effect of populating `self._redundant_refs` so
+    # we can later print a warning
+    #
+    def _resolve(self, meta_element):
+        if meta_element in self._resolved_elements:
+            return self._resolved_elements[meta_element]
+
+        element = meta_element.project.create_element(meta_element.kind,
+                                                      self._artifacts,
+                                                      meta_element)
+
+        self._resolved_elements[meta_element] = element
+
+        # resolve dependencies
+        for dep in meta_element.dependencies:
+            element._add_dependency(self._resolve(dep), Scope.RUN)
+        for dep in meta_element.build_dependencies:
+            element._add_dependency(self._resolve(dep), Scope.BUILD)
+
+        # resolve sources
+        for meta_source in meta_element.sources:
+            source = meta_element.project.create_source(meta_source.kind, meta_source)
+            redundant_ref = source._load_ref()
+            element._add_source(source)
+
+            # Collect redundant refs for a warning message
+            if redundant_ref is not None:
+                self._redundant_refs.append((source, redundant_ref))
+
+        return element
+
+    # _prefilght()
+    #
+    # Preflights all the plugins in the pipeline
+    #
+    def _preflight(self):
+        for plugin in self.dependencies(Scope.ALL, include_sources=True):
+            try:
+                plugin._preflight()
+            except BstError as e:
+                # Prepend the plugin identifier string to the error raised by
+                # the plugin so that users can more quickly identify the issue
+                # that a given plugin is encountering.
+                #
+                # Propagate the original error reason for test case purposes
+                #
+                raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
+
+    # _initialize_workspaces()
+    #
+    # Initialize active workspaces, and collect a list
+    # of any workspaces which are unused by the pipeline
+    #
+    def _initialize_workspaces(self):
+        for element_name, workspace in self.project.workspaces.list():
+            for target in self.targets:
+                element = target.search(Scope.ALL, element_name)
+
+                if element is None:
+                    self._unused_workspaces.append((element_name, workspace))
+                else:
+                    workspace.init(element)
+
+    # _initialize_remote_caches()
+    #
+    # Initialize remote artifact caches, checking what
+    # artifacts are contained by the artifact cache remotes
+    #
+    def _initialize_remote_caches(self):
+        def remote_failed(url, error):
+            self._message(MessageType.WARN, "Failed to fetch remote refs from {}: {}".format(url, error))
+
+        with self.context.timed_activity("Initializing remote caches", silent_nested=True):
+            self._artifacts.initialize_remotes(on_failure=remote_failed)
+
+    # _resolve_cache_keys()
+    #
+    # Initially resolve the cache keys
+    #
+    def _resolve_cache_keys(self, track_elements):
+        if track_elements:
+            track_elements = self.get_elements_to_track(track_elements)
+
+        with self.context.timed_activity("Resolving cached state", silent_nested=True):
+            for element in self.dependencies(Scope.ALL):
+                if track_elements and element in track_elements:
+                    # Load the pipeline in an explicitly inconsistent state, use
+                    # this for pipelines with tracking queues enabled.
+                    element._schedule_tracking()
+
+                # Determine initial element state. This may resolve cache keys
+                # and interrogate the artifact cache.
+                element._update_state()
+
+    # _assert_consistent()
+    #
+    # Asserts that the pipeline is in a consistent state, that
+    # is to say that all sources are consistent and can at least
+    # be fetched.
+    #
+    # Consequently it also means that cache keys can be resolved.
+    #
+    def _assert_consistent(self, toplevel):
+        inconsistent = []
+        with self.context.timed_activity("Checking sources"):
+            for element in toplevel:
+                if element._consistency() == Consistency.INCONSISTENT:
+                    inconsistent.append(element)
+
+        if inconsistent:
+            detail = "Exact versions are missing for the following elements\n" + \
+                     "Try tracking these elements first with `bst track`\n\n"
+            for element in inconsistent:
+                detail += "  " + element.name + "\n"
+            raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
+
+    # _assert_junction_tracking()
+    #
+    # Raises an error if tracking is attempted on junctioned elements and
+    # a project.refs file is not enabled for the toplevel project.
+    #
+    # Args:
+    #    elements (list of Element): The list of elements to be tracked
+    #    build (bool): Whether this is being called for `bst build`, otherwise `bst track`
+    #
+    # The `build` argument is only useful for suggesting an appropriate
+    # alternative to the user
+    #
+    def _assert_junction_tracking(self, elements, *, build):
+
+        # We can track anything if the toplevel project uses project.refs
+        #
+        if self.project.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            return
+
+        # Ideally, we would want to report every cross junction element but not
+        # their dependencies, unless those cross junction elements dependencies
+        # were also explicitly requested on the command line.
+        #
+        # But this is too hard, lets shoot for a simple error.
+        for element in elements:
+            element_project = element._get_project()
+            if element_project is not self.project:
+                suggestion = '--except'
+                if build:
+                    suggestion = '--track-except'
+
+                detail = "Requested to track sources across junction boundaries\n" + \
+                         "in a project which does not use separate source references.\n\n" + \
+                         "Try using `{}` arguments to limit the scope of tracking.".format(suggestion)
+
+                raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
+
+    # _plan()
+    #
+    # Args:
+    #    except_ (bool): Whether to filter out the except elements from the plan
+    #
+    # Generator function to iterate over only the elements
+    # which are required to build the pipeline target, omitting
+    # cached elements. The elements are yielded in a depth sorted
+    # ordering for optimal build plans
+    def _plan(self, except_=True):
+        build_plan = _Planner().plan(self.targets)
+
+        if except_:
+            build_plan = self.remove_elements(build_plan)
+
+        for element in build_plan:
+            yield element
+
+    # _message()
+    #
+    # Local message propagator
+    #
+    def _message(self, message_type, message, **kwargs):
+        args = dict(kwargs)
+        self.context.message(
+            Message(None, message_type, message, **args))
+
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
         try:
@@ -810,6 +836,47 @@ class Pipeline():
             with tarfile.open(tar_name, permissions) as tar:
                 tar.add(directory, arcname=element_name)
 
-    def cleanup(self):
-        if self.loader:
-            self.loader.cleanup()
+
+# _Planner()
+#
+# An internal object used for constructing build plan
+# from a given resolved toplevel element, while considering what
+# parts need to be built depending on build only dependencies
+# being cached, and depth sorting for more efficient processing.
+#
+class _Planner():
+    def __init__(self):
+        self.depth_map = {}
+        self.visiting_elements = set()
+
+    # Here we want to traverse the same element more than once when
+    # it is reachable from multiple places, with the interest of finding
+    # the deepest occurance of every element
+    def plan_element(self, element, depth, ignore_cache):
+        if element in self.visiting_elements:
+            # circular dependency, already being processed
+            return
+
+        prev_depth = self.depth_map.get(element)
+        if prev_depth is not None and prev_depth >= depth:
+            # element and dependencies already processed at equal or greater depth
+            return
+
+        self.visiting_elements.add(element)
+        for dep in element.dependencies(Scope.RUN, recurse=False):
+            self.plan_element(dep, depth, ignore_cache)
+
+        # Dont try to plan builds of elements that are cached already
+        if ignore_cache or (not element._cached() and not element._remotely_cached()):
+            for dep in element.dependencies(Scope.BUILD, recurse=False):
+                self.plan_element(dep, depth + 1, ignore_cache)
+
+        self.depth_map[element] = depth
+        self.visiting_elements.remove(element)
+
+    def plan(self, roots, ignore_cache=False):
+        for root in roots:
+            self.plan_element(root, 0, ignore_cache)
+
+        depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
+        return [item[0] for item in depth_sorted if ignore_cache or not item[0]._cached()]
