@@ -140,7 +140,7 @@ To enable completions for an installation of BuildStream you
 installed yourself from git, just append the script verbatim
 to your ``~/.bash_completion``:
 
-.. literalinclude:: ../../buildstream/data/bst
+.. literalinclude:: ../../../buildstream/data/bst
    :language: yaml
 
 

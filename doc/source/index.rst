@@ -21,29 +21,29 @@ dependencies.
    :maxdepth: 2
    :caption: Installing
 
-   install
-   docker
+   index/install
+   index/docker
 
 
 .. toctree::
    :maxdepth: 2
    :caption: General documentation
 
-   main_using
-   main_authoring
-   artifacts
+   index/using
+   index/authoring
+   index/artifacts
 
 
 .. toctree::
    :maxdepth: 2
    :caption: Reference documentation
 
-   main_core
+   index/core
    modules
 
 .. toctree::
    :maxdepth: 2
    :caption: Contributing
 
-   resources
-   HACKING
+   index/resources
+   index/HACKING

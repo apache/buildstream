@@ -93,5 +93,5 @@ Default Configuration
 ---------------------
 The default BuildStream configuration is specified here for reference:
 
-  .. literalinclude:: ../../buildstream/data/userconfig.yaml
+  .. literalinclude:: ../../../../buildstream/data/userconfig.yaml
      :language: yaml

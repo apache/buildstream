@@ -13,5 +13,5 @@ a new one, refer to :ref:`main_authoring`.
 .. toctree::
    :maxdepth: 2
 
-   invoking
-   config
+   using/invoking
+   using/config

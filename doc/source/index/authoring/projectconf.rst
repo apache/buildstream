@@ -24,12 +24,6 @@ Essentials
 
 Project Name
 ~~~~~~~~~~~~
-The project name is a unique symbol for your project and will
-be used to distinguish your project from others in user preferences,
-namspaceing of your project's artifacts in shared artifact caches,
-and in any case where BuildStream needs to distinguish between multiple
-projects.
-
 The first thing to setup in your ``project.conf`` should be the name
 of your project.
 
@@ -37,10 +31,8 @@ of your project.
 
    name: my-project-name
 
-.. note::
-
-   The project name may contain alphanumeric characters, dashes and
-   underscores, and may not start with a leading digit.
+The project name will be used in user configuration and anywhere
+that a project needs to be specified.
 
 
 .. _project_format_version:
@@ -63,7 +55,7 @@ to support a new feature.
 
 .. note::
 
-   External :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
+   :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
    plugins also implement their own YAML configuration fragments and as
    such are revisioned separately from the core format. See :ref:`project_plugins`
    for details on specifying a minimum version of a specific plugin.
@@ -201,9 +193,32 @@ External Plugins
 ----------------
 If your project makes use of any custom :mod:`Element <buildstream.element>` or
 :mod:`Source <buildstream.source>` plugins, then the project must inform BuildStream
-of the plugins it means to make use of and the origin from which they can be loaded.
+of the plugins it means to make use of and the origin from which it can be loaded.
 
 Note that plugins with the same name from different origins are not permitted.
+
+
+Core plugins
+~~~~~~~~~~~~
+Plugins provided by the BuildStream core need not be explicitly specified
+here, but you may use this section to specify a minimal format version
+to ensure that they provide the features which your project requires.
+
+.. code:: yaml
+
+   plugins:
+   - origin: core
+
+     # We require a new feature of the `git` source plugin, and
+     # a new feature introduced in version 2 of the `patch` plugin.
+     sources:
+       git: 1
+       patch: 2
+
+     # ... And a new feature of the `script` element, added
+     # in version 2 of it's own format version.
+     elements:
+       script: 2
 
 
 Local Plugins
@@ -281,11 +296,6 @@ Users can configure those options when invoking BuildStream with the
 
     $ bst --option debug True ...
 
-.. note::
-
-   The name of the option may contain alphanumeric characters
-   underscores, and may not start with a leading digit.
-
 
 Common Properties
 ~~~~~~~~~~~~~~~~~
@@ -308,12 +318,6 @@ All option types accept the following common attributes
   If used, this value will override any existing value for the
   variable declared in ``project.conf``, and will be overridden in
   the regular :ref:`composition order <format_composition>`.
-
-  .. note::
-
-     The name of the variable to export may contain alphanumeric
-     characters, dashes, underscores, and may not start with a leading
-     digit.
 
 
 Boolean
@@ -794,5 +798,5 @@ Builtin Defaults
 BuildStream defines some default values for convenience, the default
 values overridden by your project's ``project.conf`` are presented here:
 
-  .. literalinclude:: ../../buildstream/data/projectconfig.yaml
+  .. literalinclude:: ../../../../buildstream/data/projectconfig.yaml
      :language: yaml

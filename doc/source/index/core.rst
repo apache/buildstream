@@ -29,5 +29,5 @@ useful for working on BuildStream itself.
    :maxdepth: 2
    :caption: Internals
 
-   cachekeys
-   sandboxing
+   core/cachekeys
+   core/sandboxing

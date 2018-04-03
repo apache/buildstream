@@ -77,8 +77,10 @@ html devhelp: templates
 	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
 	    $(wildcard source/*.rst) \
-	    $(wildcard source/elements/*.rst) \
-	    $(wildcard source/sources/*.rst)
+            $(wildcard source/*/*.rst) \
+            $(wildcard source/*/*/*.rst)
+
+
 	@echo
 	@echo "Build of $@ finished, output: $(CURDIR)/$(BUILDDIR)/$@"
 

@@ -12,11 +12,11 @@ create your own project or modify existing projects.
    :maxdepth: 2
    :caption: Project format
 
-   formatintro
-   projectconf
-   format
-   public
-   projectrefs
+   authoring/formatintro
+   authoring/projectconf
+   authoring/format
+   authoring/public
+   authoring/projectrefs
 
 
 Plugins
