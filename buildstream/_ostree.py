@@ -534,4 +534,5 @@ def list_remote_refs(repo, remote="origin"):
         _, refs = repo.remote_list_refs(remote)
         return refs
     except GLib.GError as e:
-        raise OSTreeError(message=e.message) from e
+        (_, remote_url) = repo.remote_get_url(remote)
+        raise OSTreeError(message="{} when attempting to fetch from {}".format(e.message, remote_url)) from e
