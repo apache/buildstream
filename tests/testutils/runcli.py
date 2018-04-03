@@ -26,7 +26,7 @@ from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml
 
 # Special private exception accessor, for test case purposes
-from buildstream._exceptions import BstError, _get_last_exception, _get_last_task_error
+from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
 
 
 # Wrapper for the click.testing result
@@ -62,9 +62,9 @@ class Result():
             if not isinstance(exception, SystemExit):
                 self.unhandled_exception = True
 
-            self.exception = _get_last_exception()
+            self.exception = get_last_exception()
             self.task_error_domain, \
-                self.task_error_reason = _get_last_task_error()
+                self.task_error_reason = get_last_task_error()
         else:
             self.exception = None
             self.task_error_domain = None

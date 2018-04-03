@@ -30,7 +30,7 @@ import multiprocessing
 from ruamel import yaml
 
 # BuildStream toplevel imports
-from .._exceptions import BstError, _set_last_task_error
+from .._exceptions import BstError, set_last_task_error
 from .._message import Message, MessageType, unconditional_messages
 from ..plugin import _plugin_lookup
 from .. import _yaml, _signals, utils
@@ -401,8 +401,8 @@ class Job():
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state
             # is currently managed in _exceptions.py
-            _set_last_task_error(envelope.message['domain'],
-                                 envelope.message['reason'])
+            set_last_task_error(envelope.message['domain'],
+                                envelope.message['reason'])
         elif envelope.message_type == 'result':
             assert self.result is None
             self.result = envelope.message

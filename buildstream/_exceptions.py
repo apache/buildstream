@@ -29,7 +29,13 @@ _last_task_error_domain = None
 _last_task_error_reason = None
 
 
-def _get_last_exception():
+# get_last_exception()
+#
+# Fetches the last exception from the main process
+#
+# Used by regression tests
+#
+def get_last_exception():
     global _last_exception
 
     le = _last_exception
@@ -37,8 +43,13 @@ def _get_last_exception():
     return le
 
 
-# Called from regression test fixtures
-def _get_last_task_error():
+# get_last_task_error()
+#
+# Fetches the last exception from a task
+#
+# Used by regression tests
+#
+def get_last_task_error():
     global _last_task_error_domain
     global _last_task_error_reason
 
@@ -48,8 +59,14 @@ def _get_last_task_error():
     return (d, r)
 
 
-# Called from the scheduler when an error is encountered
-def _set_last_task_error(domain, reason):
+# set_last_task_error()
+#
+# Sets the last exception of a task
+#
+# This is set by some internals to inform regression
+# tests about how things failed in a machine readable way
+#
+def set_last_task_error(domain, reason):
     global _last_task_error_domain
     global _last_task_error_reason
 
@@ -150,17 +167,20 @@ class LoadErrorReason(Enum):
     # BuildStream does not support the required project format version
     UNSUPPORTED_PROJECT = 7
 
+    # Project requires a newer version of a plugin than the one which was loaded
+    UNSUPPORTED_PLUGIN = 8
+
     # A conditional expression failed to resolve
-    EXPRESSION_FAILED = 8
+    EXPRESSION_FAILED = 9
 
     # An assertion was intentionally encoded into project YAML
-    USER_ASSERTION = 9
+    USER_ASSERTION = 10
 
     # A list composition directive did not apply to any underlying list
-    TRAILING_LIST_DIRECTIVE = 10
+    TRAILING_LIST_DIRECTIVE = 11
 
     # Conflicting junctions in subprojects
-    CONFLICTING_JUNCTION = 11
+    CONFLICTING_JUNCTION = 12
 
 
 # LoadError

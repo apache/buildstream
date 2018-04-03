@@ -28,7 +28,7 @@ import traceback
 from .job import Job
 
 # BuildStream toplevel imports
-from .._exceptions import BstError, _set_last_task_error
+from .._exceptions import BstError, set_last_task_error
 from .._message import Message, MessageType
 
 
@@ -229,7 +229,7 @@ class Queue():
             #
             # This just allows us stronger testing capability
             #
-            _set_last_task_error(e.domain, e.reason)
+            set_last_task_error(e.domain, e.reason)
 
         except Exception as e:   # pylint: disable=broad-except
 
