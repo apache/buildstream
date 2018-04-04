@@ -17,12 +17,12 @@ DATA_DIR = os.path.join(
 )
 
 
-def open_workspace(cli, tmpdir, datafiles, kind, track):
+def open_workspace(cli, tmpdir, datafiles, kind, track, suffix=''):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     bin_files_path = os.path.join(project, 'files', 'bin-files')
     element_path = os.path.join(project, 'elements')
-    element_name = 'workspace-test-{}.bst'.format(kind)
-    workspace = os.path.join(str(tmpdir), 'workspace')
+    element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
+    workspace = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
 
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
@@ -151,6 +151,46 @@ def test_close_nonexistant_element(cli, tmpdir, datafiles):
 
     # Assert the workspace dir has been deleted
     assert not os.path.exists(workspace)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_close_multiple(cli, tmpdir, datafiles):
+    tmpdir_alpha = os.path.join(str(tmpdir), 'alpha')
+    tmpdir_beta = os.path.join(str(tmpdir), 'beta')
+    alpha, project, workspace_alpha = open_workspace(
+        cli, tmpdir_alpha, datafiles, 'git', False, suffix='-alpha')
+    beta, project, workspace_beta = open_workspace(
+        cli, tmpdir_beta, datafiles, 'git', False, suffix='-beta')
+
+    # Close the workspaces
+    result = cli.run(project=project, args=[
+        'workspace', 'close', '--remove-dir', alpha, beta
+    ])
+    result.assert_success()
+
+    # Assert the workspace dirs have been deleted
+    assert not os.path.exists(workspace_alpha)
+    assert not os.path.exists(workspace_beta)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_close_all(cli, tmpdir, datafiles):
+    tmpdir_alpha = os.path.join(str(tmpdir), 'alpha')
+    tmpdir_beta = os.path.join(str(tmpdir), 'beta')
+    alpha, project, workspace_alpha = open_workspace(
+        cli, tmpdir_alpha, datafiles, 'git', False, suffix='-alpha')
+    beta, project, workspace_beta = open_workspace(
+        cli, tmpdir_beta, datafiles, 'git', False, suffix='-beta')
+
+    # Close the workspaces
+    result = cli.run(project=project, args=[
+        'workspace', 'close', '--remove-dir', '--all'
+    ])
+    result.assert_success()
+
+    # Assert the workspace dirs have been deleted
+    assert not os.path.exists(workspace_alpha)
+    assert not os.path.exists(workspace_beta)
 
 
 @pytest.mark.datafiles(DATA_DIR)

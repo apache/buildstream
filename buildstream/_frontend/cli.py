@@ -579,14 +579,20 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
 ##################################################################
 #                     Workspace Close Command                    #
 ##################################################################
-@workspace.command(name='close', short_help="Close a workspace")
+@workspace.command(name='close', short_help="Close workspaces")
 @click.option('--remove-dir', default=False, is_flag=True,
               help="Remove the path that contains the closed workspace")
-@click.argument('element',
+@click.option('--all', '-a', 'all_', default=False, is_flag=True,
+              help="Close all open workspaces")
+@click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_close(app, remove_dir, element):
+def workspace_close(app, remove_dir, all_, elements):
     """Close a workspace"""
+
+    if not (all_ or elements):
+        click.echo('ERROR: no elements specified', err=True)
+        sys.exit(-1)
 
     if app.interactive and remove_dir:
         if not click.confirm('This will remove all your changes, are you sure?'):
@@ -594,7 +600,10 @@ def workspace_close(app, remove_dir, element):
             sys.exit(-1)
 
     with app.partially_initialized():
-        app.close_workspace(element, remove_dir)
+        if all_:
+            elements = [element_name for element_name, _ in app.project.workspaces.list()]
+        for element in elements:
+            app.close_workspace(element, remove_dir)
 
 
 ##################################################################
