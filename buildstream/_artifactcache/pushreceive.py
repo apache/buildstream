@@ -472,26 +472,40 @@ class OSTreePusher(object):
         self.writer = PushMessageWriter(self.ssh.stdin)
         self.reader = PushMessageReader(self.ssh.stdout)
 
-    def needed_commits(self, remote_refs, local_refs, needed):
-        parent = local_refs
-        if remote_refs == '0' * 64:
+
+    # needed_commits()
+    #
+    # Obtain a set of local checksums that are not present in the remote cache
+    #
+    # Args:
+    #  remote_revs: list of checksums in remote cache
+    #  local_revs: list of checksums in local cache
+    #  needed: An empty set
+    #
+    # Returns: Nothing
+    #  This function appends checksums which do not appear in the remote cache to
+    #  the set: needed. These are then commited.
+    def needed_commits(self, remote_revs, local_revs, needed):
+
+        parent = local_revs
+        if remote_revs == '0' * 64:
             # Nonexistent remote branch, use None for convenience
-            remote_refs = None
-        while parent != remote_refs:
+            remote_revs = None
+        while parent != remote_revs:
             needed.add(parent)
             # load_variant_if_exists() returns: (bool, out_variant: Glib.Variant)
             _, commit = self.repo.load_variant_if_exists(OSTree.ObjectType.COMMIT,
                                                          parent)
             if commit is None:
                 raise PushException('Shallow history from commit {} does '
-                                    'not contain remote commit {}'.format(local_refs, remote_refs))
+                                    'not contain remote commit {}'.format(local_revs, remote_revs))
             parent = OSTree.commit_get_parent(commit)
             if parent is None:
                 break
-        if remote_refs is not None and parent != remote_refs:
+        if remote_revs is not None and parent != remote_revs:
             self.writer.send_done()
             raise PushExistsException('Remote commit {} not descendent of '
-                                      'commit {}'.format(remote_refs, local_refs))
+                                      'commit {}'.format(remote_revs, local_revs))
 
     def needed_objects(self, commits):
         objects = set()
