@@ -31,7 +31,7 @@ from .optioneltmask import OptionEltMask
 from .optionarch import OptionArch
 
 
-OPTION_TYPES = {
+_OPTION_TYPES = {
     OptionBool.OPTION_TYPE: OptionBool,
     OptionEnum.OPTION_TYPE: OptionEnum,
     OptionFlags.OPTION_TYPE: OptionFlags,
@@ -43,15 +43,18 @@ OPTION_TYPES = {
 class OptionPool():
 
     def __init__(self, element_path):
-        self.options = {}      # The Options
-        self.variables = None  # The Options resolved into typed variables
-
         # We hold on to the element path for the sake of OptionEltMask
         self.element_path = element_path
 
+        #
+        # Private members
+        #
+        self._options = {}      # The Options
+        self._variables = None  # The Options resolved into typed variables
+
         # jinja2 environment, with default globals cleared out of the way
-        self.environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
-        self.environment.globals = []
+        self._environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
+        self._environment.globals = []
 
     # load()
     #
@@ -66,14 +69,14 @@ class OptionPool():
             opt_type_name = _yaml.node_get(option_definition, str, 'type')
 
             try:
-                opt_type = OPTION_TYPES[opt_type_name]
+                opt_type = _OPTION_TYPES[opt_type_name]
             except KeyError:
                 p = _yaml.node_get_provenance(option_definition, 'type')
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Invalid option type '{}'".format(p, opt_type_name))
 
             option = opt_type(option_name, option_definition, self)
-            self.options[option_name] = option
+            self._options[option_name] = option
 
     # load_yaml_values()
     #
@@ -86,7 +89,7 @@ class OptionPool():
     def load_yaml_values(self, node, *, transform=None):
         for option_name, _ in _yaml.node_items(node):
             try:
-                option = self.options[option_name]
+                option = self._options[option_name]
             except KeyError as e:
                 p = _yaml.node_get_provenance(node, option_name)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -104,7 +107,7 @@ class OptionPool():
     def load_cli_values(self, cli_options):
         for option_name, option_value in cli_options:
             try:
-                option = self.options[option_name]
+                option = self._options[option_name]
             except KeyError as e:
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "Unknown option '{}' specified on the command line".format(option_name))
@@ -117,17 +120,73 @@ class OptionPool():
     # ever trying to evaluate an expression
     #
     def resolve(self):
-        self.variables = {}
-        for option_name, option in self.options.items():
+        self._variables = {}
+        for option_name, option in self._options.items():
             # Delegate one more method for options to
             # do some last minute validation once any
             # overrides have been performed.
             #
             option.resolve()
 
-            self.variables[option_name] = option.value
+            self._variables[option_name] = option.value
 
-    # evaluate()
+    # export_variables()
+    #
+    # Exports the option values which are declared
+    # to be exported, to the passed dictionary.
+    #
+    # Variable values are exported in string form
+    #
+    # Args:
+    #    variables (dict): A variables dictionary
+    #
+    def export_variables(self, variables):
+        for _, option in self._options.items():
+            if option.variable:
+                variables[option.variable] = option.get_value()
+
+    # printable_variables()
+    #
+    # Exports all option names and string values
+    # to the passed dictionary in alphabetical order.
+    #
+    # Args:
+    #    variables (dict): A variables dictionary
+    #
+    def printable_variables(self, variables):
+        for key in sorted(self._options):
+            variables[key] = self._options[key].get_value()
+
+    # process_node()
+    #
+    # Args:
+    #    node (Mapping): A YAML Loaded dictionary
+    #
+    def process_node(self, node):
+
+        # A conditional will result in composition, which can
+        # in turn add new conditionals to the root.
+        #
+        # Keep processing conditionals on the root node until
+        # all directly nested conditionals are resolved.
+        #
+        while self._process_one_node(node):
+            pass
+
+        # Now recurse into nested dictionaries and lists
+        # and process any indirectly nested conditionals.
+        #
+        for key, value in _yaml.node_items(node):
+            if isinstance(value, Mapping):
+                self.process_node(value)
+            elif isinstance(value, list):
+                self._process_list(value)
+
+    #######################################################
+    #                 Private Methods                     #
+    #######################################################
+
+    # _evaluate()
     #
     # Evaluates a jinja2 style expression with the loaded options in context.
     #
@@ -140,15 +199,15 @@ class OptionPool():
     # Raises:
     #    LoadError: If the expression failed to resolve for any reason
     #
-    def evaluate(self, expression):
+    def _evaluate(self, expression):
 
         #
         # Variables must be resolved at this point.
         #
         try:
             template_string = "{{% if {} %}} True {{% else %}} False {{% endif %}}".format(expression)
-            template = self.environment.from_string(template_string)
-            context = template.new_context(self.variables, shared=True)
+            template = self._environment.from_string(template_string)
+            context = template.new_context(self._variables, shared=True)
             result = template.root_render_func(context)
             evaluated = jinja2.utils.concat(result)
             val = evaluated.strip()
@@ -164,47 +223,22 @@ class OptionPool():
             raise LoadError(LoadErrorReason.EXPRESSION_FAILED,
                             "Failed to evaluate expression ({}): {}".format(expression, e))
 
-    # process_node()
-    #
-    # Args:
-    #    node (Mapping): A YAML Loaded dictionary
-    #
-    def process_node(self, node):
-
-        # A conditional will result in composition, which can
-        # in turn add new conditionals to the root.
-        #
-        # Keep processing conditionals on the root node until
-        # all directly nested conditionals are resolved.
-        #
-        while self.process_one_node(node):
-            pass
-
-        # Now recurse into nested dictionaries and lists
-        # and process any indirectly nested conditionals.
-        #
-        for key, value in _yaml.node_items(node):
-            if isinstance(value, Mapping):
-                self.process_node(value)
-            elif isinstance(value, list):
-                self.process_list(value)
-
     # Recursion assistent for lists, in case there
     # are lists of lists.
     #
-    def process_list(self, values):
+    def _process_list(self, values):
         for value in values:
             if isinstance(value, Mapping):
                 self.process_node(value)
             elif isinstance(value, list):
-                self.process_list(value)
+                self._process_list(value)
 
     # Process a single conditional, resulting in composition
     # at the root level on the passed node
     #
     # Return true if a conditional was processed.
     #
-    def process_one_node(self, node):
+    def _process_one_node(self, node):
         conditions = _yaml.node_get(node, list, '(?)', default_value=[]) or None
         assertion = _yaml.node_get(node, str, '(!)', default_value='') or None
 
@@ -234,7 +268,7 @@ class OptionPool():
 
                 expression, value = tuples[0]
                 try:
-                    apply_fragment = self.evaluate(expression)
+                    apply_fragment = self._evaluate(expression)
                 except LoadError as e:
                     # Prepend the provenance of the error
                     raise LoadError(e.reason, "{}: {}".format(p, e)) from e

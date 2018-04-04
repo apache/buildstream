@@ -355,9 +355,7 @@ class Project():
         self.base_variables['max-jobs'] = str(multiprocessing.cpu_count())
 
         # Export options into variables, if that was requested
-        for _, option in self.options.options.items():
-            if option.variable:
-                self.base_variables[option.variable] = option.get_value()
+        self.options.export_variables(self.base_variables)
 
         # Load sandbox environment variables
         self.base_environment = _yaml.node_get(config, Mapping, 'environment')
