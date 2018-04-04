@@ -259,19 +259,17 @@ class Context():
     #
     # Fetch whether we are strict or not
     #
-    # Args:
-    #    project_name (str): The project name
-    #
     # Returns:
     #    (bool): Whether or not to use strict build plan
     #
-    def get_strict(self, project_name):
+    def get_strict(self):
 
         # If it was set by the CLI, it overrides any config
         if self._strict_build_plan is not None:
             return self._strict_build_plan
 
-        overrides = self.get_overrides(project_name)
+        toplevel = self.get_toplevel_project()
+        overrides = self.get_overrides(toplevel.name)
         return _yaml.node_get(overrides, bool, 'strict', default_value=True)
 
     # get_cache_key():

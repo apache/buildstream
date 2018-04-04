@@ -1235,6 +1235,7 @@ class Element(Plugin):
     # Returns: True if the artifact has been downloaded, False otherwise
     #
     def _pull(self):
+        context = self._get_context()
 
         def progress(percent, message):
             self.status(message)
@@ -1247,7 +1248,7 @@ class Element(Plugin):
 
             # update weak ref by pointing it to this newly fetched artifact
             self.__artifacts.link_key(self, key, weak_key)
-        elif not self._get_strict() and self.__remotely_cached:
+        elif not context.get_strict() and self.__remotely_cached:
             self.__artifacts.pull(self, weak_key, progress=progress)
 
             # extract strong cache key from this newly fetched artifact
@@ -1601,19 +1602,6 @@ class Element(Plugin):
         # Ensure deterministic owners of sources at build time
         utils._set_deterministic_user(directory)
 
-    # _get_strict()
-    #
-    # Convenience method to check strict build plan, since
-    # the element carries it's project reference
-    #
-    # Returns:
-    #   (bool): Whether the build plan is strict for this element
-    #
-    def _get_strict(self):
-        project = self._get_project()
-        context = self._get_context()
-        return context.get_strict(project.name)
-
     # _pull_pending()
     #
     # Check whether the artifact will be pulled.
@@ -1652,6 +1640,8 @@ class Element(Plugin):
     # This must be called whenever the state of an element may have changed.
     #
     def _update_state(self):
+        context = self._get_context()
+
         # Determine consistency of sources
         for source in self.__sources:
             source._update_state()
@@ -1692,7 +1682,7 @@ class Element(Plugin):
                 # Weak cache key could not be calculated yet
                 return
 
-        if not self._get_strict():
+        if not context.get_strict():
             # Full cache query in non-strict mode requires both the weak and
             # strict cache keys. However, we need to determine as early as
             # possible whether a build is pending to discard unstable cache keys
@@ -1717,7 +1707,7 @@ class Element(Plugin):
                 return
 
         # Query caches now that the weak and strict cache keys are available
-        key_for_cache_lookup = self.__strict_cache_key if self._get_strict() else self.__weak_cache_key
+        key_for_cache_lookup = self.__strict_cache_key if context.get_strict() else self.__weak_cache_key
         if not self.__cached:
             self.__cached = self.__artifacts.contains(self, key_for_cache_lookup)
         if not self.__remotely_cached:
@@ -1738,7 +1728,7 @@ class Element(Plugin):
 
         if self.__cache_key is None:
             # Calculate strong cache key
-            if self._get_strict():
+            if context.get_strict():
                 self.__cache_key = self.__strict_cache_key
             elif self._pull_pending():
                 # Effective strong cache key is unknown until after the pull
@@ -2032,11 +2022,12 @@ class Element(Plugin):
                 yield filename.lstrip(os.sep)
 
     def __extract(self):
+        context = self._get_context()
         key = self.__strict_cache_key
 
         # Use weak cache key, if artifact is missing for strong cache key
         # and the context allows use of weak cache keys
-        if not self._get_strict() and not self.__artifacts.contains(self, key):
+        if not context.get_strict() and not self.__artifacts.contains(self, key):
             key = self._get_cache_key(strength=_KeyStrength.WEAK)
 
         return self.__artifacts.extract(self, key)
