@@ -44,16 +44,21 @@ class PluginContext():
 
     def __init__(self, plugin_base, base_type, site_plugin_path, plugin_origins=None, dependencies=None):
 
-        self.dependencies = dependencies
+        # The plugin kinds which were loaded
         self.loaded_dependencies = []
-        self.base_type = base_type  # The base class plugins derive from
-        self.types = {}             # Plugin type lookup table by kind
-        self.plugin_origins = plugin_origins or []
+
+        #
+        # Private members
+        #
+        self._dependencies = dependencies
+        self._base_type = base_type  # The base class plugins derive from
+        self._types = {}             # Plugin type lookup table by kind
+        self._plugin_origins = plugin_origins or []
 
         # The PluginSource object
-        self.plugin_base = plugin_base
-        self.site_source = plugin_base.make_plugin_source(searchpath=site_plugin_path)
-        self.alternate_sources = {}
+        self._plugin_base = plugin_base
+        self._site_source = plugin_base.make_plugin_source(searchpath=site_plugin_path)
+        self._alternate_sources = {}
 
     # lookup():
     #
@@ -67,22 +72,22 @@ class PluginContext():
     # Raises: PluginError
     #
     def lookup(self, kind):
-        return self.ensure_plugin(kind)
+        return self._ensure_plugin(kind)
 
     def _get_local_plugin_source(self, path):
-        if ('local', path) not in self.alternate_sources:
+        if ('local', path) not in self._alternate_sources:
             # key by a tuple to avoid collision
-            source = self.plugin_base.make_plugin_source(searchpath=[path])
+            source = self._plugin_base.make_plugin_source(searchpath=[path])
             # Ensure that sources never get garbage collected,
             # as they'll take the plugins with them.
-            self.alternate_sources[('local', path)] = source
+            self._alternate_sources[('local', path)] = source
         else:
-            source = self.alternate_sources[('local', path)]
+            source = self._alternate_sources[('local', path)]
         return source
 
     def _get_pip_plugin_source(self, package_name, kind):
         defaults = None
-        if ('pip', package_name) not in self.alternate_sources:
+        if ('pip', package_name) not in self._alternate_sources:
             import pkg_resources
             # key by a tuple to avoid collision
             try:
@@ -91,7 +96,7 @@ class PluginContext():
                                                        kind)
             except pkg_resources.DistributionNotFound as e:
                 raise PluginError("Failed to load {} plugin '{}': {}"
-                                  .format(self.base_type.__name__, kind, e)) from e
+                                  .format(self._base_type.__name__, kind, e)) from e
 
             if package is None:
                 raise PluginError("Pip package {} does not contain a plugin named '{}'"
@@ -113,22 +118,22 @@ class PluginContext():
                 # The plugin didn't have an accompanying YAML file
                 defaults = None
 
-            source = self.plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
-            self.alternate_sources[('pip', package_name)] = source
+            source = self._plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
+            self._alternate_sources[('pip', package_name)] = source
 
         else:
-            source = self.alternate_sources[('pip', package_name)]
+            source = self._alternate_sources[('pip', package_name)]
 
         return source, defaults
 
-    def ensure_plugin(self, kind):
+    def _ensure_plugin(self, kind):
 
-        if kind not in self.types:
+        if kind not in self._types:
             # Check whether the plugin is specified in plugins
             source = None
             defaults = None
             loaded_dependency = False
-            for origin in self.plugin_origins:
+            for origin in self._plugin_origins:
                 if kind not in origin['plugins']:
                     continue
 
@@ -145,19 +150,19 @@ class PluginContext():
 
             # Fall back to getting the source from site
             if not source:
-                if kind not in self.site_source.list_plugins():
+                if kind not in self._site_source.list_plugins():
                     raise PluginError("No {} type registered for kind '{}'"
-                                      .format(self.base_type.__name__, kind))
+                                      .format(self._base_type.__name__, kind))
 
-                source = self.site_source
+                source = self._site_source
 
-            self.types[kind] = self.load_plugin(source, kind, defaults)
+            self._types[kind] = self._load_plugin(source, kind, defaults)
             if loaded_dependency:
                 self.loaded_dependencies.append(kind)
 
-        return self.types[kind]
+        return self._types[kind]
 
-    def load_plugin(self, source, kind, defaults):
+    def _load_plugin(self, source, kind, defaults):
 
         try:
             plugin = source.load_plugin(kind)
@@ -170,38 +175,38 @@ class PluginContext():
 
         except ImportError as e:
             raise PluginError("Failed to load {} plugin '{}': {}"
-                              .format(self.base_type.__name__, kind, e)) from e
+                              .format(self._base_type.__name__, kind, e)) from e
 
         try:
             plugin_type = plugin.setup()
         except AttributeError as e:
             raise PluginError("{} plugin '{}' did not provide a setup() function"
-                              .format(self.base_type.__name__, kind)) from e
+                              .format(self._base_type.__name__, kind)) from e
         except TypeError as e:
             raise PluginError("setup symbol in {} plugin '{}' is not a function"
-                              .format(self.base_type.__name__, kind)) from e
+                              .format(self._base_type.__name__, kind)) from e
 
-        self.assert_plugin(kind, plugin_type)
-        self.assert_version(kind, plugin_type)
+        self._assert_plugin(kind, plugin_type)
+        self._assert_version(kind, plugin_type)
         return (plugin_type, defaults)
 
-    def assert_plugin(self, kind, plugin_type):
-        if kind in self.types:
+    def _assert_plugin(self, kind, plugin_type):
+        if kind in self._types:
             raise PluginError("Tried to register {} plugin for existing kind '{}' "
                               "(already registered {})"
-                              .format(self.base_type.__name__, kind, self.types[kind].__name__))
+                              .format(self._base_type.__name__, kind, self._types[kind].__name__))
         try:
-            if not issubclass(plugin_type, self.base_type):
+            if not issubclass(plugin_type, self._base_type):
                 raise PluginError("{} plugin '{}' returned type '{}', which is not a subclass of {}"
-                                  .format(self.base_type.__name__, kind,
+                                  .format(self._base_type.__name__, kind,
                                           plugin_type.__name__,
-                                          self.base_type.__name__))
+                                          self._base_type.__name__))
         except TypeError as e:
             raise PluginError("{} plugin '{}' returned something that is not a type (expected subclass of {})"
-                              .format(self.base_type.__name__, kind,
-                                      self.base_type.__name__)) from e
+                              .format(self._base_type.__name__, kind,
+                                      self._base_type.__name__)) from e
 
-    def assert_version(self, kind, plugin_type):
+    def _assert_version(self, kind, plugin_type):
 
         # Now assert BuildStream version
         bst_major, bst_minor = utils.get_bst_version()
@@ -212,6 +217,6 @@ class PluginContext():
             raise PluginError("BuildStream {}.{} is too old for {} plugin '{}' (requires {}.{})"
                               .format(
                                   bst_major, bst_minor,
-                                  self.base_type.__name__, kind,
+                                  self._base_type.__name__, kind,
                                   plugin_type.BST_REQUIRED_VERSION_MAJOR,
                                   plugin_type.BST_REQUIRED_VERSION_MINOR))
