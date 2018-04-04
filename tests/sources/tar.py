@@ -8,6 +8,7 @@ from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from tests.testutils import cli
 from tests.testutils.site import HAVE_LZIP
+from . import list_dir_contents
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -105,16 +106,6 @@ def test_track_warning(cli, tmpdir, datafiles):
     assert "Potential man-in-the-middle attack!" in result.stderr
 
 
-def _list_dir_contents(srcdir):
-    contents = set()
-    for _, dirs, files in os.walk(srcdir):
-        for d in dirs:
-            contents.add(d)
-        for f in files:
-            contents.add(f)
-    return contents
-
-
 # Test that a staged checkout matches what was tarred up, with the default first subdir
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
@@ -139,8 +130,8 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "a")
-    original_contents = _list_dir_contents(original_dir)
-    checkout_contents = _list_dir_contents(checkoutdir)
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
 
 
@@ -168,8 +159,8 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
 
     # Check that the full content of the tarball is checked out (base-dir: '')
     original_dir = os.path.join(str(datafiles), "content")
-    original_contents = _list_dir_contents(original_dir)
-    checkout_contents = _list_dir_contents(checkoutdir)
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
 
 
@@ -197,8 +188,8 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "a")
-    original_contents = _list_dir_contents(original_dir)
-    checkout_contents = _list_dir_contents(checkoutdir)
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
 
 
@@ -233,8 +224,8 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "base-directory")
-    original_contents = _list_dir_contents(original_dir)
-    checkout_contents = _list_dir_contents(checkoutdir)
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
 
 
@@ -262,6 +253,6 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "a")
-    original_contents = _list_dir_contents(original_dir)
-    checkout_contents = _list_dir_contents(checkoutdir)
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
