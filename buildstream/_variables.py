@@ -25,7 +25,7 @@ from . import _yaml
 
 # Variables are allowed to have dashes here
 #
-VARIABLE_MATCH = r'\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}'
+_VARIABLE_MATCH = r'\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}'
 
 
 # The Variables helper object will resolve the variable references in
@@ -46,7 +46,7 @@ class Variables():
     def __init__(self, node):
 
         self.original = node
-        self.variables = self.resolve(node)
+        self.variables = self._resolve(node)
 
     # subst():
     #
@@ -62,7 +62,7 @@ class Variables():
     #    LoadError, if the string contains unresolved variable references.
     #
     def subst(self, string):
-        substitute, unmatched = self.subst_internal(string, self.variables)
+        substitute, unmatched = self._subst(string, self.variables)
         unmatched = list(set(unmatched))
         if unmatched:
             if len(unmatched) == 1:
@@ -78,7 +78,7 @@ class Variables():
 
         return substitute
 
-    def subst_internal(self, string, variables):
+    def _subst(self, string, variables):
 
         def subst_callback(match):
             nonlocal variables
@@ -91,7 +91,7 @@ class Variables():
             if value is not None:
                 # We have to check if the inner string has variables
                 # and return unmatches for those
-                unmatched += re.findall(VARIABLE_MATCH, value)
+                unmatched += re.findall(_VARIABLE_MATCH, value)
             else:
                 # Return unmodified token
                 unmatched += [varname]
@@ -100,7 +100,7 @@ class Variables():
             return value
 
         unmatched = []
-        replacement = re.sub(VARIABLE_MATCH, subst_callback, string)
+        replacement = re.sub(_VARIABLE_MATCH, subst_callback, string)
 
         return (replacement, unmatched)
 
@@ -110,7 +110,7 @@ class Variables():
     # in a dictionary, each time creating a new dictionary until there is no
     # more unresolved variables to resolve, or, until resolving further no
     # longer resolves anything, in which case we throw an exception.
-    def resolve(self, node):
+    def _resolve(self, node):
         variables = node
 
         # Special case, if notparallel is specified in the variables for this
@@ -132,7 +132,7 @@ class Variables():
                 # Ensure stringness of the value before substitution
                 value = _yaml.node_get(variables, str, key)
 
-                resolved_var, item_unmatched = self.subst_internal(value, variables)
+                resolved_var, item_unmatched = self._subst(value, variables)
                 resolved[key] = resolved_var
                 unmatched += item_unmatched
 
@@ -155,7 +155,7 @@ class Variables():
                 #
                 summary = ''
                 for unmatch in set(unmatched):
-                    for var, provenance in self.find_references(unmatch):
+                    for var, provenance in self._find_references(unmatch):
                         line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}\n"
                         summary += line.format(unmatched=unmatch, variable=var, provenance=provenance)
 
@@ -168,7 +168,7 @@ class Variables():
 
     # Helper function to fetch information about the node referring to a variable
     #
-    def find_references(self, varname):
+    def _find_references(self, varname):
         fullname = '%{' + varname + '}'
         for key, value in _yaml.node_items(self.original):
             if fullname in value:
