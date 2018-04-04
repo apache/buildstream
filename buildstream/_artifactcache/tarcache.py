@@ -29,23 +29,87 @@ from .._exceptions import ArtifactError
 from . import ArtifactCache
 
 
-def buildref(element, key):
-    project = element._get_project()
+class TarCache(ArtifactCache):
 
-    # Normalize ostree ref unsupported chars
-    element_name = element.normal_name.replace('+', 'X')
+    def __init__(self, context):
 
-    # assume project and element names are not allowed to contain slashes
-    return '{0}/{1}/{2}'.format(project.name, element_name, key)
+        super().__init__(context)
+
+        self.tardir = os.path.join(context.artifactdir, 'tar')
+        os.makedirs(self.tardir, exist_ok=True)
+
+    ################################################
+    #     Implementation of abstract methods       #
+    ################################################
+    def contains(self, element, key):
+        path = os.path.join(self.tardir, _tarpath(element, key))
+        return os.path.isfile(path)
+
+    def commit(self, element, content, keys):
+        os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
+
+        with utils._tempdir() as temp:
+            for key in keys:
+                ref = _tarpath(element, key)
+
+                refdir = os.path.join(temp, key)
+                shutil.copytree(content, refdir, symlinks=True)
+
+                _Tar.archive(os.path.join(self.tardir, ref), key, temp)
+
+    def extract(self, element, key):
+
+        fullname = self.get_artifact_fullname(element, key)
+        path = _tarpath(element, key)
+
+        if not os.path.isfile(os.path.join(self.tardir, path)):
+            raise ArtifactError("Artifact missing for {}".format(fullname))
+
+        # If the destination already exists, the artifact has been extracted
+        dest = os.path.join(self.extractdir, fullname)
+        if os.path.isdir(dest):
+            return dest
+
+        os.makedirs(self.extractdir, exist_ok=True)
+
+        with utils._tempdir(dir=self.extractdir) as tmpdir:
+            _Tar.extract(os.path.join(self.tardir, path), tmpdir)
+
+            os.makedirs(os.path.join(self.extractdir, element._get_project().name, element.normal_name),
+                        exist_ok=True)
+            try:
+                os.rename(os.path.join(tmpdir, key), dest)
+            except OSError as e:
+                # With rename, it's possible to get either ENOTEMPTY or EEXIST
+                # in the case that the destination path is a not empty directory.
+                #
+                # If rename fails with these errors, another process beat
+                # us to it so just ignore.
+                if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
+                    raise ArtifactError("Failed to extract artifact '{}': {}"
+                                        .format(fullname, e)) from e
+
+        return dest
 
 
-def tarpath(element, key):
+# _tarpath()
+#
+# Generate a relative tarball path for a given element and it's cache key
+#
+# Args:
+#    element (Element): The Element object
+#    key (str): The element's cache key
+#
+# Returns:
+#    (str): The relative path to use for storing tarballs
+#
+def _tarpath(element, key):
     project = element._get_project()
     return os.path.join(project.name, element.normal_name, key + '.tar.bz2')
 
 
 # A helper class that contains tar archive/extract functions
-class Tar():
+class _Tar():
 
     # archive()
     #
@@ -232,75 +296,3 @@ class Tar():
     def _extract_with_python(cls, location, dest):
         with tarfile.open(location) as tar:
             tar.extractall(path=dest)
-
-
-class TarCache(ArtifactCache):
-
-    def __init__(self, context):
-
-        super().__init__(context)
-
-        self.tardir = os.path.join(context.artifactdir, 'tar')
-        os.makedirs(self.tardir, exist_ok=True)
-
-    # contains()
-    #
-    # Implements artifactcache.contains().
-    #
-    def contains(self, element, key):
-        path = os.path.join(self.tardir, tarpath(element, key))
-        return os.path.isfile(path)
-
-    # commit()
-    #
-    # Implements artifactcache.commit().
-    #
-    def commit(self, element, content, keys):
-        os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
-
-        with utils._tempdir() as temp:
-            for key in keys:
-                ref = tarpath(element, key)
-
-                refdir = os.path.join(temp, key)
-                shutil.copytree(content, refdir, symlinks=True)
-
-                Tar.archive(os.path.join(self.tardir, ref), key, temp)
-
-    # extract()
-    #
-    # Implements artifactcache.extract().
-    #
-    def extract(self, element, key):
-
-        ref = buildref(element, key)
-        path = tarpath(element, key)
-
-        if not os.path.isfile(os.path.join(self.tardir, path)):
-            raise ArtifactError("Artifact missing for {}".format(ref))
-
-        # If the destination already exists, the artifact has been extracted
-        dest = os.path.join(self.extractdir, ref)
-        if os.path.isdir(dest):
-            return dest
-
-        os.makedirs(self.extractdir, exist_ok=True)
-
-        with utils._tempdir(dir=self.extractdir) as tmpdir:
-            Tar.extract(os.path.join(self.tardir, path), tmpdir)
-
-            os.makedirs(os.path.join(self.extractdir, element._get_project().name, element.normal_name),
-                        exist_ok=True)
-            try:
-                os.rename(os.path.join(tmpdir, key), dest)
-            except OSError as e:
-                # With rename, it's possible to get either ENOTEMPTY or EEXIST
-                # in the case that the destination path is a not empty directory.
-                #
-                # If rename fails with these errors, another process beat
-                # us to it so just ignore.
-                if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
-                    raise ArtifactError("Failed to extract artifact for ref '{}': {}"
-                                        .format(ref, e)) from e
-
-        return dest

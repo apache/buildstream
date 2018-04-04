@@ -5,7 +5,7 @@ from contextlib import ExitStack
 
 import pytest
 
-from buildstream._artifactcache.tarcache import Tar
+from buildstream._artifactcache.tarcache import _Tar
 from buildstream import utils, ProgramNotFoundError
 
 
@@ -19,7 +19,7 @@ def test_archive_default():
         test_file = stack.enter_context(open(os.path.join(src, 'test'), 'a'))
         test_file.write('Test')
 
-        Tar.archive(os.path.join(tar_dir, 'test.tar'), '.', src)
+        _Tar.archive(os.path.join(tar_dir, 'test.tar'), '.', src)
 
         with tarfile.open(os.path.join(tar_dir, 'test.tar')) as tar:
             tar.extractall(path=scratch)
@@ -58,7 +58,7 @@ def test_extract_default():
         with tarfile.open(os.path.join(tar_dir, 'test.tar'), 'a:') as tar:
             tar.add(src, 'contents')
 
-        Tar.extract(os.path.join(tar_dir, 'test.tar'), scratch)
+        _Tar.extract(os.path.join(tar_dir, 'test.tar'), scratch)
 
         assert os.listdir(os.path.join(scratch, 'contents')) == os.listdir(src)
 

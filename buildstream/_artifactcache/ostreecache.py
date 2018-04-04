@@ -21,7 +21,6 @@
 import multiprocessing
 import os
 import signal
-import string
 import tempfile
 
 from .. import _ostree, _signals, utils
@@ -32,53 +31,6 @@ from . import ArtifactCache
 from .pushreceive import initialize_push_connection
 from .pushreceive import push as push_artifact
 from .pushreceive import PushException
-
-
-def buildref(element, key):
-    project = element._get_project()
-
-    # Normalize ostree ref unsupported chars
-    valid_chars = string.digits + string.ascii_letters + '-._'
-    element_name = ''.join([
-        x if x in valid_chars else '_'
-        for x in element.normal_name
-    ])
-
-    assert key is not None
-
-    # assume project and element names are not allowed to contain slashes
-    return '{0}/{1}/{2}'.format(project.name, element_name, key)
-
-
-# Represents a single remote OSTree cache.
-#
-class _OSTreeRemote():
-    def __init__(self, spec, pull_url, push_url):
-        self.spec = spec
-        self.pull_url = pull_url
-        self.push_url = push_url
-
-
-# Maps artifacts to the remotes that contain them.
-#
-class _OSTreeArtifactMap():
-    def __init__(self):
-        self._ref_to_remotes = {}
-
-    def append(self, ref, remote):
-        if ref in self._ref_to_remotes:
-            self._ref_to_remotes[ref].append(remote)
-        else:
-            self._ref_to_remotes[ref] = [remote]
-
-    def lookup(self, ref):
-        return self._ref_to_remotes.get(ref, [])
-
-    def lookup_first(self, ref):
-        return self._ref_to_remotes.get(ref, [])[0]
-
-    def contains(self, ref):
-        return ref in self._ref_to_remotes
 
 
 # An OSTreeCache manages artifacts in an OSTree repository
@@ -109,6 +61,9 @@ class OSTreeCache(ArtifactCache):
         self._has_fetch_remotes = False
         self._has_push_remotes = False
 
+    ################################################
+    #     Implementation of abstract methods       #
+    ################################################
     def has_fetch_remotes(self):
         return self._has_fetch_remotes
 
@@ -124,100 +79,24 @@ class OSTreeCache(ArtifactCache):
             remotes_for_project = self._remotes[element._get_project()]
             return any(remote.spec.push for remote in remotes_for_project)
 
-    # contains():
-    #
-    # Check whether the artifact for the specified Element is already available
-    # in the local artifact cache.
-    #
-    # Args:
-    #     element (Element): The Element to check
-    #     key (str): The cache key to use
-    #
-    # Returns: True if the artifact is in the cache, False otherwise
-    #
     def contains(self, element, key):
-        ref = buildref(element, key)
+        ref = self.get_artifact_fullname(element, key)
         return _ostree.exists(self.repo, ref)
 
-    # remotes_containing_key():
-    #
-    # Return every remote cache that contains the key. The result will be an
-    # ordered list of remotes.
-    #
-    # Args:
-    #     element (Element): The Element to check
-    #     key (str): The key to use
-    #
-    # Returns (list): A list of _OSTreeRemote instances.
-    #
-    def remotes_containing_key(self, element, key):
-        if not self._has_fetch_remotes:
-            return []
-
-        artifact_map = self._artifact_maps[element._get_project()]
-        ref = buildref(element, key)
-        return artifact_map.lookup(ref)
-
-    # remote_contains():
-    #
-    # Check whether the artifact for the specified Element is already available
-    # in the remote artifact cache.
-    #
-    # Args:
-    #     element (Element): The Element to check
-    #     key (str): The cache key to use
-    #
-    # Returns: True if the artifact is in a cache, False otherwise
-    #
     def remote_contains(self, element, key):
-        remotes = self.remotes_containing_key(element, key)
+        remotes = self._remotes_containing_key(element, key)
         return len(remotes) > 0
 
-    # push_needed():
-    #
-    # Check whether an artifact for the specified Element needs to be pushed to
-    # any of the configured push remotes. The policy is to push every artifact
-    # we build to every configured push remote, so this should only return False
-    # if all of the configured push remotes already contain the given artifact.
-    #
-    # This function checks for presence of the artifact only using its strong
-    # key. The presence of the weak key in a cache does not necessarily indicate
-    # that this particular artifact is present, only that there is a
-    # partially-compatible version available.
-    #
-    # Args:
-    #     element (Element): The Element to check
-    #     key (str): The cache key to use
-    #
-    # Returns: False if all the push remotes have the artifact, True otherwise
-    #
     def push_needed(self, element, key):
 
-        remotes_with_artifact = self.remotes_containing_key(element, key)
+        remotes_with_artifact = self._remotes_containing_key(element, key)
 
         push_remotes_with_artifact = set(r for r in remotes_with_artifact if r.spec.push)
         push_remotes_for_project = set(self._remotes[element._get_project()])
         return not push_remotes_for_project.issubset(push_remotes_with_artifact)
 
-    # extract():
-    #
-    # Extract cached artifact for the specified Element if it hasn't
-    # already been extracted.
-    #
-    # Assumes artifact has previously been fetched or committed.
-    #
-    # Args:
-    #     element (Element): The Element to extract
-    #     key (str): The cache key to use
-    #
-    # Raises:
-    #     ArtifactError: In cases there was an OSError, or if the artifact
-    #                    did not exist.
-    #
-    # Returns: path to extracted artifact
-    #
     def extract(self, element, key):
-        ref = buildref(element, key)
+        ref = self.get_artifact_fullname(element, key)
 
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, ref)
@@ -252,46 +131,20 @@ class OSTreeCache(ArtifactCache):
 
         return dest
 
-    # commit():
-    #
-    # Commit built artifact to cache.
-    #
-    # Args:
-    #     element (Element): The Element commit an artifact for
-    #     content (str): The element's content directory
-    #     keys (list): The cache keys to use
-    #
     def commit(self, element, content, keys):
-        refs = [buildref(element, key) for key in keys]
+        refs = [self.get_artifact_fullname(element, key) for key in keys]
 
         try:
             _ostree.commit(self.repo, content, refs)
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 
-    # can_diff():
-    #
-    # Whether this cache implementation can diff (unfortunately
-    # there's no way to tell if an implementation is going to throw
-    # ImplError without abc).
-    #
     def can_diff(self):
         return True
 
-    # diff():
-    #
-    # Return a list of files that have been added or modified between
-    # the artifacts described by key_a and key_b.
-    #
-    # Args:
-    #     element (Element): The element whose artifacts to compare
-    #     key_a (str): The first artifact key
-    #     key_b (str): The second artifact key
-    #     subdir (str): A subdirectory to limit the comparison to
-    #
     def diff(self, element, key_a, key_b, *, subdir=None):
-        _, a, _ = self.repo.read_commit(buildref(element, key_a))
-        _, b, _ = self.repo.read_commit(buildref(element, key_b))
+        _, a, _ = self.repo.read_commit(self.get_artifact_fullname(element, key_a))
+        _, b, _ = self.repo.read_commit(self.get_artifact_fullname(element, key_b))
 
         if subdir:
             a = a.get_child(subdir)
@@ -309,21 +162,12 @@ class OSTreeCache(ArtifactCache):
 
         return modified, removed, added
 
-    # pull():
-    #
-    # Pull artifact from one of the configured remote repositories.
-    #
-    # Args:
-    #     element (Element): The Element whose artifact is to be fetched
-    #     key (str): The cache key to use
-    #     progress (callable): The progress callback, if any
-    #
     def pull(self, element, key, *, progress=None):
         project = element._get_project()
 
         artifact_map = self._artifact_maps[project]
 
-        ref = buildref(element, key)
+        ref = self.get_artifact_fullname(element, key)
 
         try:
             # fetch the artifact from highest priority remote using the specified cache key
@@ -334,18 +178,9 @@ class OSTreeCache(ArtifactCache):
             raise ArtifactError("Failed to pull artifact for element {}: {}"
                                 .format(element.name, e)) from e
 
-    # link_key():
-    #
-    # Add a key for an existing artifact.
-    #
-    # Args:
-    #     element (Element): The Element whose artifact is to be linked
-    #     oldkey (str): An existing cache key for the artifact
-    #     newkey (str): A new cache key for the artifact
-    #
     def link_key(self, element, oldkey, newkey):
-        oldref = buildref(element, oldkey)
-        newref = buildref(element, newkey)
+        oldref = self.get_artifact_fullname(element, oldkey)
+        newref = self.get_artifact_fullname(element, newkey)
 
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, oldref)
@@ -353,19 +188,6 @@ class OSTreeCache(ArtifactCache):
         # create additional ref for the same checksum
         _ostree.set_ref(self.repo, newref, rev)
 
-    # push():
-    #
-    # Push committed artifact to remote repository.
-    #
-    # Args:
-    #     element (Element): The Element whose artifact is to be pushed
-    #     keys (list): The cache keys to use
-    #
-    # Returns:
-    #   (bool): True if any remote was updated, False if no pushes were required
-    #
-    # Raises:
-    #   (ArtifactError): if there was an error
     def push(self, element, keys):
         any_pushed = False
 
@@ -376,9 +198,9 @@ class OSTreeCache(ArtifactCache):
         if not push_remotes:
             raise ArtifactError("Push is not enabled for any of the configured remote artifact caches.")
 
-        refs = [buildref(element, key) for key in keys]
+        refs = [self.get_artifact_fullname(element, key) for key in keys]
 
-        remotes_for_each_ref = [self.remotes_containing_key(element, ref) for ref in refs]
+        remotes_for_each_ref = [self._remotes_containing_key(element, ref) for ref in refs]
 
         for remote in push_remotes:
             # Push if the remote is missing any of the refs
@@ -386,61 +208,6 @@ class OSTreeCache(ArtifactCache):
                 any_pushed |= self._push_to_remote(remote, element, refs)
 
         return any_pushed
-
-    # _initialize_remote():
-    #
-    # Do protocol-specific initialization necessary to use a given OSTree
-    # remote.
-    #
-    # The SSH protocol that we use only supports pushing so initializing these
-    # involves contacting the remote to find out the corresponding pull URL.
-    #
-    # Args:
-    #     url (str): URL of the remote
-    #
-    # Returns:
-    #     (str, str): the pull URL and push URL for the remote
-    #
-    # Raises:
-    #     ArtifactError: if there was an error
-    def _initialize_remote(self, url):
-        if url.startswith('ssh://'):
-            try:
-                push_url = url
-                pull_url = initialize_push_connection(url)
-            except PushException as e:
-                raise ArtifactError(e) from e
-        elif url.startswith('/'):
-            push_url = pull_url = 'file://' + url
-        elif url.startswith('file://'):
-            push_url = pull_url = url
-        elif url.startswith('http://') or url.startswith('https://'):
-            push_url = None
-            pull_url = url
-        else:
-            raise ArtifactError("Unsupported URL: {}".format(url))
-
-        return push_url, pull_url
-
-    # _ensure_remote():
-    #
-    # Ensure that our OSTree repo has a remote configured for the given URL.
-    # Note that SSH access to remotes is not handled by libostree itself.
-    #
-    # Args:
-    #     repo (OSTree.Repo): an OSTree repository
-    #     pull_url (str): the URL where libostree can pull from the remote
-    #
-    # Returns:
-    #     (str): the name of the remote, which can be passed to various other
-    #            operations implemented by the _ostree module.
-    #
-    # Raises:
-    #     OSTreeError: if there was a problem reported by libostree
-    def _ensure_remote(self, repo, pull_url):
-        remote_name = utils.url_directory_name(pull_url)
-        _ostree.configure_remote(repo, remote_name, pull_url)
-        return remote_name
 
     def initialize_remotes(self, *, on_failure=None):
         remote_specs = self.global_remote_specs
@@ -536,6 +303,84 @@ class OSTreeCache(ArtifactCache):
             self._artifact_maps[project] = artifact_map
             self._remotes[project] = remotes
 
+    ################################################
+    #             Local Private Methods            #
+    ################################################
+
+    # _initialize_remote():
+    #
+    # Do protocol-specific initialization necessary to use a given OSTree
+    # remote.
+    #
+    # The SSH protocol that we use only supports pushing so initializing these
+    # involves contacting the remote to find out the corresponding pull URL.
+    #
+    # Args:
+    #     url (str): URL of the remote
+    #
+    # Returns:
+    #     (str, str): the pull URL and push URL for the remote
+    #
+    # Raises:
+    #     ArtifactError: if there was an error
+    def _initialize_remote(self, url):
+        if url.startswith('ssh://'):
+            try:
+                push_url = url
+                pull_url = initialize_push_connection(url)
+            except PushException as e:
+                raise ArtifactError(e) from e
+        elif url.startswith('/'):
+            push_url = pull_url = 'file://' + url
+        elif url.startswith('file://'):
+            push_url = pull_url = url
+        elif url.startswith('http://') or url.startswith('https://'):
+            push_url = None
+            pull_url = url
+        else:
+            raise ArtifactError("Unsupported URL: {}".format(url))
+
+        return push_url, pull_url
+
+    # _ensure_remote():
+    #
+    # Ensure that our OSTree repo has a remote configured for the given URL.
+    # Note that SSH access to remotes is not handled by libostree itself.
+    #
+    # Args:
+    #     repo (OSTree.Repo): an OSTree repository
+    #     pull_url (str): the URL where libostree can pull from the remote
+    #
+    # Returns:
+    #     (str): the name of the remote, which can be passed to various other
+    #            operations implemented by the _ostree module.
+    #
+    # Raises:
+    #     OSTreeError: if there was a problem reported by libostree
+    def _ensure_remote(self, repo, pull_url):
+        remote_name = utils.url_directory_name(pull_url)
+        _ostree.configure_remote(repo, remote_name, pull_url)
+        return remote_name
+
+    # _remotes_containing_key():
+    #
+    # Return every remote cache that contains the key. The result will be an
+    # ordered list of remotes.
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #     key (str): The key to use
+    #
+    # Returns (list): A list of _OSTreeRemote instances.
+    #
+    def _remotes_containing_key(self, element, key):
+        if not self._has_fetch_remotes:
+            return []
+
+        artifact_map = self._artifact_maps[element._get_project()]
+        ref = self.get_artifact_fullname(element, key)
+        return artifact_map.lookup(ref)
+
     def _push_to_remote(self, remote, element, refs):
         with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:
 
@@ -558,3 +403,34 @@ class OSTreeCache(ArtifactCache):
                     raise ArtifactError("Failed to push artifact {}: {}".format(refs, e)) from e
 
             return pushed
+
+
+# Represents a single remote OSTree cache.
+#
+class _OSTreeRemote():
+    def __init__(self, spec, pull_url, push_url):
+        self.spec = spec
+        self.pull_url = pull_url
+        self.push_url = push_url
+
+
+# Maps artifacts to the remotes that contain them.
+#
+class _OSTreeArtifactMap():
+    def __init__(self):
+        self._ref_to_remotes = {}
+
+    def append(self, ref, remote):
+        if ref in self._ref_to_remotes:
+            self._ref_to_remotes[ref].append(remote)
+        else:
+            self._ref_to_remotes[ref] = [remote]
+
+    def lookup(self, ref):
+        return self._ref_to_remotes.get(ref, [])
+
+    def lookup_first(self, ref):
+        return self._ref_to_remotes.get(ref, [])[0]
+
+    def contains(self, ref):
+        return ref in self._ref_to_remotes

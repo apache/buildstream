@@ -19,6 +19,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+import string
 from collections import Mapping, namedtuple
 
 from .._exceptions import ImplError, LoadError, LoadErrorReason
@@ -35,8 +36,13 @@ from .. import _yaml
 #                  in addition to pulling from it.
 #
 class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push')):
+
+    # _new_from_config_node
+    #
+    # Creates an ArtifactCacheSpec() from a YAML loaded node
+    #
     @staticmethod
-    def new_from_config_node(spec_node):
+    def _new_from_config_node(spec_node):
         _yaml.node_validate(spec_node, ['url', 'push'])
         url = _yaml.node_get(spec_node, str, 'url')
         push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
@@ -65,10 +71,10 @@ def artifact_cache_specs_from_config_node(config_node):
 
     artifacts = config_node.get('artifacts', [])
     if isinstance(artifacts, Mapping):
-        cache_specs.append(ArtifactCacheSpec.new_from_config_node(artifacts))
+        cache_specs.append(ArtifactCacheSpec._new_from_config_node(artifacts))
     elif isinstance(artifacts, list):
         for spec_node in artifacts:
-            cache_specs.append(ArtifactCacheSpec.new_from_config_node(spec_node))
+            cache_specs.append(ArtifactCacheSpec._new_from_config_node(spec_node))
     else:
         provenance = _yaml.node_get_provenance(config_node, key='artifacts')
         raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
@@ -104,15 +110,49 @@ def configured_remote_artifact_cache_specs(context, project):
 #
 class ArtifactCache():
     def __init__(self, context):
-
         self.context = context
-
-        os.makedirs(context.artifactdir, exist_ok=True)
         self.extractdir = os.path.join(context.artifactdir, 'extract')
-
-        self._local = False
         self.global_remote_specs = []
         self.project_remote_specs = {}
+
+        self._local = False
+
+        os.makedirs(context.artifactdir, exist_ok=True)
+
+    ################################################
+    #  Methods implemented on the abstract class   #
+    ################################################
+
+    # get_artifact_fullname()
+    #
+    # Generate a full name for an artifact, including the
+    # project namespace, element name and cache key.
+    #
+    # This can also be used as a relative path safely, and
+    # will normalize parts of the element name such that only
+    # digits, letters and some select characters are allowed.
+    #
+    # Args:
+    #    element (Element): The Element object
+    #    key (str): The element's cache key
+    #
+    # Returns:
+    #    (str): The relative path for the artifact
+    #
+    def get_artifact_fullname(self, element, key):
+        project = element._get_project()
+
+        # Normalize ostree ref unsupported chars
+        valid_chars = string.digits + string.ascii_letters + '-._'
+        element_name = ''.join([
+            x if x in valid_chars else '_'
+            for x in element.normal_name
+        ])
+
+        assert key is not None
+
+        # assume project and element names are not allowed to contain slashes
+        return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
     # set_remotes():
     #
@@ -129,6 +169,10 @@ class ArtifactCache():
             self.global_remote_specs = remote_specs
         else:
             self.project_remote_specs[project] = remote_specs
+
+    ################################################
+    # Abstract methods for subclasses to implement #
+    ################################################
 
     # initialize_remotes():
     #
