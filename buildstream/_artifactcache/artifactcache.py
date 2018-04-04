@@ -186,7 +186,7 @@ class ArtifactCache():
     def set_required_artifacts(self, artifacts):
         # We lock both strong and weak keys - deleting one but not the
         # other won't save space in most cases anyway, but would be a
-        # user iconvenience.
+        # user inconvenience.
 
         for artifact in artifacts:
             strong_key = artifact._get_cache_key(strength=_KeyStrength.STRONG)
@@ -256,6 +256,14 @@ class ArtifactCache():
     ################################################
     # Abstract methods for subclasses to implement #
     ################################################
+
+        # We also update the usage times of any artifacts we will be
+        # using, which helps preventing a buildstream process that
+        # runs in parallel with this one from removing artifacts
+        # in-use.
+        for artifact in artifacts:
+            self.update_atime(artifact, artifact._get_cache_key(strength=_KeyStrength.STRONG))
+            self.update_atime(artifact, artifact._get_cache_key(strength=_KeyStrength.WEAK))
 
     # initialize_remotes():
     #
