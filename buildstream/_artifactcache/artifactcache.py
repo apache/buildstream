@@ -217,7 +217,7 @@ class ArtifactCache():
 
         # If our artifact is larger than our max size we need to abort
         # before we clear the whole cache.
-        if self.max_size and artifact_size > self.max_size:
+        if artifact_size > self.max_size:
             raise ArtifactError("The artifact is too large for the cache with current restrictions.")
 
         artifacts = None
@@ -232,7 +232,7 @@ class ArtifactCache():
         # much, artifacts will just be cleaned slightly earlier than
         # technically necessary.
         #
-        while self.max_size and artifact_size + self.get_cache_size() > self.max_size:
+        while artifact_size + self.get_cache_size() > self.max_size:
             if artifacts is None:
                 artifacts = self.list_artifacts()
 

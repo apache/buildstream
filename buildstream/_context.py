@@ -22,6 +22,7 @@ import os
 import datetime
 from collections import deque, Mapping
 from contextlib import contextmanager
+from . import utils
 from . import _cachekey
 from . import _signals
 from . import _site
@@ -166,10 +167,29 @@ class Context():
             path = os.path.expandvars(path)
             setattr(self, directory, path)
 
+        # Load quota configuration
+        # We need to find the first existing directory in the path of
+        # our artifactdir - the artifactdir may not have been created
+        # yet.
+        artifactdir_volume = self.artifactdir
+        while not os.path.exists(artifactdir_volume):
+            artifactdir_volume = os.path.dirname(artifactdir_volume)
+
+        # By default, we set a max size of
+        # current_cache_size + available_disk_space - 2GB .
+        #
+        # The 2GB headroom hopes to ensure that we have enough space
+        # to perform builds, but of course we can't predict build
+        # sizes or external changes to memory.
+        #
+        stat = os.statvfs(artifactdir_volume)
+        cache_size = utils._get_dir_size(artifactdir_volume)
+        free_space = cache_size + stat.f_bsize * stat.f_bavail - 2000000000
+
         # FIXME: We probably want to convert from something like 2GB
         # to 2000000000, this looks like it could help:
         # https://pypi.python.org/pypi/humanfriendly
-        self.cache_quota = _yaml.node_get(defaults, int, 'cache-quota', default_value=None)
+        self.cache_quota = _yaml.node_get(defaults, int, 'cache-quota', default_value=free_space)
 
         # Load artifact share configuration
         self.artifact_cache_specs = artifact_cache_specs_from_config_node(defaults)
