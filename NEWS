@@ -1,4 +1,14 @@
 =================
+buildstream 1.1.4
+=================
+
+  o `bst workspace` commands and `bst track` will substitute their
+    source elements when performing those operations, e.g. performing
+    `bst track` on a filter element will track the sources on the
+    element that it depends on (if it has sources).
+
+
+=================
 buildstream 1.1.3
 =================
 
