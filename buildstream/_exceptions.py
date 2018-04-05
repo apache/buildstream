@@ -182,6 +182,12 @@ class LoadErrorReason(Enum):
     # Conflicting junctions in subprojects
     CONFLICTING_JUNCTION = 12
 
+    # Subproject needs to be fetched
+    SUBPROJECT_FETCH_NEEDED = 13
+
+    # Subproject has no ref
+    SUBPROJECT_INCONSISTENT = 14
+
 
 # LoadError
 #
