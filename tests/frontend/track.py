@@ -5,6 +5,8 @@ from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 
+from . import configure_project
+
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, 'project')
@@ -21,12 +23,6 @@ def generate_element(repo, element_path, dep_name=None):
         element['depends'] = [dep_name]
 
     _yaml.dump(element, element_path)
-
-
-def configure_project(path, config):
-    config['name'] = 'test'
-    config['element-path'] = 'elements'
-    _yaml.dump(config, os.path.join(path, 'project.conf'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
