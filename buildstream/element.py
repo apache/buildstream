@@ -1365,13 +1365,6 @@ class Element(Plugin):
     def _workspaced(self):
         return any(source._has_workspace() for source in self.sources())
 
-    # Get all source workspace directories.
-    #
-    def _workspace_dirs(self):
-        for source in self.sources():
-            if source._has_workspace():
-                yield source._get_workspace()
-
     # _workspaced_artifact():
     #
     # Returns whether the current artifact is workspaced.
