@@ -48,25 +48,28 @@ a list of dictionaries corresponding to the element's :ref:`sources <format_sour
 
 .. code:: yaml
 
-   # The local project's name is "core"
-   core:
+   # Main toplevel "projects" key
+   projects:
 
-     # A dictionary of element names
-     base/automake.bst:
+     # The local project's name is "core"
+     core:
 
-     # A list of sources corresponding to the element
-     # in the same order in which they were declared.
-     #
-     # The values of this list are dictionaries of the
-     # symbolic "ref" portion understood by the given
-     # source plugin implementation.
-     # 
-     - ref: af6ba39142220687c500f79b4aa2f181d9b24e4...
+       # A dictionary of element names
+       base/automake.bst:
 
-   # The "core" project depends on the "bootstrap" project,
-   # here we are allowed to override the refs for the projects
-   # we depend on through junctions.
-   bootstrap:
+       # A list of sources corresponding to the element
+       # in the same order in which they were declared.
+       #
+       # The values of this list are dictionaries of the
+       # symbolic "ref" portion understood by the given
+       # source plugin implementation.
+       #
+       - ref: af6ba39142220687c500f79b4aa2f181d9b24e4...
 
-     zlib.bst:
-     - ref: 4ff941449631ace0d4d203e3483be9dbc9da4540...
+     # The "core" project depends on the "bootstrap" project,
+     # here we are allowed to override the refs for the projects
+     # we depend on through junctions.
+     bootstrap:
+
+       zlib.bst:
+       - ref: 4ff941449631ace0d4d203e3483be9dbc9da4540...
