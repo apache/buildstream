@@ -3,7 +3,9 @@ import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
+
+from . import configure_project, generate_junction
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -71,3 +73,87 @@ def test_fetch_consistency_bug(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['fetch', 'bug.bst'])
     assert result.exc is not None
     assert str(result.exc) == "Something went terribly wrong"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path, store_ref=(ref_storage == 'inline'))
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    # Dump a project.refs if we're using project.refs storage
+    #
+    if ref_storage == 'project.refs':
+        project_refs = {
+            'projects': {
+                'test': {
+                    'junction.bst': [
+                        {
+                            'ref': ref
+                        }
+                    ]
+                }
+            }
+        }
+        _yaml.dump(project_refs, os.path.join(project, 'project.refs'))
+
+    # Now try to fetch it, this should automatically result in fetching
+    # the junction itself.
+    result = cli.run(project=project, args=['fetch', 'junction-dep.bst'])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=False)
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to fetch it, this will bail with the appropriate error
+    # informing the user to track the junction first
+    result = cli.run(project=project, args=['fetch', 'junction-dep.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
