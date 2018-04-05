@@ -32,8 +32,11 @@ from urllib.parse import urlparse
 import click
 import gi
 
+from .._exceptions import ArtifactError
+from ..utils import get_dir_size
+from .. import _ostree
 from .. import _signals  # nopep8
-from .. import utils
+
 
 gi.require_version('OSTree', '1.0')
 # pylint: disable=wrong-import-position,wrong-import-order
@@ -665,8 +668,7 @@ class OSTreeReceiver(object):
         #  - refs is a dictionary of refs to checksums
         args = self.reader.receive_info()
 
-        # args['refs'] is a dict of refs to checksums
-        # These are refs received from the client.
+        # Obtain a dict of remote refs to checksums
         remote_ref_map = args['refs']
 
         # Send info back to the client
@@ -693,6 +695,38 @@ class OSTreeReceiver(object):
             logging.debug('Received done before any objects, exiting')
             return 0
 
+        # Determine size of remote repo (in bytes)
+        repo_size = get_dir_size(self.repopath)
+
+        # if it exists, get the quota of the cache
+        cache_quota = 20000000000 # set at 20 GB for now, this will need to be determined
+
+        # Determine the size of the items about to be received
+        item_size = 19000000000 # This will need to be determined
+
+        if cache_quota and repo_size > cache_quota
+            raise ArtifactError("The repo is currently larger than the set quota")
+        #initial check
+        if cache_quota and item_size > cache_quota:
+            raise ArtifactError("Artifact is too large for the cache under the current quota")
+
+        # Clean the repo
+        if cache_quota and item_size + repo_size > cache_quota:
+            # obtain a list of LRU artifacts
+            LRU_artifacts = _ostree.list_artifacts(self.repo)
+            removed_size = 0
+
+            while item_size + repo_size - removed_size > repo_size:
+                try:
+                    to_remove = LRU_artifacts.pop(0)
+                except IndexError:
+                    raise ArtifactError("This artifact is too large for the cache under the current quota.")
+
+                # remove the artifact from the repo
+                removed_size += _ostree.remove(self.repo, to_remove, defer_prune=False)
+
+
+
         # Receive the actual objects
         # This is just a list of the files that HAVE already been received
         # It contains the check sums as we read the file names
@@ -705,9 +739,6 @@ class OSTreeReceiver(object):
         # If we didn't get any objects, we're done
         if not received_objects:
             return 0
-
-        # Determine size of remote repo
-        reposize = utils.get_dir_size(self.repopath)
 
         # Got all objects, move them to the object store
         for obj in received_objects:
