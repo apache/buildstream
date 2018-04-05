@@ -196,7 +196,8 @@ def test_list(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
-def test_build(cli, tmpdir, datafiles, kind):
+@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
+def test_build(cli, tmpdir, datafiles, kind, strict):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
     checkout = os.path.join(str(tmpdir), 'checkout')
 
@@ -205,6 +206,18 @@ def test_build(cli, tmpdir, datafiles, kind):
     os.makedirs(os.path.join(workspace, 'etc'))
     with open(os.path.join(workspace, 'etc', 'pony.conf'), 'w') as f:
         f.write("PONY='pink'")
+
+    # Configure strict mode
+    strict_mode = True
+    if strict != 'strict':
+        strict_mode = False
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict_mode
+            }
+        }
+    })
 
     # Build modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
