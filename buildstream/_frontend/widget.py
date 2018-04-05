@@ -395,7 +395,7 @@ class LogLine(Widget):
         extra_nl = False
 
         # Now add some custom things
-        if message.detail is not None:
+        if message.detail:
 
             # Identify frontend messages, we never abbreviate these
             frontend_message = not (message.task_id or message.unique_id)
