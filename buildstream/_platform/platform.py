@@ -41,7 +41,7 @@ class Platform():
         self.project = project
 
     @classmethod
-    def _create_instance(cls, *args, **kwargs):
+    def create_instance(cls, *args, **kwargs):
         if sys.platform.startswith('linux'):
             backend = 'linux'
         else:

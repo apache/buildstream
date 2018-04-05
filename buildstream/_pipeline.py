@@ -92,7 +92,7 @@ class Pipeline():
         #
 
         # Load selected platform
-        Platform._create_instance(context, project)
+        Platform.create_instance(context, project)
         platform = Platform.get_platform()
         self._artifacts = platform.artifactcache
         self._loader = Loader(self.context, self.project, targets + except_)
