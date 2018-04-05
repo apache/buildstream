@@ -201,8 +201,8 @@ class LoadErrorReason(Enum):
 # interpreting project YAML
 #
 class LoadError(BstError):
-    def __init__(self, reason, message):
-        super().__init__(message, domain=ErrorDomain.LOAD, reason=reason)
+    def __init__(self, reason, message, *, detail=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.LOAD, reason=reason)
 
 
 # ImplError
