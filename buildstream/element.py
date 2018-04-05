@@ -1738,8 +1738,8 @@ class Element(Plugin):
                 metadir = os.path.join(self.__extract(), 'meta')
                 meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
                 self.__cache_key = meta['keys']['strong']
-            elif self._buildable():
-                # Artifact will be built, not downloaded
+            elif self.__assemble_scheduled or self.__assemble_done:
+                # Artifact will or has been built, not downloaded
                 dependencies = [
                     e._get_cache_key() for e in self.dependencies(Scope.BUILD)
                 ]
