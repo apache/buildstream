@@ -885,7 +885,9 @@ class Element(Plugin):
     # _assemble_done():
     #
     # This is called in the main process after the element has been assembled
-    # in a subprocess.
+    # in both the main process and in a subprocess.
+    #
+    # This will result in updating the element state.
     #
     def _assemble_done(self):
         assert self.__assemble_scheduled
