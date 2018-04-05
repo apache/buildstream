@@ -3,7 +3,7 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 from tests.testutils import cli
 
@@ -44,7 +44,8 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     checkout = os.path.join(project, 'checkout')
 
     cli.configure({
-        'cache-quota': 10000000
+        'cache-quota': 10000000,
+        'cache-headroom': 0
     })
 
     # Create an element that uses almost the entire cache (an empty
@@ -81,7 +82,8 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
     element_path = os.path.join(project, 'elements')
 
     cli.configure({
-        'cache-quota': 400000
+        'cache-quota': 400000,
+        'cache-headroom': 0
     })
 
     # Create an element whose artifact is too large
@@ -98,7 +100,8 @@ def test_expiry_order(cli, datafiles, tmpdir):
     checkout = os.path.join(project, 'workspace')
 
     cli.configure({
-        'cache-quota': 10000000
+        'cache-quota': 10000000,
+        'cache-headroom': 0
     })
 
     # Create an artifact
@@ -143,7 +146,8 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
     cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
 
     cli.configure({
-        'cache-quota': 10000000
+        'cache-quota': 10000000,
+        'cache-headroom': 0
     })
 
     # Create a pretty big dependency
@@ -170,3 +174,33 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
     assert cli.get_element_state(project, 'unrelated.bst') != 'cached'
     assert cli.get_element_state(project, 'dependency.bst') == 'cached'
     assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+
+# Ensure that only valid cache quotas make it through the loading
+# process.
+@pytest.mark.parametrize("quota,headroom,success", [
+    ("1", "1", True),
+    ("1K", "1", True),
+    ("50%", "1", True),
+    ("infinity", "1", True),
+    ("0", "0", True),
+    ("-1", "0", False),
+    ("pony", "horse", False),
+    ("0", "-1", False),
+    ("200%", "0", False)
+])
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, headroom, success):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = os.path.join(project, 'elements')
+
+    cli.configure({
+        'cache-quota': quota,
+        'cache-headroom': headroom
+    })
+
+    res = cli.run(project=project, args=['workspace', 'list'])
+    if success:
+        res.assert_success()
+    else:
+        res.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

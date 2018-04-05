@@ -23,11 +23,13 @@ artifactdir: ${XDG_CACHE_HOME}/buildstream/artifacts
 logdir: ${XDG_CACHE_HOME}/buildstream/logs
 
 # Size of the artifact cache - buildstream will prompt if it cannot
-# store an artifact with the given constraints
+# store an artifact with the given constraints.
 #
-# By default this is <available_disk_space> - 2GB
 #
-cache-quota: null
+#
+cache-quota: infinity
+
+cache-headroom: 2G
 
 #
 #    Scheduler

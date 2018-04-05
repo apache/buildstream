@@ -155,7 +155,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache-quota'
+            'cache-quota', 'cache-headroom'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -175,21 +175,36 @@ class Context():
         while not os.path.exists(artifactdir_volume):
             artifactdir_volume = os.path.dirname(artifactdir_volume)
 
-        # By default, we set a max size of
-        # current_cache_size + available_disk_space - 2GB .
-        #
-        # The 2GB headroom hopes to ensure that we have enough space
-        # to perform builds, but of course we can't predict build
-        # sizes or external changes to memory.
-        #
-        stat = os.statvfs(artifactdir_volume)
-        cache_size = utils._get_dir_size(artifactdir_volume)
-        free_space = cache_size + stat.f_bsize * stat.f_bavail - 2000000000
+        # We read and parse the cache quota as specified by the user
+        cache_quota = _yaml.node_get(defaults, str, 'cache-quota', default_value='infinity')
+        try:
+            cache_quota = utils._parse_size(cache_quota, artifactdir_volume)
+        except utils.UtilError as e:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}\nPlease specify the value in bytes or as a % of full disk space."
+                            .format(str(e))) from e
 
-        # FIXME: We probably want to convert from something like 2GB
-        # to 2000000000, this looks like it could help:
-        # https://pypi.python.org/pypi/humanfriendly
-        self.cache_quota = _yaml.node_get(defaults, int, 'cache-quota', default_value=free_space)
+        cache_headroom = _yaml.node_get(defaults, str, 'cache-headroom', default_value='2G')
+        try:
+            cache_headroom = utils._parse_size(cache_headroom, artifactdir_volume)
+        except utils.UtilError as e:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}\nPlease specify the value in bytes or as a % of full disk space."
+                            .format(str(e))) from e
+
+        # If we are asked not to set a quota, we set it to the maximum
+        # disk space available minus the headroom defined by the user,
+        # such that we at least try to avoid raising Exceptions.
+        #
+        # Of course, if headroom is 0, we might still end up running
+        # out during a build.
+        #
+        if cache_quota is None:
+            stat = os.statvfs(artifactdir_volume)
+            cache_size = utils._get_dir_size(artifactdir_volume)
+            cache_quota = cache_size + stat.f_bsize * stat.f_bavail
+
+        self.cache_quota = cache_quota - cache_headroom
 
         # Load artifact share configuration
         self.artifact_cache_specs = artifact_cache_specs_from_config_node(defaults)
