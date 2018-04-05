@@ -592,3 +592,24 @@ def list_remote_refs(repo, remote="origin"):
     except GLib.GError as e:
         (_, remote_url) = repo.remote_get_url(remote)
         raise OSTreeError(message="{} when attempting to fetch from {}".format(e.message, remote_url)) from e
+
+
+# list_artifacts():
+# artifacts in this cache in LRU order.
+#
+# Returns:
+#     (list) - A list of refs in LRU order
+#
+def list_artifacts(repo):
+    ref_heads = os.path.join(repo.get_path().get_path(), 'refs', 'heads')
+    # FIXME: ostree 2017.11+ supports a flag that would allow
+    #        listing only local refs.
+    refs = list_all_refs(repo).keys()
+    mtimes = []
+
+    for ref in refs:
+        ref_path = os.path.join(ref_heads, ref)
+        if os.path.exists(ref_path):
+            mtimes.append(os.path.getmtime(ref_path))
+
+    return [ref for _, ref in sorted(zip(mtimes, refs))]
