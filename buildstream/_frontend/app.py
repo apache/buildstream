@@ -131,7 +131,7 @@ class App():
             self.context = Context(fetch_subprojects=fetch_subprojects)
             self.context.load(config)
         except BstError as e:
-            click.echo("Error loading user configuration: {}".format(e), err=True)
+            self.print_error(e, "Error loading user configuration")
             sys.exit(-1)
 
         # Override things in the context from our command line options,
@@ -183,7 +183,7 @@ class App():
         try:
             self.project = Project(directory, self.context, cli_options=self.main_options['option'])
         except BstError as e:
-            click.echo("Error loading project: {}".format(e), err=True)
+            self.print_error(e, "Error loading project")
             sys.exit(-1)
 
         # Run the body of the session here, once everything is loaded
@@ -246,7 +246,7 @@ class App():
                 self.pipeline = Pipeline(self.context, self.project, elements, except_,
                                          rewritable=rewritable)
             except BstError as e:
-                click.echo("Error loading pipeline: {}".format(e), err=True)
+                self.print_error(e, "Error loading pipeline")
                 sys.exit(-1)
 
             # Create our status printer, only available in interactive
@@ -261,7 +261,7 @@ class App():
                                          add_remote_cache=add_remote_cache,
                                          track_elements=track_elements)
             except BstError as e:
-                click.echo("Error initializing pipeline: {}".format(e), err=True)
+                self.print_error(e, "Error initializing pipeline")
                 sys.exit(-1)
 
             # Pipeline is loaded, now we can tell the logger about it
@@ -616,9 +616,13 @@ class App():
     #
     # Print an error
     #
-    def print_error(self, error):
+    def print_error(self, error, prefix=None):
         click.echo("", err=True)
-        click.echo("{}".format(error), err=True)
+        main_error = "{}".format(error)
+        if prefix is not None:
+            main_error = "{}: {}".format(prefix, main_error)
+
+        click.echo(main_error, err=True)
         if error.detail:
             indent = " " * INDENT
             detail = '\n' + indent + indent.join(error.detail.splitlines(True))
