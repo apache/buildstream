@@ -2,10 +2,10 @@ import os
 import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
-from buildstream._exceptions import ErrorDomain
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 
-from . import configure_project
+from . import configure_project, generate_junction
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -306,3 +306,77 @@ def test_track_consistency_bug(cli, tmpdir, datafiles):
 
     # We expect BuildStream to fail gracefully, with no recorded exception.
     result.assert_main_error(ErrorDomain.PIPELINE, None)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=False)
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to track it, this will bail with the appropriate error
+    # informing the user to track the junction first
+    result = cli.run(project=project, args=['track', 'junction-dep.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_junction_element(cli, tmpdir, datafiles, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=False)
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    # First demonstrate that showing the pipeline yields an error
+    result = cli.run(project=project, args=['show', 'junction-dep.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+
+    # Now track the junction itself
+    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result.assert_success()
+
+    # Now assert element state (via bst show under the hood) of the dep again
+    assert cli.get_element_state(project, 'junction-dep.bst') == 'waiting'
