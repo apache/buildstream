@@ -25,6 +25,7 @@ import tempfile
 import shutil
 
 from ._exceptions import LoadError, LoadErrorReason
+from ._message import Message, MessageType
 from . import Consistency
 from ._project import Project
 from . import _yaml
@@ -350,16 +351,33 @@ class Loader():
         for meta_source in meta_element.sources:
             source = meta_element.project.create_source(meta_source.kind,
                                                         meta_source)
+            redundant_ref = source._load_ref()
+            if redundant_ref:
+                self._message(MessageType.WARN,
+                              "Ignoring redundant ref in junction element {}".format(element.name))
 
             source._preflight()
 
-            if source.get_consistency() != Consistency.CACHED:
+            # Handle the case where a subproject needs to be fetched
+            #
+            if source.get_consistency() == Consistency.RESOLVED:
                 if self.context._fetch_subprojects:
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(meta_source.kind))
                     source.fetch()
                 else:
-                    raise LoadError(LoadErrorReason.MISSING_FILE, "Subproject fetch needed for {}".format(filename))
+                    detail = "Try fetching the project with `bst fetch {}`".format(filename)
+                    raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
+                                    "Subproject fetch needed for junction: {}".format(filename),
+                                    detail=detail)
+
+            # Handle the case where a subproject has no ref
+            #
+            elif source.get_consistency() == Consistency.INCONSISTENT:
+                detail = "Try tracking the junction element with `bst track {}`".format(filename)
+                raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
+                                "Subproject has no ref for junction: {}".format(filename),
+                                detail=detail)
 
             source._stage(basedir)
 
@@ -636,3 +654,12 @@ class Loader():
         if self.tempdir.startswith(self.context.builddir + os.sep):
             if os.path.exists(self.tempdir):
                 shutil.rmtree(self.tempdir)
+
+    # _message()
+    #
+    # Local message propagator
+    #
+    def _message(self, message_type, message, **kwargs):
+        args = dict(kwargs)
+        self.context.message(
+            Message(None, message_type, message, **args))

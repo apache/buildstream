@@ -221,7 +221,7 @@ def test_git_show(cli, tmpdir, datafiles):
     assert result.exit_code != 0
     assert result.exception
     assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.MISSING_FILE
+    assert result.exception.reason == LoadErrorReason.SUBPROJECT_FETCH_NEEDED
 
     # Explicitly fetch subproject
     result = cli.run(project=project, args=['fetch', 'base.bst'])
