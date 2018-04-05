@@ -51,6 +51,4 @@ class BuildQueue(Queue):
             # Inform element in main process that assembly is done
             element._assemble_done()
 
-            element._update_state()
-
         return True
