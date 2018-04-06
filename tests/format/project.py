@@ -12,6 +12,55 @@ DATA_DIR = os.path.join(
 )
 
 
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_missing_project_conf(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_missing_project_name(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "missingname")
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_load_default_project(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "default")
+    result = cli.run(project=project, args=[
+        'show', '--format', '%{env}', 'manual.bst'
+    ])
+    result.assert_success()
+
+    # Read back some of our project defaults from the env
+    env = _yaml.load_data(result.output)
+    assert (env['USER'] == "tomjon")
+    assert (env['TERM'] == "dumb")
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_override_project_path(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "overridepath")
+    result = cli.run(project=project, args=[
+        'show', '--format', '%{env}', 'manual.bst'
+    ])
+    result.assert_success()
+
+    # Read back the overridden path
+    env = _yaml.load_data(result.output)
+    assert (env['PATH'] == "/bin:/sbin")
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_project_unsupported(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "unsupported")
+
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNSUPPORTED_PROJECT)
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_project_plugin_load_allowed(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, 'plugin-allowed')
