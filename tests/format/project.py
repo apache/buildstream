@@ -27,6 +27,20 @@ def test_missing_project_name(cli, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_empty_project_name(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "emptyname")
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_invalid_project_name(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "invalidname")
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_load_default_project(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "default")
     result = cli.run(project=project, args=[
