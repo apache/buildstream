@@ -188,6 +188,9 @@ class LoadErrorReason(Enum):
     # Subproject has no ref
     SUBPROJECT_INCONSISTENT = 14
 
+    # An invalid symbol name was encountered
+    INVALID_SYMBOL_NAME = 15
+
 
 # LoadError
 #
