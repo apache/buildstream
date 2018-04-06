@@ -298,6 +298,11 @@ Users can configure those options when invoking BuildStream with the
 
     $ bst --option debug True ...
 
+.. note::
+
+   The name of the option may contain alphanumeric characters
+   underscores, and may not start with a leading digit.
+
 
 Common Properties
 ~~~~~~~~~~~~~~~~~
@@ -320,6 +325,12 @@ All option types accept the following common attributes
   If used, this value will override any existing value for the
   variable declared in ``project.conf``, and will be overridden in
   the regular :ref:`composition order <format_composition>`.
+
+  .. note::
+
+     The name of the variable to export may contain alphanumeric
+     characters, dashes, underscores, and may not start with a leading
+     digit.
 
 
 Boolean
