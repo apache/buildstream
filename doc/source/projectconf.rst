@@ -24,6 +24,12 @@ Essentials
 
 Project Name
 ~~~~~~~~~~~~
+The project name is a unique symbol for your project and will
+be used to distinguish your project from others in user preferences,
+namspaceing of your project's artifacts in shared artifact caches,
+and in any case where BuildStream needs to distinguish between multiple
+projects.
+
 The first thing to setup in your ``project.conf`` should be the name
 of your project.
 
@@ -31,8 +37,10 @@ of your project.
 
    name: my-project-name
 
-The project name will be used in user configuration and anywhere
-that a project needs to be specified.
+.. note::
+
+   The project name may contain alphanumeric characters, dashes and
+   underscores, and may not start with a leading digit.
 
 
 .. _project_format_version:
