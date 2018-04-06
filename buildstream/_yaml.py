@@ -20,6 +20,7 @@
 
 import sys
 import collections
+import string
 from copy import deepcopy
 from contextlib import ExitStack
 
@@ -1015,3 +1016,47 @@ def list_final_assertions(values):
             node_final_assertions(value)
         elif isinstance(value, list):
             list_final_assertions(value)
+
+
+# assert_symbol_name()
+#
+# A helper function to check if a loaded string is a valid symbol
+# name and to raise a consistent LoadError if not. For strings which
+# are required to be symbols.
+#
+# Args:
+#    provenance (Provenance): The provenance of the loaded symbol
+#    symbol_name (str): The loaded symbol name
+#    purpose (str): The purpose of the string, for an error message
+#    allow_dashes (bool): Whether dashes are allowed for this symbol
+#
+# Raises:
+#    LoadError: If the symbol_name is invalid
+#
+# Note that dashes are generally preferred for variable names and
+# usage in YAML, but things such as option names which will be
+# evaluated with jinja2 cannot use dashes.
+#
+def assert_symbol_name(provenance, symbol_name, purpose, *, allow_dashes=True):
+    valid_chars = string.digits + string.ascii_letters + '_'
+    if allow_dashes:
+        valid_chars += '-'
+
+    valid = True
+    if not symbol_name:
+        valid = False
+    elif any(x not in valid_chars for x in symbol_name):
+        valid = False
+    elif symbol_name[0] in string.digits:
+        valid = False
+
+    if not valid:
+        detail = "Symbol names must contain only alphanumeric characters, " + \
+                 "may not start with a digit, and may contain underscores"
+        if allow_dashes:
+            detail += " or dashes"
+
+        raise LoadError(LoadErrorReason.INVALID_SYMBOL_NAME,
+                        "{}: Invalid symbol name for {}: '{}'"
+                        .format(provenance, purpose, symbol_name),
+                        detail=detail)
