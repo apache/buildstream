@@ -172,20 +172,12 @@ class BuildElement(Element):
         # Run commands
         for command_name in _command_steps:
             commands = self.commands[command_name]
-            if not commands:
+            if not commands or command_name == 'configure-commands':
                 continue
 
             with self.timed_activity("Running {}".format(command_name)):
                 for cmd in commands:
-                    self.status("Running {}".format(command_name), detail=cmd)
-
-                    # Note the -e switch to 'sh' means to exit with an error
-                    # if any untested command fails.
-                    #
-                    exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                           SandboxFlags.ROOT_READ_ONLY)
-                    if exitcode != 0:
-                        raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+                    self._run_command(sandbox, cmd, command_name)
 
         # %{install-root}/%{build-root} should normally not be written
         # to - if an element later attempts to stage to a location
@@ -203,6 +195,12 @@ class BuildElement(Element):
         # Return the payload, this is configurable but is generally
         # always the /buildstream-install directory
         return self.get_variable('install-root')
+
+    def prepare(self, sandbox):
+        commands = self.commands['configure-commands']
+        if commands:
+            for cmd in commands:
+                self._run_command(sandbox, cmd, 'configure-commands')
 
     def generate_script(self):
         script = ""
@@ -226,3 +224,15 @@ class BuildElement(Element):
             commands.append(command)
 
         return commands
+
+    def _run_command(self, sandbox, cmd, cmd_name):
+        with self.timed_activity("Running {}".format(cmd_name)):
+            self.status("Running {}".format(cmd_name), detail=cmd)
+
+            # Note the -e switch to 'sh' means to exit with an error
+            # if any untested command fails.
+            #
+            exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+                                   SandboxFlags.ROOT_READ_ONLY)
+            if exitcode != 0:
+                raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))

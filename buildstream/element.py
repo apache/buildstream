@@ -281,6 +281,25 @@ class Element(Plugin):
         raise ImplError("element plugin '{kind}' does not implement stage()".format(
             kind=self.get_kind()))
 
+    def prepare(self, sandbox):
+        """Run one-off preparation commands.
+
+        This is run before assemble(), but is guaranteed to run only
+        the first time if we build incrementally - this makes it
+        possible to run configure-like commands without causing the
+        entire element to rebuild.
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        Raises:
+           (:class:`.ElementError`): When the element raises an error
+
+        By default, this method does nothing, but may be overriden to
+        allow configure-like commands.
+        """
+        pass
+
     def assemble(self, sandbox):
         """Assemble the output artifact
 
@@ -1167,6 +1186,23 @@ class Element(Plugin):
 
         return refs
 
+    # _prepare():
+    #
+    # Internal method for calling public abstract prepare() method.
+    #
+    def _prepare(self, sandbox):
+        workspace = self._get_workspace()
+
+        # We need to ensure that the prepare() method is only called
+        # once in workspaces, because the changes will persist across
+        # incremental builds - not desirable, for example, in the case
+        # of autotools' `./configure`.
+        if not (workspace and workspace.prepared):
+            self.prepare(sandbox)
+
+            if workspace:
+                workspace.prepared = True
+
     # _assemble():
     #
     # Internal method for calling public abstract assemble() method.
@@ -1202,7 +1238,9 @@ class Element(Plugin):
                     self.configure_sandbox(sandbox)
                     # Step 2 - Stage
                     self.stage(sandbox)
-                    # Step 3 - Assemble
+                    # Step 3 - Prepare
+                    self._prepare(sandbox)
+                    # Step 4 - Assemble
                     collect = self.assemble(sandbox)
                 except BstError as e:
                     # If an error occurred assembling an element in a sandbox,

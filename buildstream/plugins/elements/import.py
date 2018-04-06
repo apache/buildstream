@@ -32,7 +32,7 @@ The empty configuration is as such:
 
 import os
 import shutil
-from buildstream import BuildElement, ElementError
+from buildstream import Element, BuildElement, ElementError
 
 
 # Element implementation for the 'import' kind.
@@ -91,6 +91,10 @@ class ImportElement(BuildElement):
 
         # And we're done
         return '/output'
+
+    def prepare(self, sandbox):
+        # We inherit a non-default prepare from BuildElement.
+        Element.prepare(self, sandbox)
 
     def generate_script(self):
         build_root = self.get_variable('build-root')

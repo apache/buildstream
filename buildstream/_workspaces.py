@@ -25,10 +25,11 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
 
 
-BST_WORKSPACE_FORMAT_VERSION = 2
+BST_WORKSPACE_FORMAT_VERSION = 3
 
 # Hold on to a list of members which get serialized
 _WORKSPACE_MEMBERS = [
+    'prepared',
     'path',
     'last_successful',
     'running_files'
@@ -53,7 +54,8 @@ _WORKSPACE_MEMBERS = [
 #                          made obsolete with failed build artifacts.
 #
 class Workspace():
-    def __init__(self, project, *, path=None, last_successful=None, running_files=None):
+    def __init__(self, project, *, last_successful=None, path=None, prepared=False, running_files=None):
+        self.prepared = prepared
         self.last_successful = last_successful
         self.path = path
         self.running_files = running_files if running_files is not None else {}
@@ -376,7 +378,7 @@ class Workspaces():
                 for element, config in _yaml.node_items(workspaces)
             }
 
-        elif version == 1 or version == BST_WORKSPACE_FORMAT_VERSION:
+        elif version >= 1 and version <= BST_WORKSPACE_FORMAT_VERSION:
             workspaces = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
             res = {element: self._load_workspace(self._project, node)
                    for element, node in _yaml.node_items(workspaces)}
@@ -402,6 +404,7 @@ class Workspaces():
     #
     def _load_workspace(self, project, node):
         dictionary = {
+            'prepared': _yaml.node_get(node, bool, 'prepared', default_value=False),
             'path': _yaml.node_get(node, str, 'path'),
             'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
             'running_files': _yaml.node_get(node, dict, 'running_files', default_value=None),
