@@ -3,6 +3,8 @@ import pytest
 
 from buildstream import _yaml
 from tests.testutils import cli_integration as cli
+from tests.testutils.site import IS_LINUX
+from tests.testutils.integration import walk_dir
 
 
 pytestmark = pytest.mark.integration
@@ -210,3 +212,47 @@ def test_updated_dependency_nested(cli, tmpdir, datafiles):
     res = cli.run(project=project, args=['shell', element_name, '/usr/bin/test.sh'])
     assert res.exit_code == 0
     assert res.output == 'Hello world!\nHello test!\n\n'
+
+
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not IS_LINUX, reason='Incremental builds are not supported by the unix platform')
+def test_incremental_configure_commands_run_only_once(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'workspace/incremental.bst'
+
+    element = {
+        'kind': 'manual',
+        'depends': [{
+            'filename': 'base.bst',
+            'type': 'build'
+        }],
+        'sources': [{
+            'kind': 'local',
+            'path': 'files/workspace-configure-only-once'
+        }],
+        'config': {
+            'configure-commands': [
+                '$SHELL configure'
+            ]
+        }
+    }
+    _yaml.dump(element, os.path.join(element_path, element_name))
+
+    # We open a workspace on the above element
+    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res.assert_success()
+
+    # Then we build, and check whether the configure step succeeded
+    res = cli.run(project=project, args=['build', element_name])
+    res.assert_success()
+    assert os.path.exists(os.path.join(workspace, 'prepared'))
+
+    # When we build again, the configure commands should not be
+    # called, and we should therefore exit cleanly (the configure
+    # commands are set to always fail after the first run)
+    res = cli.run(project=project, args=['build', element_name])
+    res.assert_success()
+    assert not os.path.exists(os.path.join(workspace, 'prepared-again'))

@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+set -eu
+
+if [ -f "./prepared" ]; then
+    touch "./prepared-again"
+fi
+
+touch "./prepared"
