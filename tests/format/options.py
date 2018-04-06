@@ -25,6 +25,17 @@ def test_invalid_option_name(cli, datafiles, project_dir):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("project_dir", [
+    ('invalid-variable-name-spaces'),
+    ('invalid-variable-name-plus'),
+])
+def test_invalid_variable_name(cli, datafiles, project_dir):
+    project = os.path.join(datafiles.dirname, datafiles.basename, project_dir)
+    result = cli.run(project=project, silent=True, args=['show', 'element.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_invalid_option_type(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, 'invalid-type')
 
