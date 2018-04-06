@@ -411,7 +411,7 @@ class Project():
 
                 # Parse the host mount
                 path = _yaml.node_get(host_file_desc, str, 'path')
-                host_path = _yaml.node_get(host_file_desc, str, 'host_path', default_value='') or None
+                host_path = _yaml.node_get(host_file_desc, str, 'host_path', default_value=None)
                 optional = _yaml.node_get(host_file_desc, bool, 'optional', default_value=False)
                 mount = HostMount(path, host_path, optional)
 

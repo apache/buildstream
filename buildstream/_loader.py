@@ -155,9 +155,9 @@ def extract_depends_from_node(data):
         elif isinstance(dep, Mapping):
             _yaml.node_validate(dep, ['filename', 'type', 'junction'])
 
-            # Make type optional, for this we set it to None after
-            dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value="")
-            if not dep_type or dep_type == Symbol.ALL:
+            # Make type optional, for this we set it to None
+            dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
+            if dep_type is None or dep_type == Symbol.ALL:
                 dep_type = None
             elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
                 provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
@@ -167,9 +167,7 @@ def extract_depends_from_node(data):
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
 
-            junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value="")
-            if not junction:
-                junction = None
+            junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
 
             dependency = Dependency(filename,
                                     dep_type=dep_type, junction=junction,
@@ -584,11 +582,9 @@ class Loader():
             del source[Symbol.KIND]
 
             # Directory is optional
-            directory = _yaml.node_get(source, str, Symbol.DIRECTORY, default_value='')
+            directory = _yaml.node_get(source, str, Symbol.DIRECTORY, default_value=None)
             if directory:
                 del source[Symbol.DIRECTORY]
-            else:
-                directory = None
 
             index = sources.index(source)
             meta_source = MetaSource(element_name, index, kind, source, directory)

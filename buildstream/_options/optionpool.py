@@ -243,8 +243,8 @@ class OptionPool():
     # Return true if a conditional was processed.
     #
     def _process_one_node(self, node):
-        conditions = _yaml.node_get(node, list, '(?)', default_value=[]) or None
-        assertion = _yaml.node_get(node, str, '(!)', default_value='') or None
+        conditions = _yaml.node_get(node, list, '(?)', default_value=None)
+        assertion = _yaml.node_get(node, str, '(!)', default_value=None)
 
         # Process assersions first, we want to abort on the first encountered
         # assertion in a given dictionary, and not lose an assertion due to

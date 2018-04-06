@@ -58,13 +58,8 @@ class Workspace():
     @classmethod
     def from_yaml_node(cls, node, project):
         path = _yaml.node_get(node, str, 'path')
-        last_successful = _yaml.node_get(node, str, 'last_successful', default_value='')
-        running_files = _yaml.node_get(node, dict, 'running_files', default_value={})
-
-        if last_successful == '':
-            last_successful = None
-        if running_files == {}:
-            running_files = None
+        last_successful = _yaml.node_get(node, str, 'last_successful', default_value=None)
+        running_files = _yaml.node_get(node, dict, 'running_files', default_value=None)
 
         return cls(path, project, last_successful, running_files)
 

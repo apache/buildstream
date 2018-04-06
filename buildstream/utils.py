@@ -532,6 +532,11 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
         raise
 
 
+# A sentinel to be used as a default argument for functions that need
+# to distinguish between a kwarg set to None and an unset kwarg.
+_sentinel = object()
+
+
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
 def _force_rmtree(rootpath, **kwargs):
