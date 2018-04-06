@@ -66,8 +66,12 @@ class OptionPool():
     def load(self, options):
 
         for option_name, option_definition in _yaml.node_items(options):
-            opt_type_name = _yaml.node_get(option_definition, str, 'type')
 
+            # Assert that the option name is a valid symbol
+            p = _yaml.node_get_provenance(options, option_name)
+            _yaml.assert_symbol_name(p, option_name, "option name", allow_dashes=False)
+
+            opt_type_name = _yaml.node_get(option_definition, str, 'type')
             try:
                 opt_type = _OPTION_TYPES[opt_type_name]
             except KeyError:
