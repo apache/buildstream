@@ -64,6 +64,11 @@ class Option():
         self.description = _yaml.node_get(node, str, 'description')
         self.variable = _yaml.node_get(node, str, 'variable', default_value='') or None
 
+        # Assert valid symbol name for variable name
+        if self.variable:
+            p = _yaml.node_get_provenance(node, 'variable')
+            _yaml.assert_symbol_name(p, self.variable, 'variable name')
+
     # load_value()
     #
     # Loads the value of the option in string form.
