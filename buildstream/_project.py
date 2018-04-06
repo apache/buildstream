@@ -256,6 +256,11 @@ class Project():
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
         self.name = _yaml.node_get(config, str, 'name')
+
+        # Validate that project name is a valid symbol name
+        _yaml.assert_symbol_name(_yaml.node_get_provenance(config, 'name'),
+                                 self.name, "project name")
+
         self.element_path = os.path.join(
             self.directory,
             _yaml.node_get(config, str, 'element-path')
