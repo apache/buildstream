@@ -395,9 +395,8 @@ class App():
     #
     # Args:
     #    track (bool): Whether to also track the source
-    #    no_checkout (bool): Whether to check out the source (at all)
     #
-    def reset_workspace(self, track, no_checkout):
+    def reset_workspace(self, track):
         # When working on workspaces we only have one target
         target = self.pipeline.targets[0]
         workspace = self.project.workspaces.get_workspace(target.name)
@@ -407,7 +406,7 @@ class App():
                            .format(target.name))
 
         self.close_workspace(target.name, True)
-        self.open_workspace(workspace.path, no_checkout, track, False)
+        self.open_workspace(workspace.path, False, track, False)
 
     ############################################################
     #                      Local Functions                     #

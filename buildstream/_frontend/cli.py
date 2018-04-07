@@ -612,12 +612,10 @@ def workspace_close(app, remove_dir, all_, elements):
 @workspace.command(name='reset', short_help="Reset a workspace to its original state")
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch the latest source before resetting")
-@click.option('--no-checkout', default=False, is_flag=True,
-              help="Do not checkout the source, only link to the given directory")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_reset(app, track_, no_checkout, element):
+def workspace_reset(app, track_, element):
     """Reset a workspace to its original state"""
     if app.interactive:
         if not click.confirm('This will remove all your changes, are you sure?'):
@@ -625,7 +623,7 @@ def workspace_reset(app, track_, no_checkout, element):
             sys.exit(-1)
 
     with app.initialized((element,)):
-        app.reset_workspace(track_, no_checkout)
+        app.reset_workspace(track_)
 
 
 ##################################################################
