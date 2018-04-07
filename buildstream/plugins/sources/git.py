@@ -240,14 +240,14 @@ class GitMirror():
 class GitSource(Source):
 
     def configure(self, node):
-        ref = self.node_get_member(node, str, 'ref', '') or None
+        ref = self.node_get_member(node, str, 'ref', None)
 
         config_keys = ['url', 'track', 'ref', 'submodules', 'checkout-submodules']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
-        self.tracking = self.node_get_member(node, str, 'track', '') or None
+        self.tracking = self.node_get_member(node, str, 'track', None)
         self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
         self.submodules = []
 
@@ -258,7 +258,7 @@ class GitSource(Source):
         modules = self.node_get_member(node, Mapping, 'submodules', {})
         for path, _ in self.node_items(modules):
             submodule = self.node_get_member(modules, Mapping, path)
-            url = self.node_get_member(submodule, str, 'url', '') or None
+            url = self.node_get_member(submodule, str, 'url', None)
             self.submodule_overrides[path] = url
             if 'checkout' in submodule:
                 checkout = self.node_get_member(submodule, bool, 'checkout')
@@ -297,7 +297,7 @@ class GitSource(Source):
         return Consistency.INCONSISTENT
 
     def load_ref(self, node):
-        self.mirror.ref = self.node_get_member(node, str, 'ref', '') or None
+        self.mirror.ref = self.node_get_member(node, str, 'ref', None)
 
     def get_ref(self):
         return self.mirror.ref

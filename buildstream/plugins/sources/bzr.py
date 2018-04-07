@@ -65,7 +65,7 @@ class BzrSource(Source):
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.tracking = self.node_get_member(node, str, 'track')
-        self.ref = self.node_get_member(node, str, 'ref', '') or None
+        self.ref = self.node_get_member(node, str, 'ref', None)
         self.url = self.translate_url(self.original_url)
 
     def preflight(self):
@@ -85,7 +85,7 @@ class BzrSource(Source):
             return Consistency.RESOLVED
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', '') or None
+        self.ref = self.node_get_member(node, str, 'ref', None)
 
     def get_ref(self):
         return self.ref

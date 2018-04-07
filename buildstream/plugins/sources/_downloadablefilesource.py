@@ -16,8 +16,8 @@ class DownloadableFileSource(Source):
 
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
-        self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.etag = self.node_get_member(node, str, 'etag', '') or None
+        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.etag = self.node_get_member(node, str, 'etag', None)
         self.url = self.translate_url(self.original_url)
 
     def preflight(self):
@@ -37,8 +37,8 @@ class DownloadableFileSource(Source):
             return Consistency.RESOLVED
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.etag = self.node_get_member(node, str, 'etag', '') or None
+        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.etag = self.node_get_member(node, str, 'etag', None)
 
     def get_ref(self):
         # Report `None` value if we dont have a ref

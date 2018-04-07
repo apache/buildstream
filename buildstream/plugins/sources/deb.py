@@ -56,7 +56,7 @@ class DebSource(TarSource):
     def configure(self, node):
         super().configure(node)
 
-        self.base_dir = self.node_get_member(node, str, 'base-dir', '') or None
+        self.base_dir = self.node_get_member(node, str, 'base-dir', None)
 
     def preflight(self):
         return

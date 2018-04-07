@@ -65,13 +65,13 @@ class OSTreeSource(Source):
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.url = self.translate_url(self.original_url)
-        self.ref = self.node_get_member(node, str, 'ref', '') or None
-        self.tracking = self.node_get_member(node, str, 'track', '') or None
+        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.tracking = self.node_get_member(node, str, 'track', None)
         self.mirror = os.path.join(self.get_mirror_directory(),
                                    utils.url_directory_name(self.url))
 
         # (optional) Not all repos are signed. But if they are, get the gpg key
-        self.gpg_key = self.node_get_member(node, str, 'gpg-key', '') or None
+        self.gpg_key = self.node_get_member(node, str, 'gpg-key', None)
         self.gpg_key_path = None
         if self.gpg_key is not None:
             self.gpg_key_path = os.path.join(self.get_project_directory(), self.gpg_key)
@@ -86,7 +86,7 @@ class OSTreeSource(Source):
         return [self.original_url, self.ref]
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', '') or None
+        self.ref = self.node_get_member(node, str, 'ref', None)
 
     def get_ref(self):
         return self.ref

@@ -43,7 +43,7 @@ class ScriptElement(buildstream.ScriptElement):
     def configure(self, node):
         for n in self.node_get_member(node, list, 'layout', []):
             dst = self.node_subst_member(n, 'destination')
-            elm = self.node_subst_member(n, 'element', '') or None
+            elm = self.node_subst_member(n, 'element', None)
             self.layout_add(elm, dst)
 
         self.node_validate(node, [
