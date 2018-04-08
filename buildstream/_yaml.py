@@ -1041,7 +1041,7 @@ def list_final_assertions(values):
 # are required to be symbols.
 #
 # Args:
-#    provenance (Provenance): The provenance of the loaded symbol
+#    provenance (Provenance): The provenance of the loaded symbol, or None
 #    symbol_name (str): The loaded symbol name
 #    purpose (str): The purpose of the string, for an error message
 #    allow_dashes (bool): Whether dashes are allowed for this symbol
@@ -1072,7 +1072,9 @@ def assert_symbol_name(provenance, symbol_name, purpose, *, allow_dashes=True):
         if allow_dashes:
             detail += " or dashes"
 
+        message = "Invalid symbol name for {}: '{}'".format(purpose, symbol_name)
+        if provenance is not None:
+            message = "{}: {}".format(provenance, message)
+
         raise LoadError(LoadErrorReason.INVALID_SYMBOL_NAME,
-                        "{}: Invalid symbol name for {}: '{}'"
-                        .format(provenance, purpose, symbol_name),
-                        detail=detail)
+                        message, detail=detail)
