@@ -214,7 +214,12 @@ class Project():
         config = _yaml.load(_site.default_project_config)
 
         # Load project local config and override the builtin
-        project_conf = _yaml.load(projectfile)
+        try:
+            project_conf = _yaml.load(projectfile)
+        except LoadError as e:
+            # Raise a more specific error here
+            raise LoadError(LoadErrorReason.MISSING_PROJECT_CONF, str(e))
+
         _yaml.composite(config, project_conf)
 
         # Element and Source  type configurations will be composited later onto

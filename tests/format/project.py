@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(
 def test_missing_project_conf(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['workspace', 'list'])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_PROJECT_CONF)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))

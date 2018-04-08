@@ -384,8 +384,8 @@ class Loader():
         try:
             project = Project(project_dir, self.context, junction=element)
         except LoadError as e:
-            if e.reason == LoadErrorReason.MISSING_FILE:
-                raise LoadError(reason=e.reason,
+            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
+                raise LoadError(reason=LoadErrorReason.INVALID_JUNCTION,
                                 message="Could not find the project.conf file for {}. "
                                         "Expecting a project at path '{}' within {}"
                                 .format(element, element.path or '.', source)) from e

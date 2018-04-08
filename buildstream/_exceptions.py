@@ -182,14 +182,20 @@ class LoadErrorReason(Enum):
     # Conflicting junctions in subprojects
     CONFLICTING_JUNCTION = 12
 
+    # Failure to load a project from a specified junction
+    INVALID_JUNCTION = 13
+
     # Subproject needs to be fetched
-    SUBPROJECT_FETCH_NEEDED = 13
+    SUBPROJECT_FETCH_NEEDED = 14
 
     # Subproject has no ref
-    SUBPROJECT_INCONSISTENT = 14
+    SUBPROJECT_INCONSISTENT = 15
 
     # An invalid symbol name was encountered
-    INVALID_SYMBOL_NAME = 15
+    INVALID_SYMBOL_NAME = 16
+
+    # A project.conf file was missing
+    MISSING_PROJECT_CONF = 17
 
 
 # LoadError
