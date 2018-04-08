@@ -36,7 +36,7 @@ from .. import Scope, Consistency
 # Import various buildstream internals
 from .._context import Context
 from .._project import Project
-from .._exceptions import BstError, PipelineError, LoadError, AppError
+from .._exceptions import BstError, PipelineError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
 from .._pipeline import Pipeline
 from .._scheduler import Scheduler
@@ -185,6 +185,18 @@ class App():
 
         try:
             self.project = Project(directory, self.context, cli_options=self.main_options['option'])
+        except LoadError as e:
+
+            # Let's automatically start a `bst init` session in this case
+            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF and self.interactive:
+                click.echo("A project was not detected in the directory: {}".format(directory), err=True)
+                click.echo("", err=True)
+                if click.confirm("Would you like to create a new project here ?"):
+                    self.init_project(None)
+
+            self.print_error(e, "Error loading project")
+            sys.exit(-1)
+
         except BstError as e:
             self.print_error(e, "Error loading project")
             sys.exit(-1)
