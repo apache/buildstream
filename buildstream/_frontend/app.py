@@ -23,6 +23,7 @@ import sys
 import shutil
 import resource
 import datetime
+from textwrap import TextWrapper
 from contextlib import contextmanager
 from blessings import Terminal
 
@@ -35,12 +36,14 @@ from .. import Scope, Consistency
 # Import various buildstream internals
 from .._context import Context
 from .._project import Project
-from .._exceptions import BstError, PipelineError, AppError
+from .._exceptions import BstError, PipelineError, LoadError, AppError
 from .._message import Message, MessageType, unconditional_messages
 from .._pipeline import Pipeline
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
+from .._versions import BST_FORMAT_VERSION
 from .. import __version__ as build_stream_version
+from .. import _yaml
 
 # Import frontend assets
 from . import Profile, LogLine, Status
@@ -297,6 +300,72 @@ class App():
                 if session_name:
                     self.message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
                     self.print_summary()
+
+    # init_project()
+    #
+    # Initialize a new BuildStream project, either with the explicitly passed options,
+    # or by starting an interactive session if project_name is not specified and the
+    # application is running in interactive mode.
+    #
+    # Args:
+    #    project_name (str): The project name, must be a valid symbol name
+    #    format_version (int): The project format version, default is the latest version
+    #    element_directory (str): The subdirectory to store elements in, default is 'elements'
+    #    force (bool): Allow overwriting an existing project.conf
+    #
+    def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements', force=False):
+        directory = self.main_options['directory']
+        directory = os.path.abspath(directory)
+        project_path = os.path.join(directory, 'project.conf')
+
+        try:
+            # Abort if the project.conf already exists, unless `--force` was specified in `bst init`
+            if not force and os.path.exists(project_path):
+                raise AppError("A project.conf already exists at: {}".format(project_path),
+                               reason='project-exists')
+
+            if project_name:
+                # If project name was specified, user interaction is not desired, just
+                # perform some validation and write the project.conf
+                _yaml.assert_symbol_name(None, project_name, 'project name')
+                self.assert_format_version(format_version)
+                self.assert_element_path(element_path)
+
+            elif not self.interactive:
+                raise AppError("Cannot initialize a new project without specifying the project name",
+                               reason='unspecified-project-name')
+            else:
+                # Collect the parameters using an interactive session
+                project_name, format_version, element_path = \
+                    self.init_project_interactive(project_name, format_version, element_path)
+
+        except BstError as e:
+            self.print_error(e)
+            sys.exit(-1)
+
+        # Create the directory if it doesnt exist
+        os.makedirs(directory, exist_ok=True)
+
+        # Dont use ruamel.yaml here, because it doesnt let
+        # us programatically insert comments or whitespace at
+        # the toplevel.
+        #
+        try:
+            with open(project_path, 'w') as f:
+                f.write("# Unique project name\n" +
+                        "name: {}\n\n".format(project_name) +
+                        "# Required BuildStream format version\n" +
+                        "format-version: {}\n\n".format(format_version) +
+                        "# Subdirectory where elements are stored\n" +
+                        "element-path: {}\n".format(element_path))
+        except IOError as e:
+            click.echo("", err=True)
+            click.echo("Error writing {}: {}".format(project_path, e), err=True)
+            sys.exit(-1)
+
+        click.echo("", err=True)
+        click.echo("Created project.conf at: {}".format(project_path), err=True)
+        sys.exit(0)
 
     ############################################################
     #                   Workspace Commands                     #
@@ -674,6 +743,136 @@ class App():
     def cleanup(self):
         if self.pipeline:
             self.pipeline.cleanup()
+
+    # Some validation routines for project initialization
+    #
+    def assert_format_version(self, format_version):
+        message = "The version must be supported by this " + \
+                  "version of buildstream (0 - {})\n".format(BST_FORMAT_VERSION)
+
+        # Validate that it is an integer
+        try:
+            number = int(format_version)
+        except ValueError as e:
+            raise AppError(message, reason='invalid-format-version') from e
+
+        # Validate that the specified version is supported
+        if number < 0 or number > BST_FORMAT_VERSION:
+            raise AppError(message, reason='invalid-format-version')
+
+    def assert_element_path(self, element_path):
+        message = "The element path cannot be an absolute path or contain any '..' components\n"
+
+        # Validate the path is not absolute
+        if os.path.isabs(element_path):
+            raise AppError(message, reason='invalid-element-path')
+
+        # Validate that the path does not contain any '..' components
+        path = element_path
+        while path:
+            split = os.path.split(path)
+            path = split[0]
+            basename = split[1]
+            if basename == '..':
+                raise AppError(message, reason='invalid-element-path')
+
+    # init_project_interactive()
+    #
+    # Collect the user input for an interactive session for App.init_project()
+    #
+    # Args:
+    #    project_name (str): The project name, must be a valid symbol name
+    #    format_version (int): The project format version, default is the latest version
+    #    element_path (str): The subdirectory to store elements in, default is 'elements'
+    #
+    # Returns:
+    #    project_name (str): The user selected project name
+    #    format_version (int): The user selected format version
+    #    element_path (str): The user selected element path
+    #
+    def init_project_interactive(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements'):
+
+        def project_name_proc(user_input):
+            try:
+                _yaml.assert_symbol_name(None, user_input, 'project name')
+            except LoadError as e:
+                message = "{}\n\n{}\n".format(e, e.detail)
+                raise UsageError(message) from e
+            return user_input
+
+        def format_version_proc(user_input):
+            try:
+                self.assert_format_version(user_input)
+            except AppError as e:
+                raise UsageError(str(e)) from e
+            return user_input
+
+        def element_path_proc(user_input):
+            try:
+                self.assert_element_path(user_input)
+            except AppError as e:
+                raise UsageError(str(e)) from e
+            return user_input
+
+        w = TextWrapper(initial_indent='  ', subsequent_indent='  ', width=79)
+
+        # Collect project name
+        click.echo("", err=True)
+        click.echo(self.content_profile.fmt("Choose a unique name for your project"), err=True)
+        click.echo(self.format_profile.fmt("-------------------------------------"), err=True)
+        click.echo("", err=True)
+        click.echo(self.detail_profile.fmt(
+            w.fill("The project name is a unique symbol for your project and will be used "
+                   "to distinguish your project from others in user preferences, namspaceing "
+                   "of your project's artifacts in shared artifact caches, and in any case where "
+                   "BuildStream needs to distinguish between multiple projects.")), err=True)
+        click.echo("", err=True)
+        click.echo(self.detail_profile.fmt(
+            w.fill("The project name must contain only alphanumeric characters, "
+                   "may not start with a digit, and may contain dashes or underscores.")), err=True)
+        click.echo("", err=True)
+        project_name = click.prompt(self.content_profile.fmt("Project name"),
+                                    value_proc=project_name_proc, err=True)
+        click.echo("", err=True)
+
+        # Collect format version
+        click.echo(self.content_profile.fmt("Select the minimum required format version for your project"), err=True)
+        click.echo(self.format_profile.fmt("-----------------------------------------------------------"), err=True)
+        click.echo("", err=True)
+        click.echo(self.detail_profile.fmt(
+            w.fill("The format version is used to provide users who build your project "
+                   "with a helpful error message in the case that they do not have a recent "
+                   "enough version of BuildStream supporting all the features which your "
+                   "project might use.")), err=True)
+        click.echo("", err=True)
+        click.echo(self.detail_profile.fmt(
+            w.fill("The lowest version allowed is 0, the currently installed version of BuildStream "
+                   "supports up to format version {}.".format(BST_FORMAT_VERSION))), err=True)
+
+        click.echo("", err=True)
+        format_version = click.prompt(self.content_profile.fmt("Format version"),
+                                      value_proc=format_version_proc,
+                                      default=format_version, err=True)
+        click.echo("", err=True)
+
+        # Collect element path
+        click.echo(self.content_profile.fmt("Select the element path"), err=True)
+        click.echo(self.format_profile.fmt("-----------------------"), err=True)
+        click.echo("", err=True)
+        click.echo(self.detail_profile.fmt(
+            w.fill("The element path is a project subdirectory where element .bst files are stored "
+                   "within your project.")), err=True)
+        click.echo("", err=True)
+        click.echo(self.detail_profile.fmt(
+            w.fill("Elements will be displayed in logs as filenames relative to "
+                   "the element path, and similarly, dependencies must be expressed as filenames "
+                   "relative to the element path.")), err=True)
+        click.echo("", err=True)
+        element_path = click.prompt(self.content_profile.fmt("Element path"),
+                                    value_proc=element_path_proc,
+                                    default=element_path, err=True)
+
+        return (project_name, format_version, element_path)
 
 
 #

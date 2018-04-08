@@ -9,6 +9,7 @@ MAIN_COMMANDS = [
     'build ',
     'checkout ',
     'fetch ',
+    'init ',
     'pull ',
     'push ',
     'shell ',

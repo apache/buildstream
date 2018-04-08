@@ -4,6 +4,7 @@ import sys
 import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError
+from .._versions import BST_FORMAT_VERSION
 from ..__version__ import __version__ as build_stream_version
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
@@ -117,7 +118,7 @@ click.BaseCommand.main = override_main
               type=click.Path(exists=True, dir_okay=False, readable=True),
               help="Configuration file to use")
 @click.option('--directory', '-C', default=os.getcwd(),
-              type=click.Path(exists=True, file_okay=False, readable=True),
+              type=click.Path(file_okay=False, readable=True),
               help="Project directory (default: current directory)")
 @click.option('--on-error', default=None,
               type=click.Choice(['continue', 'quit', 'terminate']),
@@ -162,6 +163,31 @@ def cli(context, **kwargs):
     # Create the App, giving it the main arguments
     context.obj = App(dict(kwargs))
     context.call_on_close(context.obj.cleanup)
+
+
+##################################################################
+#                           Init Command                         #
+##################################################################
+@cli.command(short_help="Initialize a new BuildStream project")
+@click.option('--project-name', type=click.STRING,
+              help="The project name to use")
+@click.option('--format-version', type=click.INT, default=BST_FORMAT_VERSION,
+              help="The required format version (default: {})".format(BST_FORMAT_VERSION))
+@click.option('--element-path', type=click.Path(), default="elements",
+              help="The subdirectory to store elements in (default: elements)")
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Allow overwriting an existing project.conf")
+@click.pass_obj
+def init(app, project_name, format_version, element_path, force):
+    """Initialize a new BuildStream project
+
+    Creates a new BuildStream project.conf in the project
+    directory.
+
+    Unless `--project-name` is specified, this will be an
+    interactive session.
+    """
+    app.init_project(project_name, format_version, element_path, force)
 
 
 ##################################################################
