@@ -36,6 +36,7 @@ import shutil
 
 from . import _yaml
 from ._variables import Variables
+from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
 from . import Plugin, Consistency
 from . import SandboxFlags
@@ -45,16 +46,6 @@ from . import _signals
 from . import _site
 from ._platform import Platform
 from .sandbox._config import SandboxConfig
-
-
-# The base BuildStream artifact version
-#
-# The artifact version changes whenever the cache key
-# calculation algorithm changes in an incompatible way
-# or if buildstream was changed in a way which can cause
-# the same cache key to produce something that is no longer
-# the same.
-_BST_CORE_ARTIFACT_VERSION = 1
 
 
 # _KeyStrength():
@@ -1011,7 +1002,7 @@ class Element(Plugin):
             project = self._get_project()
 
             self.__cache_key_dict = {
-                'artifact-version': "{}.{}".format(_BST_CORE_ARTIFACT_VERSION,
+                'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
                                                    self.BST_ARTIFACT_VERSION),
                 'context': context.get_cache_key(),
                 'project': project.get_cache_key(),

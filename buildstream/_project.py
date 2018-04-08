@@ -33,15 +33,9 @@ from ._artifactcache import artifact_cache_specs_from_config_node
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
+from ._versions import BST_FORMAT_VERSION
 from ._workspaces import Workspaces
 
-
-# The base BuildStream format version
-#
-# This version is bumped whenever enhancements are made
-# to the `project.conf` format or the core element format.
-#
-BST_FORMAT_VERSION = 6
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
