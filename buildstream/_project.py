@@ -20,7 +20,7 @@
 
 import os
 import multiprocessing  # for cpu_count()
-from collections import Mapping
+from collections import Mapping, OrderedDict
 from pluginbase import PluginBase
 from . import utils
 from . import _cachekey
@@ -94,6 +94,8 @@ class Project():
         self.base_env_nocache = None             # The base nocache mask (list) for the environment
         self.element_overrides = {}              # Element specific configurations
         self.source_overrides = {}               # Source specific configurations
+        self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
+        self.default_mirror = None               # The name of the preferred mirror.
 
         #
         # Private Members
@@ -202,6 +204,66 @@ class Project():
         self._assert_plugin_format(source, version)
         return source
 
+    # get_alias_uri()
+    #
+    # Returns the URI for a given alias, if it exists
+    #
+    # Args:
+    #    alias (str): The alias.
+    #
+    # Returns:
+    #    str: The URI for the given alias; or None: if there is no URI for
+    #         that alias.
+    def get_alias_uri(self, alias):
+        return self._aliases.get(alias)
+
+    # generate_alias_combinations()
+    #
+    # Yields every unique combination of mirrors for each alias
+    #
+    # e.g. alias 'foo' has a mirror at 'mirror-A', and the normal alias at 'upstream-A'
+    #      alias 'bar' has no mirror, but does have the normal alias at 'upstream-B'
+    #      We would yield {'foo': 'mirror-A', 'bar': 'upstream-B'},
+    #      and            {'foo': 'upstream-A', 'bar': 'upstream-B'},
+    #
+    # Args:
+    #    aliases (list): A list of aliases to generate combinations for
+    #
+    # Yields:
+    #    a dict mapping aliases to a mirror URI
+    #
+    def generate_alias_combinations(self, aliases):
+        # We numerically address the aliases
+        aliases = list(aliases)
+
+        # Flatten the mirrors and put them in the right order
+        flattened_mirrors = {}
+        for alias in aliases:
+            flattened_mirrors[alias] = []
+            for mirror_location, alias_mappings in self.mirrors.items():
+                if alias in alias_mappings:
+                    mapping_list = list(alias_mappings[alias])
+                    if mirror_location == self.default_mirror:
+                        # The default mirror goes first
+                        flattened_mirrors[alias] = mapping_list + flattened_mirrors[alias]
+                    else:
+                        flattened_mirrors[alias].extend(mapping_list)
+            flattened_mirrors[alias].append(self._aliases[alias])
+
+        combinations = [[]]
+        for alias in aliases:
+            new_combinations = []
+            for x in combinations:
+                for y in flattened_mirrors[alias]:
+                    new_combinations.append(x + [y])
+            combinations = new_combinations
+
+        for combination in combinations:
+            out_combination = {}
+            for i, alias in enumerate(aliases):
+                out_combination[alias] = combination[i]
+            yield out_combination
+
     # _load():
     #
     # Loads the project configuration file in the project directory.
@@ -249,7 +311,7 @@ class Project():
             'aliases', 'name',
             'artifacts', 'options',
             'fail-on-overlap', 'shell',
-            'ref-storage', 'sandbox'
+            'ref-storage', 'sandbox', 'mirrors',
         ])
 
         # The project name, element path and option declarations
@@ -416,6 +478,23 @@ class Project():
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
+
+        mirrors = _yaml.node_get(config, list, 'mirrors', default_value=[])
+        default_mirror_set = False
+        for mirror in mirrors:
+            allowed_mirror_fields = [
+                'location-name', 'aliases'
+            ]
+            _yaml.node_validate(mirror, allowed_mirror_fields)
+            mirror_location = _yaml.node_get(mirror, str, 'location-name')
+            alias_mappings = {}
+            for alias_mapping, uris in _yaml.node_items(mirror['aliases']):
+                assert isinstance(uris, list)
+                alias_mappings[alias_mapping] = list(uris)
+            self.mirrors[mirror_location] = alias_mappings
+            if not default_mirror_set:
+                self.default_mirror = mirror_location
+                default_mirror_set = True
 
     # _assert_plugin_format()
     #
