@@ -7,6 +7,7 @@ from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
+from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
 repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
 
@@ -375,7 +376,7 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     # Test loading a version with decimals
     {"format-version": 0.5},
     # Test loading a future version
-    {"format-version": 3}
+    {"format-version": BST_WORKSPACE_FORMAT_VERSION + 1}
 ])
 def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -399,7 +400,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
     ({
         "alpha.bst": "/workspaces/bravo"
     }, {
-        "format-version": 2,
+        "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
                 "path": "/workspaces/bravo",
@@ -413,7 +414,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             0: "/workspaces/bravo"
         }
     }, {
-        "format-version": 2,
+        "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
                 "path": "/workspaces/bravo",
@@ -430,7 +431,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             }
         }
     }, {
-        "format-version": 2,
+        "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
                 "path": "/workspaces/bravo",
@@ -451,7 +452,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             }
         }
     }, {
-        "format-version": 2,
+        "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
                 "path": "/workspaces/bravo",
