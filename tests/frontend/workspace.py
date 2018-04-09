@@ -278,7 +278,7 @@ def test_build(cli, tmpdir, datafiles, kind, strict):
     assert os.path.exists(filename)
 
     # Check that the original /usr/bin/hello is not in the checkout
-    assert not os.path.exists(os.path.join(workspace, 'usr', 'bin', 'hello'))
+    assert not os.path.exists(os.path.join(checkout, 'usr', 'bin', 'hello'))
 
 
 # Ensure that various versions that should not be accepted raise a
