@@ -156,6 +156,8 @@ class Element(Plugin):
         self.__remotely_strong_cached = None    # Whether we have a remotely cached artifact
         self.__assemble_scheduled = False       # Element is scheduled to be assembled
         self.__assemble_done = False            # Element is assembled
+        self.__tracking_scheduled = False       # Sources are scheduled to be tracked
+        self.__tracking_done = False            # Sources have been tracked
         self.__pull_failed = False              # Whether pull was attempted but failed
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
@@ -830,8 +832,18 @@ class Element(Plugin):
     # succeeds.
     #
     def _schedule_tracking(self):
-        for source in self.__sources:
-            source._schedule_tracking()
+        self.__tracking_scheduled = True
+        self._update_state()
+
+    # _tracking_done():
+    #
+    # This is called in the main process after the element has been tracked
+    #
+    def _tracking_done(self):
+        assert self.__tracking_scheduled
+
+        self.__tracking_scheduled = False
+        self.__tracking_done = True
 
         self._update_state()
 
@@ -852,7 +864,7 @@ class Element(Plugin):
     # _assemble_done():
     #
     # This is called in the main process after the element has been assembled
-    # in both the main process and in a subprocess.
+    # and in the a subprocess after assembly completes.
     #
     # This will result in updating the element state.
     #
@@ -1611,6 +1623,10 @@ class Element(Plugin):
     #
     def __update_source_state(self):
 
+        # Cannot resolve source state until tracked
+        if self.__tracking_scheduled:
+            return
+
         # Determine overall consistency of the element
         consistency = Consistency.CACHED
         for source in self.__sources:
@@ -1644,7 +1660,7 @@ class Element(Plugin):
         self.__update_source_state()
 
         if self._get_consistency() == Consistency.INCONSISTENT:
-            # Tracking is still pending
+            # Tracking may still be pending
             return
 
         if any([not source._stable() for source in self.__sources]):

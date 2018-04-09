@@ -68,7 +68,7 @@ class TrackQueue(Queue):
                 source.warn("Failed to update project file",
                             detail="{}".format(e))
 
-        element._update_state()
+        element._tracking_done()
 
         # We'll appear as a skipped element if tracking resulted in no change
         return changed

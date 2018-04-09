@@ -88,7 +88,6 @@ class Source(Plugin):
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
-        self.__tracking = False                         # Source is scheduled to be tracked
         self.__assemble_scheduled = False               # Source is scheduled to be assembled
         self.__workspace = None                         # Directory of the currently active workspace
 
@@ -311,8 +310,6 @@ class Source(Plugin):
     # This must be called whenever the state of a source may have changed.
     #
     def _update_state(self):
-        if self.__tracking:
-            return
 
         if self.__consistency < Consistency.CACHED:
 
@@ -325,17 +322,6 @@ class Source(Plugin):
     #
     def _get_consistency(self):
         return self.__consistency
-
-    # Mark a source as scheduled to be tracked
-    #
-    # This is used across the pipeline in sessions where the
-    # source in question are going to be tracked. This is important
-    # as it will prevent depending elements from producing cache
-    # keys until the source is RESOLVED and also prevent depending
-    # elements from being assembled until the source is CACHED.
-    #
-    def _schedule_tracking(self):
-        self.__tracking = True
 
     # _schedule_assemble():
     #
@@ -442,8 +428,6 @@ class Source(Plugin):
         # TrackQueue() will want to update a specific node with
         # the ref, regardless of whether the original has changed.
         self.set_ref(ref, node)
-
-        self.__tracking = False
 
         return changed
 
