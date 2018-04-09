@@ -36,9 +36,6 @@ from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 
 
-# The separator we use for user specified aliases
-_ALIAS_SEPARATOR = ':'
-
 # Project Configuration file
 _PROJECT_CONF_FILE = 'project.conf'
 
@@ -137,8 +134,8 @@ class Project():
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
     def translate_url(self, url):
-        if url and _ALIAS_SEPARATOR in url:
-            url_alias, url_body = url.split(_ALIAS_SEPARATOR, 1)
+        if url and utils._ALIAS_SEPARATOR in url:
+            url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
             alias_url = self._aliases.get(url_alias)
             if alias_url:
                 url = alias_url + url_body

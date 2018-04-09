@@ -43,6 +43,10 @@ from . import _signals
 from ._exceptions import BstError, ErrorDomain
 
 
+# The separator we use for user specified aliases
+_ALIAS_SEPARATOR = ':'
+
+
 class UtilError(BstError):
     """Raised by utility functions when system calls fail.
 
