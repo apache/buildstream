@@ -237,6 +237,58 @@ def test_reset(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_reset_multiple(cli, tmpdir, datafiles):
+    # Open the workspaces
+    tmpdir_alpha = os.path.join(str(tmpdir), 'alpha')
+    tmpdir_beta = os.path.join(str(tmpdir), 'beta')
+    alpha, project, workspace_alpha = open_workspace(
+        cli, tmpdir_alpha, datafiles, 'git', False, suffix='-alpha')
+    beta, project, workspace_beta = open_workspace(
+        cli, tmpdir_beta, datafiles, 'git', False, suffix='-beta')
+
+    # Modify workspaces
+    shutil.rmtree(os.path.join(workspace_alpha, 'usr', 'bin'))
+    os.makedirs(os.path.join(workspace_beta, 'etc'))
+    with open(os.path.join(workspace_beta, 'etc', 'pony.conf'), 'w') as f:
+        f.write("PONY='pink'")
+
+    # Now reset the open workspaces, this should have the
+    # effect of reverting our changes.
+    result = cli.run(project=project, args=[
+        'workspace', 'reset', alpha, beta,
+    ])
+    result.assert_success()
+    assert os.path.exists(os.path.join(workspace_alpha, 'usr', 'bin', 'hello'))
+    assert not os.path.exists(os.path.join(workspace_beta, 'etc', 'pony.conf'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_reset_all(cli, tmpdir, datafiles):
+    # Open the workspaces
+    tmpdir_alpha = os.path.join(str(tmpdir), 'alpha')
+    tmpdir_beta = os.path.join(str(tmpdir), 'beta')
+    alpha, project, workspace_alpha = open_workspace(
+        cli, tmpdir_alpha, datafiles, 'git', False, suffix='-alpha')
+    beta, project, workspace_beta = open_workspace(
+        cli, tmpdir_beta, datafiles, 'git', False, suffix='-beta')
+
+    # Modify workspaces
+    shutil.rmtree(os.path.join(workspace_alpha, 'usr', 'bin'))
+    os.makedirs(os.path.join(workspace_beta, 'etc'))
+    with open(os.path.join(workspace_beta, 'etc', 'pony.conf'), 'w') as f:
+        f.write("PONY='pink'")
+
+    # Now reset the open workspace, this should have the
+    # effect of reverting our changes.
+    result = cli.run(project=project, args=[
+        'workspace', 'reset', '--all'
+    ])
+    result.assert_success()
+    assert os.path.exists(os.path.join(workspace_alpha, 'usr', 'bin', 'hello'))
+    assert not os.path.exists(os.path.join(workspace_beta, 'etc', 'pony.conf'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_list(cli, tmpdir, datafiles):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
