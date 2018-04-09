@@ -92,8 +92,6 @@ class Workspace():
     #
     def init(self, element):
         self._element = element
-        for source in element.sources():
-            source._set_workspace(self)
 
     # invalidate_key()
     #

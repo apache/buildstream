@@ -88,7 +88,6 @@ class Source(Plugin):
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
-        self.__workspace = None                         # Directory of the currently active workspace
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -327,15 +326,12 @@ class Source(Plugin):
     def _fetch(self):
         self.fetch()
 
-    # Return the path where this source should be staged under given directory
-    def _get_staging_path(self, directory):
-        if self.__directory is not None:
-            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
-        return directory
-
     # Ensures a fully constructed path and returns it
     def _ensure_directory(self, directory):
-        directory = self._get_staging_path(directory)
+
+        if self.__directory is not None:
+            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
+
         try:
             os.makedirs(directory, exist_ok=True)
         except OSError as e:
@@ -351,11 +347,7 @@ class Source(Plugin):
     def _stage(self, directory):
         staging_directory = self._ensure_directory(directory)
 
-        if self._has_workspace():
-            with self.timed_activity("Staging local files at {}".format(self.__workspace.path)):
-                self.__workspace.stage(staging_directory)
-        else:
-            self.stage(staging_directory)
+        self.stage(staging_directory)
 
     # Wrapper for init_workspace()
     def _init_workspace(self, directory):
@@ -363,18 +355,24 @@ class Source(Plugin):
 
         self.init_workspace(directory)
 
+    # _get_unique_key():
+    #
     # Wrapper for get_unique_key() api
+    #
+    # Args:
+    #    workspace_key: An alternative key to use instead of this
+    #                   source's unique key
     #
     # This adds any core attributes to the key and
     # also calculates something different if workspaces
     # are active.
     #
-    def _get_unique_key(self):
+    def _get_unique_key(self, workspace_key=None):
         key = {}
 
         key['directory'] = self.__directory
-        if self._has_workspace():
-            key['workspace'] = self.__workspace.get_key()
+        if workspace_key is not None:
+            key['workspace'] = workspace_key
         else:
             key['unique'] = self.get_unique_key()
 
@@ -546,27 +544,5 @@ class Source(Plugin):
 
         if current_ref != new_ref:
             self.info("Found new revision: {}".format(new_ref))
-            if self._has_workspace():
-                detail = "This source has an open workspace.\n" \
-                    + "To start using the new reference, please close the existing workspace."
-                self.warn("Updated reference will be ignored as source has open workspace", detail=detail)
 
         return new_ref
-
-    # Set the current workspace
-    #
-    # Note that this invalidates the workspace key.
-    #
-    def _set_workspace(self, workspace):
-        if self._has_workspace():
-            self.__workspace.invalidate_key()
-        self.__workspace = workspace
-
-    # Return the current workspace directory
-    def _get_workspace(self):
-        return self.__workspace.path
-
-    # Whether the source has a set workspace
-    #
-    def _has_workspace(self):
-        return self.__workspace is not None

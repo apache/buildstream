@@ -162,6 +162,7 @@ class Element(Plugin):
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
         self.__whitelist_regex = None
+        self.__workspace = None                 # The associated Workspace, if any
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(plugin_conf)
@@ -987,6 +988,17 @@ class Element(Plugin):
 
             context = self._get_context()
             project = self._get_project()
+            workspace = self._get_workspace()
+
+            # Use the workspace key in source cache key calculations.
+            #
+            # This is only done this way to retain backwards compatibility
+            # of the cache key after making workspaces element wide instead
+            # of being source specific.
+            #
+            workspace_key = None
+            if workspace:
+                workspace_key = workspace.get_key()
 
             self.__cache_key_dict = {
                 'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
@@ -996,7 +1008,7 @@ class Element(Plugin):
                 'element': self.get_unique_key(),
                 'execution-environment': self.__sandbox_config.get_unique_key(),
                 'environment': cache_env,
-                'sources': [s._get_unique_key() for s in self.__sources],
+                'sources': [s._get_unique_key(workspace_key) for s in self.__sources],
                 'public': self.__public,
                 'cache': type(self.__artifacts).__name__
             }
@@ -1103,8 +1115,15 @@ class Element(Plugin):
     def _track(self):
         refs = []
         for source in self.__sources:
+            old_ref = source.get_ref()
             new_ref = source._track()
             refs.append((source._get_unique_id(), new_ref))
+
+            # Complimentary warning that the new ref will be unused.
+            if old_ref != new_ref and self._get_workspace():
+                detail = "This source has an open workspace.\n" \
+                    + "To start using the new reference, please close the existing workspace."
+                source.warn("Updated reference will be ignored as source has open workspace", detail=detail)
 
         return refs
 
@@ -1332,12 +1351,6 @@ class Element(Plugin):
         os.makedirs(directory, exist_ok=True)
         return os.path.join(directory, logfile)
 
-    # Set a source's workspace
-    #
-    def _set_source_workspaces(self, path):
-        for source in self.sources():
-            source._set_workspace(path)
-
     # _get_workspace():
     #
     # Returns:
@@ -1537,13 +1550,8 @@ class Element(Plugin):
         # perform incremental builds.
         if mount_workspaces and self._can_build_incrementally():
             workspace = self._get_workspace()
-            # First, mount sources that have an open workspace
-            sources_to_mount = [source for source in self.sources() if source._has_workspace()]
-            for source in sources_to_mount:
-                mount_point = source._get_staging_path(directory)
-                mount_source = workspace.get_absolute_path()
-                sandbox.mark_directory(mount_point)
-                sandbox._set_mount_source(mount_point, mount_source)
+            sandbox.mark_directory(directory)
+            sandbox._set_mount_source(directory, workspace.get_absolute_path())
 
         # Stage all sources that need to be copied
         sandbox_root = sandbox.get_directory()
@@ -1564,15 +1572,17 @@ class Element(Plugin):
             if os.path.isdir(directory) and os.listdir(directory):
                 raise ElementError("Staging directory '{}' is not empty".format(directory))
 
-            # If mount_workspaces is set, sources with workspace are mounted
-            # directly inside the sandbox so no need to stage them here.
-            if mount_workspaces and self._can_build_incrementally():
-                sources = [source for source in self.sources() if not source._has_workspace()]
+            workspace = self._get_workspace()
+            if workspace:
+                # If mount_workspaces is set and we're doing incremental builds,
+                # the workspace is already mounted into the sandbox.
+                if not (mount_workspaces and self._can_build_incrementally()):
+                    with self.timed_activity("Staging local files at {}".format(workspace.path)):
+                        workspace.stage(directory)
             else:
-                sources = self.sources()
-
-            for source in sources:
-                source._stage(directory)
+                # No workspace, stage directly
+                for source in self.sources():
+                    source._stage(directory)
 
         # Ensure deterministic mtime of sources at build time
         utils._set_deterministic_mtime(directory)
