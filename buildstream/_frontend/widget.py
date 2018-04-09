@@ -702,7 +702,7 @@ class LogLine(Widget):
             if "%{workspaced" in format_:
                 line = p.fmt_subst(
                     line, 'workspaced',
-                    '(workspaced)' if element._workspaced() else '', fg='yellow')
+                    '(workspaced)' if element._get_workspace() else '', fg='yellow')
 
             # Workspace-dirs
             if "%{workspace-dirs" in format_:

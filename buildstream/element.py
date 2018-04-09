@@ -505,7 +505,7 @@ class Element(Plugin):
             # of any files created by our dependencies since the last
             # successful build.
             to_update = None
-            if self._workspaced() and old_dep_keys:
+            if self._get_workspace() and old_dep_keys:
                 dep._assert_cached()
 
                 if dep.name in old_dep_keys:
@@ -867,7 +867,7 @@ class Element(Plugin):
 
         self._update_state()
 
-        if self._workspaced() and self._cached():
+        if self._get_workspace() and self._cached():
             project = self._get_project()
             key = self._get_cache_key()
             workspace = self._get_workspace()
@@ -1178,7 +1178,7 @@ class Element(Plugin):
                     e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
                 }
                 workspaced_dependencies = {
-                    e.name: e._workspaced() for e in self.dependencies(Scope.BUILD)
+                    e.name: True if e._get_workspace() else False for e in self.dependencies(Scope.BUILD)
                 }
                 meta = {
                     'keys': {
@@ -1186,7 +1186,7 @@ class Element(Plugin):
                         'weak': self._get_cache_key(_KeyStrength.WEAK),
                         'dependencies': dependencies
                     },
-                    'workspaced': self._workspaced(),
+                    'workspaced': True if self._get_workspace() else False,
                     'workspaced_dependencies': workspaced_dependencies
                 }
                 _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
@@ -1335,13 +1335,6 @@ class Element(Plugin):
     def _get_workspace(self):
         project = self._get_project()
         return project.workspaces.get_workspace(self.name)
-
-    # Whether this element has a source that is workspaced.
-    #
-    def _workspaced(self):
-        if self._get_workspace():
-            return True
-        return False
 
     # _workspaced_artifact():
     #
@@ -1516,7 +1509,7 @@ class Element(Plugin):
             return sandbox.run(argv, flags, env=environment)
 
     def _can_build_incrementally(self):
-        return self._workspaced() and self.__artifacts.can_diff()
+        return self._get_workspace() and self.__artifacts.can_diff()
 
     # _stage_sources_in_sandbox():
     #
