@@ -143,12 +143,11 @@ class Mount():
     @contextmanager
     def mounted(self, mountpoint):
 
-        def kill_proc():
-            self.unmount()
-
-        with _signals.terminator(kill_proc):
-            self.mount(mountpoint)
-            yield
+        self.mount(mountpoint)
+        try:
+            with _signals.terminator(self.unmount):
+                yield
+        finally:
             self.unmount()
 
     ################################################

@@ -98,10 +98,12 @@ class Mounter(object):
 
         options = ','.join([key for key, val in kwargs.items() if val])
 
-        with _signals.terminator(kill_proc):
-            yield cls._mount(dest, src, mount_type, stdout=stdout, stderr=stderr, options=options)
-
-        cls._umount(dest, stdout, stderr)
+        path = cls._mount(dest, src, mount_type, stdout=stdout, stderr=stderr, options=options)
+        try:
+            with _signals.terminator(kill_proc):
+                yield path
+        finally:
+            cls._umount(dest, stdout, stderr)
 
     # bind_mount()
     #
@@ -136,10 +138,11 @@ class Mounter(object):
 
         path = cls._mount(dest, src, None, stdout, stderr, options)
 
-        with _signals.terminator(kill_proc):
-            # Make the rbind a slave to avoid unmounting vital devices in
-            # /proc
-            cls._mount(dest, flags=['--make-rslave'])
-            yield path
-
-        cls._umount(dest, stdout, stderr)
+        try:
+            with _signals.terminator(kill_proc):
+                # Make the rbind a slave to avoid unmounting vital devices in
+                # /proc
+                cls._mount(dest, flags=['--make-rslave'])
+                yield path
+        finally:
+            cls._umount(dest, stdout, stderr)
