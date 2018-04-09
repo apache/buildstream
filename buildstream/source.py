@@ -125,7 +125,7 @@ class Source(Plugin):
     __defaults = {}          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
 
-    def __init__(self, context, project, meta):
+    def __init__(self, context, project, meta, *, alias_overrides=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source")
@@ -135,6 +135,8 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+        self.__alias_overrides = alias_overrides        # Aliases to use instead of the one from the project
+        self._expected_aliases = set()                  # A hacky way to store which aliases the source used
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -310,8 +312,22 @@ class Source(Plugin):
         Returns:
            str: The fully qualified url, with aliases resolved
         """
-        project = self._get_project()
-        return project.translate_url(url)
+        if self.__alias_overrides:
+            if url and utils._ALIAS_SEPARATOR in url:
+                url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
+                url = self.__alias_overrides[url_alias] + url_body
+            return url
+        else:
+            project = self._get_project()
+            # Sneakily store the alias
+            if url and utils._ALIAS_SEPARATOR in url:
+                url_alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+                # The alias must already be defined in the project's aliases
+                # otherwise http://foo gets treated like it contains an alias
+                if project.get_alias_uri(url_alias):
+                    self._expected_aliases.add(url_alias)
+
+            return project.translate_url(url)
 
     def get_project_directory(self):
         """Fetch the project base directory
