@@ -125,7 +125,7 @@ class Source(Plugin):
     __defaults = {}          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
 
-    def __init__(self, context, project, meta):
+    def __init__(self, context, project, meta, *, alias_overrides=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source")
@@ -135,6 +135,8 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+        self.__alias_override = alias_override          # Tuple of alias and its override to use instead
+        self.__expected_alias = None                    # A hacky way to store the first alias used
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -284,6 +286,20 @@ class Source(Plugin):
         """
         self.stage(directory)
 
+    def mark_download_url(self, url):
+        """Identifies the URL that this Source uses to download
+
+        This must be called during :func:`~buildstream.plugin.Plugin.configure` if
+        :func:`~buildstream.source.Source.translate_url` is not called.
+
+        Args:
+           url (str): The url used to download
+
+        *Since: 1.2*
+        """
+        alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+        self.__expected_alias = alias
+
     #############################################################
     #                       Public Methods                      #
     #############################################################
@@ -300,18 +316,42 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
-    def translate_url(self, url):
+    def translate_url(self, url, *, alias_override=None):
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
 
         Args:
            url (str): A url, which may be using an alias
+           alias_override (str): Optionally, an URI to override the alias with. (*Since: 1.2*)
 
         Returns:
            str: The fully qualified url, with aliases resolved
         """
-        project = self._get_project()
-        return project.translate_url(url)
+        # Alias overriding can happen explicitly (by command-line) or
+        # implicitly (the Source being constructed with an __alias_override).
+        if alias_override or self.__alias_override:
+            url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
+            if url_alias:
+                if alias_override:
+                    url = alias_override + url_body
+                else:
+                    # Implicit alias overrides may only be done for one
+                    # specific alias, so that sources that fetch from multiple
+                    # URLs and use different aliases default to only overriding
+                    # one alias, rather than getting confused.
+                    override_alias = self.__alias_override[0]
+                    override_url = self.__alias_override[1]
+                    if url_alias == override_alias:
+                        url = override_url + url_body
+            return url
+        else:
+            # Sneakily store the alias if it hasn't already been stored
+            if not self.__expected_alias and url and utils._ALIAS_SEPARATOR in url:
+                url_alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+                self.__expected_alias = url_alias
+
+            project = self._get_project()
+            return project.translate_url(url)
 
     def get_project_directory(self):
         """Fetch the project base directory
@@ -593,6 +633,17 @@ class Source(Plugin):
             self.info("Found new revision: {}".format(new_ref))
 
         return new_ref
+
+    # Returns the alias if it's defined in the project
+    def _get_alias(self):
+        alias = self.__expected_alias
+        project = self._get_project()
+        if project.get_alias_uri(alias):
+            # The alias must already be defined in the project's aliases
+            # otherwise http://foo gets treated like it contains an alias
+            return alias
+        else:
+            return None
 
     #############################################################
     #                   Local Private Methods                   #
