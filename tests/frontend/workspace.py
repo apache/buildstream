@@ -403,6 +403,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
         "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
+                "prepared": False,
                 "path": "/workspaces/bravo",
                 "running_files": {}
             }
@@ -417,6 +418,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
         "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
+                "prepared": False,
                 "path": "/workspaces/bravo",
                 "running_files": {}
             }
@@ -434,6 +436,7 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
         "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
+                "prepared": False,
                 "path": "/workspaces/bravo",
                 "running_files": {}
             }
@@ -455,11 +458,32 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
         "format-version": BST_WORKSPACE_FORMAT_VERSION,
         "workspaces": {
             "alpha.bst": {
+                "prepared": False,
                 "path": "/workspaces/bravo",
                 "last_successful": "some_key",
                 "running_files": {
                     "beta.bst": ["some_file"]
                 }
+            }
+        }
+    }),
+    # Test loading version 3
+    ({
+        "format-version": 3,
+        "workspaces": {
+            "alpha.bst": {
+                "prepared": True,
+                "path": "/workspaces/bravo",
+                "running_files": {}
+            }
+        }
+    }, {
+        "format-version": BST_WORKSPACE_FORMAT_VERSION,
+        "workspaces": {
+            "alpha.bst": {
+                "prepared": True,
+                "path": "/workspaces/bravo",
+                "running_files": {}
             }
         }
     })
