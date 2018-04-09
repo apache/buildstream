@@ -40,8 +40,8 @@ Arch Linux
 ++++++++++
 Install the dependencies with::
 
-  sudo pacman -S fuse2 python python-pip python-gobject git \
-                 ostree bubblewrap python-ruamel-yaml
+  sudo pacman -S fuse2 ostree bubblewrap git \
+                 python python-pip python-gobject python-psutil
 
 
 Debian
