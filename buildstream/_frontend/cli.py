@@ -624,7 +624,9 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
             sys.exit(-1)
 
     with app.initialized((element,), rewritable=track_, track_elements=[element] if track_ else None):
-        app.open_workspace(directory, no_checkout, track_, force)
+        # This command supports only one target
+        target = app.pipeline.targets[0]
+        app.open_workspace(target, directory, no_checkout, track_, force)
 
 
 ##################################################################
@@ -669,7 +671,9 @@ def workspace_reset(app, track_, element):
             sys.exit(-1)
 
     with app.initialized((element,)):
-        app.reset_workspace(track_)
+        # This command supports only one target
+        target = app.pipeline.targets[0]
+        app.reset_workspace(target, track_)
 
 
 ##################################################################

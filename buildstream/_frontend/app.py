@@ -432,15 +432,14 @@ class App():
     # Open a project workspace - this requires full initialization
     #
     # Args:
+    #    target (Element): The element to open the workspace for
     #    directory (str): The directory to stage the source in
     #    no_checkout (bool): Whether to skip checking out the source
     #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
     #
-    def open_workspace(self, directory, no_checkout, track_first, force):
+    def open_workspace(self, target, directory, no_checkout, track_first, force):
 
-        # When working on workspaces we only have one target
-        target = self.pipeline.targets[0]
         workdir = os.path.abspath(directory)
 
         if not list(target.sources()):
@@ -521,11 +520,10 @@ class App():
     # changes.
     #
     # Args:
+    #    target (Element): The element to reset the workspace for
     #    track (bool): Whether to also track the source
     #
-    def reset_workspace(self, track):
-        # When working on workspaces we only have one target
-        target = self.pipeline.targets[0]
+    def reset_workspace(self, target, track):
         workspace = self.project.workspaces.get_workspace(target.name)
 
         if workspace is None:
@@ -533,7 +531,7 @@ class App():
                            .format(target.name))
 
         self.close_workspace(target.name, True)
-        self.open_workspace(workspace.path, False, track, False)
+        self.open_workspace(target, workspace.path, False, track, False)
 
     ############################################################
     #                      Local Functions                     #
