@@ -88,7 +88,6 @@ class Source(Plugin):
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
-        self.__assemble_scheduled = False               # Source is scheduled to be assembled
         self.__workspace = None                         # Directory of the currently active workspace
 
         # Collect the composited element configuration and
@@ -323,37 +322,6 @@ class Source(Plugin):
     def _get_consistency(self):
         return self.__consistency
 
-    # _schedule_assemble():
-    #
-    # This is called in the main process before the element is assembled
-    # in a subprocess.
-    #
-    def _schedule_assemble(self):
-        assert not self.__assemble_scheduled
-        self.__assemble_scheduled = True
-
-        # Invalidate workspace key as the build modifies the workspace directory
-        if self._has_workspace():
-            self.__workspace.invalidate_key()
-
-    # _assemble_done():
-    #
-    # This is called in the main process after the element has been assembled
-    # in a subprocess.
-    #
-    def _assemble_done(self):
-        assert self.__assemble_scheduled
-        self.__assemble_scheduled = False
-
-    # _stable():
-    #
-    # Unstable sources are mounted read/write and thus cannot produce a
-    # (stable) cache key before the build is complete.
-    #
-    def _stable(self):
-        # Source directory is modified by workspace build process
-        return not (self._has_workspace() and self.__assemble_scheduled)
-
     # Wrapper function around plugin provided fetch method
     #
     def _fetch(self):
@@ -406,7 +374,6 @@ class Source(Plugin):
 
         key['directory'] = self.__directory
         if self._has_workspace():
-            assert not self.__assemble_scheduled
             key['workspace'] = self.__workspace.get_key()
         else:
             key['unique'] = self.get_unique_key()

@@ -856,8 +856,10 @@ class Element(Plugin):
         assert not self.__assemble_scheduled
         self.__assemble_scheduled = True
 
-        for source in self.__sources:
-            source._schedule_assemble()
+        # Invalidate workspace key as the build modifies the workspace directory
+        workspace = self._get_workspace()
+        if workspace:
+            workspace.invalidate_key()
 
         self._update_state()
 
@@ -870,9 +872,6 @@ class Element(Plugin):
     #
     def _assemble_done(self):
         assert self.__assemble_scheduled
-
-        for source in self.__sources:
-            source._assemble_done()
 
         self.__assemble_scheduled = False
         self.__assemble_done = True
@@ -1663,9 +1662,10 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
-        if any([not source._stable() for source in self.__sources]):
-            # If any source is not stable, discard current cache key values
-            # as their correct values can only be calculated once the build is complete
+        if self._get_workspace() and self.__assemble_scheduled:
+            # If we have an active workspace and are going to build, then
+            # discard current cache key values as their correct values can only
+            # be calculated once the build is complete
             self.__cache_key_dict = None
             self.__cache_key = None
             self.__weak_cache_key = None
