@@ -149,6 +149,7 @@ class Element(Plugin):
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = artifacts            # Artifact cache
+        self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__cached = None                    # Whether we have a cached artifact
         self.__strong_cached = None             # Whether we have a cached artifact
         self.__remotely_cached = None           # Whether we have a remotely cached artifact
@@ -760,15 +761,6 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # _get_workspace():
-    #
-    # Returns:
-    #    (Workspace|None): A workspace associated with this element
-    #
-    def _get_workspace(self):
-        project = self._get_project()
-        return project.workspaces.get_workspace(self.name)
-
     # _get_artifact_metadata():
     #
     # Retrieve metadata from the given artifact.
@@ -825,22 +817,6 @@ class Element(Plugin):
             self.__build_dependencies.append(dependency)
         if scope != Scope.BUILD:
             self.__runtime_dependencies.append(dependency)
-
-    # _consistency():
-    #
-    # Returns:
-    #    (list): The minimum consistency of the elements sources
-    #
-    # If the element has no sources, this returns Consistency.CACHED
-    def _consistency(self):
-
-        # The source objects already cache the consistency state, it
-        # should not be expensive to iterate over the sources to get at it
-        consistency = Consistency.CACHED
-        for source in self.__sources:
-            source_consistency = source._get_consistency()
-            consistency = min(consistency, source_consistency)
-        return consistency
 
     # _schedule_tracking():
     #
@@ -963,7 +939,7 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._consistency() != Consistency.CACHED:
+        if self._get_consistency() != Consistency.CACHED:
             return False
 
         for dependency in self.dependencies(Scope.BUILD):
@@ -1351,10 +1327,21 @@ class Element(Plugin):
         for source in self.sources():
             source._set_workspace(path)
 
+    # _get_workspace():
+    #
+    # Returns:
+    #    (Workspace|None): A workspace associated with this element
+    #
+    def _get_workspace(self):
+        project = self._get_project()
+        return project.workspaces.get_workspace(self.name)
+
     # Whether this element has a source that is workspaced.
     #
     def _workspaced(self):
-        return any(source._has_workspace() for source in self.sources())
+        if self._get_workspace():
+            return True
+        return False
 
     # _workspaced_artifact():
     #
@@ -1618,6 +1605,38 @@ class Element(Plugin):
     def _pull_failed(self):
         self.__pull_failed = True
 
+    # _get_consistency()
+    #
+    # Returns cached consistency state
+    #
+    def _get_consistency(self):
+        return self.__consistency
+
+    # __update_source_state()
+    #
+    # Updates source consistency state
+    #
+    def __update_source_state(self):
+
+        # Determine overall consistency of the element
+        consistency = Consistency.CACHED
+        for source in self.__sources:
+            source._update_state()
+            source_consistency = source._get_consistency()
+            consistency = min(consistency, source_consistency)
+        self.__consistency = consistency
+
+        # Special case for workspaces
+        workspace = self._get_workspace()
+        if workspace and self.__consistency > Consistency.INCONSISTENT:
+
+            # A workspace is considered inconsistent in the case
+            # that it's directory went missing
+            #
+            fullpath = workspace.get_absolute_path()
+            if not os.path.exists(fullpath):
+                self.__consistency = Consistency.INCONSISTENT
+
     # _update_state()
     #
     # Keep track of element state. Calculate cache keys if possible and
@@ -1628,11 +1647,10 @@ class Element(Plugin):
     def _update_state(self):
         context = self._get_context()
 
-        # Determine consistency of sources
-        for source in self.__sources:
-            source._update_state()
+        # Compute and determine consistency of sources
+        self.__update_source_state()
 
-        if self._consistency() == Consistency.INCONSISTENT:
+        if self._get_consistency() == Consistency.INCONSISTENT:
             # Tracking is still pending
             return
 

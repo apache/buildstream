@@ -321,16 +321,6 @@ class Source(Plugin):
             with context.silence():
                 self.__consistency = self.get_consistency()
 
-            if self._has_workspace() and \
-               self.__consistency > Consistency.INCONSISTENT:
-
-                # A workspace is considered inconsistent in the case
-                # that it's directory went missing
-                #
-                fullpath = self.__workspace.get_absolute_path()
-                if not os.path.exists(fullpath):
-                    self.__consistency = Consistency.INCONSISTENT
-
     # Return cached consistency
     #
     def _get_consistency(self):

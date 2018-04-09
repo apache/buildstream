@@ -655,7 +655,7 @@ class LogLine(Widget):
             line = p.fmt_subst(line, 'key', cache_key, fg='yellow', dim=dim_keys)
             line = p.fmt_subst(line, 'full-key', full_key, fg='yellow', dim=dim_keys)
 
-            consistency = element._consistency()
+            consistency = element._get_consistency()
             if consistency == Consistency.INCONSISTENT:
                 line = p.fmt_subst(line, 'state', "no reference", fg='red')
             else:

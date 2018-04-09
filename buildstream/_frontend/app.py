@@ -416,7 +416,7 @@ class App():
         if not no_checkout or track_first:
             self.pipeline.fetch(self.scheduler, [target], track_first)
 
-        if not no_checkout and target._consistency() != Consistency.CACHED:
+        if not no_checkout and target._get_consistency() != Consistency.CACHED:
             raise PipelineError("Could not stage uncached source. " +
                                 "Use `--track` to track and " +
                                 "fetch the latest version of the " +

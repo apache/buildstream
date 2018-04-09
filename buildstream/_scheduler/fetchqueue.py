@@ -57,7 +57,7 @@ class FetchQueue(Queue):
 
         # This will automatically skip elements which
         # have no sources.
-        if element._consistency() == Consistency.CACHED:
+        if element._get_consistency() == Consistency.CACHED:
             return QueueStatus.SKIP
 
         return QueueStatus.READY
@@ -70,6 +70,6 @@ class FetchQueue(Queue):
         element._update_state()
 
         # Successful fetch, we must be CACHED now
-        assert element._consistency() == Consistency.CACHED
+        assert element._get_consistency() == Consistency.CACHED
 
         return True

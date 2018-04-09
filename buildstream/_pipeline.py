@@ -263,7 +263,7 @@ class Pipeline():
             self._assert_consistent(plan)
 
         # Filter out elements with cached sources, we already have them.
-        cached = [elt for elt in plan if elt._consistency() == Consistency.CACHED]
+        cached = [elt for elt in plan if elt._get_consistency() == Consistency.CACHED]
         plan = [elt for elt in plan if elt not in cached]
 
         self.session_elements = len(plan)
@@ -718,7 +718,7 @@ class Pipeline():
         inconsistent = []
         with self.context.timed_activity("Checking sources"):
             for element in toplevel:
-                if element._consistency() == Consistency.INCONSISTENT:
+                if element._get_consistency() == Consistency.INCONSISTENT:
                     inconsistent.append(element)
 
         if inconsistent:
