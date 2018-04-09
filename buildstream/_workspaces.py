@@ -174,7 +174,7 @@ class Workspace():
             else:
                 filelist = [(self.path, fullpath)]
 
-            self.__key = [(relpath, unique_key(self.path)) for relpath, fullpath in filelist]
+            self.__key = [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
 
         return self.__key
 
