@@ -8,9 +8,10 @@ Installing BuildStream
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
-* ruamel.yaml python library
+* libostree >= v2017.8 with introspection data
+* bubblewrap
 * PyGObject introspection bindings
-* OSTree >= v2017.8 with introspection data
+* psutil python library (so you don't have to install GCC and python-devel to build it yourself)
 
 If your system cannot provide the base system requirements for BuildStream,
 then we have some instructions which can help you get started
