@@ -281,6 +281,83 @@ def test_build(cli, tmpdir, datafiles, kind, strict):
     assert not os.path.exists(os.path.join(checkout, 'usr', 'bin', 'hello'))
 
 
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("modification", [("addfile"), ("removefile"), ("modifyfile")])
+@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
+def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
+    checkout = os.path.join(str(tmpdir), 'checkout')
+
+    # Configure strict mode
+    strict_mode = True
+    if strict != 'strict':
+        strict_mode = False
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict_mode
+            }
+        }
+    })
+
+    # Build clean workspace
+    assert cli.get_element_state(project, element_name) == 'buildable'
+    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
+    result = cli.run(project=project, args=['build', element_name])
+    result.assert_success()
+    assert cli.get_element_state(project, element_name) == 'cached'
+    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+
+    # Modify the workspace in various different ways, ensuring we
+    # properly detect the changes.
+    #
+    if modification == 'addfile':
+        os.makedirs(os.path.join(workspace, 'etc'))
+        with open(os.path.join(workspace, 'etc', 'pony.conf'), 'w') as f:
+            f.write("PONY='pink'")
+    elif modification == 'removefile':
+        os.remove(os.path.join(workspace, 'usr', 'bin', 'hello'))
+    elif modification == 'modifyfile':
+        with open(os.path.join(workspace, 'usr', 'bin', 'hello'), 'w') as f:
+            f.write('cookie')
+    else:
+        # This cannot be reached
+        assert 0
+
+    # First assert that the state is properly detected
+    assert cli.get_element_state(project, element_name) == 'buildable'
+    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
+
+    # Since there are different things going on at `bst build` time
+    # than `bst show` time, we also want to build / checkout again,
+    # and ensure that the result contains what we expect.
+    result = cli.run(project=project, args=['build', element_name])
+    result.assert_success()
+    assert cli.get_element_state(project, element_name) == 'cached'
+    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+
+    # Checkout the result
+    result = cli.run(project=project, args=[
+        'checkout', element_name, checkout
+    ])
+    result.assert_success()
+
+    # Check the result for the changes we made
+    #
+    if modification == 'addfile':
+        filename = os.path.join(checkout, 'etc', 'pony.conf')
+        assert os.path.exists(filename)
+    elif modification == 'removefile':
+        assert not os.path.exists(os.path.join(checkout, 'usr', 'bin', 'hello'))
+    elif modification == 'modifyfile':
+        with open(os.path.join(workspace, 'usr', 'bin', 'hello'), 'r') as f:
+            data = f.read()
+            assert data == 'cookie'
+    else:
+        # This cannot be reached
+        assert 0
+
+
 # Ensure that various versions that should not be accepted raise a
 # LoadError.INVALID_DATA
 @pytest.mark.datafiles(DATA_DIR)
