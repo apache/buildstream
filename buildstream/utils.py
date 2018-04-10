@@ -536,6 +536,18 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
 # to distinguish between a kwarg set to None and an unset kwarg.
 _sentinel = object()
 
+# Main process pid
+_main_pid = os.getpid()
+
+
+# _is_main_process()
+#
+# Return whether we are in the main process or not.
+#
+def _is_main_process():
+    assert _main_pid is not None
+    return os.getpid() == _main_pid
+
 
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
