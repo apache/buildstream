@@ -276,8 +276,9 @@ class LogFile(Widget):
         if message.logfile and message.scheduler:
             logfile = message.logfile
 
-            if logfile.startswith(self.logdir) and abbrev:
-                logfile = logfile[len(self.logdir) + 1:]
+            if abbrev and self.logdir != "" and logfile.startswith(self.logdir):
+                logfile = logfile[len(self.logdir):]
+                logfile = logfile.lstrip(os.sep)
 
             if message.message_type in ERROR_MESSAGES:
                 text = self.err_profile.fmt(logfile)
