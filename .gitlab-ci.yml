@@ -91,15 +91,15 @@ source_dist:
   dependencies:
   - source_dist
 
-debian-8-tests:
+tests-debian-8:
   <<: *linux-tests
 
-fedora-27-tests:
+tests-fedora-27:
   image: buildstream/buildstream-fedora:master-56-5d7ee17
   <<: *linux-tests
 
 
-unix-tests:
+tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
   image: buildstream/buildstream-fedora:master-56-5d7ee17
@@ -176,9 +176,9 @@ coverage:
     - coverage combine --rcfile=../.coveragerc -a coverage.unix
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
-  - debian-8-tests
-  - fedora-27-tests
-  - unix-tests
+  - tests-debian-8
+  - tests-fedora-27
+  - tests-unix
   - source_dist
 
 # Deploy, only for merges which land on master branch.
