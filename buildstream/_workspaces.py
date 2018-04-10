@@ -91,6 +91,27 @@ class Workspace():
         # Just pass the dictionary as kwargs
         return cls(project, **dictionary)
 
+    # differs()
+    #
+    # Checks if two workspaces are different in any way.
+    #
+    # Args:
+    #    other (Workspace): Another workspace instance
+    #
+    # Returns:
+    #    True if the workspace differs from 'other', otherwise False
+    #
+    def differs(self, other):
+
+        for member in _WORKSPACE_MEMBERS:
+            member_a = getattr(self, member)
+            member_b = getattr(other, member)
+
+            if member_a != member_b:
+                return True
+
+        return False
+
     # invalidate_key()
     #
     # Invalidate the workspace key, forcing a recalculation next time
@@ -235,6 +256,27 @@ class Workspaces():
         if element_name not in self._workspaces:
             return None
         return self._workspaces[element_name]
+
+    # update_workspace()
+    #
+    # Update the datamodel with a new Workspace instance
+    #
+    # Args:
+    #    element_name (str): The name of the element to update a workspace for
+    #    workspace_dict (Workspace): A serialized workspace dictionary
+    #
+    # Returns:
+    #    (bool): Whether the workspace has changed as a result
+    #
+    def update_workspace(self, element_name, workspace_dict):
+        assert element_name in self._workspaces
+
+        workspace = Workspace.from_dict(self._project, workspace_dict)
+        if self._workspaces[element_name].differs(workspace):
+            self._workspaces[element_name] = workspace
+            return True
+
+        return False
 
     # delete_workspace()
     #
