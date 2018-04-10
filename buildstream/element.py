@@ -493,13 +493,11 @@ class Element(Plugin):
         files_written = {}
         old_dep_keys = {}
         project = self._get_project()
+        workspace = self._get_workspace()
 
-        if self._can_build_incrementally():
-            workspace = self._get_workspace()
-
-            if workspace.last_successful:
-                old_meta = self._get_artifact_metadata(workspace.last_successful)
-                old_dep_keys = old_meta['keys']['dependencies']
+        if self._can_build_incrementally() and workspace.last_successful:
+            old_meta = self._get_artifact_metadata(workspace.last_successful)
+            old_dep_keys = old_meta['keys']['dependencies']
 
         for dep in self.dependencies(scope):
             # If we are workspaced, and we therefore perform an
@@ -507,7 +505,7 @@ class Element(Plugin):
             # of any files created by our dependencies since the last
             # successful build.
             to_update = None
-            if self._get_workspace() and old_dep_keys:
+            if workspace and old_dep_keys:
                 dep._assert_cached()
 
                 if dep.name in old_dep_keys:
@@ -519,8 +517,12 @@ class Element(Plugin):
                     # build systems anyway.
                     to_update, _, added = self.__artifacts.diff(dep, key_old, key_new, subdir='files')
                     workspace.add_running_files(dep.name, to_update + added)
-                    project.workspaces.save_config()
                     to_update.extend(workspace.running_files[dep.name])
+
+                    # In case we are running `bst shell`, this happens in the
+                    # main process and we need to update the workspace config
+                    if utils._is_main_process():
+                        project.workspaces.save_config()
 
             result = dep.stage_artifact(sandbox,
                                         path=path,
@@ -879,6 +881,14 @@ class Element(Plugin):
         self._update_state()
 
         if self._get_workspace() and self._cached():
+            #
+            # Note that this block can only happen in the
+            # main process, since `self._cached()` cannot
+            # be true when assembly is completed in the task.
+            #
+            # For this reason, it is safe to update and
+            # save the workspaces configuration
+            #
             project = self._get_project()
             key = self._get_cache_key()
             workspace = self._get_workspace()

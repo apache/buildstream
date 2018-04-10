@@ -77,6 +77,7 @@ class Job():
         # Only relevant in parent process after spawning
         self.pid = None                       # The child's pid in the parent
         self.result = None                    # Return value of child action in the parent
+        self.workspace_dict = None            # A serialized Workspace object, after any modifications
 
         self.tries = 0
 
@@ -262,11 +263,8 @@ class Job():
                          detail=env_dump, logfile=filename)
 
             try:
+                # Try the task action
                 result = self.action(element)
-                if result is not None:
-                    envelope = Envelope('result', result)
-                    self.queue.put(envelope)
-
             except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
 
@@ -277,6 +275,9 @@ class Job():
                     self.message(element, MessageType.FAIL, str(e),
                                  elapsed=elapsed, detail=e.detail,
                                  logfile=filename, sandbox=e.sandbox)
+
+                # Report changes in the workspace, even if there was a handled failure
+                self.child_send_workspace(element)
 
                 # Report the exception to the parent (for internal testing purposes)
                 self.child_send_error(e)
@@ -295,14 +296,22 @@ class Job():
                              logfile=filename)
                 self.child_shutdown(1)
 
-            elapsed = datetime.datetime.now() - starttime
-            self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed,
-                         logfile=filename)
+            else:
+                # No exception occurred in the action
+                self.child_send_workspace(element)
 
-        # Shutdown needs to stay outside of the above context manager,
-        # make sure we dont try to handle SIGTERM while the process
-        # is already busy in sys.exit()
-        self.child_shutdown(0)
+                if result is not None:
+                    envelope = Envelope('result', result)
+                    self.queue.put(envelope)
+
+                elapsed = datetime.datetime.now() - starttime
+                self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed,
+                             logfile=filename)
+
+                # Shutdown needs to stay outside of the above context manager,
+                # make sure we dont try to handle SIGTERM while the process
+                # is already busy in sys.exit()
+                self.child_shutdown(0)
 
     def child_send_error(self, e):
         domain = None
@@ -317,6 +326,12 @@ class Job():
             'reason': reason
         })
         self.queue.put(envelope)
+
+    def child_send_workspace(self, element):
+        workspace = element._get_workspace()
+        if workspace:
+            envelope = Envelope('workspace', workspace.to_dict())
+            self.queue.put(envelope)
 
     def child_complete(self, pid, returncode, element):
         if returncode != 0 and self.tries <= self.max_retries:
@@ -406,6 +421,8 @@ class Job():
         elif envelope.message_type == 'result':
             assert self.result is None
             self.result = envelope.message
+        elif envelope.message_type == 'workspace':
+            self.workspace_dict = envelope.message
         else:
             raise Exception()
 

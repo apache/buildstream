@@ -205,11 +205,29 @@ class Queue():
         # first priority again next time around
         self.wait_queue.extendleft(unready)
 
+    def update_workspaces(self, element, job):
+        # Handle any workspace modifications now
+        #
+        if job.workspace_dict:
+            project = element._get_project()
+            if project.workspaces.update_workspace(element.name, job.workspace_dict):
+                try:
+                    project.workspaces.save_config()
+                except BstError as e:
+                    self.message(element, MessageType.ERROR, "Error saving workspaces", detail=str(e))
+                except Exception as e:   # pylint: disable=broad-except
+                    self.message(element, MessageType.BUG,
+                                 "Unhandled exception while saving workspaces",
+                                 detail=traceback.format_exc())
+
     def job_done(self, job, returncode, element):
 
         # Shutdown the job
         job.shutdown()
         self.active_jobs.remove(job)
+
+        # Update workspaces in the main task before calling any queue implementation
+        self.update_workspaces(element, job)
 
         # Give the result of the job to the Queue implementor,
         # and determine if it should be considered as processed
