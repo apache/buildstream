@@ -297,6 +297,8 @@ class Workspaces():
     # create_workspace permanent
     #
     def save_config(self):
+        assert utils._is_main_process()
+
         config = {
             'format-version': BST_WORKSPACE_FORMAT_VERSION,
             'workspaces': {
