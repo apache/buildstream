@@ -162,7 +162,6 @@ class Element(Plugin):
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
         self.__whitelist_regex = None
-        self.__workspace = None                 # The associated Workspace, if any
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(plugin_conf)
