@@ -27,6 +27,13 @@ from ._exceptions import LoadError, LoadErrorReason
 
 BST_WORKSPACE_FORMAT_VERSION = 2
 
+# Hold on to a list of members which get serialized
+_WORKSPACE_MEMBERS = [
+    'path',
+    'last_successful',
+    'running_files'
+]
+
 
 # Workspace()
 #
@@ -38,15 +45,15 @@ BST_WORKSPACE_FORMAT_VERSION = 2
 # methods.
 #
 # Args:
-#    path (str): The path that should host this workspace
 #    project (Project): The project this workspace is part of
+#    path (str): The path that should host this workspace
 #    last_successful (str): The key of the last successful build of this workspace
 #    running_files (dict): A dict mapping dependency elements to files
 #                          changed between failed builds. Should be
 #                          made obsolete with failed build artifacts.
 #
 class Workspace():
-    def __init__(self, path, project, last_successful=None, running_files=None):
+    def __init__(self, project, *, path=None, last_successful=None, running_files=None):
         self.last_successful = last_successful
         self.path = path
         self.running_files = running_files if running_files is not None else {}
@@ -54,26 +61,35 @@ class Workspace():
         self._project = project
         self._key = None
 
-    @classmethod
-    def from_yaml_node(cls, node, project):
-        path = _yaml.node_get(node, str, 'path')
-        last_successful = _yaml.node_get(node, str, 'last_successful', default_value=None)
-        running_files = _yaml.node_get(node, dict, 'running_files', default_value=None)
-
-        return cls(path, project, last_successful, running_files)
-
-    # _to_dict()
+    # to_dict()
     #
-    # Convert this object to a dict for storage purposes
+    # Convert this object to a dict for serialization purposes
     #
     # Returns:
     #     (dict) A dict representation of the workspace
     #
-    def _to_dict(self):
-        to_return = ['path', 'last_successful', 'running_files']
-
+    def to_dict(self):
         return {key: val for key, val in self.__dict__.items()
-                if key in to_return and val is not None}
+                if key in _WORKSPACE_MEMBERS and val is not None}
+
+    # from_dict():
+    #
+    # Loads a new workspace from a simple dictionary, the dictionary
+    # is expected to be generated from Workspace.to_dict(), or manually
+    # when loading from a YAML file.
+    #
+    # Args:
+    #    project (Project): The Project to load this for
+    #    dictionary: A simple dictionary object
+    #
+    # Returns:
+    #    (Workspace): A newly instantiated Workspace
+    #
+    @classmethod
+    def from_dict(cls, project, dictionary):
+
+        # Just pass the dictionary as kwargs
+        return cls(project, **dictionary)
 
     # invalidate_key()
     #
@@ -180,7 +196,7 @@ class Workspaces():
         self._project = project
         self._workspaces = self._load_config()
 
-    # _list_workspaces()
+    # list()
     #
     # Generator function to enumerate workspaces.
     #
@@ -200,7 +216,7 @@ class Workspaces():
     #    path (str) - The path in which the workspace should be kept
     #
     def create_workspace(self, element_name, path):
-        self._workspaces[element_name] = Workspace(path, self._project)
+        self._workspaces[element_name] = Workspace(self._project, path=path)
 
         return self._workspaces[element_name]
 
@@ -242,7 +258,7 @@ class Workspaces():
         config = {
             'format-version': BST_WORKSPACE_FORMAT_VERSION,
             'workspaces': {
-                element: workspace._to_dict()
+                element: workspace.to_dict()
                 for element, workspace in _yaml.node_items(self._workspaces)
             }
         }
@@ -312,13 +328,13 @@ class Workspaces():
                                     "Workspace config is in unexpected format.")
 
             res = {
-                element: Workspace(config, self._project)
+                element: Workspace(self._project, path=config)
                 for element, config in _yaml.node_items(workspaces)
             }
 
         elif version == 1 or version == BST_WORKSPACE_FORMAT_VERSION:
             workspaces = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
-            res = {element: Workspace.from_yaml_node(node, self._project)
+            res = {element: self._load_workspace(self._project, node)
                    for element, node in _yaml.node_items(workspaces)}
 
         else:
@@ -328,3 +344,22 @@ class Workspaces():
                             .format(version, BST_WORKSPACE_FORMAT_VERSION))
 
         return res
+
+    # _load_workspace():
+    #
+    # Loads a new workspace from a YAML node
+    #
+    # Args:
+    #    node: A YAML Node
+    #    project (Project): The Project to load this for
+    #
+    # Returns:
+    #    (Workspace): A newly instantiated Workspace
+    #
+    def _load_workspace(self, project, node):
+        dictionary = {
+            'path': _yaml.node_get(node, str, 'path'),
+            'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
+            'running_files': _yaml.node_get(node, dict, 'running_files', default_value=None),
+        }
+        return Workspace.from_dict(self._project, dictionary)
