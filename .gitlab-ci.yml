@@ -1,4 +1,4 @@
-image: buildstream/testsuite-debian:8-master-57-be5a863
+image: fedora:27
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -17,6 +17,19 @@ before_script:
 
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
+
+  - |
+    dnf install -y fuse ostree bubblewrap git \
+                   python3 python3-pip python3-gobject python3-psutil
+  - |
+    pip3 install blessings Click jinja2 pluginbase ruamel.yaml \
+                 setuptools
+  - dnf install -y bzr findutils lzip patch which quilt
+  - dnf install -y bash-completion
+  - |
+    pip3 install apipkg coverage==4.4.0 execnet pep8 pytest pytest-cache pytest-cov \
+    pytest-datafiles pytest-env pytest-pep8 pytest-xdist pytest-pylint \
+    setuptools_scm
 
 #####################################################
 #                  Prepare stage                    #
@@ -94,7 +107,7 @@ linux-tests:
 unix-tests:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: buildstream/buildstream-fedora:master-56-5d7ee17
+  image: fedora:28
   stage: test
   variables:
     BST_FORCE_BACKEND: "unix"
@@ -107,7 +120,7 @@ unix-tests:
     # codepaths that try to use them. Removing OSTree causes fuse-libs to
     # disappear unless we mark it as user-installed.
     - dnf mark install fuse-libs
-    - dnf erase -y bubblewrap ostree
+    - dnf remove -y bubblewrap ostree
 
     # Unpack and get into dist/buildstream
     - cd dist && ./unpack.sh && cd buildstream
@@ -134,9 +147,11 @@ unix-tests:
 docs:
   stage: test
   script:
+  - dnf -y install make
   - pip3 install sphinx==1.7.1
   - pip3 install sphinx-click
   - pip3 install sphinx_rtd_theme
+  - pip3 install arpy
   - cd dist && ./unpack.sh && cd buildstream
   - pip3 install .
   - make -C doc
