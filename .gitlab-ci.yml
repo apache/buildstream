@@ -64,7 +64,7 @@ source_dist:
 
 # Run premerge commits
 #
-linux-tests:
+.linux-tests-template: &linux-tests
   stage: test
   variables:
     PYTEST_ADDOPTS: "--color=yes"
@@ -90,6 +90,10 @@ linux-tests:
     - coverage-linux/
   dependencies:
   - source_dist
+
+debian-8-tests:
+  <<: *linux-tests
+
 
 unix-tests:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
@@ -168,7 +172,7 @@ coverage:
     - coverage combine --rcfile=../.coveragerc -a coverage.unix
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
-  - linux-tests
+  - debian-8-tests
   - unix-tests
   - source_dist
 
