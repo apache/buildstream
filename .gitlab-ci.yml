@@ -94,6 +94,10 @@ source_dist:
 debian-8-tests:
   <<: *linux-tests
 
+fedora-27-tests:
+  image: buildstream/buildstream-fedora:master-56-5d7ee17
+  <<: *linux-tests
+
 
 unix-tests:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
@@ -173,6 +177,7 @@ coverage:
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
   - debian-8-tests
+  - fedora-27-tests
   - unix-tests
   - source_dist
 
