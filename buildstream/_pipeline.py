@@ -80,7 +80,6 @@ class Pipeline():
         #
         # Private members
         #
-        self._unused_workspaces = []
         self._resolved_elements = {}
         self._redundant_refs = []
         self._artifacts = None
@@ -135,8 +134,6 @@ class Pipeline():
         self._preflight()
 
         self.total_elements = len(list(self.dependencies(Scope.ALL)))
-
-        self._initialize_workspaces()
 
         # Initialize remote artifact caches. We allow the commandline to override
         # the user config in some cases (for example `bst push --remote=...`).
@@ -305,10 +302,10 @@ class Pipeline():
     #                        building
     #
     def build(self, scheduler, build_all, track_first):
-        if self._unused_workspaces:
+        unused_workspaces = self._collect_unused_workspaces()
+        if unused_workspaces:
             self._message(MessageType.WARN, "Unused workspaces",
-                          detail="\n".join([el for el, _
-                                            in self._unused_workspaces]))
+                          detail="\n".join([el for el in unused_workspaces]))
 
         # We set up two plans; one to track elements, the other to
         # build them once tracking has finished. The first plan
@@ -660,20 +657,18 @@ class Pipeline():
                 #
                 raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
 
-    # _initialize_workspaces()
+    # _collect_unused_workspaces()
     #
-    # Initialize active workspaces, and collect a list
-    # of any workspaces which are unused by the pipeline
+    # Collect a list of any workspaces which are unused by the pipeline
     #
-    def _initialize_workspaces(self):
-        for element_name, workspace in self.project.workspaces.list():
+    def _collect_unused_workspaces(self):
+        unused_workspaces = []
+        for element_name, _ in self.project.workspaces.list():
             for target in self.targets:
                 element = target.search(Scope.ALL, element_name)
-
                 if element is None:
-                    self._unused_workspaces.append((element_name, workspace))
-                else:
-                    workspace.init(element)
+                    unused_workspaces.append(element_name)
+        return unused_workspaces
 
     # _initialize_remote_caches()
     #

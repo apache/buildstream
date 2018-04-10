@@ -518,7 +518,7 @@ class Element(Plugin):
                     # files, since removed files will be picked up by
                     # build systems anyway.
                     to_update, _, added = self.__artifacts.diff(dep, key_old, key_new, subdir='files')
-                    workspace.add_running_files(dep, to_update + added)
+                    workspace.add_running_files(dep.name, to_update + added)
                     project.workspaces.save_config()
                     to_update.extend(workspace.running_files[dep.name])
 
@@ -1349,6 +1349,20 @@ class Element(Plugin):
 
         os.makedirs(directory, exist_ok=True)
         return os.path.join(directory, logfile)
+
+    # _open_workspace():
+    #
+    # "Open" a workspace for this element
+    #
+    # This requires that a workspace already be created in
+    # the workspaces metadata first.
+    #
+    def _open_workspace(self):
+        workspace = self._get_workspace()
+        assert workspace is not None
+
+        for source in self.sources():
+            source._init_workspace(workspace.path)
 
     # _get_workspace():
     #

@@ -51,9 +51,8 @@ class Workspace():
         self.path = path
         self.running_files = running_files if running_files is not None else {}
 
-        self._element = None
         self._project = project
-        self.__key = None
+        self._key = None
 
     @classmethod
     def from_yaml_node(cls, node, project):
@@ -76,30 +75,13 @@ class Workspace():
         return {key: val for key, val in self.__dict__.items()
                 if key in to_return and val is not None}
 
-    # open()
-    #
-    # "Open" this workspace, calling the init_workspace method of all
-    # its sources.
-    #
-    def open(self):
-        for source in self._element.sources():
-            source._init_workspace(self.path)
-
-    # init()
-    #
-    # Initialize the elements and sources associated to this
-    # workspace. Must be called before this object is used.
-    #
-    def init(self, element):
-        self._element = element
-
     # invalidate_key()
     #
     # Invalidate the workspace key, forcing a recalculation next time
     # it is accessed.
     #
     def invalidate_key(self):
-        self.__key = None
+        self._key = None
 
     # stage()
     #
@@ -109,7 +91,7 @@ class Workspace():
     #    directory (str) - The directory into which to stage this workspace
     #
     def stage(self, directory):
-        fullpath = os.path.join(self._project.directory, self.path)
+        fullpath = self.get_absolute_path()
         if os.path.isdir(fullpath):
             utils.copy_files(fullpath, directory)
         else:
@@ -122,16 +104,16 @@ class Workspace():
     # dependency. Duplicate files will be ignored.
     #
     # Args:
-    #     dep (Element) - The dependency whose files to append to
+    #     dep_name (str) - The dependency name whose files to append to
     #     files (str) - A list of files to append
     #
-    def add_running_files(self, dep, files):
-        if dep.name in self.running_files:
+    def add_running_files(self, dep_name, files):
+        if dep_name in self.running_files:
             # ruamel.py cannot serialize sets in python3.4
-            to_add = set(files) - set(self.running_files[dep.name])
-            self.running_files[dep.name].extend(to_add)
+            to_add = set(files) - set(self.running_files[dep_name])
+            self.running_files[dep_name].extend(to_add)
         else:
-            self.running_files[dep.name] = list(files)
+            self.running_files[dep_name] = list(files)
 
     # clear_running_files()
     #
@@ -164,8 +146,8 @@ class Workspace():
                                 "Failed loading workspace. Did you remove the "
                                 "workspace directory? {}".format(e))
 
-        if recalculate or self.__key is None:
-            fullpath = os.path.join(self._project.directory, self.path)
+        if recalculate or self._key is None:
+            fullpath = self.get_absolute_path()
 
             # Get a list of tuples of the the project relative paths and fullpaths
             if os.path.isdir(fullpath):
@@ -174,9 +156,9 @@ class Workspace():
             else:
                 filelist = [(self.path, fullpath)]
 
-            self.__key = [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
+            self._key = [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
 
-        return self.__key
+        return self._key
 
     # get_absolute_path():
     #
@@ -196,8 +178,7 @@ class Workspace():
 class Workspaces():
     def __init__(self, project):
         self._project = project
-        workspace_config = self._load_config()
-        self._workspaces = self._parse_workspace_config(workspace_config)
+        self._workspaces = self._load_config()
 
     # _list_workspaces()
     #
@@ -215,16 +196,15 @@ class Workspaces():
     # Create a workspace in the given path for the given element.
     #
     # Args:
-    #    element (Element) - The element for which to create a workspace
+    #    element_name (str) - The element name to create a workspace for
     #    path (str) - The path in which the workspace should be kept
     #
-    def create_workspace(self, element, path):
-        self._workspaces[element.name] = Workspace(path, self._project)
-        self._workspaces[element.name].init(element)
+    def create_workspace(self, element_name, path):
+        self._workspaces[element_name] = Workspace(path, self._project)
 
-        return self._workspaces[element.name]
+        return self._workspaces[element_name]
 
-    # _get_workspace()
+    # get_workspace()
     #
     # Get the path of the workspace source associated with the given
     # element's source at the given index
@@ -272,16 +252,12 @@ class Workspaces():
 
     # _load_config()
     #
-    # Load the workspace configuration and return a node containing
-    # all open workspaces for the project
+    # Loads and parses the workspace configuration
     #
     # Returns:
+    #    (dict) The extracted workspaces
     #
-    #    A node containing a dict that assigns elements to their
-    #    workspaces. For example:
-    #
-    #        alpha.bst: /home/me/alpha
-    #        bravo.bst: /home/me/bravo
+    # Raises: LoadError if there was a problem with the workspace config
     #
     def _load_config(self):
         workspace_file = os.path.join(self._project.directory, ".bst", "workspaces.yml")
@@ -294,7 +270,7 @@ class Workspaces():
 
             raise
 
-        return node
+        return self._parse_workspace_config(node)
 
     # _parse_workspace_config_format()
     #
