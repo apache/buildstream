@@ -30,6 +30,9 @@ class ConsistencyErrorSource(Source):
     def stage(self, directory):
         pass
 
+    def get_alias(self):
+        pass
+
 
 def setup():
     return ConsistencyErrorSource
