@@ -84,7 +84,7 @@ source_dist:
   # Go back to the toplevel and collect our reports
   - cd ../..
   - mkdir -p coverage-linux/
-  - cp dist/buildstream/.coverage.* coverage-linux/coverage.linux
+  - cp dist/buildstream/.coverage.* coverage-linux/coverage."${CI_JOB_NAME}"
   artifacts:
     paths:
     - coverage-linux/
@@ -170,10 +170,9 @@ coverage:
     - pip3 install --no-index .
     - mkdir report
     - cd report
-    - cp ../../../coverage-linux/coverage.linux .
     - cp ../../../coverage-unix/coverage.unix .
-    - coverage combine --rcfile=../.coveragerc -a coverage.linux
-    - coverage combine --rcfile=../.coveragerc -a coverage.unix
+    - cp ../../../coverage-linux/coverage.* .
+    - coverage combine --rcfile=../.coveragerc -a coverage.*
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
   - tests-debian-8
