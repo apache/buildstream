@@ -2,6 +2,7 @@ import os
 import pytest
 
 from buildstream import _yaml
+from buildstream._exceptions import ErrorDomain
 
 from tests.testutils import cli_integration as cli
 
@@ -265,3 +266,79 @@ def test_cli_mount(cli, tmpdir, datafiles, path):
     result = execute_shell(cli, project, ['cat', path], mount=(ponyfile, path))
     assert result.exit_code == 0
     assert result.output == 'pony\n'
+
+
+# Test that we can see the workspace files in a shell
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+def test_workspace_visible(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_name = 'workspace/workspace-mount-fail.bst'
+
+    # Open a workspace on our build failing element
+    #
+    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    assert res.exit_code == 0
+
+    # Ensure the dependencies of our build failing element are built
+    result = cli.run(project=project, args=['build', 'base.bst'])
+    assert result.exit_code == 0
+
+    # Obtain a copy of the hello.c content from the workspace
+    #
+    workspace_hello_path = os.path.join(cli.directory, 'workspace', 'hello.c')
+    assert os.path.exists(workspace_hello_path)
+    with open(workspace_hello_path, 'r') as f:
+        workspace_hello = f.read()
+
+    # Cat the hello.c file from a bst shell command, and assert
+    # that we got the same content here
+    #
+    result = cli.run(project=project, args=[
+        'shell', '--build', element_name, '--', 'cat', 'hello.c'
+    ])
+    assert result.exit_code == 0
+    assert result.output == workspace_hello
+
+
+# Test that we can see the workspace files in a shell
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+def test_sysroot_workspace_visible(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_name = 'workspace/workspace-mount-fail.bst'
+
+    # Open a workspace on our build failing element
+    #
+    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    assert res.exit_code == 0
+
+    # Ensure the dependencies of our build failing element are built
+    result = cli.run(project=project, args=['build', element_name])
+    result.assert_main_error(ErrorDomain.PIPELINE, None)
+
+    # Discover the sysroot of the failed build directory, after one
+    # failed build, there should be only one directory there.
+    #
+    build_base = os.path.join(cli.directory, 'build')
+    build_dirs = os.listdir(path=build_base)
+    assert len(build_dirs) == 1
+    build_dir = os.path.join(build_base, build_dirs[0])
+
+    # Obtain a copy of the hello.c content from the workspace
+    #
+    workspace_hello_path = os.path.join(cli.directory, 'workspace', 'hello.c')
+    assert os.path.exists(workspace_hello_path)
+    with open(workspace_hello_path, 'r') as f:
+        workspace_hello = f.read()
+
+    # Cat the hello.c file from a bst shell command, and assert
+    # that we got the same content here
+    #
+    result = cli.run(project=project, args=[
+        'shell', '--build', '--sysroot', build_dir, element_name, '--', 'cat', 'hello.c'
+    ])
+    assert result.exit_code == 0
+    assert result.output == workspace_hello
