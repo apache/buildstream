@@ -165,6 +165,12 @@ class Element(Plugin):
         self.__whitelist_regex = None
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
 
+        # hash tables of loaded artifact metadata, hashed by key
+        self.__metadata_keys = {}                     # Strong and weak keys for this key
+        self.__metadata_dependencies = {}             # Dictionary of dependency strong keys
+        self.__metadata_workspaced = {}               # Boolean of whether it's workspaced
+        self.__metadata_workspaced_dependencies = {}  # List of which dependencies are workspaced
+
         # Ensure we have loaded this class's defaults
         self.__init_defaults(plugin_conf)
 
@@ -194,8 +200,6 @@ class Element(Plugin):
         self.__sandbox_config = self.__extract_sandbox_config(meta)
 
         self.__tainted = None
-        self.__workspaced_artifact = None
-        self.__workspaced_dependencies_artifact = None
 
     def __lt__(self, other):
         return self.name < other.name
@@ -437,7 +441,8 @@ class Element(Plugin):
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_display_key())):
             # Get the extracted artifact
-            artifact = os.path.join(self.__extract(), 'files')
+            artifact_base, _ = self.__extract()
+            artifact = os.path.join(artifact_base, 'files')
 
             # Hard link it into the staging area
             #
@@ -498,8 +503,7 @@ class Element(Plugin):
         workspace = self._get_workspace()
 
         if self._can_build_incrementally() and workspace.last_successful:
-            old_meta = self._get_artifact_metadata(workspace.last_successful)
-            old_dep_keys = old_meta['keys']['dependencies']
+            old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
 
         for dep in self.dependencies(scope):
             # If we are workspaced, and we therefore perform an
@@ -774,18 +778,6 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # _get_artifact_metadata():
-    #
-    # Retrieve metadata from the given artifact.
-    #
-    # Args:
-    #     key (str): The artifact key.
-    #
-    def _get_artifact_metadata(self, key):
-        base = self.__artifacts.extract(self, key)
-        meta_file = os.path.join(base, 'meta', 'artifact.yaml')
-        return _yaml.load(os.path.join(meta_file))
-
     # _write_script():
     #
     # Writes a script to the given directory.
@@ -950,13 +942,10 @@ class Element(Plugin):
         if recalculate or self.__tainted is None:
 
             # Whether this artifact has a workspace
-            workspaced = self._workspaced_artifact()
+            workspaced = self.__get_artifact_metadata_workspaced()
 
-            # Whether this artifact's dependencies are tainted
-            workspaced_dependencies = any(
-                val for key, val in
-                _yaml.node_items(self._workspaced_dependencies_artifact())
-            )
+            # Whether this artifact's dependencies have workspaces
+            workspaced_dependencies = self.__get_artifact_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
             self.__tainted = workspaced or workspaced_dependencies
@@ -1240,23 +1229,29 @@ class Element(Plugin):
                 # ensure we have cache keys
                 self._assemble_done()
 
-                # Store artifact metadata
-                dependencies = {
+                # Store keys.yaml
+                _yaml.dump(_yaml.node_sanitize({
+                    'strong': self._get_cache_key(),
+                    'weak': self._get_cache_key(_KeyStrength.WEAK),
+                }), os.path.join(metadir, 'keys.yaml'))
+
+                # Store dependencies.yaml
+                _yaml.dump(_yaml.node_sanitize({
                     e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                }
-                workspaced_dependencies = {
-                    e.name: True if e._get_workspace() else False for e in self.dependencies(Scope.BUILD)
-                }
-                meta = {
-                    'keys': {
-                        'strong': self._get_cache_key(),
-                        'weak': self._get_cache_key(_KeyStrength.WEAK),
-                        'dependencies': dependencies
-                    },
-                    'workspaced': True if self._get_workspace() else False,
-                    'workspaced_dependencies': workspaced_dependencies
-                }
-                _yaml.dump(_yaml.node_sanitize(meta), os.path.join(metadir, 'artifact.yaml'))
+                }), os.path.join(metadir, 'dependencies.yaml'))
+
+                # Store workspaced.yaml
+                _yaml.dump(_yaml.node_sanitize({
+                    'workspaced': True if self._get_workspace() else False
+                }), os.path.join(metadir, 'workspaced.yaml'))
+
+                # Store workspaced-dependencies.yaml
+                _yaml.dump(_yaml.node_sanitize({
+                    'workspaced-dependencies': [
+                        e.name for e in self.dependencies(Scope.BUILD)
+                        if e._get_workspace()
+                    ]
+                }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
                 with self.timed_activity("Caching artifact"):
                     self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
@@ -1410,41 +1405,6 @@ class Element(Plugin):
     def _get_workspace(self):
         project = self._get_project()
         return project.workspaces.get_workspace(self.name)
-
-    # _workspaced_artifact():
-    #
-    # Returns whether the current artifact is workspaced.
-    #
-    # Returns:
-    #    (bool): Whether the current artifact is workspaced.
-    #
-    def _workspaced_artifact(self):
-
-        if self.__workspaced_artifact is None:
-            self._assert_cached()
-
-            metadir = os.path.join(self.__extract(), 'meta')
-            meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
-            if 'workspaced' in meta:
-                self.__workspaced_artifact = meta['workspaced']
-            else:
-                self.__workspaced_artifact = False
-
-        return self.__workspaced_artifact
-
-    def _workspaced_dependencies_artifact(self):
-
-        if self.__workspaced_dependencies_artifact is None:
-            self._assert_cached()
-
-            metadir = os.path.join(self.__extract(), 'meta')
-            meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
-            if 'workspaced_dependencies' in meta:
-                self.__workspaced_dependencies_artifact = meta['workspaced_dependencies']
-            else:
-                self.__workspaced_dependencies_artifact = {}
-
-        return self.__workspaced_dependencies_artifact
 
     # Run some element methods with logging directed to
     # a dedicated log file, here we yield the filename
@@ -1809,9 +1769,8 @@ class Element(Plugin):
                 pass
             elif self._cached():
                 # Load the strong cache key from the artifact
-                metadir = os.path.join(self.__extract(), 'meta')
-                meta = _yaml.load(os.path.join(metadir, 'artifact.yaml'))
-                self.__cache_key = meta['keys']['strong']
+                strong_key, _ = self.__get_artifact_metadata_keys()
+                self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
                 dependencies = [
@@ -2045,7 +2004,8 @@ class Element(Plugin):
         }
 
     def __compute_splits(self, include=None, exclude=None, orphans=True):
-        basedir = os.path.join(self.__extract(), 'files')
+        artifact_base, _ = self.__extract()
+        basedir = os.path.join(artifact_base, 'files')
 
         # No splitting requested, just report complete artifact
         if orphans and not (include or exclude):
@@ -2095,16 +2055,152 @@ class Element(Plugin):
             if include_file and not exclude_file:
                 yield filename.lstrip(os.sep)
 
-    def __extract(self):
-        context = self._get_context()
-        key = self.__strict_cache_key
+    # __extract():
+    #
+    # Extract an artifact and return the directory
+    #
+    # Args:
+    #    key (str): The key for the artifact to extract,
+    #               or None for the default key
+    #
+    # Returns:
+    #    (str): The path to the extracted artifact
+    #    (str): The chosen key
+    #
+    def __extract(self, key=None):
 
-        # Use weak cache key, if artifact is missing for strong cache key
-        # and the context allows use of weak cache keys
-        if not context.get_strict() and not self.__artifacts.contains(self, key):
-            key = self._get_cache_key(strength=_KeyStrength.WEAK)
+        if key is None:
+            context = self._get_context()
+            key = self.__strict_cache_key
 
-        return self.__artifacts.extract(self, key)
+            # Use weak cache key, if artifact is missing for strong cache key
+            # and the context allows use of weak cache keys
+            if not context.get_strict() and not self.__artifacts.contains(self, key):
+                key = self._get_cache_key(strength=_KeyStrength.WEAK)
+
+        return (self.__artifacts.extract(self, key), key)
+
+    # __get_artifact_metadata_keys():
+    #
+    # Retrieve the strong and weak keys from the given artifact.
+    #
+    # Args:
+    #     key (str): The artifact key, or None for the default key
+    #
+    # Returns:
+    #     (str): The strong key
+    #     (str): The weak key
+    #
+    def __get_artifact_metadata_keys(self, key=None):
+
+        # Now extract it and possibly derive the key
+        artifact_base, key = self.__extract(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in self.__metadata_keys:
+            return (self.__metadata_keys[key]['strong'],
+                    self.__metadata_keys[key]['weak'])
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = os.path.join(artifact_base, 'meta', 'keys.yaml')
+        meta = _yaml.load(meta_file)
+        strong_key = meta['strong']
+        weak_key = meta['weak']
+
+        assert key == strong_key or key == weak_key
+
+        self.__metadata_keys[strong_key] = meta
+        self.__metadata_keys[weak_key] = meta
+        return (strong_key, weak_key)
+
+    # __get_artifact_metadata_dependencies():
+    #
+    # Retrieve the hash of dependency strong keys from the given artifact.
+    #
+    # Args:
+    #     key (str): The artifact key, or None for the default key
+    #
+    # Returns:
+    #     (dict): A dictionary of element names and their strong keys
+    #
+    def __get_artifact_metadata_dependencies(self, key=None):
+
+        # Extract it and possibly derive the key
+        artifact_base, key = self.__extract(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in self.__metadata_dependencies:
+            return self.__metadata_dependencies[key]
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = os.path.join(artifact_base, 'meta', 'dependencies.yaml')
+        meta = _yaml.load(meta_file)
+
+        # Cache it under both strong and weak keys
+        strong_key, weak_key = self.__get_artifact_metadata_keys(key)
+        self.__metadata_dependencies[strong_key] = meta
+        self.__metadata_dependencies[weak_key] = meta
+        return meta
+
+    # __get_artifact_metadata_workspaced():
+    #
+    # Retrieve the hash of dependency strong keys from the given artifact.
+    #
+    # Args:
+    #     key (str): The artifact key, or None for the default key
+    #
+    # Returns:
+    #     (bool): Whether the given artifact was workspaced
+    #
+    def __get_artifact_metadata_workspaced(self, key=None):
+
+        # Extract it and possibly derive the key
+        artifact_base, key = self.__extract(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in self.__metadata_workspaced:
+            return self.__metadata_workspaced[key]
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = os.path.join(artifact_base, 'meta', 'workspaced.yaml')
+        meta = _yaml.load(meta_file)
+        workspaced = meta['workspaced']
+
+        # Cache it under both strong and weak keys
+        strong_key, weak_key = self.__get_artifact_metadata_keys(key)
+        self.__metadata_workspaced[strong_key] = workspaced
+        self.__metadata_workspaced[weak_key] = workspaced
+        return workspaced
+
+    # __get_artifact_metadata_workspaced_dependencies():
+    #
+    # Retrieve the hash of dependency strong keys from the given artifact.
+    #
+    # Args:
+    #     key (str): The artifact key, or None for the default key
+    #
+    # Returns:
+    #     (list): List of which dependencies are workspaced
+    #
+    def __get_artifact_metadata_workspaced_dependencies(self, key=None):
+
+        # Extract it and possibly derive the key
+        artifact_base, key = self.__extract(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in self.__metadata_workspaced_dependencies:
+            return self.__metadata_workspaced_dependencies[key]
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = os.path.join(artifact_base, 'meta', 'workspaced-dependencies.yaml')
+        meta = _yaml.load(meta_file)
+        workspaced = meta['workspaced-dependencies']
+
+        # Cache it under both strong and weak keys
+        strong_key, weak_key = self.__get_artifact_metadata_keys(key)
+        self.__metadata_workspaced_dependencies[strong_key] = workspaced
+        self.__metadata_workspaced_dependencies[weak_key] = workspaced
+        return workspaced
 
     def __get_cache_keys_for_commit(self):
         keys = []
@@ -2122,7 +2218,8 @@ class Element(Plugin):
         assert self.__dynamic_public is None
 
         # Load the public data from the artifact
-        metadir = os.path.join(self.__extract(), 'meta')
+        artifact_base, _ = self.__extract()
+        metadir = os.path.join(artifact_base, 'meta')
         self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
 
     def _subst_string(self, value):
