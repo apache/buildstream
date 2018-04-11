@@ -29,6 +29,9 @@ class ConsistencyBugSource(Source):
     def stage(self, directory):
         pass
 
+    def get_alias(self):
+        pass
+
 
 def setup():
     return ConsistencyBugSource
