@@ -38,6 +38,7 @@ from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
+from .utils import UtilError
 from . import Plugin, Consistency
 from . import SandboxFlags
 from . import utils
@@ -162,6 +163,7 @@ class Element(Plugin):
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None
         self.__whitelist_regex = None
+        self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(plugin_conf)
@@ -612,6 +614,13 @@ class Element(Plugin):
            sandbox (:class:`.Sandbox`): The build sandbox
            directory (str): An absolute path within the sandbox to stage the sources at
         """
+
+        # Hold on to the location where a plugin decided to stage sources,
+        # this will be used to reconstruct the failed sysroot properly
+        # after a failed build.
+        #
+        assert self.__staged_sources_directory is None
+        self.__staged_sources_directory = directory
 
         self._stage_sources_in_sandbox(sandbox, directory)
 
@@ -1177,6 +1186,25 @@ class Element(Plugin):
                     # If an error occurred assembling an element in a sandbox,
                     # then tack on the sandbox directory to the error
                     e.sandbox = rootdir
+
+                    # If there is a workspace open on this element, it will have
+                    # been mounted for sandbox invocations instead of being staged.
+                    #
+                    # In order to preserve the correct failure state, we need to
+                    # copy over the workspace files into the appropriate directory
+                    # in the sandbox.
+                    #
+                    workspace = self._get_workspace()
+                    if workspace and self.__staged_sources_directory:
+                        sandbox_root = sandbox.get_directory()
+                        sandbox_path = os.path.join(sandbox_root,
+                                                    self.__staged_sources_directory.lstrip(os.sep))
+                        try:
+                            utils.copy_files(workspace.path, sandbox_path)
+                        except UtilError as e:
+                            self.warn("Failed to preserve workspace state for failed build sysroot: {}"
+                                      .format(e))
+
                     raise
 
                 collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
