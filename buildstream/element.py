@@ -997,16 +997,6 @@ class Element(Plugin):
             project = self._get_project()
             workspace = self._get_workspace()
 
-            # Use the workspace key in source cache key calculations.
-            #
-            # This is only done this way to retain backwards compatibility
-            # of the cache key after making workspaces element wide instead
-            # of being source specific.
-            #
-            workspace_key = None
-            if workspace:
-                workspace_key = workspace.get_key()
-
             self.__cache_key_dict = {
                 'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
                                                    self.BST_ARTIFACT_VERSION),
@@ -1015,7 +1005,8 @@ class Element(Plugin):
                 'element': self.get_unique_key(),
                 'execution-environment': self.__sandbox_config.get_unique_key(),
                 'environment': cache_env,
-                'sources': [s._get_unique_key(workspace_key) for s in self.__sources],
+                'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
+                'workspace': '' if workspace is None else workspace.get_key(),
                 'public': self.__public,
                 'cache': type(self.__artifacts).__name__
             }

@@ -360,20 +360,13 @@ class Source(Plugin):
     # Wrapper for get_unique_key() api
     #
     # Args:
-    #    workspace_key: An alternative key to use instead of this
-    #                   source's unique key
+    #    include_source (bool): Whether to include the delegated source key
     #
-    # This adds any core attributes to the key and
-    # also calculates something different if workspaces
-    # are active.
-    #
-    def _get_unique_key(self, workspace_key=None):
+    def _get_unique_key(self, include_source):
         key = {}
 
         key['directory'] = self.__directory
-        if workspace_key is not None:
-            key['workspace'] = workspace_key
-        else:
+        if include_source:
             key['unique'] = self.get_unique_key()
 
         return key
