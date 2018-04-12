@@ -137,6 +137,7 @@ class Source(Plugin):
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
         self.__alias_overrides = alias_overrides        # Aliases to use instead of the one from the project
         self._expected_aliases = set()                  # A hacky way to store which aliases the source used
+        self.__meta = meta                              # MetaSource stored so we can copy this source later.
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -609,6 +610,32 @@ class Source(Plugin):
             self.info("Found new revision: {}".format(new_ref))
 
         return new_ref
+
+    # _mirrored_fetch():
+    #
+    # Tries to fetch from every mirror, stopping once it succeeds
+    #
+    # Returns:
+    #    (bool): True if it successfully fetched from a mirror.
+    #
+    def _mirrored_fetch(self):
+        # Mirrors can't do anything if this source doesn't use aliases
+        if not self._expected_aliases:
+            return False
+
+        context = self._get_context()
+        project = self._get_project()
+        source_kind = type(self)
+        for combination in project.generate_alias_combinations(self._expected_aliases):
+            new_source = source_kind(context, project, self.__meta, alias_overrides=combination)
+            new_source._preflight()
+            try:
+                new_source._fetch()
+            except SourceError:
+                # SourceErrors from fetch are caused by network error
+                # or ref not found
+                continue
+            return True
 
     #############################################################
     #                   Local Private Methods                   #

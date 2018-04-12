@@ -41,7 +41,11 @@ class FetchQueue(Queue):
 
     def process(self, element):
         for source in element.sources():
-            source._fetch()
+            # Try to fetch from the mirrors first
+            source_fetched = source._mirrored_fetch()
+            # Fall back to the default
+            if not source_fetched:
+                source._fetch()
 
     def status(self, element):
         # state of dependencies may have changed, recalculate element state
