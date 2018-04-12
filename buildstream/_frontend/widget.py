@@ -300,6 +300,10 @@ class MessageOrLogFile(Widget):
         self.message_widget = MessageText(content_profile, format_profile)
         self.logfile_widget = LogFile(content_profile, format_profile, err_profile)
 
+    def size_request(self, pipeline):
+        self.message_widget.size_request(pipeline)
+        self.logfile_widget.size_request(pipeline)
+
     def render(self, message):
         # Show the log file only in the main start/success messages
         if message.logfile and message.scheduler and \
