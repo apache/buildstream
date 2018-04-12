@@ -114,6 +114,63 @@ class SourceError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason, temporary=temporary)
 
 
+class SourceFetcher():
+    """SourceFetcher()
+
+    This interface exists so that a source that downloads from multiple
+    places (e.g. a git source with submodules) has a consistent interface for
+    fetching and substituting aliases.
+
+    *Since: 1.2*
+    """
+    def __init__(self):
+        self.__alias = None
+
+    #############################################################
+    #                      Abstract Methods                     #
+    #############################################################
+    def fetch(self, alias_override=None):
+        """Fetch remote sources and mirror them locally, ensuring at least
+        that the specific reference is cached locally.
+
+        Args:
+           alias_override (str): The alias to use instead of the default one
+               defined by the :ref:`aliases <project_source_aliases>` field
+               in the project's config.
+
+        Raises:
+           :class:`.SourceError`
+
+        Implementors should raise :class:`.SourceError` if the there is some
+        network error or if the source reference could not be matched.
+        """
+        raise ImplError("Source fetcher '{}' does not implement fetch()".format(type(self)))
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
+    def mark_download_url(self, url):
+        """Identifies the URL that this SourceFetcher uses to download
+
+        This must be called during the fetcher's initialization
+
+        Args:
+           url (str): The url used to download.
+        """
+        # Not guaranteed to be a valid alias yet.
+        # Ensuring it's a valid alias currently happens in Project.get_alias_uris
+        alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+        self.__alias = alias
+
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
+
+    # Returns the alias used by this fetcher
+    def _get_alias(self):
+        return self.__alias
+
+
 class Source(Plugin):
     """Source()
 
@@ -125,7 +182,7 @@ class Source(Plugin):
     __defaults = {}          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
 
-    def __init__(self, context, project, meta, *, alias_overrides=None):
+    def __init__(self, context, project, meta, *, alias_override=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source")
@@ -137,6 +194,9 @@ class Source(Plugin):
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
         self.__expected_alias = None                    # A hacky way to store the first alias used
+
+        # FIXME: Reconstruct a MetaSource from a Source instead of storing it.
+        self.__meta = meta                              # MetaSource stored so we can copy this source later.
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -300,6 +360,22 @@ class Source(Plugin):
         alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
         self.__expected_alias = alias
 
+    def get_source_fetchers(self):
+        """Get the objects that are used for fetching
+
+        If this source doesn't download from multiple URLs,
+        returning None and falling back on the default behaviour
+        is recommended.
+
+        Returns:
+           list: A list of SourceFetchers. If SourceFetchers are not supported,
+                 this will be an empty list.
+
+        *Since: 1.2*
+        """
+
+        return []
+
     #############################################################
     #                       Public Methods                      #
     #############################################################
@@ -415,7 +491,45 @@ class Source(Plugin):
     # Wrapper function around plugin provided fetch method
     #
     def _fetch(self):
-        self.fetch()
+        project = self._get_project()
+        source_fetchers = self.get_source_fetchers()
+        if source_fetchers:
+            for fetcher in source_fetchers:
+                alias = fetcher._get_alias()
+                success = False
+                for uri in project.get_alias_uris(alias):
+                    try:
+                        fetcher.fetch(uri)
+                    # FIXME: Need to consider temporary vs. permanent failures,
+                    #        and how this works with retries.
+                    except BstError as e:
+                        last_error = e
+                        continue
+                    success = True
+                    break
+                if not success:
+                    raise last_error
+        else:
+            alias = self._get_alias()
+            if not project.mirrors or not alias:
+                self.fetch()
+                return
+
+            context = self._get_context()
+            source_kind = type(self)
+            for uri in project.get_alias_uris(alias):
+                new_source = source_kind(context, project, self.__meta,
+                                         alias_override=(alias, uri))
+                new_source._preflight()
+                try:
+                    new_source.fetch()
+                # FIXME: Need to consider temporary vs. permanent failures,
+                #        and how this works with retries.
+                except BstError as e:
+                    last_error = e
+                    continue
+                return
+            raise last_error
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
