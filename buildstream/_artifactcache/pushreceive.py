@@ -21,6 +21,7 @@
 import logging
 import multiprocessing
 import os
+import re
 import subprocess
 import sys
 import shutil
@@ -33,6 +34,7 @@ import click
 import gi
 
 from .. import _signals  # nopep8
+from .._profile import Topics, profile_start, profile_end
 
 gi.require_version('OSTree', '1.0')
 # pylint: disable=wrong-import-position,wrong-import-order
@@ -619,6 +621,16 @@ class OSTreeReceiver(object):
             return 0
         update_refs = args
 
+        profile_names = set()
+        for update_ref in update_refs:
+            # Strip off the SHA256 sum on the right of the reference,
+            # leaving the project and element name
+            project_and_element_name = re.sub(r"/[a-z0-9]+$", '', update_ref)
+            profile_names.add(project_and_element_name)
+
+        profile_name = '_'.join(profile_names)
+        profile_start(Topics.ARTIFACT_RECEIVE, profile_name)
+
         self.writer.send_status(True)
 
         # Wait for putobjects or done
@@ -660,6 +672,8 @@ class OSTreeReceiver(object):
 
         # Inform pusher that everything is in place
         self.writer.send_done()
+
+        profile_end(Topics.ARTIFACT_RECEIVE, profile_name)
 
         return 0
 
