@@ -232,9 +232,9 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 
     with app.initialized(elements, session_name="Build", except_=track_except, rewritable=rewritable,
                          use_configured_remote_caches=True, track_elements=track_,
+                         track_cross_junctions=track_cross_junctions,
                          fetch_subprojects=True):
-        app.pipeline.build(app.scheduler, build_all=all_, track_first=track_,
-                           track_cross_junctions=track_cross_junctions)
+        app.pipeline.build(app.scheduler, build_all=all_)
 
 
 ##################################################################
@@ -275,10 +275,10 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 
     with app.initialized(elements, session_name="Fetch", except_=except_, rewritable=track_,
                          track_elements=elements if track_ else None,
+                         track_cross_junctions=track_cross_junctions,
                          fetch_subprojects=True):
         dependencies = app.pipeline.deps_elements(deps)
-        app.pipeline.fetch(app.scheduler, dependencies, track_first=track_,
-                           track_cross_junctions=track_cross_junctions)
+        app.pipeline.fetch(app.scheduler, dependencies)
 
 
 ##################################################################
@@ -310,9 +310,11 @@ def track(app, elements, deps, except_, cross_junctions):
         all:   All dependencies of all specified elements
     """
     with app.initialized(elements, session_name="Track", except_=except_, rewritable=True,
-                         track_elements=elements, fetch_subprojects=True):
+                         track_elements=elements,
+                         track_cross_junctions=cross_junctions,
+                         fetch_subprojects=True):
         dependencies = app.pipeline.deps_elements(deps)
-        app.pipeline.track(app.scheduler, dependencies, cross_junctions=cross_junctions)
+        app.pipeline.track(app.scheduler)
 
 
 ##################################################################

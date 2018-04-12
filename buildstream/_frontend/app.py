@@ -225,6 +225,7 @@ class App():
     #    use_configured_remote_caches (bool): Whether we should contact remotes
     #    add_remote_cache (str): The URL for an explicitly mentioned remote cache
     #    track_elements (list of elements): Elements which are to be tracked
+    #    track_cross_junctions (bool): Whether tracking is allowed to cross junction boundaries
     #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
     #                              loading process, if they are not yet locally cached
     #
@@ -240,7 +241,7 @@ class App():
     def initialized(self, elements, *, session_name=None,
                     except_=tuple(), rewritable=False,
                     use_configured_remote_caches=False, add_remote_cache=None,
-                    track_elements=None, fetch_subprojects=False):
+                    track_elements=None, track_cross_junctions=False, fetch_subprojects=False):
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
         # Start with the early stage init, this enables logging right away
@@ -274,7 +275,8 @@ class App():
             try:
                 self.pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
                                          add_remote_cache=add_remote_cache,
-                                         track_elements=track_elements)
+                                         track_elements=track_elements,
+                                         track_cross_junctions=track_cross_junctions)
             except BstError as e:
                 self.print_error(e, "Error initializing pipeline")
                 sys.exit(-1)
@@ -414,7 +416,7 @@ class App():
         # If we're going to checkout, we need at least a fetch,
         # if we were asked to track first, we're going to fetch anyway.
         if not no_checkout or track_first:
-            self.pipeline.fetch(self.scheduler, [target], track_first=track_first)
+            self.pipeline.fetch(self.scheduler, [target])
 
         if not no_checkout and target._get_consistency() != Consistency.CACHED:
             raise PipelineError("Could not stage uncached source. " +

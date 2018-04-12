@@ -126,9 +126,13 @@ class Pipeline():
     #    use_configured_remote_caches (bool): Whether to contact configured remote artifact caches
     #    add_remote_cache (str): The URL for an additional remote artifact cache
     #    track_element (list of Elements): List of elements specified by the frontend for tracking
+    #    track_cross_junctions (bool): Whether tracking is allowed to cross junction boundaries
     #
-    def initialize(self, use_configured_remote_caches=False,
-                   add_remote_cache=None, track_elements=None):
+    def initialize(self,
+                   use_configured_remote_caches=False,
+                   add_remote_cache=None,
+                   track_elements=None,
+                   track_cross_junctions=False):
 
         # Preflight directly, before ever interrogating caches or anything.
         self._preflight()
@@ -150,7 +154,14 @@ class Pipeline():
         if has_remote_caches:
             self._initialize_remote_caches()
 
-        self._resolve_cache_keys(track_elements)
+        # Work out what we're going track, if anything
+        self._track_cross_junctions = track_cross_junctions
+        self._track_elements = []
+        if track_elements:
+            self._track_elements = self._get_elements_to_track(track_elements)
+
+        # Now resolve the cache keys once tracking elements have been resolved
+        self._resolve_cache_keys()
 
     # cleanup()
     #
@@ -221,23 +232,14 @@ class Pipeline():
     #
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
-    #    dependencies (list): List of elements to track
-    #    cross_junctions (bool): Whether to allow cross junction tracking
     #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
     #
-    def track(self, scheduler, dependencies, *, cross_junctions=False):
-
-        dependencies = list(dependencies)
-        if cross_junctions:
-            self._assert_junction_tracking(dependencies)
-        else:
-            dependencies = self._filter_cross_junctions(dependencies)
-
+    def track(self, scheduler):
         track = TrackQueue()
-        track.enqueue(dependencies)
-        self.session_elements = len(dependencies)
+        track.enqueue(self._track_elements)
+        self.session_elements = len(self._track_elements)
 
         _, status = scheduler.run([track])
         if status == SchedStatus.ERROR:
@@ -252,43 +254,30 @@ class Pipeline():
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to fetch
-    #    track_first (bool): Track new source references before fetching
-    #    track_cross_junctions (bool): Whether to allow cross junction tracking
     #
-    def fetch(self, scheduler, dependencies, *, track_first=False, track_cross_junctions=False):
+    def fetch(self, scheduler, dependencies):
         fetch_plan = dependencies
-        track_plan = []
 
-        # Assert that we have a consistent pipeline, or that
-        # the track option will make it consistent
-        if track_first:
-            track_plan = fetch_plan
-
-            if track_cross_junctions:
-                self._assert_junction_tracking(track_plan)
-            else:
-                track_plan = self._filter_cross_junctions(track_plan)
-
-            # Subtract the track elements from the fetch elements, they will be added separately
-            track_elements = set(track_plan)
+        # Subtract the track elements from the fetch elements, they will be added separately
+        if self._track_elements:
+            track_elements = set(self._track_elements)
             fetch_plan = [e for e in fetch_plan if e not in track_elements]
-        else:
-            # If we're not going to track first, we need to make sure
-            # the elements are not in an inconsistent state
-            self._assert_consistent(fetch_plan)
+
+        # Assert consistency for the fetch elements
+        self._assert_consistent(fetch_plan)
 
         # Filter out elements with cached sources, only from the fetch plan
         # let the track plan resolve new refs.
         cached = [elt for elt in fetch_plan if elt._get_consistency() == Consistency.CACHED]
         fetch_plan = [elt for elt in fetch_plan if elt not in cached]
 
-        self.session_elements = len(track_plan) + len(fetch_plan)
+        self.session_elements = len(self._track_elements) + len(fetch_plan)
 
         fetch = FetchQueue()
         fetch.enqueue(fetch_plan)
-        if track_first:
+        if self._track_elements:
             track = TrackQueue()
-            track.enqueue(track_plan)
+            track.enqueue(self._track_elements)
             queues = [track, fetch]
         else:
             queues = [fetch]
@@ -299,15 +288,6 @@ class Pipeline():
         elif status == SchedStatus.TERMINATED:
             raise PipelineError(terminated=True)
 
-    def get_elements_to_track(self, track_targets):
-        planner = _Planner()
-
-        target_elements = [e for e in self.dependencies(Scope.ALL)
-                           if e.name in track_targets]
-        track_elements = planner.plan(target_elements, ignore_cache=True)
-
-        return self.remove_elements(track_elements)
-
     # build()
     #
     # Builds (assembles) elements in the pipeline.
@@ -316,31 +296,12 @@ class Pipeline():
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    build_all (bool): Whether to build all elements, or only those
     #                      which are required to build the target.
-    #    track_first (list): Elements whose sources to track prior to
-    #                        building
-    #    track_cross_junctions (bool): Whether to allow cross junction tracking
     #
-    def build(self, scheduler, *, build_all=False, track_first=False, track_cross_junctions=False):
+    def build(self, scheduler, *, build_all=False):
         unused_workspaces = self._collect_unused_workspaces()
         if unused_workspaces:
             self._message(MessageType.WARN, "Unused workspaces",
                           detail="\n".join([el for el in unused_workspaces]))
-
-        # We set up two plans; one to track elements, the other to
-        # build them once tracking has finished. The first plan
-        # contains elements from track_first, the second contains the
-        # target elements.
-        #
-        # The reason we can't use one plan is that the tracking
-        # elements may consist of entirely different elements.
-        track_plan = []
-        if track_first:
-            track_plan = self.get_elements_to_track(track_first)
-
-        if track_cross_junctions:
-            self._assert_junction_tracking(track_plan)
-        else:
-            track_plan = self._filter_cross_junctions(track_plan)
 
         if build_all:
             plan = self.dependencies(Scope.ALL)
@@ -349,7 +310,7 @@ class Pipeline():
 
         # We want to start the build queue with any elements that are
         # not being tracked first
-        track_elements = set(track_plan)
+        track_elements = set(self._track_elements)
         plan = [e for e in plan if e not in track_elements]
 
         # Assert that we have a consistent pipeline now (elements in
@@ -362,7 +323,7 @@ class Pipeline():
         pull = None
         push = None
         queues = []
-        if track_plan:
+        if self._track_elements:
             track = TrackQueue()
             queues.append(track)
         if self._artifacts.has_fetch_remotes():
@@ -374,13 +335,16 @@ class Pipeline():
             push = PushQueue()
             queues.append(push)
 
+        # If we're going to track, tracking elements go into the first queue
+        # which is the tracking queue, the rest of the plan goes into the next
+        # queue (whatever that happens to be)
         if track:
-            queues[0].enqueue(track_plan)
+            queues[0].enqueue(self._track_elements)
             queues[1].enqueue(plan)
         else:
             queues[0].enqueue(plan)
 
-        self.session_elements = len(track_plan) + len(plan)
+        self.session_elements = len(self._track_elements) + len(plan)
 
         _, status = scheduler.run(queues)
         if status == SchedStatus.ERROR:
@@ -595,7 +559,7 @@ class Pipeline():
                                 .format(tar_location, e)) from e
 
         plan = list(dependencies)
-        self.fetch(scheduler, plan, track_first=track_first)
+        self.fetch(scheduler, plan)
 
         # We don't use the scheduler for this as it is almost entirely IO
         # bound.
@@ -625,6 +589,37 @@ class Pipeline():
     #############################################################
     #                     Private Methods                       #
     #############################################################
+
+    # _get_elements_to_track():
+    #
+    # Work out which elements are going to be tracked
+    #
+    # Args:
+    #    (list of str): List of target names
+    #
+    # Returns:
+    #    (list): List of Element objects to track
+    #
+    def _get_elements_to_track(self, track_targets):
+        planner = _Planner()
+
+        # Convert target names to elements
+        target_elements = [e for e in self.dependencies(Scope.ALL)
+                           if e.name in track_targets]
+
+        # Plan them out
+        track_elements = planner.plan(target_elements, ignore_cache=True)
+
+        # Filter out --except elements
+        track_elements = self.remove_elements(track_elements)
+
+        # Filter out cross junctioned elements
+        if self._track_cross_junctions:
+            self._assert_junction_tracking(track_elements)
+        else:
+            track_elements = self._filter_cross_junctions(track_elements)
+
+        return track_elements
 
     # _resolve()
     #
@@ -708,13 +703,12 @@ class Pipeline():
     #
     # Initially resolve the cache keys
     #
-    def _resolve_cache_keys(self, track_elements):
-        if track_elements:
-            track_elements = self.get_elements_to_track(track_elements)
+    def _resolve_cache_keys(self):
+        track_elements = set(self._track_elements)
 
         with self.context.timed_activity("Resolving cached state", silent_nested=True):
             for element in self.dependencies(Scope.ALL):
-                if track_elements and element in track_elements:
+                if element in track_elements:
                     # Load the pipeline in an explicitly inconsistent state, use
                     # this for pipelines with tracking queues enabled.
                     element._schedule_tracking()
