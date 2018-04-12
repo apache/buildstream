@@ -100,6 +100,80 @@ class Consistency():
     """
 
 
+class SourceDownloader():
+    """SourceDownloader()
+
+    This interface exists so that a source that downloads from multiple
+    places (e.g. a git source with submodules) has a consistent interface for
+    fetching and substituting aliases.
+    """
+
+    def track(self, alias_override=None):
+        """Resolve a new ref from the plugin's track option
+
+        Args:
+           alias_override (str): The alias to use instead of the default one
+               defined by the :ref:`aliases <project_source_aliases>` field
+               in the project's config.
+
+        Returns:
+           (simple object): A new internal source reference, or None
+
+        If the backend in question supports resolving references from
+        a symbolic tracking branch or tag, then this should be implemented
+        to perform this task on behalf of ``build-stream track`` commands.
+
+        This usually requires fetching new content from a remote origin
+        to see if a new ref has appeared for your branch or tag. If the
+        backend store allows one to query for a new ref from a symbolic
+        tracking data without downloading then that is desirable.
+
+        See :func:`~buildstream.source.Source.get_ref` for a discussion on
+        the *ref* parameter.
+        """
+        # Allow a non implementation
+        return None
+
+    def fetch(self, alias_override=None):
+        """Fetch remote sources and mirror them locally, ensuring at least
+        that the specific reference is cached locally.
+
+        Args:
+           alias_override (str): The alias to use instead of the default one
+               defined by the :ref:`aliases <project_source_aliases>` field
+               in the project's config.
+
+        Raises:
+           :class:`.SourceError`
+
+        Implementors should raise :class:`.SourceError` if the there is some
+        network error or if the source reference could not be matched.
+        """
+        raise ImplError("Source downloader '{}' does not implement fetch()".format(type(self)))
+
+    def get_alias(self):
+        """Retrieves the alias used by this downloader, typically by splitting
+        it off the url
+
+        Note that it offers no guarantees that the alias is handled by the project.
+
+        Returns:
+           (str): The alias used by the SourceDownloader
+        """
+        # Guess that an original_url field exists
+        # If not, the source must implement an alternative way of getting the alias.
+        if hasattr(self, 'original_url'):
+            url = getattr(self, 'original_url')
+            if utils._ALIAS_SEPARATOR in url:
+                alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+                return alias
+            else:
+                return None
+        else:
+            raise ImplError("Source downloader '{}' is missing original_url "
+                            "and doesn't implement an alternative".format(type(self)))
+
+
 class SourceError(BstError):
     """This exception should be raised by :class:`.Source` implementations
     to report errors to the user.
@@ -113,7 +187,7 @@ class SourceError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason)
 
 
-class Source(Plugin):
+class Source(Plugin, SourceDownloader):
     """Source()
 
     Base Source class.
@@ -213,39 +287,6 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
-    def track(self):
-        """Resolve a new ref from the plugin's track option
-
-        Returns:
-           (simple object): A new internal source reference, or None
-
-        If the backend in question supports resolving references from
-        a symbolic tracking branch or tag, then this should be implemented
-        to perform this task on behalf of ``build-stream track`` commands.
-
-        This usually requires fetching new content from a remote origin
-        to see if a new ref has appeared for your branch or tag. If the
-        backend store allows one to query for a new ref from a symbolic
-        tracking data without downloading then that is desirable.
-
-        See :func:`~buildstream.source.Source.get_ref` for a discussion on
-        the *ref* parameter.
-        """
-        # Allow a non implementation
-        return None
-
-    def fetch(self):
-        """Fetch remote sources and mirror them locally, ensuring at least
-        that the specific reference is cached locally.
-
-        Raises:
-           :class:`.SourceError`
-
-        Implementors should raise :class:`.SourceError` if the there is some
-        network error or if the source reference could not be matched.
-        """
-        raise ImplError("Source plugin '{}' does not implement fetch()".format(self.get_kind()))
-
     def stage(self, directory):
         """Stage the sources to a directory
 
@@ -340,6 +381,26 @@ class Source(Plugin):
         with utils._tempdir(dir=mirrordir) as tempdir:
             yield tempdir
 
+    def get_source_downloaders(self, alias_override=None):
+        """Get the objects that are used for downloading
+
+        For sources that don't download from multiple URLs, it's
+        usually enough to just return a list containing itself.
+
+        For sources that do download from multiple URLs, the first
+        entry in the list must be the SourceDownloader that is used
+        for tracking (i.e. the URL points at the repository specified
+        by ref)
+
+        Args:
+           (optional) alias_override (str): A URI to use instead of the
+                                            default alias.
+
+        Returns:
+           list: A list of SourceDownloaders
+        """
+        return [self]
+
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
@@ -371,10 +432,27 @@ class Source(Plugin):
     def _get_consistency(self):
         return self.__consistency
 
-    # Wrapper function around plugin provided fetch method
+    # _fetch():
+    #
+    # Tries to fetch from every mirror, falling back on fetching without
+    # mirrors.
     #
     def _fetch(self):
-        self.fetch()
+        project = self._get_project()
+
+        # Use alias overrides to try and get the list of source downloaders
+        # Because some sources (git) need to be able to fetch to get the
+        # source downloaders
+        alias = self.get_alias()
+        uri_list = project.get_alias_uris(alias)
+        downloaders = self.__iterate_uris(uri_list, self.get_source_downloaders,
+                                          "get source downloaders when fetching")
+
+        for downloader in downloaders:
+            alias = downloader.get_alias()
+            uri_list = project.get_alias_uris(alias)
+            self.__iterate_uris(uri_list, downloader.fetch,
+                                "fetch for mirrors of alias '{}'".format(alias))
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
@@ -581,7 +659,7 @@ class Source(Plugin):
     # Wrapper for track()
     #
     def _track(self):
-        new_ref = self.track()
+        new_ref = self._mirrored_track()
         current_ref = self.get_ref()
 
         if new_ref is None:
@@ -592,6 +670,32 @@ class Source(Plugin):
             self.info("Found new revision: {}".format(new_ref))
 
         return new_ref
+
+    # _mirrored_track():
+    #
+    # Tries to track from every mirror, stopping once it succeeds
+    #
+    # Returns:
+    #    (simple object): A new internal source reference, or None
+    def _mirrored_track(self):
+
+        project = self._get_project()
+
+        # Use alias overrides to try and get the list of source downloaders
+        # Because some sources (git) need to be able to fetch to get the
+        # source downloaders
+        alias = self.get_alias()
+        uri_list = reversed(project.get_alias_uris(alias))
+        downloaders = self.__iterate_uris(uri_list, self.get_source_downloaders,
+                                          "get source downloaders when tracking")
+
+        # We only track for the main downloader
+        downloader = downloaders[0]
+
+        # If there are no mirrors or alias, track without overrides.
+        alias = downloader.get_alias()
+        uri_list = reversed(project.get_alias_uris(alias))
+        return self.__iterate_uris(uri_list, downloader.track, "track")
 
     #############################################################
     #                   Local Private Methods                   #
@@ -629,3 +733,24 @@ class Source(Plugin):
         _yaml.node_final_assertions(config)
 
         return config
+
+    # This will catch SourceErrors and interpret them as a reason to try
+    # the next one
+    #
+    def __iterate_uris(self, uri_list, callback, task_description):
+        errors = []
+        success = False
+        for uri in uri_list:
+            try:
+                retval = callback(alias_override=uri)
+            except SourceError:
+                continue
+            success = True
+            break
+        if not success:
+            if errors:
+                detail = "Errors collected:\n" + "\n".join([str(e) for e in errors])
+            else:
+                detail = None
+            raise SourceError("{}: Failed to {}".format(self, task_description), detail=detail)
+        return retval
