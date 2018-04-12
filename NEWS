@@ -4,6 +4,12 @@ buildstream 1.1.3
 
   o Added new `bst init` command to initialize a new project.
 
+  o Cross junction tracking is now disabled by default for projects
+    which can support this by using project.refs ref-storage
+
+    New options have been added to explicitly enable cross-junction
+    tracking.
+
 
 =================
 buildstream 1.1.2
