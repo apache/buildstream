@@ -205,16 +205,19 @@ def init(app, project_name, format_version, element_path, force):
 @click.option('--track-except', multiple=True,
               type=click.Path(dir_okay=False, readable=True),
               help="Except certain dependencies from tracking")
+@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
+              help="Allow tracking to cross junction boundaries")
 @click.option('--track-save', default=False, is_flag=True,
               help="Deprecated: This is ignored")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, elements, all_, track_, track_save, track_all, track_except):
+def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions):
     """Build elements in a pipeline"""
 
-    if track_except and not (track_ or track_all):
-        click.echo("ERROR: --track-except cannot be used without --track or --track-all", err=True)
+    if (track_except or track_cross_junctions) and not (track_ or track_all):
+        click.echo("ERROR: The --track-except and --track-cross-junctions options "
+                   "can only be used with --track or --track-all", err=True)
         sys.exit(-1)
 
     if track_save:
@@ -230,7 +233,8 @@ def build(app, elements, all_, track_, track_save, track_all, track_except):
     with app.initialized(elements, session_name="Build", except_=track_except, rewritable=rewritable,
                          use_configured_remote_caches=True, track_elements=track_,
                          fetch_subprojects=True):
-        app.pipeline.build(app.scheduler, all_, track_)
+        app.pipeline.build(app.scheduler, build_all=all_, track_first=track_,
+                           track_cross_junctions=track_cross_junctions)
 
 
 ##################################################################
@@ -245,10 +249,12 @@ def build(app, elements, all_, track_, track_save, track_all, track_except):
               help='The dependencies to fetch (default: plan)')
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track new source references before fetching")
+@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
+              help="Allow tracking to cross junction boundaries")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def fetch(app, elements, deps, track_, except_):
+def fetch(app, elements, deps, track_, except_, track_cross_junctions):
     """Fetch sources required to build the pipeline
 
     By default this will only try to fetch sources which are
@@ -263,11 +269,16 @@ def fetch(app, elements, deps, track_, except_):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
+    if track_cross_junctions and not track_:
+        click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
+        sys.exit(-1)
+
     with app.initialized(elements, session_name="Fetch", except_=except_, rewritable=track_,
                          track_elements=elements if track_ else None,
                          fetch_subprojects=True):
         dependencies = app.pipeline.deps_elements(deps)
-        app.pipeline.fetch(app.scheduler, dependencies, track_)
+        app.pipeline.fetch(app.scheduler, dependencies, track_first=track_,
+                           track_cross_junctions=track_cross_junctions)
 
 
 ##################################################################
@@ -280,10 +291,12 @@ def fetch(app, elements, deps, track_, except_):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to track (default: none)')
+@click.option('--cross-junctions', '-J', default=False, is_flag=True,
+              help="Allow crossing junction boundaries")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def track(app, elements, deps, except_):
+def track(app, elements, deps, except_, cross_junctions):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
@@ -293,13 +306,13 @@ def track(app, elements, deps, except_):
     Specify `--deps` to control which sources to track:
 
     \b
-        none:  No dependencies, just the element itself
-        all:   All dependencies
+        none:  No dependencies, just the specified elements
+        all:   All dependencies of all specified elements
     """
     with app.initialized(elements, session_name="Track", except_=except_, rewritable=True,
                          track_elements=elements, fetch_subprojects=True):
         dependencies = app.pipeline.deps_elements(deps)
-        app.pipeline.track(app.scheduler, dependencies)
+        app.pipeline.track(app.scheduler, dependencies, cross_junctions=cross_junctions)
 
 
 ##################################################################

@@ -222,18 +222,22 @@ class Pipeline():
     # Args:
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to track
+    #    cross_junctions (bool): Whether to allow cross junction tracking
     #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
     #
-    def track(self, scheduler, dependencies):
+    def track(self, scheduler, dependencies, *, cross_junctions=False):
 
         dependencies = list(dependencies)
+        if cross_junctions:
+            self._assert_junction_tracking(dependencies)
+        else:
+            dependencies = self._filter_cross_junctions(dependencies)
+
         track = TrackQueue()
         track.enqueue(dependencies)
         self.session_elements = len(dependencies)
-
-        self._assert_junction_tracking(dependencies, build=False)
 
         _, status = scheduler.run([track])
         if status == SchedStatus.ERROR:
@@ -249,30 +253,44 @@ class Pipeline():
     #    scheduler (Scheduler): The scheduler to run this pipeline on
     #    dependencies (list): List of elements to fetch
     #    track_first (bool): Track new source references before fetching
+    #    track_cross_junctions (bool): Whether to allow cross junction tracking
     #
-    def fetch(self, scheduler, dependencies, track_first):
-
-        plan = dependencies
+    def fetch(self, scheduler, dependencies, *, track_first=False, track_cross_junctions=False):
+        fetch_plan = dependencies
+        track_plan = []
 
         # Assert that we have a consistent pipeline, or that
         # the track option will make it consistent
-        if not track_first:
-            self._assert_consistent(plan)
+        if track_first:
+            track_plan = fetch_plan
 
-        # Filter out elements with cached sources, we already have them.
-        cached = [elt for elt in plan if elt._get_consistency() == Consistency.CACHED]
-        plan = [elt for elt in plan if elt not in cached]
+            if track_cross_junctions:
+                self._assert_junction_tracking(track_plan)
+            else:
+                track_plan = self._filter_cross_junctions(track_plan)
 
-        self.session_elements = len(plan)
+            # Subtract the track elements from the fetch elements, they will be added separately
+            track_elements = set(track_plan)
+            fetch_plan = [e for e in fetch_plan if e not in track_elements]
+        else:
+            # If we're not going to track first, we need to make sure
+            # the elements are not in an inconsistent state
+            self._assert_consistent(fetch_plan)
+
+        # Filter out elements with cached sources, only from the fetch plan
+        # let the track plan resolve new refs.
+        cached = [elt for elt in fetch_plan if elt._get_consistency() == Consistency.CACHED]
+        fetch_plan = [elt for elt in fetch_plan if elt not in cached]
+
+        self.session_elements = len(track_plan) + len(fetch_plan)
 
         fetch = FetchQueue()
+        fetch.enqueue(fetch_plan)
         if track_first:
             track = TrackQueue()
-            track.enqueue(plan)
+            track.enqueue(track_plan)
             queues = [track, fetch]
         else:
-            track = None
-            fetch.enqueue(plan)
             queues = [fetch]
 
         _, status = scheduler.run(queues)
@@ -300,8 +318,9 @@ class Pipeline():
     #                      which are required to build the target.
     #    track_first (list): Elements whose sources to track prior to
     #                        building
+    #    track_cross_junctions (bool): Whether to allow cross junction tracking
     #
-    def build(self, scheduler, build_all, track_first):
+    def build(self, scheduler, *, build_all=False, track_first=False, track_cross_junctions=False):
         unused_workspaces = self._collect_unused_workspaces()
         if unused_workspaces:
             self._message(MessageType.WARN, "Unused workspaces",
@@ -318,7 +337,10 @@ class Pipeline():
         if track_first:
             track_plan = self.get_elements_to_track(track_first)
 
-        self._assert_junction_tracking(track_plan, build=True)
+        if track_cross_junctions:
+            self._assert_junction_tracking(track_plan)
+        else:
+            track_plan = self._filter_cross_junctions(track_plan)
 
         if build_all:
             plan = self.dependencies(Scope.ALL)
@@ -573,7 +595,7 @@ class Pipeline():
                                 .format(tar_location, e)) from e
 
         plan = list(dependencies)
-        self.fetch(scheduler, plan, track_first)
+        self.fetch(scheduler, plan, track_first=track_first)
 
         # We don't use the scheduler for this as it is almost entirely IO
         # bound.
@@ -723,6 +745,23 @@ class Pipeline():
                 detail += "  " + element.name + "\n"
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 
+    # _filter_cross_junction()
+    #
+    # Filters out cross junction elements from the elements
+    #
+    # Args:
+    #    elements (list of Element): The list of elements to be tracked
+    #
+    # Returns:
+    #    (list): A filtered list of `elements` which does
+    #            not contain any cross junction elements.
+    #
+    def _filter_cross_junctions(self, elements):
+        return [
+            element for element in elements
+            if element._get_project() is self.project
+        ]
+
     # _assert_junction_tracking()
     #
     # Raises an error if tracking is attempted on junctioned elements and
@@ -730,12 +769,8 @@ class Pipeline():
     #
     # Args:
     #    elements (list of Element): The list of elements to be tracked
-    #    build (bool): Whether this is being called for `bst build`, otherwise `bst track`
     #
-    # The `build` argument is only useful for suggesting an appropriate
-    # alternative to the user
-    #
-    def _assert_junction_tracking(self, elements, *, build):
+    def _assert_junction_tracking(self, elements):
 
         # We can track anything if the toplevel project uses project.refs
         #
@@ -750,13 +785,8 @@ class Pipeline():
         for element in elements:
             element_project = element._get_project()
             if element_project is not self.project:
-                suggestion = '--except'
-                if build:
-                    suggestion = '--track-except'
-
                 detail = "Requested to track sources across junction boundaries\n" + \
-                         "in a project which does not use separate source references.\n\n" + \
-                         "Try using `{}` arguments to limit the scope of tracking.".format(suggestion)
+                         "in a project which does not use project.refs ref-storage."
 
                 raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
 

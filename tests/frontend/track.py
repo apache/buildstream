@@ -215,8 +215,9 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'track-cross-junction'))
+@pytest.mark.parametrize("cross_junction", [('cross'), ('nocross')])
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-def test_track_cross_junction(cli, tmpdir, datafiles, ref_storage):
+def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storage):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files')
     target_path = os.path.join(project, 'target.bst')
@@ -267,14 +268,27 @@ def test_track_cross_junction(cli, tmpdir, datafiles, ref_storage):
     assert get_subproject_element_state() == 'no reference'
 
     # Track recursively across the junction
-    result = cli.run(project=project, args=['track', '--deps', 'all', 'target.bst'])
+    args = ['track', '--deps', 'all']
+    if cross_junction == 'cross':
+        args += ['--cross-junctions']
+    args += ['target.bst']
+
+    result = cli.run(project=project, args=args)
 
     if ref_storage == 'inline':
-        #
-        # Cross junction tracking is not allowed when the toplevel project
-        # is using inline ref storage.
-        #
-        result.assert_main_error(ErrorDomain.PIPELINE, 'untrackable-sources')
+
+        if cross_junction == 'cross':
+            #
+            # Cross junction tracking is not allowed when the toplevel project
+            # is using inline ref storage.
+            #
+            result.assert_main_error(ErrorDomain.PIPELINE, 'untrackable-sources')
+        else:
+            #
+            # No cross juction tracking was requested
+            #
+            result.assert_success()
+            assert get_subproject_element_state() == 'no reference'
     else:
         #
         # Tracking is allowed with project.refs ref storage
@@ -282,9 +296,12 @@ def test_track_cross_junction(cli, tmpdir, datafiles, ref_storage):
         result.assert_success()
 
         #
-        # Assert that we now have a ref for the subproject element
+        # If cross junction tracking was enabled, we should now be buildable
         #
-        assert get_subproject_element_state() == 'buildable'
+        if cross_junction == 'cross':
+            assert get_subproject_element_state() == 'buildable'
+        else:
+            assert get_subproject_element_state() == 'no reference'
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))

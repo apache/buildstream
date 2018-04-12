@@ -414,7 +414,7 @@ class App():
         # If we're going to checkout, we need at least a fetch,
         # if we were asked to track first, we're going to fetch anyway.
         if not no_checkout or track_first:
-            self.pipeline.fetch(self.scheduler, [target], track_first)
+            self.pipeline.fetch(self.scheduler, [target], track_first=track_first)
 
         if not no_checkout and target._get_consistency() != Consistency.CACHED:
             raise PipelineError("Could not stage uncached source. " +
