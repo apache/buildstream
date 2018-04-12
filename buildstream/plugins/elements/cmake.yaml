@@ -13,6 +13,9 @@ variables:
   # For backwards compatibility only, do not use.
   cmake-extra: ''
 
+  # The cmake generator to use
+  generator: Unix Makefiles
+
   cmake-args: |
 
     -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}" \
@@ -20,10 +23,10 @@ variables:
 
   cmake: |
 
-    cmake -B%{build-dir} -H. %{cmake-args}
+    cmake -B%{build-dir} -H. -G"%{generator}" %{cmake-args}
 
-  make: make -C %{build-dir}
-  make-install: make -j1 -C %{build-dir} DESTDIR="%{install-root}" install
+  make: cmake --build %{build-dir} -- ${JOBS}
+  make-install: env DESTDIR="%{install-root}" cmake --build %{build-dir} --target install
 
   # Set this if the sources cannot handle parallelization.
   #
@@ -59,11 +62,11 @@ config:
 
 # Use max-jobs CPUs for building and enable verbosity
 environment:
-  MAKEFLAGS: -j%{max-jobs}
+  JOBS: -j%{max-jobs}
   V: 1
 
-# And dont consider MAKEFLAGS or V as something which may
+# And dont consider JOBS or V as something which may
 # effect build output.
 environment-nocache:
-- MAKEFLAGS
+- JOBS
 - V
