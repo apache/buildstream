@@ -340,7 +340,7 @@ class StatusJob():
         # Calculate the size needed to display
         self.size = 10  # Size of time code with brackets
         self.size += len(action_name)
-        self.size += len(element.name)
+        self.size += len(element._get_full_name())
         self.size += 3  # '[' + ':' + ']'
 
     # render()
@@ -357,7 +357,7 @@ class StatusJob():
             self.format_profile.fmt(']')
 
         # Add padding after the display name, before terminating ']'
-        name = self.element.name + (' ' * padding)
+        name = self.element._get_full_name() + (' ' * padding)
         text += self.format_profile.fmt('[') + \
             self.content_profile.fmt(self.action_name) + \
             self.format_profile.fmt(':') + \
