@@ -30,7 +30,7 @@ if "_BST_COMPLETION" not in os.environ:
     from .utils import UtilError, ProgramNotFoundError
     from .sandbox import Sandbox, SandboxFlags
     from .plugin import Plugin
-    from .source import Source, SourceError, Consistency
+    from .source import Source, SourceError, Consistency, SourceDownloader
     from .element import Element, ElementError, Scope
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement
