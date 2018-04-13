@@ -97,7 +97,7 @@ class BzrSource(Source):
     def track(self):
         with self.timed_activity("Tracking {}".format(self.url),
                                  silent_nested=True):
-            self._ensure_mirror()
+            self._ensure_mirror(skip_ref_check=True)
             ret, out = self.check_output([self.host_bzr, "version-info",
                                           "--custom", "--template={revno}",
                                           self._get_branch_dir()],
@@ -207,7 +207,7 @@ class BzrSource(Source):
             yield repodir
             self._atomic_replace_mirrordir(repodir)
 
-    def _ensure_mirror(self):
+    def _ensure_mirror(self, skip_ref_check=False):
         with self._atomic_repodir() as repodir:
             # Initialize repo if no metadata
             bzr_metadata_dir = os.path.join(repodir, ".bzr")
@@ -216,18 +216,21 @@ class BzrSource(Source):
                           fail="Failed to initialize bzr repository")
 
             branch_dir = os.path.join(repodir, self.tracking)
+            branch_url = self.url + "/" + self.tracking
             if not os.path.exists(branch_dir):
                 # `bzr branch` the branch if it doesn't exist
                 # to get the upstream code
-                branch_url = self.url + "/" + self.tracking
                 self.call([self.host_bzr, "branch", branch_url, branch_dir],
                           fail="Failed to branch from {} to {}".format(branch_url, branch_dir))
 
             else:
                 # `bzr pull` the branch if it does exist
                 # to get any changes to the upstream code
-                self.call([self.host_bzr, "pull", "--directory={}".format(branch_dir)],
+                self.call([self.host_bzr, "pull", "--directory={}".format(branch_dir), branch_url],
                           fail="Failed to pull new changes for {}".format(branch_dir))
+        if not skip_ref_check and not self._check_ref():
+            raise SourceError("Failed to ensure ref '{}' was mirrored".format(self.ref),
+                              reason="ref-not-mirrored")
 
 
 def setup():
