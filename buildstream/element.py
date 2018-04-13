@@ -21,6 +21,48 @@
 """
 Element
 =======
+
+
+.. _core_element_abstract_methods:
+
+Abstract Methods
+----------------
+For loading and configuration purposes, Elements must implement the
+:ref:`Plugin base class abstract methods <core_plugin_abstract_methods>`.
+
+
+.. _core_element_build_phase:
+
+Build Phase
+~~~~~~~~~~~
+The following methods are the foundation of the element's *build phase*, they
+must be implemented by all Element classes.
+
+* :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`
+
+  Configures the :class:`.Sandbox`. This is called before anything else
+
+* :func:`Element.stage() <buildstream.element.Element.stage>`
+
+  Stage dependencies and :class:`Sources <buildstream.source.Source>` into
+  the sandbox.
+
+* :func:`Element.assemble() <buildstream.element.Element.assemble>`
+
+  Perform the actual assembly of the element
+
+
+Miscellaneous
+~~~~~~~~~~~~~
+Miscellaneous abstract methods also exist:
+
+* :func:`Element.generate_script() <buildstream.element.Element.generate_script>`
+
+  For the purpose of ``bst source bundle``, an Element may optionally implmenent this.
+
+
+Class Reference
+---------------
 """
 
 import os
@@ -204,6 +246,84 @@ class Element(Plugin):
     def __lt__(self, other):
         return self.name < other.name
 
+    #############################################################
+    #                      Abstract Methods                     #
+    #############################################################
+    def configure_sandbox(self, sandbox):
+        """Configures the the sandbox for execution
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        Raises:
+           (:class:`.ElementError`): When the element raises an error
+
+        Elements must implement this method to configure the sandbox object
+        for execution.
+        """
+        raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(
+            kind=self.get_kind()))
+
+    def stage(self, sandbox):
+        """Stage inputs into the sandbox directories
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        Raises:
+           (:class:`.ElementError`): When the element raises an error
+
+        Elements must implement this method to populate the sandbox
+        directory with data. This is done either by staging :class:`.Source`
+        objects, by staging the artifacts of the elements this element depends
+        on, or both.
+        """
+        raise ImplError("element plugin '{kind}' does not implement stage()".format(
+            kind=self.get_kind()))
+
+    def assemble(self, sandbox):
+        """Assemble the output artifact
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+
+        Returns:
+           (str): An absolute path within the sandbox to collect the artifact from
+
+        Raises:
+           (:class:`.ElementError`): When the element raises an error
+
+        Elements must implement this method to create an output
+        artifact from its sources and dependencies.
+        """
+        raise ImplError("element plugin '{kind}' does not implement assemble()".format(
+            kind=self.get_kind()))
+
+    def generate_script(self):
+        """Generate a build (sh) script to build this element
+
+        Returns:
+           (str): A string containing the shell commands required to build the element
+
+        BuildStream guarantees the following environment when the
+        generated script is run:
+
+        - All element variables have been exported.
+        - The cwd is `self.get_variable('build_root')/self.normal_name`.
+        - $PREFIX is set to `self.get_variable('install_root')`.
+        - The directory indicated by $PREFIX is an empty directory.
+
+        Files are expected to be installed to $PREFIX.
+
+        If the script fails, it is expected to return with an exit
+        code != 0.
+        """
+        raise ImplError("element plugin '{kind}' does not implement write_script()".format(
+            kind=self.get_kind()))
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
     def sources(self):
         """A generator function to enumerate the element sources
 
@@ -639,12 +759,9 @@ class Element(Plugin):
 
         .. note::
 
-           This can only be called in the build phase of an element and
-           never before. This may be called in
-           :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`,
-           :func:`Element.stage() <buildstream.element.Element.stage>` and in
-           :func:`Element.assemble() <buildstream.element.Element.assemble>`
-
+           This can only be called the abstract methods which are
+           called as a part of the :ref:`build phase <core_element_build_phase>`
+           and never before.
         """
         if self.__dynamic_public is None:
             self._load_public_data()
@@ -698,81 +815,6 @@ class Element(Plugin):
             return self.__variables.variables[varname]
 
         return None
-
-    #############################################################
-    #                  Abstract Element Methods                 #
-    #############################################################
-    def configure_sandbox(self, sandbox):
-        """Configures the the sandbox for execution
-
-        Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
-
-        Raises:
-           (:class:`.ElementError`): When the element raises an error
-
-        Elements must implement this method to configure the sandbox object
-        for execution.
-        """
-        raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(
-            kind=self.get_kind()))
-
-    def stage(self, sandbox):
-        """Stage inputs into the sandbox directories
-
-        Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
-
-        Raises:
-           (:class:`.ElementError`): When the element raises an error
-
-        Elements must implement this method to populate the sandbox
-        directory with data. This is done either by staging :class:`.Source`
-        objects, by staging the artifacts of the elements this element depends
-        on, or both.
-        """
-        raise ImplError("element plugin '{kind}' does not implement stage()".format(
-            kind=self.get_kind()))
-
-    def generate_script(self):
-        """Generate a build (sh) script to build this element
-
-        Returns:
-           (str): A string containing the shell commands required to build the element
-
-        BuildStream guarantees the following environment when the
-        generated script is run:
-
-        - All element variables have been exported.
-        - The cwd is `self.get_variable('build_root')/self.normal_name`.
-        - $PREFIX is set to `self.get_variable('install_root')`.
-        - The directory indicated by $PREFIX is an empty directory.
-
-        Files are expected to be installed to $PREFIX.
-
-        If the script fails, it is expected to return with an exit
-        code != 0.
-        """
-        raise ImplError("element plugin '{kind}' does not implement write_script()".format(
-            kind=self.get_kind()))
-
-    def assemble(self, sandbox):
-        """Assemble the output artifact
-
-        Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
-
-        Returns:
-           (str): An absolute path within the sandbox to collect the artifact from
-
-        Raises:
-           (:class:`.ElementError`): When the element raises an error
-
-        Elements must implement this method to create an output
-        artifact from its sources and dependencies.
-        """
-        raise ImplError("element plugin '{kind}' does not implement assemble()".format(
-            kind=self.get_kind()))
 
     #############################################################
     #            Private Methods used in BuildStream            #
