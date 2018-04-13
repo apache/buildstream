@@ -19,9 +19,35 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 """
 Plugin
-=======
+======
 BuildStream supports third party plugins to define additional kinds of
-elements and sources.
+:mod:`Elements <buildstream.element>` and :mod:`Sources <buildstream.source>`.
+
+The common API is documented here, along with some information on how
+external plugin packages are structured.
+
+
+.. _core_plugin_abstract_methods:
+
+Abstract Methods
+----------------
+For both :mod:`Elements <buildstream.element>` and :mod:`Sources <buildstream.source>`,
+it is mandatory to implement the following abstract methods:
+
+* :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+
+  Loads the user provided configuration YAML for the given source or element
+
+* :func:`Plugin.preflight() <buildstream.plugin.Plugin.preflight>`
+
+  Early preflight checks allow plugins to bail out early with an error
+  in the case that it can predict that failure is inevitable.
+
+* :func:`Plugin.get_unique_key() <buildstream.plugin.Plugin.get_unique_key>`
+
+  Once all configuration has been loaded and preflight checks have passed,
+  this method is used to inform the core of a plugin's unique configuration.
+
 
 Plugin Structure
 ----------------
@@ -153,6 +179,88 @@ class Plugin():
             typetag=self.__type_tag,
             provenance=self.__provenance)
 
+    #############################################################
+    #                      Abstract Methods                     #
+    #############################################################
+    def configure(self, node):
+        """Configure the Plugin from loaded configuration data
+
+        Args:
+           node (dict): The loaded configuration dictionary
+
+        Raises:
+           :class:`.SourceError`: If its a :class:`.Source` implementation
+           :class:`.ElementError`: If its an :class:`.Element` implementation
+
+        Plugin implementors should implement this method to read configuration
+        data and store it.
+
+        Plugins should use the :func:`Plugin.node_get_member() <buildstream.plugin.Plugin.node_get_member>`
+        and :func:`Plugin.node_get_list_element() <buildstream.plugin.Plugin.node_get_list_element>`
+        methods to fetch values from the passed `node`. This will ensure that a nice human readable error
+        message will be raised if the expected configuration is not found, indicating the filename,
+        line and column numbers.
+
+        Further the :func:`Plugin.node_validate() <buildstream.plugin.Plugin.node_validate>` method
+        should be used to ensure that the user has not specified keys in `node` which are unsupported
+        by the plugin.
+
+        .. note::
+
+           For Elements, when variable substitution is desirable, the
+           :func:`Element.node_subst_member() <buildstream.element.Element.node_subst_member>`
+           and :func:`Element.node_subst_list_element() <buildstream.element.Element.node_subst_list_element>`
+           methods can be used.
+        """
+        raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
+            tag=self.__type_tag, kind=self.get_kind()))
+
+    def preflight(self):
+        """Preflight Check
+
+        Raises:
+           :class:`.SourceError`: If its a :class:`.Source` implementation
+           :class:`.ElementError`: If its an :class:`.Element` implementation
+
+        This method is run after :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+        and after the pipeline is fully constructed.
+
+        Implementors should simply raise :class:`.SourceError` or :class:`.ElementError`
+        with an informative message in the case that the host environment is
+        unsuitable for operation.
+
+        Plugins which require host tools (only sources usually) should obtain
+        them with :func:`utils.get_host_tool() <buildstream.utils.get_host_tool>` which
+        will raise an error automatically informing the user that a host tool is needed.
+        """
+        raise ImplError("{tag} plugin '{kind}' does not implement preflight()".format(
+            tag=self.__type_tag, kind=self.get_kind()))
+
+    def get_unique_key(self):
+        """Return something which uniquely identifies the plugin input
+
+        Returns:
+           A string, list or dictionary which uniquely identifies the input
+
+        This is used to construct unique cache keys for elements and sources,
+        sources should return something which uniquely identifies the payload,
+        such as an sha256 sum of a tarball content.
+
+        Elements and Sources should implement this by collecting any configurations
+        which could possibly effect the output and return a dictionary of these settings.
+
+        For Sources, this is guaranteed to only be called if
+        :func:`Source.get_consistency() <buildstream.source.Source.get_consistency>`
+        has not returned :func:`Consistency.INCONSISTENT <buildstream.source.Consistency.INCONSISTENT>`
+        which is to say that the Source is expected to have an exact *ref* indicating
+        exactly what source is going to be staged.
+        """
+        raise ImplError("{tag} plugin '{kind}' does not implement get_unique_key()".format(
+            tag=self.__type_tag, kind=self.get_kind()))
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
     def get_kind(self):
         """Fetches the kind of this plugin
 
@@ -284,71 +392,6 @@ class Plugin():
                   node, dict, 'things', [ i ])
         """
         return _yaml.node_get(node, expected_type, member_name, indices=indices)
-
-    def configure(self, node):
-        """Configure the Plugin from loaded configuration data
-
-        Args:
-           node (dict): The loaded configuration dictionary
-
-        Raises:
-           :class:`.SourceError`: If its a :class:`.Source` implementation
-           :class:`.ElementError`: If its an :class:`.Element` implementation
-           :class:`.LoadError`: If one of the *node* handling methods fail
-
-        Plugin implementors should implement this method to read configuration
-        data and store it. Use of the :func:`~buildstream.plugin.Plugin.node_get_member`
-        convenience method will ensure that a nice :class:`.LoadError` is triggered
-        whenever the YAML input configuration is faulty.
-
-        Implementations may raise :class:`.SourceError` or :class:`.ElementError` for other errors.
-
-        .. note::
-
-           During configure, logging is suppressed unless buildstream is run with
-           debugging output enabled.
-        """
-        raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
-            tag=self.__type_tag, kind=self.get_kind()))
-
-    def preflight(self):
-        """Preflight Check
-
-        Raises:
-           :class:`.SourceError`: If its a :class:`.Source` implementation
-           :class:`.ElementError`: If its an :class:`.Element` implementation
-           :class:`.ProgramNotFoundError`: If a required host tool is not found
-
-        This method is run after :func:`~buildstream.plugin.Plugin.configure` and
-        after the pipeline is fully constructed. :class:`.Element` plugins are free
-        to use the :func:`~buildstream.element.Element.dependencies` method and inspect
-        public data at this time.
-
-        Implementors should simply raise :class:`.SourceError` or :class:`.ElementError`
-        with an informative message in the case that the host environment is
-        unsuitable for operation.
-
-        Plugins which require host tools (only sources usually) should obtain
-        them with :func:`.utils.get_host_tool` which will raise
-        :class:`.ProgramNotFoundError` automatically.
-        """
-        raise ImplError("{tag} plugin '{kind}' does not implement preflight()".format(
-            tag=self.__type_tag, kind=self.get_kind()))
-
-    def get_unique_key(self):
-        """Return something which uniquely identifies the plugin input
-
-        Returns:
-           A string, list or dictionary which uniquely identifies the sources to use
-
-        This is used to construct unique cache keys for elements and sources,
-        sources should return something which uniquely identifies the payload,
-        such as an sha256 sum of a tarball content. Elements should implement
-        this by collecting any configurations which could possibly effect the
-        output and return a dictionary of these settings.
-        """
-        raise ImplError("{tag} plugin '{kind}' does not implement get_unique_key()".format(
-            tag=self.__type_tag, kind=self.get_kind()))
 
     def debug(self, brief, *, detail=None):
         """Print a debugging message
