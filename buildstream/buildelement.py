@@ -17,38 +17,49 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-
-"""The BuildElement class is a convenience element one can derive from for
+"""
+BuildElement
+============
+The BuildElement class is a convenience element one can derive from for
 implementing the most common case of element.
 
 
-Description of assemble activities
-----------------------------------
-This element will perform the following steps to assemble an element:
+Abstract method implementations
+-------------------------------
 
-Stage dependencies
+Element.configure_sandbox()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`,
+the BuildElement will ensure that the sandbox locations described by the ``%{build-root}``
+and ``%{install-root}`` variables are marked and will be mounted read-write for the
+:func:`assemble phase<buildstream.element.Element.configure_sandbox>`.
+
+The working directory for the sandbox will be configured to be the ``%{build-root}``,
+unless the ``%{command-subdir}`` variable is specified for the element in question,
+in which case the working directory will be configured as ``%{build-root}/%{command-subdir}``.
+
+
+Element.stage()
+~~~~~~~~~~~~~~~
+In :func:`Element.stage() <buildstream.element.Element.stage>`, the BuildElement
+will do the following operations:
+
+* Stage all the dependencies in the :func:`Scope.BUILD <buildstream.element.Scope.BUILD>`
+  scope into the sandbox root.
+
+* Run the integration commands for all staged dependencies using
+  :func:`Element.integrate() <buildstream.element.Element.integrate>`
+
+* Stage any Source on the given element to the ``%{build-root}`` location
+  inside the sandbox, using
+  :func:`Element.stage_sources() <buildstream.element.Element.integrate>`
+
+
+Element.assemble()
 ~~~~~~~~~~~~~~~~~~
-The dependencies in the :func:`Scope.BUILD <buildstream.element.Scope.BUILD>`
-scope will be staged at the root of the sandbox
-
-Integrate dependencies
-~~~~~~~~~~~~~~~~~~~~~~
-The integration commands taken from the ``bst`` public domain of each dependency
-will be run in the sandbox to create and update caches. Typically ``ldconfig``
-among other things is run in this step.
-
-Stage sources
-~~~~~~~~~~~~~
-:mod:`Sources <buildstream.source>` are now staged according to their configuration
-into the ``%{build-root}`` directory (normally ``/buildstream/build``) inside the sandbox.
-
-Run commands
-~~~~~~~~~~~~
-Commands are now run in the sandbox.
-
-Commands are taken from the element configuration specified by the given
-:mod:`BuildElement <buildstream.buildelement>` subclass, which can in turn be
-overridden by the user in element declarations (``.bst`` files).
+In :func:`Element.assemble() <buildstream.element.Element.assemble>`, the
+BuildElement will proceed to run sandboxed commands which are expected to be
+found in the element configuration.
 
 Commands are run in the following order:
 
@@ -57,44 +68,9 @@ Commands are run in the following order:
 * ``install-commands``: Commands to install the results into ``%{install-root}``
 * ``strip-commands``: Commands to strip debugging symbols installed binaries
 
-Sometimes it is interesting to append or prepend commands to an existing
-command list without replacing it entirely, for this; array composition
-:ref:`prepend <format_directives_list_prepend>` and
-:ref:`append <format_directives_list_append>` directives can be used.
-
-**Example**
-
-.. code:: yaml
-
-  config:
-    configure-commands:
-      (<):
-      - echo "Do something before default configure-commands"
-
-**Working Directory**
-
-Note that by default the working directory is where the sources are staged in
-``%{build-root}``, but this can be overridden to build inside of a subdirectory
-of the build directory using the ``command-subdir`` variable in an element
-declaration. e.g.:
-
-.. code:: yaml
-
-  variables:
-    command-subdir: src
-
-The above fragment will cause all commands to be run in the ``src/`` subdirectory
-of the staged sources.
-
-
-Result collection
-~~~~~~~~~~~~~~~~~
-Finally, the resulting build *artifact* is collected from the the ``%{install-root}``
-directory (which is normally configured as ``/buildstream-install``) inside the sandbox.
-
-All build elements must install into the ``%{install-root}`` using whatever
-semantic the given build system provides to do this. E.g. for standard autotools
-packages we simply do ``make DESTDIR=%{install-root} install``.
+The result of the build is expected to end up in ``%{install-root}``, and
+as such; Element.assemble() method will return the ``%{install-root}`` for
+artifact collection purposes.
 """
 
 import os
@@ -120,6 +96,9 @@ _command_steps = ['configure-commands',
 
 class BuildElement(Element):
 
+    #############################################################
+    #             Abstract Method Implementations               #
+    #############################################################
     def configure(self, node):
 
         self.commands = {}
@@ -131,7 +110,7 @@ class BuildElement(Element):
 
         for command_name in _legacy_command_steps:
             if command_name in _command_steps:
-                self.commands[command_name] = self._get_commands(node, command_name)
+                self.commands[command_name] = self.__get_commands(node, command_name)
             else:
                 self.commands[command_name] = []
 
@@ -225,16 +204,6 @@ class BuildElement(Element):
         # always the /buildstream-install directory
         return self.get_variable('install-root')
 
-    def _get_commands(self, node, name):
-        list_node = self.node_get_member(node, list, name, [])
-        commands = []
-
-        for i in range(len(list_node)):
-            command = self.node_subst_list_element(node, name, [i])
-            commands.append(command)
-
-        return commands
-
     def generate_script(self):
         script = ""
         for command_name in _command_steps:
@@ -244,3 +213,16 @@ class BuildElement(Element):
                 script += "(set -ex; {}\n) || exit 1\n".format(cmd)
 
         return script
+
+    #############################################################
+    #                   Private Local Methods                   #
+    #############################################################
+    def __get_commands(self, node, name):
+        list_node = self.node_get_member(node, list, name, [])
+        commands = []
+
+        for i in range(len(list_node)):
+            command = self.node_subst_list_element(node, name, [i])
+            commands.append(command)
+
+        return commands
