@@ -172,6 +172,7 @@ coverage:
     - cd report
     - cp ../../../coverage-unix/coverage.unix .
     - cp ../../../coverage-linux/coverage.* .
+    - ls coverage.*
     - coverage combine --rcfile=../.coveragerc -a coverage.*
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
