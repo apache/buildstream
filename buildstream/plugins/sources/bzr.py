@@ -72,7 +72,6 @@ class BzrSource(Source):
         self.original_url = self.node_get_member(node, str, 'url')
         self.tracking = self.node_get_member(node, str, 'track')
         self.ref = self.node_get_member(node, str, 'ref', None)
-        self.url = self.translate_url(self.original_url)
 
     def preflight(self):
         # Check if bzr is installed, get the binary at the same time.
@@ -99,10 +98,11 @@ class BzrSource(Source):
     def set_ref(self, ref, node):
         node['ref'] = self.ref = ref
 
-    def track(self):
-        with self.timed_activity("Tracking {}".format(self.url),
+    def track(self, alias_override=None):
+        url = self.translate_url(self.original_url, alias_override)
+        with self.timed_activity("Tracking {}".format(url),
                                  silent_nested=True):
-            self._ensure_mirror()
+            self._ensure_mirror(url, skip_ref_check=True)
             ret, out = self.check_output([self.host_bzr, "version-info",
                                           "--custom", "--template={revno}",
                                           self._get_branch_dir()],
@@ -113,10 +113,11 @@ class BzrSource(Source):
 
             return out
 
-    def fetch(self):
-        with self.timed_activity("Fetching {}".format(self.url),
+    def fetch(self, alias_override=None):
+        url = self.translate_url(self.original_url, alias_override)
+        with self.timed_activity("Fetching {}".format(url),
                                  silent_nested=True):
-            self._ensure_mirror()
+            self._ensure_mirror(url)
 
     def stage(self, directory):
         self.call([self.host_bzr, "checkout", "--lightweight",
@@ -126,7 +127,10 @@ class BzrSource(Source):
                   .format(self.ref, self._get_branch_dir(), directory))
 
     def init_workspace(self, directory):
-        url = os.path.join(self.url, self.tracking)
+        # XXX: init_workspace points the branch at the upstream URL
+        # Even if mirrors exist.
+        url = self.translate_url(self.original_url)
+        branch_url = os.path.join(url, self.tracking)
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
             # Checkout from the cache
             self.call([self.host_bzr, "branch",
@@ -137,8 +141,8 @@ class BzrSource(Source):
                       .format(self.ref, self._get_branch_dir(), directory))
             # Switch the parent branch to the source's origin
             self.call([self.host_bzr, "switch",
-                       "--directory={}".format(directory), url],
-                      fail="Failed to switch workspace's parent branch to {}".format(url))
+                       "--directory={}".format(directory), branch_url],
+                      fail="Failed to switch workspace's parent branch to {}".format(branch_url))
 
     def _check_ref(self):
         # If the mirror doesnt exist yet, then we dont have the ref
@@ -212,7 +216,7 @@ class BzrSource(Source):
             yield repodir
             self._atomic_replace_mirrordir(repodir)
 
-    def _ensure_mirror(self):
+    def _ensure_mirror(self, url, skip_ref_check=False):
         with self._atomic_repodir() as repodir:
             # Initialize repo if no metadata
             bzr_metadata_dir = os.path.join(repodir, ".bzr")
@@ -221,18 +225,21 @@ class BzrSource(Source):
                           fail="Failed to initialize bzr repository")
 
             branch_dir = os.path.join(repodir, self.tracking)
+            branch_url = url + "/" + self.tracking
             if not os.path.exists(branch_dir):
                 # `bzr branch` the branch if it doesn't exist
                 # to get the upstream code
-                branch_url = self.url + "/" + self.tracking
                 self.call([self.host_bzr, "branch", branch_url, branch_dir],
                           fail="Failed to branch from {} to {}".format(branch_url, branch_dir))
 
             else:
                 # `bzr pull` the branch if it does exist
                 # to get any changes to the upstream code
-                self.call([self.host_bzr, "pull", "--directory={}".format(branch_dir)],
+                self.call([self.host_bzr, "pull", "--directory={}".format(branch_dir), branch_url],
                           fail="Failed to pull new changes for {}".format(branch_dir))
+        if not skip_ref_check and not self._check_ref():
+            raise SourceError("Failed to ensure ref '{}' was mirrored".format(self.ref),
+                              reason="ref-not-mirrored")
 
 
 def setup():
