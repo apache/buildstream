@@ -20,6 +20,52 @@
 """
 Source
 ======
+
+
+.. _core_source_abstract_methods:
+
+Abstract Methods
+----------------
+For loading and configuration purposes, Sources must implement the
+:ref:`Plugin base class abstract methods <core_plugin_abstract_methods>`.
+
+Sources expose the following abstract methods. Unless explicitly mentioned,
+these methods are mandatory to implement.
+
+* :func:`Source.get_consistency() <buildstream.source.Source.get_consistency>`
+
+  Report the sources consistency state.
+
+* :func:`Source.load_ref() <buildstream.source.Source.load_ref>`
+
+  Load the ref from a specific YAML node
+
+* :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
+
+  Fetch the source ref
+
+* :func:`Source.set_ref() <buildstream.source.Source.set_ref>`
+
+  Set a new ref explicitly
+
+* :func:`Source.track() <buildstream.source.Source.track>`
+
+  Automatically derive a new ref from a symbolic tracking branch
+
+* :func:`Source.fetch() <buildstream.source.Source.fetch>`
+
+  Fetch the actual payload for the currently set ref
+
+* :func:`Source.stage() <buildstream.source.Source.stage>`
+
+  Stage the sources for a given ref at a specified location
+
+* :func:`Source.init_workspace() <buildstream.source.Source.init_workspace>`
+
+  Stage sources in a local directory for use as a workspace.
+
+  **Optional**: If left unimplemented, this will default to calling
+  :func:`Source.stage() <buildstream.source.Source.stage>`
 """
 
 import os
@@ -102,79 +148,9 @@ class Source(Plugin):
     should be checked for using node_validate().
     """
 
-    def __init_defaults(self):
-        if not self.__defaults_set:
-            project = self._get_project()
-            sources = project.source_overrides
-            type(self).__defaults = sources.get(self.get_kind(), {})
-            type(self).__defaults_set = True
-
-    # This will resolve the final configuration to be handed
-    # off to source.configure()
-    #
-    def __extract_config(self, meta):
-        config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
-        config = _yaml.node_chain_copy(config)
-
-        _yaml.composite(config, meta.config)
-        _yaml.node_final_assertions(config)
-
-        return config
-
-    def get_mirror_directory(self):
-        """Fetches the directory where this source should store things
-
-        Returns:
-           (str): The directory belonging to this source
-        """
-
-        # Create the directory if it doesnt exist
-        context = self._get_context()
-        directory = os.path.join(context.sourcedir, self.get_kind())
-        os.makedirs(directory, exist_ok=True)
-        return directory
-
-    def translate_url(self, url):
-        """Translates the given url which may be specified with an alias
-        into a fully qualified url.
-
-        Args:
-           url (str): A url, which may be using an alias
-
-        Returns:
-           str: The fully qualified url, with aliases resolved
-        """
-        project = self._get_project()
-        return project.translate_url(url)
-
-    def get_project_directory(self):
-        """Fetch the project base directory
-
-        This is useful for sources which need to load resources
-        stored somewhere inside the project.
-
-        Returns:
-           str: The project base directory
-        """
-        project = self._get_project()
-        return project.directory
-
-    @contextmanager
-    def tempdir(self):
-        """Context manager for working in a temporary directory
-
-        Yields:
-           (str): A path to a temporary directory
-
-        This should be used by source plugins directly instead of the tempfile
-        module. This one will automatically cleanup in case of termination by
-        catching the signal before os._exit(). It will also use the 'mirror
-        directory' as expected for a source.
-        """
-        mirrordir = self.get_mirror_directory()
-        with utils._tempdir(dir=mirrordir) as tempdir:
-            yield tempdir
-
+    #############################################################
+    #                      Abstract Methods                     #
+    #############################################################
     def get_consistency(self):
         """Report whether the source has a resolved reference
 
@@ -188,6 +164,14 @@ class Source(Plugin):
 
         Args:
            node (dict): The YAML node to load the ref from
+
+        .. note::
+
+           The *ref* for the Source is expected to be read at
+           :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` time,
+           this will only be used for loading refs from alternative locations
+           than in the `element.bst` file where the given Source object has
+           been declared.
 
         *Since: 1.2*
         """
@@ -298,6 +282,63 @@ class Source(Plugin):
         some system error.
         """
         self.stage(directory)
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
+    def get_mirror_directory(self):
+        """Fetches the directory where this source should store things
+
+        Returns:
+           (str): The directory belonging to this source
+        """
+
+        # Create the directory if it doesnt exist
+        context = self._get_context()
+        directory = os.path.join(context.sourcedir, self.get_kind())
+        os.makedirs(directory, exist_ok=True)
+        return directory
+
+    def translate_url(self, url):
+        """Translates the given url which may be specified with an alias
+        into a fully qualified url.
+
+        Args:
+           url (str): A url, which may be using an alias
+
+        Returns:
+           str: The fully qualified url, with aliases resolved
+        """
+        project = self._get_project()
+        return project.translate_url(url)
+
+    def get_project_directory(self):
+        """Fetch the project base directory
+
+        This is useful for sources which need to load resources
+        stored somewhere inside the project.
+
+        Returns:
+           str: The project base directory
+        """
+        project = self._get_project()
+        return project.directory
+
+    @contextmanager
+    def tempdir(self):
+        """Context manager for working in a temporary directory
+
+        Yields:
+           (str): A path to a temporary directory
+
+        This should be used by source plugins directly instead of the tempfile
+        module. This one will automatically cleanup in case of termination by
+        catching the signal before os._exit(). It will also use the 'mirror
+        directory' as expected for a source.
+        """
+        mirrordir = self.get_mirror_directory()
+        with utils._tempdir(dir=mirrordir) as tempdir:
+            yield tempdir
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -539,3 +580,25 @@ class Source(Plugin):
             self.info("Found new revision: {}".format(new_ref))
 
         return new_ref
+
+    #############################################################
+    #                   Local Private Methods                   #
+    #############################################################
+    def __init_defaults(self):
+        if not self.__defaults_set:
+            project = self._get_project()
+            sources = project.source_overrides
+            type(self).__defaults = sources.get(self.get_kind(), {})
+            type(self).__defaults_set = True
+
+    # This will resolve the final configuration to be handed
+    # off to source.configure()
+    #
+    def __extract_config(self, meta):
+        config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
+        config = _yaml.node_chain_copy(config)
+
+        _yaml.composite(config, meta.config)
+        _yaml.node_final_assertions(config)
+
+        return config
