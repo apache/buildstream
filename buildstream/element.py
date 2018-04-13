@@ -35,8 +35,9 @@ For loading and configuration purposes, Elements must implement the
 
 Build Phase
 ~~~~~~~~~~~
-The following methods are the foundation of the element's *build phase*, they
-must be implemented by all Element classes.
+The following methods are the foundation of the element's *build
+phase*, they must be implemented by all Element classes, unless
+explicitly stated otherwise.
 
 * :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`
 
@@ -46,6 +47,13 @@ must be implemented by all Element classes.
 
   Stage dependencies and :class:`Sources <buildstream.source.Source>` into
   the sandbox.
+
+* :func:`Element.prepare() <buildstream.element.Element.prepare>`
+
+  Call preparation methods that should only be performed once in the
+  lifetime of a build directory (e.g. autotools' ./configure).
+
+  **Optional**: If left unimplemented, this step will be skipped.
 
 * :func:`Element.assemble() <buildstream.element.Element.assemble>`
 

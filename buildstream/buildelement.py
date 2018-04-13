@@ -55,6 +55,15 @@ will do the following operations:
   :func:`Element.stage_sources() <buildstream.element.Element.integrate>`
 
 
+Element.prepare()
+~~~~~~~~~~~~~~~~~
+
+In :func:`Element.prepare() <buildstream.element.Element.prepare>`,
+the BuildElement will run ``configure-commands``, which are used to
+run one-off preparations that should not be repeated for a single
+build directory.
+
+
 Element.assemble()
 ~~~~~~~~~~~~~~~~~~
 In :func:`Element.assemble() <buildstream.element.Element.assemble>`, the
@@ -63,7 +72,6 @@ found in the element configuration.
 
 Commands are run in the following order:
 
-* ``configure-commands``: Commands to configure how the element will build
 * ``build-commands``: Commands to build the element
 * ``install-commands``: Commands to install the results into ``%{install-root}``
 * ``strip-commands``: Commands to strip debugging symbols installed binaries
