@@ -14,6 +14,12 @@ buildstream 1.1.3
 
     Use `--verbose` and `--no-verbose` to adjust the amount of detail given.
 
+  o BuildElements' `configure-commands` are only run once for
+    workspaces now, which allows for incremental builds.
+
+    Appropriate API for plugins is also exposed through
+    `Element.prepare`.
+
 
 =================
 buildstream 1.1.2
