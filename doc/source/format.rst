@@ -95,6 +95,7 @@ definitions may depend on other elements by specifying the project relative path
 to the elements on which they depend here. See `Dependencies`_ for more information
 on the dependency model.
 
+Note the order you put the elements in ``depends:`` doesn't matter.
 
 .. _format_sources:
 
