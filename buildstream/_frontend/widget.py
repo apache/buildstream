@@ -335,6 +335,7 @@ class LogLine(Widget):
         self._indent = ' ' * indent
         self._log_lines = log_lines
         self._message_lines = message_lines
+        self._resolved_keys = None
 
         self._space_widget = Space(content_profile, format_profile)
         self._logfile_widget = LogFile(content_profile, format_profile, err_profile)
@@ -464,6 +465,13 @@ class LogLine(Widget):
         starttime = datetime.datetime.now()
         text = ''
 
+        assert self._resolved_keys is None
+        elements = set()
+        visited = {}
+        for element in pipeline.targets:
+            elements.update(element.dependencies(Scope.ALL, visited=visited))
+        self._resolved_keys = {element: element._get_cache_key() for element in elements}
+
         # Main invocation context
         text += '\n'
         text += self.content_profile.fmt("BuildStream Version {}\n".format(bst_version), bold=True)
@@ -536,6 +544,13 @@ class LogLine(Widget):
             return
 
         text = ''
+
+        assert self._resolved_keys is not None
+        elements = sorted(e for (e, k) in self._resolved_keys.items() if k != e._get_cache_key())
+        if elements:
+            text += self.content_profile.fmt("Resolved key Summary\n", bold=True)
+            text += self.show_pipeline(elements, self._context.log_element_format)
+            text += "\n\n"
 
         if self._failure_messages:
             text += self.content_profile.fmt("Failure Summary\n", bold=True)
