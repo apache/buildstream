@@ -22,7 +22,7 @@ class Repo():
         # The directory the actual repo will be stored in
         self.repo = os.path.join(self.directory, subdir)
 
-        os.makedirs(self.repo)
+        os.makedirs(self.repo, exist_ok=True)
 
     # create():
     #
@@ -69,3 +69,22 @@ class Repo():
                 shutil.copytree(src_path, dest_path)
             else:
                 shutil.copy2(src_path, dest_path)
+
+    # copy():
+    #
+    # Creates a copy of this repository in the specified
+    # destination.
+    #
+    # Args:
+    #    dest (str): The destination directory
+    #
+    # Returns:
+    #    (Repo): A Repo object for the new repository.
+    def copy(self, dest):
+        subdir = self.repo[len(self.directory):].lstrip(os.sep)
+        new_dir = os.path.join(dest, subdir)
+        os.makedirs(new_dir, exist_ok=True)
+        self.copy_directory(self.repo, new_dir)
+        repo_type = type(self)
+        new_repo = repo_type(dest, subdir)
+        return new_repo
