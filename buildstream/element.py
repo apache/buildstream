@@ -1058,7 +1058,7 @@ class Element(Plugin):
                 # Strong cache key could not be calculated yet
                 return
 
-    # _get_full_display_key():
+    # _get_display_key():
     #
     # Returns cache keys for display purposes
     #
@@ -1069,7 +1069,7 @@ class Element(Plugin):
     #
     # Question marks are returned if information for the cache key is missing.
     #
-    def _get_full_display_key(self):
+    def _get_display_key(self):
         context = self._get_context()
         dim_key = True
 
@@ -1813,7 +1813,7 @@ class Element(Plugin):
     # Question marks are returned if information for the cache key is missing.
     #
     def __get_brief_display_key(self):
-        _, display_key, _ = self._get_full_display_key()
+        _, display_key, _ = self._get_display_key()
         return display_key
 
     # __prepare():

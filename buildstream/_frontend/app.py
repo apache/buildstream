@@ -657,7 +657,7 @@ class App():
                     queue.enqueue([element])
 
     def shell(self, element, scope, directory, *, mounts=None, isolate=False, command=None):
-        _, key, dim = element._get_full_display_key()
+        _, key, dim = element._get_display_key()
         element_name = element._get_full_name()
 
         if self.colors:
