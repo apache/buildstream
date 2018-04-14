@@ -101,8 +101,8 @@ class OSTreeCache(ArtifactCache):
         # resolve ref to checksum
         rev = _ostree.checksum(self.repo, ref)
 
-        if not rev:
-            raise ArtifactError("Artifact missing for {}".format(ref))
+        # Extracting a nonexistent artifact is a bug
+        assert rev, "Artifact missing for {}".format(ref)
 
         dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, rev)
         if os.path.isdir(dest):
