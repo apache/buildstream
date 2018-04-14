@@ -211,9 +211,10 @@ class Element(Plugin):
         self.__tracking_done = False            # Sources have been tracked
         self.__pull_failed = False              # Whether pull was attempted but failed
         self.__log_path = None                  # Path to dedicated log file or None
-        self.__splits = None
-        self.__whitelist_regex = None
+        self.__splits = None                    # Resolved regex objects for computing split domains
+        self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
+        self.__tainted = None                   # Whether the artifact is tainted and should not be shared
 
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
@@ -248,8 +249,6 @@ class Element(Plugin):
 
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(meta)
-
-        self.__tainted = None
 
     def __lt__(self, other):
         return self.name < other.name
@@ -540,7 +539,7 @@ class Element(Plugin):
         Yields:
            (str): The paths of the files in manifest
         """
-        self._assert_cached()
+        self.__assert_cached()
         return self.__compute_splits(include, exclude, orphans)
 
     def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
@@ -584,9 +583,9 @@ class Element(Plugin):
             update_mtimes = []
 
         # Time to use the artifact, check once more that it's there
-        self._assert_cached()
+        self.__assert_cached()
 
-        with self.timed_activity("Staging {}/{}".format(self.name, self._get_display_key())):
+        with self.timed_activity("Staging {}/{}".format(self.name, self.__get_brief_display_key())):
             # Get the extracted artifact
             artifact_base, _ = self.__extract()
             artifact = os.path.join(artifact_base, 'files')
@@ -649,7 +648,7 @@ class Element(Plugin):
         project = self._get_project()
         workspace = self._get_workspace()
 
-        if self._can_build_incrementally() and workspace.last_successful:
+        if self.__can_build_incrementally() and workspace.last_successful:
             old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
 
         for dep in self.dependencies(scope):
@@ -659,7 +658,7 @@ class Element(Plugin):
             # successful build.
             to_update = None
             if workspace and old_dep_keys:
-                dep._assert_cached()
+                dep.__assert_cached()
 
                 if dep.name in old_dep_keys:
                     key_new = dep._get_cache_key()
@@ -791,7 +790,7 @@ class Element(Plugin):
            and never before.
         """
         if self.__dynamic_public is None:
-            self._load_public_data()
+            self.__load_public_data()
 
         data = self.__dynamic_public.get(domain)
         if data is not None:
@@ -812,7 +811,7 @@ class Element(Plugin):
         method.
         """
         if self.__dynamic_public is None:
-            self._load_public_data()
+            self.__load_public_data()
 
         if data is not None:
             data = _yaml.node_copy(data)
@@ -846,35 +845,6 @@ class Element(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
-
-    # _write_script():
-    #
-    # Writes a script to the given directory.
-    def _write_script(self, directory):
-        with open(_site.build_module_template, "r") as f:
-            script_template = f.read()
-
-        variable_string = ""
-        for var, val in self.get_environment().items():
-            variable_string += "{0}={1} ".format(var, val)
-
-        script = script_template.format(
-            name=self.normal_name,
-            build_root=self.get_variable('build-root'),
-            install_root=self.get_variable('install-root'),
-            variables=variable_string,
-            commands=self.generate_script()
-        )
-
-        os.makedirs(directory, exist_ok=True)
-        script_path = os.path.join(directory, "build-" + self.normal_name)
-
-        with self.timed_activity("Writing build script", silent_nested=True):
-            with utils.save_file_atomic(script_path, "w") as script_file:
-                script_file.write(script)
-
-            os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
-
     # _add_source():
     #
     # Adds a source, for pipeline construction
@@ -884,7 +854,7 @@ class Element(Plugin):
 
     # _add_dependency()
     #
-    # Adds a dependency
+    # Adds a dependency, for pipeline construction
     #
     def _add_dependency(self, dependency, scope):
         if scope != Scope.RUN:
@@ -892,79 +862,12 @@ class Element(Plugin):
         if scope != Scope.BUILD:
             self.__runtime_dependencies.append(dependency)
 
-    # _schedule_tracking():
+    # _get_consistency()
     #
-    # Force an element state to be inconsistent. Any sources appear to be
-    # inconsistent.
+    # Returns cached consistency state
     #
-    # This is used across the pipeline in sessions where the
-    # elements in question are going to be tracked, causing the
-    # pipeline to rebuild safely by ensuring cache key recalculation
-    # and reinterrogation of element state after tracking of elements
-    # succeeds.
-    #
-    def _schedule_tracking(self):
-        self.__tracking_scheduled = True
-        self._update_state()
-
-    # _tracking_done():
-    #
-    # This is called in the main process after the element has been tracked
-    #
-    def _tracking_done(self):
-        assert self.__tracking_scheduled
-
-        self.__tracking_scheduled = False
-        self.__tracking_done = True
-
-        self._update_state()
-
-    # _schedule_assemble():
-    #
-    # This is called in the main process before the element is assembled
-    # in a subprocess.
-    #
-    def _schedule_assemble(self):
-        assert not self.__assemble_scheduled
-        self.__assemble_scheduled = True
-
-        # Invalidate workspace key as the build modifies the workspace directory
-        workspace = self._get_workspace()
-        if workspace:
-            workspace.invalidate_key()
-
-        self._update_state()
-
-    # _assemble_done():
-    #
-    # This is called in the main process after the element has been assembled
-    # and in the a subprocess after assembly completes.
-    #
-    # This will result in updating the element state.
-    #
-    def _assemble_done(self):
-        assert self.__assemble_scheduled
-
-        self.__assemble_scheduled = False
-        self.__assemble_done = True
-
-        self._update_state()
-
-        if self._get_workspace() and self._cached():
-            #
-            # Note that this block can only happen in the
-            # main process, since `self._cached()` cannot
-            # be true when assembly is completed in the task.
-            #
-            # For this reason, it is safe to update and
-            # save the workspaces configuration
-            #
-            project = self._get_project()
-            key = self._get_cache_key()
-            workspace = self._get_workspace()
-            workspace.last_successful = key
-            workspace.clear_running_files()
-            project.workspaces.save_config()
+    def _get_consistency(self):
+        return self.__consistency
 
     # _cached():
     #
@@ -975,15 +878,6 @@ class Element(Plugin):
     def _cached(self):
         return self.__cached
 
-    # _assert_cached()
-    #
-    # Raises an error if the artifact is not cached.
-    #
-    def _assert_cached(self):
-        if not self._cached():
-            raise ElementError("{}: Missing artifact {}"
-                               .format(self, self._get_display_key()))
-
     # _remotely_cached():
     #
     # Returns:
@@ -992,34 +886,6 @@ class Element(Plugin):
     #
     def _remotely_cached(self):
         return self.__remotely_cached
-
-    # _tainted():
-    #
-    # Whether this artifact should be pushed to an artifact cache.
-    #
-    # Args:
-    #    recalculate (bool) - Whether to force recalculation
-    #
-    # Returns:
-    #    (bool) False if this artifact should be excluded from pushing.
-    #
-    # Note:
-    #    This method should only be called after the element's
-    #    artifact is present in the local artifact cache.
-    #
-    def _tainted(self, recalculate=False):
-        if recalculate or self.__tainted is None:
-
-            # Whether this artifact has a workspace
-            workspaced = self.__get_artifact_metadata_workspaced()
-
-            # Whether this artifact's dependencies have workspaces
-            workspaced_dependencies = self.__get_artifact_metadata_workspaced_dependencies()
-
-            # Other conditions should be or-ed
-            self.__tainted = workspaced or workspaced_dependencies
-
-        return self.__tainted
 
     # _buildable():
     #
@@ -1038,52 +904,6 @@ class Element(Plugin):
             return False
 
         return True
-
-    # __calculate_cache_key():
-    #
-    # Calculates the cache key
-    #
-    # Returns:
-    #    (str): A hex digest cache key for this Element, or None
-    #
-    # None is returned if information for the cache key is missing.
-    #
-    def __calculate_cache_key(self, dependencies):
-        # No cache keys for dependencies which have no cache keys
-        if None in dependencies:
-            return None
-
-        # Generate dict that is used as base for all cache keys
-        if self.__cache_key_dict is None:
-            # Filter out nocache variables from the element's environment
-            cache_env = {
-                key: value
-                for key, value in self.node_items(self.__environment)
-                if key not in self.__env_nocache
-            }
-
-            context = self._get_context()
-            project = self._get_project()
-            workspace = self._get_workspace()
-
-            self.__cache_key_dict = {
-                'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
-                                                   self.BST_ARTIFACT_VERSION),
-                'context': context.get_cache_key(),
-                'project': project.get_cache_key(),
-                'element': self.get_unique_key(),
-                'execution-environment': self.__sandbox_config.get_unique_key(),
-                'environment': cache_env,
-                'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
-                'workspace': '' if workspace is None else workspace.get_key(),
-                'public': self.__public,
-                'cache': type(self.__artifacts).__name__
-            }
-
-        cache_key_dict = self.__cache_key_dict.copy()
-        cache_key_dict['dependencies'] = dependencies
-
-        return _cachekey.generate_key(cache_key_dict)
 
     # _get_cache_key():
     #
@@ -1121,629 +941,6 @@ class Element(Plugin):
 
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
-
-    # _get_full_display_key():
-    #
-    # Returns cache keys for display purposes
-    #
-    # Returns:
-    #    (str): A full hex digest cache key for this Element
-    #    (str): An abbreviated hex digest cache key for this Element
-    #    (bool): True if key should be shown as dim, False otherwise
-    #
-    # Question marks are returned if information for the cache key is missing.
-    #
-    def _get_full_display_key(self):
-        context = self._get_context()
-        dim_key = True
-
-        cache_key = self._get_cache_key()
-
-        if not cache_key:
-            cache_key = "{:?<64}".format('')
-        elif self._get_cache_key() == self.__strict_cache_key:
-            # Strong cache key used in this session matches cache key
-            # that would be used in strict build mode
-            dim_key = False
-
-        length = min(len(cache_key), context.log_key_length)
-        return (cache_key, cache_key[0:length], dim_key)
-
-    # _get_display_key():
-    #
-    # Returns an abbreviated cache key for display purposes
-    #
-    # Returns:
-    #    (str): An abbreviated hex digest cache key for this Element
-    #
-    # Question marks are returned if information for the cache key is missing.
-    #
-    def _get_display_key(self):
-        _, display_key, _ = self._get_full_display_key()
-        return display_key
-
-    # _get_variables()
-    #
-    # Fetch the internal Variables
-    #
-    def _get_variables(self):
-        return self.__variables
-
-    # _track():
-    #
-    # Calls track() on the Element sources
-    #
-    # Raises:
-    #    SourceError: If one of the element sources has an error
-    #
-    # Returns:
-    #    (list): A list of Source object ids and their new references
-    #
-    def _track(self):
-        refs = []
-        for source in self.__sources:
-            old_ref = source.get_ref()
-            new_ref = source._track()
-            refs.append((source._get_unique_id(), new_ref))
-
-            # Complimentary warning that the new ref will be unused.
-            if old_ref != new_ref and self._get_workspace():
-                detail = "This source has an open workspace.\n" \
-                    + "To start using the new reference, please close the existing workspace."
-                source.warn("Updated reference will be ignored as source has open workspace", detail=detail)
-
-        return refs
-
-    # _prepare():
-    #
-    # Internal method for calling public abstract prepare() method.
-    #
-    def _prepare(self, sandbox):
-        workspace = self._get_workspace()
-
-        # We need to ensure that the prepare() method is only called
-        # once in workspaces, because the changes will persist across
-        # incremental builds - not desirable, for example, in the case
-        # of autotools' `./configure`.
-        if not (workspace and workspace.prepared):
-            self.prepare(sandbox)
-
-            if workspace:
-                workspace.prepared = True
-
-    # _assemble():
-    #
-    # Internal method for calling public abstract assemble() method.
-    #
-    def _assemble(self):
-
-        # Assert call ordering
-        assert not self._cached()
-
-        context = self._get_context()
-        with self._output_file() as output_file:
-
-            # Explicitly clean it up, keep the build dir around if exceptions are raised
-            os.makedirs(context.builddir, exist_ok=True)
-            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
-
-            # Cleanup the build directory on explicit SIGTERM
-            def cleanup_rootdir():
-                utils._force_rmtree(rootdir)
-
-            with _signals.terminator(cleanup_rootdir), \
-                self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # nopep8
-
-                sandbox_root = sandbox.get_directory()
-
-                # By default, the dynamic public data is the same as the static public data.
-                # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = _yaml.node_copy(self.__public)
-
-                # Call the abstract plugin methods
-                try:
-                    # Step 1 - Configure
-                    self.configure_sandbox(sandbox)
-                    # Step 2 - Stage
-                    self.stage(sandbox)
-                    # Step 3 - Prepare
-                    self._prepare(sandbox)
-                    # Step 4 - Assemble
-                    collect = self.assemble(sandbox)
-                except BstError as e:
-                    # If an error occurred assembling an element in a sandbox,
-                    # then tack on the sandbox directory to the error
-                    e.sandbox = rootdir
-
-                    # If there is a workspace open on this element, it will have
-                    # been mounted for sandbox invocations instead of being staged.
-                    #
-                    # In order to preserve the correct failure state, we need to
-                    # copy over the workspace files into the appropriate directory
-                    # in the sandbox.
-                    #
-                    workspace = self._get_workspace()
-                    if workspace and self.__staged_sources_directory:
-                        sandbox_root = sandbox.get_directory()
-                        sandbox_path = os.path.join(sandbox_root,
-                                                    self.__staged_sources_directory.lstrip(os.sep))
-                        try:
-                            utils.copy_files(workspace.path, sandbox_path)
-                        except UtilError as e:
-                            self.warn("Failed to preserve workspace state for failed build sysroot: {}"
-                                      .format(e))
-
-                    raise
-
-                collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
-                if not os.path.exists(collectdir):
-                    raise ElementError(
-                        "Directory '{}' was not found inside the sandbox, "
-                        "unable to collect artifact contents"
-                        .format(collect))
-
-                # At this point, we expect an exception was raised leading to
-                # an error message, or we have good output to collect.
-
-                # Create artifact directory structure
-                assembledir = os.path.join(rootdir, 'artifact')
-                filesdir = os.path.join(assembledir, 'files')
-                logsdir = os.path.join(assembledir, 'logs')
-                metadir = os.path.join(assembledir, 'meta')
-                os.mkdir(assembledir)
-                os.mkdir(filesdir)
-                os.mkdir(logsdir)
-                os.mkdir(metadir)
-
-                # Hard link files from collect dir to files directory
-                utils.link_files(collectdir, filesdir)
-
-                # Copy build log
-                if self.__log_path:
-                    shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
-
-                # Store public data
-                _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
-
-                # ensure we have cache keys
-                self._assemble_done()
-
-                # Store keys.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'strong': self._get_cache_key(),
-                    'weak': self._get_cache_key(_KeyStrength.WEAK),
-                }), os.path.join(metadir, 'keys.yaml'))
-
-                # Store dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                }), os.path.join(metadir, 'dependencies.yaml'))
-
-                # Store workspaced.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced': True if self._get_workspace() else False
-                }), os.path.join(metadir, 'workspaced.yaml'))
-
-                # Store workspaced-dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced-dependencies': [
-                        e.name for e in self.dependencies(Scope.BUILD)
-                        if e._get_workspace()
-                    ]
-                }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
-
-                with self.timed_activity("Caching artifact"):
-                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
-
-            # Finally cleanup the build dir
-            cleanup_rootdir()
-
-    # _pull():
-    #
-    # Pull artifact from remote artifact repository into local artifact cache.
-    #
-    # Returns: True if the artifact has been downloaded, False otherwise
-    #
-    def _pull(self):
-        context = self._get_context()
-
-        def progress(percent, message):
-            self.status(message)
-
-        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-
-        if self.__remotely_strong_cached:
-            key = self.__strict_cache_key
-            self.__artifacts.pull(self, key, progress=progress)
-
-            # update weak ref by pointing it to this newly fetched artifact
-            self.__artifacts.link_key(self, key, weak_key)
-        elif not context.get_strict() and self.__remotely_cached:
-            self.__artifacts.pull(self, weak_key, progress=progress)
-
-            # extract strong cache key from this newly fetched artifact
-            self._update_state()
-
-            # create tag for strong cache key
-            key = self._get_cache_key(strength=_KeyStrength.STRONG)
-            self.__artifacts.link_key(self, weak_key, key)
-        else:
-            raise ElementError("Attempt to pull unavailable artifact for element {}"
-                               .format(self.name))
-
-        # Notify successfull download
-        display_key = self._get_display_key()
-        self.info("Downloaded artifact {}".format(display_key))
-        return True
-
-    # _skip_push():
-    #
-    # Determine whether we should create a push job for this element.
-    #
-    # Returns:
-    #   (bool): True if this element does not need a push job to be created
-    #
-    def _skip_push(self):
-        if not self.__artifacts.has_push_remotes(element=self):
-            # No push remotes for this element's project
-            return True
-
-        if not self._cached():
-            return True
-
-        # Do not push tained artifact
-        if self._tainted():
-            return True
-
-        # Use the strong cache key to check whether a remote already has the artifact.
-        # In non-strict mode we want to push updated artifacts even if the
-        # remote already has an artifact with the same weak cache key.
-        key = self._get_cache_key(strength=_KeyStrength.STRONG)
-
-        # Skip if every push remote contains this element already.
-        if self.__artifacts.push_needed(self, key):
-            return False
-        else:
-            return True
-
-    # _push():
-    #
-    # Push locally cached artifact to remote artifact repository.
-    #
-    # Returns:
-    #   (bool): True if the remote was updated, False if it already existed
-    #           and no updated was required
-    #
-    def _push(self):
-        self._assert_cached()
-
-        if self._tainted():
-            self.warn("Not pushing tainted artifact.")
-            return False
-
-        with self.timed_activity("Pushing artifact"):
-            # Push all keys used for local commit
-            return self.__artifacts.push(self, self.__get_cache_keys_for_commit())
-
-    # _logfile()
-    #
-    # Compose the log file for this action & pid.
-    #
-    # Args:
-    #    action_name (str): The action name
-    #    pid (int): Optional pid, current pid is assumed if not provided.
-    #
-    # Returns:
-    #    (string): The log file full path
-    #
-    # Log file format, when there is a cache key, is:
-    #
-    #    '{logdir}/{project}/{element}/{cachekey}-{action}.{pid}.log'
-    #
-    # Otherwise, it is:
-    #
-    #    '{logdir}/{project}/{element}/{:0<64}-{action}.{pid}.log'
-    #
-    # This matches the order in which things are stored in the artifact cache
-    #
-    def _logfile(self, action_name, pid=None):
-        project = self._get_project()
-        context = self._get_context()
-        key = self._get_display_key()
-        if pid is None:
-            pid = os.getpid()
-
-        action = action_name.lower()
-        logfile = "{key}-{action}.{pid}.log".format(
-            key=key, action=action, pid=pid)
-
-        directory = os.path.join(context.logdir, project.name, self.normal_name)
-
-        os.makedirs(directory, exist_ok=True)
-        return os.path.join(directory, logfile)
-
-    # _open_workspace():
-    #
-    # "Open" a workspace for this element
-    #
-    # This requires that a workspace already be created in
-    # the workspaces metadata first.
-    #
-    def _open_workspace(self):
-        workspace = self._get_workspace()
-        assert workspace is not None
-
-        for source in self.sources():
-            source._init_workspace(workspace.path)
-
-    # _get_workspace():
-    #
-    # Returns:
-    #    (Workspace|None): A workspace associated with this element
-    #
-    def _get_workspace(self):
-        project = self._get_project()
-        return project.workspaces.get_workspace(self.name)
-
-    # Run some element methods with logging directed to
-    # a dedicated log file, here we yield the filename
-    # we decided on for logging
-    #
-    @contextmanager
-    def _logging_enabled(self, action_name):
-        self.__log_path = self._logfile(action_name)
-        with open(self.__log_path, 'a') as logfile:
-
-            # Write one last line to the log and flush it to disk
-            def flush_log():
-
-                # If the process currently had something happening in the I/O stack
-                # then trying to reenter the I/O stack will fire a runtime error.
-                #
-                # So just try to flush as well as we can at SIGTERM time
-                try:
-                    logfile.write('\n\nAction {} for element {} forcefully terminated\n'
-                                  .format(action_name, self.name))
-                    logfile.flush()
-                except RuntimeError:
-                    os.fsync(logfile.fileno())
-
-            self._set_log_handle(logfile)
-            with _signals.terminator(flush_log):
-                yield self.__log_path
-            self._set_log_handle(None)
-            self.__log_path = None
-
-    # Override plugin _set_log_handle(), set it for our sources and dependencies too
-    #
-    # A log handle is set once in the context of a child task which will have only
-    # one log, so it's not harmful to modify the state of dependencies
-    def _set_log_handle(self, logfile, recurse=True):
-        super()._set_log_handle(logfile)
-        for source in self.sources():
-            source._set_log_handle(logfile)
-        if recurse:
-            for dep in self.dependencies(Scope.ALL):
-                dep._set_log_handle(logfile, False)
-
-    # _prepare_sandbox():
-    #
-    # This stages things for either _shell() (below) or also
-    # is used to stage things by the `bst checkout` codepath
-    #
-    @contextmanager
-    def _prepare_sandbox(self, scope, directory, integrate=True):
-
-        with self.__sandbox(directory, config=self.__sandbox_config) as sandbox:
-
-            # Configure always comes first, and we need it.
-            self.configure_sandbox(sandbox)
-
-            # Stage something if we need it
-            if not directory:
-                if scope == Scope.BUILD:
-                    self.stage(sandbox)
-                elif scope == Scope.RUN:
-                    # Stage deps in the sandbox root
-                    with self.timed_activity("Staging dependencies", silent_nested=True):
-                        self.stage_dependency_artifacts(sandbox, scope)
-
-                    # Run any integration commands provided by the dependencies
-                    # once they are all staged and ready
-                    if integrate:
-                        with self.timed_activity("Integrating sandbox"):
-                            for dep in self.dependencies(scope):
-                                dep.integrate(sandbox)
-
-            yield sandbox
-
-    # _shell():
-    #
-    # Connects the terminal with a shell running in a staged
-    # environment
-    #
-    # Args:
-    #    scope (Scope): Either BUILD or RUN scopes are valid, or None
-    #    directory (str): A directory to an existing sandbox, or None
-    #    mounts (list): A list of (str, str) tuples, representing host/target paths to mount
-    #    isolate (bool): Whether to isolate the environment like we do in builds
-    #    prompt (str): A suitable prompt string for PS1
-    #    command (list): An argv to launch in the sandbox
-    #
-    # Returns: Exit code
-    #
-    # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None):
-
-        with self._prepare_sandbox(scope, directory) as sandbox:
-            environment = self.get_environment()
-            environment = copy.copy(environment)
-            flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
-
-            # Fetch the main toplevel project, in case this is a junctioned
-            # subproject, we want to use the rules defined by the main one.
-            context = self._get_context()
-            project = context.get_toplevel_project()
-            shell_command, shell_environment, shell_host_files = project.get_shell_config()
-
-            if prompt is not None:
-                environment['PS1'] = prompt
-
-            # Special configurations for non-isolated sandboxes
-            if not isolate:
-
-                # Open the network, and reuse calling uid/gid
-                #
-                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
-
-                # Apply project defined environment vars to set for a shell
-                for key, value in _yaml.node_items(shell_environment):
-                    environment[key] = value
-
-                # Setup any requested bind mounts
-                if mounts is None:
-                    mounts = []
-
-                for mount in shell_host_files + mounts:
-                    if not os.path.exists(mount.host_path):
-                        if not mount.optional:
-                            self.warn("Not mounting non-existing host file: {}".format(mount.host_path))
-                    else:
-                        sandbox.mark_directory(mount.path)
-                        sandbox._set_mount_source(mount.path, mount.host_path)
-
-            if command:
-                argv = [arg for arg in command]
-            else:
-                argv = shell_command
-
-            self.status("Running command", detail=" ".join(argv))
-
-            # Run shells with network enabled and readonly root.
-            return sandbox.run(argv, flags, env=environment)
-
-    def _can_build_incrementally(self):
-        return self._get_workspace() and self.__artifacts.can_diff()
-
-    # _stage_sources_in_sandbox():
-    #
-    # Stage this element's sources to a directory inside sandbox
-    #
-    # Args:
-    #     sandbox (:class:`.Sandbox`): The build sandbox
-    #     directory (str): An absolute path to stage the sources at
-    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
-    #
-    def _stage_sources_in_sandbox(self, sandbox, directory, mount_workspaces=True):
-
-        # Only artifact caches that implement diff() are allowed to
-        # perform incremental builds.
-        if mount_workspaces and self._can_build_incrementally():
-            workspace = self._get_workspace()
-            sandbox.mark_directory(directory)
-            sandbox._set_mount_source(directory, workspace.get_absolute_path())
-
-        # Stage all sources that need to be copied
-        sandbox_root = sandbox.get_directory()
-        host_directory = os.path.join(sandbox_root, directory.lstrip(os.sep))
-        self._stage_sources_at(host_directory, mount_workspaces=mount_workspaces)
-
-    # _stage_sources_at():
-    #
-    # Stage this element's sources to a directory
-    #
-    # Args:
-    #     directory (str): An absolute path to stage the sources at
-    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
-    #
-    def _stage_sources_at(self, directory, mount_workspaces=True):
-        with self.timed_activity("Staging sources", silent_nested=True):
-
-            if os.path.isdir(directory) and os.listdir(directory):
-                raise ElementError("Staging directory '{}' is not empty".format(directory))
-
-            workspace = self._get_workspace()
-            if workspace:
-                # If mount_workspaces is set and we're doing incremental builds,
-                # the workspace is already mounted into the sandbox.
-                if not (mount_workspaces and self._can_build_incrementally()):
-                    with self.timed_activity("Staging local files at {}".format(workspace.path)):
-                        workspace.stage(directory)
-            else:
-                # No workspace, stage directly
-                for source in self.sources():
-                    source._stage(directory)
-
-        # Ensure deterministic mtime of sources at build time
-        utils._set_deterministic_mtime(directory)
-        # Ensure deterministic owners of sources at build time
-        utils._set_deterministic_user(directory)
-
-    # _pull_pending()
-    #
-    # Check whether the artifact will be pulled.
-    #
-    # Returns:
-    #   (bool): Whether a pull operation is pending
-    #
-    def _pull_pending(self):
-        if self.__pull_failed:
-            # Consider this equivalent to artifact being unavailable in
-            # remote cache
-            return False
-
-        if not self.__strong_cached and self.__remotely_strong_cached:
-            # Pull pending using strict cache key
-            return True
-        elif not self.__cached and self.__remotely_cached:
-            # Pull pending using weak cache key
-            return True
-        else:
-            # No pull pending
-            return False
-
-    # _pull_failed()
-    #
-    # Indicate that pull was attempted but failed.
-    #
-    def _pull_failed(self):
-        self.__pull_failed = True
-
-    # _get_consistency()
-    #
-    # Returns cached consistency state
-    #
-    def _get_consistency(self):
-        return self.__consistency
-
-    # __update_source_state()
-    #
-    # Updates source consistency state
-    #
-    def __update_source_state(self):
-
-        # Cannot resolve source state until tracked
-        if self.__tracking_scheduled:
-            return
-
-        # Determine overall consistency of the element
-        consistency = Consistency.CACHED
-        for source in self.__sources:
-            source._update_state()
-            source_consistency = source._get_consistency()
-            consistency = min(consistency, source_consistency)
-        self.__consistency = consistency
-
-        # Special case for workspaces
-        workspace = self._get_workspace()
-        if workspace and self.__consistency > Consistency.INCONSISTENT:
-
-            # A workspace is considered inconsistent in the case
-            # that it's directory went missing
-            #
-            fullpath = workspace.get_absolute_path()
-            if not os.path.exists(fullpath):
-                self.__consistency = Consistency.INCONSISTENT
 
     # _update_state()
     #
@@ -1861,6 +1058,37 @@ class Element(Plugin):
                 # Strong cache key could not be calculated yet
                 return
 
+    # _get_full_display_key():
+    #
+    # Returns cache keys for display purposes
+    #
+    # Returns:
+    #    (str): A full hex digest cache key for this Element
+    #    (str): An abbreviated hex digest cache key for this Element
+    #    (bool): True if key should be shown as dim, False otherwise
+    #
+    # Question marks are returned if information for the cache key is missing.
+    #
+    def _get_full_display_key(self):
+        context = self._get_context()
+        dim_key = True
+
+        cache_key = self._get_cache_key()
+
+        if not cache_key:
+            cache_key = "{:?<64}".format('')
+        elif self._get_cache_key() == self.__strict_cache_key:
+            # Strong cache key used in this session matches cache key
+            # that would be used in strict build mode
+            dim_key = False
+
+        length = min(len(cache_key), context.log_key_length)
+        return (cache_key, cache_key[0:length], dim_key)
+
+    # _preflight():
+    #
+    # A wrapper for calling the abstract preflight() method.
+    #
     def _preflight(self):
         if self.BST_FORBID_RDEPENDS:
             runtime_deps = list(self.dependencies(Scope.RUN, recurse=False))
@@ -1876,9 +1104,822 @@ class Element(Plugin):
 
         self.preflight()
 
+    # _schedule_tracking():
+    #
+    # Force an element state to be inconsistent. Any sources appear to be
+    # inconsistent.
+    #
+    # This is used across the pipeline in sessions where the
+    # elements in question are going to be tracked, causing the
+    # pipeline to rebuild safely by ensuring cache key recalculation
+    # and reinterrogation of element state after tracking of elements
+    # succeeds.
+    #
+    def _schedule_tracking(self):
+        self.__tracking_scheduled = True
+        self._update_state()
+
+    # _tracking_done():
+    #
+    # This is called in the main process after the element has been tracked
+    #
+    def _tracking_done(self):
+        assert self.__tracking_scheduled
+
+        self.__tracking_scheduled = False
+        self.__tracking_done = True
+
+        self._update_state()
+
+    # _track():
+    #
+    # Calls track() on the Element sources
+    #
+    # Raises:
+    #    SourceError: If one of the element sources has an error
+    #
+    # Returns:
+    #    (list): A list of Source object ids and their new references
+    #
+    def _track(self):
+        refs = []
+        for source in self.__sources:
+            old_ref = source.get_ref()
+            new_ref = source._track()
+            refs.append((source._get_unique_id(), new_ref))
+
+            # Complimentary warning that the new ref will be unused.
+            if old_ref != new_ref and self._get_workspace():
+                detail = "This source has an open workspace.\n" \
+                    + "To start using the new reference, please close the existing workspace."
+                source.warn("Updated reference will be ignored as source has open workspace", detail=detail)
+
+        return refs
+
+    # _prepare_sandbox():
+    #
+    # This stages things for either _shell() (below) or also
+    # is used to stage things by the `bst checkout` codepath
+    #
+    @contextmanager
+    def _prepare_sandbox(self, scope, directory, integrate=True):
+
+        with self.__sandbox(directory, config=self.__sandbox_config) as sandbox:
+
+            # Configure always comes first, and we need it.
+            self.configure_sandbox(sandbox)
+
+            # Stage something if we need it
+            if not directory:
+                if scope == Scope.BUILD:
+                    self.stage(sandbox)
+                elif scope == Scope.RUN:
+                    # Stage deps in the sandbox root
+                    with self.timed_activity("Staging dependencies", silent_nested=True):
+                        self.stage_dependency_artifacts(sandbox, scope)
+
+                    # Run any integration commands provided by the dependencies
+                    # once they are all staged and ready
+                    if integrate:
+                        with self.timed_activity("Integrating sandbox"):
+                            for dep in self.dependencies(scope):
+                                dep.integrate(sandbox)
+
+            yield sandbox
+
+    # _stage_sources_in_sandbox():
+    #
+    # Stage this element's sources to a directory inside sandbox
+    #
+    # Args:
+    #     sandbox (:class:`.Sandbox`): The build sandbox
+    #     directory (str): An absolute path to stage the sources at
+    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
+    #
+    def _stage_sources_in_sandbox(self, sandbox, directory, mount_workspaces=True):
+
+        # Only artifact caches that implement diff() are allowed to
+        # perform incremental builds.
+        if mount_workspaces and self.__can_build_incrementally():
+            workspace = self._get_workspace()
+            sandbox.mark_directory(directory)
+            sandbox._set_mount_source(directory, workspace.get_absolute_path())
+
+        # Stage all sources that need to be copied
+        sandbox_root = sandbox.get_directory()
+        host_directory = os.path.join(sandbox_root, directory.lstrip(os.sep))
+        self._stage_sources_at(host_directory, mount_workspaces=mount_workspaces)
+
+    # _stage_sources_at():
+    #
+    # Stage this element's sources to a directory
+    #
+    # Args:
+    #     directory (str): An absolute path to stage the sources at
+    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
+    #
+    def _stage_sources_at(self, directory, mount_workspaces=True):
+        with self.timed_activity("Staging sources", silent_nested=True):
+
+            if os.path.isdir(directory) and os.listdir(directory):
+                raise ElementError("Staging directory '{}' is not empty".format(directory))
+
+            workspace = self._get_workspace()
+            if workspace:
+                # If mount_workspaces is set and we're doing incremental builds,
+                # the workspace is already mounted into the sandbox.
+                if not (mount_workspaces and self.__can_build_incrementally()):
+                    with self.timed_activity("Staging local files at {}".format(workspace.path)):
+                        workspace.stage(directory)
+            else:
+                # No workspace, stage directly
+                for source in self.sources():
+                    source._stage(directory)
+
+        # Ensure deterministic mtime of sources at build time
+        utils._set_deterministic_mtime(directory)
+        # Ensure deterministic owners of sources at build time
+        utils._set_deterministic_user(directory)
+
+    # _schedule_assemble():
+    #
+    # This is called in the main process before the element is assembled
+    # in a subprocess.
+    #
+    def _schedule_assemble(self):
+        assert not self.__assemble_scheduled
+        self.__assemble_scheduled = True
+
+        # Invalidate workspace key as the build modifies the workspace directory
+        workspace = self._get_workspace()
+        if workspace:
+            workspace.invalidate_key()
+
+        self._update_state()
+
+    # _assemble_done():
+    #
+    # This is called in the main process after the element has been assembled
+    # and in the a subprocess after assembly completes.
+    #
+    # This will result in updating the element state.
+    #
+    def _assemble_done(self):
+        assert self.__assemble_scheduled
+
+        self.__assemble_scheduled = False
+        self.__assemble_done = True
+
+        self._update_state()
+
+        if self._get_workspace() and self._cached():
+            #
+            # Note that this block can only happen in the
+            # main process, since `self._cached()` cannot
+            # be true when assembly is completed in the task.
+            #
+            # For this reason, it is safe to update and
+            # save the workspaces configuration
+            #
+            project = self._get_project()
+            key = self._get_cache_key()
+            workspace = self._get_workspace()
+            workspace.last_successful = key
+            workspace.clear_running_files()
+            project.workspaces.save_config()
+
+    # _assemble():
+    #
+    # Internal method for running the entire build phase.
+    #
+    # This will:
+    #   - Prepare a sandbox for the build
+    #   - Call the public abstract methods for the build phase
+    #   - Cache the resulting artifact
+    #
+    def _assemble(self):
+
+        # Assert call ordering
+        assert not self._cached()
+
+        context = self._get_context()
+        with self._output_file() as output_file:
+
+            # Explicitly clean it up, keep the build dir around if exceptions are raised
+            os.makedirs(context.builddir, exist_ok=True)
+            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
+
+            # Cleanup the build directory on explicit SIGTERM
+            def cleanup_rootdir():
+                utils._force_rmtree(rootdir)
+
+            with _signals.terminator(cleanup_rootdir), \
+                self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # nopep8
+
+                sandbox_root = sandbox.get_directory()
+
+                # By default, the dynamic public data is the same as the static public data.
+                # The plugin's assemble() method may modify this, though.
+                self.__dynamic_public = _yaml.node_copy(self.__public)
+
+                # Call the abstract plugin methods
+                try:
+                    # Step 1 - Configure
+                    self.configure_sandbox(sandbox)
+                    # Step 2 - Stage
+                    self.stage(sandbox)
+                    # Step 3 - Prepare
+                    self.__prepare(sandbox)
+                    # Step 4 - Assemble
+                    collect = self.assemble(sandbox)
+                except BstError as e:
+                    # If an error occurred assembling an element in a sandbox,
+                    # then tack on the sandbox directory to the error
+                    e.sandbox = rootdir
+
+                    # If there is a workspace open on this element, it will have
+                    # been mounted for sandbox invocations instead of being staged.
+                    #
+                    # In order to preserve the correct failure state, we need to
+                    # copy over the workspace files into the appropriate directory
+                    # in the sandbox.
+                    #
+                    workspace = self._get_workspace()
+                    if workspace and self.__staged_sources_directory:
+                        sandbox_root = sandbox.get_directory()
+                        sandbox_path = os.path.join(sandbox_root,
+                                                    self.__staged_sources_directory.lstrip(os.sep))
+                        try:
+                            utils.copy_files(workspace.path, sandbox_path)
+                        except UtilError as e:
+                            self.warn("Failed to preserve workspace state for failed build sysroot: {}"
+                                      .format(e))
+
+                    raise
+
+                collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
+                if not os.path.exists(collectdir):
+                    raise ElementError(
+                        "Directory '{}' was not found inside the sandbox, "
+                        "unable to collect artifact contents"
+                        .format(collect))
+
+                # At this point, we expect an exception was raised leading to
+                # an error message, or we have good output to collect.
+
+                # Create artifact directory structure
+                assembledir = os.path.join(rootdir, 'artifact')
+                filesdir = os.path.join(assembledir, 'files')
+                logsdir = os.path.join(assembledir, 'logs')
+                metadir = os.path.join(assembledir, 'meta')
+                os.mkdir(assembledir)
+                os.mkdir(filesdir)
+                os.mkdir(logsdir)
+                os.mkdir(metadir)
+
+                # Hard link files from collect dir to files directory
+                utils.link_files(collectdir, filesdir)
+
+                # Copy build log
+                if self.__log_path:
+                    shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
+
+                # Store public data
+                _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+
+                # ensure we have cache keys
+                self._assemble_done()
+
+                # Store keys.yaml
+                _yaml.dump(_yaml.node_sanitize({
+                    'strong': self._get_cache_key(),
+                    'weak': self._get_cache_key(_KeyStrength.WEAK),
+                }), os.path.join(metadir, 'keys.yaml'))
+
+                # Store dependencies.yaml
+                _yaml.dump(_yaml.node_sanitize({
+                    e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                }), os.path.join(metadir, 'dependencies.yaml'))
+
+                # Store workspaced.yaml
+                _yaml.dump(_yaml.node_sanitize({
+                    'workspaced': True if self._get_workspace() else False
+                }), os.path.join(metadir, 'workspaced.yaml'))
+
+                # Store workspaced-dependencies.yaml
+                _yaml.dump(_yaml.node_sanitize({
+                    'workspaced-dependencies': [
+                        e.name for e in self.dependencies(Scope.BUILD)
+                        if e._get_workspace()
+                    ]
+                }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
+
+                with self.timed_activity("Caching artifact"):
+                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+
+            # Finally cleanup the build dir
+            cleanup_rootdir()
+
+    # _pull_pending()
+    #
+    # Check whether the artifact will be pulled.
+    #
+    # Returns:
+    #   (bool): Whether a pull operation is pending
+    #
+    def _pull_pending(self):
+        if self.__pull_failed:
+            # Consider this equivalent to artifact being unavailable in
+            # remote cache
+            return False
+
+        if not self.__strong_cached and self.__remotely_strong_cached:
+            # Pull pending using strict cache key
+            return True
+        elif not self.__cached and self.__remotely_cached:
+            # Pull pending using weak cache key
+            return True
+        else:
+            # No pull pending
+            return False
+
+    # _pull_failed()
+    #
+    # Indicate that pull was attempted but failed.
+    #
+    # This needs to be called in the main process after
+    # a pull fails so that we properly update the main
+    # process data model
+    #
+    def _pull_failed(self):
+        self.__pull_failed = True
+
+    # _pull():
+    #
+    # Pull artifact from remote artifact repository into local artifact cache.
+    #
+    # Returns: True if the artifact has been downloaded, False otherwise
+    #
+    def _pull(self):
+        context = self._get_context()
+
+        def progress(percent, message):
+            self.status(message)
+
+        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+
+        if self.__remotely_strong_cached:
+            key = self.__strict_cache_key
+            self.__artifacts.pull(self, key, progress=progress)
+
+            # update weak ref by pointing it to this newly fetched artifact
+            self.__artifacts.link_key(self, key, weak_key)
+        elif not context.get_strict() and self.__remotely_cached:
+            self.__artifacts.pull(self, weak_key, progress=progress)
+
+            # extract strong cache key from this newly fetched artifact
+            self._update_state()
+
+            # create tag for strong cache key
+            key = self._get_cache_key(strength=_KeyStrength.STRONG)
+            self.__artifacts.link_key(self, weak_key, key)
+        else:
+            raise ElementError("Attempt to pull unavailable artifact for element {}"
+                               .format(self.name))
+
+        # Notify successfull download
+        display_key = self.__get_brief_display_key()
+        self.info("Downloaded artifact {}".format(display_key))
+        return True
+
+    # _skip_push():
+    #
+    # Determine whether we should create a push job for this element.
+    #
+    # Returns:
+    #   (bool): True if this element does not need a push job to be created
+    #
+    def _skip_push(self):
+        if not self.__artifacts.has_push_remotes(element=self):
+            # No push remotes for this element's project
+            return True
+
+        if not self._cached():
+            return True
+
+        # Do not push tained artifact
+        if self.__get_tainted():
+            return True
+
+        # Use the strong cache key to check whether a remote already has the artifact.
+        # In non-strict mode we want to push updated artifacts even if the
+        # remote already has an artifact with the same weak cache key.
+        key = self._get_cache_key(strength=_KeyStrength.STRONG)
+
+        # Skip if every push remote contains this element already.
+        if self.__artifacts.push_needed(self, key):
+            return False
+        else:
+            return True
+
+    # _push():
+    #
+    # Push locally cached artifact to remote artifact repository.
+    #
+    # Returns:
+    #   (bool): True if the remote was updated, False if it already existed
+    #           and no updated was required
+    #
+    def _push(self):
+        self.__assert_cached()
+
+        if self.__get_tainted():
+            self.warn("Not pushing tainted artifact.")
+            return False
+
+        with self.timed_activity("Pushing artifact"):
+            # Push all keys used for local commit
+            return self.__artifacts.push(self, self.__get_cache_keys_for_commit())
+
+    # _shell():
+    #
+    # Connects the terminal with a shell running in a staged
+    # environment
+    #
+    # Args:
+    #    scope (Scope): Either BUILD or RUN scopes are valid, or None
+    #    directory (str): A directory to an existing sandbox, or None
+    #    mounts (list): A list of (str, str) tuples, representing host/target paths to mount
+    #    isolate (bool): Whether to isolate the environment like we do in builds
+    #    prompt (str): A suitable prompt string for PS1
+    #    command (list): An argv to launch in the sandbox
+    #
+    # Returns: Exit code
+    #
+    # If directory is not specified, one will be staged using scope
+    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None):
+
+        with self._prepare_sandbox(scope, directory) as sandbox:
+            environment = self.get_environment()
+            environment = copy.copy(environment)
+            flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
+
+            # Fetch the main toplevel project, in case this is a junctioned
+            # subproject, we want to use the rules defined by the main one.
+            context = self._get_context()
+            project = context.get_toplevel_project()
+            shell_command, shell_environment, shell_host_files = project.get_shell_config()
+
+            if prompt is not None:
+                environment['PS1'] = prompt
+
+            # Special configurations for non-isolated sandboxes
+            if not isolate:
+
+                # Open the network, and reuse calling uid/gid
+                #
+                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
+
+                # Apply project defined environment vars to set for a shell
+                for key, value in _yaml.node_items(shell_environment):
+                    environment[key] = value
+
+                # Setup any requested bind mounts
+                if mounts is None:
+                    mounts = []
+
+                for mount in shell_host_files + mounts:
+                    if not os.path.exists(mount.host_path):
+                        if not mount.optional:
+                            self.warn("Not mounting non-existing host file: {}".format(mount.host_path))
+                    else:
+                        sandbox.mark_directory(mount.path)
+                        sandbox._set_mount_source(mount.path, mount.host_path)
+
+            if command:
+                argv = [arg for arg in command]
+            else:
+                argv = shell_command
+
+            self.status("Running command", detail=" ".join(argv))
+
+            # Run shells with network enabled and readonly root.
+            return sandbox.run(argv, flags, env=environment)
+
+    # _open_workspace():
+    #
+    # "Open" a workspace for this element
+    #
+    # This requires that a workspace already be created in
+    # the workspaces metadata first.
+    #
+    def _open_workspace(self):
+        workspace = self._get_workspace()
+        assert workspace is not None
+
+        for source in self.sources():
+            source._init_workspace(workspace.path)
+
+    # _get_workspace():
+    #
+    # Returns:
+    #    (Workspace|None): A workspace associated with this element
+    #
+    def _get_workspace(self):
+        project = self._get_project()
+        return project.workspaces.get_workspace(self.name)
+
+    # _write_script():
+    #
+    # Writes a script to the given directory.
+    def _write_script(self, directory):
+        with open(_site.build_module_template, "r") as f:
+            script_template = f.read()
+
+        variable_string = ""
+        for var, val in self.get_environment().items():
+            variable_string += "{0}={1} ".format(var, val)
+
+        script = script_template.format(
+            name=self.normal_name,
+            build_root=self.get_variable('build-root'),
+            install_root=self.get_variable('install-root'),
+            variables=variable_string,
+            commands=self.generate_script()
+        )
+
+        os.makedirs(directory, exist_ok=True)
+        script_path = os.path.join(directory, "build-" + self.normal_name)
+
+        with self.timed_activity("Writing build script", silent_nested=True):
+            with utils.save_file_atomic(script_path, "w") as script_file:
+                script_file.write(script)
+
+            os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
+
+    # _subst_string()
+    #
+    # Substitue a string, this is an internal function related
+    # to how junctions are loaded and needs to be more generic
+    # than the public node_subst_member()
+    #
+    # Args:
+    #    value (str): A string value
+    #
+    # Returns:
+    #    (str): The string after substitutions have occurred
+    #
+    def _subst_string(self, value):
+        return self.__variables.subst(value)
+
+    # Run some element methods with logging directed to
+    # a dedicated log file, here we yield the filename
+    # we decided on for logging
+    #
+    @contextmanager
+    def _logging_enabled(self, action_name):
+        self.__log_path = self.__logfile(action_name)
+        with open(self.__log_path, 'a') as logfile:
+
+            # Write one last line to the log and flush it to disk
+            def flush_log():
+
+                # If the process currently had something happening in the I/O stack
+                # then trying to reenter the I/O stack will fire a runtime error.
+                #
+                # So just try to flush as well as we can at SIGTERM time
+                try:
+                    logfile.write('\n\nAction {} for element {} forcefully terminated\n'
+                                  .format(action_name, self.name))
+                    logfile.flush()
+                except RuntimeError:
+                    os.fsync(logfile.fileno())
+
+            self._set_log_handle(logfile)
+            with _signals.terminator(flush_log):
+                yield self.__log_path
+            self._set_log_handle(None)
+            self.__log_path = None
+
+    # Override plugin _set_log_handle(), set it for our sources and dependencies too
+    #
+    # A log handle is set once in the context of a child task which will have only
+    # one log, so it's not harmful to modify the state of dependencies
+    def _set_log_handle(self, logfile, recurse=True):
+        super()._set_log_handle(logfile)
+        for source in self.sources():
+            source._set_log_handle(logfile)
+        if recurse:
+            for dep in self.dependencies(Scope.ALL):
+                dep._set_log_handle(logfile, False)
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
+
+    # __update_source_state()
+    #
+    # Updates source consistency state
+    #
+    def __update_source_state(self):
+
+        # Cannot resolve source state until tracked
+        if self.__tracking_scheduled:
+            return
+
+        # Determine overall consistency of the element
+        consistency = Consistency.CACHED
+        for source in self.__sources:
+            source._update_state()
+            source_consistency = source._get_consistency()
+            consistency = min(consistency, source_consistency)
+        self.__consistency = consistency
+
+        # Special case for workspaces
+        workspace = self._get_workspace()
+        if workspace and self.__consistency > Consistency.INCONSISTENT:
+
+            # A workspace is considered inconsistent in the case
+            # that it's directory went missing
+            #
+            fullpath = workspace.get_absolute_path()
+            if not os.path.exists(fullpath):
+                self.__consistency = Consistency.INCONSISTENT
+
+    # __calculate_cache_key():
+    #
+    # Calculates the cache key
+    #
+    # Returns:
+    #    (str): A hex digest cache key for this Element, or None
+    #
+    # None is returned if information for the cache key is missing.
+    #
+    def __calculate_cache_key(self, dependencies):
+        # No cache keys for dependencies which have no cache keys
+        if None in dependencies:
+            return None
+
+        # Generate dict that is used as base for all cache keys
+        if self.__cache_key_dict is None:
+            # Filter out nocache variables from the element's environment
+            cache_env = {
+                key: value
+                for key, value in self.node_items(self.__environment)
+                if key not in self.__env_nocache
+            }
+
+            context = self._get_context()
+            project = self._get_project()
+            workspace = self._get_workspace()
+
+            self.__cache_key_dict = {
+                'artifact-version': "{}.{}".format(BST_CORE_ARTIFACT_VERSION,
+                                                   self.BST_ARTIFACT_VERSION),
+                'context': context.get_cache_key(),
+                'project': project.get_cache_key(),
+                'element': self.get_unique_key(),
+                'execution-environment': self.__sandbox_config.get_unique_key(),
+                'environment': cache_env,
+                'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
+                'workspace': '' if workspace is None else workspace.get_key(),
+                'public': self.__public,
+                'cache': type(self.__artifacts).__name__
+            }
+
+        cache_key_dict = self.__cache_key_dict.copy()
+        cache_key_dict['dependencies'] = dependencies
+
+        return _cachekey.generate_key(cache_key_dict)
+
+    # __can_build_incrementally()
+    #
+    # Check if the element can be built incrementally, this
+    # is used to decide how to stage things
+    #
+    # Returns:
+    #    (bool): Whether this element can be built incrementally
+    #
+    def __can_build_incrementally(self):
+        return self._get_workspace() and self.__artifacts.can_diff()
+
+    # __get_brief_display_key():
+    #
+    # Returns an abbreviated cache key for display purposes
+    #
+    # Returns:
+    #    (str): An abbreviated hex digest cache key for this Element
+    #
+    # Question marks are returned if information for the cache key is missing.
+    #
+    def __get_brief_display_key(self):
+        _, display_key, _ = self._get_full_display_key()
+        return display_key
+
+    # __prepare():
+    #
+    # Internal method for calling public abstract prepare() method.
+    #
+    def __prepare(self, sandbox):
+        workspace = self._get_workspace()
+
+        # We need to ensure that the prepare() method is only called
+        # once in workspaces, because the changes will persist across
+        # incremental builds - not desirable, for example, in the case
+        # of autotools' `./configure`.
+        if not (workspace and workspace.prepared):
+            self.prepare(sandbox)
+
+            if workspace:
+                workspace.prepared = True
+
+    # __logfile()
+    #
+    # Compose the log file for this action & pid.
+    #
+    # Args:
+    #    action_name (str): The action name
+    #    pid (int): Optional pid, current pid is assumed if not provided.
+    #
+    # Returns:
+    #    (string): The log file full path
+    #
+    # Log file format, when there is a cache key, is:
+    #
+    #    '{logdir}/{project}/{element}/{cachekey}-{action}.{pid}.log'
+    #
+    # Otherwise, it is:
+    #
+    #    '{logdir}/{project}/{element}/{:0<64}-{action}.{pid}.log'
+    #
+    # This matches the order in which things are stored in the artifact cache
+    #
+    def __logfile(self, action_name, pid=None):
+        project = self._get_project()
+        context = self._get_context()
+        key = self.__get_brief_display_key()
+        if pid is None:
+            pid = os.getpid()
+
+        action = action_name.lower()
+        logfile = "{key}-{action}.{pid}.log".format(
+            key=key, action=action, pid=pid)
+
+        directory = os.path.join(context.logdir, project.name, self.normal_name)
+
+        os.makedirs(directory, exist_ok=True)
+        return os.path.join(directory, logfile)
+
+    # __assert_cached()
+    #
+    # Raises an error if the artifact is not cached.
+    #
+    def __assert_cached(self):
+        assert self._cached(), "{}: Missing artifact {}".format(self, self.__get_brief_display_key())
+
+    # __get_tainted():
+    #
+    # Checkes whether this artifact should be pushed to an artifact cache.
+    #
+    # Args:
+    #    recalculate (bool) - Whether to force recalculation
+    #
+    # Returns:
+    #    (bool) False if this artifact should be excluded from pushing.
+    #
+    # Note:
+    #    This method should only be called after the element's
+    #    artifact is present in the local artifact cache.
+    #
+    def __get_tainted(self, recalculate=False):
+        if recalculate or self.__tainted is None:
+
+            # Whether this artifact has a workspace
+            workspaced = self.__get_artifact_metadata_workspaced()
+
+            # Whether this artifact's dependencies have workspaces
+            workspaced_dependencies = self.__get_artifact_metadata_workspaced_dependencies()
+
+            # Other conditions should be or-ed
+            self.__tainted = workspaced or workspaced_dependencies
+
+        return self.__tainted
+
+    # __sandbox():
+    #
+    # A context manager to prepare a Sandbox object at the specified directory,
+    # if the directory is None, then a directory will be chosen automatically
+    # in the configured build directory.
+    #
+    # Args:
+    #    directory (str): The local directory where the sandbox will live, or None
+    #    stdout (fileobject): The stream for stdout for the sandbox
+    #    stderr (fileobject): The stream for stderr for the sandbox
+    #    config (SandboxConfig): The SandboxConfig object
+    #
+    # Yields:
+    #    (Sandbox): A usable sandbox
+    #
     @contextmanager
     def __sandbox(self, directory, stdout=None, stderr=None, config=None):
         context = self._get_context()
@@ -2060,20 +2101,6 @@ class Element(Plugin):
 
         return element_public
 
-    def __file_is_whitelisted(self, pattern):
-        # Considered storing the whitelist regex for re-use, but public data
-        # can be altered mid-build.
-        # Public data is not guaranteed to stay the same for the duration of
-        # the build, but I can think of no reason to change it mid-build.
-        # If this ever changes, things will go wrong unexpectedly.
-        if not self.__whitelist_regex:
-            bstdata = self.get_public_data('bst')
-            whitelist = _yaml.node_get(bstdata, list, 'overlap-whitelist', default_value=[])
-            whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
-            expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
-            self.__whitelist_regex = re.compile(expression)
-        return self.__whitelist_regex.match(pattern)
-
     def __init_splits(self):
         bstdata = self.get_public_data('bst')
         splits = bstdata.get('split-rules')
@@ -2133,6 +2160,20 @@ class Element(Plugin):
 
             if include_file and not exclude_file:
                 yield filename.lstrip(os.sep)
+
+    def __file_is_whitelisted(self, pattern):
+        # Considered storing the whitelist regex for re-use, but public data
+        # can be altered mid-build.
+        # Public data is not guaranteed to stay the same for the duration of
+        # the build, but I can think of no reason to change it mid-build.
+        # If this ever changes, things will go wrong unexpectedly.
+        if not self.__whitelist_regex:
+            bstdata = self.get_public_data('bst')
+            whitelist = _yaml.node_get(bstdata, list, 'overlap-whitelist', default_value=[])
+            whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
+            expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
+            self.__whitelist_regex = re.compile(expression)
+        return self.__whitelist_regex.match(pattern)
 
     # __extract():
     #
@@ -2281,6 +2322,19 @@ class Element(Plugin):
         self.__metadata_workspaced_dependencies[weak_key] = workspaced
         return workspaced
 
+    # __load_public_data():
+    #
+    # Loads the public data from the cached artifact
+    #
+    def __load_public_data(self):
+        self.__assert_cached()
+        assert self.__dynamic_public is None
+
+        # Load the public data from the artifact
+        artifact_base, _ = self.__extract()
+        metadir = os.path.join(artifact_base, 'meta')
+        self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
+
     def __get_cache_keys_for_commit(self):
         keys = []
 
@@ -2291,18 +2345,6 @@ class Element(Plugin):
         keys.append(self._get_cache_key(strength=_KeyStrength.WEAK))
 
         return utils._deduplicate(keys)
-
-    def _load_public_data(self):
-        self._assert_cached()
-        assert self.__dynamic_public is None
-
-        # Load the public data from the artifact
-        artifact_base, _ = self.__extract()
-        metadir = os.path.join(artifact_base, 'meta')
-        self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
-
-    def _subst_string(self, value):
-        return self.__variables.subst(value)
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
