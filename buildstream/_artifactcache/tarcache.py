@@ -62,8 +62,8 @@ class TarCache(ArtifactCache):
         fullname = self.get_artifact_fullname(element, key)
         path = _tarpath(element, key)
 
-        if not os.path.isfile(os.path.join(self.tardir, path)):
-            raise ArtifactError("Artifact missing for {}".format(fullname))
+        # Extracting a nonexistent artifact is a bug
+        assert os.path.isfile(os.path.join(self.tardir, path)), "Artifact missing for {}".format(fullname)
 
         # If the destination already exists, the artifact has been extracted
         dest = os.path.join(self.extractdir, fullname)
