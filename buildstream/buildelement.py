@@ -57,7 +57,6 @@ will do the following operations:
 
 Element.prepare()
 ~~~~~~~~~~~~~~~~~
-
 In :func:`Element.prepare() <buildstream.element.Element.prepare>`,
 the BuildElement will run ``configure-commands``, which are used to
 run one-off preparations that should not be repeated for a single
@@ -109,7 +108,7 @@ class BuildElement(Element):
     #############################################################
     def configure(self, node):
 
-        self.commands = {}
+        self.__commands = {}
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
@@ -118,9 +117,9 @@ class BuildElement(Element):
 
         for command_name in _legacy_command_steps:
             if command_name in _command_steps:
-                self.commands[command_name] = self.__get_commands(node, command_name)
+                self.__commands[command_name] = self.__get_commands(node, command_name)
             else:
-                self.commands[command_name] = []
+                self.__commands[command_name] = []
 
     def preflight(self):
         pass
@@ -128,7 +127,7 @@ class BuildElement(Element):
     def get_unique_key(self):
         dictionary = {}
 
-        for command_name, command_list in self.commands.items():
+        for command_name, command_list in self.__commands.items():
             dictionary[command_name] = command_list
 
         # Specifying notparallel for a given element effects the
@@ -179,13 +178,13 @@ class BuildElement(Element):
 
         # Run commands
         for command_name in _command_steps:
-            commands = self.commands[command_name]
+            commands = self.__commands[command_name]
             if not commands or command_name == 'configure-commands':
                 continue
 
             with self.timed_activity("Running {}".format(command_name)):
                 for cmd in commands:
-                    self._run_command(sandbox, cmd, command_name)
+                    self.__run_command(sandbox, cmd, command_name)
 
         # %{install-root}/%{build-root} should normally not be written
         # to - if an element later attempts to stage to a location
@@ -205,15 +204,15 @@ class BuildElement(Element):
         return self.get_variable('install-root')
 
     def prepare(self, sandbox):
-        commands = self.commands['configure-commands']
+        commands = self.__commands['configure-commands']
         if commands:
             for cmd in commands:
-                self._run_command(sandbox, cmd, 'configure-commands')
+                self.__run_command(sandbox, cmd, 'configure-commands')
 
     def generate_script(self):
         script = ""
         for command_name in _command_steps:
-            commands = self.commands[command_name]
+            commands = self.__commands[command_name]
 
             for cmd in commands:
                 script += "(set -ex; {}\n) || exit 1\n".format(cmd)
@@ -233,7 +232,7 @@ class BuildElement(Element):
 
         return commands
 
-    def _run_command(self, sandbox, cmd, cmd_name):
+    def __run_command(self, sandbox, cmd, cmd_name):
         with self.timed_activity("Running {}".format(cmd_name)):
             self.status("Running {}".format(cmd_name), detail=cmd)
 
