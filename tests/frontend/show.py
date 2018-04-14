@@ -23,7 +23,6 @@ DATA_DIR = os.path.join(
 ])
 def test_show(cli, datafiles, target, format, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     result = cli.run(project=project, silent=True, args=[
         'show',
         '--deps', 'none',
@@ -45,7 +44,6 @@ def test_show(cli, datafiles, target, format, expected):
 ])
 def test_show_except(cli, datafiles, target, except_, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     result = cli.run(project=project, silent=True, args=[
         'show',
         '--deps', 'all',
