@@ -367,32 +367,18 @@ class Source(Plugin):
     def _fetch(self):
         self.fetch()
 
-    # Ensures a fully constructed path and returns it
-    def _ensure_directory(self, directory):
-
-        if self.__directory is not None:
-            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
-
-        try:
-            os.makedirs(directory, exist_ok=True)
-        except OSError as e:
-            raise SourceError("Failed to create staging directory: {}"
-                              .format(e),
-                              reason="ensure-stage-dir-fail") from e
-        return directory
-
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
     # 'directory' option
     #
     def _stage(self, directory):
-        staging_directory = self._ensure_directory(directory)
+        staging_directory = self.__ensure_directory(directory)
 
         self.stage(staging_directory)
 
     # Wrapper for init_workspace()
     def _init_workspace(self, directory):
-        directory = self._ensure_directory(directory)
+        directory = self.__ensure_directory(directory)
 
         self.init_workspace(directory)
 
@@ -584,6 +570,21 @@ class Source(Plugin):
     #############################################################
     #                   Local Private Methods                   #
     #############################################################
+
+    # Ensures a fully constructed path and returns it
+    def __ensure_directory(self, directory):
+
+        if self.__directory is not None:
+            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as e:
+            raise SourceError("Failed to create staging directory: {}"
+                              .format(e),
+                              reason="ensure-stage-dir-fail") from e
+        return directory
+
     def __init_defaults(self):
         if not self.__defaults_set:
             project = self._get_project()
