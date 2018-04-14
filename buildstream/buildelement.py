@@ -134,8 +134,7 @@ class BuildElement(Element):
         # cache key, while having the side effect of setting max-jobs to 1,
         # which is normally automatically resolved and does not effect
         # the cache key.
-        variables = self._get_variables()
-        if self.node_get_member(variables.variables, bool, 'notparallel', False):
+        if self.get_variable('notparallel'):
             dictionary['notparallel'] = True
 
         return dictionary
