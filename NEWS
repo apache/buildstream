@@ -20,6 +20,9 @@ buildstream 1.1.3
     Appropriate API for plugins is also exposed through
     `Element.prepare`.
 
+  o The `cmake` plugin now supports building with ninja with the
+    newly added `generator` configuration option.
+
 
 =================
 buildstream 1.1.2
