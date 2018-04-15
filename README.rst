@@ -1,5 +1,8 @@
 BuildStream
 ===========
+.. image:: https://gitlab.com/BuildStream/buildstream/badges/master/coverage.svg?job=coverage
+   :target: https://gitlab.com/BuildStream/buildstream/commits/master
+
 BuildStream is a flexible and extensible framework for the modelling of build
 pipelines in a declarative YAML format, written in python.
 
