@@ -128,7 +128,7 @@ class Debug(Widget):
 # A widget for rendering the time codes
 class TimeCode(Widget):
     def __init__(self, content_profile, format_profile, microseconds=False):
-        self.microseconds = microseconds
+        self._microseconds = microseconds
         super(TimeCode, self).__init__(content_profile, format_profile)
 
     def render(self, message):
@@ -150,7 +150,7 @@ class TimeCode(Widget):
 
         text = self.format_profile.fmt(':').join(fields)
 
-        if self.microseconds:
+        if self._microseconds:
             if elapsed is not None:
                 text += self.content_profile.fmt(".{0:06d}".format(elapsed.microseconds))
             else:
@@ -161,7 +161,7 @@ class TimeCode(Widget):
 # A widget for rendering the MessageType
 class TypeName(Widget):
 
-    action_colors = {
+    _action_colors = {
         MessageType.DEBUG: "cyan",
         MessageType.STATUS: "cyan",
         MessageType.INFO: "magenta",
@@ -177,7 +177,7 @@ class TypeName(Widget):
         return self.content_profile.fmt("{: <7}"
                                         .format(message.message_type.upper()),
                                         bold=True, dim=True,
-                                        fg=self.action_colors[message.message_type])
+                                        fg=self._action_colors[message.message_type])
 
 
 # A widget for displaying the Element name
@@ -188,7 +188,7 @@ class ElementName(Widget):
 
         # Pre initialization format string, before we know the length of
         # element names in the pipeline
-        self.fmt_string = '{: <30}'
+        self._fmt_string = '{: <30}'
 
     def size_request(self, pipeline):
         longest_name = 0
@@ -198,7 +198,7 @@ class ElementName(Widget):
         # Put a cap at a specific width, usually some elements cause the line
         # to be too long, just live with the unaligned columns in that case
         longest_name = min(longest_name, 30)
-        self.fmt_string = '{: <' + str(longest_name) + '}'
+        self._fmt_string = '{: <' + str(longest_name) + '}'
 
     def render(self, message):
         element_id = message.task_id or message.unique_id
@@ -215,7 +215,7 @@ class ElementName(Widget):
 
         return self.content_profile.fmt("{: >5}".format(action_name.lower())) + \
             self.format_profile.fmt(':') + \
-            self.content_profile.fmt(self.fmt_string.format(name))
+            self.content_profile.fmt(self._fmt_string.format(name))
 
 
 # A widget for displaying the primary message text
@@ -232,26 +232,26 @@ class CacheKey(Widget):
     def __init__(self, content_profile, format_profile, err_profile):
         super(CacheKey, self).__init__(content_profile, format_profile)
 
-        self.err_profile = err_profile
-        self.key_length = 0
+        self._err_profile = err_profile
+        self._key_length = 0
 
     def size_request(self, pipeline):
-        self.key_length = pipeline.context.log_key_length
+        self._key_length = pipeline.context.log_key_length
 
     def render(self, message):
 
         element_id = message.task_id or message.unique_id
-        if element_id is None or not self.key_length:
+        if element_id is None or not self._key_length:
             return ""
 
         missing = False
-        key = ' ' * self.key_length
+        key = ' ' * self._key_length
         plugin = _plugin_lookup(element_id)
         if isinstance(plugin, Element):
             _, key, missing = plugin._get_display_key()
 
         if message.message_type in ERROR_MESSAGES:
-            text = self.err_profile.fmt(key)
+            text = self._err_profile.fmt(key)
         else:
             text = self.content_profile.fmt(key, dim=missing)
 
@@ -264,25 +264,25 @@ class LogFile(Widget):
     def __init__(self, content_profile, format_profile, err_profile):
         super(LogFile, self).__init__(content_profile, format_profile)
 
-        self.err_profile = err_profile
-        self.logdir = ''
+        self._err_profile = err_profile
+        self._logdir = ''
 
     def size_request(self, pipeline):
 
         # Hold on to the logging directory so we can abbreviate
-        self.logdir = pipeline.context.logdir
+        self._logdir = pipeline.context.logdir
 
     def render(self, message, abbrev=True):
 
         if message.logfile and message.scheduler:
             logfile = message.logfile
 
-            if abbrev and self.logdir != "" and logfile.startswith(self.logdir):
-                logfile = logfile[len(self.logdir):]
+            if abbrev and self._logdir != "" and logfile.startswith(self._logdir):
+                logfile = logfile[len(self._logdir):]
                 logfile = logfile.lstrip(os.sep)
 
             if message.message_type in ERROR_MESSAGES:
-                text = self.err_profile.fmt(logfile)
+                text = self._err_profile.fmt(logfile)
             else:
                 text = self.content_profile.fmt(logfile, dim=True)
         else:
@@ -291,27 +291,27 @@ class LogFile(Widget):
         return text
 
 
+# START and SUCCESS messages are expected to have no useful
+# information in the message text, so we display the logfile name for
+# these messages, and the message text for other types.
+#
 class MessageOrLogFile(Widget):
-    """ START and SUCCESS messages are expected to have no useful
-        information in the message text, so we display the logfile name for
-        these messages, and the message text for other types.
-    """
     def __init__(self, content_profile, format_profile, err_profile):
         super(MessageOrLogFile, self).__init__(content_profile, format_profile)
-        self.message_widget = MessageText(content_profile, format_profile)
-        self.logfile_widget = LogFile(content_profile, format_profile, err_profile)
+        self._message_widget = MessageText(content_profile, format_profile)
+        self._logfile_widget = LogFile(content_profile, format_profile, err_profile)
 
     def size_request(self, pipeline):
-        self.message_widget.size_request(pipeline)
-        self.logfile_widget.size_request(pipeline)
+        self._message_widget.size_request(pipeline)
+        self._logfile_widget.size_request(pipeline)
 
     def render(self, message):
         # Show the log file only in the main start/success messages
         if message.logfile and message.scheduler and \
            message.message_type in [MessageType.START, MessageType.SUCCESS]:
-            text = self.logfile_widget.render(message)
+            text = self._logfile_widget.render(message)
         else:
-            text = self.message_widget.render(message)
+            text = self._message_widget.render(message)
         return text
 
 
@@ -326,26 +326,23 @@ class LogLine(Widget):
                  message_format: str = None):
         super(LogLine, self).__init__(content_profile, format_profile)
 
-        self.columns = []
+        self._columns = []
         self._failure_messages = defaultdict(list)
         self._context = None
-        self.success_profile = success_profile
-        self.err_profile = err_profile
-        self.detail_profile = detail_profile
-        self.indent = ' ' * indent
-        self.log_lines = log_lines
-        self.message_lines = message_lines
-        self.message_format = message_format
+        self._success_profile = success_profile
+        self._err_profile = err_profile
+        self._detail_profile = detail_profile
+        self._indent = ' ' * indent
+        self._log_lines = log_lines
+        self._message_lines = message_lines
 
-        self.space_widget = Space(content_profile, format_profile)
-        self.logfile_widget = LogFile(content_profile, format_profile, err_profile)
+        self._space_widget = Space(content_profile, format_profile)
+        self._logfile_widget = LogFile(content_profile, format_profile, err_profile)
 
         if debug:
-            self.columns.extend([
+            self._columns.extend([
                 Debug(content_profile, format_profile)
             ])
-
-        logfile_format = message_format
 
         self.logfile_variable_names = {
             "elapsed": TimeCode(content_profile, format_profile, microseconds=False),
@@ -356,333 +353,23 @@ class LogLine(Widget):
             "action": TypeName(content_profile, format_profile),
             "message": MessageOrLogFile(content_profile, format_profile, err_profile)
         }
-        logfile_tokens = self._parse_logfile_format(logfile_format, content_profile, format_profile)
-        self.columns.extend(logfile_tokens)
+        logfile_tokens = self._parse_logfile_format(message_format, content_profile, format_profile)
+        self._columns.extend(logfile_tokens)
 
-    def _parse_logfile_format(self, format_string, content_profile, format_profile):
-        logfile_tokens = []
-        while format_string:
-            if format_string.startswith("%%"):
-                logfile_tokens.append(FixedText("%", content_profile, format_profile))
-                format_string = format_string[2:]
-                continue
-            m = re.search(r"^%\{([^\}]+)\}", format_string)
-            if m is not None:
-                variable = m.group(1)
-                format_string = format_string[m.end(0):]
-                if variable not in self.logfile_variable_names:
-                    raise Exception("'{0}' is not a valid log variable name.".format(variable))
-                logfile_tokens.append(self.logfile_variable_names[variable])
-            else:
-                m = re.search("^[^%]+", format_string)
-                if m is not None:
-                    text = FixedText(m.group(0), content_profile, format_profile)
-                    format_string = format_string[m.end(0):]
-                    logfile_tokens.append(text)
-                else:
-                    # No idea what to do now
-                    raise Exception("'{0}' could not be parsed into a valid logging format.".format(format_string))
-        return logfile_tokens
-
-    def size_request(self, pipeline):
-        for widget in self.columns:
-            widget.size_request(pipeline)
-
-        self.space_widget.size_request(pipeline)
-        self.logfile_widget.size_request(pipeline)
-
-        self._context = pipeline.context
-
-    def render(self, message):
-
-        # Track logfiles for later use
-        element_id = message.task_id or message.unique_id
-        if message.message_type in ERROR_MESSAGES and element_id is not None:
-            plugin = _plugin_lookup(element_id)
-            self._failure_messages[plugin].append(message)
-
-        return self._render(message)
-
-    def _render(self, message):
-
-        # Render the column widgets first
-        text = ''
-        for widget in self.columns:
-            text += widget.render(message)
-
-        text += '\n'
-
-        extra_nl = False
-
-        # Now add some custom things
-        if message.detail:
-
-            # Identify frontend messages, we never abbreviate these
-            frontend_message = not (message.task_id or message.unique_id)
-
-            # Split and truncate message detail down to message_lines lines
-            lines = message.detail.splitlines(True)
-
-            n_lines = len(lines)
-            abbrev = False
-            if message.message_type not in ERROR_MESSAGES \
-               and not frontend_message and n_lines > self.message_lines:
-                abbrev = True
-                lines = lines[0:self.message_lines]
-            else:
-                lines[n_lines - 1] = lines[n_lines - 1].rstrip('\n')
-
-            detail = self.indent + self.indent.join(lines)
-
-            text += '\n'
-            if message.message_type in ERROR_MESSAGES:
-                text += self.err_profile.fmt(detail, bold=True)
-            else:
-                text += self.detail_profile.fmt(detail)
-
-            if abbrev:
-                text += self.indent + \
-                    self.content_profile.fmt('Message contains {} additional lines'
-                                             .format(n_lines - self.message_lines), dim=True)
-            text += '\n'
-
-            extra_nl = True
-
-        if message.sandbox is not None:
-            sandbox = self.indent + 'Sandbox directory: ' + message.sandbox
-
-            text += '\n'
-            if message.message_type == MessageType.FAIL:
-                text += self.err_profile.fmt(sandbox, bold=True)
-            else:
-                text += self.detail_profile.fmt(sandbox)
-            text += '\n'
-            extra_nl = True
-
-        if message.scheduler and message.message_type == MessageType.FAIL:
-            text += '\n'
-
-            if self._context is not None and not self._context.log_verbose:
-                text += self.indent + self.err_profile.fmt("Log file: ")
-                text += self.indent + self.logfile_widget.render(message) + '\n'
-            else:
-                text += self.indent + self.err_profile.fmt("Printing the last {} lines from log file:"
-                                                           .format(self.log_lines)) + '\n'
-                text += self.indent + self.logfile_widget.render(message, abbrev=False) + '\n'
-                text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
-
-                log_content = self.read_last_lines(message.logfile)
-                log_content = textwrap.indent(log_content, self.indent)
-                text += self.detail_profile.fmt(log_content)
-                text += '\n'
-                text += self.indent + self.err_profile.fmt("=" * 70) + '\n'
-            extra_nl = True
-
-        if extra_nl:
-            text += '\n'
-
-        return text
-
-    def read_last_lines(self, logfile):
-        with ExitStack() as stack:
-            # mmap handles low-level memory details, allowing for
-            # faster searches
-            f = stack.enter_context(open(logfile, 'r+'))
-            log = stack.enter_context(mmap(f.fileno(), os.path.getsize(f.name)))
-
-            count = 0
-            end = log.size() - 1
-
-            while count < self.log_lines and end >= 0:
-                location = log.rfind(b'\n', 0, end)
-                count += 1
-
-                # If location is -1 (none found), this will print the
-                # first character because of the later +1
-                end = location
-
-            # end+1 is correct whether or not a newline was found at
-            # that location. If end is -1 (seek before beginning of file)
-            # then we get the first characther. If end is a newline position,
-            # we discard it and only want to print the beginning of the next
-            # line.
-            lines = log[(end + 1):].splitlines()
-            return '\n'.join([line.decode('utf-8') for line in lines]).rstrip()
-
+    # show_pipeline()
     #
-    # A message to be printed at program startup, indicating
-    # some things about user configuration and BuildStream version
-    # and so on.
+    # Display a list of elements in the specified format.
+    #
+    # The formatting string is the one currently documented in `bst show`, this
+    # is used in pipeline session headings and also to implement `bst show`.
     #
     # Args:
-    #    pipeline (Pipeline): The pipeline to print the heading of
-    #    log_file (file): An optional file handle for additional logging
-    #    deps (list): Optional list of elements, default is to use the whole pipeline
-    #    styling (bool): Whether to enable ansi escape codes in the output
+    #    dependencies (list of Element): A list of Element objects
+    #    format_: A formatting string, as specified by `bst show`
     #
-    def print_heading(self, pipeline, log_file, deps=None, styling=False):
-        context = pipeline.context
-        project = pipeline.project
-        starttime = datetime.datetime.now()
-        text = ''
-
-        # Main invocation context
-        text += '\n'
-        text += self.content_profile.fmt("BuildStream Version {}\n".format(bst_version), bold=True)
-        values = OrderedDict()
-        values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
-        values["Project"] = "{} ({})".format(project.name, project.directory)
-        values["Targets"] = ", ".join([t.name for t in pipeline.targets])
-        text += self.format_values(values)
-
-        # User configurations
-        text += '\n'
-        text += self.content_profile.fmt("User Configuration\n", bold=True)
-        values = OrderedDict()
-        values["Configuration File"] = \
-            "Default Configuration" if not context.config_origin else context.config_origin
-        values["Log Files"] = context.logdir
-        values["Source Mirrors"] = context.sourcedir
-        values["Build Area"] = context.builddir
-        values["Artifact Cache"] = context.artifactdir
-        values["Strict Build Plan"] = "Yes" if context.get_strict() else "No"
-        values["Maximum Fetch Tasks"] = context.sched_fetchers
-        values["Maximum Build Tasks"] = context.sched_builders
-        values["Maximum Push Tasks"] = context.sched_pushers
-        values["Maximum Network Retries"] = context.sched_network_retries
-        text += self.format_values(values)
-        text += '\n'
-
-        # Project Options
-        values = OrderedDict()
-        project.options.printable_variables(values)
-        if values:
-            text += self.content_profile.fmt("Project Options\n", bold=True)
-            text += self.format_values(values)
-            text += '\n'
-
-        # Plugins
-        text += self.format_plugins(project._element_factory.loaded_dependencies,
-                                    project._source_factory.loaded_dependencies)
-
-        # Pipeline state
-        text += self.content_profile.fmt("Pipeline\n", bold=True)
-        if deps is None:
-            deps = pipeline.dependencies(Scope.ALL)
-        text += self.show_pipeline(deps, context.log_element_format)
-        text += '\n'
-
-        # Separator line before following output
-        text += self.format_profile.fmt("=" * 79 + '\n')
-
-        click.echo(text, color=styling, nl=False, err=True)
-        if log_file:
-            click.echo(text, file=log_file, color=False, nl=False)
-
-    # Print queue summaries at the end of a scheduler run
+    # Returns:
+    #    (str): The formatted list of elements
     #
-    def print_summary(self, pipeline, scheduler, log_file, styling=False):
-
-        # Early silent return if there are no queues, can happen
-        # only in the case that the pipeline early returned due to
-        # an inconsistent pipeline state.
-        if scheduler.queues is None:
-            return
-
-        text = ''
-
-        if self._failure_messages:
-            text += self.content_profile.fmt("Failure Summary\n", bold=True)
-            values = OrderedDict()
-
-            for element, messages in sorted(self._failure_messages.items(), key=lambda x: x[0].name):
-                values[element.name] = ''.join(self._render(v) for v in messages)
-            text += self.format_values(values, style_value=False)
-
-        text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
-        values = OrderedDict()
-
-        values['Total'] = self.content_profile.fmt(str(pipeline.total_elements))
-        values['Session'] = self.content_profile.fmt(str(pipeline.session_elements))
-
-        processed_maxlen = 1
-        skipped_maxlen = 1
-        failed_maxlen = 1
-        for queue in scheduler.queues:
-            processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
-            skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
-            failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
-
-        for queue in scheduler.queues:
-            processed = str(len(queue.processed_elements))
-            skipped = str(len(queue.skipped_elements))
-            failed = str(len(queue.failed_elements))
-
-            processed_align = ' ' * (processed_maxlen - len(processed))
-            skipped_align = ' ' * (skipped_maxlen - len(skipped))
-            failed_align = ' ' * (failed_maxlen - len(failed))
-
-            status_text = self.content_profile.fmt("processed ") + \
-                self.success_profile.fmt(processed) + \
-                self.format_profile.fmt(', ') + processed_align
-
-            status_text += self.content_profile.fmt("skipped ") + \
-                self.content_profile.fmt(skipped) + \
-                self.format_profile.fmt(', ') + skipped_align
-
-            status_text += self.content_profile.fmt("failed ") + \
-                self.err_profile.fmt(failed) + ' ' + failed_align
-            values["{} Queue".format(queue.action_name)] = status_text
-
-        text += self.format_values(values, style_value=False)
-
-        click.echo(text, color=styling, nl=False, err=True)
-        if log_file:
-            click.echo(text, file=log_file, color=False, nl=False)
-
-    def format_plugins(self, element_plugins, source_plugins):
-        text = ""
-
-        if not (element_plugins or source_plugins):
-            return text
-
-        text += self.content_profile.fmt("Loaded Plugins\n", bold=True)
-
-        if element_plugins:
-            text += self.format_profile.fmt("  Element Plugins\n")
-            for plugin in element_plugins:
-                text += self.content_profile.fmt("    - {}\n".format(plugin))
-
-        if source_plugins:
-            text += self.format_profile.fmt("  Source Plugins\n")
-            for plugin in source_plugins:
-                text += self.content_profile.fmt("    - {}\n".format(plugin))
-
-        text += '\n'
-
-        return text
-
-    def format_values(self, values, style_value=True):
-        text = ''
-        max_key_len = 0
-        for key, value in values.items():
-            max_key_len = max(len(key), max_key_len)
-
-        for key, value in values.items():
-            if isinstance(value, str) and '\n' in value:
-                text += self.format_profile.fmt("  {}:\n".format(key))
-                text += textwrap.indent(value, self.indent)
-                continue
-
-            text += self.format_profile.fmt("  {}: {}".format(key, ' ' * (max_key_len - len(key))))
-            if style_value:
-                text += self.content_profile.fmt(str(value))
-            else:
-                text += str(value)
-            text += '\n'
-
-        return text
-
     def show_pipeline(self, dependencies, format_):
         report = ''
         p = Profile()
@@ -758,3 +445,354 @@ class LogLine(Widget):
             report += line + '\n'
 
         return report.rstrip('\n')
+
+    # print_heading()
+    #
+    # A message to be printed at program startup, indicating
+    # some things about user configuration and BuildStream version
+    # and so on.
+    #
+    # Args:
+    #    pipeline (Pipeline): The pipeline to print the heading of
+    #    log_file (file): An optional file handle for additional logging
+    #    deps (list): Optional list of elements, default is to use the whole pipeline
+    #    styling (bool): Whether to enable ansi escape codes in the output
+    #
+    def print_heading(self, pipeline, log_file, deps=None, styling=False):
+        context = pipeline.context
+        project = pipeline.project
+        starttime = datetime.datetime.now()
+        text = ''
+
+        # Main invocation context
+        text += '\n'
+        text += self.content_profile.fmt("BuildStream Version {}\n".format(bst_version), bold=True)
+        values = OrderedDict()
+        values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
+        values["Project"] = "{} ({})".format(project.name, project.directory)
+        values["Targets"] = ", ".join([t.name for t in pipeline.targets])
+        text += self._format_values(values)
+
+        # User configurations
+        text += '\n'
+        text += self.content_profile.fmt("User Configuration\n", bold=True)
+        values = OrderedDict()
+        values["Configuration File"] = \
+            "Default Configuration" if not context.config_origin else context.config_origin
+        values["Log Files"] = context.logdir
+        values["Source Mirrors"] = context.sourcedir
+        values["Build Area"] = context.builddir
+        values["Artifact Cache"] = context.artifactdir
+        values["Strict Build Plan"] = "Yes" if context.get_strict() else "No"
+        values["Maximum Fetch Tasks"] = context.sched_fetchers
+        values["Maximum Build Tasks"] = context.sched_builders
+        values["Maximum Push Tasks"] = context.sched_pushers
+        values["Maximum Network Retries"] = context.sched_network_retries
+        text += self._format_values(values)
+        text += '\n'
+
+        # Project Options
+        values = OrderedDict()
+        project.options.printable_variables(values)
+        if values:
+            text += self.content_profile.fmt("Project Options\n", bold=True)
+            text += self._format_values(values)
+            text += '\n'
+
+        # Plugins
+        text += self._format_plugins(project._element_factory.loaded_dependencies,
+                                     project._source_factory.loaded_dependencies)
+
+        # Pipeline state
+        text += self.content_profile.fmt("Pipeline\n", bold=True)
+        if deps is None:
+            deps = pipeline.dependencies(Scope.ALL)
+        text += self.show_pipeline(deps, context.log_element_format)
+        text += '\n'
+
+        # Separator line before following output
+        text += self.format_profile.fmt("=" * 79 + '\n')
+
+        click.echo(text, color=styling, nl=False, err=True)
+        if log_file:
+            click.echo(text, file=log_file, color=False, nl=False)
+
+    # print_summary()
+    #
+    # Print a summary of activities at the end of a session
+    #
+    # Args:
+    #    pipeline (Pipeline): The Pipeline
+    #    scheduler (Scheduler): The Scheduler
+    #    log_file (file): An optional file handle for additional logging
+    #    styling (bool): Whether to enable ansi escape codes in the output
+    #
+    def print_summary(self, pipeline, scheduler, log_file, styling=False):
+
+        # Early silent return if there are no queues, can happen
+        # only in the case that the pipeline early returned due to
+        # an inconsistent pipeline state.
+        if scheduler.queues is None:
+            return
+
+        text = ''
+
+        if self._failure_messages:
+            text += self.content_profile.fmt("Failure Summary\n", bold=True)
+            values = OrderedDict()
+
+            for element, messages in sorted(self._failure_messages.items(), key=lambda x: x[0].name):
+                values[element.name] = ''.join(self._render(v) for v in messages)
+            text += self._format_values(values, style_value=False)
+
+        text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
+        values = OrderedDict()
+
+        values['Total'] = self.content_profile.fmt(str(pipeline.total_elements))
+        values['Session'] = self.content_profile.fmt(str(pipeline.session_elements))
+
+        processed_maxlen = 1
+        skipped_maxlen = 1
+        failed_maxlen = 1
+        for queue in scheduler.queues:
+            processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
+            skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
+            failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
+
+        for queue in scheduler.queues:
+            processed = str(len(queue.processed_elements))
+            skipped = str(len(queue.skipped_elements))
+            failed = str(len(queue.failed_elements))
+
+            processed_align = ' ' * (processed_maxlen - len(processed))
+            skipped_align = ' ' * (skipped_maxlen - len(skipped))
+            failed_align = ' ' * (failed_maxlen - len(failed))
+
+            status_text = self.content_profile.fmt("processed ") + \
+                self._success_profile.fmt(processed) + \
+                self.format_profile.fmt(', ') + processed_align
+
+            status_text += self.content_profile.fmt("skipped ") + \
+                self.content_profile.fmt(skipped) + \
+                self.format_profile.fmt(', ') + skipped_align
+
+            status_text += self.content_profile.fmt("failed ") + \
+                self._err_profile.fmt(failed) + ' ' + failed_align
+            values["{} Queue".format(queue.action_name)] = status_text
+
+        text += self._format_values(values, style_value=False)
+
+        click.echo(text, color=styling, nl=False, err=True)
+        if log_file:
+            click.echo(text, file=log_file, color=False, nl=False)
+
+    ###################################################
+    #             Widget Abstract Methods             #
+    ###################################################
+    def size_request(self, pipeline):
+        for widget in self._columns:
+            widget.size_request(pipeline)
+
+        self._space_widget.size_request(pipeline)
+        self._logfile_widget.size_request(pipeline)
+
+        self._context = pipeline.context
+
+    def render(self, message):
+
+        # Track logfiles for later use
+        element_id = message.task_id or message.unique_id
+        if message.message_type in ERROR_MESSAGES and element_id is not None:
+            plugin = _plugin_lookup(element_id)
+            self._failure_messages[plugin].append(message)
+
+        return self._render(message)
+
+    ###################################################
+    #                 Private Methods                 #
+    ###################################################
+    def _parse_logfile_format(self, format_string, content_profile, format_profile):
+        logfile_tokens = []
+        while format_string:
+            if format_string.startswith("%%"):
+                logfile_tokens.append(FixedText("%", content_profile, format_profile))
+                format_string = format_string[2:]
+                continue
+            m = re.search(r"^%\{([^\}]+)\}", format_string)
+            if m is not None:
+                variable = m.group(1)
+                format_string = format_string[m.end(0):]
+                if variable not in self.logfile_variable_names:
+                    raise Exception("'{0}' is not a valid log variable name.".format(variable))
+                logfile_tokens.append(self.logfile_variable_names[variable])
+            else:
+                m = re.search("^[^%]+", format_string)
+                if m is not None:
+                    text = FixedText(m.group(0), content_profile, format_profile)
+                    format_string = format_string[m.end(0):]
+                    logfile_tokens.append(text)
+                else:
+                    # No idea what to do now
+                    raise Exception("'{0}' could not be parsed into a valid logging format.".format(format_string))
+        return logfile_tokens
+
+    def _render(self, message):
+
+        # Render the column widgets first
+        text = ''
+        for widget in self._columns:
+            text += widget.render(message)
+
+        text += '\n'
+
+        extra_nl = False
+
+        # Now add some custom things
+        if message.detail:
+
+            # Identify frontend messages, we never abbreviate these
+            frontend_message = not (message.task_id or message.unique_id)
+
+            # Split and truncate message detail down to message_lines lines
+            lines = message.detail.splitlines(True)
+
+            n_lines = len(lines)
+            abbrev = False
+            if message.message_type not in ERROR_MESSAGES \
+               and not frontend_message and n_lines > self._message_lines:
+                abbrev = True
+                lines = lines[0:self._message_lines]
+            else:
+                lines[n_lines - 1] = lines[n_lines - 1].rstrip('\n')
+
+            detail = self._indent + self._indent.join(lines)
+
+            text += '\n'
+            if message.message_type in ERROR_MESSAGES:
+                text += self._err_profile.fmt(detail, bold=True)
+            else:
+                text += self._detail_profile.fmt(detail)
+
+            if abbrev:
+                text += self._indent + \
+                    self.content_profile.fmt('Message contains {} additional lines'
+                                             .format(n_lines - self._message_lines), dim=True)
+            text += '\n'
+
+            extra_nl = True
+
+        if message.sandbox is not None:
+            sandbox = self._indent + 'Sandbox directory: ' + message.sandbox
+
+            text += '\n'
+            if message.message_type == MessageType.FAIL:
+                text += self._err_profile.fmt(sandbox, bold=True)
+            else:
+                text += self._detail_profile.fmt(sandbox)
+            text += '\n'
+            extra_nl = True
+
+        if message.scheduler and message.message_type == MessageType.FAIL:
+            text += '\n'
+
+            if self._context is not None and not self._context.log_verbose:
+                text += self._indent + self._err_profile.fmt("Log file: ")
+                text += self._indent + self._logfile_widget.render(message) + '\n'
+            else:
+                text += self._indent + self._err_profile.fmt("Printing the last {} lines from log file:"
+                                                             .format(self._log_lines)) + '\n'
+                text += self._indent + self._logfile_widget.render(message, abbrev=False) + '\n'
+                text += self._indent + self._err_profile.fmt("=" * 70) + '\n'
+
+                log_content = self._read_last_lines(message.logfile)
+                log_content = textwrap.indent(log_content, self._indent)
+                text += self._detail_profile.fmt(log_content)
+                text += '\n'
+                text += self._indent + self._err_profile.fmt("=" * 70) + '\n'
+            extra_nl = True
+
+        if extra_nl:
+            text += '\n'
+
+        return text
+
+    def _read_last_lines(self, logfile):
+        with ExitStack() as stack:
+            # mmap handles low-level memory details, allowing for
+            # faster searches
+            f = stack.enter_context(open(logfile, 'r+'))
+            log = stack.enter_context(mmap(f.fileno(), os.path.getsize(f.name)))
+
+            count = 0
+            end = log.size() - 1
+
+            while count < self._log_lines and end >= 0:
+                location = log.rfind(b'\n', 0, end)
+                count += 1
+
+                # If location is -1 (none found), this will print the
+                # first character because of the later +1
+                end = location
+
+            # end+1 is correct whether or not a newline was found at
+            # that location. If end is -1 (seek before beginning of file)
+            # then we get the first characther. If end is a newline position,
+            # we discard it and only want to print the beginning of the next
+            # line.
+            lines = log[(end + 1):].splitlines()
+            return '\n'.join([line.decode('utf-8') for line in lines]).rstrip()
+
+    def _format_plugins(self, element_plugins, source_plugins):
+        text = ""
+
+        if not (element_plugins or source_plugins):
+            return text
+
+        text += self.content_profile.fmt("Loaded Plugins\n", bold=True)
+
+        if element_plugins:
+            text += self.format_profile.fmt("  Element Plugins\n")
+            for plugin in element_plugins:
+                text += self.content_profile.fmt("    - {}\n".format(plugin))
+
+        if source_plugins:
+            text += self.format_profile.fmt("  Source Plugins\n")
+            for plugin in source_plugins:
+                text += self.content_profile.fmt("    - {}\n".format(plugin))
+
+        text += '\n'
+
+        return text
+
+    # _format_values()
+    #
+    # Formats an indented dictionary of titles / values, ensuring
+    # the values are aligned.
+    #
+    # Args:
+    #    values: A dictionary, usually an OrderedDict()
+    #    style_value: Whether to use the content profile for the values
+    #
+    # Returns:
+    #    (str): The formatted values
+    #
+    def _format_values(self, values, style_value=True):
+        text = ''
+        max_key_len = 0
+        for key, value in values.items():
+            max_key_len = max(len(key), max_key_len)
+
+        for key, value in values.items():
+            if isinstance(value, str) and '\n' in value:
+                text += self.format_profile.fmt("  {}:\n".format(key))
+                text += textwrap.indent(value, self._indent)
+                continue
+
+            text += self.format_profile.fmt("  {}: {}".format(key, ' ' * (max_key_len - len(key))))
+            if style_value:
+                text += self.content_profile.fmt(str(value))
+            else:
+                text += str(value)
+            text += '\n'
+
+        return text
