@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@ import click
 #
 class Profile():
     def __init__(self, **kwargs):
-        self.kwargs = dict(kwargs)
+        self._kwargs = dict(kwargs)
 
     # fmt()
     #
@@ -46,7 +46,7 @@ class Profile():
     #
     def fmt(self, text, **kwargs):
         kwargs = dict(kwargs)
-        fmtargs = copy.copy(self.kwargs)
+        fmtargs = copy.copy(self._kwargs)
         fmtargs.update(kwargs)
         return click.style(text, **fmtargs)
 
