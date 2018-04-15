@@ -131,7 +131,7 @@ class Plugin():
     """The plugin's YAML format version
 
     This should be set to ``1`` the first time any new configuration
-    is understood by your :func:`~buildstream.plugin.Plugin.configure`
+    is understood by your :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
     implementation and subsequently bumped every time your
     configuration is enhanced.
 
@@ -140,6 +140,10 @@ class Plugin():
        Plugins are expected to maintain backward compatibility
        in the format and configurations they expose. The versioning
        is intended to track availability of new features only.
+
+       For convenience, the format version for plugins maintained and
+       distributed with BuildStream are revisioned with BuildStream's
+       core format version :ref:`core format version <project_format_version>`.
     """
 
     def __init__(self, name, context, project, provenance, type_tag):

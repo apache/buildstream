@@ -63,10 +63,14 @@ to support a new feature.
 
 .. note::
 
-   :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
+   External :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
    plugins also implement their own YAML configuration fragments and as
    such are revisioned separately from the core format. See :ref:`project_plugins`
    for details on specifying a minimum version of a specific plugin.
+
+   Core :mod:`Elements <buildstream.element>` and :mod:`Sources <buildstream.source>`
+   which are maintained and distributed as a part of BuildStream are revisioned
+   under the same global ``format-version`` described here.
 
 
 Element Path
@@ -195,32 +199,9 @@ External Plugins
 ----------------
 If your project makes use of any custom :mod:`Element <buildstream.element>` or
 :mod:`Source <buildstream.source>` plugins, then the project must inform BuildStream
-of the plugins it means to make use of and the origin from which it can be loaded.
+of the plugins it means to make use of and the origin from which they can be loaded.
 
 Note that plugins with the same name from different origins are not permitted.
-
-
-Core plugins
-~~~~~~~~~~~~
-Plugins provided by the BuildStream core need not be explicitly specified
-here, but you may use this section to specify a minimal format version
-to ensure that they provide the features which your project requires.
-
-.. code:: yaml
-
-   plugins:
-   - origin: core
-
-     # We require a new feature of the `git` source plugin, and
-     # a new feature introduced in version 2 of the `patch` plugin.
-     sources:
-       git: 1
-       patch: 2
-
-     # ... And a new feature of the `script` element, added
-     # in version 2 of it's own format version.
-     elements:
-       script: 2
 
 
 Local Plugins
