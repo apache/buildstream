@@ -52,55 +52,68 @@ from . import Profile, LogLine, Status
 INDENT = 4
 
 
-##################################################################
-#                    Main Application State                      #
-##################################################################
+# App()
+#
+# Main Application State
+#
+# Args:
+#    main_options (dict): The main CLI options of the `bst`
+#                         command, before any subcommand
+#
 class App():
 
     def __init__(self, main_options):
 
-        # Snapshot the start time of the session at the earliest opportunity,
-        # this is used for inclusive session time logging
-        self.session_start = datetime.datetime.now()
+        #
+        # Public members
+        #
+        self.context = None        # The Context object
+        self.project = None        # The toplevel Project object
+        self.scheduler = None      # The Scheduler
+        self.pipeline = None       # The Pipeline
+        self.logger = None         # The LogLine object
+        self.interactive = None    # Whether we are running in interactive mode
+        self.colors = None         # Whether to use colors in logging
 
-        self.main_options = main_options
-        self.logger = None
-        self.status = None
-        self.target = None
-
-        # Main asset handles
-        self.context = None
-        self.project = None
-        self.scheduler = None
-        self.pipeline = None
-
-        # Failure messages, hashed by unique plugin id
-        self.fail_messages = {}
+        #
+        # Private members
+        #
+        self._session_start = datetime.datetime.now()
+        self._main_options = main_options  # Main CLI options, before any command
+        self._status = None                # The Status object
+        self._fail_messages = {}           # Failure messages by unique plugin id
+        self._interactive_failures = None  # Whether to handle failures interactively
 
         # UI Colors Profiles
-        self.content_profile = Profile(fg='yellow')
-        self.format_profile = Profile(fg='cyan', dim=True)
-        self.success_profile = Profile(fg='green')
-        self.error_profile = Profile(fg='red', dim=True)
-        self.detail_profile = Profile(dim=True)
+        self._content_profile = Profile(fg='yellow')
+        self._format_profile = Profile(fg='cyan', dim=True)
+        self._success_profile = Profile(fg='green')
+        self._error_profile = Profile(fg='red', dim=True)
+        self._detail_profile = Profile(dim=True)
 
-        # Check if we are connected to a tty
-        self.is_a_tty = Terminal().is_a_tty
+        #
+        # Earily initialization
+        #
+        is_a_tty = Terminal().is_a_tty
 
-        # Figure out interactive mode
-        if self.main_options['no_interactive']:
+        # Enable interactive mode if we're attached to a tty
+        if main_options['no_interactive']:
             self.interactive = False
         else:
-            self.interactive = self.is_a_tty
+            self.interactive = is_a_tty
 
-        # Whether we handle failures interactively
-        # defaults to whether we are interactive or not.
-        self.interactive_failures = self.interactive
+        # Handle errors interactively if we're in interactive mode
+        # and --on-error was not specified on the command line
+        if main_options.get('on_error') is not None:
+            self._interactive_failures = False
+        else:
+            self._interactive_failures = self.interactive
 
-        # Resolve whether to use colors in output
-        if self.main_options['colors'] is None:
-            self.colors = self.is_a_tty
-        elif self.main_options['colors']:
+        # Use color output if we're attached to a tty, unless
+        # otherwise specified on the comand line
+        if main_options['colors'] is None:
+            self.colors = is_a_tty
+        elif main_options['colors']:
             self.colors = True
         else:
             self.colors = False
@@ -127,15 +140,14 @@ class App():
     #
     @contextmanager
     def partially_initialized(self, *, fetch_subprojects=False):
-        directory = self.main_options['directory']
-        config = self.main_options['config']
+        directory = self._main_options['directory']
+        config = self._main_options['config']
 
         try:
             self.context = Context(fetch_subprojects=fetch_subprojects)
             self.context.load(config)
         except BstError as e:
-            self.print_error(e, "Error loading user configuration")
-            sys.exit(-1)
+            self._error_exit(e, "Error loading user configuration")
 
         # Override things in the context from our command line options,
         # the command line when used, trumps the config files.
@@ -153,23 +165,17 @@ class App():
             'network_retries': 'sched_network_retries'
         }
         for cli_option, context_attr in override_map.items():
-            option_value = self.main_options.get(cli_option)
+            option_value = self._main_options.get(cli_option)
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
 
-        # Disable interactive failures if --on-error was specified
-        # on the command line, but not if it was only specified
-        # in the config.
-        if self.main_options.get('on_error') is not None:
-            self.interactive_failures = False
-
         # Create the logger right before setting the message handler
         self.logger = LogLine(
-            self.content_profile,
-            self.format_profile,
-            self.success_profile,
-            self.error_profile,
-            self.detail_profile,
+            self._content_profile,
+            self._format_profile,
+            self._success_profile,
+            self._error_profile,
+            self._detail_profile,
             # Indentation for detailed messages
             indent=INDENT,
             # Number of last lines in an element's log to print (when encountering errors)
@@ -181,10 +187,10 @@ class App():
             message_format=self.context.log_message_format)
 
         # Propagate pipeline feedback to the user
-        self.context.set_message_handler(self.message_handler)
+        self.context.set_message_handler(self._message_handler)
 
         try:
-            self.project = Project(directory, self.context, cli_options=self.main_options['option'])
+            self.project = Project(directory, self.context, cli_options=self._main_options['option'])
         except LoadError as e:
 
             # Let's automatically start a `bst init` session in this case
@@ -194,19 +200,16 @@ class App():
                 if click.confirm("Would you like to create a new project here ?"):
                     self.init_project(None)
 
-            self.print_error(e, "Error loading project")
-            sys.exit(-1)
+            self._error_exit(e, "Error loading project")
 
         except BstError as e:
-            self.print_error(e, "Error loading project")
-            sys.exit(-1)
+            self._error_exit(e, "Error loading project")
 
         # Run the body of the session here, once everything is loaded
         try:
             yield
         except BstError as e:
-            self.print_error(e)
-            sys.exit(-1)
+            self._error_exit(e)
 
     # initialized()
     #
@@ -249,27 +252,26 @@ class App():
 
             # Mark the beginning of the session
             if session_name:
-                self.message(MessageType.START, session_name)
+                self._message(MessageType.START, session_name)
 
             # Create the application's scheduler
-            self.scheduler = Scheduler(self.context, self.session_start,
-                                       interrupt_callback=self.interrupt_handler,
-                                       ticker_callback=self.tick,
-                                       job_start_callback=self.job_started,
-                                       job_complete_callback=self.job_completed)
+            self.scheduler = Scheduler(self.context, self._session_start,
+                                       interrupt_callback=self._interrupt_handler,
+                                       ticker_callback=self._tick,
+                                       job_start_callback=self._job_started,
+                                       job_complete_callback=self._job_completed)
 
             try:
                 self.pipeline = Pipeline(self.context, self.project, elements, except_,
                                          rewritable=rewritable)
             except BstError as e:
-                self.print_error(e, "Error loading pipeline")
-                sys.exit(-1)
+                self._error_exit(e, "Error loading pipeline")
 
             # Create our status printer, only available in interactive
-            self.status = Status(self.content_profile, self.format_profile,
-                                 self.success_profile, self.error_profile,
-                                 self.pipeline, self.scheduler,
-                                 colors=self.colors)
+            self._status = Status(self._content_profile, self._format_profile,
+                                  self._success_profile, self._error_profile,
+                                  self.pipeline, self.scheduler,
+                                  colors=self.colors)
 
             # Initialize pipeline
             try:
@@ -278,8 +280,7 @@ class App():
                                          track_elements=track_elements,
                                          track_cross_junctions=track_cross_junctions)
             except BstError as e:
-                self.print_error(e, "Error initializing pipeline")
-                sys.exit(-1)
+                self._error_exit(e, "Error initializing pipeline")
 
             # Pipeline is loaded, now we can tell the logger about it
             self.logger.size_request(self.pipeline)
@@ -288,7 +289,7 @@ class App():
 
             # Print the heading
             if session_name:
-                self.print_heading()
+                self._print_heading()
 
             # Run the body of the session here, once everything is loaded
             try:
@@ -300,20 +301,20 @@ class App():
 
                 if session_name:
                     if isinstance(e, PipelineError) and e.terminated:  # pylint: disable=no-member
-                        self.message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
+                        self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
                     else:
-                        self.message(MessageType.FAIL, session_name, elapsed=elapsed)
+                        self._message(MessageType.FAIL, session_name, elapsed=elapsed)
 
                 if session_name:
-                    self.print_summary()
+                    self._print_summary()
 
                 # Let the outer context manager print the error and exit
                 raise
             else:
                 # No exceptions occurred, print session time and summary
                 if session_name:
-                    self.message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
-                    self.print_summary()
+                    self._message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
+                    self._print_summary()
 
     # init_project()
     #
@@ -328,7 +329,7 @@ class App():
     #    force (bool): Allow overwriting an existing project.conf
     #
     def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements', force=False):
-        directory = self.main_options['directory']
+        directory = self._main_options['directory']
         directory = os.path.abspath(directory)
         project_path = os.path.join(directory, 'project.conf')
 
@@ -342,8 +343,8 @@ class App():
                 # If project name was specified, user interaction is not desired, just
                 # perform some validation and write the project.conf
                 _yaml.assert_symbol_name(None, project_name, 'project name')
-                self.assert_format_version(format_version)
-                self.assert_element_path(element_path)
+                self._assert_format_version(format_version)
+                self._assert_element_path(element_path)
 
             elif not self.interactive:
                 raise AppError("Cannot initialize a new project without specifying the project name",
@@ -351,35 +352,76 @@ class App():
             else:
                 # Collect the parameters using an interactive session
                 project_name, format_version, element_path = \
-                    self.init_project_interactive(project_name, format_version, element_path)
+                    self._init_project_interactive(project_name, format_version, element_path)
+
+            # Create the directory if it doesnt exist
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except IOError as e:
+                raise AppError("Error creating project directory {}: {}".format(directory, e)) from e
+
+            # Dont use ruamel.yaml here, because it doesnt let
+            # us programatically insert comments or whitespace at
+            # the toplevel.
+            try:
+                with open(project_path, 'w') as f:
+                    f.write("# Unique project name\n" +
+                            "name: {}\n\n".format(project_name) +
+                            "# Required BuildStream format version\n" +
+                            "format-version: {}\n\n".format(format_version) +
+                            "# Subdirectory where elements are stored\n" +
+                            "element-path: {}\n".format(element_path))
+            except IOError as e:
+                raise AppError("Error writing {}: {}".format(project_path, e)) from e
 
         except BstError as e:
-            self.print_error(e)
-            sys.exit(-1)
-
-        # Create the directory if it doesnt exist
-        os.makedirs(directory, exist_ok=True)
-
-        # Dont use ruamel.yaml here, because it doesnt let
-        # us programatically insert comments or whitespace at
-        # the toplevel.
-        #
-        try:
-            with open(project_path, 'w') as f:
-                f.write("# Unique project name\n" +
-                        "name: {}\n\n".format(project_name) +
-                        "# Required BuildStream format version\n" +
-                        "format-version: {}\n\n".format(format_version) +
-                        "# Subdirectory where elements are stored\n" +
-                        "element-path: {}\n".format(element_path))
-        except IOError as e:
-            click.echo("", err=True)
-            click.echo("Error writing {}: {}".format(project_path, e), err=True)
-            sys.exit(-1)
+            self._error_exit(e)
 
         click.echo("", err=True)
         click.echo("Created project.conf at: {}".format(project_path), err=True)
         sys.exit(0)
+
+    # shell()
+    #
+    # Run a shell
+    #
+    # Args:
+    #    element (Element): An Element object to run the shell for
+    #    scope (Scope): The scope for the shell (Scope.BUILD or Scope.RUN)
+    #    directory (str): A directory where an existing prestaged sysroot is expected, or None
+    #    mounts (list of HostMount): Additional directories to mount into the sandbox
+    #    isolate (bool): Whether to isolate the environment like we do in builds
+    #    command (list): An argv to launch in the sandbox, or None
+    #
+    # Returns:
+    #    (int): The exit code of the launched shell
+    #
+    def shell(self, element, scope, directory, *, mounts=None, isolate=False, command=None):
+        _, key, dim = element._get_display_key()
+        element_name = element._get_full_name()
+
+        if self.colors:
+            prompt = self._format_profile.fmt('[') + \
+                self._content_profile.fmt(key, dim=dim) + \
+                self._format_profile.fmt('@') + \
+                self._content_profile.fmt(element_name) + \
+                self._format_profile.fmt(':') + \
+                self._content_profile.fmt('$PWD') + \
+                self._format_profile.fmt(']$') + ' '
+        else:
+            prompt = '[{}@{}:${{PWD}}]$ '.format(key, element_name)
+
+        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command)
+
+    # cleanup()
+    #
+    # Cleans up application state
+    #
+    # This is called by Click at exit time
+    #
+    def cleanup(self):
+        if self.pipeline:
+            self.pipeline.cleanup()
 
     ############################################################
     #                   Workspace Commands                     #
@@ -439,7 +481,7 @@ class App():
                 target._open_workspace()
 
         self.project.workspaces.save_config()
-        self.message(MessageType.INFO, "Saved workspace configuration")
+        self._message(MessageType.INFO, "Saved workspace configuration")
 
     # close_workspace
     #
@@ -469,7 +511,7 @@ class App():
         # Delete the workspace and save the configuration
         self.project.workspaces.delete_workspace(element_name)
         self.project.workspaces.save_config()
-        self.message(MessageType.INFO, "Saved workspace configuration")
+        self._message(MessageType.INFO, "Saved workspace configuration")
 
     # reset_workspace
     #
@@ -497,7 +539,7 @@ class App():
 
     # Local message propagator
     #
-    def message(self, message_type, message, **kwargs):
+    def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
         self.context.message(
             Message(None, message_type, message, **args))
@@ -505,21 +547,21 @@ class App():
     #
     # Render the status area, conditional on some internal state
     #
-    def maybe_render_status(self):
+    def _maybe_render_status(self):
 
         # If we're suspended or terminating, then dont render the status area
-        if self.status and self.scheduler and \
+        if self._status and self.scheduler and \
            not (self.scheduler.suspended or self.scheduler.terminated):
-            self.status.render()
+            self._status.render()
 
     #
     # Handle ^C SIGINT interruptions in the scheduling main loop
     #
-    def interrupt_handler(self):
+    def _interrupt_handler(self):
 
         # Only handle ^C interactively in interactive mode
         if not self.interactive:
-            self.status.clear()
+            self._status.clear()
             self.scheduler.terminate_jobs()
             return
 
@@ -527,7 +569,7 @@ class App():
         # like to continue, abort immediately, or only complete processing of
         # the currently ongoing tasks. We can also print something more
         # intelligent, like how many tasks remain to complete overall.
-        with self.interrupted():
+        with self._interrupted():
             click.echo("\nUser interrupted with ^C\n" +
                        "\n"
                        "Choose one of the following options:\n" +
@@ -540,7 +582,7 @@ class App():
 
             try:
                 choice = click.prompt("Choice:",
-                                      value_proc=prefix_choice_value_proc(['continue', 'quit', 'terminate']),
+                                      value_proc=_prefix_choice_value_proc(['continue', 'quit', 'terminate']),
                                       default='continue', err=True)
             except click.Abort:
                 # Ensure a newline after automatically printed '^C'
@@ -557,35 +599,38 @@ class App():
                 elif choice == 'continue':
                     click.echo("\nContinuing\n", err=True)
 
-    def job_started(self, element, action_name):
-        self.status.add_job(element, action_name)
-        self.maybe_render_status()
+    def _tick(self, elapsed):
+        self._maybe_render_status()
 
-    def job_completed(self, element, queue, action_name, success):
-        self.status.remove_job(element, action_name)
-        self.maybe_render_status()
+    def _job_started(self, element, action_name):
+        self._status.add_job(element, action_name)
+        self._maybe_render_status()
+
+    def _job_completed(self, element, queue, action_name, success):
+        self._status.remove_job(element, action_name)
+        self._maybe_render_status()
 
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
         if not success and not self.scheduler.terminated:
 
             # Get the last failure message for additional context
-            failure = self.fail_messages.get(element._get_unique_id())
+            failure = self._fail_messages.get(element._get_unique_id())
 
             # XXX This is dangerous, sometimes we get the job completed *before*
             # the failure message reaches us ??
             if not failure:
-                self.status.clear()
+                self._status.clear()
                 click.echo("\n\n\nBUG: Message handling out of sync, " +
                            "unable to retrieve failure message for element {}\n\n\n\n\n"
                            .format(element), err=True)
             else:
-                self.handle_failure(element, queue, failure)
+                self._handle_failure(element, queue, failure)
 
-    def handle_failure(self, element, queue, failure):
+    def _handle_failure(self, element, queue, failure):
 
         # Handle non interactive mode setting of what to do when a job fails.
-        if not self.interactive_failures:
+        if not self._interactive_failures:
 
             if self.context.sched_error_action == 'terminate':
                 self.scheduler.terminate_jobs()
@@ -596,7 +641,7 @@ class App():
             return
 
         # Interactive mode for element failures
-        with self.interrupted():
+        with self._interrupted():
 
             summary = ("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
                        "\n" +
@@ -623,7 +668,7 @@ class App():
 
                 try:
                     choice = click.prompt("Choice:", default='continue', err=True,
-                                          value_proc=prefix_choice_value_proc(choices))
+                                          value_proc=_prefix_choice_value_proc(choices))
                 except click.Abort:
                     # Ensure a newline after automatically printed '^C'
                     click.echo("", err=True)
@@ -656,49 +701,37 @@ class App():
                     queue.failed_elements.remove(element)
                     queue.enqueue([element])
 
-    def shell(self, element, scope, directory, *, mounts=None, isolate=False, command=None):
-        _, key, dim = element._get_display_key()
-        element_name = element._get_full_name()
-
-        if self.colors:
-            prompt = self.format_profile.fmt('[') + \
-                self.content_profile.fmt(key, dim=dim) + \
-                self.format_profile.fmt('@') + \
-                self.content_profile.fmt(element_name) + \
-                self.format_profile.fmt(':') + \
-                self.content_profile.fmt('$PWD') + \
-                self.format_profile.fmt(']$') + ' '
-        else:
-            prompt = '[{}@{}:${{PWD}}]$ '.format(key, element_name)
-
-        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command)
-
-    def tick(self, elapsed):
-        self.maybe_render_status()
-
     #
     # Prints the application startup heading, used for commands which
     # will process a pipeline.
     #
-    def print_heading(self, deps=None):
+    def _print_heading(self, deps=None):
         self.logger.print_heading(self.pipeline,
-                                  self.main_options['log_file'],
+                                  self._main_options['log_file'],
                                   styling=self.colors,
                                   deps=deps)
 
     #
     # Print a summary of the queues
     #
-    def print_summary(self):
+    def _print_summary(self):
         click.echo("", err=True)
         self.logger.print_summary(self.pipeline, self.scheduler,
-                                  self.main_options['log_file'],
+                                  self._main_options['log_file'],
                                   styling=self.colors)
 
+    # _error_exit()
     #
-    # Print an error
+    # Exit with an error
     #
-    def print_error(self, error, prefix=None):
+    # This will print the passed error to stderr and exit the program
+    # with -1 status
+    #
+    # Args:
+    #   error (BstError): A BstError exception to print
+    #   prefix (str): An optional string to prepend to the error message
+    #
+    def _error_exit(self, error, prefix=None):
         click.echo("", err=True)
         main_error = "{}".format(error)
         if prefix is not None:
@@ -710,10 +743,12 @@ class App():
             detail = '\n' + indent + indent.join(error.detail.splitlines(True))
             click.echo("{}".format(detail), err=True)
 
+        sys.exit(-1)
+
     #
     # Handle messages from the pipeline
     #
-    def message_handler(self, message, context):
+    def _message_handler(self, message, context):
 
         # Drop status messages from the UI if not verbose, we'll still see
         # info messages and status messages will still go to the log files.
@@ -722,45 +757,41 @@ class App():
 
         # Hold on to the failure messages
         if message.message_type in [MessageType.FAIL, MessageType.BUG] and message.unique_id is not None:
-            self.fail_messages[message.unique_id] = message
+            self._fail_messages[message.unique_id] = message
 
         # Send to frontend if appropriate
         if self.context.silent_messages() and (message.message_type not in unconditional_messages):
             return
 
-        if self.status:
-            self.status.clear()
+        if self._status:
+            self._status.clear()
 
         text = self.logger.render(message)
         click.echo(text, color=self.colors, nl=False, err=True)
 
         # Maybe render the status area
-        self.maybe_render_status()
+        self._maybe_render_status()
 
         # Additionally log to a file
-        if self.main_options['log_file']:
-            click.echo(text, file=self.main_options['log_file'], color=False, nl=False)
+        if self._main_options['log_file']:
+            click.echo(text, file=self._main_options['log_file'], color=False, nl=False)
 
     @contextmanager
-    def interrupted(self):
+    def _interrupted(self):
         self.scheduler.disconnect_signals()
 
-        self.status.clear()
+        self._status.clear()
         self.scheduler.suspend_jobs()
 
         yield
 
-        self.maybe_render_status()
+        self._maybe_render_status()
         self.scheduler.resume_jobs()
         self.scheduler.connect_signals()
 
-    def cleanup(self):
-        if self.pipeline:
-            self.pipeline.cleanup()
-
     # Some validation routines for project initialization
     #
-    def assert_format_version(self, format_version):
+    def _assert_format_version(self, format_version):
         message = "The version must be supported by this " + \
                   "version of buildstream (0 - {})\n".format(BST_FORMAT_VERSION)
 
@@ -774,7 +805,7 @@ class App():
         if number < 0 or number > BST_FORMAT_VERSION:
             raise AppError(message, reason='invalid-format-version')
 
-    def assert_element_path(self, element_path):
+    def _assert_element_path(self, element_path):
         message = "The element path cannot be an absolute path or contain any '..' components\n"
 
         # Validate the path is not absolute
@@ -790,7 +821,7 @@ class App():
             if basename == '..':
                 raise AppError(message, reason='invalid-element-path')
 
-    # init_project_interactive()
+    # _init_project_interactive()
     #
     # Collect the user input for an interactive session for App.init_project()
     #
@@ -804,7 +835,7 @@ class App():
     #    format_version (int): The user selected format version
     #    element_path (str): The user selected element path
     #
-    def init_project_interactive(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements'):
+    def _init_project_interactive(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements'):
 
         def project_name_proc(user_input):
             try:
@@ -816,14 +847,14 @@ class App():
 
         def format_version_proc(user_input):
             try:
-                self.assert_format_version(user_input)
+                self._assert_format_version(user_input)
             except AppError as e:
                 raise UsageError(str(e)) from e
             return user_input
 
         def element_path_proc(user_input):
             try:
-                self.assert_element_path(user_input)
+                self._assert_element_path(user_input)
             except AppError as e:
                 raise UsageError(str(e)) from e
             return user_input
@@ -832,57 +863,57 @@ class App():
 
         # Collect project name
         click.echo("", err=True)
-        click.echo(self.content_profile.fmt("Choose a unique name for your project"), err=True)
-        click.echo(self.format_profile.fmt("-------------------------------------"), err=True)
+        click.echo(self._content_profile.fmt("Choose a unique name for your project"), err=True)
+        click.echo(self._format_profile.fmt("-------------------------------------"), err=True)
         click.echo("", err=True)
-        click.echo(self.detail_profile.fmt(
+        click.echo(self._detail_profile.fmt(
             w.fill("The project name is a unique symbol for your project and will be used "
                    "to distinguish your project from others in user preferences, namspaceing "
                    "of your project's artifacts in shared artifact caches, and in any case where "
                    "BuildStream needs to distinguish between multiple projects.")), err=True)
         click.echo("", err=True)
-        click.echo(self.detail_profile.fmt(
+        click.echo(self._detail_profile.fmt(
             w.fill("The project name must contain only alphanumeric characters, "
                    "may not start with a digit, and may contain dashes or underscores.")), err=True)
         click.echo("", err=True)
-        project_name = click.prompt(self.content_profile.fmt("Project name"),
+        project_name = click.prompt(self._content_profile.fmt("Project name"),
                                     value_proc=project_name_proc, err=True)
         click.echo("", err=True)
 
         # Collect format version
-        click.echo(self.content_profile.fmt("Select the minimum required format version for your project"), err=True)
-        click.echo(self.format_profile.fmt("-----------------------------------------------------------"), err=True)
+        click.echo(self._content_profile.fmt("Select the minimum required format version for your project"), err=True)
+        click.echo(self._format_profile.fmt("-----------------------------------------------------------"), err=True)
         click.echo("", err=True)
-        click.echo(self.detail_profile.fmt(
+        click.echo(self._detail_profile.fmt(
             w.fill("The format version is used to provide users who build your project "
                    "with a helpful error message in the case that they do not have a recent "
                    "enough version of BuildStream supporting all the features which your "
                    "project might use.")), err=True)
         click.echo("", err=True)
-        click.echo(self.detail_profile.fmt(
+        click.echo(self._detail_profile.fmt(
             w.fill("The lowest version allowed is 0, the currently installed version of BuildStream "
                    "supports up to format version {}.".format(BST_FORMAT_VERSION))), err=True)
 
         click.echo("", err=True)
-        format_version = click.prompt(self.content_profile.fmt("Format version"),
+        format_version = click.prompt(self._content_profile.fmt("Format version"),
                                       value_proc=format_version_proc,
                                       default=format_version, err=True)
         click.echo("", err=True)
 
         # Collect element path
-        click.echo(self.content_profile.fmt("Select the element path"), err=True)
-        click.echo(self.format_profile.fmt("-----------------------"), err=True)
+        click.echo(self._content_profile.fmt("Select the element path"), err=True)
+        click.echo(self._format_profile.fmt("-----------------------"), err=True)
         click.echo("", err=True)
-        click.echo(self.detail_profile.fmt(
+        click.echo(self._detail_profile.fmt(
             w.fill("The element path is a project subdirectory where element .bst files are stored "
                    "within your project.")), err=True)
         click.echo("", err=True)
-        click.echo(self.detail_profile.fmt(
+        click.echo(self._detail_profile.fmt(
             w.fill("Elements will be displayed in logs as filenames relative to "
                    "the element path, and similarly, dependencies must be expressed as filenames "
                    "relative to the element path.")), err=True)
         click.echo("", err=True)
-        element_path = click.prompt(self.content_profile.fmt("Element path"),
+        element_path = click.prompt(self._content_profile.fmt("Element path"),
                                     value_proc=element_path_proc,
                                     default=element_path, err=True)
 
@@ -901,7 +932,7 @@ class App():
 # 'click.UsageError' exception. That way, Click display an error message and
 # ask for a new input.
 #
-def prefix_choice_value_proc(choices):
+def _prefix_choice_value_proc(choices):
 
     def value_proc(user_input):
         remaining_candidate = [choice for choice in choices if choice.startswith(user_input)]
