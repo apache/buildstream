@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -35,6 +35,8 @@ from .widget import TimeCode
 # Args:
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
+#    success_profile (Profile): Formatting profile for success text
+#    error_profile (Profile): Formatting profile for error text
 #    pipeline (Pipeline): The Pipeline
 #    scheduler (Scheduler): The Scheduler
 #    colors (bool): Whether to print the ANSI color codes in the output
@@ -45,26 +47,26 @@ class Status():
                  success_profile, error_profile,
                  pipeline, scheduler, colors=False):
 
-        self.content_profile = content_profile
-        self.format_profile = format_profile
-        self.success_profile = success_profile
-        self.error_profile = error_profile
-        self.pipeline = pipeline
-        self.scheduler = scheduler
-        self.jobs = []
-        self.last_lines = 0  # Number of status lines we last printed to console
-        self.term = Terminal()
-        self.spacing = 1
-        self.colors = colors
-        self.header = StatusHeader(content_profile, format_profile,
-                                   success_profile, error_profile,
-                                   pipeline, scheduler)
+        self._content_profile = content_profile
+        self._format_profile = format_profile
+        self._success_profile = success_profile
+        self._error_profile = error_profile
+        self._pipeline = pipeline
+        self._scheduler = scheduler
+        self._jobs = []
+        self._last_lines = 0  # Number of status lines we last printed to console
+        self._term = Terminal()
+        self._spacing = 1
+        self._colors = colors
+        self._header = _StatusHeader(content_profile, format_profile,
+                                     success_profile, error_profile,
+                                     pipeline, scheduler)
 
-        self.term_width, _ = click.get_terminal_size()
-        self.alloc_lines = 0
-        self.alloc_columns = None
-        self.line_length = 0
-        self.need_alloc = True
+        self._term_width, _ = click.get_terminal_size()
+        self._alloc_lines = 0
+        self._alloc_columns = None
+        self._line_length = 0
+        self._need_alloc = True
 
     # add_job()
     #
@@ -75,10 +77,10 @@ class Status():
     #    action_name (str): The action name for this job
     #
     def add_job(self, element, action_name):
-        elapsed = self.scheduler.elapsed_time()
-        job = StatusJob(element, action_name, self.content_profile, self.format_profile, elapsed)
-        self.jobs.append(job)
-        self.need_alloc = True
+        elapsed = self._scheduler.elapsed_time()
+        job = _StatusJob(element, action_name, self._content_profile, self._format_profile, elapsed)
+        self._jobs.append(job)
+        self._need_alloc = True
 
     # remove_job()
     #
@@ -89,12 +91,12 @@ class Status():
     #    action_name (str): The action name for this job
     #
     def remove_job(self, element, action_name):
-        self.jobs = [
-            job for job in self.jobs
+        self._jobs = [
+            job for job in self._jobs
             if not (job.element is element and
                     job.action_name == action_name)
         ]
-        self.need_alloc = True
+        self._need_alloc = True
 
     # clear()
     #
@@ -111,13 +113,13 @@ class Status():
     #
     def clear(self):
 
-        if not self.term.does_styling:
+        if not self._term.does_styling:
             return
 
-        for i in range(self.last_lines):
-            self.move_up()
-            self.clear_line()
-        self.last_lines = 0
+        for i in range(self._last_lines):
+            self._move_up()
+            self._clear_line()
+        self._last_lines = 0
 
     # render()
     #
@@ -128,69 +130,69 @@ class Status():
     # not necessary to call clear().
     def render(self):
 
-        if not self.term.does_styling:
+        if not self._term.does_styling:
             return
 
-        elapsed = self.scheduler.elapsed_time()
+        elapsed = self._scheduler.elapsed_time()
 
         self.clear()
-        self.check_term_width()
-        self.allocate()
+        self._check_term_width()
+        self._allocate()
 
         # Nothing to render, early return
-        if self.alloc_lines == 0:
+        if self._alloc_lines == 0:
             return
 
         # Before rendering the actual lines, we need to add some line
         # feeds for the amount of lines we intend to print first, and
         # move cursor position back to the first line
-        for _ in range(self.alloc_lines + self.header.lines):
+        for _ in range(self._alloc_lines + self._header.lines):
             click.echo('', err=True)
-        for _ in range(self.alloc_lines + self.header.lines):
-            self.move_up()
+        for _ in range(self._alloc_lines + self._header.lines):
+            self._move_up()
 
         # Render the one line header
-        text = self.header.render(self.term_width, elapsed)
-        click.echo(text, color=self.colors, err=True)
+        text = self._header.render(self._term_width, elapsed)
+        click.echo(text, color=self._colors, err=True)
 
         # Now we have the number of columns, and an allocation for
         # alignment of each column
-        n_columns = len(self.alloc_columns)
-        for line in self.job_lines(n_columns):
+        n_columns = len(self._alloc_columns)
+        for line in self._job_lines(n_columns):
             text = ''
             for job in line:
                 column = line.index(job)
-                text += job.render(self.alloc_columns[column] - job.size, elapsed)
+                text += job.render(self._alloc_columns[column] - job.size, elapsed)
 
                 # Add spacing between columns
                 if column < (n_columns - 1):
-                    text += ' ' * self.spacing
+                    text += ' ' * self._spacing
 
             # Print the line
-            click.echo(text, color=self.colors, err=True)
+            click.echo(text, color=self._colors, err=True)
 
         # Track what we printed last, for the next clear
-        self.last_lines = self.alloc_lines + self.header.lines
+        self._last_lines = self._alloc_lines + self._header.lines
 
-    ###########################################
-    #         Status area internals           #
-    ###########################################
-    def check_term_width(self):
+    ###################################################
+    #                 Private Methods                 #
+    ###################################################
+    def _check_term_width(self):
         term_width, _ = click.get_terminal_size()
-        if self.term_width != term_width:
-            self.term_width = term_width
-            self.need_alloc = True
+        if self._term_width != term_width:
+            self._term_width = term_width
+            self._need_alloc = True
 
-    def move_up(self):
+    def _move_up(self):
         # Explicitly move to beginning of line, fixes things up
         # when there was a ^C or ^Z printed to the terminal.
-        click.echo(self.term.move_x(0) + self.term.move_up, nl=False, err=True)
+        click.echo(self._term.move_x(0) + self._term.move_up, nl=False, err=True)
 
-    def clear_line(self):
-        click.echo(self.term.clear_eol, nl=False, err=True)
+    def _clear_line(self):
+        click.echo(self._term.clear_eol, nl=False, err=True)
 
-    def allocate(self):
-        if not self.need_alloc:
+    def _allocate(self):
+        if not self._need_alloc:
             return
 
         # State when there is no jobs to display
@@ -199,32 +201,32 @@ class Status():
         line_length = 0
 
         # Test for the widest width which fits columnized jobs
-        for columns in reversed(range(len(self.jobs))):
-            alloc_lines, alloc_columns = self.allocate_columns(columns + 1)
+        for columns in reversed(range(len(self._jobs))):
+            alloc_lines, alloc_columns = self._allocate_columns(columns + 1)
 
             # If the sum of column widths with spacing in between
             # fits into the terminal width, this is a good allocation.
-            line_length = sum(alloc_columns) + (columns * self.spacing)
-            if line_length < self.term_width:
+            line_length = sum(alloc_columns) + (columns * self._spacing)
+            if line_length < self._term_width:
                 break
 
-        self.alloc_lines = alloc_lines
-        self.alloc_columns = alloc_columns
-        self.line_length = line_length
-        self.need_alloc = False
+        self._alloc_lines = alloc_lines
+        self._alloc_columns = alloc_columns
+        self._line_length = line_length
+        self._need_alloc = False
 
-    def job_lines(self, columns):
-        for i in range(0, len(self.jobs), columns):
-            yield self.jobs[i:i + columns]
+    def _job_lines(self, columns):
+        for i in range(0, len(self._jobs), columns):
+            yield self._jobs[i:i + columns]
 
     # Returns an array of integers representing the maximum
     # length in characters for each column, given the current
     # list of jobs to render.
     #
-    def allocate_columns(self, columns):
+    def _allocate_columns(self, columns):
         column_widths = [0 for _ in range(columns)]
         lines = 0
-        for line in self.job_lines(columns):
+        for line in self._job_lines(columns):
             line_len = len(line)
             lines += 1
             for col in range(columns):
@@ -235,23 +237,90 @@ class Status():
         return lines, column_widths
 
 
-# The header widget renders total elapsed time and the main invocation information
-class StatusHeader():
+# _StatusHeader()
+#
+# A delegate object for rendering the header part of the Status() widget
+#
+# Args:
+#    content_profile (Profile): Formatting profile for content text
+#    format_profile (Profile): Formatting profile for formatting text
+#    success_profile (Profile): Formatting profile for success text
+#    error_profile (Profile): Formatting profile for error text
+#    pipeline (Pipeline): The Pipeline
+#    scheduler (Scheduler): The Scheduler
+#
+class _StatusHeader():
 
     def __init__(self, content_profile, format_profile,
                  success_profile, error_profile,
                  pipeline, scheduler):
 
-        self.content_profile = content_profile
-        self.format_profile = format_profile
-        self.success_profile = success_profile
-        self.error_profile = error_profile
-        self.pipeline = pipeline
-        self.scheduler = scheduler
-        self.time_code = TimeCode(content_profile, format_profile)
+        #
+        # Public members
+        #
         self.lines = 3
 
-    def render_queue(self, queue):
+        #
+        # Private members
+        #
+        self._content_profile = content_profile
+        self._format_profile = format_profile
+        self._success_profile = success_profile
+        self._error_profile = error_profile
+        self._pipeline = pipeline
+        self._scheduler = scheduler
+        self._time_code = TimeCode(content_profile, format_profile)
+
+    def render(self, line_length, elapsed):
+        line_length = max(line_length, 80)
+        size = 0
+        text = ''
+
+        session = str(self._pipeline.session_elements)
+        total = str(self._pipeline.total_elements)
+
+        # Format and calculate size for pipeline target and overall time code
+        size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
+        size += 8  # Size of time code
+        size += len(self._pipeline.project.name) + 1
+        text += self._time_code.render_time(elapsed)
+        text += ' ' + self._content_profile.fmt(self._pipeline.project.name)
+        text += ' ' + self._format_profile.fmt('(') + \
+                self._content_profile.fmt(session) + \
+                self._format_profile.fmt('/') + \
+                self._content_profile.fmt(total) + \
+                self._format_profile.fmt(')')
+
+        line1 = self._centered(text, size, line_length, '=')
+        size = 0
+        text = ''
+
+        # Format and calculate size for each queue progress
+        for queue in self._scheduler.queues:
+
+            # Add spacing
+            if self._scheduler.queues.index(queue) > 0:
+                size += 2
+                text += self._format_profile.fmt('→ ')
+
+            queue_text, queue_size = self._render_queue(queue)
+            size += queue_size
+            text += queue_text
+
+        line2 = self._centered(text, size, line_length, ' ')
+
+        size = 24
+        text = self._format_profile.fmt("~~~~~ ") + \
+            self._content_profile.fmt('Active Tasks') + \
+            self._format_profile.fmt(" ~~~~~")
+        line3 = self._centered(text, size, line_length, ' ')
+
+        return line1 + '\n' + line2 + '\n' + line3
+
+    ###################################################
+    #                 Private Methods                 #
+    ###################################################
+    def _render_queue(self, queue):
         processed = str(len(queue.processed_elements))
         skipped = str(len(queue.skipped_elements))
         failed = str(len(queue.failed_elements))
@@ -259,83 +328,56 @@ class StatusHeader():
         size = 5  # Space for the formatting '[', ':', ' ', ' ' and ']'
         size += len(queue.complete_name)
         size += len(processed) + len(skipped) + len(failed)
-        text = self.format_profile.fmt("(") + \
-            self.content_profile.fmt(queue.complete_name) + \
-            self.format_profile.fmt(":") + \
-            self.success_profile.fmt(processed) + ' ' + \
-            self.content_profile.fmt(skipped) + ' ' + \
-            self.error_profile.fmt(failed) + \
-            self.format_profile.fmt(")")
+        text = self._format_profile.fmt("(") + \
+            self._content_profile.fmt(queue.complete_name) + \
+            self._format_profile.fmt(":") + \
+            self._success_profile.fmt(processed) + ' ' + \
+            self._content_profile.fmt(skipped) + ' ' + \
+            self._error_profile.fmt(failed) + \
+            self._format_profile.fmt(")")
 
         return (text, size)
 
-    def render(self, line_length, elapsed):
-        line_length = max(line_length, 80)
-        size = 0
-        text = ''
-
-        session = str(self.pipeline.session_elements)
-        total = str(self.pipeline.total_elements)
-
-        # Format and calculate size for pipeline target and overall time code
-        size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
-        size += 8  # Size of time code
-        size += len(self.pipeline.project.name) + 1
-        text += self.time_code.render_time(elapsed)
-        text += ' ' + self.content_profile.fmt(self.pipeline.project.name)
-        text += ' ' + self.format_profile.fmt('(') + \
-                self.content_profile.fmt(session) + \
-                self.format_profile.fmt('/') + \
-                self.content_profile.fmt(total) + \
-                self.format_profile.fmt(')')
-
-        line1 = self.centered(text, size, line_length, '=')
-        size = 0
-        text = ''
-
-        # Format and calculate size for each queue progress
-        for queue in self.scheduler.queues:
-
-            # Add spacing
-            if self.scheduler.queues.index(queue) > 0:
-                size += 2
-                text += self.format_profile.fmt('→ ')
-
-            queue_text, queue_size = self.render_queue(queue)
-            size += queue_size
-            text += queue_text
-
-        line2 = self.centered(text, size, line_length, ' ')
-
-        size = 24
-        text = self.format_profile.fmt("~~~~~ ") + \
-            self.content_profile.fmt('Active Tasks') + \
-            self.format_profile.fmt(" ~~~~~")
-        line3 = self.centered(text, size, line_length, ' ')
-
-        return line1 + '\n' + line2 + '\n' + line3
-
-    def centered(self, text, size, line_length, fill):
+    def _centered(self, text, size, line_length, fill):
         remaining = line_length - size
         remaining -= 2
 
-        final_text = self.format_profile.fmt(fill * (remaining // 2)) + ' '
+        final_text = self._format_profile.fmt(fill * (remaining // 2)) + ' '
         final_text += text
-        final_text += ' ' + self.format_profile.fmt(fill * (remaining // 2))
+        final_text += ' ' + self._format_profile.fmt(fill * (remaining // 2))
 
         return final_text
 
 
-# A widget for formatting a job in the status area
-class StatusJob():
+# _StatusJob()
+#
+# A delegate object for rendering a job in the status area
+#
+# Args:
+#    element (Element): The element being processed
+#    action_name (str): The name of the action
+#    content_profile (Profile): Formatting profile for content text
+#    format_profile (Profile): Formatting profile for formatting text
+#    elapsed (datetime): The offset of the scheduler when this job is created
+#
+class _StatusJob():
 
     def __init__(self, element, action_name, content_profile, format_profile, elapsed):
-        self.offset = elapsed
-        self.element = element
-        self.action_name = action_name
-        self.content_profile = content_profile
-        self.format_profile = format_profile
-        self.time_code = TimeCode(content_profile, format_profile)
+
+        #
+        # Public members
+        #
+        self.element = element            # The Element
+        self.action_name = action_name    # The action name
+        self.size = None                  # The number of characters required to render
+
+        #
+        # Private members
+        #
+        self._offset = elapsed
+        self._content_profile = content_profile
+        self._format_profile = format_profile
+        self._time_code = TimeCode(content_profile, format_profile)
 
         # Calculate the size needed to display
         self.size = 10  # Size of time code with brackets
@@ -352,16 +394,16 @@ class StatusJob():
     #    elapsed (datetime): The session elapsed time offset
     #
     def render(self, padding, elapsed):
-        text = self.format_profile.fmt('[') + \
-            self.time_code.render_time(elapsed - self.offset) + \
-            self.format_profile.fmt(']')
+        text = self._format_profile.fmt('[') + \
+            self._time_code.render_time(elapsed - self._offset) + \
+            self._format_profile.fmt(']')
 
         # Add padding after the display name, before terminating ']'
         name = self.element._get_full_name() + (' ' * padding)
-        text += self.format_profile.fmt('[') + \
-            self.content_profile.fmt(self.action_name) + \
-            self.format_profile.fmt(':') + \
-            self.content_profile.fmt(name) + \
-            self.format_profile.fmt(']')
+        text += self._format_profile.fmt('[') + \
+            self._content_profile.fmt(self.action_name) + \
+            self._format_profile.fmt(':') + \
+            self._content_profile.fmt(name) + \
+            self._format_profile.fmt(']')
 
         return text
