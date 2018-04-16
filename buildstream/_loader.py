@@ -25,11 +25,10 @@ import tempfile
 import shutil
 
 from ._exceptions import LoadError, LoadErrorReason
-from ._message import Message, MessageType
 from . import Consistency
 from ._project import Project
 from . import _yaml
-
+from .element import Element
 from ._metaelement import MetaElement
 from ._metasource import MetaSource
 from ._profile import Topics, profile_start, profile_end
@@ -334,32 +333,20 @@ class Loader():
 
         # meta junction element
         meta_element = self.collect_element(filename)
-
         if meta_element.kind != 'junction':
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
 
-        element = meta_element.project.create_element(self.artifacts,
-                                                      meta_element)
+        element = Element._new_from_meta(meta_element, self.artifacts)
+        element._preflight()
 
-        os.makedirs(self.context.builddir, exist_ok=True)
-        basedir = tempfile.mkdtemp(prefix="{}-".format(element.normal_name), dir=self.context.builddir)
-
-        for meta_source in meta_element.sources:
-            source = meta_element.project.create_source(meta_source)
-            redundant_ref = source._load_ref()
-            if redundant_ref:
-                self._message(MessageType.WARN,
-                              "Ignoring redundant ref in junction element {}".format(element.name))
-
-            source._preflight()
-
+        for source in element.sources():
             # Handle the case where a subproject needs to be fetched
             #
             if source.get_consistency() == Consistency.RESOLVED:
                 if self.context._fetch_subprojects:
                     if ticker:
-                        ticker(filename, 'Fetching subproject from {} source'.format(meta_source.kind))
+                        ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
                     source.fetch()
                 else:
                     detail = "Try fetching the project with `bst fetch {}`".format(filename)
@@ -375,18 +362,21 @@ class Loader():
                                 "Subproject has no ref for junction: {}".format(filename),
                                 detail=detail)
 
-            source._stage(basedir)
+        # Stage sources
+        os.makedirs(self.context.builddir, exist_ok=True)
+        basedir = tempfile.mkdtemp(prefix="{}-".format(element.normal_name), dir=self.context.builddir)
+        element._stage_sources_at(basedir, mount_workspaces=False)
 
+        # Load the project
         project_dir = os.path.join(basedir, element.path)
-
         try:
             project = Project(project_dir, self.context, junction=element)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 raise LoadError(reason=LoadErrorReason.INVALID_JUNCTION,
                                 message="Could not find the project.conf file for {}. "
-                                        "Expecting a project at path '{}' within {}"
-                                .format(element, element.path or '.', source)) from e
+                                        "Expecting a project at path '{}'"
+                                .format(element, element.path or '.')) from e
             else:
                 raise
 
@@ -648,12 +638,3 @@ class Loader():
         if self.tempdir.startswith(self.context.builddir + os.sep):
             if os.path.exists(self.tempdir):
                 shutil.rmtree(self.tempdir)
-
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.message(
-            Message(None, message_type, message, **args))
