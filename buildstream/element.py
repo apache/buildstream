@@ -304,6 +304,8 @@ class Element(Plugin):
 
         By default, this method does nothing, but may be overriden to
         allow configure-like commands.
+
+        *Since: 1.2*
         """
         pass
 
