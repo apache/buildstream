@@ -281,3 +281,112 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
 
     # Assert that it's cached now
     assert cli.get_element_state(project, 'junction-dep.bst') == 'cached'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_junction(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to build it, this should automatically result in fetching
+    # the junction itself at load time.
+    result = cli.run(project=project, args=['build', 'junction-dep.bst'])
+    result.assert_success()
+
+    # Assert that it's cached now
+    assert cli.get_element_state(project, 'junction-dep.bst') == 'cached'
+
+    # Now check it out
+    result = cli.run(project=project, args=[
+        'checkout', 'junction-dep.bst', checkout
+    ])
+    result.assert_success()
+
+    # Assert the content of /etc/animal.conf
+    filename = os.path.join(checkout, 'etc', 'animal.conf')
+    assert os.path.exists(filename)
+    with open(filename, 'r') as f:
+        contents = f.read()
+    assert contents == 'animal=Pony\n'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+    workspace = os.path.join(cli.directory, 'workspace')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    # Now open a workspace on the junction
+    #
+    result = cli.run(project=project, args=['workspace', 'open', 'junction.bst', workspace])
+    result.assert_success()
+    filename = os.path.join(workspace, 'files', 'etc-files', 'etc', 'animal.conf')
+
+    # Assert the content of /etc/animal.conf in the workspace
+    assert os.path.exists(filename)
+    with open(filename, 'r') as f:
+        contents = f.read()
+    assert contents == 'animal=Pony\n'
+
+    # Modify the content of the animal.conf in the workspace
+    with open(filename, 'w') as f:
+        f.write('animal=Horsy\n')
+
+    # Now try to build it, this should automatically result in fetching
+    # the junction itself at load time.
+    result = cli.run(project=project, args=['build', 'junction-dep.bst'])
+    result.assert_success()
+
+    # Assert that it's cached now
+    assert cli.get_element_state(project, 'junction-dep.bst') == 'cached'
+
+    # Now check it out
+    result = cli.run(project=project, args=[
+        'checkout', 'junction-dep.bst', checkout
+    ])
+    result.assert_success()
+
+    # Assert the workspace modified content of /etc/animal.conf
+    filename = os.path.join(checkout, 'etc', 'animal.conf')
+    assert os.path.exists(filename)
+    with open(filename, 'r') as f:
+        contents = f.read()
+    assert contents == 'animal=Horsy\n'
