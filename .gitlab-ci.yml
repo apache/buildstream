@@ -191,6 +191,7 @@ docs:
 #
 coverage:
   stage: post
+  coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
     - cd dist && ./unpack.sh && cd buildstream
     - pip3 install --no-index .
