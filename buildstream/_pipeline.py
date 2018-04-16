@@ -30,6 +30,7 @@ from tempfile import TemporaryDirectory
 from ._exceptions import PipelineError, ImplError, BstError
 from ._message import Message, MessageType
 from ._loader import Loader
+from .element import Element
 from . import Consistency
 from . import Scope
 from . import _site
@@ -80,8 +81,6 @@ class Pipeline():
         #
         # Private members
         #
-        self._resolved_elements = {}
-        self._redundant_refs = []
         self._artifacts = None
         self._loader = None
         self._exceptions = None
@@ -99,18 +98,21 @@ class Pipeline():
         with self.context.timed_activity("Loading pipeline", silent_nested=True):
             meta_elements = self._loader.load(rewritable, None)
 
-        # Resolve the real elements now that we've resolved the project
+        # Resolve the real elements now that we've loaded the project
         with self.context.timed_activity("Resolving pipeline"):
-            resolved_elements = [self._resolve(meta_element)
-                                 for meta_element in meta_elements]
+            resolved_elements = [
+                Element._new_from_meta(meta, self._artifacts)
+                for meta in meta_elements
+            ]
 
         # Now warn about any redundant source references which may have
         # been discovered in the resolve() phase.
-        if self._redundant_refs:
+        redundant_refs = Element._get_redundant_source_refs()
+        if redundant_refs:
             detail = "The following inline specified source references will be ignored:\n\n"
             lines = [
                 "{}:{}".format(source._get_provenance(), ref)
-                for source, ref in self._redundant_refs
+                for source, ref in redundant_refs
             ]
             detail += "\n".join(lines)
             self._message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
@@ -170,6 +172,9 @@ class Pipeline():
     def cleanup(self):
         if self._loader:
             self._loader.cleanup()
+
+        # Reset the element loader state
+        Element._reset_load_state()
 
     # deps_elements()
     #
@@ -620,40 +625,6 @@ class Pipeline():
             track_elements = self._filter_cross_junctions(track_elements)
 
         return track_elements
-
-    # _resolve()
-    #
-    # Instantiates plugin-provided Element and Source instances
-    # from MetaElement and MetaSource objects
-    #
-    # This has a side effect of populating `self._redundant_refs` so
-    # we can later print a warning
-    #
-    def _resolve(self, meta_element):
-        if meta_element in self._resolved_elements:
-            return self._resolved_elements[meta_element]
-
-        element = meta_element.project.create_element(self._artifacts, meta_element)
-
-        self._resolved_elements[meta_element] = element
-
-        # resolve dependencies
-        for dep in meta_element.dependencies:
-            element._add_dependency(self._resolve(dep), Scope.RUN)
-        for dep in meta_element.build_dependencies:
-            element._add_dependency(self._resolve(dep), Scope.BUILD)
-
-        # resolve sources
-        for meta_source in meta_element.sources:
-            source = meta_element.project.create_source(meta_source)
-            redundant_ref = source._load_ref()
-            element._add_source(source)
-
-            # Collect redundant refs for a warning message
-            if redundant_ref is not None:
-                self._redundant_refs.append((source, redundant_ref))
-
-        return element
 
     # _prefilght()
     #

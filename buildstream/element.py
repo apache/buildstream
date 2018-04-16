@@ -154,8 +154,10 @@ class Element(Plugin):
     All elements derive from this class, this interface defines how
     the core will be interacting with Elements.
     """
-    __defaults = {}          # The defaults from the yaml file and project
-    __defaults_set = False   # Flag, in case there are no defaults at all
+    __defaults = {}               # The defaults from the yaml file and project
+    __defaults_set = False        # Flag, in case there are no defaults at all
+    __instantiated_elements = {}  # A hash of Element by MetaElement
+    __redundant_source_refs = []  # A list of (source, ref) tuples which were redundantly specified
 
     BST_ARTIFACT_VERSION = 0
     """The element plugin's artifact version
@@ -851,22 +853,69 @@ class Element(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
-    # _add_source():
-    #
-    # Adds a source, for pipeline construction
-    #
-    def _add_source(self, source):
-        self.__sources.append(source)
 
-    # _add_dependency()
+    # _new_from_meta():
     #
-    # Adds a dependency, for pipeline construction
+    # Recursively instantiate a new Element instance, it's sources
+    # and it's dependencies from a meta element.
     #
-    def _add_dependency(self, dependency, scope):
-        if scope != Scope.RUN:
-            self.__build_dependencies.append(dependency)
-        if scope != Scope.BUILD:
-            self.__runtime_dependencies.append(dependency)
+    # Args:
+    #    artifacts (ArtifactCache): The artifact cache
+    #    meta (MetaElement): The meta element
+    #
+    # Returns:
+    #    (Element): A newly created Element instance
+    #
+    @classmethod
+    def _new_from_meta(cls, meta, artifacts):
+
+        if meta in cls.__instantiated_elements:
+            return cls.__instantiated_elements[meta]
+
+        project = meta.project
+        element = project.create_element(artifacts, meta)
+        cls.__instantiated_elements[meta] = element
+
+        # Instantiate sources
+        for meta_source in meta.sources:
+            source = project.create_source(meta_source)
+            redundant_ref = source._load_ref()
+            element.__sources.append(source)
+
+            # Collect redundant refs which occurred at load time
+            if redundant_ref is not None:
+                cls.__redundant_source_refs.append((source, redundant_ref))
+
+        # Instantiate dependencies
+        for meta_dep in meta.dependencies:
+            dependency = Element._new_from_meta(meta_dep, artifacts)
+            element.__runtime_dependencies.append(dependency)
+        for meta_dep in meta.build_dependencies:
+            dependency = Element._new_from_meta(meta_dep, artifacts)
+            element.__build_dependencies.append(dependency)
+
+        return element
+
+    # _get_redundant_source_refs()
+    #
+    # Fetches a list of (Source, ref) tuples of all the Sources
+    # which were loaded with a ref specified in the element declaration
+    # for projects which use project.refs ref-storage.
+    #
+    # This is used to produce a warning
+    @classmethod
+    def _get_redundant_source_refs(cls):
+        return cls.__redundant_source_refs
+
+    # _reset_load_state()
+    #
+    # This is called by Pipeline.cleanup() and is used to
+    # reset the loader state between multiple sessions.
+    #
+    @classmethod
+    def _reset_load_state(cls):
+        cls.__instantiated_elements = {}
+        cls.__redundant_source_refs = []
 
     # _get_consistency()
     #
