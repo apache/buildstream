@@ -171,16 +171,15 @@ class Project():
     # Instantiate and return an element
     #
     # Args:
-    #    kind (str): The kind of Element to create
     #    artifacts (ArtifactCache): The artifact cache
-    #    meta (object): The loaded MetaElement
+    #    meta (MetaElement): The loaded MetaElement
     #
     # Returns:
     #    (Element): A newly created Element object of the appropriate kind
     #
-    def create_element(self, kind, artifacts, meta):
-        element = self._element_factory.create(kind, self._context, self, artifacts, meta)
-        version = self._element_format_versions.get(kind, 0)
+    def create_element(self, artifacts, meta):
+        element = self._element_factory.create(self._context, self, artifacts, meta)
+        version = self._element_format_versions.get(meta.kind, 0)
         self._assert_plugin_format(element, version)
         return element
 
@@ -189,15 +188,14 @@ class Project():
     # Instantiate and return a Source
     #
     # Args:
-    #    kind (str): The kind of Source to create
-    #    meta (object): The loaded MetaSource
+    #    meta (MetaSource): The loaded MetaSource
     #
     # Returns:
     #    (Source): A newly created Source object of the appropriate kind
     #
-    def create_source(self, kind, meta):
-        source = self._source_factory.create(kind, self._context, self, meta)
-        version = self._source_format_versions.get(kind, 0)
+    def create_source(self, meta):
+        source = self._source_factory.create(self._context, self, meta)
+        version = self._source_format_versions.get(meta.kind, 0)
         self._assert_plugin_format(source, version)
         return source
 

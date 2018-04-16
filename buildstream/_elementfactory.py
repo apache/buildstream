@@ -42,7 +42,6 @@ class ElementFactory(PluginContext):
     # objects on demand for a given pipeline.
     #
     # Args:
-    #    kind (str): The kind of Element to create
     #    context (object): The Context object for processing
     #    project (object): The project object
     #    artifacts (ArtifactCache): The artifact cache
@@ -54,6 +53,6 @@ class ElementFactory(PluginContext):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the element itself took issue with the config)
     #
-    def create(self, kind, context, project, artifacts, meta):
-        element_type, default_config = self.lookup(kind)
+    def create(self, context, project, artifacts, meta):
+        element_type, default_config = self.lookup(meta.kind)
         return element_type(context, project, artifacts, meta, default_config)

@@ -339,16 +339,14 @@ class Loader():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
 
-        element = meta_element.project.create_element(meta_element.kind,
-                                                      self.artifacts,
+        element = meta_element.project.create_element(self.artifacts,
                                                       meta_element)
 
         os.makedirs(self.context.builddir, exist_ok=True)
         basedir = tempfile.mkdtemp(prefix="{}-".format(element.normal_name), dir=self.context.builddir)
 
         for meta_source in meta_element.sources:
-            source = meta_element.project.create_source(meta_source.kind,
-                                                        meta_source)
+            source = meta_element.project.create_source(meta_source)
             redundant_ref = source._load_ref()
             if redundant_ref:
                 self._message(MessageType.WARN,
