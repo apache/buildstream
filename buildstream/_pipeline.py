@@ -303,10 +303,6 @@ class Pipeline():
     #                      which are required to build the target.
     #
     def build(self, scheduler, *, build_all=False):
-        unused_workspaces = self._collect_unused_workspaces()
-        if unused_workspaces:
-            self._message(MessageType.WARN, "Unused workspaces",
-                          detail="\n".join([el for el in unused_workspaces]))
 
         if build_all:
             plan = self.dependencies(Scope.ALL)
@@ -633,19 +629,6 @@ class Pipeline():
     def _preflight(self):
         for element in self.dependencies(Scope.ALL):
             element._preflight()
-
-    # _collect_unused_workspaces()
-    #
-    # Collect a list of any workspaces which are unused by the pipeline
-    #
-    def _collect_unused_workspaces(self):
-        unused_workspaces = []
-        for element_name, _ in self.project.workspaces.list():
-            for target in self.targets:
-                element = target.search(Scope.ALL, element_name)
-                if element is None:
-                    unused_workspaces.append(element_name)
-        return unused_workspaces
 
     # _initialize_remote_caches()
     #
