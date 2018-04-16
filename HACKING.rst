@@ -212,11 +212,6 @@ Documenting BuildStream
 BuildStream starts out as a documented project from day one and uses
 sphinx to document itself.
 
-Useful links:
-
-* Sphinx documentation: http://www.sphinx-doc.org/en/1.4.8/contents.html
-* rst primer: http://www.sphinx-doc.org/en/stable/rest.html
-
 
 Documentation formatting policy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -235,6 +230,8 @@ The BuildStream documentation style is as follows:
 * Cross references should be of the form ``:role:`target```.
 
   * To cross reference arbitrary locations with, for example, the anchor ``_anchor_name``, you must give the link an explicit title: ``:ref:`Link text <anchor_name>```. Note that the "_" prefix is not required.
+
+Useful links:
 
 For further information, please see the `Sphinx Documentation <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_.
 
