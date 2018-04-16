@@ -344,6 +344,15 @@ class Source(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # Wrapper around preflight() method
+    #
+    def _preflight(self):
+        try:
+            self.preflight()
+        except BstError as e:
+            # Prepend provenance to the error
+            raise SourceError("{}: {}".format(self, e), reason=e.reason) from e
+
     # Update cached consistency for a source
     #
     # This must be called whenever the state of a source may have changed.

@@ -21,7 +21,7 @@ def test_missing_patch(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])
-    result.assert_main_error(ErrorDomain.PIPELINE, 'patch-no-exist')
+    result.assert_main_error(ErrorDomain.SOURCE, 'patch-no-exist')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -35,7 +35,7 @@ def test_non_regular_file_patch(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'show', 'irregular.bst'
     ])
-    result.assert_main_error(ErrorDomain.PIPELINE, "patch-not-a-file")
+    result.assert_main_error(ErrorDomain.SOURCE, "patch-not-a-file")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))

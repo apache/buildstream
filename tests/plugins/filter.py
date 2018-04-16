@@ -63,25 +63,25 @@ def test_filter_deps_ok(datafiles, cli):
 def test_filter_forbid_sources(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['build', 'forbidden-source.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, 'element-forbidden-sources')
+    result.assert_main_error(ErrorDomain.ELEMENT, 'element-forbidden-sources')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_forbid_multi_bdep(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['build', 'forbidden-multi-bdep.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, 'filter-bdepend-wrong-count')
+    result.assert_main_error(ErrorDomain.ELEMENT, 'filter-bdepend-wrong-count')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_forbid_no_bdep(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['build', 'forbidden-no-bdep.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, 'filter-bdepend-wrong-count')
+    result.assert_main_error(ErrorDomain.ELEMENT, 'filter-bdepend-wrong-count')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_forbid_also_rdep(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['build', 'forbidden-also-rdep.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, 'filter-bdepend-also-rdepend')
+    result.assert_main_error(ErrorDomain.ELEMENT, 'filter-bdepend-also-rdepend')

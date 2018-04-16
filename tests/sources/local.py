@@ -21,7 +21,7 @@ def test_missing_file(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.SOURCE, None)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))

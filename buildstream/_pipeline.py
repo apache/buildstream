@@ -662,17 +662,8 @@ class Pipeline():
     # Preflights all the plugins in the pipeline
     #
     def _preflight(self):
-        for plugin in self.dependencies(Scope.ALL, include_sources=True):
-            try:
-                plugin._preflight()
-            except BstError as e:
-                # Prepend the plugin identifier string to the error raised by
-                # the plugin so that users can more quickly identify the issue
-                # that a given plugin is encountering.
-                #
-                # Propagate the original error reason for test case purposes
-                #
-                raise PipelineError("{}: {}".format(plugin, e), reason=e.reason) from e
+        for element in self.dependencies(Scope.ALL):
+            element._preflight()
 
     # _collect_unused_workspaces()
     #

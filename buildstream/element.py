@@ -1093,7 +1093,8 @@ class Element(Plugin):
 
     # _preflight():
     #
-    # A wrapper for calling the abstract preflight() method.
+    # A wrapper for calling the abstract preflight() method on
+    # the element and it's sources.
     #
     def _preflight(self):
         if self.BST_FORBID_RDEPENDS:
@@ -1106,7 +1107,15 @@ class Element(Plugin):
                 raise ElementError("{}: Sources are forbidden for '{}' elements"
                                    .format(self, self.get_kind()), reason="element-forbidden-sources")
 
-        self.preflight()
+        try:
+            self.preflight()
+        except BstError as e:
+            # Prepend provenance to the error
+            raise ElementError("{}: {}".format(self, e), reason=e.reason) from e
+
+        # Preflight the sources
+        for source in self.sources():
+            source._preflight()
 
     # _schedule_tracking():
     #
