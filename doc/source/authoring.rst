@@ -1,6 +1,6 @@
 
 
-.. _main_authoring:
+.. _authoring:
 
 Authoring Projects
 ==================

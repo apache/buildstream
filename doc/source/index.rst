@@ -27,7 +27,6 @@ dependencies.
    :maxdepth: 2
 
    main_using
-   main_authoring
    artifacts
 
 
