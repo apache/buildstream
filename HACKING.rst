@@ -215,6 +215,27 @@ Useful links:
 * rst primer: http://www.sphinx-doc.org/en/stable/rest.html
 
 
+Documentation formatting policy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The BuildStream documentation style is as follows:
+
+* Titles and headings require two leading empty lines above them. Only the first word should be capitalized.
+
+  * If there is an ``.. _internal_link`` anchor, there should be two empty lines above the anchor, followed by one leading empty line.
+
+* Within a section, paragraphs should be separated by one empty line.
+
+* Notes are defined using: ``.. note::`` blocks, followed by an empty line and then indented (3 spaces) text.
+
+* Code blocks are defined using: ``.. code:: LANGUAGE`` blocks, followed by an empty line and then indented (3 spaces) text. Note that the default language is `python`.
+
+* Cross references should be of the form ``:role:`target```.
+
+  * To cross reference arbitrary locations with, for example, the anchor ``_anchor_name``, you must give the link an explicit title: ``:ref:`Link text <anchor_name>```. Note that the "_" prefix is not required.
+
+For further information, please see the `Sphinx Documentation <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_.
+
+
 Building Docs
 ~~~~~~~~~~~~~
 The documentation build is not integrated into the ``setup.py`` and is
