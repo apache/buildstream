@@ -18,8 +18,8 @@ Here is a rather complete example using the autotools element kind and git sourc
 
    # Specify some dependencies
    depends:
-   - elements/element1.bst
-   - elements/element2.bst
+   - element1.bst
+   - element2.bst
 
    # Specify the source which should be built
    sources:
@@ -80,6 +80,8 @@ To refer to a third party plugin, prefix the plugin with its package, for exampl
    kind: buildstream-plugins:dpkg_build
 
 
+.. _format_depends:
+
 Depends
 ~~~~~~~
 
@@ -87,13 +89,14 @@ Depends
 
    # Specify some dependencies
    depends:
-   - elements/element1.bst
-   - elements/element2.bst
+   - element1.bst
+   - element2.bst
 
-Relationships between elements are specified with the ``depends`` attribute. Element
-definitions may depend on other elements by specifying the project relative path
-to the elements on which they depend here. See `Dependencies`_ for more information
-on the dependency model.
+Relationships between elements are specified with the ``depends`` attribute. Elements
+may depend on other elements by specifying the :ref:`element path <project_element_path>`
+relative filename to the elements they depend on here.
+
+See :ref:`format_dependencies` for more information on the dependency model.
 
 
 .. _format_sources:
@@ -154,7 +157,7 @@ Variables
 Variables can be declared or overridden from an element. Variables can also be
 declared and overridden in the :ref:`projectconf`
 
-See `Using Variables`_ below for a more in depth discussion on variables in BuildStream.
+See :ref:`format_variables` below for a more in depth discussion on variables in BuildStream.
 
 
 .. _format_environment:
@@ -265,17 +268,14 @@ dependency model.
 Expressing Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~
 Dependencies in BuildStream are parameterizable objects, however as demonstrated
-in the above example, they can also be expressed as strings as a convenience
-shorthand whenever the default dependency attributes are suitable.
+in the :ref:`above example <format_depends>`, they can also be expressed as simple
+strings as a convenience shorthand in most cases, whenever the default dependency
+attributes are suitable.
 
-Shorthand:
+.. note::
 
-.. code:: yaml
-
-   # Shorthand Dependencies
-   depends:
-   - elements/foo.bst
-   - elements/bar.bst
+   Note the order in which element dependencies are declared in the ``depends``
+   list is not meaningful.
 
 Dependency dictionary:
 
@@ -283,35 +283,59 @@ Dependency dictionary:
 
    # Fully specified dependency
    depends:
-   - filename: elements/foo.bst
+   - filename: foo.bst
      type: build
-     junction: elements/baseproject.bst
+     junction: baseproject.bst
 
-The ``type`` attribute can be used to express the dependency type.
+Attributes:
 
-The ``junction`` attribute can be used to depend on elements in other projects.
-See :mod:`junction <elements.junction>`.
+* ``filename``
 
-.. note::
+  The :ref:`element path <project_element_path>` relative filename of the element to
+  depend on in the project.
 
-   The ``junction`` attribute is available since :ref:`format version 1 <project_format_version>`
+* ``type``
 
+  This attribute is used to express the :ref:`dependency type <format_dependencies_types>`.
+
+* ``junction``
+
+  This attribute can be used to depend on elements in other projects.
+
+  If a junction is specified, then it must be an :ref:`element path <project_element_path>`
+  relative filename of the junction element in the project.
+
+  In the case that a *junction* is specified, the ``filename`` attribute indicates an element
+  in the *junctioned project*.
+
+  See :mod:`junction <elements.junction>`.
+
+  .. note::
+
+     The ``junction`` attribute is available since :ref:`format version 1 <project_format_version>`
+
+
+.. _format_dependencies_types:
 
 Dependency Types
 ~~~~~~~~~~~~~~~~
 The dependency ``type`` attribute defines what the dependency is required for
 and is essential to how BuildStream plots a build plan.
 
-There are two types which one can specify for a dependency, ``build`` and ``runtime``.
+There are two types which one can specify for a dependency:
 
-A ``build`` dependency type states that the given element's product must
-be staged in order to build the depending element. Depending on an element
-which has ``build`` dependencies will not implicitly depend on that element's
-``build`` dependencies.
+* ``build``
 
-A ``runtime`` dependency type states that the given element's product
-must be present for the depending element to function. An element's
-``runtime`` dependencies need not be staged in order to build the element.
+  A ``build`` dependency type states that the given element's product must
+  be staged in order to build the depending element. Depending on an element
+  which has ``build`` dependencies will not implicitly depend on that element's
+  ``build`` dependencies.
+
+* ``runtime``
+
+  A ``runtime`` dependency type states that the given element's product
+  must be present for the depending element to function. An element's
+  ``runtime`` dependencies need not be staged in order to build the element.
 
 If ``type`` is not specified, then it is assumed that the dependency is
 required both at build time and runtime.

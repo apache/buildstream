@@ -73,6 +73,8 @@ to support a new feature.
    under the same global ``format-version`` described here.
 
 
+.. _project_element_path:
+
 Element Path
 ~~~~~~~~~~~~
 To allow the user to structure their project nicely, BuildStream
