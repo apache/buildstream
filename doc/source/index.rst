@@ -27,14 +27,14 @@ dependencies.
    :maxdepth: 2
 
    main_using
-   artifacts
 
 
 .. toctree::
    :maxdepth: 2
 
+   main_general
    main_core
-   modules
+   
 
 .. toctree::
    :maxdepth: 2
