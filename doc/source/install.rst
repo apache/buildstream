@@ -1,6 +1,6 @@
 
-.. _installing:
 
+.. _install:
 
 Installing BuildStream
 ======================
@@ -12,10 +12,6 @@ BuildStream requires the following base system requirements:
 * bubblewrap
 * PyGObject introspection bindings
 * psutil python library (so you don't have to install GCC and python-devel to build it yourself)
-
-If your system cannot provide the base system requirements for BuildStream,
-then we have some instructions which can help you get started
-:ref:`using BuildStream with Docker <docker>`.
 
 
 Installing from source (recommended)

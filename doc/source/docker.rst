@@ -1,8 +1,11 @@
 
+
 .. _docker:
 
 BuildStream inside Docker
-=========================
+-------------------------
+If your system cannot provide the base system requirements for BuildStream, then it is possible to run buildstream within a Docker image.
+
 The BuildStream project provides
 `Docker images <https://hub.docker.com/r/buildstream/buildstream-fedora>`_
 containing BuildStream and its dependencies.

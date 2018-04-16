@@ -20,8 +20,7 @@ dependencies.
 .. toctree::
    :maxdepth: 2
 
-   install
-   docker
+   main_install
 
 
 .. toctree::

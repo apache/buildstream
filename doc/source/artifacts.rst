@@ -2,8 +2,8 @@
 .. _artifacts:
 
 
-Artifact Caches
-===============
+Installing an artifact server
+=============================
 BuildStream caches the results of builds in a local artifact cache, and will
 avoid building an element if there is a suitable build already present in the
 local artifact cache.
@@ -67,7 +67,7 @@ Installing the receiver
 ~~~~~~~~~~~~~~~~~~~~~~~
 You will also need to install BuildStream on the artifact server in order
 to receive uploaded artifacts over ssh. Follow the instructions for installing
-BuildStream :ref:`here <installing>`
+BuildStream :ref:`here <install>`
 
 When installing BuildStream on the artifact server, it must be installed
 in a system wide location, with ``pip3 install .`` in the BuildStream
