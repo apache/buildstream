@@ -80,8 +80,8 @@ Fedora
 For recent fedora systems, the following line should get you the system
 requirements you need::
 
-  dnf install -y bubblewrap fuse fuse-libs git python3-gobject \
-                 python3-psutil ostree python3-ruamel-yaml
+  dnf install -y fuse ostree bubblewrap git \
+                 python3 python3-pip python3-gobject python3-psutil
 
 
 Installing
