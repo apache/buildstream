@@ -6,9 +6,13 @@ BuildStream
 What is BuildStream?
 ====================
 
-BuildStream is an Free Software tool for building/integrating software stacks.
-It supports multiple build-systems (e.g. autotools, cmake, cpan, distutils, make,
-meson, qmake), covers many programming languages, and can create outputs in a
+BuildStream is a Free Software tool for building/integrating software stacks.
+It takes inspiration, lessons and use-cases from various projects including
+OBS, Reproducible Builds, Yocto, Baserock, Buildroot, Aboriginal, GNOME Continuous,
+JHBuild, Flatpak Builder and Android repo.
+
+BuildStream supports multiple build-systems (e.g. autotools, cmake, cpan, distutils,
+make, meson, qmake), covers many programming languages, and can create outputs in a
 range of packaging formats, for multiple platforms and chipsets.
 
 Why should I use BuildStream?
@@ -58,10 +62,10 @@ BuildStream operates on a set of YAML files (.bst files), as follows:
 * evaluates the version information and build instructions to calculate a build
   graph for the target(s) and all dependencies and unique cache-keys for each
   element
-* retrieves elements from cache if they are already built, or builds them using
-  the instructions declared in the .bst files
-* transforms and/or deploys the resulting target(s) based on the instructions
-  declared in the .bst files.
+* retrieves elements from cache if they are already built, or builds them in a
+  sandboxed environment using the instructions declared in the .bst files
+* transforms/configures and/or deploys the resulting target(s) based on the
+  instructions declared in the .bst files.
 
 How can I get started?
 ======================
