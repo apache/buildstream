@@ -2,7 +2,7 @@
 
 .. _projectrefs:
 
-The project.refs File
+The project.refs file
 =====================
 If one has elected to store source references in a single ``project.refs``
 file, then it will be stored at the toplevel of your project directory
@@ -12,7 +12,7 @@ using the :ref:`ref-storage configuration <project_format_ref_storage>`
 
 .. _projectrefs_basics:
 
-Basic Behavior
+Basic behavior
 --------------
 When a ``project.refs`` file is in use, any source references found
 in the :ref:`inline source declarations <format_sources>` are considered

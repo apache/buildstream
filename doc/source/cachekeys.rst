@@ -2,7 +2,7 @@
 .. _cachekeys:
 
 
-Cache Keys
+Cache keys
 ==========
 
 Cache keys for artifacts are generated from the inputs of the build process
@@ -19,7 +19,7 @@ includes:
 * Dependencies (depending on cache key type, see below)
 * Public data
 
-Cache Key Types
+Cache key types
 ---------------
 There are two types of cache keys in BuildStream, ``strong`` and ``weak``.
 
@@ -42,7 +42,7 @@ or the environment changes but it will not change when a dependency is updated.
 For elements without build dependencies the ``strong`` cache key is identical
 to the ``weak`` cache key.
 
-Strict Build Plan
+Strict build plan
 -----------------
 This is the default build plan that exclusively uses ``strong`` cache keys
 for the core functionality. An element's cache key can be calculated when
@@ -60,7 +60,7 @@ and non-strict build plans. If the artifact cache already contains an
 artifact with the same ``weak`` cache key, it's replaced. Thus, non-strict
 builds always use the latest artifact available for a given ``weak`` cache key.
 
-Non-strict Build Plan
+Non-strict build plan
 ---------------------
 The non-strict build plan disables the time-consuming automatic rebuild of
 reverse dependencies at the cost of dropping the reproducibility benefits.

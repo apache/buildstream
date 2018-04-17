@@ -10,7 +10,7 @@ other more elaborate details about BuildStream internals.
 
 .. _core_framework:
 
-Core Framework
+Core framework
 --------------
 The core public APIs are of interest to anyone who wishes to
 implement custom :mod:`Element <buildstream.element>` or

@@ -2,7 +2,7 @@
 .. _public:
 
 
-Builtin Public Data
+Builtin public data
 ===================
 
 Elements can provide public data which can be read by other elements
@@ -18,7 +18,7 @@ In this section we will describe the public data in the ``bst`` domain.
 
 .. _public_integration:
 
-Integration Commands
+Integration commands
 --------------------
 
 .. code:: yaml
@@ -47,7 +47,7 @@ any build commands.
 
 .. _public_split_rules:
 
-Split Rules
+Split rules
 -----------
 
 .. code:: yaml

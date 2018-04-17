@@ -1,6 +1,6 @@
 
-.. _artifacts:
 
+.. _artifacts:
 
 Installing an artifact server
 =============================
@@ -180,7 +180,7 @@ E.g., create ``/etc/cron.d/artifacts`` with the following content:
    */5 * * * * artifacts ostree --repo=/home/artifacts/artifacts summary -u
 
 
-User Configuration
+User configuration
 ~~~~~~~~~~~~~~~~~~
 The user configuration for artifacts is documented with the rest
 of the :ref:`user configuration documentation <config>`.
@@ -203,7 +203,7 @@ then a user can use the following user configuration:
      #push: true
 
 
-Authenticating Users
+Authenticating users
 ~~~~~~~~~~~~~~~~~~~~
 In order to give permission to a given user to upload
 artifacts, simply use the regular ``ssh`` method.

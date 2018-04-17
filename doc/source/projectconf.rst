@@ -2,7 +2,7 @@
 .. _projectconf:
 
 
-Project Configuration
+Project configuration
 =====================
 The project configuration file should be named ``project.conf`` and
 be located at the project root. It holds information such as Source
@@ -22,7 +22,7 @@ Essentials
 
 .. _project_format_name:
 
-Project Name
+Project name
 ~~~~~~~~~~~~
 The project name is a unique symbol for your project and will
 be used to distinguish your project from others in user preferences,
@@ -45,7 +45,7 @@ of your project.
 
 .. _project_format_version:
 
-Format Version
+Format version
 ~~~~~~~~~~~~~~
 The BuildStream format is guaranteed to be backwards compatible
 with any earlier releases. The project's minimum required format
@@ -75,7 +75,7 @@ to support a new feature.
 
 .. _project_element_path:
 
-Element Path
+Element path
 ~~~~~~~~~~~~
 To allow the user to structure their project nicely, BuildStream
 allows the user to specify a project subdirectory where element
@@ -91,7 +91,7 @@ elements are referred to in a ``.bst`` file or on the command line.
 
 .. _project_format_ref_storage:
 
-Ref Storage
+Ref storage
 ~~~~~~~~~~~
 By default, BuildStream expects to read and write source references
 directly in the :ref:`source declaration <format_sources>`, but this
@@ -125,7 +125,7 @@ following to your ``project.conf``:
    The ``ref-storage`` configuration is available since :ref:`format version 5 <project_format_version>`
 
 
-Fail on Overlaps
+Fail on overlaps
 ~~~~~~~~~~~~~~~~
 When multiple elements are staged, there's a possibility that different
 elements will try and stage different versions of the same file.
@@ -143,7 +143,7 @@ and the order that the elements were overlapped.
   fail-on-overlap: true
 
 
-Source Aliases
+Source aliases
 ~~~~~~~~~~~~~~
 In order to abstract the download location of source code and
 any assets which need to be downloaded, and also as a matter of
@@ -177,7 +177,7 @@ for more detail.
 
 .. _project_essentials_artifacts:
 
-Artifact Server
+Artifact server
 ~~~~~~~~~~~~~~~
 If you have setup an :ref:`artifact server <artifacts>` for your
 project then it is convenient to configure this in your ``project.conf``
@@ -197,7 +197,7 @@ will have higher priority than later ones.
 
 .. _project_plugins:
 
-External Plugins
+External plugins
 ----------------
 If your project makes use of any custom :mod:`Element <buildstream.element>` or
 :mod:`Source <buildstream.source>` plugins, then the project must inform BuildStream
@@ -206,7 +206,7 @@ of the plugins it means to make use of and the origin from which they can be loa
 Note that plugins with the same name from different origins are not permitted.
 
 
-Local Plugins
+Local plugins
 ~~~~~~~~~~~~~
 Local plugins are expected to be found in a subdirectory of the actual
 BuildStream project. :mod:`Element <buildstream.element>` and
@@ -233,7 +233,7 @@ plugin.
        mysource: 0
 
 
-Pip Plugins
+Pip plugins
 ~~~~~~~~~~~
 Plugins loaded from the ``pip`` origin are expected to be installed
 separately on the host operating system using python's package management
@@ -287,7 +287,7 @@ Users can configure those options when invoking BuildStream with the
    underscores, and may not start with a leading digit.
 
 
-Common Properties
+Common properties
 ~~~~~~~~~~~~~~~~~
 All option types accept the following common attributes
 
@@ -471,7 +471,7 @@ Architecture options can be tested with the same expressions
 as other Enumeration options.
 
 
-Element Mask
+Element mask
 ~~~~~~~~~~~~
 The ``element-mask`` option type is a special Flags option
 which automatically allows only element names as values.
@@ -500,7 +500,7 @@ same syntax as other Flag options.
 
 .. _project_defaults:
 
-Element Default Configuration
+Element default configuration
 -----------------------------
 The ``project.conf`` plays a role in defining elements by
 providing default values and also by overriding values declared
@@ -549,7 +549,7 @@ the number of jobs for a given build without effecting the resulting
 cache key.
 
 
-Split Rules
+Split rules
 ~~~~~~~~~~~
 The project wide :ref:`split rules <public_split_rules>` defaults can
 be specified here.
@@ -570,7 +570,7 @@ be specified here.
 
 .. _project_overrides:
 
-Overriding Plugin Defaults
+Overriding plugin defaults
 --------------------------
 Base attributes declared by element and source plugins can be overridden
 on a project wide basis. This section explains how to make project wide
@@ -579,7 +579,7 @@ statements which augment the configuration of an element or source plugin.
 
 .. _project_element_overrides:
 
-Element Overrides
+Element overrides
 ~~~~~~~~~~~~~~~~~
 The elements dictionary can be used to override variables, environments
 or plugin specific configuration data as shown below.
@@ -604,7 +604,7 @@ or plugin specific configuration data as shown below.
 
 .. _project_source_overrides:
 
-Source Overrides
+Source overrides
 ~~~~~~~~~~~~~~~~
 The sources dictionary can be used to override source plugin
 specific configuration data as shown below.
@@ -640,7 +640,7 @@ The ``shell`` section allows some customization of the shell environment.
    The ``shell`` section is available since :ref:`format version 1 <project_format_version>`
 
 
-Interactive Shell Command
+Interactive shell command
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 By default, BuildStream will use ``sh -i`` when running an interactive
 shell, unless a specific command is given to the ``bst shell`` command.
@@ -660,7 +660,7 @@ ensure that the customized prompt is not overwritten:
      command: [ 'bash', '--noprofile', '--norc', '-i' ]
 
 
-Environment Assignments
+Environment assignments
 ~~~~~~~~~~~~~~~~~~~~~~~
 In order to cooperate with your host environment, a debugging shell
 sometimes needs to be configured with some extra knowledge inheriting
@@ -699,7 +699,7 @@ server with a ``bst shell`` environment:
        PULSE_SERVER: 'unix:${XDG_RUNTIME_DIR}/pulse/native'
 
 
-Host Files
+Host files
 ~~~~~~~~~~
 It can be useful to share some files on the host with a shell so that
 it can integrate better with the host environment.
@@ -789,7 +789,7 @@ Host side environment variable expansion is also supported:
 
 .. _project_builtin_defaults:
 
-Builtin Defaults
+Builtin defaults
 ----------------
 BuildStream defines some default values for convenience, the default
 values overridden by your project's ``project.conf`` are presented here:

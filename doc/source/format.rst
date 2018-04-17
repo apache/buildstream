@@ -1,13 +1,13 @@
 
 .. _format:
 
-Element Constructs
+Element constructs
 ==================
 
 
 .. _format_basics:
 
-Element Basics
+Element basics
 --------------
 Here is a rather complete example using the autotools element kind and git source kind:
 
@@ -265,7 +265,7 @@ In this section we'll quickly go over the few features BuildStream offers in its
 dependency model.
 
 
-Expressing Dependencies
+Expressing dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~
 Dependencies in BuildStream are parameterizable objects, however as demonstrated
 in the :ref:`above example <format_depends>`, they can also be expressed as simple
@@ -317,7 +317,7 @@ Attributes:
 
 .. _format_dependencies_types:
 
-Dependency Types
+Dependency types
 ~~~~~~~~~~~~~~~~
 The dependency ``type`` attribute defines what the dependency is required for
 and is essential to how BuildStream plots a build plan.
@@ -350,13 +350,13 @@ required both at build time and runtime.
 
 .. _format_variables:
 
-Using Variables
+Using variables
 ---------------
 Variables in BuildStream are a way to make your build instructions and
 element configurations more dynamic.
 
 
-Referring to Variables
+Referring to variables
 ~~~~~~~~~~~~~~~~~~~~~~
 Variables are expressed as ``%{...}``, where ``...`` must contain only
 alphanumeric characters and the separators ``_`` and ``-``. Further, the
@@ -367,7 +367,7 @@ first letter of ``...`` must be an alphabetic character.
    This is release version %{version}
 
 
-Declaring and Overriding Variables
+Declaring and overriding variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To declare or override a variable, one need only specify a value
 in the relevant *variables* section:

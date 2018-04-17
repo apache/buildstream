@@ -2,7 +2,7 @@
 
 .. _authoring:
 
-Authoring Projects
+Authoring projects
 ==================
 This section details how to use the BuildStream YAML format to
 create your own project or modify existing projects.
@@ -33,7 +33,7 @@ Elements
 The following element types are provided with BuildStream:
 
 
-General Elements
+General elements
 ''''''''''''''''
 
 * :mod:`stack <elements.stack>` - Symbolic Element for dependency grouping
@@ -44,7 +44,7 @@ General Elements
 * :mod:`filter <elements.filter>` - Extract a subset of files from another element
 
 
-Build Elements
+Build elements
 ''''''''''''''
 
 * :mod:`manual <elements.manual>` - Manual Build Element
@@ -72,7 +72,7 @@ The following source types are provided with BuildStream:
 * :mod:`deb <sources.deb>` - A Source implementation for deb packages
 
 
-External Plugins
+External plugins
 ----------------
 External plugins need to be installed separately, here is
 a list of BuildStream plugin projects known to us at this time:

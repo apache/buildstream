@@ -3,7 +3,7 @@ Hacking on BuildStream
 Some tips and guidelines for developers hacking on BuildStream
 
 
-Feature Additions
+Feature additions
 -----------------
 Major feature additions should be proposed on the
 `mailing list <https://mail.gnome.org/mailman/listinfo/buildstream-list>`_
@@ -21,7 +21,7 @@ bugs which may have fell through the cracks in the review process, giving us
 a reasonable timeframe for identifying these.
 
 
-Patch Submissions
+Patch submissions
 -----------------
 Branches must be submitted as merge requests in gitlab and should usually
 be associated to an issue report on gitlab.
@@ -45,7 +45,7 @@ makes bisections more easy to perform, but is not always practical with
 more complex branches.
 
 
-Commit Messages
+Commit messages
 ~~~~~~~~~~~~~~~
 Commit messages must be formatted with a brief summary line, optionally
 followed by an empty line and then a free form detailed description of
@@ -65,12 +65,12 @@ a very brief description of the change.
   This fixes issue #123
 
 
-Coding Style
+Coding style
 ------------
 Coding style details for BuildStream
 
 
-Style Guide
+Style guide
 ~~~~~~~~~~~
 Python coding style for BuildStream is pep8, which is documented here: https://www.python.org/dev/peps/pep-0008/
 
@@ -145,7 +145,7 @@ public symbols. In the case of public modules where we may have a mix of
 before *local private* symbols.
 
 
-Symbol Naming
+Symbol naming
 '''''''''''''
 Any private symbol must start with a single leading underscore for two reasons:
 
@@ -187,7 +187,7 @@ ambiguous.
   methods declared in public scope.
 
 
-Documenting Private Symbols
+Documenting private symbols
 '''''''''''''''''''''''''''
 Any symbol which is *API Private* (regardless of whether it is also
 *local private*), should have some documentation for developers to
@@ -215,7 +215,7 @@ Useful links:
 * rst primer: http://www.sphinx-doc.org/en/stable/rest.html
 
 
-Building Docs
+Building docs
 ~~~~~~~~~~~~~
 The documentation build is not integrated into the ``setup.py`` and is
 difficult (or impossible) to do so, so there is a little bit of setup
@@ -240,7 +240,7 @@ This will give you a ``doc/build/html`` directory with the html docs which
 you can view in your browser locally to test.
 
 
-Man Pages
+Man pages
 ~~~~~~~~~
 Unfortunately it is quite difficult to integrate the man pages build
 into the ``setup.py``, as such, whenever the frontend command line
@@ -261,7 +261,7 @@ the ``man/`` subdirectory, which will be automatically included
 in the buildstream distribution.
 
 
-Documenting Conventions
+Documenting conventions
 ~~~~~~~~~~~~~~~~~~~~~~~
 We use the sphinx.ext.napoleon extension for the purpose of having
 a bit nicer docstrings than the default sphinx docstrings.
@@ -297,7 +297,7 @@ The elaborate documentation for pytest can be found here: http://doc.pytest.org/
 Don't get lost in the docs if you don't need to, follow existing examples instead.
 
 
-Running Tests
+Running tests
 ~~~~~~~~~~~~~
 To run the tests, just type::
 
@@ -336,7 +336,7 @@ with::
 Alternatively, any IDE plugin that uses pytest should automatically
 detect the ``.pylintrc`` in the project's root directory.
 
-Adding Tests
+Adding tests
 ~~~~~~~~~~~~
 Tests are found in the tests subdirectory, inside of which
 there is a separarate directory for each *domain* of tests.

@@ -125,7 +125,7 @@ A regular way to do this is to add the following line to the end of your ``~/.ba
    You will have to restart your terminal in order for these changes to take effect.
 
 
-Bash Completions
+Bash completions
 ~~~~~~~~~~~~~~~~
 Bash completions are supported by sourcing the ``buildstream/data/bst``
 script found in the BuildStream repository. On many systems this script

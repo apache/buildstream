@@ -21,7 +21,7 @@ in other sections of the documentation.
 .. _format_structure:
 
 
-Directory Structure
+Directory structure
 -------------------
 A BuildStream project is a directory consisting of:
 
@@ -64,7 +64,7 @@ order in which they are applied. Configurations which are applied later have a h
 priority and override configurations which precede them.
 
 
-1. Builtin Defaults
+1. Builtin defaults
 ~~~~~~~~~~~~~~~~~~~
 The :ref:`builtin defaults <project_builtin_defaults>` provide a set of builtin
 default default values for ``project.conf``.
@@ -73,7 +73,7 @@ The project wide defaults defined in the builtin project configuration, such as 
 *variables* or *environment* sections, form the base configuration of all elements.
 
 
-2. Project Configuration
+2. Project configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 The :ref:`project wide defaults <project_defaults>` specified in your
 ``project.conf`` are now applied on top of builtin defaults.
@@ -86,7 +86,7 @@ Note that :ref:`plugin type specific configuration <project_overrides>`
 in ``project.conf`` is not applied until later.
 
 
-3. Plugin Defaults
+3. Plugin defaults
 ~~~~~~~~~~~~~~~~~~
 Elements and Sources are all implemented as plugins.
 
@@ -103,7 +103,7 @@ Source plugins do not have a ``.yaml`` file, and do not have *variables* or
 *environment*.
 
 
-4. Project Configuration Overrides
+4. Project configuration overrides
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``project.conf`` now gives you :ref:`another opportunity <project_overrides>` to
 override configuration on a per plugin basis.
@@ -118,7 +118,7 @@ including configuration in element specific *config* sections.
 See also :ref:`project_overrides`
 
 
-5. Plugin Declarations
+5. Plugin declarations
 ~~~~~~~~~~~~~~~~~~~~~~~
 Finally, after having resolved any :ref:`conditionals <format_directives_conditional>`
 in the parsing phase of loading element declarations; the configurations specified in a

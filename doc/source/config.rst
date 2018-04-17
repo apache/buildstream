@@ -2,7 +2,7 @@
 .. _config:
 
 
-User Configuration
+User configuration
 ==================
 User configuration and preferences can be specified in a user provided
 configuration file, and usually also on the command line.
@@ -23,14 +23,14 @@ invoking ``bst``, an attempt is made to load user specific configuration from
 will be ``~/.config/buildstream.conf``
 
 
-Project Specific Value
+Project specific value
 ----------------------
 The ``projects`` key can be used to specify project specific configurations,
 the supported configurations on a project wide basis are listed here.
 
 .. _config_artifacts:
 
-Artifact Server
+Artifact server
 ~~~~~~~~~~~~~~~
 The project you build will often specify a :ref:`remote artifact cache
 <artifacts>` already, but you may want to specify extra caches. There are two
@@ -65,7 +65,7 @@ by the project.
 If you give a list of URLs, earlier entries in the list will have higher
 priority than later ones.
 
-Strict Build Plan
+Strict build plan
 ~~~~~~~~~~~~~~~~~
 The strict build plan option decides whether you want elements
 to rebuild when their dependencies have changed. This is enabled
@@ -89,7 +89,7 @@ modifying some low level component.
    the ``--strict`` and ``--no-strict`` command line options.
 
 
-Default Configuration
+Default configuration
 ---------------------
 The default BuildStream configuration is specified here for reference:
 
