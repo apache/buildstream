@@ -498,6 +498,11 @@ class App():
         if workspace is None:
             raise AppError("Workspace '{}' does not exist".format(element_name))
 
+        if self.interactive and remove_dir:
+            if not click.confirm('This will remove all your changes, are you sure?'):
+                click.echo('Aborting', err=True)
+                sys.exit(-1)
+
         # Remove workspace directory if prompted
         if remove_dir:
             with self.context.timed_activity("Removing workspace directory {}"
