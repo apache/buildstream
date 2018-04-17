@@ -71,9 +71,8 @@ For debian unstable or testing, only the following line should be enough
 to get the base system requirements installed::
 
   sudo apt-get install \
-      python3-dev python3-pip git \
-      python3-gi gir1.2-ostree-1.0 ostree \
-      bubblewrap python3-ruamel.yaml fuse libfuse2
+      fuse ostree gir1.2-ostree-1.0 bubblewrap git \
+      python3 python3-pip python3-gi python3-psutil
 
 
 Fedora
