@@ -104,6 +104,27 @@ def test_open_track(cli, tmpdir, datafiles, kind):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
+def test_open_force(cli, tmpdir, datafiles, kind):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+
+    # Close the workspace
+    result = cli.run(project=project, args=[
+        'workspace', 'close', element_name
+    ])
+    result.assert_success()
+
+    # Assert the workspace dir still exists
+    assert os.path.exists(workspace)
+
+    # Now open the workspace again with --force, this should happily succeed
+    result = cli.run(project=project, args=[
+        'workspace', 'open', '--force', element_name, workspace
+    ])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", repo_kinds)
 def test_close(cli, tmpdir, datafiles, kind):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
 
