@@ -13,6 +13,11 @@ BuildStream requires the following base system requirements:
 * PyGObject introspection bindings
 * psutil python library (so you don't have to install GCC and python-devel to build it yourself)
 
+If you intend to push built artifacts to a remote artifact server,
+which requires special permissions, you will also need:
+
+* ssh
+
 
 Installing from source (recommended)
 ------------------------------------
