@@ -1,8 +1,8 @@
 
-.. _invoking:
+.. _commands:
 
-Invoking BuildStream
-====================
+Commands
+========
 
 .. click:: buildstream._frontend:cli
    :prog: bst

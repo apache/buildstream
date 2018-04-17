@@ -10,6 +10,6 @@ This section details how to use the BuildStream command line interface, work wit
 .. toctree::
    :maxdepth: 2
 
-   invoking
+   commands
    config
    authoring
