@@ -59,8 +59,8 @@ And then running::
 At this point you should be able to get the system requirements with::
 
   sudo apt-get install \
-      python3-dev python3-pip git python3-gi \
-      python3-ruamel.yaml bubblewrap fuse libfuse2
+      fuse ostree gir1.2-ostree-1.0 bubblewrap git \
+      python3 python3-pip python3-gi python3-psutil
   sudo apt-get install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
 
