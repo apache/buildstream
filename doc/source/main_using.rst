@@ -4,7 +4,7 @@
 
 Using BuildStream
 =================
-This section details how to use the BuildStream command line interface, work with existing BuildStream projects and how to author a new project.
+This section details how to use the BuildStream command line interface and work with existing BuildStream projects.
 
 
 .. toctree::
@@ -12,4 +12,3 @@ This section details how to use the BuildStream command line interface, work wit
 
    commands
    user_config
-   authoring

@@ -22,7 +22,6 @@ dependencies.
 
    main_install
    main_using
-   main_general
    main_core
    resources
    HACKING
