@@ -71,7 +71,7 @@ The easiest way to get started is to explore some existing .bst files, for examp
 * https://gitlab.gnome.org/GNOME/gnome-build-meta/
 * https://gitlab.com/freedesktop-sdk/freedesktop-sdk
 * https://gitlab.com/baserock/definitions
-* https://gitlab.com/BuildStream/buildstream-examples/tree/x86image/build-x86image
+* https://gitlab.com/BuildStream/buildstream-examples/tree/master/build-x86image
 * https://gitlab.com/BuildStream/buildstream-examples/tree/master/netsurf-flatpak
 
 If you have any questions please ask on our `#buildstream <irc://irc.gnome.org/buildstream>`_ channel in `irc.gnome.org <irc://irc.gnome.org>`_
