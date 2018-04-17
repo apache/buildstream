@@ -1676,11 +1676,26 @@ class Element(Plugin):
     # the workspaces metadata first.
     #
     def _open_workspace(self):
+        context = self._get_context()
         workspace = self._get_workspace()
         assert workspace is not None
 
-        for source in self.sources():
-            source._init_workspace(workspace.path)
+        # First lets get a temp dir in our build directory
+        # and stage there, then link the files over to the desired
+        # path.
+        #
+        # We do this so that force opening workspaces which overwrites
+        # files in the target directory actually works without any
+        # additional support from Source implementations.
+        #
+        os.makedirs(context.builddir, exist_ok=True)
+        with utils._tempdir(dir=context.builddir, prefix='workspace-{}'
+                            .format(self.normal_name)) as temp:
+            for source in self.sources():
+                source._init_workspace(temp)
+
+            # Now hardlink the files into the workspace target.
+            utils.link_files(temp, workspace.path)
 
     # _get_workspace():
     #
