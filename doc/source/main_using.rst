@@ -11,5 +11,6 @@ This section details how to use the BuildStream command line interface and work 
    :maxdepth: 2
 
    getting_started
+   examples
    commands
    user_config
