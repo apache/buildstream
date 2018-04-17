@@ -9,6 +9,7 @@ BuildStream requires the following base system requirements:
 * python3 >= 3.4
 * libostree >= v2017.8 with introspection data
 * bubblewrap >= 0.1.2
+* fuse2
 * PyGObject introspection bindings
 * psutil python library (so you don't have to install GCC and python-devel to build it yourself)
 
