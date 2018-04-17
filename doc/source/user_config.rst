@@ -1,5 +1,5 @@
 
-.. _config:
+.. _user_config:
 
 
 User configuration

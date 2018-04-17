@@ -11,5 +11,5 @@ This section details how to use the BuildStream command line interface, work wit
    :maxdepth: 2
 
    commands
-   config
+   user_config
    authoring

@@ -183,7 +183,7 @@ E.g., create ``/etc/cron.d/artifacts`` with the following content:
 User configuration
 ~~~~~~~~~~~~~~~~~~
 The user configuration for artifacts is documented with the rest
-of the :ref:`user configuration documentation <config>`.
+of the :ref:`user configuration documentation <user_config>`.
 
 Assuming you have the same setup used in this document, and that your
 host is reachable on the internet as ``artifacts.com`` (for example),
