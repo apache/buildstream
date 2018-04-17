@@ -21,23 +21,8 @@ dependencies.
    :maxdepth: 2
 
    main_install
-
-
-.. toctree::
-   :maxdepth: 2
-
    main_using
-
-
-.. toctree::
-   :maxdepth: 2
-
    main_general
    main_core
-   
-
-.. toctree::
-   :maxdepth: 2
-
    resources
    HACKING
