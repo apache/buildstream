@@ -24,15 +24,16 @@ from collections import Mapping, namedtuple
 import tempfile
 import shutil
 
-from ._exceptions import LoadError, LoadErrorReason
-from . import Consistency
-from ._project import Project
-from . import _yaml
-from .element import Element
-from ._metaelement import MetaElement
-from ._metasource import MetaSource
-from ._profile import Topics, profile_start, profile_end
-from ._platform import Platform
+from .._exceptions import LoadError, LoadErrorReason
+from .. import Consistency
+from .._project import Project
+from .. import _yaml
+from ..element import Element
+from .._profile import Topics, profile_start, profile_end
+from .._platform import Platform
+
+from . import MetaElement
+from . import MetaSource
 
 
 #################################################
