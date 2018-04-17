@@ -480,7 +480,7 @@ class Loader():
             # Handle the case where a subproject needs to be fetched
             #
             if source.get_consistency() == Consistency.RESOLVED:
-                if self._context._fetch_subprojects:
+                if self._context.fetch_subprojects:
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
                     source.fetch()

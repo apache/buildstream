@@ -47,6 +47,9 @@ class Context():
 
     def __init__(self, *, fetch_subprojects=False):
 
+        # Whether to automatically fetch subprojects in this session
+        self.fetch_subprojects = fetch_subprojects
+
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
 
@@ -110,7 +113,6 @@ class Context():
         self._message_depth = deque()
         self._projects = []
         self._project_overrides = {}
-        self._fetch_subprojects = fetch_subprojects
 
     # load()
     #
