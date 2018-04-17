@@ -613,6 +613,16 @@ def workspace():
 def workspace_open(app, no_checkout, force, track_, element, directory):
     """Open a workspace for manual source modification"""
 
+    if os.path.exists(directory):
+
+        if not os.path.isdir(directory):
+            click.echo("Checkout directory is not a directory: {}".format(directory), err=True)
+            sys.exit(-1)
+
+        if not (no_checkout or force) and os.listdir(directory):
+            click.echo("Checkout directory is not empty: {}".format(directory), err=True)
+            sys.exit(-1)
+
     with app.initialized((element,), rewritable=track_, track_elements=[element] if track_ else None):
         app.open_workspace(directory, no_checkout, track_, force)
 

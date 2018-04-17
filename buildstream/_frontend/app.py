@@ -474,9 +474,6 @@ class App():
         workspace = self.project.workspaces.create_workspace(target.name, workdir)
 
         if not no_checkout:
-            if not force and os.listdir(directory):
-                raise AppError("Checkout directory is not empty: {}".format(directory))
-
             with target.timed_activity("Staging sources to {}".format(directory)):
                 target._open_workspace()
 
