@@ -26,6 +26,9 @@ buildstream 1.1.3
   o `bst workspace close` and `bst workspace reset` now support multiple
     elements. All elements can be specified using `--all`.
 
+  o The elements whose cache keys had to be determined during the build
+    are summarised at the end of the build.
+
 
 =================
 buildstream 1.1.2
