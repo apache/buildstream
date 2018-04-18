@@ -570,9 +570,10 @@ class OSTreePusher(object):
 #     pull_url (str): Redirection for clients who want to pull, not push.
 #
 class OSTreeReceiver(object):
-    def __init__(self, repopath, pull_url):
+    def __init__(self, repopath, pull_url, cache_quota):
         self.repopath = repopath
         self.pull_url = pull_url
+        self.cache_quota = cache_quota
 
         if self.repopath is None:
             self.repo = OSTree.Repo.new_default()
@@ -799,8 +800,10 @@ def push(repo, remote, branches, output):
 @click.option('--debug', '-d', is_flag=True, default=False, help="Debug mode")
 @click.option('--pull-url', type=str, required=True,
               help="Clients who try to pull over SSH will be redirected here")
+@click.option('--cache-quota', type=int,
+              help="Implement a quota on the cache (in bytes) here")
 @click.argument('repo')
-def receive_main(verbose, debug, pull_url, repo):
+def receive_main(verbose, debug, pull_url, cache_quota, repo):
     """A BuildStream sister program for receiving artifacts send to a shared artifact cache
     """
     loglevel = logging.WARNING
@@ -811,5 +814,7 @@ def receive_main(verbose, debug, pull_url, repo):
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=loglevel, stream=sys.stderr)
 
-    receiver = OSTreeReceiver(repo, pull_url)
+    # IDEA: have it so that cache_quota can allow human friendly input.
+
+    receiver = OSTreeReceiver(repo, pull_url, cache_quota)
     return receiver.run()
