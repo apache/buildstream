@@ -37,7 +37,7 @@ class FetchQueue(Queue):
     def __init__(self, scheduler, skip_cached=False):
         super().__init__(scheduler)
 
-        self.skip_cached = skip_cached
+        self._skip_cached = skip_cached
 
     def process(self, element):
         for source in element.sources():
@@ -48,7 +48,7 @@ class FetchQueue(Queue):
         element._update_state()
 
         # Optionally skip elements that are already in the artifact cache
-        if self.skip_cached:
+        if self._skip_cached:
             if not element._can_query_cache():
                 return QueueStatus.WAIT
 
