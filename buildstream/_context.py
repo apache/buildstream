@@ -59,6 +59,9 @@ class Context():
         # The local binary artifact cache directory
         self.artifactdir = None
 
+        # Default root location for workspaces
+        self.workspacedir = None
+
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = []
 
@@ -152,9 +155,10 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
+            'workspacedir',
         ])
 
-        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
+        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #

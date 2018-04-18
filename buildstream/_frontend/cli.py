@@ -599,17 +599,21 @@ def workspace():
 def workspace_open(app, no_checkout, force, track_, element, directory):
     """Open a workspace for manual source modification"""
 
-    if os.path.exists(directory):
-
-        if not os.path.isdir(directory):
-            click.echo("Checkout directory is not a directory: {}".format(directory), err=True)
-            sys.exit(-1)
-
-        if not (no_checkout or force) and os.listdir(directory):
-            click.echo("Checkout directory is not empty: {}".format(directory), err=True)
-            sys.exit(-1)
-
     with app.initialized():
+
+        if not os.path.isabs(directory):
+            directory = os.path.join(app.context.workspacedir, directory)
+
+        if os.path.exists(directory):
+
+            if not os.path.isdir(directory):
+                click.echo("Checkout directory is not a directory: {}".format(directory), err=True)
+                sys.exit(-1)
+
+            if not (no_checkout or force) and os.listdir(directory):
+                click.echo("Checkout directory is not empty: {}".format(directory), err=True)
+                sys.exit(-1)
+
         app.stream.workspace_open(element, directory,
                                   no_checkout=no_checkout,
                                   track_first=track_,

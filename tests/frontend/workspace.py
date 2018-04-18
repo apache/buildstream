@@ -18,12 +18,15 @@ DATA_DIR = os.path.join(
 )
 
 
-def open_workspace(cli, tmpdir, datafiles, kind, track, suffix=''):
+def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspacedir=None):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     bin_files_path = os.path.join(project, 'files', 'bin-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
-    workspace = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
+    if workspacedir is None:
+        workspace = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
+    else:
+        workspace = os.path.join('workspace{}'.format(suffix))
 
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
@@ -67,6 +70,9 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix=''):
 
     # Check that the executable hello file is found in the workspace
     filename = os.path.join(workspace, 'usr', 'bin', 'hello')
+    if workspacedir is not None:
+        filename = os.path.join(workspacedir, filename)
+
     assert os.path.exists(filename)
 
     return (element_name, project, workspace)
@@ -122,6 +128,25 @@ def test_open_force(cli, tmpdir, datafiles, kind):
     ])
     result.assert_success()
 
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", repo_kinds)
+def test_open_workspacedir_absolute(cli, tmpdir, datafiles, kind):
+    workspacedir = os.path.join(tmpdir, 'workspaces')
+    user_config = {'workspacedir': workspacedir}
+    cli.configure(user_config)
+    open_workspace(cli, tmpdir, datafiles, kind, False,
+                   workspacedir=workspacedir)
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", repo_kinds)
+def test_open_workspacedir_relative(cli, tmpdir, datafiles, kind):
+    workspacedir = os.path.join('workspaces')
+    if os.path.isdir(workspacedir):
+        shutil.rmtree(workspacedir)
+    user_config = {'workspacedir': workspacedir}
+    cli.configure(user_config)
+    open_workspace(cli, tmpdir, datafiles, kind, False,
+                   workspacedir=workspacedir)
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
