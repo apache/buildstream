@@ -104,10 +104,8 @@ class Scheduler():
     #
     def run(self, queues):
 
-        # Attach the queues
+        # Hold on to the queues to process
         self.queues = queues
-        for queue in queues:
-            queue.attach(self)
 
         # Ensure that we have a fresh new event loop, in case we want
         # to run another test in this thread.

@@ -242,7 +242,7 @@ class Pipeline():
     # are rewritten inline.
     #
     def track(self, scheduler):
-        track = TrackQueue()
+        track = TrackQueue(scheduler)
         track.enqueue(self._track_elements)
         self.session_elements = len(self._track_elements)
 
@@ -278,10 +278,10 @@ class Pipeline():
 
         self.session_elements = len(self._track_elements) + len(fetch_plan)
 
-        fetch = FetchQueue()
+        fetch = FetchQueue(scheduler)
         fetch.enqueue(fetch_plan)
         if self._track_elements:
-            track = TrackQueue()
+            track = TrackQueue(scheduler)
             track.enqueue(self._track_elements)
             queues = [track, fetch]
         else:
@@ -318,22 +318,22 @@ class Pipeline():
         # track_plan will be made consistent)
         self._assert_consistent(plan)
 
-        fetch = FetchQueue(skip_cached=True)
-        build = BuildQueue()
+        fetch = FetchQueue(scheduler, skip_cached=True)
+        build = BuildQueue(scheduler)
         track = None
         pull = None
         push = None
         queues = []
         if self._track_elements:
-            track = TrackQueue()
+            track = TrackQueue(scheduler)
             queues.append(track)
         if self._artifacts.has_fetch_remotes():
-            pull = PullQueue()
+            pull = PullQueue(scheduler)
             queues.append(pull)
         queues.append(fetch)
         queues.append(build)
         if self._artifacts.has_push_remotes():
-            push = PushQueue()
+            push = PushQueue(scheduler)
             queues.append(push)
 
         # If we're going to track, tracking elements go into the first queue
@@ -434,7 +434,7 @@ class Pipeline():
         self._assert_consistent(plan)
         self.session_elements = len(plan)
 
-        pull = PullQueue()
+        pull = PullQueue(scheduler)
         pull.enqueue(plan)
         queues = [pull]
 
@@ -461,7 +461,7 @@ class Pipeline():
         self._assert_consistent(plan)
         self.session_elements = len(plan)
 
-        push = PushQueue()
+        push = PushQueue(scheduler)
         push.enqueue(plan)
         queues = [push]
 

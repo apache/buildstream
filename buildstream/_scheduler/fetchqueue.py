@@ -34,8 +34,8 @@ class FetchQueue(Queue):
     complete_name = "Fetched"
     queue_type = QueueType.FETCH
 
-    def __init__(self, skip_cached=False):
-        super().__init__()
+    def __init__(self, scheduler, skip_cached=False):
+        super().__init__(scheduler)
 
         self.skip_cached = skip_cached
 
