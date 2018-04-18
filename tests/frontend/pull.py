@@ -66,10 +66,9 @@ def test_push_pull_all(cli, tmpdir, datafiles):
     artifacts = os.path.join(cli.directory, 'artifacts')
     shutil.rmtree(artifacts)
 
-    # Assert that we are now in a downloadable state, nothing
-    # is cached locally anymore
+    # Assert that nothing is cached locally anymore
     for element_name in all_elements:
-        assert cli.get_element_state(project, element_name) == 'downloadable'
+        assert cli.get_element_state(project, element_name) != 'cached'
 
     # Now try bst pull
     result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
@@ -83,7 +82,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 # Tests that:
 #
 #  * `bst build` pushes all build elements ONLY to configured 'push' cache
-#  * `bst show` finds artifacts that are available only in the secondary cache
+#  * `bst pull` finds artifacts that are available only in the secondary cache
 #
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
@@ -113,8 +112,16 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
     artifacts = os.path.join(cli.directory, 'artifacts')
     shutil.rmtree(artifacts)
 
-    # Assert that the element is 'downloadable', i.e. we found it in share2.
-    assert cli.get_element_state(project, 'target.bst') == 'downloadable'
+    # Assert that the element is not cached anymore.
+    assert cli.get_element_state(project, 'target.bst') != 'cached'
+
+    # Now try bst pull
+    result = cli.run(project=project, args=['pull', 'target.bst'])
+    result.assert_success()
+
+    # And assert that it's again in the local cache, without having built,
+    # i.e. we found it in share2.
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
 
 
 # Tests that:
@@ -205,10 +212,9 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
     artifacts = os.path.join(cli.directory, 'artifacts')
     shutil.rmtree(artifacts)
 
-    # Assert that we are now in a downloadable state, nothing
-    # is cached locally anymore
+    # Assert that nothing is cached locally anymore
     for element_name in all_elements:
-        assert cli.get_element_state(project, element_name) == 'downloadable'
+        assert cli.get_element_state(project, element_name) != 'cached'
 
     # Add a file to force change in strict cache key of import-bin.bst
     with open(os.path.join(str(project), 'files', 'bin-files', 'usr', 'bin', 'world'), 'w') as f:
@@ -216,8 +222,8 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
 
     # Assert that the workspaced element requires a rebuild
     assert cli.get_element_state(project, 'import-bin.bst') == 'buildable'
-    # Assert that the target is still downloadable due to --no-strict
-    assert cli.get_element_state(project, 'target.bst') == 'downloadable'
+    # Assert that the target is still waiting due to --no-strict
+    assert cli.get_element_state(project, 'target.bst') == 'waiting'
 
     # Now try bst pull
     result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
@@ -247,7 +253,7 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
 
     # Assert that everything is now cached in the remote.
     share.update_summary()
-    all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
+    all_elements = {'target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst'}
     for element_name in all_elements:
         assert_shared(cli, share, project, element_name)
 
@@ -257,10 +263,9 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
     artifacts = os.path.join(cli.directory, 'artifacts')
     shutil.rmtree(artifacts)
 
-    # Assert that we are now in a downloadable state, nothing
-    # is cached locally anymore
+    # Assert that nothing is cached locally anymore
     for element_name in all_elements:
-        assert cli.get_element_state(project, element_name) == 'downloadable'
+        assert cli.get_element_state(project, element_name) != 'cached'
 
     # Now try bst build with tracking and pulling.
     # Tracking will be skipped for target.bst as it doesn't have any sources.
@@ -270,3 +275,4 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
     # the caches.
     result = cli.run(project=project, args=['build', '--track-all', 'target.bst'])
     result.assert_success()
+    assert set(result.get_pulled_elements()) == all_elements

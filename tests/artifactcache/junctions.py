@@ -79,12 +79,11 @@ def test_push_pull(cli, tmpdir, datafiles):
     artifacts = os.path.join(cli.directory, 'artifacts')
     shutil.rmtree(artifacts)
 
-    # Assert that we are now in a downloadable state, nothing
-    # is cached locally anymore
+    # Assert that nothing is cached locally anymore
     state = cli.get_element_state(project, 'target.bst')
-    assert state == 'downloadable'
+    assert state != 'cached'
     state = cli.get_element_state(base_project, 'target.bst')
-    assert state == 'downloadable'
+    assert state != 'cached'
 
     # Now try bst pull
     result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])

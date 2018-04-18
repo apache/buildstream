@@ -170,7 +170,7 @@ def test_push_after_pull(cli, tmpdir, datafiles):
 
     assert_shared(cli, share1, project, 'target.bst')
     assert_not_shared(cli, share2, project, 'target.bst')
-    assert cli.get_element_state(project, 'target.bst') == 'downloadable'
+    assert cli.get_element_state(project, 'target.bst') != 'cached'
 
     # Now run the build again. Correct `bst build` behaviour is to download the
     # artifact from share1 but not push it back again.

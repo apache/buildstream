@@ -337,7 +337,6 @@ class Cli():
             'show',
             '--deps', 'none',
             '--format', '%{state}',
-            '--downloadable',
             element_name
         ])
         result.assert_success()
