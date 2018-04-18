@@ -176,6 +176,9 @@ class Queue():
         while self.done_queue:
             yield self.done_queue.popleft()
 
+    def dequeue_ready(self):
+        return any(self.done_queue)
+
     def process_ready(self):
         scheduler = self.scheduler
         unready = []

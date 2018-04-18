@@ -345,7 +345,7 @@ class Scheduler():
 
             # process_ready() may have skipped jobs, adding them to the done_queue.
             # Pull these skipped elements forward to the next queue and process them.
-            process_queues = sum([len(q.done_queue) for q in self.queues]) > 0
+            process_queues = any(q.dequeue_ready() for q in self.queues)
 
         # If nothings ticking, time to bail out
         ticking = 0
