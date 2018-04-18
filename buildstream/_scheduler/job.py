@@ -130,15 +130,12 @@ class Job():
         # Spawn the process
         self._process = Process(target=self._child_action, args=[self._queue])
 
-        # Here we want the following
+        # Block signals which are handled in the main process such that
+        # the child process does not inherit the parent's state, but the main
+        # process will be notified of any signal after we launch the child.
         #
-        #  A.) Child should inherit blocked SIGINT state, it's never handled there
-        #  B.) Child should not inherit SIGTSTP handled state
-        #
-        with _signals.blocked([signal.SIGINT], ignore=False):
-            self._scheduler.loop.remove_signal_handler(signal.SIGTSTP)
+        with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
             self._process.start()
-            self._scheduler.loop.add_signal_handler(signal.SIGTSTP, self._scheduler.suspend_event)
 
         # Wait for it to complete
         self._watcher = asyncio.get_child_watcher()
@@ -273,6 +270,14 @@ class Job():
         # This avoids some SIGTSTP signals from grandchildren
         # getting propagated up to the master process
         os.setsid()
+
+        # First set back to the default signal handlers for the signals
+        # we handle, and then clear their blocked state.
+        #
+        signal_list = [signal.SIGTSTP, signal.SIGTERM]
+        for sig in signal_list:
+            signal.signal(sig, signal.SIG_DFL)
+        signal.pthread_sigmask(signal.SIG_UNBLOCK, signal_list)
 
         # Assign the queue we passed across the process boundaries
         #
