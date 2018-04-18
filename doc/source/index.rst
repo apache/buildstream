@@ -20,6 +20,7 @@ dependencies.
 .. toctree::
    :maxdepth: 2
 
+   about
    main_install
    main_using
    main_core
