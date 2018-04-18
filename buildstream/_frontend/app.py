@@ -778,16 +778,12 @@ class App():
 
     @contextmanager
     def _interrupted(self):
-        self.scheduler.disconnect_signals()
-
         self._status.clear()
-        self.scheduler.suspend_jobs()
-
-        yield
-
-        self._maybe_render_status()
-        self.scheduler.resume_jobs()
-        self.scheduler.connect_signals()
+        try:
+            with self.scheduler.jobs_suspended():
+                yield
+        finally:
+            self._maybe_render_status()
 
     # Some validation routines for project initialization
     #
