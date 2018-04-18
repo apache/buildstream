@@ -576,6 +576,9 @@ class OSTreeReceiver(object):
 
         if self.repopath is None:
             self.repo = OSTree.Repo.new_default()
+            self.repopath = self.repo.get_path().get_path()
+            # NOTE: OSTree.Repo.get_path() returns Gio.File
+            # Gio.File.get_path() returns a string of the pathway
         else:
             self.repo = OSTree.Repo.new(Gio.File.new_for_path(self.repopath))
         self.repo.open(None)
