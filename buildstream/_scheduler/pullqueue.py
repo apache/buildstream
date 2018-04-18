@@ -47,9 +47,9 @@ class PullQueue(Queue):
         else:
             return QueueStatus.SKIP
 
-    def done(self, element, result, returncode):
+    def done(self, element, result, success):
 
-        if returncode != 0:
+        if not success:
             return False
 
         if not result:

@@ -41,9 +41,9 @@ class PushQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, element, result, returncode):
+    def done(self, element, result, success):
 
-        if returncode != 0:
+        if not success:
             return False
 
         # Element._push() returns True if it uploaded an artifact,

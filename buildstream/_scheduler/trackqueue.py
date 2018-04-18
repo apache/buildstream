@@ -48,9 +48,9 @@ class TrackQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, element, result, returncode):
+    def done(self, element, result, success):
 
-        if returncode != 0:
+        if not success:
             return False
 
         changed = False

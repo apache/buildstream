@@ -46,8 +46,9 @@ class BuildQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, element, result, returncode):
-        if returncode == 0:
+    def done(self, element, result, success):
+
+        if success:
             # Inform element in main process that assembly is done
             element._assemble_done()
 

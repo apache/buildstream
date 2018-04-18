@@ -53,14 +53,48 @@ class Process(multiprocessing.Process):
 
 # Job()
 #
+# The Job object represents a parallel task, when calling Job.spawn(),
+# the given `action_cb` will be called in parallel to the calling process,
+# and `complete_cb` will be called with the action result in the calling
+# process when the job completes.
+#
 # Args:
 #    scheduler (Scheduler): The scheduler
 #    element (Element): The element to operate on
 #    action_name (str): The queue action name
+#    action_cb (callable): The action function
+#    complete_cb (callable): The function to call when complete
+#    max_retries (int): The maximum number of retries
+#
+# Here is the calling signature of the action_cb:
+#
+#     action_cb():
+#
+#     This function will be called in the child task
+#
+#     Args:
+#        element (Element): The element passed to the Job() constructor
+#
+#     Returns:
+#        (object): Any abstract simple python object, including a string, int,
+#                  bool, list or dict, this must be a simple serializable object.
+#
+# Here is the calling signature of the complete_cb:
+#
+#     complete_cb():
+#
+#     This function will be called when the child task completes
+#
+#     Args:
+#        job (Job): The job object which completed
+#        element (Element): The element passed to the Job() constructor
+#        success (bool): True if the action_cb did not raise an exception
+#        result (object): The deserialized object returned by the `action_cb`, or None
+#                         if `success` is False
 #
 class Job():
 
-    def __init__(self, scheduler, element, action_name):
+    def __init__(self, scheduler, element, action_name, action_cb, complete_cb, *, max_retries=0):
 
         # Shared with child process
         self.scheduler = scheduler            # The scheduler
@@ -68,32 +102,24 @@ class Job():
         self.process = None                   # The Process object
         self.watcher = None                   # Child process watcher
         self.action_name = action_name        # The action name for the Queue
-        self.action = None                    # The action callable function
-        self.complete = None                  # The complete callable function
+        self.action_cb = action_cb            # The action callable function
+        self.complete_cb = complete_cb        # The complete callable function
         self.element = element                # The element we're processing
         self.listening = False                # Whether the parent is currently listening
         self.suspended = False                # Whether this job is currently suspended
+        self.max_retries = max_retries        # Maximum number of automatic retries
 
         # Only relevant in parent process after spawning
         self.pid = None                       # The child's pid in the parent
         self.result = None                    # Return value of child action in the parent
         self.workspace_dict = None            # A serialized Workspace object, after any modifications
-
-        self.tries = 0
+        self.tries = 0                        # Try count, for retryable jobs
 
     # spawn()
     #
-    # Args:
-    #    action (callable): The action function
-    #    complete (callable): The function to call when complete
-    #    max_retries (int): The maximum number of retries
-    #
-    def spawn(self, action, complete, max_retries=0):
-        self.action = action
-        self.complete = complete
+    def spawn(self):
 
         self.tries += 1
-        self.max_retries = max_retries
 
         self.parent_start_listening()
 
@@ -115,16 +141,7 @@ class Job():
 
         # Wait for it to complete
         self.watcher = asyncio.get_child_watcher()
-        self.watcher.add_child_handler(self.pid, self.child_complete, self.element)
-
-    # shutdown()
-    #
-    # Should be called after the job completes
-    #
-    def shutdown(self):
-        # Make sure we've read everything we need and then stop listening
-        self.parent_process_queue()
-        self.parent_stop_listening()
+        self.watcher.add_child_handler(self.pid, self.parent_child_completed, self.element)
 
     # terminate()
     #
@@ -264,7 +281,7 @@ class Job():
 
             try:
                 # Try the task action
-                result = self.action(element)
+                result = self.action_cb(element)
             except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
 
@@ -299,10 +316,7 @@ class Job():
             else:
                 # No exception occurred in the action
                 self.child_send_workspace(element)
-
-                if result is not None:
-                    envelope = Envelope('result', result)
-                    self.queue.put(envelope)
+                self.child_send_result(result)
 
                 elapsed = datetime.datetime.now() - starttime
                 self.message(element, MessageType.SUCCESS, self.action_name, elapsed=elapsed,
@@ -327,20 +341,16 @@ class Job():
         })
         self.queue.put(envelope)
 
+    def child_send_result(self, result):
+        if result is not None:
+            envelope = Envelope('result', result)
+            self.queue.put(envelope)
+
     def child_send_workspace(self, element):
         workspace = element._get_workspace()
         if workspace:
             envelope = Envelope('workspace', workspace.to_dict())
             self.queue.put(envelope)
-
-    def child_complete(self, pid, returncode, element):
-        self.shutdown()
-
-        if returncode != 0 and self.tries <= self.max_retries:
-            self.spawn(self.action, self.complete, self.max_retries)
-            return
-
-        self.complete(self, returncode, element)
 
     def child_shutdown(self, exit_code):
         self.queue.close()
@@ -405,6 +415,25 @@ class Job():
     #######################################################
     #                 Parent Process                      #
     #######################################################
+
+    # shutdown()
+    #
+    # Should be called after the job completes
+    #
+    def parent_shutdown(self):
+        # Make sure we've read everything we need and then stop listening
+        self.parent_process_queue()
+        self.parent_stop_listening()
+
+    def parent_child_completed(self, pid, returncode, element):
+        self.parent_shutdown()
+
+        if returncode != 0 and self.tries <= self.max_retries:
+            self.spawn()
+            return
+
+        self.complete_cb(self, element, returncode == 0, self.result)
+
     def parent_process_envelope(self, envelope):
         if not self.listening:
             return

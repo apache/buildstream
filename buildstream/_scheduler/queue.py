@@ -139,13 +139,14 @@ class Queue():
     # Args:
     #    element (Element): The element which completed processing
     #    result (any): The return value of the process() implementation
-    #    returncode (int): The process return code, 0 = success
+    #    success (bool): True if the process() implementation did not
+    #                    raise any exception
     #
     # Returns:
     #    (bool): True if the element should appear to be processsed,
     #            Otherwise False will count the element as "skipped"
     #
-    def done(self, element, result, returncode):
+    def done(self, element, result, success):
         pass
 
     #####################################################
@@ -195,10 +196,12 @@ class Queue():
 
             self.prepare(element)
 
-            job = Job(scheduler, element, self.action_name)
+            job = Job(scheduler, element, self.action_name,
+                      self.process, self.job_done,
+                      max_retries=self.max_retries)
             scheduler.job_starting(job)
 
-            job.spawn(self.process, self.job_done, self.max_retries)
+            job.spawn()
             self.active_jobs.append(job)
 
         # These were not ready but were in the beginning, give em
@@ -220,7 +223,7 @@ class Queue():
                                  "Unhandled exception while saving workspaces",
                                  detail=traceback.format_exc())
 
-    def job_done(self, job, returncode, element):
+    def job_done(self, job, element, success, result):
 
         # Remove from our jobs
         self.active_jobs.remove(job)
@@ -232,7 +235,7 @@ class Queue():
         # and determine if it should be considered as processed
         # or skipped.
         try:
-            processed = self.done(element, job.result, returncode)
+            processed = self.done(element, result, success)
 
         except BstError as e:
 
@@ -260,7 +263,7 @@ class Queue():
 
             # No exception occured, handle the success/failure state in the normal way
             #
-            if returncode == 0:
+            if success:
                 self.done_queue.append(element)
                 if processed:
                     self.processed_elements.append(element)
@@ -274,7 +277,7 @@ class Queue():
         self.scheduler.put_job_token(self.queue_type)
 
         # Notify frontend
-        self.scheduler.job_completed(self, job, returncode == 0)
+        self.scheduler.job_completed(self, job, success)
 
         self.scheduler.sched()
 
