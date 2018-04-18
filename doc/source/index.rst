@@ -4,18 +4,15 @@
    contain the root `toctree` directive.
 
 
-BuildStream Documentation
-=========================
+Welcome to BuildStream’s documentation!
+=======================================
 
-About BuildStream
------------------
-BuildStream is a flexible and extensible framework for the modelling of build
-pipelines in a declarative YAML format, written in python.
+These docs cover everything you need to build and integrate software stacks
+using BuildStream.
 
-These pipelines are composed of abstract elements which perform mutations on
-*filesystem data* as input and output, and are related to eachother by their
-dependencies.
-
+They begin with a basic introduction to BuildStream, background
+information on basic concepts, and a guide to the BuildStream command line interface.
+Later sections provide detailed information on BuilStream internals.
 
 .. toctree::
    :maxdepth: 2
