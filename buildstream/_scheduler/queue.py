@@ -222,8 +222,7 @@ class Queue():
 
     def job_done(self, job, returncode, element):
 
-        # Shutdown the job
-        job.shutdown()
+        # Remove from our jobs
         self.active_jobs.remove(job)
 
         # Update workspaces in the main task before calling any queue implementation

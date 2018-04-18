@@ -334,8 +334,9 @@ class Job():
             self.queue.put(envelope)
 
     def child_complete(self, pid, returncode, element):
+        self.shutdown()
+
         if returncode != 0 and self.tries <= self.max_retries:
-            self.shutdown()
             self.spawn(self.action, self.complete, self.max_retries)
             return
 
