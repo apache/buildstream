@@ -402,12 +402,10 @@ def push(app, elements, deps, remote):
 @click.option('--format', '-f', 'format_', metavar='FORMAT', default=None,
               type=click.STRING,
               help='Format string for each element')
-@click.option('--downloadable', default=False, is_flag=True,
-              help="Refresh downloadable state")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def show(app, elements, deps, except_, order, format_, downloadable):
+def show(app, elements, deps, except_, order, format_):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -457,8 +455,7 @@ def show(app, elements, deps, except_, order, format_, downloadable):
     with app.initialized():
         dependencies = app.stream.load_selection(elements,
                                                  selection=deps,
-                                                 except_targets=except_,
-                                                 downloadable=downloadable)
+                                                 except_targets=except_)
 
         if order == "alpha":
             dependencies = sorted(dependencies)
