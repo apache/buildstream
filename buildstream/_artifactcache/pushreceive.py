@@ -33,6 +33,7 @@ from urllib.parse import urlparse
 import click
 import gi
 
+from .. import _ostree
 from .. import _signals  # nopep8
 from .._profile import Topics, profile_start, profile_end
 
@@ -277,9 +278,13 @@ class PushMessageReader(object):
         _, args = self.receive([PushCommandType.update])
         return args
 
-    def receive_putobjects(self, repo):
-
+    def receive_putobjects(self, repo, repopath):
         received_objects = []
+
+        # Determine the available disk space, in bytes, of the file system
+        # which mounts the repo
+        stats = os.statvfs(repopath)
+        free_disk_space = stats.f_bfree * stats.f_bsize
 
         # Open a TarFile for reading uncompressed tar from a stream
         tar = tarfile.TarFile.open(mode='r|', fileobj=self.file)
@@ -288,6 +293,7 @@ class PushMessageReader(object):
         #
         # This should block while tar.next() reads the next
         # tar object from the stream.
+        buffer_ = int(2e9)
         while True:
             filepos = tar.fileobj.tell()
             tar_info = tar.next()
@@ -300,7 +306,16 @@ class PushMessageReader(object):
                     tar.fileobj.read(512)
                 break
 
+            # obtain size of tar object in bytes
+            artifact_size = tar_info.size
+
+            if artifact_size > free_disk_space - buffer_:
+                # Clean up the cache with a buffer of 2GB
+                removed_size = clean_up_cache(repo, artifact_size, free_disk_space, buffer_)
+                free_disk_space += removed_size
+
             tar.extract(tar_info, self.tmpdir)
+            free_disk_space -= artifact_size
             received_objects.append(tar_info.name)
 
         # Finished with this stream
@@ -645,7 +660,7 @@ class OSTreeReceiver(object):
             return 0
 
         # Receive the actual objects
-        received_objects = self.reader.receive_putobjects(self.repo)
+        received_objects = self.reader.receive_putobjects(self.repo, self.repopath)
 
         # Ensure that pusher has sent all objects
         self.reader.receive_done()
@@ -792,6 +807,42 @@ def push(repo, remote, branches, output):
             logging.info("Ref {} was already present in remote {}".format(branches, remote))
             terminate_push()
             return False
+
+
+# clean_up_cache()
+#
+# Keep removing Least Recently Pushed (LRP) artifacts in a cache until there
+# is enough space for the incoming artifact
+#
+# Args:
+#   repo: OSTree.Repo object
+#   free_disk_space: The available disk space on the file system in bytes
+#   artifact_size: The size of the artifact in bytes
+#   buffer_: The amount of headroom we want on disk.
+#
+# Returns:
+#   int: The total bytes removed on the filesystem
+#
+def clean_up_cache(repo, artifact_size, free_disk_space, buffer_):
+    # obtain a list of LRP artifacts
+    LRP_artifacts = _ostree.list_artifacts(repo)
+
+    removed_size = 0  # in bytes
+    while artifact_size - removed_size > free_disk_space - buffer_:
+        try:
+            to_remove = LRP_artifacts.pop(0)  # The first element in the list is the LRP artifact
+        except IndexError:
+            logging.info("There are no more artifacts left in the cache. Adding artifact...")
+            break
+
+        removed_size += _ostree.remove(repo, to_remove, defer_prune=False)
+
+    if removed_size > 0:
+        logging.info("Successfully removed {} bytes from the cache".format(removed_size))
+    else:
+        logging.info("No artifacts were removed from the cache.")
+
+    return removed_size
 
 
 @click.command(short_help="Receive pushed artifacts over ssh")
