@@ -386,9 +386,9 @@ and use the integration cli helper.
 Measuring BuildStream performance
 ---------------------------------
 
+
 Benchmarking framework
 ~~~~~~~~~~~~~~~~~~~~~~~
-
 BuildStream has a utility to measure performance which is available from a
 separate repository at https://gitlab.com/BuildStream/benchmarks. This tool
 allows you to run a fixed set of workloads with multiple versions of
@@ -399,9 +399,9 @@ testing potential optimizations.
 For full documentation on how to use the benchmarking tool see the README in
 the 'benchmarks' repository.
 
+
 Profiling tools
 ~~~~~~~~~~~~~~~
-
 When looking for ways to speed up the code you should make use of a profiling
 tool.
 
