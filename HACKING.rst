@@ -54,6 +54,9 @@ the change.
 The summary line must start with what changed, followed by a colon and
 a very brief description of the change.
 
+If there is an associated issue, it **must** be mentioned somewhere
+in the commit message.
+
 **Example**::
 
   element.py: Added the frobnicator so that foos are properly frobbed.
