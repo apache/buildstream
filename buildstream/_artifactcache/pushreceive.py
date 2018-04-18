@@ -33,7 +33,8 @@ from urllib.parse import urlparse
 import click
 import gi
 
-from ..utils import _parse_size
+from ..utils import _get_dir_size, _parse_size
+from .. import _ostree
 from .. import _signals  # nopep8
 from .._profile import Topics, profile_start, profile_end
 
@@ -278,7 +279,7 @@ class PushMessageReader(object):
         _, args = self.receive([PushCommandType.update])
         return args
 
-    def receive_putobjects(self, repo):
+    def receive_putobjects(self, repo, repo_size, cache_quota):
 
         received_objects = []
 
@@ -289,6 +290,7 @@ class PushMessageReader(object):
         #
         # This should block while tar.next() reads the next
         # tar object from the stream.
+        current_repo_size = repo_size
         while True:
             filepos = tar.fileobj.tell()
             tar_info = tar.next()
@@ -300,6 +302,11 @@ class PushMessageReader(object):
                 if tar.fileobj.tell() - filepos < 1024:
                     tar.fileobj.read(512)
                 break
+
+            # obtain size of tar object in bytes
+            artifact_size = tar_info.size
+            if cache_quota and artifact_size + current_repo_size > cache_quota:
+                current_repo_size = clean_up_cache(repo, current_repo_size, artifact_size, cache_quota)
 
             tar.extract(tar_info, self.tmpdir)
             received_objects.append(tar_info.name)
@@ -650,8 +657,16 @@ class OSTreeReceiver(object):
             logging.debug('Received done before any objects, exiting')
             return 0
 
+        # Determine the size (in bytes) of the artifact cache
+        # Expensive function, we should probably only work this out if there is a quota,
+        # otherwise we don't need it.
+        if self.cache_quota:
+            repo_size = _get_dir_size(self.repopath)
+        else:
+            repo_size = None
+
         # Receive the actual objects
-        received_objects = self.reader.receive_putobjects(self.repo)
+        received_objects = self.reader.receive_putobjects(self.repo, repo_size, self.cache_quota)
 
         # Ensure that pusher has sent all objects
         self.reader.receive_done()
@@ -798,6 +813,42 @@ def push(repo, remote, branches, output):
             logging.info("Ref {} was already present in remote {}".format(branches, remote))
             terminate_push()
             return False
+
+
+# clean_up_cache()
+#
+# Keep removing Least Recently Pushed (LRP) artifacts in a cache until there
+# is enough space for the incoming artifact
+#
+# Args:
+#   repo: OSTree.Repo object
+#   repo_size: The size of the repo in bytes
+#   artifact_size: The size of the artifact in bytes
+#   cache_quota: quota of the cache in bytes
+#
+# Returns:
+#   int: The new repo_size
+#
+def clean_up_cache(repo, repo_size, artifact_size, cache_quota):
+    # obtain a list of LRP artifacts
+    LRP_artifacts = _ostree.list_artifacts(repo)
+
+    removed_size = 0  # in bytes
+    while artifact_size + repo_size - removed_size > cache_quota:
+        try:
+            to_remove = LRP_artifacts.pop(0)  # The first element in the list is the LRP artifact
+        except IndexError:
+            logging.info("There are no more artifacts left in the cache. Adding artifact...")
+            break
+
+        removed_size += _ostree.remove(repo, to_remove, defer_prune=False)
+
+    if removed_size > 0:
+        logging.info("Successfully removed {} bytes from the cache".format(removed_size))
+    else:
+        logging.info("No artifacts were removed from the cache.")
+
+    return artifact_size + repo_size - removed_size
 
 
 @click.command(short_help="Receive pushed artifacts over ssh")
