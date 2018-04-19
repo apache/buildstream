@@ -117,6 +117,46 @@ def test_track_recurse(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_track_single(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+    element_path = os.path.join(project, 'elements')
+    element_dep_name = 'track-test-dep.bst'
+    element_target_name = 'track-test-target.bst'
+
+    # Create our repo object of the given source type with
+    # the dev files, and then collect the initial ref.
+    #
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    # Write out our test targets
+    generate_element(repo, os.path.join(element_path, element_dep_name))
+    generate_element(repo, os.path.join(element_path, element_target_name),
+                     dep_name=element_dep_name)
+
+    # Assert that tracking is needed for both elements
+    assert cli.get_element_state(project, element_dep_name) == 'no reference'
+    assert cli.get_element_state(project, element_target_name) == 'no reference'
+
+    # Now first try to track only one element
+    result = cli.run(project=project, args=[
+        'track', '--deps', 'none',
+        element_target_name])
+    result.assert_success()
+
+    # And now fetch it
+    result = cli.run(project=project, args=[
+        'fetch', '--deps', 'none',
+        element_target_name])
+    result.assert_success()
+
+    # Assert that the dependency is waiting and the target has still never been tracked
+    assert cli.get_element_state(project, element_dep_name) == 'no reference'
+    assert cli.get_element_state(project, element_target_name) == 'waiting'
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     project = os.path.join(datafiles.dirname, datafiles.basename)
