@@ -97,7 +97,8 @@ class OptionPool():
             except KeyError as e:
                 p = _yaml.node_get_provenance(node, option_name)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Unknown option '{}' specified".format(p, option_name))
+                                "{}: Unknown option '{}' specified"
+                                .format(p, option_name)) from e
             option.load_value(node, transform=transform)
 
     # load_cli_values()
@@ -114,7 +115,8 @@ class OptionPool():
                 option = self._options[option_name]
             except KeyError as e:
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Unknown option '{}' specified on the command line".format(option_name))
+                                "Unknown option '{}' specified on the command line"
+                                .format(option_name)) from e
             option.set_value(option_value)
 
     # resolve()
@@ -180,7 +182,7 @@ class OptionPool():
         # Now recurse into nested dictionaries and lists
         # and process any indirectly nested conditionals.
         #
-        for key, value in _yaml.node_items(node):
+        for _, value in _yaml.node_items(node):
             if isinstance(value, Mapping):
                 self.process_node(value)
             elif isinstance(value, list):
