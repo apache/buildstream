@@ -42,6 +42,33 @@ from ._artifactcache.artifactcache import ArtifactCacheSpec, configured_remote_a
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 
 
+# PipelineSelection()
+#
+# Defines the kind of pipeline selection to make when the pipeline
+# is provided a list of targets, for whichever purpose.
+#
+# These values correspond to the CLI `--deps` arguments for convenience.
+#
+class PipelineSelection():
+
+    # Select only the target elements in the associated targets
+    NONE = 'none'
+
+    # Select elements which must be built for the associated targets to be built
+    PLAN = 'plan'
+
+    # All dependencies of all targets, including the targets
+    ALL = 'all'
+
+    # All direct build dependencies and their recursive runtime dependencies,
+    # excluding the targets
+    BUILD = 'build'
+
+    # All direct runtime dependencies and their recursive runtime dependencies,
+    # including the targets
+    RUN = 'run'
+
+
 # Pipeline()
 #
 # Args:
@@ -176,28 +203,28 @@ class Pipeline():
         # Reset the element loader state
         Element._reset_load_state()
 
-    # deps_elements()
+    # get_selection()
     #
     # Args:
-    #    mode (str): A specific mode of resolving deps
+    #    mode (PipelineSelection): The PipelineSelection mode
     #
     # Various commands define a --deps option to specify what elements to
     # use in the result, this function reports a list that is appropriate for
     # the selected option.
     #
-    def deps_elements(self, mode):
+    def get_selection(self, mode):
 
         elements = None
-        if mode == 'none':
+        if mode == PipelineSelection.NONE:
             elements = self.targets
-        elif mode == 'plan':
+        elif mode == PipelineSelection.PLAN:
             elements = list(self._plan())
         else:
-            if mode == 'all':
+            if mode == PipelineSelection.ALL:
                 scope = Scope.ALL
-            elif mode == 'build':
+            elif mode == PipelineSelection.BUILD:
                 scope = Scope.BUILD
-            elif mode == 'run':
+            elif mode == PipelineSelection.RUN:
                 scope = Scope.RUN
 
             elements = list(self.dependencies(scope))

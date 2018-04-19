@@ -277,7 +277,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
                          track_elements=elements if track_ else None,
                          track_cross_junctions=track_cross_junctions,
                          fetch_subprojects=True):
-        dependencies = app.pipeline.deps_elements(deps)
+        dependencies = app.pipeline.get_selection(deps)
         app.pipeline.fetch(app.scheduler, dependencies)
 
 
@@ -313,7 +313,7 @@ def track(app, elements, deps, except_, cross_junctions):
                          track_elements=elements,
                          track_cross_junctions=cross_junctions,
                          fetch_subprojects=True):
-        dependencies = app.pipeline.deps_elements(deps)
+        dependencies = app.pipeline.get_selection(deps)
         app.pipeline.track(app.scheduler)
 
 
@@ -344,7 +344,7 @@ def pull(app, elements, deps, remote):
     """
     with app.initialized(elements, session_name="Pull", use_configured_remote_caches=(remote is None),
                          add_remote_cache=remote, fetch_subprojects=True):
-        to_pull = app.pipeline.deps_elements(deps)
+        to_pull = app.pipeline.get_selection(deps)
         app.pipeline.pull(app.scheduler, to_pull)
 
 
@@ -375,7 +375,7 @@ def push(app, elements, deps, remote):
     with app.initialized(elements, session_name="Push",
                          use_configured_remote_caches=(remote is None),
                          add_remote_cache=remote, fetch_subprojects=True):
-        to_push = app.pipeline.deps_elements(deps)
+        to_push = app.pipeline.get_selection(deps)
         app.pipeline.push(app.scheduler, to_push)
 
 
@@ -449,7 +449,7 @@ def show(app, elements, deps, except_, order, format_, downloadable):
     """
     with app.initialized(elements, except_=except_, use_configured_remote_caches=downloadable):
 
-        dependencies = app.pipeline.deps_elements(deps)
+        dependencies = app.pipeline.get_selection(deps)
         if order == "alpha":
             dependencies = sorted(dependencies)
 
@@ -582,7 +582,7 @@ def source_bundle(app, target, force, directory,
     """Produce a source bundle to be manually executed
     """
     with app.initialized((target,), rewritable=track_, track_elements=[target] if track_ else None):
-        dependencies = app.pipeline.deps_elements('all')
+        dependencies = app.pipeline.get_selection('all')
         app.pipeline.source_bundle(app.scheduler, dependencies, force, track_,
                                    compression, directory)
 
