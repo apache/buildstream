@@ -333,6 +333,9 @@ class ArtifactCache():
     #     key (str): The cache key to use
     #     progress (callable): The progress callback, if any
     #
+    # Returns:
+    #   (bool): True if pull was successful, False if artifact was not available
+    #
     def pull(self, element, key, *, progress=None):
         raise ImplError("Cache '{kind}' does not implement pull()"
                         .format(kind=type(self).__name__))

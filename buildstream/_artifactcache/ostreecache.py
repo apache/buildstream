@@ -171,9 +171,14 @@ class OSTreeCache(ArtifactCache):
 
         try:
             # fetch the artifact from highest priority remote using the specified cache key
-            remote = artifact_map.lookup_first(ref)
+            remotes = artifact_map.lookup(ref)
+            if not remotes:
+                return False
+
+            remote = remotes[0]
             remote_name = self._ensure_remote(self.repo, remote.pull_url)
             _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
+            return True
         except OSTreeError as e:
             raise ArtifactError("Failed to pull artifact for element {}: {}"
                                 .format(element.name, e)) from e
@@ -428,9 +433,6 @@ class _OSTreeArtifactMap():
 
     def lookup(self, ref):
         return self._ref_to_remotes.get(ref, [])
-
-    def lookup_first(self, ref):
-        return self._ref_to_remotes.get(ref, [])[0]
 
     def contains(self, ref):
         return ref in self._ref_to_remotes

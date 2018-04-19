@@ -1569,12 +1569,12 @@ class Element(Plugin):
 
         if self.__remotely_strong_cached:
             key = self.__strict_cache_key
-            self.__artifacts.pull(self, key, progress=progress)
+            assert self.__artifacts.pull(self, key, progress=progress)
 
             # update weak ref by pointing it to this newly fetched artifact
             self.__artifacts.link_key(self, key, weak_key)
         elif not context.get_strict() and self.__remotely_cached:
-            self.__artifacts.pull(self, weak_key, progress=progress)
+            assert self.__artifacts.pull(self, weak_key, progress=progress)
 
             # extract strong cache key from this newly fetched artifact
             self._update_state()
