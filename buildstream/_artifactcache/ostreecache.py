@@ -54,9 +54,8 @@ class OSTreeCache(ArtifactCache):
         ostreedir = os.path.join(context.artifactdir, 'ostree')
         self.repo = _ostree.ensure(ostreedir, False)
 
-        # Per-project list of OSTreeRemote and OSTreeArtifactMap instances.
+        # Per-project list of OSTreeRemote instances.
         self._remotes = {}
-        self._artifact_maps = {}
 
         self._has_fetch_remotes = False
         self._has_push_remotes = False
@@ -91,18 +90,6 @@ class OSTreeCache(ArtifactCache):
     def contains(self, element, key):
         ref = self.get_artifact_fullname(element, key)
         return _ostree.exists(self.repo, ref)
-
-    def remote_contains(self, element, key):
-        remotes = self._remotes_containing_key(element, key)
-        return len(remotes) > 0
-
-    def push_needed(self, element, key):
-
-        remotes_with_artifact = self._remotes_containing_key(element, key)
-
-        push_remotes_with_artifact = set(r for r in remotes_with_artifact if r.spec.push)
-        push_remotes_for_project = set(self._remotes[element._get_project()])
-        return not push_remotes_for_project.issubset(push_remotes_with_artifact)
 
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
@@ -174,23 +161,19 @@ class OSTreeCache(ArtifactCache):
     def pull(self, element, key, *, progress=None):
         project = element._get_project()
 
-        artifact_map = self._artifact_maps[project]
-
         ref = self.get_artifact_fullname(element, key)
 
-        try:
-            # fetch the artifact from highest priority remote using the specified cache key
-            remotes = artifact_map.lookup(ref)
-            if not remotes:
-                return False
+        for remote in self._remotes[project]:
+            try:
+                # fetch the artifact from highest priority remote using the specified cache key
+                remote_name = self._ensure_remote(self.repo, remote.pull_url)
+                _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
+                return True
+            except OSTreeError:
+                # Try next remote
+                continue
 
-            remote = remotes[0]
-            remote_name = self._ensure_remote(self.repo, remote.pull_url)
-            _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
-            return True
-        except OSTreeError as e:
-            raise ArtifactError("Failed to pull artifact for element {}: {}"
-                                .format(element.name, e)) from e
+        return False
 
     def link_key(self, element, oldkey, newkey):
         oldref = self.get_artifact_fullname(element, oldkey)
@@ -214,12 +197,8 @@ class OSTreeCache(ArtifactCache):
 
         refs = [self.get_artifact_fullname(element, key) for key in keys]
 
-        remotes_for_each_ref = [self._remotes_containing_key(element, ref) for ref in refs]
-
         for remote in push_remotes:
-            # Push if the remote is missing any of the refs
-            if any([remote not in remotes_with_ref for remotes_with_ref in remotes_for_each_ref]):
-                any_pushed |= self._push_to_remote(remote, element, refs)
+            any_pushed |= self._push_to_remote(remote, element, refs)
 
         return any_pushed
 
@@ -244,9 +223,7 @@ class OSTreeCache(ArtifactCache):
         def child_action(url, q):
             try:
                 push_url, pull_url = self._initialize_remote(url)
-                remote = self._ensure_remote(self.repo, pull_url)
-                remote_refs = _ostree.list_remote_refs(self.repo, remote=remote)
-                q.put((None, push_url, pull_url, remote_refs))
+                q.put((None, push_url, pull_url))
             except Exception as e:               # pylint: disable=broad-except
                 # Whatever happens, we need to return it to the calling process
                 #
@@ -267,7 +244,7 @@ class OSTreeCache(ArtifactCache):
                 with _signals.blocked([signal.SIGINT], ignore=False):
                     p.start()
 
-                error, push_url, pull_url, remote_refs = q.get()
+                error, push_url, pull_url = q.get()
                 p.join()
             except KeyboardInterrupt:
                 utils._kill_process_tree(p.pid)
@@ -283,16 +260,15 @@ class OSTreeCache(ArtifactCache):
                 if pull_url:
                     self._has_fetch_remotes = True
 
-                remote_results[remote_spec.url] = (push_url, pull_url, remote_refs)
+                remote_results[remote_spec.url] = (push_url, pull_url)
 
-        # Prepare push_urls, pull_urls, and remote_refs for each project
+        # Prepare push_urls and pull_urls for each project
         for project in self.context.get_projects():
             remote_specs = self.global_remote_specs
             if project in self.project_remote_specs:
                 remote_specs = list(utils._deduplicate(remote_specs + self.project_remote_specs[project]))
 
             remotes = []
-            artifact_map = _OSTreeArtifactMap()
 
             for remote_spec in remote_specs:
                 # Errors are already handled in the loop above,
@@ -300,7 +276,7 @@ class OSTreeCache(ArtifactCache):
                 if remote_spec.url not in remote_results:
                     continue
 
-                push_url, pull_url, remote_refs = remote_results[remote_spec.url]
+                push_url, pull_url = remote_results[remote_spec.url]
 
                 if remote_spec.push and not push_url:
                     raise ArtifactError("Push enabled but not supported by repo at: {}".format(remote_spec.url))
@@ -308,13 +284,6 @@ class OSTreeCache(ArtifactCache):
                 remote = _OSTreeRemote(remote_spec, pull_url, push_url)
                 remotes.append(remote)
 
-                # Update our overall map of remote refs with any refs that are
-                # present in the new remote and were not already found in
-                # higher priority ones.
-                for ref in remote_refs:
-                    artifact_map.append(ref, remote)
-
-            self._artifact_maps[project] = artifact_map
             self._remotes[project] = remotes
 
     ################################################
@@ -376,25 +345,6 @@ class OSTreeCache(ArtifactCache):
         _ostree.configure_remote(repo, remote_name, pull_url)
         return remote_name
 
-    # _remotes_containing_key():
-    #
-    # Return every remote cache that contains the key. The result will be an
-    # ordered list of remotes.
-    #
-    # Args:
-    #     element (Element): The Element to check
-    #     key (str): The key to use
-    #
-    # Returns (list): A list of _OSTreeRemote instances.
-    #
-    def _remotes_containing_key(self, element, key):
-        if not self._has_fetch_remotes:
-            return []
-
-        artifact_map = self._artifact_maps[element._get_project()]
-        ref = self.get_artifact_fullname(element, key)
-        return artifact_map.lookup(ref)
-
     def _push_to_remote(self, remote, element, refs):
         with utils._tempdir(dir=self.context.artifactdir, prefix='push-repo-') as temp_repo_dir:
 
@@ -426,22 +376,3 @@ class _OSTreeRemote():
         self.spec = spec
         self.pull_url = pull_url
         self.push_url = push_url
-
-
-# Maps artifacts to the remotes that contain them.
-#
-class _OSTreeArtifactMap():
-    def __init__(self):
-        self._ref_to_remotes = {}
-
-    def append(self, ref, remote):
-        if ref in self._ref_to_remotes:
-            self._ref_to_remotes[ref].append(remote)
-        else:
-            self._ref_to_remotes[ref] = [remote]
-
-    def lookup(self, ref):
-        return self._ref_to_remotes.get(ref, [])
-
-    def contains(self, ref):
-        return ref in self._ref_to_remotes
