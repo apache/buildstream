@@ -116,7 +116,7 @@ class Status():
         if not self._term.does_styling:
             return
 
-        for i in range(self._last_lines):
+        for _ in range(self._last_lines):
             self._move_up()
             self._clear_line()
         self._last_lines = 0
