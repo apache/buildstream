@@ -312,8 +312,8 @@ def track(app, elements, deps, except_, cross_junctions):
     with app.initialized(elements, session_name="Track", except_=except_, rewritable=True,
                          track_elements=elements,
                          track_cross_junctions=cross_junctions,
+                         track_selection=deps,
                          fetch_subprojects=True):
-        dependencies = app.pipeline.get_selection(deps)
         app.pipeline.track(app.scheduler)
 
 
