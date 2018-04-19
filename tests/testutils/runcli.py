@@ -159,14 +159,14 @@ class Result():
         return list(tracked)
 
     def get_pushed_elements(self):
-        pushed = re.findall(r'\[\s*push:(\S+)\s*\]\s*START\s*Pushing artifact', self.stderr)
+        pushed = re.findall(r'\[\s*push:(\S+)\s*\]\s*INFO\s*Pushed artifact', self.stderr)
         if pushed is None:
             return []
 
         return list(pushed)
 
     def get_pulled_elements(self):
-        pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*START', self.stderr)
+        pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*INFO\s*Downloaded artifact', self.stderr)
         if pulled is None:
             return []
 
