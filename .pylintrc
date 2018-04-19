@@ -105,7 +105,6 @@ disable=#####################################
         invalid-name,
 
         unused-argument,
-        unused-variable,
 
         ###########################################################
         # Messages that report warnings which should be addressed #
