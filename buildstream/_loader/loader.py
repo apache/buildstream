@@ -377,7 +377,6 @@ class Loader():
         # we have good error reporting
         for i in range(len(sources)):
             source = _yaml.node_get(node, Mapping, Symbol.SOURCES, indices=[i])
-            provenance = _yaml.node_get_provenance(source)
             kind = _yaml.node_get(source, str, Symbol.KIND)
             del source[Symbol.KIND]
 
@@ -451,7 +450,7 @@ class Loader():
                 return loader
 
         try:
-            load_element = self._load_file(filename, rewritable, ticker)
+            self._load_file(filename, rewritable, ticker)
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:
                 # other load error
