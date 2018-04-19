@@ -2080,7 +2080,7 @@ class Element(Plugin):
 
         # Resolve variables in environment value strings
         final_env = {}
-        for key, value in self.node_items(environment):
+        for key, _ in self.node_items(environment):
             final_env[key] = self.node_subst_member(environment, key)
 
         return final_env
