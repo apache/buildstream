@@ -198,7 +198,7 @@ class Context():
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
-        for project_name, overrides in _yaml.node_items(self._project_overrides):
+        for _, overrides in _yaml.node_items(self._project_overrides):
             _yaml.node_validate(overrides, ['artifacts', 'options', 'strict'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
@@ -380,7 +380,7 @@ class Context():
                 self._push_message_depth(silent_nested)
                 yield
 
-            except BstError as e:
+            except BstError:
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
                 elapsed = datetime.datetime.now() - starttime
