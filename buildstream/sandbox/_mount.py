@@ -138,6 +138,6 @@ class MountMap():
     @contextmanager
     def mounted(self, sandbox):
         with ExitStack() as stack:
-            for mountpoint, mount in self.mounts.items():
+            for _, mount in self.mounts.items():
                 stack.enter_context(mount.mounted(sandbox))
             yield
