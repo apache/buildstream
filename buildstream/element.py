@@ -1618,7 +1618,14 @@ class Element(Plugin):
 
         with self.timed_activity("Pushing artifact"):
             # Push all keys used for local commit
-            return self.__artifacts.push(self, self.__get_cache_keys_for_commit())
+            pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit())
+            if not pushed:
+                return False
+
+            # Notify successful upload
+            display_key = self.__get_brief_display_key()
+            self.info("Pushed artifact {}".format(display_key))
+            return True
 
     # _shell():
     #
