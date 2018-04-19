@@ -155,7 +155,7 @@ class PushMessageWriter(object):
         for ref in refs:
             _, checksum = repo.resolve_rev(ref, True)
             if checksum:
-                _, has_object = repo.has_object(OSTree.ObjectType.COMMIT, ref, None)
+                _, has_object = repo.has_object(OSTree.ObjectType.COMMIT, checksum, None)
                 if has_object:
                     ref_map[ref] = checksum
 
