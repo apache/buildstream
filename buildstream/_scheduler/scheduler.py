@@ -297,9 +297,9 @@ class Scheduler():
     # Args:
     #    job (Job): The starting Job
     #
-    def job_starting(self, job):
+    def job_starting(self, job, element):
         if self._job_start_callback:
-            self._job_start_callback(job.element, job.action_name)
+            self._job_start_callback(element, job.action_name)
 
     # job_completed():
     #
@@ -310,9 +310,9 @@ class Scheduler():
     #    job (Job): The completed Job
     #    success (bool): Whether the Job completed with a success status
     #
-    def job_completed(self, queue, job, success):
+    def job_completed(self, queue, job, element, success):
         if self._job_complete_callback:
-            self._job_complete_callback(job.element, queue, job.action_name, success)
+            self._job_complete_callback(element, queue, job.action_name, success)
 
     #######################################################
     #                  Local Private Methods              #
