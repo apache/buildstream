@@ -16,7 +16,8 @@ JHBuild, Flatpak Builder and Android repo.
 
 BuildStream supports multiple build-systems (e.g. autotools, cmake, cpan, distutils,
 make, meson, qmake), covers many programming languages, and can create outputs in a
-range of packaging formats, for multiple platforms and chipsets.
+range of formats (e.g. debian packages, flatpak runtimes, sysroots, system
+images) for multiple platforms and chipsets.
 
 Why should I use BuildStream?
 =============================
