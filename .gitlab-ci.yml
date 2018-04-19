@@ -93,6 +93,10 @@ source_dist:
 tests-debian-8:
   <<: *linux-tests
 
+tests-debian-9:
+  image: buildstream/buildstream-debian:master-81-caa5241
+  <<: *linux-tests
+
 tests-fedora-27:
   image: buildstream/buildstream-fedora:master-56-5d7ee17
   <<: *linux-tests
@@ -225,6 +229,7 @@ coverage:
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
   - tests-debian-8
+  - tests-debian-9
   - tests-fedora-27
   - tests-unix
   - source_dist
