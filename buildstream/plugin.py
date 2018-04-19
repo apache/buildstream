@@ -695,13 +695,8 @@ __PLUGINS_TABLE = WeakValueDictionary()
 #    (Plugin): The plugin for the given ID, or None
 #
 def _plugin_lookup(unique_id):
-    try:
-        plugin = __PLUGINS_TABLE[unique_id]
-    except (AttributeError, KeyError) as e:
-        print("Could not find plugin with ID {}".format(unique_id))
-        raise
-
-    return plugin
+    assert unique_id in __PLUGINS_TABLE, "Could not find plugin with ID {}".format(unique_id)
+    return __PLUGINS_TABLE[unique_id]
 
 
 # No need for unregister, WeakValueDictionary() will remove entries
