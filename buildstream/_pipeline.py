@@ -156,12 +156,14 @@ class Pipeline():
     #    add_remote_cache (str): The URL for an additional remote artifact cache
     #    track_element (list of Elements): List of elements specified by the frontend for tracking
     #    track_cross_junctions (bool): Whether tracking is allowed to cross junction boundaries
+    #    track_selection (PipelineSelection): The selection algorithm for track elements
     #
     def initialize(self,
                    use_configured_remote_caches=False,
                    add_remote_cache=None,
                    track_elements=None,
-                   track_cross_junctions=False):
+                   track_cross_junctions=False,
+                   track_selection=PipelineSelection.ALL):
 
         # Preflight directly, before ever interrogating caches or anything.
         self._preflight()
@@ -187,7 +189,7 @@ class Pipeline():
         self._track_cross_junctions = track_cross_junctions
         self._track_elements = []
         if track_elements:
-            self._track_elements = self._get_elements_to_track(track_elements)
+            self._track_elements = self._get_elements_to_track(track_elements, track_selection)
 
         # Now resolve the cache keys once tracking elements have been resolved
         self._resolve_cache_keys()
@@ -620,26 +622,36 @@ class Pipeline():
 
     # _get_elements_to_track():
     #
-    # Work out which elements are going to be tracked
+    # Work out which elements are going to be tracked.
+    #
+    # Currently the 'mode' parameter only accepts
+    # PipelineSelection.NONE or PipelineSelection.ALL
+    #
+    # This makes the assumption that the except elements are
+    # meant to be removed from tracking element lists.
     #
     # Args:
-    #    (list of str): List of target names
+    #    track_targets (list of str): List of target names
+    #    mode (PipelineSelection): The PipelineSelection mode
     #
     # Returns:
     #    (list): List of Element objects to track
     #
-    def _get_elements_to_track(self, track_targets):
+    def _get_elements_to_track(self, track_targets, mode=PipelineSelection.ALL):
         planner = _Planner()
 
         # Convert target names to elements
-        target_elements = [e for e in self.dependencies(Scope.ALL)
-                           if e.name in track_targets]
+        track_elements = [e for e in self.dependencies(Scope.ALL)
+                          if e.name in track_targets]
 
-        # Plan them out
-        track_elements = planner.plan(target_elements, ignore_cache=True)
+        if mode != PipelineSelection.NONE:
+            assert mode == PipelineSelection.ALL
 
-        # Filter out --except elements
-        track_elements = self.remove_elements(track_elements)
+            # Plan them out
+            track_elements = planner.plan(track_elements, ignore_cache=True)
+
+            # Filter out --except elements
+            track_elements = self.remove_elements(track_elements)
 
         # Filter out cross junctioned elements
         if self._track_cross_junctions:

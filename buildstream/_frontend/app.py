@@ -38,7 +38,7 @@ from .._context import Context
 from .._project import Project
 from .._exceptions import BstError, PipelineError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
-from .._pipeline import Pipeline
+from .._pipeline import Pipeline, PipelineSelection
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
 from .._versions import BST_FORMAT_VERSION
@@ -229,6 +229,7 @@ class App():
     #    add_remote_cache (str): The URL for an explicitly mentioned remote cache
     #    track_elements (list of elements): Elements which are to be tracked
     #    track_cross_junctions (bool): Whether tracking is allowed to cross junction boundaries
+    #    track_selection (PipelineSelection): The selection algorithm for track elements
     #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
     #                              loading process, if they are not yet locally cached
     #
@@ -243,8 +244,12 @@ class App():
     @contextmanager
     def initialized(self, elements, *, session_name=None,
                     except_=tuple(), rewritable=False,
-                    use_configured_remote_caches=False, add_remote_cache=None,
-                    track_elements=None, track_cross_junctions=False, fetch_subprojects=False):
+                    use_configured_remote_caches=False,
+                    add_remote_cache=None,
+                    track_elements=None,
+                    track_cross_junctions=False,
+                    track_selection=PipelineSelection.ALL,
+                    fetch_subprojects=False):
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
         # Start with the early stage init, this enables logging right away
@@ -278,7 +283,8 @@ class App():
                 self.pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
                                          add_remote_cache=add_remote_cache,
                                          track_elements=track_elements,
-                                         track_cross_junctions=track_cross_junctions)
+                                         track_cross_junctions=track_cross_junctions,
+                                         track_selection=track_selection)
             except BstError as e:
                 self._error_exit(e, "Error initializing pipeline")
 
