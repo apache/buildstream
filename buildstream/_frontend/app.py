@@ -476,7 +476,7 @@ class App():
         except OSError as e:
             raise AppError("Failed to create workspace directory: {}".format(e)) from e
 
-        workspace = self.project.workspaces.create_workspace(target.name, workdir)
+        self.project.workspaces.create_workspace(target.name, workdir)
 
         if not no_checkout:
             with target.timed_activity("Staging sources to {}".format(directory)):
