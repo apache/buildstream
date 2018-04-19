@@ -20,12 +20,13 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 # System imports
+import os
 from collections import deque
 from enum import Enum
 import traceback
 
 # Local imports
-from ..job import Job
+from ..jobs import ElementJob
 
 # BuildStream toplevel imports
 from ..._exceptions import BstError, set_last_task_error
@@ -238,12 +239,15 @@ class Queue():
                 self.skipped_elements.append(element)
                 continue
 
+            logfile = self._element_log_path(element)
             self.prepare(element)
 
-            job = Job(scheduler, element, self.action_name,
-                      self.process, self._job_done,
-                      max_retries=self._max_retries)
-            scheduler.job_starting(job)
+            job = ElementJob(scheduler, self.action_name,
+                             logfile, element=element,
+                             action_cb=self.process,
+                             complete_cb=self._job_done,
+                             max_retries=self._max_retries)
+            scheduler.job_starting(job, element)
 
             job.spawn()
             self.active_jobs.append(job)
@@ -266,11 +270,15 @@ class Queue():
     #    job (Job): The job which completed
     #
     def _update_workspaces(self, element, job):
+        workspace_dict = None
+        if job.child_data:
+            workspace_dict = job.child_data['workspace']
+
         # Handle any workspace modifications now
         #
-        if job.workspace_dict:
+        if workspace_dict:
             project = element._get_project()
-            if project.workspaces.update_workspace(element.name, job.workspace_dict):
+            if project.workspaces.update_workspace(element.name, workspace_dict):
                 try:
                     project.workspaces.save_config()
                 except BstError as e:
@@ -343,7 +351,7 @@ class Queue():
         self._scheduler.put_job_token(self.queue_type)
 
         # Notify frontend
-        self._scheduler.job_completed(self, job, success)
+        self._scheduler.job_completed(self, job, element, success)
 
         self._scheduler.sched()
 
@@ -353,3 +361,16 @@ class Queue():
         context = element._get_context()
         message = Message(element._get_unique_id(), message_type, brief, **kwargs)
         context.message(message)
+
+    def _element_log_path(self, element):
+        project = element._get_project()
+        context = element._get_context()
+
+        key = element._get_display_key()[1]
+        action = self.action_name.lower()
+        logfile = "{key}-{action}.{{pid}}.log".format(key=key, action=action)
+
+        directory = os.path.join(context.logdir, project.name, element.normal_name)
+
+        os.makedirs(directory, exist_ok=True)
+        return os.path.join(directory, logfile)
