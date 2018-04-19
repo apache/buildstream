@@ -86,7 +86,7 @@ class DownloadableFileSource(Source):
         # Download the file, raise hell if the sha256sums don't match,
         # and mirror the file otherwise.
         with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
-            sha256, etag = self._ensure_mirror()
+            sha256, _ = self._ensure_mirror()
             if sha256 != self.ref:
                 raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
                                   .format(self.url, sha256, self.ref))
