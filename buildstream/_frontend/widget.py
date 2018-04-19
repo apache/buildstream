@@ -371,8 +371,6 @@ class LogLine(Widget):
             else:
                 if element._cached():
                     line = p.fmt_subst(line, 'state', "cached", fg='magenta')
-                elif element._remotely_cached():
-                    line = p.fmt_subst(line, 'state', "downloadable", fg='cyan')
                 elif consistency == Consistency.RESOLVED:
                     line = p.fmt_subst(line, 'state', "fetch needed", fg='red')
                 elif element._buildable():

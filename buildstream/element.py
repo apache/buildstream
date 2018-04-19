@@ -215,13 +215,11 @@ class Element(Plugin):
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__cached = None                    # Whether we have a cached artifact
         self.__strong_cached = None             # Whether we have a cached artifact
-        self.__remotely_cached = None           # Whether we have a remotely cached artifact
-        self.__remotely_strong_cached = None    # Whether we have a remotely cached artifact
         self.__assemble_scheduled = False       # Element is scheduled to be assembled
         self.__assemble_done = False            # Element is assembled
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
         self.__tracking_done = False            # Sources have been tracked
-        self.__pull_failed = False              # Whether pull was attempted but failed
+        self.__pull_done = False                # Whether pull was attempted
         self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None                    # Resolved regex objects for computing split domains
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
@@ -954,15 +952,6 @@ class Element(Plugin):
     def _cached(self):
         return self.__cached
 
-    # _remotely_cached():
-    #
-    # Returns:
-    #    (bool): Whether this element is already present in
-    #            the remote artifact cache
-    #
-    def _remotely_cached(self):
-        return self.__remotely_cached
-
     # _buildable():
     #
     # Returns:
@@ -1049,8 +1038,6 @@ class Element(Plugin):
             self.__weak_cache_key = None
             self.__strict_cache_key = None
             self.__strong_cached = None
-            self.__remotely_cached = None
-            self.__remotely_strong_cached = None
             return
 
         if self.__weak_cache_key is None:
@@ -1081,9 +1068,8 @@ class Element(Plugin):
             # are sufficient. However, don't update the `cached` attributes
             # until the full cache query below.
             cached = self.__artifacts.contains(self, self.__weak_cache_key)
-            remotely_cached = self.__artifacts.remote_contains(self, self.__weak_cache_key)
             if (not self.__assemble_scheduled and not self.__assemble_done and
-                    not cached and not remotely_cached):
+                    not cached and not self._pull_pending()):
                 self._schedule_assemble()
                 return
 
@@ -1101,15 +1087,11 @@ class Element(Plugin):
         key_for_cache_lookup = self.__strict_cache_key if context.get_strict() else self.__weak_cache_key
         if not self.__cached:
             self.__cached = self.__artifacts.contains(self, key_for_cache_lookup)
-        if not self.__remotely_cached:
-            self.__remotely_cached = self.__artifacts.remote_contains(self, key_for_cache_lookup)
         if not self.__strong_cached:
             self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
-        if not self.__remotely_strong_cached:
-            self.__remotely_strong_cached = self.__artifacts.remote_contains(self, self.__strict_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
-                not self.__cached and not self.__remotely_cached):
+                not self.__cached and not self._pull_pending()):
             # Workspaced sources are considered unstable if a build is pending
             # as the build will modify the contents of the workspace.
             # Determine as early as possible if a build is pending to discard
@@ -1527,31 +1509,55 @@ class Element(Plugin):
     #   (bool): Whether a pull operation is pending
     #
     def _pull_pending(self):
-        if self.__pull_failed:
-            # Consider this equivalent to artifact being unavailable in
-            # remote cache
+        if self.__strong_cached:
+            # Artifact already in local cache
             return False
 
-        if not self.__strong_cached and self.__remotely_strong_cached:
-            # Pull pending using strict cache key
-            return True
-        elif not self.__cached and self.__remotely_cached:
-            # Pull pending using weak cache key
-            return True
-        else:
-            # No pull pending
-            return False
+        # Pull is pending if artifact remote server available
+        # and pull has not been attempted yet
+        return self.__artifacts.has_fetch_remotes(element=self) and not self.__pull_done
 
-    # _pull_failed()
+    # _pull_done()
     #
-    # Indicate that pull was attempted but failed.
+    # Indicate that pull was attempted.
     #
-    # This needs to be called in the main process after
-    # a pull fails so that we properly update the main
+    # This needs to be called in the main process after a pull
+    # succeeds or fails so that we properly update the main
     # process data model
     #
-    def _pull_failed(self):
-        self.__pull_failed = True
+    # This will result in updating the element state.
+    #
+    def _pull_done(self):
+        self.__pull_done = True
+
+        self._update_state()
+
+    def _pull_strong(self, *, progress=None):
+        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+
+        key = self.__strict_cache_key
+        if not self.__artifacts.pull(self, key, progress=progress):
+            return False
+
+        # update weak ref by pointing it to this newly fetched artifact
+        self.__artifacts.link_key(self, key, weak_key)
+
+        return True
+
+    def _pull_weak(self, *, progress=None):
+        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+
+        if not self.__artifacts.pull(self, weak_key, progress=progress):
+            return False
+
+        # extract strong cache key from this newly fetched artifact
+        self._pull_done()
+
+        # create tag for strong cache key
+        key = self._get_cache_key(strength=_KeyStrength.STRONG)
+        self.__artifacts.link_key(self, weak_key, key)
+
+        return True
 
     # _pull():
     #
@@ -1565,26 +1571,14 @@ class Element(Plugin):
         def progress(percent, message):
             self.status(message)
 
-        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+        # Attempt to pull artifact without knowing whether it's available
+        pulled = self._pull_strong(progress=progress)
 
-        if self.__remotely_strong_cached:
-            key = self.__strict_cache_key
-            assert self.__artifacts.pull(self, key, progress=progress)
+        if not pulled and not self._cached() and not context.get_strict():
+            pulled = self._pull_weak(progress=progress)
 
-            # update weak ref by pointing it to this newly fetched artifact
-            self.__artifacts.link_key(self, key, weak_key)
-        elif not context.get_strict() and self.__remotely_cached:
-            assert self.__artifacts.pull(self, weak_key, progress=progress)
-
-            # extract strong cache key from this newly fetched artifact
-            self._update_state()
-
-            # create tag for strong cache key
-            key = self._get_cache_key(strength=_KeyStrength.STRONG)
-            self.__artifacts.link_key(self, weak_key, key)
-        else:
-            raise ElementError("Attempt to pull unavailable artifact for element {}"
-                               .format(self.name))
+        if not pulled:
+            return False
 
         # Notify successfull download
         display_key = self.__get_brief_display_key()
@@ -1610,16 +1604,7 @@ class Element(Plugin):
         if self.__get_tainted():
             return True
 
-        # Use the strong cache key to check whether a remote already has the artifact.
-        # In non-strict mode we want to push updated artifacts even if the
-        # remote already has an artifact with the same weak cache key.
-        key = self._get_cache_key(strength=_KeyStrength.STRONG)
-
-        # Skip if every push remote contains this element already.
-        if self.__artifacts.push_needed(self, key):
-            return False
-        else:
-            return True
+        return False
 
     # _push():
     #

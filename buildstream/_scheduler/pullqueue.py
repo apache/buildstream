@@ -52,10 +52,7 @@ class PullQueue(Queue):
         if not success:
             return False
 
-        if not result:
-            element._pull_failed()
-
-        element._update_state()
+        element._pull_done()
 
         # Element._pull() returns True if it downloaded an artifact,
         # here we want to appear skipped if we did not download.

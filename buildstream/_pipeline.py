@@ -475,7 +475,7 @@ class _Planner():
             self.plan_element(dep, depth)
 
         # Dont try to plan builds of elements that are cached already
-        if not element._cached() and not element._remotely_cached():
+        if not element._cached():
             for dep in element.dependencies(Scope.BUILD, recurse=False):
                 self.plan_element(dep, depth + 1)
 
