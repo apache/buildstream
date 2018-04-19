@@ -251,7 +251,7 @@ class PushMessageReader(object):
         if not header:
             # Remote end quit
             return None, None
-        order, version, cmdtype, size = self.decode_header(header)
+        order, _, cmdtype, size = self.decode_header(header)
         msg = self.file.read(size)
         if len(msg) != size:
             raise PushException('Did not receive full message')
@@ -268,11 +268,11 @@ class PushMessageReader(object):
         return cmdtype, args.unpack()
 
     def receive_info(self):
-        cmdtype, args = self.receive([PushCommandType.info])
+        _, args = self.receive([PushCommandType.info])
         return args
 
     def receive_update(self):
-        cmdtype, args = self.receive([PushCommandType.update])
+        _, args = self.receive([PushCommandType.update])
         return args
 
     def receive_putobjects(self, repo):
@@ -307,11 +307,11 @@ class PushMessageReader(object):
         return received_objects
 
     def receive_status(self):
-        cmdtype, args = self.receive([PushCommandType.status])
+        _, args = self.receive([PushCommandType.status])
         return args
 
     def receive_done(self):
-        cmdtype, args = self.receive([PushCommandType.done])
+        _, args = self.receive([PushCommandType.done])
         return args
 
 
