@@ -527,7 +527,7 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
             # This operation is atomic, at least on platforms we care about:
             # https://bugs.python.org/issue8828
             os.replace(tempname, filename)
-    except Exception as e:
+    except Exception:
         cleanup_tempfile()
         raise
 
@@ -685,7 +685,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
             if ignore_missing:
                 continue
             else:
-                raise UtilError("Source file is missing: {}".format(srcpath))
+                raise UtilError("Source file is missing: {}".format(srcpath)) from e
 
         if stat.S_ISDIR(mode):
             # Ensure directory exists in destination
