@@ -519,7 +519,7 @@ class OSTreePusher(object):
         if not update_refs:
             logging.info('Nothing to update')
             self.writer.send_done()
-            return self.close()
+            raise PushExistsException('Nothing to update')
 
         # Send update command
         logging.info('Sending update request')
