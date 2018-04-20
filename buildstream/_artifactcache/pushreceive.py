@@ -387,6 +387,9 @@ class ProcessWithPipes(object):
             self.stderr = open(r2, 'rb')
             os.close(w2)
 
+        # The eventual return code
+        self.returncode = -1
+
     def wait(self):
         self.proc.join()
         self.returncode = self.proc.exitcode
