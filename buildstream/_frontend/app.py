@@ -22,6 +22,7 @@ import os
 import sys
 import shutil
 import resource
+import traceback
 import datetime
 from textwrap import TextWrapper
 from contextlib import contextmanager
@@ -188,6 +189,10 @@ class App():
 
         # Propagate pipeline feedback to the user
         self.context.set_message_handler(self._message_handler)
+
+        # Now that we have a logger and message handler,
+        # we can override the global exception hook.
+        sys.excepthook = self._global_exception_handler
 
         try:
             self.project = Project(directory, self.context, cli_options=self._main_options['option'])
@@ -549,6 +554,23 @@ class App():
         args = dict(kwargs)
         self.context.message(
             Message(None, message_type, message, **args))
+
+    # Exception handler
+    #
+    def _global_exception_handler(self, etype, value, tb):
+
+        # Print the regular BUG message
+        #
+        formatted = "".join(traceback.format_exception(etype, value, tb))
+        self._message(MessageType.BUG, str(value),
+                      detail=formatted)
+
+        # If the scheduler has started, try to terminate all jobs gracefully,
+        # but do not call sys.exit() as this may leave zombie processes.
+        if self.scheduler.loop:
+            self.scheduler.terminate_jobs()
+        else:
+            sys.exit(-1)
 
     #
     # Render the status area, conditional on some internal state
