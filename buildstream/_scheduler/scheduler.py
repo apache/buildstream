@@ -28,6 +28,7 @@ from contextlib import contextmanager
 
 # Local imports
 from .queues import QueueType
+from .queuerunner import QueueRunner
 
 
 # A decent return code for Scheduler.run()
@@ -82,6 +83,7 @@ class Scheduler():
         #
         # Private members
         #
+        self._runners = []
         self._interrupt_callback = interrupt_callback
         self._ticker_callback = ticker_callback
         self._job_start_callback = job_start_callback
@@ -115,6 +117,7 @@ class Scheduler():
     def run(self, queues):
 
         # Hold on to the queues to process
+        self._runners.append(QueueRunner(self, queues))
         self.queues = queues
 
         # Ensure that we have a fresh new event loop, in case we want
@@ -221,36 +224,8 @@ class Scheduler():
     # and process anything that is ready.
     #
     def sched(self):
-
-        process_queues = True
-
-        while self._queue_jobs and process_queues:
-
-            # Pull elements forward through queues
-            elements = []
-            for queue in self.queues:
-                # Enqueue elements complete from the last queue
-                queue.enqueue(elements)
-
-                # Dequeue processed elements for the next queue
-                elements = list(queue.dequeue())
-                elements = list(elements)
-
-            # Kickoff whatever processes can be processed at this time
-            #
-            # We start by queuing from the last queue first, because we want to
-            # give priority to queues later in the scheduling process in the case
-            # that multiple queues share the same token type.
-            #
-            # This avoids starvation situations where we dont move on to fetch
-            # tasks for elements which failed to pull, and thus need all the pulls
-            # to complete before ever starting a build
-            for queue in reversed(self.queues):
-                queue.process_ready()
-
-            # process_ready() may have skipped jobs, adding them to the done_queue.
-            # Pull these skipped elements forward to the next queue and process them.
-            process_queues = any(q.dequeue_ready() for q in self.queues)
+        for runner in self._runners:
+            runner.schedule_jobs()
 
         # If nothings ticking, time to bail out
         ticking = 0
