@@ -37,6 +37,7 @@ from buildstream import Element, BuildElement, ElementError
 
 # Element implementation for the 'import' kind.
 class ImportElement(BuildElement):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         self.source = self.node_subst_member(node, 'source')

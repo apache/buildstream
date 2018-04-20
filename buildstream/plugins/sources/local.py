@@ -40,6 +40,7 @@ from buildstream import utils
 
 
 class LocalSource(Source):
+    # pylint: disable=attribute-defined-outside-init
 
     def __init__(self, context, project, meta):
         super().__init__(context, project, meta)

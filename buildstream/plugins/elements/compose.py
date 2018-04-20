@@ -40,6 +40,7 @@ from buildstream import Element, Scope
 
 # Element implementation for the 'compose' kind.
 class ComposeElement(Element):
+    # pylint: disable=attribute-defined-outside-init
 
     # The compose element's output is it's dependencies, so
     # we must rebuild if the dependencies change even when

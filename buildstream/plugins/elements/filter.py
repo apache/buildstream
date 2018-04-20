@@ -41,6 +41,7 @@ from buildstream import Element, ElementError, Scope
 
 
 class FilterElement(Element):
+    # pylint: disable=attribute-defined-outside-init
 
     # The filter element's output is it's dependencies, so
     # we must rebuild if the dependencies change even when

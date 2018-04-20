@@ -59,6 +59,7 @@ from buildstream import utils
 
 
 class BzrSource(Source):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         self.node_validate(node, ['url', 'track', 'ref'] + Source.COMMON_CONFIG_KEYS)

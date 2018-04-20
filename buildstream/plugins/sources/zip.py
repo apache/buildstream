@@ -60,6 +60,7 @@ from ._downloadablefilesource import DownloadableFileSource
 
 
 class ZipSource(DownloadableFileSource):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         super().configure(node)

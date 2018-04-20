@@ -58,6 +58,7 @@ from buildstream._ostree import OSTreeError
 
 
 class OSTreeSource(Source):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
 

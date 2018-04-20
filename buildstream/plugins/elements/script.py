@@ -40,6 +40,8 @@ import buildstream
 
 # Element implementation for the 'script' kind.
 class ScriptElement(buildstream.ScriptElement):
+    # pylint: disable=attribute-defined-outside-init
+
     def configure(self, node):
         for n in self.node_get_member(node, list, 'layout', []):
             dst = self.node_subst_member(n, 'destination')

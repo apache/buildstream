@@ -115,6 +115,7 @@ from buildstream._pipeline import PipelineError
 
 # Element implementation for the 'junction' kind.
 class JunctionElement(Element):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         self.path = self.node_get_member(node, str, 'path', default='')

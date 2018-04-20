@@ -238,6 +238,7 @@ class GitMirror():
 
 
 class GitSource(Source):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', None)

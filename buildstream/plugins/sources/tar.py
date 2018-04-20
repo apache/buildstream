@@ -61,6 +61,7 @@ from ._downloadablefilesource import DownloadableFileSource
 
 
 class TarSource(DownloadableFileSource):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         super().configure(node)

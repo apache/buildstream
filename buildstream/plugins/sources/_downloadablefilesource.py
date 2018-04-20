@@ -11,6 +11,7 @@ from buildstream import utils
 
 
 class DownloadableFileSource(Source):
+    # pylint: disable=attribute-defined-outside-init
 
     COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag']
 

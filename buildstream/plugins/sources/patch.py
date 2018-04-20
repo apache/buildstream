@@ -44,6 +44,7 @@ from buildstream import utils
 
 
 class PatchSource(Source):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         self.path = self.node_get_member(node, str, "path")

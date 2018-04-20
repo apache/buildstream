@@ -52,6 +52,7 @@ from .tar import TarSource
 
 
 class DebSource(TarSource):
+    # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
         super().configure(node)
