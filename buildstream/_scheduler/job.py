@@ -46,6 +46,7 @@ class Envelope():
 # Process class that doesn't call waitpid on its own.
 # This prevents conflicts with the asyncio child watcher.
 class Process(multiprocessing.Process):
+    # pylint: disable=attribute-defined-outside-init
     def start(self):
         self._popen = self._Popen(self)
         self._sentinel = self._popen.sentinel
