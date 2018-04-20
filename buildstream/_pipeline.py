@@ -111,6 +111,8 @@ class Pipeline():
         self._artifacts = None
         self._loader = None
         self._exceptions = None
+        self._track_cross_junctions = False
+        self._track_elements = []
 
         #
         # Early initialization
@@ -187,7 +189,6 @@ class Pipeline():
 
         # Work out what we're going track, if anything
         self._track_cross_junctions = track_cross_junctions
-        self._track_elements = []
         if track_elements:
             self._track_elements = self._get_elements_to_track(track_elements, track_selection)
 
