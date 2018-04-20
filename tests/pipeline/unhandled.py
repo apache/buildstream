@@ -17,6 +17,11 @@ DATA_DIR = os.path.join(
 def test_unhandled_exception(cli, datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
+    # FIXME: Find a better way to test this, currently this
+    #        makes the unreasonable assumption that `bst` is installed,
+    #        it further makes the assumption that the installed version
+    #        of BuildStream is the one under test.
+    #
     process = subprocess.Popen(['bst', 'fetch', 'error.bst'],
                                cwd=basedir, stderr=subprocess.PIPE)
     try:
