@@ -93,7 +93,6 @@ disable=#####################################
         #######################################################
         # Messages that we would like to enable at some point #
         #######################################################
-        attribute-defined-outside-init,
 
         # Overriden methods don't actually override but redefine
         arguments-differ,
