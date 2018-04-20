@@ -114,7 +114,7 @@ class PushMessageWriter(object):
     def __init__(self, file, byteorder=sys.byteorder):
         self.file = file
         self.byteorder = byteorder
-        self.msg_byteorder = python_to_msg_byteorder(self.byteorder)
+        self.msg_byteorder = python_to_msg_byteorder(self.byteorder)  # 'l' or 'B'
 
     def encode_header(self, cmdtype, size):
         header = self.msg_byteorder.encode() + \
@@ -177,6 +177,7 @@ class PushMessageWriter(object):
     def send_update(self, refs):
         cmdtype = PushCommandType.update
         args = {}
+        # Note: Here, revs will be a tuple of (remote_rev, local_rev)
         for branch, revs in refs.items():
             args[branch] = GLib.Variant('(ss)', revs)
         command = PushCommand(cmdtype, args)
@@ -193,14 +194,19 @@ class PushMessageWriter(object):
 
         # Open a TarFile for writing uncompressed tar to a stream
         tar = tarfile.TarFile.open(mode='w|', fileobj=self.file)
+        # Note: objects is a set containing: <commit>.GLib.Enum
+        # for each object
         for obj in objects:
 
             logging.info('Sending object {}'.format(obj))
+            # obtain the path of the object
+            # Example: path/to/ostree/cache/objects/4a/COMMIT.GlibEnum
             objpath = ostree_object_path(repo, obj)
             stat = os.stat(objpath)
 
             tar_info = tarfile.TarInfo(obj)
             tar_info.mtime = stat.st_mtime
+            # obtain the size of the file in bytes
             tar_info.size = stat.st_size
             with open(objpath, 'rb') as obj_fp:
                 tar.addfile(tar_info, obj_fp)
@@ -381,6 +387,7 @@ def foo_run(func, args, stdin_fd, stdout_fd, stderr_fd):
 
 class ProcessWithPipes(object):
     def __init__(self, func, args, *, stderr=None):
+        # Create a pipe and return a pair of file descriptors (r, w)
         r0, w0 = os.pipe()
         r1, w1 = os.pipe()
         if stderr is None:
@@ -425,10 +432,12 @@ class OSTreePusher(object):
 
         # Enumerate branches to push
         if branches is None:
+            # obtain a dict of 'refs': 'checksums'
             _, self.refs = self.repo.list_refs(None, None)
         else:
             self.refs = {}
             for branch in branches:
+                # branch is a ref, now find its checksum (i.e. rev)
                 _, rev = self.repo.resolve_rev(branch, False)
                 self.refs[branch] = rev
 
@@ -447,6 +456,9 @@ class OSTreePusher(object):
         logging.info('Executing {}'.format(' '.join(ssh_cmd)))
 
         if self.remote_host:
+            # subprocess.Popen(args, bufsize=-1,...)
+            # Executes a child program in a new process which returns an open file
+            # object connected to the pipe.
             self.ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE,
                                         stderr=self.output,
@@ -457,31 +469,33 @@ class OSTreePusher(object):
         self.writer = PushMessageWriter(self.ssh.stdin)
         self.reader = PushMessageReader(self.ssh.stdout)
 
-    def needed_commits(self, remote, local, needed):
-        parent = local
-        if remote == '0' * 64:
+    def needed_commits(self, remote_rev, local_rev, needed):
+        parent = local_rev
+        if remote_rev == '0' * 64:
             # Nonexistent remote branch, use None for convenience
-            remote = None
-        while parent != remote:
+            remote_rev = None
+        while parent != remote_rev:
             needed.add(parent)
             _, commit = self.repo.load_variant_if_exists(OSTree.ObjectType.COMMIT,
                                                          parent)
             if commit is None:
                 raise PushException('Shallow history from commit {} does '
-                                    'not contain remote commit {}'.format(local, remote))
+                                    'not contain remote commit {}'.format(local_rev, remote_rev))
             parent = OSTree.commit_get_parent(commit)
             if parent is None:
                 break
-        if remote is not None and parent != remote:
+        if remote_rev is not None and parent != remote_rev:
             self.writer.send_done()
             raise PushExistsException('Remote commit {} not descendent of '
-                                      'commit {}'.format(remote, local))
+                                      'commit {}'.format(remote_rev, local_rev))
 
     def needed_objects(self, commits):
         objects = set()
         for rev in commits:
+            # obtain a set containing all reachable objects from a specific rev
             _, reachable = self.repo.traverse_commit(rev, 0, None)
             for obj in reachable:
+                # Get the objects name. General form: <commit>.GLib.Enum
                 objname = OSTree.object_to_string(obj[0], obj[1])
                 if obj[1] == OSTree.ObjectType.FILE:
                     # Make this a filez since we're archive-z2
@@ -523,6 +537,8 @@ class OSTreePusher(object):
         for branch, rev in self.refs.items():
             remote_rev = remote_refs.get(branch, '0' * 64)
             if rev != remote_rev:
+                # if the checksums for a branch aren't equal add a tuple of
+                # the remote_rev and local rev to a new dictionary.
                 update_refs[branch] = remote_rev, rev
         if not update_refs:
             logging.info('Nothing to update')
@@ -543,9 +559,12 @@ class OSTreePusher(object):
         commits = set()
         exc_info = None
         ref_count = 0
+
+        # update the remote checksum with the local one
         for branch, revs in update_refs.items():
             logging.info('Updating {} {} to {}'.format(branch, revs[0], revs[1]))
             try:
+                # obtain a set of the commits needed to be pushed
                 self.needed_commits(revs[0], revs[1], commits)
                 ref_count += 1
             except PushExistsException:
@@ -557,6 +576,7 @@ class OSTreePusher(object):
             raise exc_info[0].with_traceback(exc_info[1], exc_info[2])
 
         logging.info('Enumerating objects to send')
+        # obtain a set of the objects which need to be pushed to the server
         objects = self.needed_objects(commits)
 
         # Send all the objects to receiver, checking status after each
