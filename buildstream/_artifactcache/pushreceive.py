@@ -113,7 +113,7 @@ class PushMessageWriter(object):
     def __init__(self, file, byteorder=sys.byteorder):
         self.file = file
         self.byteorder = byteorder
-        self.msg_byteorder = python_to_msg_byteorder(self.byteorder)
+        self.msg_byteorder = python_to_msg_byteorder(self.byteorder)  # 'l' or 'B'
 
     def encode_header(self, cmdtype, size):
         header = self.msg_byteorder.encode() + \
@@ -388,6 +388,7 @@ def foo_run(func, args, stdin_fd, stdout_fd, stderr_fd):
 
 class ProcessWithPipes(object):
     def __init__(self, func, args, *, stderr=None):
+        # Create a pipe and return a pair of file descriptors (r, w)
         r0, w0 = os.pipe()
         r1, w1 = os.pipe()
         if stderr is None:
@@ -432,10 +433,12 @@ class OSTreePusher(object):
 
         # Enumerate branches to push
         if branches is None:
+            # obtain a dict of 'refs': 'checksums'
             _, self.refs = self.repo.list_refs(None, None)
         else:
             self.refs = {}
             for branch in branches:
+                # branch is a ref, now find its checksum (i.e. rev)
                 _, rev = self.repo.resolve_rev(branch, False)
                 self.refs[branch] = rev
 
@@ -454,6 +457,9 @@ class OSTreePusher(object):
         logging.info('Executing {}'.format(' '.join(ssh_cmd)))
 
         if self.remote_host:
+            # subprocess.Popen(args, bufsize=-1,...)
+            # Executes a child program in a new process which returns an open file
+            # object connected to the pipe.
             self.ssh = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE,
                                         stderr=self.output,
@@ -530,6 +536,8 @@ class OSTreePusher(object):
         for branch, rev in self.refs.items():
             remote_rev = remote_refs.get(branch, '0' * 64)
             if rev != remote_rev:
+                # if the checksums for a branch aren't equal add a tuple of
+                # the remote_rev and local rev to a new dictionary.
                 update_refs[branch] = remote_rev, rev
         if not update_refs:
             logging.info('Nothing to update')
@@ -550,9 +558,12 @@ class OSTreePusher(object):
         commits = set()
         exc_info = None
         ref_count = 0
+
+        # update the remote checksum with the local one
         for branch, revs in update_refs.items():
             logging.info('Updating {} {} to {}'.format(branch, revs[0], revs[1]))
             try:
+                # obtain a set of the commits needed to be pushed
                 self.needed_commits(revs[0], revs[1], commits)
                 ref_count += 1
             except PushExistsException:
@@ -564,6 +575,7 @@ class OSTreePusher(object):
             raise exc_info[0].with_traceback(exc_info[1], exc_info[2])
 
         logging.info('Enumerating objects to send')
+        # obtain a set of the objects which need to be pushed to the server
         objects = self.needed_objects(commits)
 
         # Send all the objects to receiver, checking status after each
