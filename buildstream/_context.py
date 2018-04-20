@@ -86,6 +86,9 @@ class Context():
         # Format string for printing the pipeline at startup time
         self.log_element_format = None
 
+        # Format string for printing message lines in the master log
+        self.log_message_format = None
+
         # Maximum number of fetch or refresh tasks
         self.sched_fetchers = 4
 
