@@ -55,6 +55,21 @@ def test_load_default_project(cli, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_load_project_from_subdir(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'project-from-subdir')
+    result = cli.run(
+        project=project,
+        cwd=os.path.join(project, 'subdirectory'),
+        args=['show', '--format', '%{env}', 'manual.bst'])
+    result.assert_success()
+
+    # Read back some of our project defaults from the env
+    env = _yaml.load_data(result.output)
+    assert (env['USER'] == "tomjon")
+    assert (env['TERM'] == "dumb")
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_override_project_path(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "overridepath")
     result = cli.run(project=project, args=[

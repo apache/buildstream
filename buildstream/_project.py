@@ -40,6 +40,9 @@ from ._workspaces import Workspaces
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
 
+# Project Configuration file
+_PROJECT_CONF_FILE = 'project.conf'
+
 
 # HostMount()
 #
@@ -75,7 +78,7 @@ class Project():
         self.name = None
 
         # The project directory
-        self.directory = os.path.abspath(directory)
+        self.directory = self._ensure_project_dir(directory)
 
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
@@ -211,7 +214,7 @@ class Project():
     def _load(self):
 
         # Load builtin default
-        projectfile = os.path.join(self.directory, "project.conf")
+        projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
         config = _yaml.load(_site.default_project_config)
 
         # Load project local config and override the builtin
@@ -458,3 +461,27 @@ class Project():
                 # paths are passed in relative to the project, but must be absolute
                 origin_dict['path'] = os.path.join(self.directory, origin_dict['path'])
             destination.append(origin_dict)
+
+    # _ensure_project_dir()
+    #
+    # Returns path of the project directory, if a configuration file is found
+    # in given directory or any of its parent directories.
+    #
+    # Args:
+    #    directory (str) - directory from where the command was invoked
+    #
+    # Raises:
+    #    LoadError if project.conf is not found
+    #
+    def _ensure_project_dir(self, directory):
+        directory = os.path.abspath(directory)
+        while not os.path.isfile(os.path.join(directory, _PROJECT_CONF_FILE)):
+            parent_dir = os.path.dirname(directory)
+            if directory == parent_dir:
+                raise LoadError(
+                    LoadErrorReason.MISSING_PROJECT_CONF,
+                    '{} not found in current directory or any of its parent directories'
+                    .format(_PROJECT_CONF_FILE))
+            directory = parent_dir
+
+        return directory
