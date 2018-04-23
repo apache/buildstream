@@ -4,7 +4,6 @@
 
 Installing BuildStream
 ======================
-
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
