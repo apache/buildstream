@@ -9,7 +9,7 @@ class PreflightErrorSource(Source):
     def preflight(self):
 
         # Raise a preflight error unconditionally
-        raise SourceError("{}: Unsatisfied requirements in preflight, raising this error",
+        raise SourceError("Unsatisfied requirements in preflight, raising this error",
                           reason="the-preflight-error")
 
     def get_unique_key(self):
