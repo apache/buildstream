@@ -16,3 +16,4 @@ other more elaborate details about BuildStream internals.
    sandboxing
    core_framework
    modules
+   buildstream.sandbox
