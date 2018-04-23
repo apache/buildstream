@@ -16,3 +16,10 @@ useful for working on BuildStream itself.
 * :mod:`ScriptElement <buildstream.scriptelement>` - Script Element Class
 * :mod:`Sandbox <buildstream.sandbox.sandbox>` - Build Sandbox
 * :mod:`Utilities <buildstream.utils>` - Utilities for Plugins
+
+
+.. toctree::
+   :maxdepth: 2
+
+   modules
+   buildstream.sandbox

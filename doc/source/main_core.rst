@@ -15,5 +15,3 @@ other more elaborate details about BuildStream internals.
    cachekeys
    sandboxing
    core_framework
-   modules
-   buildstream.sandbox
