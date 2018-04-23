@@ -4,6 +4,7 @@
 
 Installing BuildStream
 ======================
+
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
@@ -11,12 +12,6 @@ BuildStream requires the following base system requirements:
 * bubblewrap
 * PyGObject introspection bindings
 * psutil python library (so you don't have to install GCC and python-devel to build it yourself)
-* OSTree >= v2017.8 with introspection data
-* Bubblewrap >= 0.1.2 sandboxing tool
-
-If your system cannot provide the base system requirements for BuildStream,
-then we have some instructions which can help you get started
-:ref:`using BuildStream with Docker <docker>`.
 
 
 Installing from source (recommended)
