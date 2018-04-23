@@ -4,15 +4,15 @@
    contain the root `toctree` directive.
 
 
-Welcome to BuildStream’s documentation!
-=======================================
-
+BuildStream documentation
+=========================
 These docs cover everything you need to build and integrate software stacks
 using BuildStream.
 
 They begin with a basic introduction to BuildStream, background
 information on basic concepts, and a guide to the BuildStream command line interface.
 Later sections provide detailed information on BuilStream internals.
+
 
 .. toctree::
    :maxdepth: 2
