@@ -10,14 +10,6 @@ stages:
   - test
   - post
 
-before_script:
-  # Diagnostics
-  - mount
-  - df -h
-
-  - useradd -Um buildstream
-  - chown -R buildstream:buildstream .
-
 #####################################################
 #                  Prepare stage                    #
 #####################################################
