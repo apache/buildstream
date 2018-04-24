@@ -10,14 +10,6 @@ stages:
   - test
   - post
 
-before_script:
-  # Diagnostics
-  - mount
-  - df -h
-
-  - useradd -Um buildstream
-  - chown -R buildstream:buildstream .
-
 #####################################################
 #                  Prepare stage                    #
 #####################################################
@@ -95,6 +87,12 @@ analysis:
   variables:
     PYTEST_ADDOPTS: "--color=yes"
   script:
+  # Diagnostics
+  - mount
+  - df -h
+
+  - useradd -Um buildstream
+  - chown -R buildstream:buildstream .
 
   - export INTEGRATION_CACHE="$(pwd)/cache/integration-cache"
 
