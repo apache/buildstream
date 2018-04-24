@@ -424,7 +424,6 @@ class Stream():
 
         elements, track_elements = self._load((target,), track_targets)
         target = elements[0]
-        workdir = os.path.abspath(directory)
 
         if not list(target.sources()):
             build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
@@ -460,7 +459,7 @@ class Stream():
         except OSError as e:
             raise StreamError("Failed to create workspace directory: {}".format(e)) from e
 
-        self._project.workspaces.create_workspace(target.name, workdir)
+        self._project.workspaces.create_workspace(target.name, directory)
 
         if not no_checkout:
             with target.timed_activity("Staging sources to {}".format(directory)):
