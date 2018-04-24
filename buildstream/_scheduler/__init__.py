@@ -18,12 +18,12 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .queue import Queue, QueueStatus, QueueType
+from .queues import Queue, QueueStatus, QueueType
 
-from .fetchqueue import FetchQueue
-from .trackqueue import TrackQueue
-from .buildqueue import BuildQueue
-from .pushqueue import PushQueue
-from .pullqueue import PullQueue
+from .queues.fetchqueue import FetchQueue
+from .queues.trackqueue import TrackQueue
+from .queues.buildqueue import BuildQueue
+from .queues.pushqueue import PushQueue
+from .queues.pullqueue import PullQueue
 
 from .scheduler import Scheduler, SchedStatus
