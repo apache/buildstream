@@ -24,6 +24,7 @@ The BuildElement class is a convenience element one can derive from for
 implementing the most common case of element.
 
 
+
 Abstract method implementations
 -------------------------------
 
