@@ -80,8 +80,11 @@ class Project():
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
 
+        # ProjectRefs for the main refs and also for junctions
+        self.refs = ProjectRefs(self.directory, 'project.refs')
+        self.junction_refs = ProjectRefs(self.directory, 'junction.refs')
+
         self.workspaces = None                   # Workspaces
-        self.refs = ProjectRefs(self.directory)  # ProjectRefs
         self.options = None                      # OptionPool
         self.junction = junction                 # The junction Element object, if this is a subproject
         self.fail_on_overlap = False             # Whether overlaps are treated as errors
@@ -382,6 +385,7 @@ class Project():
         # Load project.refs if it exists, this may be ignored.
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
             self.refs.load(self.options)
+            self.junction_refs.load(self.options)
 
         # Parse shell options
         shell_options = _yaml.node_get(config, Mapping, 'shell')

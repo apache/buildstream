@@ -41,11 +41,16 @@ class ProjectRefStorage():
 #
 # The project.refs file management
 #
+# Args:
+#    directory (str): The project directory
+#    base_name (str): The project.refs basename
+#
 class ProjectRefs():
 
-    def __init__(self, directory):
+    def __init__(self, directory, base_name):
         directory = os.path.abspath(directory)
-        self._fullpath = os.path.join(directory, "project.refs")
+        self._fullpath = os.path.join(directory, base_name)
+        self._base_name = base_name
         self._toplevel_node = None
         self._toplevel_save = None
 
@@ -59,7 +64,7 @@ class ProjectRefs():
     def load(self, options):
 
         try:
-            self._toplevel_node = _yaml.load(self._fullpath, shortname='project.refs', copy_tree=True)
+            self._toplevel_node = _yaml.load(self._fullpath, shortname=self._base_name, copy_tree=True)
             provenance = _yaml.node_get_provenance(self._toplevel_node)
             self._toplevel_save = provenance.toplevel
 

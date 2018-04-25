@@ -151,7 +151,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
                 }
             }
         }
-        _yaml.dump(project_refs, os.path.join(project, 'project.refs'))
+        _yaml.dump(project_refs, os.path.join(project, 'junction.refs'))
 
     # Assert the correct error when trying to show the pipeline
     result = cli.run(project=project, silent=True, args=[

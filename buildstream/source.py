@@ -132,6 +132,7 @@ class Source(Plugin):
 
         self.__element_name = meta.element_name         # The name of the element owning this source
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
+        self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
 
@@ -425,6 +426,20 @@ class Source(Plugin):
 
         return changed
 
+    # _project_refs():
+    #
+    # Gets the appropriate ProjectRefs object for this source,
+    # which depends on whether the owning element is a junction
+    #
+    # Args:
+    #    project (Project): The project to check
+    #
+    def _project_refs(self, project):
+        element_kind = self.__element_kind
+        if element_kind == 'junction':
+            return project.junction_refs
+        return project.refs
+
     # _load_ref():
     #
     # Loads the ref for the said source.
@@ -462,7 +477,8 @@ class Source(Plugin):
 
         # If the main project overrides the ref, use the override
         if project is not toplevel and toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-            ref_node = toplevel.refs.lookup_ref(project.name, element_name, element_idx)
+            refs = self._project_refs(toplevel)
+            ref_node = refs.lookup_ref(project.name, element_name, element_idx)
             if ref_node is not None:
                 do_load_ref(ref_node)
 
@@ -479,7 +495,8 @@ class Source(Plugin):
                 self.set_ref(None, {})
 
             # Try to load the ref
-            ref_node = project.refs.lookup_ref(project.name, element_name, element_idx)
+            refs = self._project_refs(project)
+            ref_node = refs.lookup_ref(project.name, element_name, element_idx)
             if ref_node is not None:
                 do_load_ref(ref_node)
 
@@ -505,6 +522,7 @@ class Source(Plugin):
         context = self._get_context()
         project = self._get_project()
         toplevel = context.get_toplevel_project()
+        toplevel_refs = self._project_refs(toplevel)
         provenance = self._get_provenance()
 
         element_name = self.__element_name
@@ -515,12 +533,12 @@ class Source(Plugin):
         #
         if project is toplevel:
             if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
+                node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
             else:
                 node = provenance.node
         else:
             if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                node = toplevel.refs.lookup_ref(project.name, element_name, element_idx, write=True)
+                node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
             else:
                 node = {}
 
@@ -542,7 +560,7 @@ class Source(Plugin):
         #
         if project is toplevel:
             if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                do_save_refs(toplevel.refs)
+                do_save_refs(toplevel_refs)
             else:
                 # Save the ref in the originating file
                 #
@@ -555,7 +573,7 @@ class Source(Plugin):
                                       reason="save-ref-error") from e
         else:
             if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                do_save_refs(toplevel.refs)
+                do_save_refs(toplevel_refs)
             else:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))
 

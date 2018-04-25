@@ -117,7 +117,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
                 }
             }
         }
-        _yaml.dump(project_refs, os.path.join(project, 'project.refs'))
+        _yaml.dump(project_refs, os.path.join(project, 'junction.refs'))
 
     # Now try to fetch it, this should automatically result in fetching
     # the junction itself.
