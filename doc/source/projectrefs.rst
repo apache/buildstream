@@ -9,6 +9,9 @@ file, then it will be stored at the toplevel of your project directory
 adjacent to ``project.conf``. This can be configured in your project
 using the :ref:`ref-storage configuration <project_format_ref_storage>`
 
+Sources for :mod:`junction <elements.junction>` elements are stored
+separately in an adjacent ``junction.refs`` file of the same format.
+
 
 .. _projectrefs_basics:
 

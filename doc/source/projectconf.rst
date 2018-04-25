@@ -111,7 +111,8 @@ allowed to be configured with the following values:
 
 * ``project.refs``
 
-  Source references are stored in the ``project.refs`` file.
+  Source references are stored in the ``project.refs`` file, and
+  junction source references are stored in the ``junction.refs`` file.
 
 To enable storing of source references in ``project.refs``, add the
 following to your ``project.conf``:
