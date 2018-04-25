@@ -2,7 +2,7 @@ import os
 import shutil
 import pytest
 from buildstream._exceptions import ErrorDomain
-from tests.testutils import cli, create_artifact_share
+from tests.testutils import cli, create_artifact_share, create_element_size
 from tests.testutils.site import IS_LINUX
 
 # Project directory
@@ -195,3 +195,165 @@ def test_push_after_pull(cli, tmpdir, datafiles):
     result.assert_success()
     assert result.get_pulled_elements() == ['target.bst']
     assert result.get_pushed_elements() == ['target.bst']
+
+
+# Ensure that when a pushed artifact's size exceeds the artifact share's
+# quota, the least recently pushed artifact is deleted.
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_expires(cli, datafiles, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = os.path.join(project, 'elements')
+
+    # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
+    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+
+    # Set an environment variable of 12 MB for the cache_quota
+    os.environ['BST_TEST_CACHE_QUOTA'] = "12M"
+
+    # Configure bst to push to the cache
+    cli.configure({
+        'artifacts': {'url': share.repo, 'push': True},
+    })
+
+    # Create and build an element of 5 MB
+    create_element_size('element1.bst', element_path, [], 5000000)  # [] => no deps
+    result = cli.run(project=project, args=['build', 'element1.bst'])
+    result.assert_success()
+
+    # Create and build an element of 5 MB
+    create_element_size('element2.bst', element_path, [], 5000000)  # [] => no deps
+    result = cli.run(project=project, args=['build', 'element2.bst'])
+    result.assert_success()
+
+    # update the share
+    share.update_summary()
+
+    # check that element's 1 and 2 are cached both locally and remotely
+    assert cli.get_element_state(project, 'element1.bst') == 'cached'
+    assert_shared(cli, share, project, 'element1.bst')
+    assert cli.get_element_state(project, 'element2.bst') == 'cached'
+    assert_shared(cli, share, project, 'element2.bst')
+
+    # Create and build another element of 5 MB (This will exceed cache quota)
+    create_element_size('element3.bst', element_path, [], 5000000)
+    result = cli.run(project=project, args=['build', 'element3.bst'])
+    result.assert_success()
+
+    # update the share
+    share.update_summary()
+
+    # Ensure it is cached both locally and remotely
+    assert cli.get_element_state(project, 'element3.bst') == 'cached'
+    assert_shared(cli, share, project, 'element3.bst')
+
+    # Ensure element1 has been removed from the share
+    assert_not_shared(cli, share, project, 'element1.bst')
+    # Ensure that elemen2 remains
+    assert_shared(cli, share, project, 'element2.bst')
+
+
+# Test that a large artifact, whose size exceeds the quota, is not pushed
+# to the remote share
+@pytest.mark.datafiles(DATA_DIR)
+def test_huge_artifact(cli, datafiles, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = os.path.join(project, 'elements')
+
+    # Create an artifact share (remote cache) in tmpdir/artifactshare
+    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+
+    # Set an environment variable of 5 MB for the cache_quota
+    os.environ['BST_TEST_CACHE_QUOTA'] = "5M"
+
+    # Configure bst to push to the cache
+    cli.configure({
+        'artifacts': {'url': share.repo, 'push': True},
+    })
+
+    create_element_size('small_element.bst', element_path, [], 3000000)
+    result = cli.run(project=project, args=['build', 'small_element.bst'])
+    result.assert_success()
+
+    # Create and build element of 6 MB.
+    create_element_size('large_element.bst', element_path, [], 6000000)
+    result = cli.run(project=project, args=['build', 'large_element.bst'])
+    result.assert_success()
+
+    # update the cache
+    share.update_summary()
+
+    # Ensure that the small artifact is still in the share
+    assert cli.get_element_state(project, 'small_element.bst') == 'cached'
+    assert_shared(cli, share, project, 'small_element.bst')
+
+    # Ensure that the artifact is cached locally but NOT remotely
+    assert cli.get_element_state(project, 'large_element.bst') == 'cached'
+    assert_not_shared(cli, share, project, 'large_element.bst')
+
+
+# Test that when an element is pulled recently, it is not considered the LRU element.
+# NOTE: We expect this test to fail as the current implementation of remote cache
+# expiry only expiries from least recently pushed. NOT least recently used. This will
+# hopefully change when we implement as CAS cache.
+@pytest.mark.xfail
+@pytest.mark.datafiles(DATA_DIR)
+def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = os.path.join(project, 'elements')
+
+    # Create an artifact share (remote cache) in tmpdir/artifactshare
+    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+
+    # Set an environment variable of 12 MB for the cache_quota
+    os.environ['BST_TEST_CACHE_QUOTA'] = "12M"
+
+    # Configure bst to push to the cache
+    cli.configure({
+        'artifacts': {'url': share.repo, 'push': True},
+    })
+
+    # Create and build 2 elements, each of 5 MB.
+    create_element_size('element1.bst', element_path, [], 5000000)
+    result = cli.run(project=project, args=['build', 'element1.bst'])
+    result.assert_success()
+
+    create_element_size('element2.bst', element_path, [], 5000000)
+    result = cli.run(project=project, args=['build', 'element2.bst'])
+    result.assert_success()
+
+    share.update_summary()
+
+    # Ensure they are cached locally
+    assert cli.get_element_state(project, 'element1.bst') == 'cached'
+    assert cli.get_element_state(project, 'element2.bst') == 'cached'
+
+    # Ensure that they have  been pushed to the cache
+    assert_shared(cli, share, project, 'element1.bst')
+    assert_shared(cli, share, project, 'element2.bst')
+
+    # Remove element1 from the local cache
+    cli.remove_artifact_from_cache(project, 'element1.bst')
+    assert cli.get_element_state(project, 'element1.bst') != 'cached'
+
+    # Pull the first element from the remote (this should update its mtime)
+    result = cli.run(project=project, args=['pull', 'element1.bst', '--remote',
+                                            share.repo])
+    result.assert_success()
+
+    # Ensure element1 is cached locally
+    assert cli.get_element_state(project, 'element1.bst') == 'cached'
+
+    # Create and build the element3 (of 5 MB)
+    create_element_size('element3.bst', element_path, [], 5000000)
+    result = cli.run(project=project, args=['build', 'element3.bst'])
+    result.assert_success()
+
+    share.update_summary()
+
+    # Make sure it's cached locally and remotely
+    assert cli.get_element_state(project, 'element3.bst') == 'cached'
+    assert_shared(cli, share, project, 'element3.bst')
+
+    # Ensure that element2 was deleted from the share and element1 remains
+    assert_not_shared(cli, share, project, 'element2.bst')
+    assert_shared(cli, share, project, 'element1.bst')

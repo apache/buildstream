@@ -871,5 +871,9 @@ def receive_main(verbose, debug, pull_url, cache_quota, repo):
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=loglevel, stream=sys.stderr)
 
+    # Use environment variable for the tests
+    if not cache_quota and 'BST_TEST_CACHE_QUOTA' in os.environ:
+        cache_quota = os.getenv('BST_TEST_CACHE_QUOTA')
+
     receiver = OSTreeReceiver(repo, pull_url, cache_quota)
     return receiver.run()
