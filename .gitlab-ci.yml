@@ -50,31 +50,6 @@ source_dist:
     paths:
     - dist/
 
-analysis:
-  stage: prepare
-  script:
-  - |
-    pip3 install radon
-    mkdir analysis
-
-  - |
-    echo "Calculating Maintainability Index"
-    radon mi -s -j buildstream > analysis/mi.json
-    radon mi -s buildstream
-
-  - |
-    echo "Calculating Cyclomatic Complexity"
-    radon cc -a -s -j buildstream > analysis/cc.json
-    radon cc -a -s buildstream
-
-  - |
-    echo "Calculating Raw Metrics"
-    radon raw -s -j buildstream > analysis/raw.json
-    radon raw -s buildstream
-
-  artifacts:
-    paths:
-    - analysis/
 
 #####################################################
 #                    Test stage                     #
@@ -206,6 +181,32 @@ codequality:
         "registry.gitlab.com/gitlab-org/security-products/codequality:$SP_VERSION" /code
   artifacts:
     paths: [codeclimate.json]
+
+analysis:
+  stage: post
+  script:
+  - |
+    pip3 install radon
+    mkdir analysis
+
+  - |
+    echo "Calculating Maintainability Index"
+    radon mi -s -j buildstream > analysis/mi.json
+    radon mi -s buildstream
+
+  - |
+    echo "Calculating Cyclomatic Complexity"
+    radon cc -a -s -j buildstream > analysis/cc.json
+    radon cc -a -s buildstream
+
+  - |
+    echo "Calculating Raw Metrics"
+    radon raw -s -j buildstream > analysis/raw.json
+    radon raw -s buildstream
+
+  artifacts:
+    paths:
+    - analysis/
 
 # Collate coverage reports
 #
