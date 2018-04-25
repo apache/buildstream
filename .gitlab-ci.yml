@@ -87,8 +87,6 @@ source_dist:
   artifacts:
     paths:
     - coverage-linux/
-  dependencies:
-  - source_dist
 
 tests-debian-8:
   <<: *linux-tests
@@ -135,8 +133,6 @@ tests-unix:
     - coverage-unix/
     - logs-unix/
 
-  dependencies:
-  - source_dist
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
@@ -156,8 +152,6 @@ docs:
   artifacts:
     paths:
     - public/
-  dependencies:
-  - source_dist
 
 
 #####################################################
