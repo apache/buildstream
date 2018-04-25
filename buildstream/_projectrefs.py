@@ -44,12 +44,10 @@ class ProjectRefStorage():
 class ProjectRefs():
 
     def __init__(self, directory):
-
-        self.directory = os.path.abspath(directory)
-        self.fullpath = os.path.join(self.directory, "project.refs")
-
-        self.toplevel_node = None
-        self.toplevel_save = None
+        directory = os.path.abspath(directory)
+        self._fullpath = os.path.join(directory, "project.refs")
+        self._toplevel_node = None
+        self._toplevel_save = None
 
     # load()
     #
@@ -61,16 +59,16 @@ class ProjectRefs():
     def load(self, options):
 
         try:
-            self.toplevel_node = _yaml.load(self.fullpath, shortname='project.refs', copy_tree=True)
-            provenance = _yaml.node_get_provenance(self.toplevel_node)
-            self.toplevel_save = provenance.toplevel
+            self._toplevel_node = _yaml.load(self._fullpath, shortname='project.refs', copy_tree=True)
+            provenance = _yaml.node_get_provenance(self._toplevel_node)
+            self._toplevel_save = provenance.toplevel
 
             # Process any project options immediately
-            options.process_node(self.toplevel_node)
+            options.process_node(self._toplevel_node)
 
             # Run any final assertions on the project.refs, just incase there
             # are list composition directives or anything left unprocessed.
-            _yaml.node_final_assertions(self.toplevel_node)
+            _yaml.node_final_assertions(self._toplevel_node)
 
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:
@@ -78,13 +76,13 @@ class ProjectRefs():
 
             # Ignore failure if the file doesnt exist, it'll be created and
             # for now just assumed to be empty
-            self.toplevel_node = {}
-            self.toplevel_save = self.toplevel_node
+            self._toplevel_node = {}
+            self._toplevel_save = self._toplevel_node
 
-        _yaml.node_validate(self.toplevel_node, ['projects'])
+        _yaml.node_validate(self._toplevel_node, ['projects'])
 
         # Ensure we create our toplevel entry point on the fly here
-        for node in [self.toplevel_node, self.toplevel_save]:
+        for node in [self._toplevel_node, self._toplevel_save]:
             if 'projects' not in node:
                 node['projects'] = {}
 
@@ -93,7 +91,7 @@ class ProjectRefs():
     # Save the project.refs file with any local changes
     #
     def save(self):
-        _yaml.dump(self.toplevel_save, self.fullpath)
+        _yaml.dump(self._toplevel_save, self._fullpath)
 
     # lookup_ref()
     #
@@ -111,7 +109,7 @@ class ProjectRefs():
     #
     def lookup_ref(self, project, element, source_index, *, write=False):
 
-        node = self._lookup(self.toplevel_node, project, element, source_index)
+        node = self._lookup(self._toplevel_node, project, element, source_index)
 
         if write:
 
@@ -123,7 +121,7 @@ class ProjectRefs():
             # If we couldnt find the orignal, create a new one.
             #
             if node is None:
-                node = self._lookup(self.toplevel_save, project, element, source_index, ensure=True)
+                node = self._lookup(self._toplevel_save, project, element, source_index, ensure=True)
 
         return node
 
