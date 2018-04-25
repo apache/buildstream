@@ -114,8 +114,6 @@ analysis:
   artifacts:
     paths:
     - coverage-linux/
-  dependencies:
-  - source_dist
 
 tests-debian-8:
   <<: *linux-tests
@@ -158,8 +156,6 @@ tests-unix:
     - coverage-unix/
     - logs-unix/
 
-  dependencies:
-  - source_dist
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
@@ -179,8 +175,6 @@ docs:
   artifacts:
     paths:
     - public/
-  dependencies:
-  - source_dist
 
 
 #####################################################
@@ -202,19 +196,11 @@ coverage:
     - ls coverage.*
     - coverage combine --rcfile=../.coveragerc -a coverage.*
     - coverage report --rcfile=../.coveragerc -m
-  dependencies:
-  - tests-debian-8
-  - tests-fedora-27
-  - tests-unix
-  - source_dist
 
 # Deploy, only for merges which land on master branch.
 #
 pages:
   stage: post
-  dependencies:
-  - source_dist
-  - docs
   script:
   - find public/
   artifacts:
