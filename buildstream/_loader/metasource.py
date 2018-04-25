@@ -28,12 +28,14 @@ class MetaSource():
     # Args:
     #    element_name: The name of the owning element
     #    element_index: The index of the source in the owning element's source list
+    #    element_kind: The kind of the owning element
     #    kind: The kind of the source
     #    config: The configuration data for the source
     #
-    def __init__(self, element_name, element_index, kind, config, directory):
+    def __init__(self, element_name, element_index, element_kind, kind, config, directory):
         self.element_name = element_name
         self.element_index = element_index
+        self.element_kind = element_kind
         self.kind = kind
         self.config = config
         self.directory = directory

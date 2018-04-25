@@ -372,6 +372,7 @@ class Loader():
         meta_sources = []
 
         sources = _yaml.node_get(node, list, Symbol.SOURCES, default_value=[])
+        element_kind = _yaml.node_get(node, str, Symbol.KIND)
 
         # Safe loop calling into _yaml.node_get() for each element ensures
         # we have good error reporting
@@ -386,11 +387,10 @@ class Loader():
                 del source[Symbol.DIRECTORY]
 
             index = sources.index(source)
-            meta_source = MetaSource(element_name, index, kind, source, directory)
+            meta_source = MetaSource(element_name, index, element_kind, kind, source, directory)
             meta_sources.append(meta_source)
 
-        kind = _yaml.node_get(node, str, Symbol.KIND)
-        meta_element = MetaElement(self.project, element_name, kind,
+        meta_element = MetaElement(self.project, element_name, element_kind,
                                    elt_provenance, meta_sources,
                                    _yaml.node_get(node, Mapping, Symbol.CONFIG, default_value={}),
                                    _yaml.node_get(node, Mapping, Symbol.VARIABLES, default_value={}),
@@ -404,7 +404,7 @@ class Loader():
 
         # Descend
         for dep in element.deps:
-            if kind == 'junction':
+            if element_kind == 'junction':
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Junctions do not support dependencies".format(dep.provenance))
 
