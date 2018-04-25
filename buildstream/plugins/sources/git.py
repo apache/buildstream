@@ -121,6 +121,12 @@ class GitMirror():
                          fail="Failed to fetch from remote git repository: {}".format(self.url),
                          cwd=self.mirror)
 
+    def describe(self):
+        self.source.call([self.source.host_git, 'describe'],
+                         fail="Failed to find a tag in remote git repository: {}".format(self.url),
+                         cwd=self.mirror)
+
+
     def has_ref(self):
         if not self.ref:
             return False
