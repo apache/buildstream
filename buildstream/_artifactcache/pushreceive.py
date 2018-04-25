@@ -36,6 +36,7 @@ import gi
 from ..utils import _get_dir_size, _parse_size
 from .. import _ostree
 from .. import _signals  # nopep8
+from .._exceptions import ArtifactError
 from .._profile import Topics, profile_start, profile_end
 
 gi.require_version('OSTree', '1.0')
@@ -54,6 +55,11 @@ class PushException(Exception):
 
 # Trying to commit a ref which already exists in remote
 class PushExistsException(Exception):
+    pass
+
+
+# Trying to push an artifact that is too big for the cache
+class ArtifactTooBigError(Exception):
     pass
 
 
@@ -286,7 +292,6 @@ class PushMessageReader(object):
         return args
 
     def receive_putobjects(self, repo, repo_size, cache_quota):
-
         received_objects = []
 
         # Open a TarFile for reading uncompressed tar from a stream
@@ -311,11 +316,18 @@ class PushMessageReader(object):
 
             # obtain size of tar object in bytes
             artifact_size = tar_info.size
-            if cache_quota and artifact_size + current_repo_size > cache_quota:
+            if cache_quota and artifact_size < cache_quota and artifact_size + current_repo_size > cache_quota:
                 current_repo_size = clean_up_cache(repo, current_repo_size, artifact_size, cache_quota)
 
-            tar.extract(tar_info, self.tmpdir)
-            received_objects.append(tar_info.name)
+            if cache_quota and artifact_size > cache_quota:
+                # Tell the user we've done nothing with this artifact
+                # This could potentially be from accidentially setting a small cache quota...
+                raise ArtifactTooBigError("Artifact of size: {} bytes is too big for the remote cache"
+                                          " under the current quota of: {} bytes."
+                                          .format(artifact_size, cache_quota))
+            else:
+                tar.extract(tar_info, self.tmpdir)
+                received_objects.append(tar_info.name)
 
         # Finished with this stream
         tar.close()
@@ -632,14 +644,19 @@ class OSTreeReceiver(object):
     def run(self):
         try:
             exit_code = self.do_run()
-            self.close()
-            return exit_code
+        except ArtifactTooBigError:
+            logging.warning("The artifact was too big for the cache under the current quota,"
+                            " so it has not been received")
+            exit_code = 0
         except:
             # BLIND EXCEPT - Just abort if we receive any exception, this
             # can be a broken pipe, a tarfile read error when the remote
             # connection is closed, a bug; whatever happens we want to cleanup.
             self.close()
             raise
+
+        self.close()
+        return exit_code
 
     def do_run(self):
         # Receive remote info
@@ -822,7 +839,13 @@ def push(repo, remote, branches, output):
             return True
         except ConnectionError as e:
             # Connection attempt failed or connection was terminated unexpectedly
-            terminate_push()
+            try:
+                terminate_push()
+            except BrokenPipeError:
+                # If the artifact is too big for the cache, we force the tar stream to quit
+                # So let's just log this and return push as False
+                logging.info("Ref {} is too big for the cache under the current quota".format(branches))
+                return False
             raise PushException("Connection failed") from e
         except PushException:
             terminate_push()
@@ -858,8 +881,7 @@ def clean_up_cache(repo, repo_size, artifact_size, cache_quota):
         try:
             to_remove = LRP_artifacts.pop(0)  # The first element in the list is the LRP artifact
         except IndexError:
-            logging.info("There are no more artifacts left in the cache. Adding artifact...")
-            break
+            raise ArtifactError("There are no more artifacts in the cache.")
 
         removed_size += _ostree.remove(repo, to_remove, defer_prune=False)
 
