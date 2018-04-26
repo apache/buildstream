@@ -247,6 +247,20 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement fetch()".format(self.get_kind()))
 
+    def update_mirror(self):
+        """Mirror remote sources locally. Its difference with :meth:`.fetch`
+        is that it will download everything from remote source,
+        whether or not the required `ref` depends on it.
+
+        Raises:
+           :class:`.SourceError`
+
+        Implementors should raise :class:`.SourceError` if the there is some
+        network error.
+        """
+
+        raise ImplError("Source plugin '{}' does not implement update_mirror()".format(self.get_kind()))
+
     def stage(self, directory):
         """Stage the sources to a directory
 
@@ -287,6 +301,65 @@ class Source(Plugin):
     #############################################################
     #                       Public Methods                      #
     #############################################################
+    def find_mirror_directory(self, upstream_url, predicate,
+                              create=False):
+        """Find directory where source plugin data is stored.
+
+        Args:
+           upstream_url (str): url of upstream
+           predicate (function): predicate which takes a path and
+                                 should return if this path is
+                                 useable.
+           create (bool): whether no available space is found, one is
+                          created.
+
+        Returns:
+           (str): The directory belonging to this source, or None if
+                  not available.
+        """
+
+        base = self.get_mirror_directory()
+        subdir = utils.url_directory_name(upstream_url)
+        namespace = 0
+        while True:
+            curdir = os.path.join(base, subdir, str(namespace))
+            if not os.path.isdir(curdir):
+                if create:
+                    os.makedirs(curdir, exist_ok=False)
+                    if predicate(curdir):
+                        return curdir
+                    else:
+                        return None
+                else:
+                    return None
+            else:
+                if predicate(curdir):
+                    return curdir
+            namespace += 1
+
+    def last_mirror_directory(self, upstream_url):
+        """Find last directory where source plugin has stored
+        data.
+
+        Args:
+           upstream_url (str): url of upstream
+
+        Returns:
+           (str): The directory belonging to this source, or None if
+                  not available.
+        """
+
+        base = self.get_mirror_directory()
+        subdir = utils.url_directory_name(upstream_url)
+        namespace = 0
+        lastdir = None
+        while True:
+            curdir = os.path.join(base, subdir, str(namespace))
+            if not os.path.isdir(curdir):
+                return lastdir
+            lastdir = curdir
+            namespace += 1
+
     def get_mirror_directory(self):
         """Fetches the directory where this source should store things
 
