@@ -90,6 +90,10 @@ class LocalSource(Source):
         # Nothing to do here for a local source
         pass  # pragma: nocover
 
+    def update_mirror(self):
+        # Nothing to do here for a local source
+        pass
+
     def stage(self, directory):
 
         # Dont use hardlinks to stage sources, they are not write protected
