@@ -113,6 +113,9 @@ class BzrSource(Source):
                                  silent_nested=True):
             self._ensure_mirror()
 
+    def update_mirror(self):
+        self._ensure_mirror()
+
     def stage(self, directory):
         self.call([self.host_bzr, "checkout", "--lightweight",
                    "--revision=revno:{}".format(self.ref),
@@ -137,46 +140,64 @@ class BzrSource(Source):
 
     def _check_ref(self):
         # If the mirror doesnt exist yet, then we dont have the ref
-        if not os.path.exists(self._get_branch_dir()):
+        branch_dir = self._get_branch_dir()
+        if branch_dir is None:
             return False
 
         return self.call([self.host_bzr, "revno",
                           "--revision=revno:{}".format(self.ref),
-                          self._get_branch_dir()]) == 0
+                          branch_dir]) == 0
 
-    def _get_branch_dir(self):
-        return os.path.join(self._get_mirror_dir(), self.tracking)
+    def _has_not_diverged(self, mirror_dir):
+        branch_dir = os.path.join(mirror_dir, self.tracking)
+        bzr_metadata_dir = os.path.join(branch_dir, ".bzr")
+        if not os.path.isdir(bzr_metadata_dir):
+            return True
+        branch_url = self.url + "/" + self.tracking
+        ret = self.call([self.host_bzr, "missing",
+                         "--directory={}".format(branch_dir),
+                         "--mine-only", "--line", "--quiet",
+                         branch_url])
+        return ret == 0
 
-    def _get_mirror_dir(self):
-        return os.path.join(self.get_mirror_directory(),
-                            utils.url_directory_name(self.original_url))
+    def _get_branch_dir(self, create=False):
+        mirror_dir = self._get_mirror_dir(create=create)
+        if mirror_dir is None:
+            return None
+        branch_dir = os.path.join(mirror_dir, self.tracking)
+        if create:
+            os.makedirs(branch_dir, exist_ok=True)
+        return branch_dir
 
-    def _atomic_replace_mirrordir(self, srcdir):
+    def _get_mirror_dir(self, create=False):
+        return self.find_mirror_directory(self.original_url, self._has_not_diverged, create=create)
+
+    def _atomic_replace_mirrordir(self, srcdir, tgtdir):
         """Helper function to safely replace the mirror dir"""
 
-        if not os.path.exists(self._get_mirror_dir()):
+        if not os.path.exists(tgtdir):
             # Just move the srcdir to the mirror dir
             try:
-                os.rename(srcdir, self._get_mirror_dir())
+                os.rename(srcdir, tgtdir)
             except OSError as e:
                 raise SourceError("{}: Failed to move srcdir '{}' to mirror dir '{}'"
-                                  .format(str(self), srcdir, self._get_mirror_dir())) from e
+                                  .format(str(self), srcdir, tgtdir)) from e
         else:
             # Atomically swap the backup dir.
-            backupdir = self._get_mirror_dir() + ".bak"
+            backupdir = tgtdir + ".bak"
             try:
-                os.rename(self._get_mirror_dir(), backupdir)
+                os.rename(tgtdir, backupdir)
             except OSError as e:
                 raise SourceError("{}: Failed to move mirrordir '{}' to backup dir '{}'"
-                                  .format(str(self), self._get_mirror_dir(), backupdir)) from e
+                                  .format(str(self), tgtdir, backupdir)) from e
 
             try:
-                os.rename(srcdir, self._get_mirror_dir())
+                os.rename(srcdir, tgtdir)
             except OSError as e:
                 # Attempt to put the backup back!
-                os.rename(backupdir, self._get_mirror_dir())
+                os.rename(backupdir, tgtdir)
                 raise SourceError("{}: Failed to replace bzr repo '{}' with '{}"
-                                  .format(str(self), srcdir, self._get_mirror_dir())) from e
+                                  .format(str(self), srcdir, tgtdir)) from e
             finally:
                 if os.path.exists(backupdir):
                     shutil.rmtree(backupdir)
@@ -194,18 +215,17 @@ class BzrSource(Source):
         repo in an inconsistent state.
         """
         with self.tempdir() as repodir:
-            mirror_dir = self._get_mirror_dir()
-            if os.path.exists(mirror_dir):
-                try:
-                    # shutil.copytree doesn't like it if destination exists
-                    shutil.rmtree(repodir)
-                    shutil.copytree(mirror_dir, repodir)
-                except (shutil.Error, OSError) as e:
-                    raise SourceError("{}: Failed to copy bzr repo from '{}' to '{}'"
-                                      .format(str(self), mirror_dir, repodir)) from e
+            mirror_dir = self._get_mirror_dir(create=True)
+            try:
+                # shutil.copytree doesn't like it if destination exists
+                shutil.rmtree(repodir)
+                shutil.copytree(mirror_dir, repodir)
+            except (shutil.Error, OSError) as e:
+                raise SourceError("{}: Failed to copy bzr repo from '{}' to '{}'"
+                                  .format(str(self), mirror_dir, repodir)) from e
 
             yield repodir
-            self._atomic_replace_mirrordir(repodir)
+            self._atomic_replace_mirrordir(repodir, mirror_dir)
 
     def _ensure_mirror(self):
         with self._atomic_repodir() as repodir:
