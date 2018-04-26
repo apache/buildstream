@@ -123,7 +123,7 @@ following to your ``project.conf``:
 
 .. note::
 
-   The ``ref-storage`` configuration is available since :ref:`format version 5 <project_format_version>`
+   The ``ref-storage`` configuration is available since :ref:`format version 8 <project_format_version>`
 
 
 Fail on overlaps
