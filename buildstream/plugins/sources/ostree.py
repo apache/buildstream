@@ -122,6 +122,14 @@ class OSTreeSource(Source):
                     raise SourceError("{}: Failed to fetch ref '{}' from origin: {}\n\n{}"
                                       .format(self, self.ref, self.url, e)) from e
 
+    def update_mirror(self):
+        self.ensure()
+        try:
+            _ostree.fetch(self.repo, progress=self.progress)
+        except OSTreeError as e:
+            raise SourceError("{}: Failed to fetch from origin: {}\n\n{}"
+                              .format(self, self.url, e)) from e
+
     def stage(self, directory):
         self.ensure()
 
