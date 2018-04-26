@@ -85,12 +85,11 @@ GIT_MODULES = '.gitmodules'
 #
 class GitMirror():
 
-    def __init__(self, source, path, url, ref):
+    def __init__(self, source, path, url):
 
         self.source = source
         self.path = path
         self.url = source.translate_url(url)
-        self.ref = ref
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(self.url))
 
     # Ensures that the mirror exists
@@ -116,27 +115,34 @@ class GitMirror():
                     raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}'"
                                       .format(self.source, self.url, tmpdir, self.mirror)) from e
 
-    def fetch(self):
-        self.source.call([self.source.host_git, 'fetch', 'origin', '--prune'],
+        self.source.call([self.source.host_git, 'config', 'gc.auto', '0'],
+                         cwd=self.mirror,
+                         fail="Failed to disable garbage collection on git repository {}".format(self.url))
+
+    def fetch_ref(self, ref):
+        ret = self.source.call([self.source.host_git, 'fetch', 'origin', ref],
+                               cwd=self.mirror)
+        if ret != 0:
+            raise SourceError("Failed to fetch {} from remote git repository: {}".format(ref, self.url))
+
+    def update_mirror(self):
+        self.source.call([self.source.host_git, 'fetch', 'origin'],
                          fail="Failed to fetch from remote git repository: {}".format(self.url),
                          cwd=self.mirror)
 
-    def has_ref(self):
-        if not self.ref:
-            return False
-
+    def has_ref(self, ref):
         # If the mirror doesnt exist, we also dont have the ref
         if not os.path.exists(self.mirror):
             return False
 
         # Check if the ref is really there
-        rc = self.source.call([self.source.host_git, 'cat-file', '-t', self.ref], cwd=self.mirror)
+        rc = self.source.call([self.source.host_git, 'cat-file', '-t', ref], cwd=self.mirror)
         return rc == 0
 
-    def assert_ref(self):
-        if not self.has_ref():
+    def assert_ref(self, ref):
+        if not self.has_ref(ref):
             raise SourceError("{}: expected ref '{}' was not found in git repository: '{}'"
-                              .format(self.source, self.ref, self.url))
+                              .format(self.source, ref, self.url))
 
     def latest_commit(self, tracking):
         _, output = self.source.check_output(
@@ -145,7 +151,7 @@ class GitMirror():
             cwd=self.mirror)
         return output.rstrip('\n')
 
-    def stage(self, directory):
+    def stage(self, directory, ref):
         fullpath = os.path.join(directory, self.path)
 
         # We need to pass '--no-hardlinks' because there's nothing to
@@ -154,11 +160,11 @@ class GitMirror():
         self.source.call([self.source.host_git, 'clone', '--no-checkout', '--no-hardlinks', self.mirror, fullpath],
                          fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath))
 
-        self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
-                         fail="Failed to checkout git ref {}".format(self.ref),
+        self.source.call([self.source.host_git, 'checkout', '--force', ref],
+                         fail="Failed to checkout git ref {}".format(ref),
                          cwd=fullpath)
 
-    def init_workspace(self, directory):
+    def init_workspace(self, directory, ref):
         fullpath = os.path.join(directory, self.path)
 
         self.source.call([self.source.host_git, 'clone', '--no-checkout', self.mirror, fullpath],
@@ -168,13 +174,13 @@ class GitMirror():
                          fail='Failed to add remote origin "{}"'.format(self.url),
                          cwd=fullpath)
 
-        self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
-                         fail="Failed to checkout git ref {}".format(self.ref),
+        self.source.call([self.source.host_git, 'checkout', '--force', ref],
+                         fail="Failed to checkout git ref {}".format(ref),
                          cwd=fullpath)
 
     # List the submodules (path/url tuples) present at the given ref of this repo
-    def submodule_list(self):
-        modules = "{}:{}".format(self.ref, GIT_MODULES)
+    def submodule_list(self, ref):
+        modules = "{}:{}".format(ref, GIT_MODULES)
         exit_code, output = self.source.check_output(
             [self.source.host_git, 'show', modules], cwd=self.mirror)
 
@@ -185,7 +191,7 @@ class GitMirror():
         elif exit_code != 0:
             raise SourceError(
                 "{plugin}: Failed to show gitmodules at ref {ref}".format(
-                    plugin=self, ref=self.ref))
+                    plugin=self, ref=ref))
 
         content = '\n'.join([l.strip() for l in output.splitlines()])
 
@@ -203,9 +209,7 @@ class GitMirror():
 
     # Fetch the ref which this mirror requires its submodule to have,
     # at the given ref of this mirror.
-    def submodule_ref(self, submodule, ref=None):
-        if not ref:
-            ref = self.ref
+    def submodule_ref(self, submodule, ref):
 
         # list objects in the parent repo tree to find the commit
         # object that corresponds to the submodule
@@ -241,14 +245,14 @@ class GitSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
-        ref = self.node_get_member(node, str, 'ref', None)
+        self.ref = self.node_get_member(node, str, 'ref', None)
 
         config_keys = ['url', 'track', 'ref', 'submodules', 'checkout-submodules']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
-        self.mirror = GitMirror(self, '', self.original_url, ref)
         self.tracking = self.node_get_member(node, str, 'track', None)
+        self.mirror = GitMirror(self, '', self.original_url)
         self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
         self.submodules = []
 
@@ -273,7 +277,7 @@ class GitSource(Source):
         # Here we want to encode the local name of the repository and
         # the ref, if the user changes the alias to fetch the same sources
         # from another location, it should not effect the cache key.
-        key = [self.original_url, self.mirror.ref]
+        key = [self.original_url, self.ref]
 
         # Only modify the cache key with checkout_submodules if it's something
         # other than the default behaviour.
@@ -291,20 +295,20 @@ class GitSource(Source):
         return key
 
     def get_consistency(self):
-        if self.have_all_refs():
+        if self.have_ref_and_submodules():
             return Consistency.CACHED
-        elif self.mirror.ref is not None:
+        elif self.ref is not None:
             return Consistency.RESOLVED
         return Consistency.INCONSISTENT
 
     def load_ref(self, node):
-        self.mirror.ref = self.node_get_member(node, str, 'ref', None)
+        self.ref = self.node_get_member(node, str, 'ref', None)
 
     def get_ref(self):
-        return self.mirror.ref
+        return self.ref
 
     def set_ref(self, ref, node):
-        node['ref'] = self.mirror.ref = ref
+        node['ref'] = self.ref = ref
 
     def track(self):
 
@@ -316,12 +320,12 @@ class GitSource(Source):
                                  .format(self.tracking, self.mirror.url),
                                  silent_nested=True):
             self.mirror.ensure()
-            self.mirror.fetch()
+            self.mirror.fetch_ref(self.tracking)
 
             # Update self.mirror.ref and node.ref from the self.tracking branch
             ret = self.mirror.latest_commit(self.tracking)
 
-        return ret
+            return ret
 
     def fetch(self):
 
@@ -330,10 +334,10 @@ class GitSource(Source):
             # Here we are only interested in ensuring that our mirror contains
             # the self.mirror.ref commit.
             self.mirror.ensure()
-            if not self.mirror.has_ref():
-                self.mirror.fetch()
+            if not self.mirror.has_ref(self.ref):
+                self.mirror.fetch_ref(self.ref)
 
-            self.mirror.assert_ref()
+            self.mirror.assert_ref(self.ref)
 
             # Here after performing any fetches, we need to also ensure that
             # we've cached the desired refs in our mirrors of submodules.
@@ -341,14 +345,26 @@ class GitSource(Source):
             self.refresh_submodules()
             self.fetch_submodules()
 
+    def update_mirror(self):
+        if self.checkout_submodules:
+            self.warn("{}: Mirroring of submodules will not happen unless "
+                      "submodules are explicitly listed."
+                      .format(self.mirror.source))
+        for path, url in self.submodule_overrides.items():
+            if self.submodule_checkout_overrides.get(path, False):
+                mirror = GitMirror(self, path, url)
+                mirror.update_mirror()
+
+        self.mirror.update_mirror()
+
     def init_workspace(self, directory):
         # XXX: may wish to refactor this as some code dupe with stage()
         self.refresh_submodules()
 
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
-            self.mirror.init_workspace(directory)
-            for mirror in self.submodules:
-                mirror.init_workspace(directory)
+            self.mirror.init_workspace(directory, self.ref)
+            for mirror, ref in self.submodules:
+                mirror.init_workspace(directory, ref)
 
     def stage(self, directory):
 
@@ -362,28 +378,28 @@ class GitSource(Source):
         # Stage the main repo in the specified directory
         #
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
-            self.mirror.stage(directory)
-            for mirror in self.submodules:
+            self.mirror.stage(directory, self.ref)
+            for mirror, ref in self.submodules:
                 if mirror.path in self.submodule_checkout_overrides:
                     checkout = self.submodule_checkout_overrides[mirror.path]
                 else:
                     checkout = self.checkout_submodules
 
                 if checkout:
-                    mirror.stage(directory)
+                    mirror.stage(directory, ref)
 
     ###########################################################
     #                     Local Functions                     #
     ###########################################################
-    def have_all_refs(self):
-        if not self.mirror.has_ref():
+    def have_ref_and_submodules(self):
+        if self.ref is None or not self.mirror.has_ref(self.ref):
             return False
 
         self.refresh_submodules()
-        for mirror in self.submodules:
+        for mirror, ref in self.submodules:
             if not os.path.exists(mirror.mirror):
                 return False
-            if not mirror.has_ref():
+            if not mirror.has_ref(ref):
                 return False
 
         return True
@@ -393,13 +409,18 @@ class GitSource(Source):
     # Assumes that we have our mirror and we have the ref which we point to
     #
     def refresh_submodules(self):
+
+        if self.ref is None:
+            self.submodules = []
+            return
+
         submodules = []
 
         # XXX Here we should issue a warning if either:
         #   A.) A submodule exists but is not defined in the element configuration
         #   B.) The element configuration configures submodules which dont exist at the current ref
         #
-        for path, url in self.mirror.submodule_list():
+        for path, url in self.mirror.submodule_list(self.ref):
 
             # Allow configuration to override the upstream
             # location of the submodules.
@@ -407,10 +428,10 @@ class GitSource(Source):
             if override_url:
                 url = override_url
 
-            ref = self.mirror.submodule_ref(path)
+            ref = self.mirror.submodule_ref(path, self.ref)
             if ref is not None:
-                mirror = GitMirror(self, path, url, ref)
-                submodules.append(mirror)
+                mirror = GitMirror(self, path, url)
+                submodules.append((mirror, ref))
 
         self.submodules = submodules
 
@@ -421,11 +442,11 @@ class GitSource(Source):
     # referred to at the given commit of the main git source.
     #
     def fetch_submodules(self):
-        for mirror in self.submodules:
+        for mirror, ref in self.submodules:
             mirror.ensure()
-            if not mirror.has_ref():
-                mirror.fetch()
-                mirror.assert_ref()
+            if not mirror.has_ref(ref):
+                mirror.fetch_ref(ref)
+                mirror.assert_ref(ref)
 
 
 # Plugin entry point
