@@ -21,7 +21,12 @@
 # Plugin author facing APIs
 import os
 if "_BST_COMPLETION" not in os.environ:
-    from .__version__ import __version__
+
+    # Special sauce to get the version from versioneer
+    from ._version import get_versions
+    __version__ = get_versions()['version']
+    del get_versions
+
     from .utils import UtilError, ProgramNotFoundError
     from .sandbox import Sandbox, SandboxFlags
     from .plugin import Plugin

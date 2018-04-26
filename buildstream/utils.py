@@ -39,7 +39,6 @@ from contextlib import contextmanager
 
 import psutil
 
-from . import __version__
 from . import _signals
 from ._exceptions import BstError, ErrorDomain
 
@@ -469,6 +468,8 @@ def get_bst_version():
        (int): The major version
        (int): The minor version
     """
+    # Import this only conditionally, it's not resolved at bash complete time
+    from . import __version__
     versions = __version__.split('.')[:2]
 
     return (int(versions[0]), int(versions[1]))

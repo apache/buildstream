@@ -5,7 +5,6 @@ import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError
 from .._versions import BST_FORMAT_VERSION
-from ..__version__ import __version__ as build_stream_version
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
 
@@ -112,8 +111,18 @@ click.BaseCommand.main = override_main
 ##################################################################
 #                          Main Options                          #
 ##################################################################
+def print_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+
+    from .. import __version__
+    click.echo(__version__)
+    ctx.exit()
+
+
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
-@click.version_option(version=build_stream_version)
+@click.option('--version', is_flag=True, callback=print_version,
+              expose_value=False, is_eager=True)
 @click.option('--config', '-c',
               type=click.Path(exists=True, dir_okay=False, readable=True),
               help="Configuration file to use")
