@@ -163,23 +163,6 @@ For this you will want something like the following in your ``/etc/ssh/sshd_conf
         ForceCommand bst-artifact-receive --pull-url https://example.com/artifacts --verbose artifacts
 
 
-Summary file updates
-~~~~~~~~~~~~~~~~~~~~
-BuildStream uses the OSTree summary file to determine what artifacts are
-available in the remote artifact cache. ``ostree summary -u`` updates
-the summary file. This command cannot be run concurrently and thus it
-cannot be executed by ``bst-artifact-receive``, it has to be triggered
-externally.
-
-A simple way to configure this is to set up a cron job that triggers the
-summary file update every 5 minutes.
-E.g., create ``/etc/cron.d/artifacts`` with the following content:
-
-.. code::
-
-   */5 * * * * artifacts ostree --repo=/home/artifacts/artifacts summary -u
-
-
 User configuration
 ~~~~~~~~~~~~~~~~~~
 The user configuration for artifacts is documented with the rest
