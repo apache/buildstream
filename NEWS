@@ -29,6 +29,13 @@ buildstream 1.1.3
   o The elements whose cache keys had to be determined during the build
     are summarised at the end of the build.
 
+  o Fixed versioning introspection to be dynamic, many users use
+    a developer install mode so they can update with git, now the
+    version information is always up to date in logs.
+
+    This causes a minor API break: The --version output now only
+    outputs the version.
+
 
 =================
 buildstream 1.1.2
