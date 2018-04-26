@@ -6,9 +6,9 @@ About BuildStream
 .. image:: https://gitlab.com/BuildStream/buildstream/badges/master/coverage.svg?job=coverage
    :target: https://gitlab.com/BuildStream/buildstream/commits/master
 
+
 What is BuildStream?
 ====================
-
 BuildStream is a Free Software tool for building/integrating software stacks.
 It takes inspiration, lessons and use-cases from various projects including
 OBS, Reproducible Builds, Yocto, Baserock, Buildroot, Aboriginal, GNOME Continuous,
@@ -18,9 +18,9 @@ BuildStream supports multiple build-systems (e.g. autotools, cmake, cpan, distut
 make, meson, qmake), and can create outputs in a range of formats (e.g. debian packages,
 flatpak runtimes, sysroots, system images) for multiple platforms and chipsets.
 
+
 Why should I use BuildStream?
 =============================
-
 BuildStream offers the following advantages:
 
 * **Declarative build instructions/definitions**
@@ -49,16 +49,16 @@ BuildStream offers the following advantages:
   BuildStream can create full systems and complete toolchains from scratch, for
   a range of ISAs including x86_32, x86_64, ARMv7, ARMv8, MIPS.
 
+
 How do I use BuildStream?
 =========================
-
 Please refer to the `documentation <https://buildstream.gitlab.io/buildstream/>`_
 for  information about installing BuildStream, and about the BuildStream YAML format
 and plugin options.
 
+
 How does BuildStream work?
 ==========================
-
 BuildStream operates on a set of YAML files (.bst files), as follows:
 
 * loads the YAML files which describe the target(s) and all dependencies
@@ -70,9 +70,9 @@ BuildStream operates on a set of YAML files (.bst files), as follows:
 * transforms/configures and/or deploys the resulting target(s) based on the
   instructions declared in the .bst files.
 
+
 How can I get started?
 ======================
-
 The easiest way to get started is to explore some existing .bst files, for example:
 
 * https://gitlab.gnome.org/GNOME/gnome-build-meta/
