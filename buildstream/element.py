@@ -175,7 +175,13 @@ class Element(Plugin):
     """
 
     BST_FORBID_RDEPENDS = False
-    """Whether to raise exceptions if an element has runtime-dependencies.
+    """Whether to raise exceptions if an element has runtime dependencies.
+
+    *Since: 1.2*
+    """
+
+    BST_FORBID_BDEPENDS = False
+    """Whether to raise exceptions if an element has build dependencies.
 
     *Since: 1.2*
     """
@@ -1146,10 +1152,21 @@ class Element(Plugin):
     # the element and it's sources.
     #
     def _preflight(self):
+
+        if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
+            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.RUN, recurse=False)):
+                raise ElementError("{}: Dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-depends")
+
         if self.BST_FORBID_RDEPENDS:
             if any(self.dependencies(Scope.RUN, recurse=False)):
                 raise ElementError("{}: Runtime dependencies are forbidden for '{}' elements"
                                    .format(self, self.get_kind()), reason="element-forbidden-rdepends")
+
+        if self.BST_FORBID_BDEPENDS:
+            if any(self.dependencies(Scope.BUILD, recurse=False)):
+                raise ElementError("{}: Build dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-bdepends")
 
         if self.BST_FORBID_SOURCES:
             if any(self.sources()):
