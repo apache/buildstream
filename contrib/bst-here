@@ -25,7 +25,7 @@
 usage() {
     cat <<EOF
 
-USAGE: $(basename "$0") [-i BST_HERE_IMAGE] [-p] [-t] [-T] [-h] [COMMAND] [ARG..]
+USAGE: $(basename "$0") [-i BST_HERE_IMAGE] [-p] [-t] [-T] [-v VOLUME ...] [-h] [COMMAND] [ARG..]
 
 Run a bst command in a new BuildStream container.
 
@@ -38,6 +38,8 @@ OPTIONS:
     -p            Pull the latest buildstream image before running.
     -t            Force pseudo-terminal allocation.
     -T            Disable pseudo-terminal allocation.
+    -v VOLUME     Specify additional volumes to mount; should be in format
+                  'host-src:container-dest' same as 'docker run -v'.
     -h            Print this help text and exit.
 
 EOF
@@ -48,13 +50,14 @@ bst_here_image="${BST_HERE_IMAGE:-buildstream/buildstream-fedora:latest}"
 
 is_tty=
 update=false
+extra_volumes_opt=
 
 if test -t 0
 then
     is_tty=y
 fi
 
-while getopts i:ptTh arg
+while getopts i:ptTv:h arg
 do
     case $arg in
     i)
@@ -68,6 +71,9 @@ do
         ;;
     t)
         is_tty=y
+        ;;
+    v)
+        extra_volumes_opt="$extra_volumes_opt --volume $OPTARG"
         ;;
     h)
         usage 0
@@ -121,6 +127,7 @@ exec docker run --rm -i${is_tty:+ -t} \
                 --volume buildstream-cache:/root/.cache/buildstream \
                 --volume buildstream-config:/root/.config \
                 --volume "$PWD":/src \
+                $extra_volumes_opt \
                 --workdir /src \
                 "$bst_here_image" \
                 $command
