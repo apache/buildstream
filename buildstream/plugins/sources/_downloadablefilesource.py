@@ -13,13 +13,18 @@ from buildstream import utils
 class DownloadableFileSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag']
+    COMMON_CONFIG_KEYS = ['url', 'ref',
+                          'etag', 'filename']
+    COMMON_CONFIG_KEYS.extend(Source.COMMON_CONFIG_KEYS)
 
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', None)
         self.url = self.translate_url(self.original_url)
         self._warn_deprecated_etag(node)
+        self.filename = self.node_get_member(node, str, 'filename', None)
+        if self.filename is None:
+            self.filename = os.path.basename(self.url)
 
     def preflight(self):
         return
@@ -31,7 +36,7 @@ class DownloadableFileSource(Source):
         if self.ref is None:
             return Consistency.INCONSISTENT
 
-        if os.path.isfile(self._get_mirror_file()):
+        if self._get_mirror_file():
             return Consistency.CACHED
 
         else:
@@ -70,7 +75,8 @@ class DownloadableFileSource(Source):
         # file to be already cached because Source.fetch() will
         # not be called if the source is already Consistency.CACHED.
         #
-        if os.path.isfile(self._get_mirror_file()):
+        cachedfile = self._get_mirror_file()
+        if cachedfile is not None and os.path.isfile(cachedfile):
             return  # pragma: nocover
 
         # Download the file, raise hell if the sha256sums don't match,
@@ -87,21 +93,27 @@ class DownloadableFileSource(Source):
             provenance = self.node_provenance(node, member_name='etag')
             self.warn('{} "etag" is deprecated and ignored.'.format(provenance))
 
+    def update_mirror(self):
+        self._ensure_mirror()
+
     def _get_etag(self, ref):
-        etagfilename = os.path.join(self._get_mirror_dir(), '{}.etag'.format(ref))
-        if os.path.exists(etagfilename):
-            with open(etagfilename, 'r') as etagfile:
-                return etagfile.read()
+        mirrorfilename = self._get_mirror_file(sha=ref)
+        if mirrorfilename:
+            etagfilename = '{}.etag'.format(mirrorfilename)
+            if os.path.exists(etagfilename):
+                with open(etagfilename, 'r') as etagfile:
+                    return etagfile.read()
 
         return None
 
     def _store_etag(self, ref, etag):
-        etagfilename = os.path.join(self._get_mirror_dir(), '{}.etag'.format(ref))
+        mirrorfilename = self._get_mirror_file(sha=ref, create=True)
+        etagfilename = '{}.etag'.format(mirrorfilename)
         with utils.save_file_atomic(etagfilename) as etagfile:
             etagfile.write(etag)
 
     def _ensure_mirror(self):
-        # Downloads from the url and caches it according to its sha256sum.
+        # Downloads from the url and caches it along with its sha256sum and etag.
         try:
             with self.tempdir() as td:
                 default_name = os.path.basename(self.url)
@@ -129,15 +141,15 @@ class DownloadableFileSource(Source):
                     with open(local_file, 'wb') as dest:
                         shutil.copyfileobj(response, dest)
 
-                # Make sure url-specific mirror dir exists.
-                if not os.path.isdir(self._get_mirror_dir()):
-                    os.makedirs(self._get_mirror_dir())
-
                 # Store by sha256sum
                 sha256 = utils.sha256sum(local_file)
                 # Even if the file already exists, move the new file over.
                 # In case the old file was corrupted somehow.
-                os.rename(local_file, self._get_mirror_file(sha256))
+                mirrorfilename = self._get_mirror_file(sha=sha256, create=True)
+                os.rename(local_file, mirrorfilename)
+                if etag is not None:
+                    with open('{}.etag'.format(mirrorfilename), 'w') as etagfile:
+                        etagfile.write(etag)
 
                 if etag:
                     self._store_etag(sha256, etag)
@@ -156,9 +168,23 @@ class DownloadableFileSource(Source):
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e)) from e
 
-    def _get_mirror_dir(self):
-        return os.path.join(self.get_mirror_directory(),
-                            utils.url_directory_name(self.original_url))
+    def _is_right_mirror(self, path, sha):
+        shafilename = os.path.join(path, '{}.sha256'.format(self.filename))
+        if os.path.exists(shafilename):
+            with open(shafilename, 'r') as shafile:
+                return shafile.read(64) == sha
+        else:
+            with open(shafilename, 'w') as shafile:
+                shafile.write(sha)
+            return True
 
-    def _get_mirror_file(self, sha=None):
-        return os.path.join(self._get_mirror_dir(), sha or self.ref)
+    def _get_mirror_file(self, sha=None, create=False):
+        if sha is None:
+            sha = self.ref
+        path = self.find_mirror_directory(self.original_url,
+                                          lambda path: self._is_right_mirror(path, sha),
+                                          create=create)
+        if path:
+            return os.path.join(path, self.filename)
+        else:
+            return None
