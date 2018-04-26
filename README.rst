@@ -15,9 +15,8 @@ OBS, Reproducible Builds, Yocto, Baserock, Buildroot, Aboriginal, GNOME Continuo
 JHBuild, Flatpak Builder and Android repo.
 
 BuildStream supports multiple build-systems (e.g. autotools, cmake, cpan, distutils,
-make, meson, qmake), covers many programming languages, and can create outputs in a
-range of formats (e.g. debian packages, flatpak runtimes, sysroots, system
-images) for multiple platforms and chipsets.
+make, meson, qmake), and can create outputs in a range of formats (e.g. debian packages,
+flatpak runtimes, sysroots, system images) for multiple platforms and chipsets.
 
 Why should I use BuildStream?
 =============================
