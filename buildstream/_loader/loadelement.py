@@ -167,6 +167,7 @@ def _extract_depends_from_node(node):
         output_deps.append(dependency)
 
     # Now delete "depends", we dont want it anymore
-    del node[Symbol.DEPENDS]
+    if Symbol.DEPENDS in node:
+        del node[Symbol.DEPENDS]
 
     return output_deps
