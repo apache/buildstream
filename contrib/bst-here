@@ -27,7 +27,7 @@ usage() {
 
 USAGE: $(basename "$0") [-t] [-T] [-p] [-h] [COMMAND] [ARG..]
 
-Run a bst command in a new BuildStream contaner.
+Run a bst command in a new BuildStream container.
 
 If no command is specified, an interactive shell is launched
 using "/bin/bash -i".
