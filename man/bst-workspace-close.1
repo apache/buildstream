@@ -1,12 +1,15 @@
-.TH "BST WORKSPACE CLOSE" "1" "25-Mar-2018" "" "bst workspace close Manual"
+.TH "BST WORKSPACE CLOSE" "1" "26-Apr-2018" "" "bst workspace close Manual"
 .SH NAME
-bst\-workspace\-close \- Close a workspace
+bst\-workspace\-close \- Close workspaces
 .SH SYNOPSIS
 .B bst workspace close
-[OPTIONS] ELEMENT
+[OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Close a workspace
 .SH OPTIONS
 .TP
 \fB\-\-remove\-dir\fP
 Remove the path that contains the closed workspace
+.TP
+\fB\-a,\fP \-\-all
+Close all open workspaces
