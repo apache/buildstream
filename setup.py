@@ -215,7 +215,7 @@ setup(name='BuildStream',
 
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
-      packages=find_packages(),
+      packages=find_packages(exclude=('tests', 'tests.*')),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
                                     'data/*.yaml', 'data/*.sh.in']},
       data_files=[
