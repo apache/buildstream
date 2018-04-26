@@ -10,6 +10,7 @@ MAIN_COMMANDS = [
     'checkout ',
     'fetch ',
     'init ',
+    'mirror ',
     'pull ',
     'push ',
     'shell ',

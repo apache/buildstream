@@ -6,6 +6,7 @@ from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
+from .. import utils
 
 
 ##################################################################
@@ -327,6 +328,53 @@ def track(app, elements, deps, except_, cross_junctions):
                          selection=deps,
                          except_targets=except_,
                          cross_junctions=cross_junctions)
+
+
+##################################################################
+#                         Mirror Command                         #
+##################################################################
+@cli.command(short_help="Mirror new source references")
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
+              help="Except certain dependencies from mirroring")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to mirror (default: none)')
+@click.argument('elements', nargs=-1,
+                required=False,
+                type=click.Path(dir_okay=False, readable=True))
+@click.pass_obj
+def mirror(app, elements, deps, except_):
+    """Mirror all sources.
+
+    This will download everything available from sources. For
+    repositories, it will download all commits/revisions. For files,
+    it will download the latest version even if the source is already
+    cached. Previously mirrored/fetched downloads will still be
+    accessible.
+
+    If no element is given as parameters, all elements found in
+    `element_path` will be used.
+
+    Specify `--deps` to control which sources to track:
+
+    \b
+        none:  No dependencies, just the specified elements
+        all:   All dependencies of all specified elements
+
+    """
+    if not elements:
+        with app.partially_initialized():
+            elements = []
+            for element in utils.list_relative_paths(app.project.element_path):
+                if element.endswith('.bst'):
+                    elements.append(element)
+    elements = tuple(elements)
+
+    with app.initialized(session_name="Mirror"):
+        app.stream.mirror(elements,
+                          selection=deps,
+                          except_targets=except_)
 
 
 ##################################################################
