@@ -117,6 +117,10 @@ from buildstream._pipeline import PipelineError
 class JunctionElement(Element):
     # pylint: disable=attribute-defined-outside-init
 
+    # Junctions are not allowed any dependencies
+    BST_FORBID_BDEPENDS = True
+    BST_FORBID_RDEPENDS = True
+
     def configure(self, node):
         self.path = self.node_get_member(node, str, 'path', default='')
         self.options = self.node_get_member(node, Mapping, 'options', default={})
