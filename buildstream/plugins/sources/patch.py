@@ -82,6 +82,10 @@ class PatchSource(Source):
         # Nothing to do here for a local source
         pass  # pragma: nocover
 
+    def update_mirror(self):
+        # Nothing to do here for a local source
+        pass
+
     def stage(self, directory):
         with self.timed_activity("Applying local patch: {}".format(self.path)):
 
