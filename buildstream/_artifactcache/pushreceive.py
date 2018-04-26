@@ -33,6 +33,7 @@ from urllib.parse import urlparse
 import click
 import gi
 
+from ..utils import _parse_size
 from .. import _signals  # nopep8
 from .._profile import Topics, profile_start, profile_end
 
@@ -573,7 +574,11 @@ class OSTreeReceiver(object):
     def __init__(self, repopath, pull_url, cache_quota):
         self.repopath = repopath
         self.pull_url = pull_url
-        self.cache_quota = cache_quota
+        if cache_quota:
+            # Parse the string and find the quota in bytes (int)
+            self.cache_quota = _parse_size(cache_quota, repopath)
+        else:
+            self.cache_quota = None
 
         if self.repopath is None:
             self.repo = OSTree.Repo.new_default()
@@ -800,8 +805,9 @@ def push(repo, remote, branches, output):
 @click.option('--debug', '-d', is_flag=True, default=False, help="Debug mode")
 @click.option('--pull-url', type=str, required=True,
               help="Clients who try to pull over SSH will be redirected here")
-@click.option('--cache-quota', type=int,
-              help="Implement a quota on the cache (in bytes) here")
+@click.option('--cache-quota', type=str,
+              help="Implement a cache quota. Accepted suffixes are: K, M, G, T "
+              "or no suffix (for bytes).\nExample: --cache-quota 20G for 20 Gb")
 @click.argument('repo')
 def receive_main(verbose, debug, pull_url, cache_quota, repo):
     """A BuildStream sister program for receiving artifacts send to a shared artifact cache
@@ -813,8 +819,6 @@ def receive_main(verbose, debug, pull_url, cache_quota, repo):
         loglevel = logging.DEBUG
     logging.basicConfig(format='%(module)s: %(levelname)s: %(message)s',
                         level=loglevel, stream=sys.stderr)
-
-    # IDEA: have it so that cache_quota can allow human friendly input.
 
     receiver = OSTreeReceiver(repo, pull_url, cache_quota)
     return receiver.run()

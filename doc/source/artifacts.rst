@@ -160,8 +160,10 @@ For this you will want something like the following in your ``/etc/ssh/sshd_conf
 	# command must be specified here; 'artifacts' is
 	# the HOME relative path to the artifact cache.
 	# The exact pull URL must also be specified.
-	# A cache-quota is optional and should be specified in bytes
-	## FIXME: The above should have a function which converts 20G -> bytes...
+	# A cache-quota is optional and can either be specified
+	# by the exact integer, or in human friendly form,
+	# for example, a 20 GB quota is specified with "20G"
+
         ForceCommand bst-artifact-receive --pull-url https://example.com/artifacts --cache-quota quota_in_bytes --verbose artifacts
 
 
