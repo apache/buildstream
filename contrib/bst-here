@@ -25,7 +25,7 @@
 usage() {
     cat <<EOF
 
-USAGE: $(basename "$0") [-t] [-T] [-p] [-h] [COMMAND] [ARG..]
+USAGE: $(basename "$0") [-i BST_HERE_IMAGE] [-p] [-t] [-T] [-h] [COMMAND] [ARG..]
 
 Run a bst command in a new BuildStream container.
 
@@ -33,16 +33,18 @@ If no command is specified, an interactive shell is launched
 using "/bin/bash -i".
 
 OPTIONS:
-    -t      Force pseudo-terminal allocation.
-    -T      Disable pseudo-terminal allocation.
-    -p      Pull the latest buildstream image before running.
-    -h      Print this help text and exit.
+    -i IMAGE      Specify Docker image to use; can also be specified by setting
+                  BST_HERE_IMAGE environment variable.
+    -p            Pull the latest buildstream image before running.
+    -t            Force pseudo-terminal allocation.
+    -T            Disable pseudo-terminal allocation.
+    -h            Print this help text and exit.
 
 EOF
     exit "$1"
 }
 
-BST_IMAGE='buildstream/buildstream-fedora:latest'
+bst_here_image="${BST_HERE_IMAGE:-buildstream/buildstream-fedora:latest}"
 
 is_tty=
 update=false
@@ -52,17 +54,20 @@ then
     is_tty=y
 fi
 
-while getopts tTph arg
+while getopts i:ptTh arg
 do
     case $arg in
+    i)
+        bst_here_image="$OPTARG"
+        ;;
+    p)
+        update=true
+        ;;
     T)
         is_tty=
         ;;
     t)
         is_tty=y
-        ;;
-    p)
-        update=true
         ;;
     h)
         usage 0
@@ -97,7 +102,7 @@ fi
 
 if "$update" == true
 then
-    docker pull "$BST_IMAGE"
+    docker pull "$bst_here_image"
 fi
 
 # FIXME: We run with --privileged to allow bwrap to mount system
@@ -117,5 +122,5 @@ exec docker run --rm -i${is_tty:+ -t} \
                 --volume buildstream-config:/root/.config \
                 --volume "$PWD":/src \
                 --workdir /src \
-                "$BST_IMAGE" \
+                "$bst_here_image" \
                 $command
