@@ -2,7 +2,7 @@ import os
 import pytest
 import shutil
 
-from buildstream import _yaml
+from buildstream import _yaml, ElementError
 from buildstream._exceptions import LoadError, LoadErrorReason
 from tests.testutils import cli, create_repo
 from tests.testutils.site import HAVE_GIT
@@ -130,8 +130,8 @@ def test_invalid_with_deps(cli, datafiles):
     result = cli.run(project=project, args=['build', 'junction-with-deps.bst'])
     assert result.exit_code != 0
     assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    assert isinstance(result.exception, ElementError)
+    assert result.exception.reason == 'element-forbidden-depends'
 
 
 @pytest.mark.datafiles(DATA_DIR)

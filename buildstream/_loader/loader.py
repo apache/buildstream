@@ -404,10 +404,6 @@ class Loader():
 
         # Descend
         for dep in element.deps:
-            if element_kind == 'junction':
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Junctions do not support dependencies".format(dep.provenance))
-
             loader = self._get_loader_for_dep(dep)
             meta_dep = loader._collect_element(dep.name)
             if dep.dep_type != 'runtime':
