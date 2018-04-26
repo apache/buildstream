@@ -30,7 +30,7 @@ from tempfile import TemporaryDirectory
 
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
 from ._message import Message, MessageType
-from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
+from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue, MirrorQueue
 from ._pipeline import Pipeline, PipelineSelection
 from ._platform import Platform
 from . import utils, _yaml, _site
@@ -211,6 +211,30 @@ class Stream():
         if track_elements:
             self._enqueue_plan(track_elements, queue=track_queue)
         self._enqueue_plan(elements)
+        self._run()
+
+    # mirror()
+    #
+    # Mirrors all sources on the pipeline.
+    #
+    # Args:
+    #    targets (list of str): Targets to fetch
+    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    except_targets (list of str): Specified targets to except from fetching
+    #
+    def mirror(self, targets, *,
+               selection=PipelineSelection.PLAN,
+               except_targets=None):
+        elements, _ = \
+            self._load(targets, (),
+                       selection=selection,
+                       except_targets=except_targets,
+                       track_except_targets=except_targets,
+                       fetch_subprojects=True)
+
+        mirrorqueue = MirrorQueue(self._scheduler)
+        self._add_queue(mirrorqueue)
+        self._enqueue_plan(elements, queue=mirrorqueue)
         self._run()
 
     # fetch()

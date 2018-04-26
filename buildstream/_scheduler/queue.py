@@ -45,6 +45,9 @@ class QueueType():
     # Tasks which upload stuff to the internet
     PUSH = 3
 
+    # Tasks which mirror sources
+    MIRROR = 4
+
 
 # Queue status for a given element
 #

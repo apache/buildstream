@@ -468,6 +468,7 @@ class LogLine(Widget):
         values["Maximum Fetch Tasks"] = context.sched_fetchers
         values["Maximum Build Tasks"] = context.sched_builders
         values["Maximum Push Tasks"] = context.sched_pushers
+        values["Maximum Mirror Tasks"] = context.sched_mirrorers
         values["Maximum Network Retries"] = context.sched_network_retries
         text += self._format_values(values)
         text += '\n'

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,15 +16,26 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Valentin David <valentin.david@codethink.co.uk>
 
-from .queue import Queue, QueueStatus, QueueType
+from . import Queue, QueueType, QueueStatus
 
-from .fetchqueue import FetchQueue
-from .trackqueue import TrackQueue
-from .buildqueue import BuildQueue
-from .pushqueue import PushQueue
-from .pullqueue import PullQueue
-from .mirrorqueue import MirrorQueue
 
-from .scheduler import Scheduler, SchedStatus
+class MirrorQueue(Queue):
+
+    action_name = "Mirror"
+    complete_name = "Mirrored"
+    queue_type = QueueType.MIRROR
+
+    def process(self, element):
+        for source in element.sources():
+            source.update_mirror()
+
+    def status(self, element):
+        if not list(element.sources()):
+            return QueueStatus.SKIP
+
+        return QueueStatus.READY
+
+    def done(self, element, result, success):
+        return success

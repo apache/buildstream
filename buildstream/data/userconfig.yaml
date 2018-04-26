@@ -36,6 +36,9 @@ scheduler:
   # Maximum number of simultaneous artifact uploading tasks.
   pushers: 4
 
+  # Maximum number of simultaneous mirror tasks.
+  mirrorers: 10
+
   # Maximum number of retries for network tasks.
   network-retries: 2
 

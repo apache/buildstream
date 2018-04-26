@@ -95,6 +95,9 @@ class Context():
         # Maximum number of push tasks
         self.sched_pushers = 4
 
+        # Maximum number of mirror tasks
+        self.sched_mirrorers = 4
+
         # Maximum number of retries for network tasks
         self.sched_network_retries = 2
 
@@ -186,12 +189,14 @@ class Context():
         scheduler = _yaml.node_get(defaults, Mapping, 'scheduler')
         _yaml.node_validate(scheduler, [
             'on-error', 'fetchers', 'builders',
-            'pushers', 'network-retries'
+            'pushers', 'network-retries',
+            'mirrorers'
         ])
         self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
+        self.sched_mirrorers = _yaml.node_get(scheduler, int, 'mirrorers')
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
 
         # Load per-projects overrides

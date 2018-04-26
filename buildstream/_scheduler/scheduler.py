@@ -96,7 +96,8 @@ class Scheduler():
         self._job_tokens = {
             QueueType.FETCH: context.sched_fetchers,
             QueueType.BUILD: context.sched_builders,
-            QueueType.PUSH: context.sched_pushers
+            QueueType.PUSH: context.sched_pushers,
+            QueueType.MIRROR: context.sched_mirrorers
         }
 
     # run()
