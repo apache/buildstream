@@ -78,7 +78,6 @@ class Queue():
         #
         # Public members
         #
-        self.active_jobs = []          # List of active ongoing Jobs, for scheduler observation
         self.failed_elements = []      # List of failed elements, for the frontend
         self.processed_elements = []   # List of processed elements, for the frontend
         self.skipped_elements = []     # List of skipped elements, for the frontend
@@ -224,6 +223,7 @@ class Queue():
     def process_ready(self):
         scheduler = self._scheduler
         unready = []
+        ready = []
 
         while self._wait_queue and scheduler.get_job_token(self.queue_type):
             element = self._wait_queue.popleft()
@@ -242,19 +242,23 @@ class Queue():
             logfile = self._element_log_path(element)
             self.prepare(element)
 
-            job = ElementJob(scheduler, self.action_name,
+            job = ElementJob(scheduler, self.queue_type,
+                             self.action_name,
                              logfile, element=element,
                              action_cb=self.process,
                              complete_cb=self._job_done,
                              max_retries=self._max_retries)
-            scheduler.job_starting(job, element)
+            ready.append(job)
 
-            job.spawn()
-            self.active_jobs.append(job)
+            # Notify the frontend
+            if self._scheduler._job_start_callback:
+                self._scheduler._job_start_callback(element, self.action_name)
 
         # These were not ready but were in the beginning, give em
         # first priority again next time around
         self._wait_queue.extendleft(unready)
+
+        return ready
 
     #####################################################
     #                 Private Methods                   #
@@ -298,9 +302,6 @@ class Queue():
     # See the Job object for an explanation of the call signature
     #
     def _job_done(self, job, element, success, result):
-
-        # Remove from our jobs
-        self.active_jobs.remove(job)
 
         # Update workspaces in the main task before calling any queue implementation
         self._update_workspaces(element, job)
@@ -347,13 +348,11 @@ class Queue():
                 self.failed_elements.append(element)
 
         # Give the token for this job back to the scheduler
-        # immediately before invoking another round of scheduling
         self._scheduler.put_job_token(self.queue_type)
 
         # Notify frontend
-        self._scheduler.job_completed(self, job, element, success)
-
-        self._scheduler.sched()
+        if self._scheduler._job_complete_callback:
+            self._scheduler._job_complete_callback(element, self, job.action_name, success)
 
     # Convenience wrapper for Queue implementations to send
     # a message for the element they are processing

@@ -67,13 +67,14 @@ class Process(multiprocessing.Process):
 #
 class Job():
 
-    def __init__(self, scheduler, action_name, logfile, *, max_retries=0):
+    def __init__(self, scheduler, job_type, action_name, logfile, *, max_retries=0):
 
         #
         # Public members
         #
         self.action_name = action_name   # The action name for the Queue
-        self.child_data = None
+        self.child_data = None           # Data to be sent to the main process
+        self.job_type = job_type         # The type of the job
 
         #
         # Private members
@@ -540,6 +541,7 @@ class Job():
             return
 
         self._parent_complete(returncode == 0, self._result)
+        self._scheduler.job_completed(self)
 
     # _parent_process_envelope()
     #

@@ -71,8 +71,10 @@ class Scheduler():
         #
         # Public members
         #
-        self.queues = None          # Exposed for the frontend to print summaries
+        self.active_jobs = []       # Jobs currently being run in the scheduler
         self.context = context      # The Context object shared with Queues
+        self.queues = None
+        self.queue_runner = None    # The QueueRunner that delivers jobs to schedule
         self.terminated = False     # Whether the scheduler was asked to terminate or has terminated
         self.suspended = False      # Whether the scheduler is currently suspended
 
@@ -83,7 +85,6 @@ class Scheduler():
         #
         # Private members
         #
-        self._runners = []
         self._interrupt_callback = interrupt_callback
         self._ticker_callback = ticker_callback
         self._job_start_callback = job_start_callback
@@ -116,8 +117,8 @@ class Scheduler():
     #
     def run(self, queues):
 
+        self.queue_runner = QueueRunner(self, queues)
         # Hold on to the queues to process
-        self._runners.append(QueueRunner(self, queues))
         self.queues = queues
 
         # Ensure that we have a fresh new event loop, in case we want
@@ -224,16 +225,37 @@ class Scheduler():
     # and process anything that is ready.
     #
     def sched(self):
-        for runner in self._runners:
-            runner.schedule_jobs()
+        jobs = self.queue_runner.schedule_jobs()
+        self.run_jobs(jobs)
 
         # If nothings ticking, time to bail out
-        ticking = 0
-        for queue in self.queues:
-            ticking += len(queue.active_jobs)
-
-        if ticking == 0:
+        if not self.active_jobs:
             self.loop.stop()
+
+    # run_jobs():
+    #
+    # Execute jobs and track them.
+    #
+    # Args:
+    #    jobs (typing.Iterable[jobs]) - A set of jobs to run
+    #
+    def run_jobs(self, jobs):
+        for job in jobs:
+            job.spawn()
+            self.active_jobs.append(job)
+
+    # job_completed():
+    #
+    # Called when a Job completes
+    #
+    # Args:
+    #    queue (Queue): The Queue holding a complete job
+    #    job (Job): The completed Job
+    #    success (bool): Whether the Job completed with a success status
+    #
+    def job_completed(self, job):
+        self.active_jobs.remove(job)
+        self.sched()
 
     # get_job_token():
     #
@@ -266,30 +288,6 @@ class Scheduler():
     def put_job_token(self, queue_type):
         self._job_tokens[queue_type] += 1
 
-    # job_starting():
-    #
-    # Called by the Queue when starting a Job
-    #
-    # Args:
-    #    job (Job): The starting Job
-    #
-    def job_starting(self, job, element):
-        if self._job_start_callback:
-            self._job_start_callback(element, job.action_name)
-
-    # job_completed():
-    #
-    # Called by the Queue when a Job completes
-    #
-    # Args:
-    #    queue (Queue): The Queue holding a complete job
-    #    job (Job): The completed Job
-    #    success (bool): Whether the Job completed with a success status
-    #
-    def job_completed(self, queue, job, element, success):
-        if self._job_complete_callback:
-            self._job_complete_callback(element, queue, job.action_name, success)
-
     #######################################################
     #                  Local Private Methods              #
     #######################################################
@@ -302,9 +300,8 @@ class Scheduler():
         if not self.suspended:
             self._suspendtime = datetime.datetime.now()
             self.suspended = True
-            for queue in self.queues:
-                for job in queue.active_jobs:
-                    job.suspend()
+            for job in self.active_jobs:
+                job.suspend()
 
     # _resume_jobs()
     #
@@ -312,9 +309,8 @@ class Scheduler():
     #
     def _resume_jobs(self):
         if self.suspended:
-            for queue in self.queues:
-                for job in queue.active_jobs:
-                    job.resume()
+            for job in self.active_jobs:
+                job.resume()
             self.suspended = False
             self._starttime += (datetime.datetime.now() - self._suspendtime)
             self._suspendtime = None
@@ -377,17 +373,15 @@ class Scheduler():
         wait_limit = 20.0
 
         # First tell all jobs to terminate
-        for queue in self.queues:
-            for job in queue.active_jobs:
-                job.terminate()
+        for job in self.active_jobs:
+            job.terminate()
 
         # Now wait for them to really terminate
-        for queue in self.queues:
-            for job in queue.active_jobs:
-                elapsed = datetime.datetime.now() - wait_start
-                timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-                if not job.terminate_wait(timeout):
-                    job.kill()
+        for job in self.active_jobs:
+            elapsed = datetime.datetime.now() - wait_start
+            timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
+            if not job.terminate_wait(timeout):
+                job.kill()
 
         self.loop.stop()
 
