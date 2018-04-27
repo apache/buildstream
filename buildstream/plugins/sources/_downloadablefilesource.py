@@ -18,8 +18,8 @@ class DownloadableFileSource(Source):
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', None)
-        self.etag = self.node_get_member(node, str, 'etag', None)
         self.url = self.translate_url(self.original_url)
+        self._warn_deprecated_etag(node)
 
     def preflight(self):
         return
@@ -39,24 +39,13 @@ class DownloadableFileSource(Source):
 
     def load_ref(self, node):
         self.ref = self.node_get_member(node, str, 'ref', None)
-        self.etag = self.node_get_member(node, str, 'etag', None)
+        self._warn_deprecated_etag(node)
 
     def get_ref(self):
-        # Report `None` value if we dont have a ref
-        if self.ref is None:
-            return None
-        return (self.ref, self.etag)
+        return self.ref
 
     def set_ref(self, ref, node):
-        # Always support `None` value for ref
-        if ref is None:
-            ref = (None, None)
-
-        self.ref, self.etag = ref
-
-        node['ref'] = self.ref
-        if self.etag:
-            node['etag'] = self.etag
+        node['ref'] = self.ref = ref
 
     def track(self):
         # there is no 'track' field in the source to determine what/whether
@@ -64,7 +53,7 @@ class DownloadableFileSource(Source):
         # decision by the user.
         with self.timed_activity("Tracking {}".format(self.url),
                                  silent_nested=True):
-            new_ref, new_etag = self._ensure_mirror()
+            new_ref = self._ensure_mirror()
 
             if self.ref and self.ref != new_ref:
                 detail = "When tracking, new ref differs from current ref:\n" \
@@ -73,7 +62,7 @@ class DownloadableFileSource(Source):
                     + "  New ref: {}\n".format(new_ref)
                 self.warn("Potential man-in-the-middle attack!", detail=detail)
 
-            return (new_ref, new_etag)
+            return new_ref
 
     def fetch(self):
 
@@ -87,10 +76,29 @@ class DownloadableFileSource(Source):
         # Download the file, raise hell if the sha256sums don't match,
         # and mirror the file otherwise.
         with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
-            sha256, _ = self._ensure_mirror()
+            sha256 = self._ensure_mirror()
             if sha256 != self.ref:
                 raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
                                   .format(self.url, sha256, self.ref))
+
+    def _warn_deprecated_etag(self, node):
+        etag = self.node_get_member(node, str, 'etag', None)
+        if etag:
+            provenance = self.node_provenance(node, member_name='etag')
+            self.warn('{} "etag" is deprecated and ignored.'.format(provenance))
+
+    def _get_etag(self, ref):
+        etagfilename = os.path.join(self._get_mirror_dir(), '{}.etag'.format(ref))
+        if os.path.exists(etagfilename):
+            with open(etagfilename, 'r') as etagfile:
+                return etagfile.read()
+
+        return None
+
+    def _store_etag(self, ref, etag):
+        etagfilename = os.path.join(self._get_mirror_dir(), '{}.etag'.format(ref))
+        with utils.save_file_atomic(etagfilename) as etagfile:
+            etagfile.write(etag)
 
     def _ensure_mirror(self):
         # Downloads from the url and caches it according to its sha256sum.
@@ -100,9 +108,15 @@ class DownloadableFileSource(Source):
                 request = urllib.request.Request(self.url)
                 request.add_header('Accept', '*/*')
 
-                # Do not re-download the file if the ETag matches
-                if self.etag and self.get_consistency() == Consistency.CACHED:
-                    request.add_header('If-None-Match', self.etag)
+                # We do not use etag in case what we have in cache is
+                # not matching ref in order to be able to recover from
+                # corrupted download.
+                if self.ref:
+                    etag = self._get_etag(self.ref)
+
+                    # Do not re-download the file if the ETag matches.
+                    if etag and self.get_consistency() == Consistency.CACHED:
+                        request.add_header('If-None-Match', etag)
 
                 with contextlib.closing(urllib.request.urlopen(request)) as response:
                     info = response.info()
@@ -125,11 +139,16 @@ class DownloadableFileSource(Source):
                 # In case the old file was corrupted somehow.
                 os.rename(local_file, self._get_mirror_file(sha256))
 
-                return (sha256, etag)
+                if etag:
+                    self._store_etag(sha256, etag)
+                return sha256
 
         except urllib.error.HTTPError as e:
             if e.code == 304:
-                return (self.ref, self.etag)
+                # 304 Not Modified.
+                # Because we use etag only for matching ref, currently specified ref is what
+                # we would have downloaded.
+                return self.ref
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e)) from e
 
