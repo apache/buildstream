@@ -3,7 +3,7 @@ import sys
 
 import click
 from .. import _yaml
-from .._exceptions import BstError, LoadError
+from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
@@ -635,7 +635,7 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
     with app.initialized((element,), rewritable=track_, track_elements=[element] if track_ else None):
         # This command supports only one target
         target = app.pipeline.targets[0]
-        app.open_workspace(target, directory, no_checkout, track_, force)
+        app.stream.workspace_open(target, directory, no_checkout, track_, force)
 
 
 ##################################################################
@@ -657,10 +657,29 @@ def workspace_close(app, remove_dir, all_, elements):
         sys.exit(-1)
 
     with app.partially_initialized():
+
+        # Early exit if we specified `all` and there are no workspaces
+        if all_ and not app.stream.workspace_exists():
+            click.echo('No open workspaces to close', err=True)
+            sys.exit(0)
+
+        # Check that the workspaces in question exist
+        nonexisting = []
+        for element_name in elements:
+            if not app.stream.workspace_exists(element_name):
+                nonexisting.append(element_name)
+        if nonexisting:
+            raise AppError("Workspace does not exist", detail="\n".join(nonexisting))
+
+        if app.interactive and remove_dir:
+            if not click.confirm('This will remove all your changes, are you sure?'):
+                click.echo('Aborting', err=True)
+                sys.exit(-1)
+
         if all_:
             elements = [element_name for element_name, _ in app.project.workspaces.list()]
-        for element in elements:
-            app.close_workspace(element, remove_dir)
+        for element_name in elements:
+            app.stream.workspace_close(element_name, remove_dir)
 
 
 ##################################################################
@@ -692,7 +711,7 @@ def workspace_reset(app, track_, all_, elements):
 
     with app.initialized(elements):
         for target in app.pipeline.targets:
-            app.reset_workspace(target, track_)
+            app.stream.workspace_reset(target, track_)
 
 
 ##################################################################
@@ -704,14 +723,4 @@ def workspace_list(app):
     """List open workspaces"""
 
     with app.partially_initialized():
-        workspaces = []
-        for element_name, workspace_ in app.project.workspaces.list():
-            workspace_detail = {
-                'element': element_name,
-                'directory': workspace_.path,
-            }
-            workspaces.append(workspace_detail)
-
-        _yaml.dump({
-            'workspaces': workspaces
-        })
+        app.stream.workspace_list()

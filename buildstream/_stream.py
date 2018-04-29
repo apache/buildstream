@@ -20,14 +20,15 @@
 import os
 import stat
 import shlex
+import shutil
 import tarfile
 from tempfile import TemporaryDirectory
 
 from ._exceptions import StreamError, ImplError, BstError
-from . import _site
-from . import utils
-from . import Scope, Consistency
+from ._message import Message, MessageType
 from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
+from . import utils, _yaml, _site
+from . import Scope, Consistency
 
 
 # Stream()
@@ -39,15 +40,13 @@ from ._scheduler import SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQue
 #
 class Stream():
 
-    def __init__(self, context, scheduler, pipeline):
+    def __init__(self, context):
         self.session_elements = 0  # Number of elements to process in this session
         self.total_elements = 0    # Number of total potential elements for this pipeline
 
         self._context = context
-        self._scheduler = scheduler
-        self._pipeline = pipeline
-
-        self.total_elements = len(list(self._pipeline.dependencies(Scope.ALL)))
+        self._scheduler = None
+        self._pipeline = None
 
     # track()
     #
@@ -208,7 +207,7 @@ class Stream():
                 with target.timed_activity("Checking out files in {}".format(directory)):
                     try:
                         if hardlinks:
-                            self.checkout_hardlinks(sandbox_root, directory)
+                            self._checkout_hardlinks(sandbox_root, directory)
                         else:
                             utils.copy_files(sandbox_root, directory)
                     except OSError as e:
@@ -216,25 +215,6 @@ class Stream():
         except BstError as e:
             raise StreamError("Error while staging dependencies into a sandbox: {}".format(e),
                               reason=e.reason) from e
-
-    # Helper function for checkout()
-    #
-    def checkout_hardlinks(self, sandbox_root, directory):
-        try:
-            removed = utils.safe_remove(directory)
-        except OSError as e:
-            raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
-
-        if removed:
-            # Try a simple rename of the sandbox root; if that
-            # doesnt cut it, then do the regular link files code path
-            try:
-                os.rename(sandbox_root, directory)
-            except OSError:
-                os.makedirs(directory, exist_ok=True)
-                utils.link_files(sandbox_root, directory)
-        else:
-            utils.link_files(sandbox_root, directory)
 
     # pull()
     #
@@ -289,6 +269,150 @@ class Stream():
             raise StreamError()
         elif status == SchedStatus.TERMINATED:
             raise StreamError(terminated=True)
+
+    # workspace_open
+    #
+    # Open a project workspace
+    #
+    # Args:
+    #    target (Element): The element to open the workspace for
+    #    directory (str): The directory to stage the source in
+    #    no_checkout (bool): Whether to skip checking out the source
+    #    track_first (bool): Whether to track and fetch first
+    #    force (bool): Whether to ignore contents in an existing directory
+    #
+    def workspace_open(self, target, directory, no_checkout, track_first, force):
+        project = self._context.get_toplevel_project()
+        workdir = os.path.abspath(directory)
+
+        if not list(target.sources()):
+            build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
+            if not build_depends:
+                raise StreamError("The given element has no sources")
+            detail = "Try opening a workspace on one of its dependencies instead:\n"
+            detail += "  \n".join(build_depends)
+            raise StreamError("The given element has no sources", detail=detail)
+
+        # Check for workspace config
+        workspace = project.workspaces.get_workspace(target.name)
+        if workspace:
+            raise StreamError("Workspace '{}' is already defined at: {}"
+                              .format(target.name, workspace.path))
+
+        # If we're going to checkout, we need at least a fetch,
+        # if we were asked to track first, we're going to fetch anyway.
+        if not no_checkout or track_first:
+            self.fetch(self._scheduler, [target])
+
+        if not no_checkout and target._get_consistency() != Consistency.CACHED:
+            raise StreamError("Could not stage uncached source. " +
+                              "Use `--track` to track and " +
+                              "fetch the latest version of the " +
+                              "source.")
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as e:
+            raise StreamError("Failed to create workspace directory: {}".format(e)) from e
+
+        project.workspaces.create_workspace(target.name, workdir)
+
+        if not no_checkout:
+            with target.timed_activity("Staging sources to {}".format(directory)):
+                target._open_workspace()
+
+        project.workspaces.save_config()
+        self._message(MessageType.INFO, "Saved workspace configuration")
+
+    # workspace_close
+    #
+    # Close a project workspace
+    #
+    # Args:
+    #    element_name (str): The element name to close the workspace for
+    #    remove_dir (bool): Whether to remove the associated directory
+    #
+    def workspace_close(self, element_name, remove_dir):
+        project = self._context.get_toplevel_project()
+        workspace = project.workspaces.get_workspace(element_name)
+
+        # Remove workspace directory if prompted
+        if remove_dir:
+            with self._context.timed_activity("Removing workspace directory {}"
+                                              .format(workspace.path)):
+                try:
+                    shutil.rmtree(workspace.path)
+                except OSError as e:
+                    raise StreamError("Could not remove  '{}': {}"
+                                      .format(workspace.path, e)) from e
+
+        # Delete the workspace and save the configuration
+        project.workspaces.delete_workspace(element_name)
+        project.workspaces.save_config()
+        self._message(MessageType.INFO, "Closed workspace for {}".format(element_name))
+
+    # workspace_reset
+    #
+    # Reset a workspace to its original state, discarding any user
+    # changes.
+    #
+    # Args:
+    #    target (Element): The element to reset the workspace for
+    #    track (bool): Whether to also track the source
+    #
+    def workspace_reset(self, target, track):
+        project = self._context.get_toplevel_project()
+        workspace = project.workspaces.get_workspace(target.name)
+
+        if workspace is None:
+            raise StreamError("Workspace '{}' is currently not defined"
+                              .format(target.name))
+
+        self.workspace_close(target.name, True)
+        self.workspace_open(target, workspace.path, False, track, False)
+
+    # workspace_exists
+    #
+    # Check if a workspace exists
+    #
+    # Args:
+    #    element_name (str): The element name to close the workspace for, or None
+    #
+    # Returns:
+    #    (bool): True if the workspace exists
+    #
+    # If None is specified for `element_name`, then this will return
+    # True if there are any existing workspaces.
+    #
+    def workspace_exists(self, element_name=None):
+        project = self._context.get_toplevel_project()
+
+        if element_name:
+            workspace = project.workspaces.get_workspace(element_name)
+            if workspace:
+                return True
+        elif any(project.workspaces.list()):
+            return True
+
+        return False
+
+    # workspace_list
+    #
+    # Serializes the workspaces and dumps them in YAML to stdout.
+    #
+    def workspace_list(self):
+        project = self._context.get_toplevel_project()
+        workspaces = []
+        for element_name, workspace_ in project.workspaces.list():
+            workspace_detail = {
+                'element': element_name,
+                'directory': workspace_.path,
+            }
+            workspaces.append(workspace_detail)
+
+        _yaml.dump({
+            'workspaces': workspaces
+        })
 
     # source_bundle()
     #
@@ -350,6 +474,34 @@ class Stream():
     #############################################################
     #                     Private Methods                       #
     #############################################################
+
+    # _message()
+    #
+    # Local message propagator
+    #
+    def _message(self, message_type, message, **kwargs):
+        args = dict(kwargs)
+        self._context.message(
+            Message(None, message_type, message, **args))
+
+    # Helper function for checkout()
+    #
+    def _checkout_hardlinks(self, sandbox_root, directory):
+        try:
+            removed = utils.safe_remove(directory)
+        except OSError as e:
+            raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
+
+        if removed:
+            # Try a simple rename of the sandbox root; if that
+            # doesnt cut it, then do the regular link files code path
+            try:
+                os.rename(sandbox_root, directory)
+            except OSError:
+                os.makedirs(directory, exist_ok=True)
+                utils.link_files(sandbox_root, directory)
+        else:
+            utils.link_files(sandbox_root, directory)
 
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
