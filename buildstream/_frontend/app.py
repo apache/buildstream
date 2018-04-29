@@ -145,6 +145,9 @@ class App():
         directory = self._main_options['directory']
         config = self._main_options['config']
 
+        #
+        # Load the Context
+        #
         try:
             self.context = Context(fetch_subprojects=fetch_subprojects)
             self.context.load(config)
@@ -171,30 +174,9 @@ class App():
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
 
-        # Create the logger right before setting the message handler
-        self.logger = LogLine(
-            self._content_profile,
-            self._format_profile,
-            self._success_profile,
-            self._error_profile,
-            self._detail_profile,
-            # Indentation for detailed messages
-            indent=INDENT,
-            # Number of last lines in an element's log to print (when encountering errors)
-            log_lines=self.context.log_error_lines,
-            # Maximum number of lines to print in a detailed message
-            message_lines=self.context.log_message_lines,
-            # Whether to print additional debugging information
-            debug=self.context.log_debug,
-            message_format=self.context.log_message_format)
-
-        # Propagate pipeline feedback to the user
-        self.context.set_message_handler(self._message_handler)
-
-        # Now that we have a logger and message handler,
-        # we can override the global exception hook.
-        sys.excepthook = self._global_exception_handler
-
+        #
+        # Load the Project
+        #
         try:
             self.project = Project(directory, self.context, cli_options=self._main_options['option'])
         except LoadError as e:
@@ -211,8 +193,38 @@ class App():
         except BstError as e:
             self._error_exit(e, "Error loading project")
 
-        # Create the stream now.
+        # Create the stream right away, we'll need to pass it around
         self.stream = Stream(self.context)
+
+        # Create the application's scheduler
+        self.scheduler = Scheduler(self.context, self._session_start,
+                                   interrupt_callback=self._interrupt_handler,
+                                   ticker_callback=self._tick,
+                                   job_start_callback=self._job_started,
+                                   job_complete_callback=self._job_completed)
+
+        # Create the logger right before setting the message handler
+        self.logger = LogLine(self.context,
+                              self._content_profile,
+                              self._format_profile,
+                              self._success_profile,
+                              self._error_profile,
+                              self._detail_profile,
+                              indent=INDENT)
+
+        # Create our status printer, only available in interactive
+        self._status = Status(self.context,
+                              self._content_profile, self._format_profile,
+                              self._success_profile, self._error_profile,
+                              self.stream, self.scheduler,
+                              colors=self.colors)
+
+        # Propagate pipeline feedback to the user
+        self.context.set_message_handler(self._message_handler)
+
+        # Now that we have a logger and message handler,
+        # we can override the global exception hook.
+        sys.excepthook = self._global_exception_handler
 
         # Run the body of the session here, once everything is loaded
         try:
@@ -269,24 +281,11 @@ class App():
             if session_name:
                 self._message(MessageType.START, session_name)
 
-            # Create the application's scheduler
-            self.scheduler = Scheduler(self.context, self._session_start,
-                                       interrupt_callback=self._interrupt_handler,
-                                       ticker_callback=self._tick,
-                                       job_start_callback=self._job_started,
-                                       job_complete_callback=self._job_completed)
-
             try:
                 self.pipeline = Pipeline(self.context, self.project, elements, except_,
                                          rewritable=rewritable)
             except BstError as e:
                 self._error_exit(e, "Error loading pipeline")
-
-            # Create our status printer, only available in interactive
-            self._status = Status(self._content_profile, self._format_profile,
-                                  self._success_profile, self._error_profile,
-                                  self.stream, self.pipeline, self.scheduler,
-                                  colors=self.colors)
 
             # Initialize pipeline
             try:
@@ -304,9 +303,6 @@ class App():
             self.stream._pipeline = self.pipeline
             self.stream.total_elements = len(list(self.pipeline.dependencies(Scope.ALL)))
 
-            # Pipeline is loaded, now we can tell the logger about it
-            self.logger.size_request(self.pipeline)
-
             profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
             # Print the heading
@@ -318,16 +314,14 @@ class App():
                 yield
             except BstError as e:
 
-                # Catch the error and summarize what happened
-                elapsed = self.scheduler.elapsed_time()
-
                 if session_name:
+                    elapsed = self.scheduler.elapsed_time()
+
                     if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
                         self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
                     else:
                         self._message(MessageType.FAIL, session_name, elapsed=elapsed)
 
-                if session_name:
                     self._print_summary()
 
                 # Let the outer context manager print the error and exit

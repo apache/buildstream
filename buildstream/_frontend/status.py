@@ -33,21 +33,23 @@ from .widget import TimeCode
 # to a terminal, or if the terminal does not support ANSI escape codes.
 #
 # Args:
+#    context (Context): The Context
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
 #    success_profile (Profile): Formatting profile for success text
 #    error_profile (Profile): Formatting profile for error text
 #    stream (Stream): The Stream
-#    pipeline (Pipeline): The Pipeline
 #    scheduler (Scheduler): The Scheduler
 #    colors (bool): Whether to print the ANSI color codes in the output
 #
 class Status():
 
-    def __init__(self, content_profile, format_profile,
+    def __init__(self, context,
+                 content_profile, format_profile,
                  success_profile, error_profile,
-                 stream, pipeline, scheduler, colors=False):
+                 stream, scheduler, colors=False):
 
+        self._context = context
         self._content_profile = content_profile
         self._format_profile = format_profile
         self._success_profile = success_profile
@@ -58,9 +60,10 @@ class Status():
         self._term = Terminal()
         self._spacing = 1
         self._colors = colors
-        self._header = _StatusHeader(content_profile, format_profile,
+        self._header = _StatusHeader(context,
+                                     content_profile, format_profile,
                                      success_profile, error_profile,
-                                     stream, pipeline, scheduler)
+                                     stream, scheduler)
 
         self._term_width, _ = click.get_terminal_size()
         self._alloc_lines = 0
@@ -78,7 +81,7 @@ class Status():
     #
     def add_job(self, element, action_name):
         elapsed = self._scheduler.elapsed_time()
-        job = _StatusJob(element, action_name, self._content_profile, self._format_profile, elapsed)
+        job = _StatusJob(self._context, element, action_name, self._content_profile, self._format_profile, elapsed)
         self._jobs.append(job)
         self._need_alloc = True
 
@@ -242,19 +245,20 @@ class Status():
 # A delegate object for rendering the header part of the Status() widget
 #
 # Args:
+#    context (Context): The Context
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
 #    success_profile (Profile): Formatting profile for success text
 #    error_profile (Profile): Formatting profile for error text
 #    stream (Stream): The Stream
-#    pipeline (Pipeline): The Pipeline
 #    scheduler (Scheduler): The Scheduler
 #
 class _StatusHeader():
 
-    def __init__(self, content_profile, format_profile,
+    def __init__(self, context,
+                 content_profile, format_profile,
                  success_profile, error_profile,
-                 stream, pipeline, scheduler):
+                 stream, scheduler):
 
         #
         # Public members
@@ -269,11 +273,12 @@ class _StatusHeader():
         self._success_profile = success_profile
         self._error_profile = error_profile
         self._stream = stream
-        self._pipeline = pipeline
         self._scheduler = scheduler
-        self._time_code = TimeCode(content_profile, format_profile)
+        self._time_code = TimeCode(context, content_profile, format_profile)
+        self._context = context
 
     def render(self, line_length, elapsed):
+        project = self._context.get_toplevel_project()
         line_length = max(line_length, 80)
         size = 0
         text = ''
@@ -281,12 +286,12 @@ class _StatusHeader():
         session = str(self._stream.session_elements)
         total = str(self._stream.total_elements)
 
-        # Format and calculate size for pipeline target and overall time code
+        # Format and calculate size for target and overall time code
         size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
         size += 8  # Size of time code
-        size += len(self._pipeline.project.name) + 1
+        size += len(project.name) + 1
         text += self._time_code.render_time(elapsed)
-        text += ' ' + self._content_profile.fmt(self._pipeline.project.name)
+        text += ' ' + self._content_profile.fmt(project.name)
         text += ' ' + self._format_profile.fmt('(') + \
                 self._content_profile.fmt(session) + \
                 self._format_profile.fmt('/') + \
@@ -356,6 +361,7 @@ class _StatusHeader():
 # A delegate object for rendering a job in the status area
 #
 # Args:
+#    context (Context): The Context
 #    element (Element): The element being processed
 #    action_name (str): The name of the action
 #    content_profile (Profile): Formatting profile for content text
@@ -364,7 +370,7 @@ class _StatusHeader():
 #
 class _StatusJob():
 
-    def __init__(self, element, action_name, content_profile, format_profile, elapsed):
+    def __init__(self, context, element, action_name, content_profile, format_profile, elapsed):
 
         #
         # Public members
@@ -379,7 +385,7 @@ class _StatusJob():
         self._offset = elapsed
         self._content_profile = content_profile
         self._format_profile = format_profile
-        self._time_code = TimeCode(content_profile, format_profile)
+        self._time_code = TimeCode(context, content_profile, format_profile)
 
         # Calculate the size needed to display
         self.size = 10  # Size of time code with brackets
