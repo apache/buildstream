@@ -530,12 +530,12 @@ class LogLine(Widget):
     # Print a summary of activities at the end of a session
     #
     # Args:
-    #    pipeline (Pipeline): The Pipeline
+    #    stream (Stream): The Stream
     #    scheduler (Scheduler): The Scheduler
     #    log_file (file): An optional file handle for additional logging
     #    styling (bool): Whether to enable ansi escape codes in the output
     #
-    def print_summary(self, pipeline, scheduler, log_file, styling=False):
+    def print_summary(self, stream, scheduler, log_file, styling=False):
 
         # Early silent return if there are no queues, can happen
         # only in the case that the pipeline early returned due to
@@ -563,8 +563,8 @@ class LogLine(Widget):
         text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
         values = OrderedDict()
 
-        values['Total'] = self.content_profile.fmt(str(pipeline.total_elements))
-        values['Session'] = self.content_profile.fmt(str(pipeline.session_elements))
+        values['Total'] = self.content_profile.fmt(str(stream.total_elements))
+        values['Session'] = self.content_profile.fmt(str(stream.session_elements))
 
         processed_maxlen = 1
         skipped_maxlen = 1

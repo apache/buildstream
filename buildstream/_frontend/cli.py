@@ -243,7 +243,7 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
                          use_configured_remote_caches=True, track_elements=track_,
                          track_cross_junctions=track_cross_junctions,
                          fetch_subprojects=True):
-        app.pipeline.build(app.scheduler, build_all=all_)
+        app.stream.build(app.scheduler, build_all=all_)
 
 
 ##################################################################
@@ -287,7 +287,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
                          track_cross_junctions=track_cross_junctions,
                          fetch_subprojects=True):
         dependencies = app.pipeline.get_selection(deps)
-        app.pipeline.fetch(app.scheduler, dependencies)
+        app.stream.fetch(app.scheduler, dependencies)
 
 
 ##################################################################
@@ -323,7 +323,7 @@ def track(app, elements, deps, except_, cross_junctions):
                          track_cross_junctions=cross_junctions,
                          track_selection=deps,
                          fetch_subprojects=True):
-        app.pipeline.track(app.scheduler)
+        app.stream.track(app.scheduler)
 
 
 ##################################################################
@@ -354,7 +354,7 @@ def pull(app, elements, deps, remote):
     with app.initialized(elements, session_name="Pull", use_configured_remote_caches=(remote is None),
                          add_remote_cache=remote, fetch_subprojects=True):
         to_pull = app.pipeline.get_selection(deps)
-        app.pipeline.pull(app.scheduler, to_pull)
+        app.stream.pull(app.scheduler, to_pull)
 
 
 ##################################################################
@@ -385,7 +385,7 @@ def push(app, elements, deps, remote):
                          use_configured_remote_caches=(remote is None),
                          add_remote_cache=remote, fetch_subprojects=True):
         to_push = app.pipeline.get_selection(deps)
-        app.pipeline.push(app.scheduler, to_push)
+        app.stream.push(app.scheduler, to_push)
 
 
 ##################################################################
@@ -564,7 +564,7 @@ def checkout(app, element, directory, force, integrate, hardlinks):
     """Checkout a built artifact to the specified directory
     """
     with app.initialized((element,)):
-        app.pipeline.checkout(directory, force, integrate, hardlinks)
+        app.stream.checkout(directory, force, integrate, hardlinks)
 
 
 ##################################################################
@@ -592,8 +592,8 @@ def source_bundle(app, target, force, directory,
     """
     with app.initialized((target,), rewritable=track_, track_elements=[target] if track_ else None):
         dependencies = app.pipeline.get_selection('all')
-        app.pipeline.source_bundle(app.scheduler, dependencies, force, track_,
-                                   compression, directory)
+        app.stream.source_bundle(app.scheduler, dependencies, force, track_,
+                                 compression, directory)
 
 
 ##################################################################

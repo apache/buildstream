@@ -39,6 +39,7 @@ from .._context import Context
 from .._project import Project
 from .._exceptions import BstError, PipelineError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
+from .._stream import Stream
 from .._pipeline import Pipeline, PipelineSelection
 from .._scheduler import Scheduler
 from .._profile import Topics, profile_start, profile_end
@@ -69,6 +70,7 @@ class App():
         # Public members
         #
         self.context = None        # The Context object
+        self.stream = None         # The Stream object
         self.project = None        # The toplevel Project object
         self.scheduler = None      # The Scheduler
         self.pipeline = None       # The Pipeline
@@ -255,10 +257,11 @@ class App():
                     track_cross_junctions=False,
                     track_selection=PipelineSelection.ALL,
                     fetch_subprojects=False):
-        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
         # Start with the early stage init, this enables logging right away
         with self.partially_initialized(fetch_subprojects=fetch_subprojects):
+
+            profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
             # Mark the beginning of the session
             if session_name:
@@ -280,7 +283,7 @@ class App():
             # Create our status printer, only available in interactive
             self._status = Status(self._content_profile, self._format_profile,
                                   self._success_profile, self._error_profile,
-                                  self.pipeline, self.scheduler,
+                                  self.stream, self.pipeline, self.scheduler,
                                   colors=self.colors)
 
             # Initialize pipeline
@@ -292,6 +295,8 @@ class App():
                                          track_selection=track_selection)
             except BstError as e:
                 self._error_exit(e, "Error initializing pipeline")
+
+            self.stream = Stream(self.context, self.scheduler, self.pipeline)
 
             # Pipeline is loaded, now we can tell the logger about it
             self.logger.size_request(self.pipeline)
@@ -476,7 +481,7 @@ class App():
         # If we're going to checkout, we need at least a fetch,
         # if we were asked to track first, we're going to fetch anyway.
         if not no_checkout or track_first:
-            self.pipeline.fetch(self.scheduler, [target])
+            self.stream.fetch(self.scheduler, [target])
 
         if not no_checkout and target._get_consistency() != Consistency.CACHED:
             raise PipelineError("Could not stage uncached source. " +
@@ -751,7 +756,7 @@ class App():
     #
     def _print_summary(self):
         click.echo("", err=True)
-        self.logger.print_summary(self.pipeline, self.scheduler,
+        self.logger.print_summary(self.stream, self.scheduler,
                                   self._main_options['log_file'],
                                   styling=self.colors)
 

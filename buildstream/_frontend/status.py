@@ -37,6 +37,7 @@ from .widget import TimeCode
 #    format_profile (Profile): Formatting profile for formatting text
 #    success_profile (Profile): Formatting profile for success text
 #    error_profile (Profile): Formatting profile for error text
+#    stream (Stream): The Stream
 #    pipeline (Pipeline): The Pipeline
 #    scheduler (Scheduler): The Scheduler
 #    colors (bool): Whether to print the ANSI color codes in the output
@@ -45,13 +46,12 @@ class Status():
 
     def __init__(self, content_profile, format_profile,
                  success_profile, error_profile,
-                 pipeline, scheduler, colors=False):
+                 stream, pipeline, scheduler, colors=False):
 
         self._content_profile = content_profile
         self._format_profile = format_profile
         self._success_profile = success_profile
         self._error_profile = error_profile
-        self._pipeline = pipeline
         self._scheduler = scheduler
         self._jobs = []
         self._last_lines = 0  # Number of status lines we last printed to console
@@ -60,7 +60,7 @@ class Status():
         self._colors = colors
         self._header = _StatusHeader(content_profile, format_profile,
                                      success_profile, error_profile,
-                                     pipeline, scheduler)
+                                     stream, pipeline, scheduler)
 
         self._term_width, _ = click.get_terminal_size()
         self._alloc_lines = 0
@@ -246,6 +246,7 @@ class Status():
 #    format_profile (Profile): Formatting profile for formatting text
 #    success_profile (Profile): Formatting profile for success text
 #    error_profile (Profile): Formatting profile for error text
+#    stream (Stream): The Stream
 #    pipeline (Pipeline): The Pipeline
 #    scheduler (Scheduler): The Scheduler
 #
@@ -253,7 +254,7 @@ class _StatusHeader():
 
     def __init__(self, content_profile, format_profile,
                  success_profile, error_profile,
-                 pipeline, scheduler):
+                 stream, pipeline, scheduler):
 
         #
         # Public members
@@ -267,6 +268,7 @@ class _StatusHeader():
         self._format_profile = format_profile
         self._success_profile = success_profile
         self._error_profile = error_profile
+        self._stream = stream
         self._pipeline = pipeline
         self._scheduler = scheduler
         self._time_code = TimeCode(content_profile, format_profile)
@@ -276,8 +278,8 @@ class _StatusHeader():
         size = 0
         text = ''
 
-        session = str(self._pipeline.session_elements)
-        total = str(self._pipeline.total_elements)
+        session = str(self._stream.session_elements)
+        total = str(self._stream.total_elements)
 
         # Format and calculate size for pipeline target and overall time code
         size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
