@@ -100,7 +100,7 @@ def test_failed_build_listing(cli, tmpdir, datafiles):
         _yaml.dump(element, os.path.join(project, element_path))
         element_names.append(element_name)
     result = cli.run(project=project, args=['--on-error=continue', 'build'] + element_names)
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
 
     failure_heading_pos = re.search(r'^Failure Summary$', result.stderr, re.MULTILINE).start()
     pipeline_heading_pos = re.search(r'^Pipeline Summary$', result.stderr, re.MULTILINE).start()

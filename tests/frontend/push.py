@@ -58,7 +58,7 @@ def test_push(cli, tmpdir, datafiles):
 
     # Try pushing with no remotes configured. This should fail.
     result = cli.run(project=project, args=['push', 'target.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
 
     # Configure bst to pull but not push from a cache and run `bst push`.
     # This should also fail.
@@ -66,7 +66,7 @@ def test_push(cli, tmpdir, datafiles):
         'artifacts': {'url': share1.repo, 'push': False},
     })
     result = cli.run(project=project, args=['push', 'target.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
 
     # Configure bst to push to one of the caches and run `bst push`. This works.
     cli.configure({

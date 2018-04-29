@@ -38,7 +38,7 @@ def test_overlaps_error(cli, datafiles):
     gen_project(project_dir, True)
     result = cli.run(project=project_dir, silent=True, args=[
         'build', 'collect.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.ELEMENT, "overlap-error")
 
 
@@ -69,7 +69,7 @@ def test_overlaps_whitelist_on_overlapper(cli, datafiles):
     gen_project(project_dir, True)
     result = cli.run(project=project_dir, silent=True, args=[
         'build', 'collect-partially-whitelisted.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.ELEMENT, "overlap-error")
 
 

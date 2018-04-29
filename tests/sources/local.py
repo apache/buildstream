@@ -88,5 +88,5 @@ def test_stage_file_exists(cli, tmpdir, datafiles):
 
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, 'ensure-stage-dir-fail')

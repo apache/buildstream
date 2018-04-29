@@ -61,7 +61,7 @@ def test_stage_file_nonexistent_dir(cli, tmpdir, datafiles):
 
     # Fails at build time because it tries to patch into a non-existing directory
     result = cli.run(project=project, args=['build', 'failure-nonexistent-dir.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, "patch-no-files")
 
 
@@ -72,7 +72,7 @@ def test_stage_file_empty_dir(cli, tmpdir, datafiles):
 
     # Fails at build time because it tries to patch with nothing else staged
     result = cli.run(project=project, args=['build', 'failure-empty-dir.bst'])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, "patch-no-files")
 
 

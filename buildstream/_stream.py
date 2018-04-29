@@ -23,7 +23,7 @@ import shlex
 import tarfile
 from tempfile import TemporaryDirectory
 
-from ._exceptions import PipelineError, ImplError, BstError
+from ._exceptions import StreamError, ImplError, BstError
 from . import _site
 from . import utils
 from . import Scope, Consistency
@@ -67,9 +67,9 @@ class Stream():
 
         _, status = self._scheduler.run([track])
         if status == SchedStatus.ERROR:
-            raise PipelineError()
+            raise StreamError()
         elif status == SchedStatus.TERMINATED:
-            raise PipelineError(terminated=True)
+            raise StreamError(terminated=True)
 
     # fetch()
     #
@@ -108,9 +108,9 @@ class Stream():
 
         _, status = self._scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            raise PipelineError()
+            raise StreamError()
         elif status == SchedStatus.TERMINATED:
-            raise PipelineError(terminated=True)
+            raise StreamError(terminated=True)
 
     # build()
     #
@@ -168,9 +168,9 @@ class Stream():
 
         _, status = self._scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            raise PipelineError()
+            raise StreamError()
         elif status == SchedStatus.TERMINATED:
-            raise PipelineError(terminated=True)
+            raise StreamError(terminated=True)
 
     # checkout()
     #
@@ -190,14 +190,14 @@ class Stream():
         try:
             os.makedirs(directory, exist_ok=True)
         except OSError as e:
-            raise PipelineError("Failed to create checkout directory: {}".format(e)) from e
+            raise StreamError("Failed to create checkout directory: {}".format(e)) from e
 
         if not os.access(directory, os.W_OK):
-            raise PipelineError("Directory {} not writable".format(directory))
+            raise StreamError("Directory {} not writable".format(directory))
 
         if not force and os.listdir(directory):
-            raise PipelineError("Checkout directory is not empty: {}"
-                                .format(directory))
+            raise StreamError("Checkout directory is not empty: {}"
+                              .format(directory))
 
         # Stage deps into a temporary sandbox first
         try:
@@ -212,10 +212,10 @@ class Stream():
                         else:
                             utils.copy_files(sandbox_root, directory)
                     except OSError as e:
-                        raise PipelineError("Failed to checkout files: {}".format(e)) from e
+                        raise StreamError("Failed to checkout files: {}".format(e)) from e
         except BstError as e:
-            raise PipelineError("Error while staging dependencies into a sandbox: {}".format(e),
-                                reason=e.reason) from e
+            raise StreamError("Error while staging dependencies into a sandbox: {}".format(e),
+                              reason=e.reason) from e
 
     # Helper function for checkout()
     #
@@ -223,7 +223,7 @@ class Stream():
         try:
             removed = utils.safe_remove(directory)
         except OSError as e:
-            raise PipelineError("Failed to remove checkout directory: {}".format(e)) from e
+            raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
 
         if removed:
             # Try a simple rename of the sandbox root; if that
@@ -247,7 +247,7 @@ class Stream():
     def pull(self, scheduler, elements):
 
         if not self._pipeline._artifacts.has_fetch_remotes():
-            raise PipelineError("Not artifact caches available for pulling artifacts")
+            raise StreamError("Not artifact caches available for pulling artifacts")
 
         plan = elements
         self._pipeline._assert_consistent(plan)
@@ -259,9 +259,9 @@ class Stream():
 
         _, status = self._scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            raise PipelineError()
+            raise StreamError()
         elif status == SchedStatus.TERMINATED:
-            raise PipelineError(terminated=True)
+            raise StreamError(terminated=True)
 
     # push()
     #
@@ -274,7 +274,7 @@ class Stream():
     def push(self, scheduler, elements):
 
         if not self._pipeline._artifacts.has_push_remotes():
-            raise PipelineError("No artifact caches available for pushing artifacts")
+            raise StreamError("No artifact caches available for pushing artifacts")
 
         plan = elements
         self._pipeline._assert_consistent(plan)
@@ -286,9 +286,9 @@ class Stream():
 
         _, status = self._scheduler.run(queues)
         if status == SchedStatus.ERROR:
-            raise PipelineError()
+            raise StreamError()
         elif status == SchedStatus.TERMINATED:
-            raise PipelineError(terminated=True)
+            raise StreamError(terminated=True)
 
     # source_bundle()
     #
@@ -316,8 +316,8 @@ class Stream():
             open(tar_location, mode="x")
             os.remove(tar_location)
         except IOError as e:
-            raise PipelineError("Cannot write to {0}: {1}"
-                                .format(tar_location, e)) from e
+            raise StreamError("Cannot write to {0}: {1}"
+                              .format(tar_location, e)) from e
 
         plan = list(dependencies)
         self.fetch(self._scheduler, plan)
@@ -334,8 +334,8 @@ class Stream():
             try:
                 os.makedirs(source_directory)
             except OSError as e:
-                raise PipelineError("Failed to create directory: {}"
-                                    .format(e)) from e
+                raise StreamError("Failed to create directory: {}"
+                                  .format(e)) from e
 
             # Any elements that don't implement _write_script
             # should not be included in the later stages.

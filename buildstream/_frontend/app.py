@@ -37,7 +37,7 @@ from .. import Scope, Consistency
 # Import various buildstream internals
 from .._context import Context
 from .._project import Project
-from .._exceptions import BstError, PipelineError, LoadError, LoadErrorReason, AppError
+from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._pipeline import Pipeline, PipelineSelection
@@ -316,7 +316,7 @@ class App():
                 elapsed = self.scheduler.elapsed_time()
 
                 if session_name:
-                    if isinstance(e, PipelineError) and e.terminated:  # pylint: disable=no-member
+                    if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
                         self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
                     else:
                         self._message(MessageType.FAIL, session_name, elapsed=elapsed)
@@ -484,10 +484,10 @@ class App():
             self.stream.fetch(self.scheduler, [target])
 
         if not no_checkout and target._get_consistency() != Consistency.CACHED:
-            raise PipelineError("Could not stage uncached source. " +
-                                "Use `--track` to track and " +
-                                "fetch the latest version of the " +
-                                "source.")
+            raise AppError("Could not stage uncached source. " +
+                           "Use `--track` to track and " +
+                           "fetch the latest version of the " +
+                           "source.")
 
         try:
             os.makedirs(directory, exist_ok=True)

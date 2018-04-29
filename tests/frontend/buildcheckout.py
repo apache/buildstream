@@ -88,7 +88,7 @@ def test_build_checkout_nonempty(datafiles, cli, hardlinks):
 
     # Now check it out
     result = cli.run(project=project, args=checkout_args)
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -192,7 +192,7 @@ def test_install_to_build(cli, tmpdir, datafiles):
     # attempt to stage into /buildstream/build, which is not allowed.
     result = cli.run(project=project, args=strict_args(['build', element], True))
 
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.ELEMENT, None)
 
 

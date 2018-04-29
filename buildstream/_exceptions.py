@@ -88,6 +88,7 @@ class ErrorDomain(Enum):
     SOURCE = 10
     ELEMENT = 11
     APP = 12
+    STREAM = 13
 
 
 # BstError is an internal base exception class for BuildSream
@@ -252,9 +253,19 @@ class ArtifactError(BstError):
 
 # PipelineError
 #
-# Raised when a pipeline fails
+# Raised from pipeline operations
 #
 class PipelineError(BstError):
+
+    def __init__(self, message, *, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.PIPELINE, reason=reason)
+
+
+# StreamError
+#
+# Raised when a stream operation fails
+#
+class StreamError(BstError):
 
     def __init__(self, message=None, *, detail=None, reason=None, terminated=False):
 
@@ -264,7 +275,7 @@ class PipelineError(BstError):
         if message is None:
             message = ""
 
-        super().__init__(message, detail=detail, domain=ErrorDomain.PIPELINE, reason=reason)
+        super().__init__(message, detail=detail, domain=ErrorDomain.STREAM, reason=reason)
 
         self.terminated = terminated
 

@@ -317,7 +317,7 @@ def test_sysroot_workspace_visible(cli, tmpdir, datafiles):
 
     # Ensure the dependencies of our build failing element are built
     result = cli.run(project=project, args=['build', element_name])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
 
     # Discover the sysroot of the failed build directory, after one
     # failed build, there should be only one directory there.

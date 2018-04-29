@@ -65,7 +65,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
     ])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
 
 
@@ -82,7 +82,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
     ])
-    result.assert_main_error(ErrorDomain.PIPELINE, None)
+    result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
 
 
