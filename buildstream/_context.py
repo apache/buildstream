@@ -45,10 +45,7 @@ from ._artifactcache import artifact_cache_specs_from_config_node
 #
 class Context():
 
-    def __init__(self, *, fetch_subprojects=False):
-
-        # Whether to automatically fetch subprojects in this session
-        self.fetch_subprojects = fetch_subprojects
+    def __init__(self):
 
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None

@@ -235,7 +235,7 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
     if track_all:
         track_ = elements
 
-    with app.initialized(session_name="Build", fetch_subprojects=True):
+    with app.initialized(session_name="Build"):
         app.stream.build(elements,
                          track_targets=track_,
                          track_except=track_except,
@@ -279,7 +279,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
         click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
         sys.exit(-1)
 
-    with app.initialized(session_name="Fetch", fetch_subprojects=True):
+    with app.initialized(session_name="Fetch"):
         app.stream.fetch(elements,
                          selection=deps,
                          except_targets=except_,
@@ -315,7 +315,7 @@ def track(app, elements, deps, except_, cross_junctions):
         none:  No dependencies, just the specified elements
         all:   All dependencies of all specified elements
     """
-    with app.initialized(session_name="Track", fetch_subprojects=True):
+    with app.initialized(session_name="Track"):
         app.stream.track(elements,
                          selection=deps,
                          except_targets=except_,
@@ -347,7 +347,7 @@ def pull(app, elements, deps, remote):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    with app.initialized(session_name="Pull", fetch_subprojects=True):
+    with app.initialized(session_name="Pull"):
         app.stream.pull(elements, selection=deps, remote=remote)
 
 
@@ -375,7 +375,7 @@ def push(app, elements, deps, remote):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    with app.initialized(session_name="Push", fetch_subprojects=True):
+    with app.initialized(session_name="Push"):
         app.stream.push(elements, selection=deps, remote=remote)
 
 
@@ -716,7 +716,7 @@ def source_bundle(app, element, force, directory,
                   track_, compression, except_):
     """Produce a source bundle to be manually executed
     """
-    with app.initialized(fetch_subprojects=True):
+    with app.initialized():
         app.stream.source_bundle(element, directory,
                                  track_first=track_,
                                  force=force,

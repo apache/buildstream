@@ -51,10 +51,11 @@ from . import MetaSource
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
 #    tempdir (str): A directory to cleanup with the Loader, given to the loader by a parent
 #                   loader in the case that this loader is a subproject loader.
+#    fetch_subprojects (bool): Whether to fetch subprojects while loading
 #
 class Loader():
 
-    def __init__(self, context, project, filenames, *, parent=None, tempdir=None):
+    def __init__(self, context, project, filenames, *, parent=None, tempdir=None, fetch_subprojects=False):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
@@ -78,6 +79,7 @@ class Loader():
         #
         # Private members
         #
+        self._fetch_subprojects = fetch_subprojects
         self._context = context
         self._options = project.options      # Project options (OptionPool)
         self._basedir = basedir              # Base project directory
@@ -475,7 +477,7 @@ class Loader():
             # Handle the case where a subproject needs to be fetched
             #
             if source.get_consistency() == Consistency.RESOLVED:
-                if self._context.fetch_subprojects:
+                if self._fetch_subprojects:
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
                     source.fetch()
@@ -511,7 +513,10 @@ class Loader():
             else:
                 raise
 
-        loader = Loader(self._context, project, [], parent=self, tempdir=basedir)
+        loader = Loader(self._context, project, [],
+                        parent=self,
+                        tempdir=basedir,
+                        fetch_subprojects=self._fetch_subprojects)
 
         self._loaders[filename] = loader
 

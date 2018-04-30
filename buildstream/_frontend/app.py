@@ -134,12 +134,8 @@ class App():
     # partial initialization is useful for some contexts where we dont
     # want to load the pipeline, such as executing workspace commands.
     #
-    # Args:
-    #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
-    #                              loading process, if they are not yet locally cached
-    #
     @contextmanager
-    def partially_initialized(self, *, fetch_subprojects=False):
+    def partially_initialized(self):
         directory = self._main_options['directory']
         config = self._main_options['config']
 
@@ -147,7 +143,7 @@ class App():
         # Load the Context
         #
         try:
-            self.context = Context(fetch_subprojects=fetch_subprojects)
+            self.context = Context()
             self.context.load(config)
         except BstError as e:
             self._error_exit(e, "Error loading user configuration")
@@ -241,8 +237,6 @@ class App():
     #
     # Args:
     #    session_name (str): The name of the session, or None for no session
-    #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
-    #                              loading process, if they are not yet locally cached
     #
     # Note that the except_ argument may have a subtly different meaning depending
     # on the activity performed on the Pipeline. In normal circumstances the except_
@@ -253,14 +247,12 @@ class App():
     # the session header and summary, and time the main session from startup time.
     #
     @contextmanager
-    def initialized(self, *,
-                    session_name=None,
-                    fetch_subprojects=False):
+    def initialized(self, *, session_name=None):
 
         self._session_name = session_name
 
         # Start with the early stage init, this enables logging right away
-        with self.partially_initialized(fetch_subprojects=fetch_subprojects):
+        with self.partially_initialized():
 
             # Mark the beginning of the session
             if session_name:

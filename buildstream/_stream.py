@@ -86,7 +86,8 @@ class Stream():
                        except_targets=(),
                        downloadable=False):
         self.init_pipeline(targets, except_=except_targets,
-                           use_configured_remote_caches=downloadable)
+                           use_configured_remote_caches=downloadable,
+                           fetch_subprojects=False)
         return self._pipeline.get_selection(selection)
 
     # shell()
@@ -153,7 +154,8 @@ class Stream():
                            rewritable=rewritable,
                            use_configured_remote_caches=True,
                            track_elements=track_targets,
-                           track_cross_junctions=track_cross_junctions)
+                           track_cross_junctions=track_cross_junctions,
+                           fetch_subprojects=True)
 
         if build_all:
             plan = self._pipeline.dependencies(Scope.ALL)
@@ -229,7 +231,8 @@ class Stream():
                            except_=except_targets,
                            rewritable=rewritable,
                            track_elements=targets if track_targets else None,
-                           track_cross_junctions=track_cross_junctions)
+                           track_cross_junctions=track_cross_junctions,
+                           fetch_subprojects=True)
 
         fetch_plan = self._pipeline.get_selection(selection)
 
@@ -260,7 +263,8 @@ class Stream():
                            rewritable=True,
                            track_elements=targets,
                            track_cross_junctions=cross_junctions,
-                           track_selection=selection)
+                           track_selection=selection,
+                           fetch_subprojects=True)
 
         track = TrackQueue(self._scheduler)
         track.enqueue(self._pipeline._track_elements)
@@ -294,7 +298,9 @@ class Stream():
 
         self.init_pipeline(targets,
                            use_configured_remote_caches=use_configured_remote_caches,
-                           add_remote_cache=remote)
+                           add_remote_cache=remote,
+                           fetch_subprojects=True)
+
         elements = self._pipeline.get_selection(selection)
 
         if not self._pipeline._artifacts.has_fetch_remotes():
@@ -336,7 +342,9 @@ class Stream():
 
         self.init_pipeline(targets,
                            use_configured_remote_caches=use_configured_remote_caches,
-                           add_remote_cache=remote)
+                           add_remote_cache=remote,
+                           fetch_subprojects=True)
+
         elements = self._pipeline.get_selection(selection)
 
         if not self._pipeline._artifacts.has_push_remotes():
@@ -374,7 +382,7 @@ class Stream():
                  integrate=True,
                  hardlinks=False):
 
-        self.init_pipeline((target,))
+        self.init_pipeline((target,), fetch_subprojects=True)
 
         # We only have one target in a checkout command
         target = self._pipeline.targets[0]
@@ -428,7 +436,8 @@ class Stream():
         self.init_pipeline((target,),
                            track_elements=[target] if track_first else None,
                            track_selection=PipelineSelection.NONE,
-                           rewritable=track_first)
+                           rewritable=track_first,
+                           fetch_subprojects=False)
 
         target = self._pipeline.targets[0]
         workdir = os.path.abspath(directory)
@@ -516,7 +525,8 @@ class Stream():
         self.init_pipeline(targets,
                            track_elements=targets if track_first else None,
                            track_selection=PipelineSelection.NONE,
-                           rewritable=track_first)
+                           rewritable=track_first,
+                           fetch_subprojects=False)
 
         # Do the tracking first
         if track_first:
@@ -602,7 +612,8 @@ class Stream():
         self.init_pipeline((target,),
                            track_elements=[target] if track_first else None,
                            track_selection=PipelineSelection.NONE,
-                           rewritable=track_first)
+                           rewritable=track_first,
+                           fetch_subprojects=True)
 
         # source-bundle only supports one target
         target = self._pipeline.targets[0]
@@ -787,8 +798,7 @@ class Stream():
     #    track_elements (list of elements): Elements which are to be tracked
     #    track_cross_junctions (bool): Whether tracking is allowed to cross junction boundaries
     #    track_selection (PipelineSelection): The selection algorithm for track elements
-    #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
-    #                              loading process, if they are not yet locally cached
+    #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Note that the except_ argument may have a subtly different meaning depending
     # on the activity performed on the Pipeline. In normal circumstances the except_
@@ -802,12 +812,15 @@ class Stream():
                       add_remote_cache=None,
                       track_elements=None,
                       track_cross_junctions=False,
-                      track_selection=PipelineSelection.ALL):
+                      track_selection=PipelineSelection.ALL,
+                      fetch_subprojects=True):
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
         self._pipeline = Pipeline(self._context, self._project, self._artifacts,
-                                  elements, except_, rewritable=rewritable)
+                                  elements, except_,
+                                  rewritable=rewritable,
+                                  fetch_subprojects=fetch_subprojects)
 
         self._pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
                                   add_remote_cache=add_remote_cache,

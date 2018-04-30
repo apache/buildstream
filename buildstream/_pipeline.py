@@ -69,9 +69,8 @@ class PipelineSelection():
 #                         current source refs will not be the effective refs.
 #    rewritable (bool): Whether the loaded files should be rewritable
 #                       this is a bit more expensive due to deep copies
-#    use_configured_remote_caches (bool): Whether to connect to configured artifact remotes.
-#    add_remote_cache (str): Adds an additional artifact remote URL, which is
-#                            prepended to the list of remotes (and thus given highest priority).
+#    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
+#                              loading process, if they are not yet locally cached
 #
 # The ticker methods will be called with an element name for each tick, a final
 # tick with None as the argument is passed to signal that processing of this
@@ -86,7 +85,9 @@ class PipelineSelection():
 #
 class Pipeline():
 
-    def __init__(self, context, project, artifacts, targets, except_, rewritable=False):
+    def __init__(self, context, project, artifacts, targets, except_, *,
+                 rewritable=False,
+                 fetch_subprojects=True):
 
         self.context = context     # The Context
         self.project = project     # The toplevel project
@@ -105,7 +106,8 @@ class Pipeline():
         # Early initialization
         #
 
-        self._loader = Loader(self.context, self.project, targets + except_)
+        self._loader = Loader(self.context, self.project, targets + except_,
+                              fetch_subprojects=fetch_subprojects)
 
         with self.context.timed_activity("Loading pipeline", silent_nested=True):
             meta_elements = self._loader.load(rewritable, None)
