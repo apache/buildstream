@@ -23,7 +23,7 @@ def create_pipeline(tmpdir, basedir, target):
 
     context.set_message_handler(dummy_handler)
 
-    return Pipeline(context, project, [target], [])
+    return Pipeline(context, project, None, [target], [])
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customsource'))

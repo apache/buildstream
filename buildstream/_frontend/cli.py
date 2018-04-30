@@ -235,15 +235,12 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
     if track_all:
         track_ = elements
 
-    rewritable = False
-    if track_:
-        rewritable = True
-
-    with app.initialized(elements, session_name="Build", except_=track_except, rewritable=rewritable,
-                         use_configured_remote_caches=True, track_elements=track_,
+    with app.initialized(session_name="Build", fetch_subprojects=True):
+        app.stream.build(elements,
+                         track_targets=track_,
+                         track_except=track_except,
                          track_cross_junctions=track_cross_junctions,
-                         fetch_subprojects=True):
-        app.stream.build(app.scheduler, build_all=all_)
+                         build_all=all_)
 
 
 ##################################################################
@@ -282,12 +279,12 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
         click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
         sys.exit(-1)
 
-    with app.initialized(elements, session_name="Fetch", except_=except_, rewritable=track_,
-                         track_elements=elements if track_ else None,
-                         track_cross_junctions=track_cross_junctions,
-                         fetch_subprojects=True):
-        dependencies = app.pipeline.get_selection(deps)
-        app.stream.fetch(app.scheduler, dependencies)
+    with app.initialized(session_name="Fetch", fetch_subprojects=True):
+        app.stream.fetch(elements,
+                         selection=deps,
+                         except_targets=except_,
+                         track_targets=track_,
+                         track_cross_junctions=track_cross_junctions)
 
 
 ##################################################################
@@ -318,12 +315,11 @@ def track(app, elements, deps, except_, cross_junctions):
         none:  No dependencies, just the specified elements
         all:   All dependencies of all specified elements
     """
-    with app.initialized(elements, session_name="Track", except_=except_, rewritable=True,
-                         track_elements=elements,
-                         track_cross_junctions=cross_junctions,
-                         track_selection=deps,
-                         fetch_subprojects=True):
-        app.stream.track(app.scheduler)
+    with app.initialized(session_name="Track", fetch_subprojects=True):
+        app.stream.track(elements,
+                         selection=deps,
+                         except_targets=except_,
+                         cross_junctions=cross_junctions)
 
 
 ##################################################################
@@ -351,10 +347,8 @@ def pull(app, elements, deps, remote):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    with app.initialized(elements, session_name="Pull", use_configured_remote_caches=(remote is None),
-                         add_remote_cache=remote, fetch_subprojects=True):
-        to_pull = app.pipeline.get_selection(deps)
-        app.stream.pull(app.scheduler, to_pull)
+    with app.initialized(session_name="Pull", fetch_subprojects=True):
+        app.stream.pull(elements, selection=deps, remote=remote)
 
 
 ##################################################################
@@ -381,11 +375,8 @@ def push(app, elements, deps, remote):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
-    with app.initialized(elements, session_name="Push",
-                         use_configured_remote_caches=(remote is None),
-                         add_remote_cache=remote, fetch_subprojects=True):
-        to_push = app.pipeline.get_selection(deps)
-        app.stream.push(app.scheduler, to_push)
+    with app.initialized(session_name="Push", fetch_subprojects=True):
+        app.stream.push(elements, selection=deps, remote=remote)
 
 
 ##################################################################
@@ -456,9 +447,12 @@ def show(app, elements, deps, except_, order, format_, downloadable):
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
     """
-    with app.initialized(elements, except_=except_, use_configured_remote_caches=downloadable):
+    with app.initialized():
+        dependencies = app.stream.load_selection(elements,
+                                                 selection=deps,
+                                                 except_targets=except_,
+                                                 downloadable=downloadable)
 
-        dependencies = app.pipeline.get_selection(deps)
         if order == "alpha":
             dependencies = sorted(dependencies)
 
@@ -466,8 +460,7 @@ def show(app, elements, deps, except_, order, format_, downloadable):
             format_ = app.context.log_element_format
 
         report = app.logger.show_pipeline(dependencies, format_)
-
-    click.echo(report, color=app.colors)
+        click.echo(report, color=app.colors)
 
 
 ##################################################################
@@ -507,43 +500,32 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
     """
     from ..element import Scope
     from .._project import HostMount
+    from .._pipeline import PipelineSelection
+
     if build_:
         scope = Scope.BUILD
     else:
         scope = Scope.RUN
 
-    with app.initialized((element,)):
-        pass
+    with app.initialized():
+        dependencies = app.stream.load_selection((element,), selection=PipelineSelection.NONE)
+        element = dependencies[0]
+        prompt = app.shell_prompt(element)
+        mounts = [
+            HostMount(path, host_path)
+            for host_path, path in mount
+        ]
+        try:
+            exitcode = app.stream.shell(element, scope, prompt,
+                                        directory=sysroot,
+                                        mounts=mounts,
+                                        isolate=isolate,
+                                        command=command)
+        except BstError as e:
+            raise AppError("Error launching shell: {}".format(e), detail=e.detail) from e
 
-    # Assert we have everything we need built.
-    missing_deps = []
-    if scope is not None:
-        for dep in app.pipeline.dependencies(scope):
-            if not dep._cached():
-                missing_deps.append(dep)
-
-    if missing_deps:
-        click.echo("", err=True)
-        click.echo("Missing elements for staging an environment for a shell:", err=True)
-        for dep in missing_deps:
-            click.echo("   {}".format(dep.name), err=True)
-        click.echo("", err=True)
-        click.echo("Try building them first", err=True)
-        sys.exit(-1)
-
-    mounts = [
-        HostMount(path, host_path)
-        for host_path, path in mount
-    ]
-
-    try:
-        element = app.pipeline.targets[0]
-        exitcode = app.shell(element, scope, sysroot, mounts=mounts, isolate=isolate, command=command)
-        sys.exit(exitcode)
-    except BstError as e:
-        click.echo("", err=True)
-        click.echo("Errors shelling into this pipeline: {}".format(e), err=True)
-        sys.exit(-1)
+    # If there were no errors, we return the shell's exit code here.
+    sys.exit(exitcode)
 
 
 ##################################################################
@@ -563,37 +545,12 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 def checkout(app, element, directory, force, integrate, hardlinks):
     """Checkout a built artifact to the specified directory
     """
-    with app.initialized((element,)):
-        app.stream.checkout(directory, force, integrate, hardlinks)
-
-
-##################################################################
-#                     Source Bundle Command                      #
-##################################################################
-@cli.command(name="source-bundle", short_help="Produce a build bundle to be manually executed")
-@click.option('--except', 'except_', multiple=True,
-              type=click.Path(dir_okay=False, readable=True),
-              help="Elements to except from the tarball")
-@click.option('--compression', default='gz',
-              type=click.Choice(['none', 'gz', 'bz2', 'xz']),
-              help="Compress the tar file using the given algorithm.")
-@click.option('--track', 'track_', default=False, is_flag=True,
-              help="Track new source references before building")
-@click.option('--force', '-f', default=False, is_flag=True,
-              help="Overwrite files existing in checkout directory")
-@click.option('--directory', default=os.getcwd(),
-              help="The directory to write the tarball to")
-@click.argument('target',
-                type=click.Path(dir_okay=False, readable=True))
-@click.pass_obj
-def source_bundle(app, target, force, directory,
-                  track_, compression, except_):
-    """Produce a source bundle to be manually executed
-    """
-    with app.initialized((target,), rewritable=track_, track_elements=[target] if track_ else None):
-        dependencies = app.pipeline.get_selection('all')
-        app.stream.source_bundle(app.scheduler, dependencies, force, track_,
-                                 compression, directory)
+    with app.initialized():
+        app.stream.checkout(element,
+                            directory=directory,
+                            force=force,
+                            integrate=integrate,
+                            hardlinks=hardlinks)
 
 
 ##################################################################
@@ -632,10 +589,11 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
             click.echo("Checkout directory is not empty: {}".format(directory), err=True)
             sys.exit(-1)
 
-    with app.initialized((element,), rewritable=track_, track_elements=[element] if track_ else None):
-        # This command supports only one target
-        target = app.pipeline.targets[0]
-        app.stream.workspace_open(target, directory, no_checkout, track_, force)
+    with app.initialized():
+        app.stream.workspace_open(element, directory,
+                                  no_checkout=no_checkout,
+                                  track_first=track_,
+                                  force=force)
 
 
 ##################################################################
@@ -656,7 +614,7 @@ def workspace_close(app, remove_dir, all_, elements):
         click.echo('ERROR: no elements specified', err=True)
         sys.exit(-1)
 
-    with app.partially_initialized():
+    with app.initialized():
 
         # Early exit if we specified `all` and there are no workspaces
         if all_ and not app.stream.workspace_exists():
@@ -679,7 +637,7 @@ def workspace_close(app, remove_dir, all_, elements):
         if all_:
             elements = [element_name for element_name, _ in app.project.workspaces.list()]
         for element_name in elements:
-            app.stream.workspace_close(element_name, remove_dir)
+            app.stream.workspace_close(element_name, remove_dir=remove_dir)
 
 
 ##################################################################
@@ -696,22 +654,31 @@ def workspace_close(app, remove_dir, all_, elements):
 def workspace_reset(app, track_, all_, elements):
     """Reset a workspace to its original state"""
 
-    if not (all_ or elements):
-        click.echo('ERROR: no elements specified', err=True)
-        sys.exit(-1)
+    # Check that the workspaces in question exist
+    with app.initialized():
 
-    if app.interactive:
-        if not click.confirm('This will remove all your changes, are you sure?'):
-            click.echo('Aborting', err=True)
-            sys.exit(-1)
+        if not (all_ or elements):
+            raise AppError('No elements specified to reset')
 
-    with app.partially_initialized():
+        if all_ and not app.stream.workspace_exists():
+            raise AppError("No open workspaces to reset")
+
+        nonexisting = []
+        for element_name in elements:
+            if not app.stream.workspace_exists(element_name):
+                nonexisting.append(element_name)
+        if nonexisting:
+            raise AppError("Workspace does not exist", detail="\n".join(nonexisting))
+
+        if app.interactive:
+            if not click.confirm('This will remove all your changes, are you sure?'):
+                click.echo('Aborting', err=True)
+                sys.exit(-1)
+
         if all_:
             elements = tuple(element_name for element_name, _ in app.project.workspaces.list())
 
-    with app.initialized(elements):
-        for target in app.pipeline.targets:
-            app.stream.workspace_reset(target, track_)
+        app.stream.workspace_reset(elements, track_first=track_)
 
 
 ##################################################################
@@ -722,5 +689,35 @@ def workspace_reset(app, track_, all_, elements):
 def workspace_list(app):
     """List open workspaces"""
 
-    with app.partially_initialized():
+    with app.initialized():
         app.stream.workspace_list()
+
+
+##################################################################
+#                     Source Bundle Command                      #
+##################################################################
+@cli.command(name="source-bundle", short_help="Produce a build bundle to be manually executed")
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(dir_okay=False, readable=True),
+              help="Elements to except from the tarball")
+@click.option('--compression', default='gz',
+              type=click.Choice(['none', 'gz', 'bz2', 'xz']),
+              help="Compress the tar file using the given algorithm.")
+@click.option('--track', 'track_', default=False, is_flag=True,
+              help="Track new source references before bundling")
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Overwrite an existing tarball")
+@click.option('--directory', default=os.getcwd(),
+              help="The directory to write the tarball to")
+@click.argument('element',
+                type=click.Path(dir_okay=False, readable=True))
+@click.pass_obj
+def source_bundle(app, element, force, directory,
+                  track_, compression, except_):
+    """Produce a source bundle to be manually executed
+    """
+    with app.initialized(fetch_subprojects=True):
+        app.stream.source_bundle(element, directory,
+                                 track_first=track_,
+                                 force=force,
+                                 compression=compression)

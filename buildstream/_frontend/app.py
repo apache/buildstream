@@ -39,9 +39,7 @@ from .._project import Project
 from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
-from .._pipeline import Pipeline, PipelineSelection
 from .._scheduler import Scheduler
-from .._profile import Topics, profile_start, profile_end
 from .._versions import BST_FORMAT_VERSION
 from .. import __version__ as build_stream_version
 from .. import _yaml
@@ -72,7 +70,6 @@ class App():
         self.stream = None         # The Stream object
         self.project = None        # The toplevel Project object
         self.scheduler = None      # The Scheduler
-        self.pipeline = None       # The Pipeline
         self.logger = None         # The LogLine object
         self.interactive = None    # Whether we are running in interactive mode
         self.colors = None         # Whether to use colors in logging
@@ -81,6 +78,7 @@ class App():
         # Private members
         #
         self._session_start = datetime.datetime.now()
+        self._session_name = None
         self._main_options = main_options  # Main CLI options, before any command
         self._status = None                # The Status object
         self._fail_messages = {}           # Failure messages by unique plugin id
@@ -194,7 +192,7 @@ class App():
             self._error_exit(e, "Error loading project")
 
         # Create the stream right away, we'll need to pass it around
-        self.stream = Stream(self.context)
+        self.stream = Stream(self.context, self.project, self.loaded_cb)
 
         # Create the application's scheduler
         self.scheduler = Scheduler(self.context, self._session_start,
@@ -242,15 +240,7 @@ class App():
     # reporting the errors and exiting with a consistent error status.
     #
     # Args:
-    #    elements (list of elements): The elements to load recursively
     #    session_name (str): The name of the session, or None for no session
-    #    except_ (list of elements): The elements to except
-    #    rewritable (bool): Whether we should load the YAML files for roundtripping
-    #    use_configured_remote_caches (bool): Whether we should contact remotes
-    #    add_remote_cache (str): The URL for an explicitly mentioned remote cache
-    #    track_elements (list of elements): Elements which are to be tracked
-    #    track_cross_junctions (bool): Whether tracking is allowed to cross junction boundaries
-    #    track_selection (PipelineSelection): The selection algorithm for track elements
     #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
     #                              loading process, if they are not yet locally cached
     #
@@ -263,51 +253,29 @@ class App():
     # the session header and summary, and time the main session from startup time.
     #
     @contextmanager
-    def initialized(self, elements, *, session_name=None,
-                    except_=tuple(), rewritable=False,
-                    use_configured_remote_caches=False,
-                    add_remote_cache=None,
-                    track_elements=None,
-                    track_cross_junctions=False,
-                    track_selection=PipelineSelection.ALL,
+    def initialized(self, *,
+                    session_name=None,
                     fetch_subprojects=False):
+
+        self._session_name = session_name
 
         # Start with the early stage init, this enables logging right away
         with self.partially_initialized(fetch_subprojects=fetch_subprojects):
-
-            profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
 
             # Mark the beginning of the session
             if session_name:
                 self._message(MessageType.START, session_name)
 
-            try:
-                self.pipeline = Pipeline(self.context, self.project, elements, except_,
-                                         rewritable=rewritable)
-            except BstError as e:
-                self._error_exit(e, "Error loading pipeline")
-
-            # Initialize pipeline
-            try:
-                self.pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
-                                         add_remote_cache=add_remote_cache,
-                                         track_elements=track_elements,
-                                         track_cross_junctions=track_cross_junctions,
-                                         track_selection=track_selection)
-            except BstError as e:
-                self._error_exit(e, "Error initializing pipeline")
-
             # XXX This is going to change soon !
             #
             self.stream._scheduler = self.scheduler
-            self.stream._pipeline = self.pipeline
-            self.stream.total_elements = len(list(self.pipeline.dependencies(Scope.ALL)))
 
-            profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in elements))
-
-            # Print the heading
-            if session_name:
-                self._print_heading()
+            # XXX Print the heading
+            #
+            #      WE NEED A STREAM CALLBACK FOR POST LOAD SESSION START
+            #
+            # if session_name:
+            #    self._print_heading()
 
             # Run the body of the session here, once everything is loaded
             try:
@@ -405,22 +373,18 @@ class App():
         click.echo("Created project.conf at: {}".format(project_path), err=True)
         sys.exit(0)
 
-    # shell()
+    # shell_prompt():
     #
-    # Run a shell
+    # Creates a prompt for a shell environment, using ANSI color codes
+    # if they are available in the execution context.
     #
     # Args:
-    #    element (Element): An Element object to run the shell for
-    #    scope (Scope): The scope for the shell (Scope.BUILD or Scope.RUN)
-    #    directory (str): A directory where an existing prestaged sysroot is expected, or None
-    #    mounts (list of HostMount): Additional directories to mount into the sandbox
-    #    isolate (bool): Whether to isolate the environment like we do in builds
-    #    command (list): An argv to launch in the sandbox, or None
+    #    element (Element): The Element object to resolve a prompt for
     #
     # Returns:
-    #    (int): The exit code of the launched shell
+    #    (str): The formatted prompt to display in the shell
     #
-    def shell(self, element, scope, directory, *, mounts=None, isolate=False, command=None):
+    def shell_prompt(self, element):
         _, key, dim = element._get_display_key()
         element_name = element._get_full_name()
 
@@ -435,7 +399,7 @@ class App():
         else:
             prompt = '[{}@{}:${{PWD}}]$ '.format(key, element_name)
 
-        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command)
+        return prompt
 
     # cleanup()
     #
@@ -444,8 +408,8 @@ class App():
     # This is called by Click at exit time
     #
     def cleanup(self):
-        if self.pipeline:
-            self.pipeline.cleanup()
+        if self.stream:
+            self.stream.cleanup()
 
     ############################################################
     #                      Local Functions                     #
@@ -609,7 +573,8 @@ class App():
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     try:
-                        self.shell(element, Scope.BUILD, failure.sandbox, isolate=True)
+                        prompt = self.shell_prompt(element)
+                        self.stream.shell(element, Scope.BUILD, prompt, directory=failure.sandbox, isolate=True)
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':
@@ -632,14 +597,14 @@ class App():
                     queue.enqueue([element])
 
     #
-    # Prints the application startup heading, used for commands which
-    # will process a pipeline.
+    # Print the session heading if we've loaded a pipeline and there
+    # is going to be a session
     #
-    def _print_heading(self, deps=None):
-        self.logger.print_heading(self.pipeline,
-                                  self._main_options['log_file'],
-                                  styling=self.colors,
-                                  deps=deps)
+    def loaded_cb(self, pipeline):
+        if self._session_name:
+            self.logger.print_heading(pipeline,
+                                      self._main_options['log_file'],
+                                      styling=self.colors)
 
     #
     # Print a summary of the queues

@@ -27,7 +27,6 @@ from ._message import Message, MessageType
 from ._loader import Loader
 from .element import Element
 from . import Scope, Consistency
-from ._platform import Platform
 from ._project import ProjectRefStorage
 from ._artifactcache.artifactcache import ArtifactCacheSpec, configured_remote_artifact_cache_specs
 
@@ -87,7 +86,7 @@ class PipelineSelection():
 #
 class Pipeline():
 
-    def __init__(self, context, project, targets, except_, rewritable=False):
+    def __init__(self, context, project, artifacts, targets, except_, rewritable=False):
 
         self.context = context     # The Context
         self.project = project     # The toplevel project
@@ -96,7 +95,7 @@ class Pipeline():
         #
         # Private members
         #
-        self._artifacts = None
+        self._artifacts = artifacts
         self._loader = None
         self._exceptions = None
         self._track_cross_junctions = False
@@ -106,10 +105,6 @@ class Pipeline():
         # Early initialization
         #
 
-        # Load selected platform
-        Platform.create_instance(context, project)
-        platform = Platform.get_platform()
-        self._artifacts = platform.artifactcache
         self._loader = Loader(self.context, self.project, targets + except_)
 
         with self.context.timed_activity("Loading pipeline", silent_nested=True):
