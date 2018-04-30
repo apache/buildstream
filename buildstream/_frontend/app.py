@@ -126,18 +126,32 @@ class App():
             # Set soft limit to hard limit
             resource.setrlimit(resource.RLIMIT_NOFILE, (limits[1], limits[1]))
 
-    # partially_initialized()
+    # initialized()
     #
-    # Early stage initialization context manager which only initializes the
-    # Context, Project and the logger.
+    # Context manager to initialize the application and optionally run a session
+    # within the context manager.
     #
-    # partial initialization is useful for some contexts where we dont
-    # want to load the pipeline, such as executing workspace commands.
+    # This context manager will take care of catching errors from within the
+    # context and report them consistently, so the CLI need not take care of
+    # reporting the errors and exiting with a consistent error status.
+    #
+    # Args:
+    #    session_name (str): The name of the session, or None for no session
+    #
+    # Note that the except_ argument may have a subtly different meaning depending
+    # on the activity performed on the Pipeline. In normal circumstances the except_
+    # argument excludes elements from the `elements` list. In a build session, the
+    # except_ elements are excluded from the tracking plan.
+    #
+    # If a session_name is provided, we treat the block as a session, and print
+    # the session header and summary, and time the main session from startup time.
     #
     @contextmanager
-    def partially_initialized(self):
+    def initialized(self, *, session_name=None):
         directory = self._main_options['directory']
         config = self._main_options['config']
+
+        self._session_name = session_name
 
         #
         # Load the Context
@@ -220,77 +234,38 @@ class App():
         # we can override the global exception hook.
         sys.excepthook = self._global_exception_handler
 
+        # Mark the beginning of the session
+        if session_name:
+            self._message(MessageType.START, session_name)
+
+        # XXX This is going to change soon !
+        #
+        self.stream._scheduler = self.scheduler
+
         # Run the body of the session here, once everything is loaded
         try:
             yield
         except BstError as e:
+
+            # Print a nice summary if this is a session
+            if session_name:
+                elapsed = self.scheduler.elapsed_time()
+
+                if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
+                    self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
+                else:
+                    self._message(MessageType.FAIL, session_name, elapsed=elapsed)
+
+                self._print_summary()
+
+            # Exit with the error
             self._error_exit(e)
 
-    # initialized()
-    #
-    # Context manager to initialize the application and optionally run a session
-    # within the context manager.
-    #
-    # This context manager will take care of catching errors from within the
-    # context and report them consistently, so the CLI need not take care of
-    # reporting the errors and exiting with a consistent error status.
-    #
-    # Args:
-    #    session_name (str): The name of the session, or None for no session
-    #
-    # Note that the except_ argument may have a subtly different meaning depending
-    # on the activity performed on the Pipeline. In normal circumstances the except_
-    # argument excludes elements from the `elements` list. In a build session, the
-    # except_ elements are excluded from the tracking plan.
-    #
-    # If a session_name is provided, we treat the block as a session, and print
-    # the session header and summary, and time the main session from startup time.
-    #
-    @contextmanager
-    def initialized(self, *, session_name=None):
-
-        self._session_name = session_name
-
-        # Start with the early stage init, this enables logging right away
-        with self.partially_initialized():
-
-            # Mark the beginning of the session
+        else:
+            # No exceptions occurred, print session time and summary
             if session_name:
-                self._message(MessageType.START, session_name)
-
-            # XXX This is going to change soon !
-            #
-            self.stream._scheduler = self.scheduler
-
-            # XXX Print the heading
-            #
-            #      WE NEED A STREAM CALLBACK FOR POST LOAD SESSION START
-            #
-            # if session_name:
-            #    self._print_heading()
-
-            # Run the body of the session here, once everything is loaded
-            try:
-                yield
-            except BstError as e:
-
-                if session_name:
-                    elapsed = self.scheduler.elapsed_time()
-
-                    if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
-                        self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
-                    else:
-                        self._message(MessageType.FAIL, session_name, elapsed=elapsed)
-
-                    self._print_summary()
-
-                # Let the outer context manager print the error and exit
-                raise
-            else:
-                # No exceptions occurred, print session time and summary
-                if session_name:
-                    self._message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
-                    self._print_summary()
+                self._message(MessageType.SUCCESS, session_name, elapsed=self.scheduler.elapsed_time())
+                self._print_summary()
 
     # init_project()
     #
