@@ -143,8 +143,6 @@ def test_open_workspacedir_absolute(cli, tmpdir, datafiles, kind):
 @pytest.mark.parametrize("kind", repo_kinds)
 def test_open_workspacedir_relative(cli, tmpdir, datafiles, kind):
     workspacedir = os.path.join('workspaces')
-    if os.path.isdir(workspacedir):
-        shutil.rmtree(workspacedir)
     user_config = {'workspacedir': workspacedir}
     cli.configure(user_config)
     open_workspace(cli, tmpdir, datafiles, kind, False,
