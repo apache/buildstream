@@ -585,39 +585,94 @@ def workspace():
 ##################################################################
 #                     Workspace Open Command                     #
 ##################################################################
-@workspace.command(name='open', short_help="Open a new workspace")
-@click.option('--no-checkout', default=False, is_flag=True,
-              help="Do not checkout the source, only link to the given directory")
-@click.option('--force', '-f', default=False, is_flag=True,
-              help="Overwrite files existing in checkout directory")
-@click.option('--track', 'track_', default=False, is_flag=True,
-              help="Track and fetch new source references before checking out the workspace")
-@click.argument('element',
-                type=click.Path(dir_okay=False, readable=True))
-@click.argument('directory', type=click.Path(file_okay=False))
-@click.pass_obj
-def workspace_open(app, no_checkout, force, track_, element, directory):
+def workspace_open(app, no_checkout, force, track_, elements, directory):
     """Open a workspace for manual source modification"""
 
     with app.initialized():
 
-        if not os.path.isabs(directory):
-            directory = os.path.join(app.context.workspacedir, directory)
+        targets = app.stream.load_selection(elements)
+        for target in targets:
+            targetdir = directory
+            if not targetdir:
+                targetdir, element_ext = os.path.splitext(target.name)
+                if element_ext != '.bst':
+                    targetdir.append(element_ext)
 
-        if os.path.exists(directory):
+            if not os.path.isabs(targetdir):
+                targetdir = os.path.join(app.context.workspacedir, targetdir)
 
-            if not os.path.isdir(directory):
-                click.echo("Checkout directory is not a directory: {}".format(directory), err=True)
-                sys.exit(-1)
+            if os.path.exists(targetdir):
 
-            if not (no_checkout or force) and os.listdir(directory):
-                click.echo("Checkout directory is not empty: {}".format(directory), err=True)
-                sys.exit(-1)
+                if not os.path.isdir(targetdir):
+                    click.echo("Checkout directory is not a directory: {}".format(targetdir), err=True)
+                    sys.exit(-1)
 
-        app.stream.workspace_open(element, directory,
-                                  no_checkout=no_checkout,
-                                  track_first=track_,
-                                  force=force)
+                if not (no_checkout or force) and os.listdir(targetdir):
+                    click.echo("Checkout directory is not empty: {}".format(targetdir), err=True)
+                    sys.exit(-1)
+
+            app.stream.workspace_open(target.name, targetdir,
+                                      no_checkout=no_checkout,
+                                      track_first=track_,
+                                      force=force)
+
+
+def workspace_open_options(fun):
+    options = []
+    options.append(click.option('--no-checkout', default=False, is_flag=True,
+                                help="Do not checkout the source, only link to the given directory"))
+    options.append(click.option('--force', '-f', default=False, is_flag=True,
+                                help="Overwrite files existing in checkout directory"))
+    options.append(click.option('--track', 'track_', default=False, is_flag=True,
+                                help="Track and fetch new source references before checking out the workspace"))
+    for option in options:
+        fun = option(fun)
+    return fun
+
+
+@workspace.command(name='open', short_help="Open new workspaces")
+@workspace_open_options
+@click.option('--multiple', 'multiple', default=False, is_flag=True,
+              help="Behave has open-multiple command. Otherwise this command is the same as open-single")
+@click.argument('arguments', nargs=-1, type=click.UNPROCESSED)
+@click.pass_obj
+@click.pass_context
+def workspace_open_base(ctx, app, multiple,  arguments, **kwargs):
+    if multiple:
+        new_ctx = click.Context(workspace_open_multiple, parent=ctx)
+        workspace_open_multiple.parse_args(new_ctx, list(arguments))
+        new_ctx.forward(workspace_open_multiple, **kwargs)
+    else:
+        new_ctx = click.Context(workspace_open_single, parent=ctx)
+        workspace_open_single.parse_args(new_ctx, list(arguments))
+        new_ctx.forward(workspace_open_single, **kwargs)
+
+
+@workspace.command(name='open-single',
+                   short_help="Open a new workspace")
+@workspace_open_options
+@click.argument('element',
+                nargs=1,
+                required=True,
+                type=click.Path(dir_okay=False, readable=True))
+@click.argument('directory',
+                nargs=1,
+                required=False,
+                type=click.Path(file_okay=False))
+@click.pass_obj
+def workspace_open_single(app, no_checkout, force, track_, element, directory):
+    workspace_open(app, no_checkout, force, track_, (element,), directory)
+
+
+@workspace.command(name='open-multiple', short_help="Open new workspaces")
+@workspace_open_options
+@click.argument('elements',
+                nargs=-1,
+                required=True,
+                type=click.Path(dir_okay=False, readable=True))
+@click.pass_obj
+def workspace_open_multiple(app, no_checkout, force, track_, elements):
+    workspace_open(app, no_checkout, force, track_, elements, None)
 
 
 ##################################################################

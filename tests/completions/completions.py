@@ -50,6 +50,8 @@ WORKSPACE_COMMANDS = [
     'close ',
     'list ',
     'open ',
+    'open-multiple ',
+    'open-single ',
     'reset '
 ]
 
