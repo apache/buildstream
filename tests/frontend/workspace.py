@@ -128,6 +128,7 @@ def test_open_force(cli, tmpdir, datafiles, kind):
     ])
     result.assert_success()
 
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
 def test_open_workspacedir_absolute(cli, tmpdir, datafiles, kind):
@@ -136,6 +137,7 @@ def test_open_workspacedir_absolute(cli, tmpdir, datafiles, kind):
     cli.configure(user_config)
     open_workspace(cli, tmpdir, datafiles, kind, False,
                    workspacedir=workspacedir)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
@@ -147,6 +149,7 @@ def test_open_workspacedir_relative(cli, tmpdir, datafiles, kind):
     cli.configure(user_config)
     open_workspace(cli, tmpdir, datafiles, kind, False,
                    workspacedir=workspacedir)
+
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
