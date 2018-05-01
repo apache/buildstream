@@ -637,7 +637,7 @@ def workspace_open_options(fun):
 @click.argument('arguments', nargs=-1, type=click.UNPROCESSED)
 @click.pass_obj
 @click.pass_context
-def workspace_open_base(ctx, app, multiple,  arguments, **kwargs):
+def workspace_open_base(ctx, app, multiple, arguments, **kwargs):
     if multiple:
         new_ctx = click.Context(workspace_open_multiple, parent=ctx)
         workspace_open_multiple.parse_args(new_ctx, list(arguments))
