@@ -23,7 +23,7 @@ artifactdir: ${XDG_CACHE_HOME}/buildstream/artifacts
 logdir: ${XDG_CACHE_HOME}/buildstream/logs
 
 # Default root location for workspaces
-workspacedir: .
+workspacedir: ${PWD}
 
 #
 #    Scheduler
