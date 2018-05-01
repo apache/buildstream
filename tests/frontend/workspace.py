@@ -26,7 +26,7 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspacedir=
     if workspacedir is None:
         workspace = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
     else:
-        workspace = os.path.join('workspace{}'.format(suffix))
+        workspace = os.path.join(project, 'workspace{}'.format(suffix))
 
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
