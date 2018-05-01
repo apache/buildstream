@@ -132,7 +132,7 @@ def test_open_force(cli, tmpdir, datafiles, kind):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
 def test_open_workspacedir_absolute(cli, tmpdir, datafiles, kind):
-    workspacedir = os.path.join(tmpdir, 'workspaces')
+    workspacedir = os.path.join(str(tmpdir), 'workspaces')
     user_config = {'workspacedir': workspacedir}
     cli.configure(user_config)
     open_workspace(cli, tmpdir, datafiles, kind, False,
