@@ -123,7 +123,7 @@ class PushMessageWriter(object):
 
     def encode_message(self, command):
         if not isinstance(command, PushCommand):
-            raise PushException('Command must by GLib.Variant')
+            raise PushException('Command must be PushCommand')
         data = command.variant.get_data_as_bytes()
         size = data.get_size()
 
