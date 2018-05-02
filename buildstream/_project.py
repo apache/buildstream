@@ -29,7 +29,7 @@ from . import _yaml
 from ._profile import Topics, profile_start, profile_end
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
-from ._artifactcache import artifact_cache_specs_from_config_node
+from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
@@ -296,7 +296,7 @@ class Project():
         #
 
         # Load artifacts pull/push configuration for this project
-        self.artifact_cache_specs = artifact_cache_specs_from_config_node(config)
+        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config)
 
         # Workspace configurations
         self.workspaces = Workspaces(self)

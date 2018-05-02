@@ -822,9 +822,15 @@ class Stream():
                                   rewritable=rewritable,
                                   fetch_subprojects=fetch_subprojects)
 
-        self._pipeline.initialize(use_configured_remote_caches=use_configured_remote_caches,
-                                  add_remote_cache=add_remote_cache,
-                                  track_elements=track_elements,
+        # After loading the projects, but before resolving cache keys,
+        # we need to initialize remote artifact caches where relevant
+        #
+        self._artifacts.setup_remotes(use_config=use_configured_remote_caches,
+                                      remote_url=add_remote_cache)
+
+        # Now complete the initialization
+        #
+        self._pipeline.initialize(track_elements=track_elements,
                                   track_cross_junctions=track_cross_junctions,
                                   track_selection=track_selection)
 

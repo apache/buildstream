@@ -29,7 +29,7 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
-from ._artifactcache import artifact_cache_specs_from_config_node
+from ._artifactcache import ArtifactCache
 
 
 # Context()
@@ -164,7 +164,7 @@ class Context():
             setattr(self, directory, path)
 
         # Load artifact share configuration
-        self.artifact_cache_specs = artifact_cache_specs_from_config_node(defaults)
+        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

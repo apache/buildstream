@@ -28,7 +28,6 @@ from ._loader import Loader
 from .element import Element
 from . import Scope, Consistency
 from ._project import ProjectRefStorage
-from ._artifactcache.artifactcache import ArtifactCacheSpec, configured_remote_artifact_cache_specs
 
 
 # PipelineSelection()
@@ -139,36 +138,17 @@ class Pipeline():
     # Initialize the pipeline
     #
     # Args:
-    #    use_configured_remote_caches (bool): Whether to contact configured remote artifact caches
-    #    add_remote_cache (str): The URL for an additional remote artifact cache
     #    track_element (list of Elements): List of elements specified by the frontend for tracking
     #    track_cross_junctions (bool): Whether tracking is allowed to cross junction boundaries
     #    track_selection (PipelineSelection): The selection algorithm for track elements
     #
     def initialize(self,
-                   use_configured_remote_caches=False,
-                   add_remote_cache=None,
                    track_elements=None,
                    track_cross_junctions=False,
                    track_selection=PipelineSelection.ALL):
 
         # Preflight directly, before ever interrogating caches or anything.
         self._preflight()
-
-        # Initialize remote artifact caches. We allow the commandline to override
-        # the user config in some cases (for example `bst push --remote=...`).
-        has_remote_caches = False
-        if add_remote_cache:
-            self._artifacts.set_remotes([ArtifactCacheSpec(add_remote_cache, push=True)])
-            has_remote_caches = True
-        if use_configured_remote_caches:
-            for project in self.context.get_projects():
-                artifact_caches = configured_remote_artifact_cache_specs(self.context, project)
-                if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
-                    self._artifacts.set_remotes(artifact_caches, project=project)
-                    has_remote_caches = True
-        if has_remote_caches:
-            self._initialize_remote_caches()
 
         # Work out what we're going track, if anything
         self._track_cross_junctions = track_cross_junctions
@@ -354,18 +334,6 @@ class Pipeline():
     def _preflight(self):
         for element in self.dependencies(Scope.ALL):
             element._preflight()
-
-    # _initialize_remote_caches()
-    #
-    # Initialize remote artifact caches, checking what
-    # artifacts are contained by the artifact cache remotes
-    #
-    def _initialize_remote_caches(self):
-        def remote_failed(url, error):
-            self._message(MessageType.WARN, "Failed to fetch remote refs from {}: {}".format(url, error))
-
-        with self.context.timed_activity("Initializing remote caches", silent_nested=True):
-            self._artifacts.initialize_remotes(on_failure=remote_failed)
 
     # _resolve_cache_keys()
     #

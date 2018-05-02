@@ -19,4 +19,3 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .artifactcache import ArtifactCache, ArtifactCacheSpec
-from .artifactcache import artifact_cache_specs_from_config_node, configured_remote_artifact_cache_specs

@@ -23,6 +23,7 @@ import string
 from collections import Mapping, namedtuple
 
 from .._exceptions import ImplError, LoadError, LoadErrorReason
+from .._message import Message, MessageType
 from .. import utils
 from .. import _yaml
 
@@ -51,56 +52,6 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push')):
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: empty artifact cache URL".format(provenance))
         return ArtifactCacheSpec(url, push)
-
-
-# artifact_cache_specs_from_config_node()
-#
-# Parses the configuration of remote artifact caches from a config block.
-#
-# Args:
-#   config_node (dict): The config block, which may contain the 'artifacts' key
-#
-# Returns:
-#   A list of ArtifactCacheSpec instances.
-#
-# Raises:
-#   LoadError, if the config block contains invalid keys.
-#
-def artifact_cache_specs_from_config_node(config_node):
-    cache_specs = []
-
-    artifacts = config_node.get('artifacts', [])
-    if isinstance(artifacts, Mapping):
-        cache_specs.append(ArtifactCacheSpec._new_from_config_node(artifacts))
-    elif isinstance(artifacts, list):
-        for spec_node in artifacts:
-            cache_specs.append(ArtifactCacheSpec._new_from_config_node(spec_node))
-    else:
-        provenance = _yaml.node_get_provenance(config_node, key='artifacts')
-        raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                              "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
-                              (str(provenance)))
-    return cache_specs
-
-
-# configured_remote_artifact_cache_specs():
-#
-# Return the list of configured artifact remotes for a given project, in priority
-# order. This takes into account the user and project configuration.
-#
-# Args:
-#     context (Context): The BuildStream context
-#     project (Project): The BuildStream project
-#
-# Returns:
-#   A list of ArtifactCacheSpec instances describing the remote artifact caches.
-#
-def configured_remote_artifact_cache_specs(context, project):
-    project_overrides = context.get_overrides(project.name)
-    project_extra_specs = artifact_cache_specs_from_config_node(project_overrides)
-
-    return list(utils._deduplicate(
-        project_extra_specs + project.artifact_cache_specs + context.artifact_cache_specs))
 
 
 # An ArtifactCache manages artifacts.
@@ -154,21 +105,63 @@ class ArtifactCache():
         # assume project and element names are not allowed to contain slashes
         return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
-    # set_remotes():
+    # setup_remotes():
     #
-    # Set the list of remote caches. If project is None, the global list of
-    # remote caches will be set, which is used by all projects. If a project is
-    # specified, the per-project list of remote caches will be set.
+    # Sets up which remotes to use
     #
     # Args:
-    #     remote_specs (list): List of ArtifactCacheSpec instances, in priority order.
-    #     project (Project): The Project instance for project-specific remotes
-    def set_remotes(self, remote_specs, *, project=None):
-        if project is None:
-            # global remotes
-            self.global_remote_specs = remote_specs
+    #    use_config (bool): Whether to use project configuration
+    #    remote_url (str): Remote artifact cache URL
+    #
+    # This requires that all of the projects which are to be processed in the session
+    # have already been loaded and are observable in the Context.
+    #
+    def setup_remotes(self, *, use_config=False, remote_url=None):
+
+        # Initialize remote artifact caches. We allow the commandline to override
+        # the user config in some cases (for example `bst push --remote=...`).
+        has_remote_caches = False
+        if remote_url:
+            self._set_remotes([ArtifactCacheSpec(remote_url, push=True)])
+            has_remote_caches = True
+        if use_config:
+            for project in self.context.get_projects():
+                artifact_caches = _configured_remote_artifact_cache_specs(self.context, project)
+                if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
+                    self._set_remotes(artifact_caches, project=project)
+                    has_remote_caches = True
+        if has_remote_caches:
+            self._initialize_remotes()
+
+    # specs_from_config_node()
+    #
+    # Parses the configuration of remote artifact caches from a config block.
+    #
+    # Args:
+    #   config_node (dict): The config block, which may contain the 'artifacts' key
+    #
+    # Returns:
+    #   A list of ArtifactCacheSpec instances.
+    #
+    # Raises:
+    #   LoadError, if the config block contains invalid keys.
+    #
+    @staticmethod
+    def specs_from_config_node(config_node):
+        cache_specs = []
+
+        artifacts = config_node.get('artifacts', [])
+        if isinstance(artifacts, Mapping):
+            cache_specs.append(ArtifactCacheSpec._new_from_config_node(artifacts))
+        elif isinstance(artifacts, list):
+            for spec_node in artifacts:
+                cache_specs.append(ArtifactCacheSpec._new_from_config_node(spec_node))
         else:
-            self.project_remote_specs[project] = remote_specs
+            provenance = _yaml.node_get_provenance(config_node, key='artifacts')
+            raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                                  "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
+                                  (str(provenance)))
+        return cache_specs
 
     ################################################
     # Abstract methods for subclasses to implement #
@@ -356,3 +349,64 @@ class ArtifactCache():
     def link_key(self, element, oldkey, newkey):
         raise ImplError("Cache '{kind}' does not implement link_key()"
                         .format(kind=type(self).__name__))
+
+    ################################################
+    #               Local Private Methods          #
+    ################################################
+
+    # _message()
+    #
+    # Local message propagator
+    #
+    def _message(self, message_type, message, **kwargs):
+        args = dict(kwargs)
+        self.context.message(
+            Message(None, message_type, message, **args))
+
+    # _set_remotes():
+    #
+    # Set the list of remote caches. If project is None, the global list of
+    # remote caches will be set, which is used by all projects. If a project is
+    # specified, the per-project list of remote caches will be set.
+    #
+    # Args:
+    #     remote_specs (list): List of ArtifactCacheSpec instances, in priority order.
+    #     project (Project): The Project instance for project-specific remotes
+    def _set_remotes(self, remote_specs, *, project=None):
+        if project is None:
+            # global remotes
+            self.global_remote_specs = remote_specs
+        else:
+            self.project_remote_specs[project] = remote_specs
+
+    # _initialize_remotes()
+    #
+    # An internal wrapper which calls the abstract method and
+    # reports takes care of messaging
+    #
+    def _initialize_remotes(self):
+        def remote_failed(url, error):
+            self._message(MessageType.WARN, "Failed to fetch remote refs from {}: {}".format(url, error))
+
+        with self.context.timed_activity("Initializing remote caches", silent_nested=True):
+            self.initialize_remotes(on_failure=remote_failed)
+
+
+# _configured_remote_artifact_cache_specs():
+#
+# Return the list of configured artifact remotes for a given project, in priority
+# order. This takes into account the user and project configuration.
+#
+# Args:
+#     context (Context): The BuildStream context
+#     project (Project): The BuildStream project
+#
+# Returns:
+#   A list of ArtifactCacheSpec instances describing the remote artifact caches.
+#
+def _configured_remote_artifact_cache_specs(context, project):
+    project_overrides = context.get_overrides(project.name)
+    project_extra_specs = ArtifactCache.specs_from_config_node(project_overrides)
+
+    return list(utils._deduplicate(
+        project_extra_specs + project.artifact_cache_specs + context.artifact_cache_specs))
