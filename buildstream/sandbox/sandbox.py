@@ -29,7 +29,7 @@ See also: :ref:`sandboxing`.
 """
 
 import os
-from .._exceptions import ImplError
+from .._exceptions import ImplError, BstError
 
 
 class SandboxFlags():
@@ -90,6 +90,8 @@ class Sandbox():
         self.__cwd = None
         self.__env = None
         self.__mount_sources = {}
+        self.__allow_real_directory = kwargs['allow_real_directory']
+
         # Configuration from kwargs common to all subclasses
         self.__config = kwargs['config']
         self.__stdout = kwargs['stdout']
@@ -106,12 +108,17 @@ class Sandbox():
         """Fetches the sandbox root directory
 
         The root directory is where artifacts for the base
-        runtime environment should be staged.
+        runtime environment should be staged. Only works if
+        BST_VIRTUAL_DIRECTORY is not set.
 
         Returns:
            (str): The sandbox root directory
+
         """
-        return self.__root
+        if self.__allow_real_directory:
+            return self.__root
+        else:
+            raise BstError("You can't use get_directory")
 
     def set_environment(self, environment):
         """Sets the environment variables for the sandbox

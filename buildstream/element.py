@@ -191,6 +191,13 @@ class Element(Plugin):
     *Since: 1.2*
     """
 
+    BST_VIRTUAL_DIRECTORY = False
+    """Whether to raise exceptions if an element uses Sandbox.get_directory
+    instead of Sandbox.get_virtual_directory.
+
+    *Since: 1.2*
+    """
+
     def __init__(self, context, project, artifacts, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
@@ -2043,7 +2050,8 @@ class Element(Plugin):
                                               directory,
                                               stdout=stdout,
                                               stderr=stderr,
-                                              config=config)
+                                              config=config,
+                                              allow_real_directory=not self.BST_VIRTUAL_DIRECTORY)
             yield sandbox
 
         else:
