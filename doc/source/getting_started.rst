@@ -49,3 +49,12 @@ directory each element is represented by a *.bst* file. *.bst* files use YAML sy
 Within an element (*.bst* file), there are various attributes (nodes) that authors
 can control. However, it should be noted that BuildStream aims to provide sensible default
 values for attributes that are not explicitly set/declared by the user.
+
+
+Examples and Walkthroughs
+-------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   example_element

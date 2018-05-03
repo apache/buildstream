@@ -28,6 +28,8 @@ given element specify their plugin specific configuration directly
 :ref:`in their source declarations <format_sources>`.
 
 
+.. _elements:
+
 Elements
 ~~~~~~~~
 The following element types are provided with BuildStream:
@@ -44,6 +46,8 @@ General elements
 * :mod:`filter <elements.filter>` - Extract a subset of files from another element
 
 
+.. _build_elements:
+
 Build elements
 ''''''''''''''
 
@@ -57,6 +61,7 @@ Build elements
 * :mod:`meson <elements.meson>` - Meson Build Element
 * :mod:`pip <elements.pip>` - Pip build element
 
+.. _supported_sources:
 
 Sources
 ~~~~~~~
