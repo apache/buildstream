@@ -39,7 +39,6 @@ from .widget import TimeCode
 #    success_profile (Profile): Formatting profile for success text
 #    error_profile (Profile): Formatting profile for error text
 #    stream (Stream): The Stream
-#    scheduler (Scheduler): The Scheduler
 #    colors (bool): Whether to print the ANSI color codes in the output
 #
 class Status():
@@ -47,14 +46,14 @@ class Status():
     def __init__(self, context,
                  content_profile, format_profile,
                  success_profile, error_profile,
-                 stream, scheduler, colors=False):
+                 stream, colors=False):
 
         self._context = context
         self._content_profile = content_profile
         self._format_profile = format_profile
         self._success_profile = success_profile
         self._error_profile = error_profile
-        self._scheduler = scheduler
+        self._stream = stream
         self._jobs = []
         self._last_lines = 0  # Number of status lines we last printed to console
         self._term = Terminal()
@@ -63,7 +62,7 @@ class Status():
         self._header = _StatusHeader(context,
                                      content_profile, format_profile,
                                      success_profile, error_profile,
-                                     stream, scheduler)
+                                     stream)
 
         self._term_width, _ = click.get_terminal_size()
         self._alloc_lines = 0
@@ -80,7 +79,7 @@ class Status():
     #    action_name (str): The action name for this job
     #
     def add_job(self, element, action_name):
-        elapsed = self._scheduler.elapsed_time()
+        elapsed = self._stream.elapsed_time
         job = _StatusJob(self._context, element, action_name, self._content_profile, self._format_profile, elapsed)
         self._jobs.append(job)
         self._need_alloc = True
@@ -136,7 +135,7 @@ class Status():
         if not self._term.does_styling:
             return
 
-        elapsed = self._scheduler.elapsed_time()
+        elapsed = self._stream.elapsed_time
 
         self.clear()
         self._check_term_width()
@@ -251,14 +250,13 @@ class Status():
 #    success_profile (Profile): Formatting profile for success text
 #    error_profile (Profile): Formatting profile for error text
 #    stream (Stream): The Stream
-#    scheduler (Scheduler): The Scheduler
 #
 class _StatusHeader():
 
     def __init__(self, context,
                  content_profile, format_profile,
                  success_profile, error_profile,
-                 stream, scheduler):
+                 stream):
 
         #
         # Public members
@@ -273,7 +271,6 @@ class _StatusHeader():
         self._success_profile = success_profile
         self._error_profile = error_profile
         self._stream = stream
-        self._scheduler = scheduler
         self._time_code = TimeCode(context, content_profile, format_profile)
         self._context = context
 
@@ -283,8 +280,8 @@ class _StatusHeader():
         size = 0
         text = ''
 
-        session = str(self._stream.session_elements)
-        total = str(self._stream.total_elements)
+        session = str(len(self._stream.session_elements))
+        total = str(len(self._stream.total_elements))
 
         # Format and calculate size for target and overall time code
         size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
@@ -303,10 +300,10 @@ class _StatusHeader():
         text = ''
 
         # Format and calculate size for each queue progress
-        for queue in self._scheduler.queues:
+        for queue in self._stream.queues:
 
             # Add spacing
-            if self._scheduler.queues.index(queue) > 0:
+            if self._stream.queues.index(queue) > 0:
                 size += 2
                 text += self._format_profile.fmt('→ ')
 
@@ -366,7 +363,7 @@ class _StatusHeader():
 #    action_name (str): The name of the action
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
-#    elapsed (datetime): The offset of the scheduler when this job is created
+#    elapsed (datetime): The offset into the session when this job is created
 #
 class _StatusJob():
 

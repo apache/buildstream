@@ -31,40 +31,24 @@ def create_element(repo, name, path, dependencies, ref=None):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("exceptions,excepted", [
+@pytest.mark.parametrize("track_targets,exceptions,tracked", [
     # Test with no exceptions
-    ([], []),
+    (['0.bst'], [], ['0.bst', '2.bst', '3.bst', '4.bst', '5.bst', '6.bst', '7.bst']),
+    (['3.bst'], [], ['3.bst', '4.bst', '5.bst', '6.bst']),
+    (['2.bst', '3.bst'], [], ['2.bst', '3.bst', '4.bst', '5.bst', '6.bst', '7.bst']),
 
     # Test excepting '2.bst'
-    (['2.bst'], ['2.bst', '7.bst']),
+    (['0.bst'], ['2.bst'], ['0.bst', '3.bst', '4.bst', '5.bst', '6.bst']),
+    (['3.bst'], ['2.bst'], []),
+    (['2.bst', '3.bst'], ['2.bst'], ['3.bst', '4.bst', '5.bst', '6.bst']),
 
     # Test excepting '2.bst' and '3.bst'
-    (['2.bst', '3.bst'], [
-        '2.bst', '3.bst', '4.bst',
-        '5.bst', '6.bst', '7.bst'
-    ])
+    (['0.bst'], ['2.bst', '3.bst'], ['0.bst']),
+    (['3.bst'], ['2.bst', '3.bst'], []),
+    (['2.bst', '3.bst'], ['2.bst', '3.bst'], [])
 ])
-@pytest.mark.parametrize("track_targets,tracked", [
-    # Test tracking the main target element
-    (['0.bst'], [
-        '0.bst', '2.bst', '3.bst',
-        '4.bst', '5.bst', '6.bst', '7.bst'
-    ]),
-
-    # Test tracking a child element
-    (['3.bst'], [
-        '3.bst', '4.bst', '5.bst',
-        '6.bst'
-    ]),
-
-    # Test tracking multiple children
-    (['2.bst', '3.bst'], [
-        '2.bst', '3.bst', '4.bst',
-        '5.bst', '6.bst', '7.bst'
-    ])
-])
-def test_build_track(cli, datafiles, tmpdir, ref_storage, track_targets,
-                     exceptions, tracked, excepted):
+def test_build_track(cli, datafiles, tmpdir, ref_storage,
+                     track_targets, exceptions, tracked):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
@@ -102,7 +86,7 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage, track_targets,
     for element, dependencies in create_elements.items():
         # Test the element inconsistency resolution by ensuring that
         # only elements that aren't tracked have refs
-        if element in set(tracked) - set(excepted):
+        if element in set(tracked):
             # Elements which should not have a ref set
             #
             create_element(repo, element, element_path, dependencies)
@@ -133,14 +117,14 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage, track_targets,
     result = cli.run(project=project, silent=True, args=args)
     tracked_elements = result.get_tracked_elements()
 
-    assert set(tracked_elements) == set(tracked) - set(excepted)
+    assert set(tracked_elements) == set(tracked)
 
     # Delete element sources
     source_dir = os.path.join(project, 'cache', 'sources')
     shutil.rmtree(source_dir)
 
     # Delete artifacts one by one and assert element states
-    for target in set(tracked) - set(excepted):
+    for target in set(tracked):
         cli.remove_artifact_from_cache(project, target)
 
         # Assert that it's tracked
@@ -154,40 +138,24 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage, track_targets,
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-@pytest.mark.parametrize("exceptions,excepted", [
+@pytest.mark.parametrize("track_targets,exceptions,tracked", [
     # Test with no exceptions
-    ([], []),
+    (['0.bst'], [], ['0.bst', '2.bst', '3.bst', '4.bst', '5.bst', '6.bst', '7.bst']),
+    (['3.bst'], [], ['3.bst', '4.bst', '5.bst', '6.bst']),
+    (['2.bst', '3.bst'], [], ['2.bst', '3.bst', '4.bst', '5.bst', '6.bst', '7.bst']),
 
     # Test excepting '2.bst'
-    (['2.bst'], ['2.bst', '7.bst']),
+    (['0.bst'], ['2.bst'], ['0.bst', '3.bst', '4.bst', '5.bst', '6.bst']),
+    (['3.bst'], ['2.bst'], []),
+    (['2.bst', '3.bst'], ['2.bst'], ['3.bst', '4.bst', '5.bst', '6.bst']),
 
     # Test excepting '2.bst' and '3.bst'
-    (['2.bst', '3.bst'], [
-        '2.bst', '3.bst', '4.bst',
-        '5.bst', '6.bst', '7.bst'
-    ])
-])
-@pytest.mark.parametrize("track_targets,tracked", [
-    # Test tracking the main target element
-    (['0.bst'], [
-        '0.bst', '2.bst', '3.bst',
-        '4.bst', '5.bst', '6.bst', '7.bst'
-    ]),
-
-    # Test tracking a child element
-    (['3.bst'], [
-        '3.bst', '4.bst', '5.bst',
-        '6.bst'
-    ]),
-
-    # Test tracking multiple children
-    (['2.bst', '3.bst'], [
-        '2.bst', '3.bst', '4.bst',
-        '5.bst', '6.bst', '7.bst'
-    ])
+    (['0.bst'], ['2.bst', '3.bst'], ['0.bst']),
+    (['3.bst'], ['2.bst', '3.bst'], []),
+    (['2.bst', '3.bst'], ['2.bst', '3.bst'], [])
 ])
 def test_build_track_update(cli, datafiles, tmpdir, track_targets,
-                            exceptions, tracked, excepted):
+                            exceptions, tracked):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
@@ -231,7 +199,7 @@ def test_build_track_update(cli, datafiles, tmpdir, track_targets,
     result = cli.run(project=project, silent=True, args=args)
     tracked_elements = result.get_tracked_elements()
 
-    assert set(tracked_elements) == set(tracked) - set(excepted)
+    assert set(tracked_elements) == set(tracked)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))

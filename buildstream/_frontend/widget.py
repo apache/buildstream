@@ -28,7 +28,7 @@ import click
 from ruamel import yaml
 
 from . import Profile
-from .. import Element, Scope, Consistency
+from .. import Element, Consistency
 from .. import _yaml
 from .. import __version__ as bst_version
 from .._exceptions import ImplError
@@ -435,23 +435,17 @@ class LogLine(Widget):
     # and so on.
     #
     # Args:
-    #    pipeline (Pipeline): The pipeline to print the heading of
+    #    project (Project): The toplevel project we were invoked from
+    #    stream (Stream): The stream
     #    log_file (file): An optional file handle for additional logging
-    #    deps (list): Optional list of elements, default is to use the whole pipeline
     #    styling (bool): Whether to enable ansi escape codes in the output
     #
-    def print_heading(self, pipeline, log_file, deps=None, styling=False):
+    def print_heading(self, project, stream, *, log_file, styling=False):
         context = self.context
-        project = pipeline.project
         starttime = datetime.datetime.now()
         text = ''
 
-        assert self._resolved_keys is None
-        elements = set()
-        visited = {}
-        for element in pipeline.targets:
-            elements.update(element.dependencies(Scope.ALL, visited=visited))
-        self._resolved_keys = {element: element._get_cache_key() for element in elements}
+        self._resolved_keys = {element: element._get_cache_key() for element in stream.session_elements}
 
         # Main invocation context
         text += '\n'
@@ -459,7 +453,7 @@ class LogLine(Widget):
         values = OrderedDict()
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)
-        values["Targets"] = ", ".join([t.name for t in pipeline.targets])
+        values["Targets"] = ", ".join([t.name for t in stream.targets])
         text += self._format_values(values)
 
         # User configurations
@@ -494,9 +488,7 @@ class LogLine(Widget):
 
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)
-        if deps is None:
-            deps = pipeline.dependencies(Scope.ALL)
-        text += self.show_pipeline(deps, context.log_element_format)
+        text += self.show_pipeline(stream.total_elements, context.log_element_format)
         text += '\n'
 
         # Separator line before following output
@@ -512,16 +504,15 @@ class LogLine(Widget):
     #
     # Args:
     #    stream (Stream): The Stream
-    #    scheduler (Scheduler): The Scheduler
     #    log_file (file): An optional file handle for additional logging
     #    styling (bool): Whether to enable ansi escape codes in the output
     #
-    def print_summary(self, stream, scheduler, log_file, styling=False):
+    def print_summary(self, stream, log_file, styling=False):
 
         # Early silent return if there are no queues, can happen
-        # only in the case that the pipeline early returned due to
+        # only in the case that the stream early returned due to
         # an inconsistent pipeline state.
-        if scheduler.queues is None:
+        if not stream.queues:
             return
 
         text = ''
@@ -544,18 +535,18 @@ class LogLine(Widget):
         text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
         values = OrderedDict()
 
-        values['Total'] = self.content_profile.fmt(str(stream.total_elements))
-        values['Session'] = self.content_profile.fmt(str(stream.session_elements))
+        values['Total'] = self.content_profile.fmt(str(len(stream.total_elements)))
+        values['Session'] = self.content_profile.fmt(str(len(stream.session_elements)))
 
         processed_maxlen = 1
         skipped_maxlen = 1
         failed_maxlen = 1
-        for queue in scheduler.queues:
+        for queue in stream.queues:
             processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
             skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
             failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
 
-        for queue in scheduler.queues:
+        for queue in stream.queues:
             processed = str(len(queue.processed_elements))
             skipped = str(len(queue.skipped_elements))
             failed = str(len(queue.failed_elements))
