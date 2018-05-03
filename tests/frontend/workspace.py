@@ -18,20 +18,12 @@ DATA_DIR = os.path.join(
 )
 
 
-def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspacedir=None):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+def open_workspace_create_element(cli, project, tmpdir, kind, track, suffix):
     bin_files_path = os.path.join(project, 'files', 'bin-files')
     element_path = os.path.join(project, 'elements')
-    element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
-    if workspacedir is None:
-        workspace = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
-    else:
-        workspace = os.path.join(project, 'workspace{}'.format(suffix))
 
-    # Create our repo object of the given source type with
-    # the bin files, and then collect the initial ref.
-    #
-    repo = create_repo(kind, str(tmpdir))
+    element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
+    repo = create_repo(kind, os.path.join(str(tmpdir), 'repo-{}'.format(suffix)))
     ref = repo.create(bin_files_path)
     if track:
         ref = None
@@ -54,15 +46,59 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspacedir=
     else:
         assert state == 'fetch needed'
 
-    # Now open the workspace, this should have the effect of automatically
-    # tracking & fetching the source from the repo.
+    return element_name
+
+
+def open_workspace_run_client(cli, project, track, *params):
     args = ['workspace', 'open']
     if track:
         args.append('--track')
-    args.extend([element_name, workspace])
+
+    args.extend(params)
 
     result = cli.run(project=project, args=args)
     result.assert_success()
+
+
+def open_workspace_multiple(cli, tmpdir, datafiles, kind, track, workspacedir, suffixes=['-alpha', '-beta']):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    element_names = []
+    for suffix in suffixes:
+        element_names.append(open_workspace_create_element(cli, project, tmpdir, kind, track, suffix))
+
+    # Now open the workspace, this should have the effect of automatically
+    # tracking & fetching the source from the repo.
+    open_workspace_run_client(cli, project, track, "--multiple", *element_names)
+
+    # Assert that we are now buildable because the source is
+    # now cached.
+    for element_name in element_names:
+        assert cli.get_element_state(project, element_name) == 'buildable'
+
+        element_basename, _ = os.path.splitext(element_name)
+        workspace = os.path.join(workspacedir, element_basename)
+        filename = os.path.join(workspace, 'usr', 'bin', 'hello')
+
+        # Check that the executable hello file is found in the workspace
+        assert os.path.exists(filename)
+
+    return (element_names, project)
+
+
+def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspacedir=None):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    element_name = open_workspace_create_element(cli, project, tmpdir, kind, track, suffix)
+
+    if workspacedir is None:
+        workspace = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
+    else:
+        workspace = os.path.join(project, 'workspace{}'.format(suffix))
+
+    # Now open the workspace, this should have the effect of automatically
+    # tracking & fetching the source from the repo.
+    open_workspace_run_client(cli, project, track, element_name, workspace)
 
     # Assert that we are now buildable because the source is
     # now cached.
@@ -127,6 +163,16 @@ def test_open_force(cli, tmpdir, datafiles, kind):
         'workspace', 'open', '--force', element_name, workspace
     ])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", repo_kinds)
+def test_open_multiple(cli, tmpdir, datafiles, kind):
+    workspacedir = os.path.join(str(tmpdir), 'workspaces')
+    user_config = {'workspacedir': workspacedir}
+    cli.configure(user_config)
+    open_workspace_multiple(cli, tmpdir, datafiles, kind, False,
+                            workspacedir)
 
 
 @pytest.mark.datafiles(DATA_DIR)
