@@ -958,7 +958,12 @@ class Element(Plugin):
             return False
 
         for dependency in self.dependencies(Scope.BUILD):
-            if not dependency._cached():
+            # In non-strict mode an element's strong cache key may not be available yet
+            # even though an artifact is available in the local cache. This can happen
+            # if the pull job is still pending as the remote cache may have an artifact
+            # that matches the strict cache key, which is preferred over a locally
+            # cached artifact with a weak cache key match.
+            if not dependency._cached() or not dependency._get_cache_key(strength=_KeyStrength.STRONG):
                 return False
 
         if not self.__assemble_scheduled:
