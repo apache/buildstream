@@ -477,7 +477,11 @@ class Element(Plugin):
           name = self.node_subst_member(node, 'name')
         """
         value = self.node_get_member(node, str, member_name, default)
-        return self.__variables.subst(value)
+        try:
+            return self.__variables.subst(value)
+        except LoadError as e:
+            provenance = _yaml.node_get_provenance(node, key=member_name)
+            raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
 
     def node_subst_list(self, node, member_name):
         """Fetch a list from a node member, substituting any variables in the list
@@ -497,7 +501,14 @@ class Element(Plugin):
         perform variable substitutions.
         """
         value = self.node_get_member(node, list, member_name)
-        return [self.__variables.subst(x) for x in value]
+        ret = []
+        for index, x in enumerate(value):
+            try:
+                ret.append(self.__variables.subst(x))
+            except LoadError as e:
+                provenance = _yaml.node_get_provenance(node, key=member_name, indices=[index])
+                raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
+        return ret
 
     def node_subst_list_element(self, node, member_name, indices):
         """Fetch the value of a list element from a node member, substituting any variables
@@ -534,7 +545,11 @@ class Element(Plugin):
                   node, 'strings', [ i ])
         """
         value = self.node_get_list_element(node, str, member_name, indices)
-        return self.__variables.subst(value)
+        try:
+            return self.__variables.subst(value)
+        except LoadError as e:
+            provenance = _yaml.node_get_provenance(node, key=member_name, indices=indices)
+            raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
 
     def compute_manifest(self, *, include=None, exclude=None, orphans=True):
         """Compute and return this element's selective manifest

@@ -87,7 +87,7 @@ class Variables():
             token = match.group(0)
             varname = match.group(1)
 
-            value = _yaml.node_get(variables, str, varname)
+            value = _yaml.node_get(variables, str, varname, default_value=None)
             if value is not None:
                 # We have to check if the inner string has variables
                 # and return unmatches for those
