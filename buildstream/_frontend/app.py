@@ -693,6 +693,8 @@ class App():
             while choice not in ['continue', 'quit', 'terminate', 'retry']:
                 click.echo(summary, err=True)
 
+                self._notify("Buildstream failure", "{} on element {}".format(failure.action_name, element.name))
+
                 try:
                     choice = click.prompt("Choice:", default='continue', err=True,
                                           value_proc=_prefix_choice_value_proc(choices))
@@ -941,6 +943,9 @@ class App():
                                     default=element_path, err=True)
 
         return (project_name, format_version, element_path)
+
+    def _notify(self, title, text):
+        click.echo("\033]777;notify;{};{}\007".format(title, text))
 
 
 #
