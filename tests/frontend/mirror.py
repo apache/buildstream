@@ -68,3 +68,66 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
     # But at least we can be sure it succeeds
     result = cli.run(project=project_dir, args=['fetch', element_name])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_mirror_fetch_multi(cli, tmpdir, datafiles):
+    output_file = os.path.join(str(tmpdir), "output.txt")
+    project_dir = str(tmpdir)
+    element_dir = os.path.join(project_dir, 'elements')
+    os.makedirs(element_dir, exist_ok=True)
+    element_name = "test.bst"
+    element_path = os.path.join(element_dir, element_name)
+    element = {
+        'kind': 'import',
+        'sources': [
+            {
+                'kind': 'fetch_source',
+                "output-text": output_file,
+                "urls": ["foo:repo1", "bar:repo2"],
+                "fetch-succeeds": {
+                    "FOO/repo1": True,
+                    "BAR/repo2": False,
+                    "OOF/repo1": False,
+                    "RAB/repo2": True
+                }
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    project_file = os.path.join(project_dir, 'project.conf')
+    project = {
+        'name': 'test',
+        'element-path': 'elements',
+        'aliases': {
+            "foo": "FOO/",
+            "bar": "BAR/"
+        },
+        'mirrors': [
+            {
+                'location-name': 'middle-earth',
+                'aliases': {
+                    "foo": ["OOF/"],
+                    "bar": ["RAB/"]
+                },
+            },
+        ],
+        'plugins': [
+            {
+                'origin': 'local',
+                'path': 'sources',
+                'sources': {
+                    'fetch_source': 0
+                }
+            }
+        ]
+    }
+    _yaml.dump(project, project_file)
+
+    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result.assert_success()
+    with open(output_file) as f:
+        contents = f.read()
+        assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
+        assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
