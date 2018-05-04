@@ -97,7 +97,7 @@ class DownloadableFileSource(Source):
 
     def _store_etag(self, ref, etag):
         etagfilename = os.path.join(self._get_mirror_dir(), '{}.etag'.format(ref))
-        with open(etagfilename, 'w') as etagfile:
+        with utils.save_file_atomic(etagfilename) as etagfile:
             etagfile.write(etag)
 
     def _ensure_mirror(self):
