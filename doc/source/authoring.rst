@@ -19,6 +19,8 @@ create your own project or modify existing projects.
    projectrefs
 
 
+.. _plugins:
+
 Plugins
 -------
 Plugins provide their own individual plugin specific YAML configurations,

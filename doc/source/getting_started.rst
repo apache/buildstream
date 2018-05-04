@@ -57,4 +57,5 @@ Examples and Walkthroughs
 .. toctree::
    :maxdepth: 1
 
+   hello_world
    example_element
