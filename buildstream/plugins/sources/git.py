@@ -121,12 +121,6 @@ class GitMirror():
                          fail="Failed to fetch from remote git repository: {}".format(self.url),
                          cwd=self.mirror)
 
-    def describe(self):
-        self.source.call([self.source.host_git, 'describe'],
-                         fail="Failed to find a tag in remote git repository: {}".format(self.url),
-                         cwd=self.mirror)
-
-
     def has_ref(self):
         if not self.ref:
             return False
@@ -157,7 +151,21 @@ class GitMirror():
         # We need to pass '--no-hardlinks' because there's nothing to
         # stop the build from overwriting the files in the .git directory
         # inside the sandbox.
-        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--no-hardlinks', self.mirror, fullpath],
+
+        # Need to get every commit since the last tagged object until the tracking commit
+        if has_ref():
+            all_tags = subprocess.check_output(['git', 'tag'])
+            tags_since_sha = subprocess.check_output(['git', 'tag', '--contains', self.ref])
+            preceeding_tags = all_tags - set(tags_since) 
+            last_tag_before_ref = preceeding_tags[-1]
+
+        # find number of commits since last_tag_before_ref
+            target_depth = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD...{}'.format(last_tag_before_ref)])
+
+        else:
+            target_depth = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD...{}'.format(self.ref)])
+
+        self.source.call([self.source.host_git, 'clone', '--depth {}'.format(target_depth), '--no-checkout', '--no-hardlinks', self.mirror, fullpath],
                          fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath))
 
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],

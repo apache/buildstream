@@ -216,12 +216,15 @@ def init(app, project_name, format_version, element_path, force):
               help="Except certain dependencies from tracking")
 @click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
               help="Allow tracking to cross junction boundaries")
+@click.option('--cached-build-tree', default='False',
+              type=click.Choice(['True', 'False']),
+              help="Toggle the download of the cached build tree")
 @click.option('--track-save', default=False, is_flag=True,
               help="Deprecated: This is ignored")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions):
+def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions, cached_build_tree):
     """Build elements in a pipeline"""
 
     if (track_except or track_cross_junctions) and not (track_ or track_all):
@@ -240,7 +243,8 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
                          track_targets=track_,
                          track_except=track_except,
                          track_cross_junctions=track_cross_junctions,
-                         build_all=all_)
+                         build_all=all_,
+                         cached_build_tree)
 
 
 ##################################################################
@@ -338,10 +342,13 @@ def track(app, elements, deps, except_, cross_junctions):
               help='The dependency artifacts to pull (default: none)')
 @click.option('--remote', '-r',
               help="The URL of the remote cache (defaults to the first configured cache)")
+@click.option('--cached-build-tree', default='False',
+              type=click.Choice(['True', 'False']),
+              help="Toggle the download of the cached build tree")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def pull(app, elements, deps, remote):
+def pull(app, elements, deps, remote, cached_build_tree):
     """Pull a built artifact from the configured remote artifact cache.
 
     By default the artifact will be pulled one of the configured caches
@@ -355,7 +362,7 @@ def pull(app, elements, deps, remote):
         all:   All dependencies
     """
     with app.initialized(session_name="Pull"):
-        app.stream.pull(elements, selection=deps, remote=remote)
+        app.stream.pull(elements, selection=deps, remote=remote, cached_build_tree=cached_build_tree)
 
 
 ##################################################################
@@ -579,7 +586,8 @@ def workspace():
               help="Overwrite files existing in checkout directory")
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
-@click.option('--no-cache', 'no_cache', default=False, is_flag=True,
+@click.option('--no-cache', 'no_cache',  default='False',
+              type=click.Choice(['True', 'False']),
               help="Use Cached build tree if available")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
@@ -658,7 +666,8 @@ def workspace_close(app, remove_dir, all_, elements):
               help="Track and fetch the latest source before resetting")
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Reset all open workspaces")
-@click.option('--no-cache', 'no_cache', default=False, is_flag=True,
+@click.option('--no-cache', 'no_cache',  default='False',
+              type=click.Choice(['True', 'False']),
               help="Use Cached build tree if available")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
