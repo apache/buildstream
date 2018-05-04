@@ -157,3 +157,41 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     # informing the user to track the junction first
     result = cli.run(project=project, args=['fetch', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+def test_fetch_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
+    project = str(datafiles)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+
+    import_etc_path = os.path.join(subproject_path, 'elements', 'import-etc-repo.bst')
+    etc_files_path = os.path.join(subproject_path, 'files', 'etc-files')
+
+    repo = create_repo(kind, str(tmpdir.join('import-etc')))
+    ref = repo.create(etc_files_path)
+
+    element = {
+        'kind': 'import',
+        'sources': [
+            repo.source_config(ref=(ref if ref_storage == 'inline' else None))
+        ]
+    }
+    _yaml.dump(element, import_etc_path)
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=(ref_storage == 'inline'))
+
+    if ref_storage == 'project.refs':
+        result = cli.run(project=project, args=['track', 'junction.bst'])
+        result.assert_success()
+        result = cli.run(project=project, args=['track', 'junction.bst:import-etc.bst'])
+        result.assert_success()
+
+    result = cli.run(project=project, args=['fetch', 'junction.bst:import-etc.bst'])
+    result.assert_success()

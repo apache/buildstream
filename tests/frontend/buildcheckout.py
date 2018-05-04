@@ -390,3 +390,22 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
     with open(filename, 'r') as f:
         contents = f.read()
     assert contents == 'animal=Horsy\n'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_cross_junction(datafiles, cli, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    generate_junction(tmpdir, subproject_path, junction_path)
+
+    result = cli.run(project=project, args=['build', 'junction.bst:import-etc.bst'])
+    result.assert_success()
+
+    result = cli.run(project=project, args=['checkout', 'junction.bst:import-etc.bst', checkout])
+    result.assert_success()
+
+    filename = os.path.join(checkout, 'etc', 'animal.conf')
+    assert os.path.exists(filename)

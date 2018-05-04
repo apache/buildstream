@@ -107,9 +107,13 @@ class Loader():
 
         # First pass, recursively load files and populate our table of LoadElements
         #
+        deps = []
+
         for target in self._targets:
             profile_start(Topics.LOAD_PROJECT, target)
-            self._load_file(target, rewritable, ticker)
+            junction, name, loader = self._parse_name(target, rewritable, ticker)
+            loader._load_file(name, rewritable, ticker)
+            deps.append(Dependency(name, junction=junction))
             profile_end(Topics.LOAD_PROJECT, target)
 
         #
@@ -119,7 +123,8 @@ class Loader():
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         DummyTarget = namedtuple('DummyTarget', ['name', 'full_name', 'deps'])
-        dummy = DummyTarget(name='', full_name='', deps=[Dependency(e) for e in self._targets])
+
+        dummy = DummyTarget(name='', full_name='', deps=deps)
         self._elements[''] = dummy
 
         profile_key = "_".join(t for t in self._targets)
@@ -127,17 +132,20 @@ class Loader():
         self._check_circular_deps('')
         profile_end(Topics.CIRCULAR_CHECK, profile_key)
 
+        ret = []
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
         for target in self._targets:
             profile_start(Topics.SORT_DEPENDENCIES, target)
-            self._sort_dependencies(target)
+            junction, name, loader = self._parse_name(target, rewritable, ticker)
+            loader._sort_dependencies(name)
             profile_end(Topics.SORT_DEPENDENCIES, target)
+            # Finally, wrap what we have into LoadElements and return the target
+            #
+            ret.append(loader._collect_element(name))
 
-        # Finally, wrap what we have into LoadElements and return the target
-        #
-        return [self._collect_element(target) for target in self._targets]
+        return ret
 
     # cleanup():
     #
@@ -554,3 +562,30 @@ class Loader():
             return self._loaders[dep.junction]
         else:
             return self
+
+    # _parse_name():
+    #
+    # Get junction and base name of element along with loader for the sub-project
+    #
+    # Args:
+    #   name (str): Name of target
+    #   rewritable (bool): Whether the loaded files should be rewritable
+    #                      this is a bit more expensive due to deep copies
+    #   ticker (callable): An optional function for tracking load progress
+    #
+    # Returns:
+    #   (tuple): - (str): name of the junction element
+    #            - (str): name of the element
+    #            - (Loader): loader for sub-project
+    #
+    def _parse_name(self, name, rewritable, ticker):
+        # We allow to split only once since deep junctions names are forbidden.
+        # Users who want to refer to elements in sub-sub-projects are required
+        # to create junctions on the top level project.
+        junction_path = name.rsplit(':', 1)
+        if len(junction_path) == 1:
+            return None, junction_path[-1], self
+        else:
+            self._load_file(junction_path[-2], rewritable, ticker)
+            loader = self._get_loader(junction_path[-2], rewritable=rewritable, ticker=ticker)
+            return junction_path[-2], junction_path[-1], loader

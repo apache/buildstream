@@ -260,3 +260,43 @@ def test_git_build(cli, tmpdir, datafiles):
     # Check that the checkout contains the expected files from both projects
     assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
     assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_cross_junction_names(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'foo')
+    copy_subprojects(project, datafiles, ['base'])
+
+    element_list = cli.get_pipeline(project, ['base.bst:target.bst'])
+    assert 'base.bst:target.bst' in element_list
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'foo')
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Create the repo from 'base' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(str(datafiles), 'base'))
+
+    # Write out junction element with git source
+    element = {
+        'kind': 'junction',
+        'sources': [
+            repo.source_config(ref=ref)
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'base.bst'))
+
+    print(element)
+    print(cli.get_pipeline(project, ['base.bst']))
+
+    # Build (with implicit fetch of subproject), checkout
+    result = cli.run(project=project, args=['build', 'base.bst:target.bst'])
+    assert result.exit_code == 0
+    result = cli.run(project=project, args=['checkout', 'base.bst:target.bst', checkoutdir])
+    assert result.exit_code == 0
+
+    # Check that the checkout contains the expected files from both projects
+    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))

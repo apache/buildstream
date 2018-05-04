@@ -7,6 +7,8 @@ from unittest.mock import MagicMock
 from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli, create_artifact_share, create_element_size
 from tests.testutils.site import IS_LINUX
+from . import configure_project, generate_junction
+
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -377,3 +379,26 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     # Ensure that element2 was deleted from the share and element1 remains
     assert_not_shared(cli, share, project, 'element2.bst')
     assert_shared(cli, share, project, 'element1.bst')
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_cross_junction(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=True)
+
+    result = cli.run(project=project, args=['build', 'junction.bst:import-etc.bst'])
+    result.assert_success()
+
+    assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'cached'
+
+    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+    cli.configure({
+        'artifacts': {'url': share.repo, 'push': True},
+    })
+    result = cli.run(project=project, args=['push', 'junction.bst:import-etc.bst'])
+
+    cache_key = cli.get_element_key(project, 'junction.bst:import-etc.bst')
+    assert share.has_artifact('subtest', 'import-etc.bst', cache_key)

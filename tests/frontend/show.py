@@ -111,7 +111,8 @@ def test_target_is_dependency(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
+@pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
+def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
@@ -155,14 +156,15 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
 
     # Assert the correct error when trying to show the pipeline
     result = cli.run(project=project, silent=True, args=[
-        'show', 'junction-dep.bst'])
+        'show', element_name])
 
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
 
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
+@pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
+def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, element_name):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
@@ -190,6 +192,43 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
 
     # Assert the correct error when trying to show the pipeline
     result = cli.run(project=project, silent=True, args=[
-        'show', 'junction-dep.bst'])
+        'show', element_name])
 
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
+def test_fetched_junction(cli, tmpdir, datafiles, element_name):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=True)
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    result = cli.run(project=project, silent=True, args=[
+        'fetch', 'junction.bst'])
+
+    result.assert_success()
+
+    # Assert the correct error when trying to show the pipeline
+    result = cli.run(project=project, silent=True, args=[
+        'show', '--format', '%{name}-%{state}', element_name])
+
+    results = result.output.strip().splitlines()
+    assert 'junction.bst:import-etc.bst-buildable' in results

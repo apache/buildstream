@@ -4,6 +4,8 @@ import pytest
 from tests.testutils import cli, create_artifact_share
 from tests.testutils.site import IS_LINUX
 
+from . import generate_junction
+
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -276,3 +278,35 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', '--track-all', '--all', 'target.bst'])
     result.assert_success()
     assert set(result.get_pulled_elements()) == all_elements
+
+
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_pull_cross_junction(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=True)
+
+    # First build the target element and push to the remote.
+    cli.configure({
+        'artifacts': {'url': share.repo, 'push': True}
+    })
+    result = cli.run(project=project, args=['build', 'junction.bst:import-etc.bst'])
+    result.assert_success()
+    assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'cached'
+
+    cache_dir = os.path.join(project, 'cache', 'artifacts')
+    shutil.rmtree(cache_dir)
+
+    share.update_summary()
+    assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'buildable'
+
+    # Now try bst pull
+    result = cli.run(project=project, args=['pull', 'junction.bst:import-etc.bst'])
+    result.assert_success()
+
+    # And assert that it's again in the local cache, without having built
+    assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'cached'
