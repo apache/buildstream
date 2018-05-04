@@ -62,3 +62,17 @@ def test_overrides(cli, datafiles, tmpdir, target, varname, expected):
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
     assert result_vars[varname] == expected
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing_variables'))
+def test_missing_variable(cli, datafiles, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=[
+        'show', '--deps', 'none', '--format', '%{config}', 'manual.bst'
+    ])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.UNRESOLVED_VARIABLE)
+    expected = ("Error loading pipeline: "
+                "manual.bst [line 5 column 6]: "
+                "Unresolved variable 'foo'")
+    assert expected in result.stderr.splitlines()
