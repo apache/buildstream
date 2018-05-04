@@ -15,13 +15,17 @@ class DownloadableFileSource(Source):
 
     COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag']
 
+    def _warn_deprecated_etag(self, node):
+        etag = self.node_get_member(node, str, 'etag', None)
+        if etag:
+            provenance = self.node_provenance(node, member_name='etag')
+            self.warn('{} "etag" is deprecated and ignored.'.format(provenance))
+
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', None)
         self.url = self.translate_url(self.original_url)
-        etag = self.node_get_member(node, str, 'etag', None)
-        if etag:
-            self.warn('"etag" given for source {}. This field is deprecated and ignored.'.format(self.original_url))
+        self._warn_deprecated_etag(node)
 
     def preflight(self):
         return
@@ -41,6 +45,7 @@ class DownloadableFileSource(Source):
 
     def load_ref(self, node):
         self.ref = self.node_get_member(node, str, 'ref', None)
+        self._warn_deprecated_etag(node)
 
     def get_ref(self):
         return self.ref
