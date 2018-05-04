@@ -343,6 +343,7 @@ class App():
         directory = self._main_options['directory']
         directory = os.path.abspath(directory)
         project_path = os.path.join(directory, 'project.conf')
+        elements_path = os.path.join(directory, 'elements')
 
         try:
             # Abort if the project.conf already exists, unless `--force` was specified in `bst init`
@@ -370,6 +371,13 @@ class App():
                 os.makedirs(directory, exist_ok=True)
             except IOError as e:
                 raise AppError("Error creating project directory {}: {}".format(directory, e)) from e
+
+            # Create the elements sub-directory if it doesnt exist
+            try:
+                os.makedirs(elements_path, exist_ok=True)
+            except IOError as e:
+                raise AppError("Error creating elements sub-directory {}: {}"
+                               .format(elements_path, e)) from e
 
             # Dont use ruamel.yaml here, because it doesnt let
             # us programatically insert comments or whitespace at
