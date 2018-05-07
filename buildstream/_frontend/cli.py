@@ -711,7 +711,7 @@ def workspace_close(app, remove_dir, all_, elements):
             sys.exit(0)
 
         if all_:
-            elements = [element_name for element_name, _ in app.project.workspaces.list()]
+            elements = [element_name for element_name, _ in app.context.get_workspaces().list()]
 
         elements = app.stream.redirect_element_names(elements)
 
@@ -763,7 +763,7 @@ def workspace_reset(app, soft, track_, all_, elements):
                 sys.exit(-1)
 
         if all_:
-            elements = tuple(element_name for element_name, _ in app.project.workspaces.list())
+            elements = tuple(element_name for element_name, _ in app.context.get_workspaces().list())
 
         app.stream.workspace_reset(elements, soft=soft, track_first=track_)
 

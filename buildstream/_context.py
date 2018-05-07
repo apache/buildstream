@@ -30,6 +30,7 @@ from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
+from ._workspaces import Workspaces
 
 
 # Context()
@@ -113,6 +114,7 @@ class Context():
         self._message_depth = deque()
         self._projects = []
         self._project_overrides = {}
+        self._workspaces = None
 
     # load()
     #
@@ -219,6 +221,8 @@ class Context():
     #    project (Project): The project to add
     #
     def add_project(self, project):
+        if not self._projects:
+            self._workspaces = Workspaces(project)
         self._projects.append(project)
 
     # get_projects():
@@ -241,6 +245,9 @@ class Context():
     #
     def get_toplevel_project(self):
         return self._projects[0]
+
+    def get_workspaces(self):
+        return self._workspaces
 
     # get_overrides():
     #

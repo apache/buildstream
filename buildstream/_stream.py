@@ -434,8 +434,10 @@ class Stream():
             detail += "  \n".join(build_depends)
             raise StreamError("The given element has no sources", detail=detail)
 
+        workspaces = self._context.get_workspaces()
+
         # Check for workspace config
-        workspace = self._project.workspaces.get_workspace(target.name)
+        workspace = workspaces.get_workspace(target._get_full_name())
         if workspace:
             raise StreamError("Workspace '{}' is already defined at: {}"
                               .format(target.name, workspace.path))
@@ -460,13 +462,13 @@ class Stream():
         except OSError as e:
             raise StreamError("Failed to create workspace directory: {}".format(e)) from e
 
-        self._project.workspaces.create_workspace(target.name, workdir)
+        workspaces.create_workspace(target._get_full_name(), workdir)
 
         if not no_checkout:
             with target.timed_activity("Staging sources to {}".format(directory)):
                 target._open_workspace()
 
-        self._project.workspaces.save_config()
+        workspaces.save_config()
         self._message(MessageType.INFO, "Saved workspace configuration")
 
     # workspace_close
@@ -478,7 +480,8 @@ class Stream():
     #    remove_dir (bool): Whether to remove the associated directory
     #
     def workspace_close(self, element_name, *, remove_dir):
-        workspace = self._project.workspaces.get_workspace(element_name)
+        workspaces = self._context.get_workspaces()
+        workspace = workspaces.get_workspace(element_name)
 
         # Remove workspace directory if prompted
         if remove_dir:
@@ -491,8 +494,8 @@ class Stream():
                                       .format(workspace.path, e)) from e
 
         # Delete the workspace and save the configuration
-        self._project.workspaces.delete_workspace(element_name)
-        self._project.workspaces.save_config()
+        workspaces.delete_workspace(element_name)
+        workspaces.save_config()
         self._message(MessageType.INFO, "Closed workspace for {}".format(element_name))
 
     # workspace_reset
@@ -525,8 +528,10 @@ class Stream():
         if track_first:
             self._fetch(elements, track_elements=track_elements)
 
+        workspaces = self._context.get_workspaces()
+
         for element in elements:
-            workspace = self._project.workspaces.get_workspace(element.name)
+            workspace = workspaces.get_workspace(element._get_full_name())
 
             if soft:
                 workspace.prepared = False
@@ -542,15 +547,15 @@ class Stream():
                     raise StreamError("Could not remove  '{}': {}"
                                       .format(workspace.path, e)) from e
 
-            self._project.workspaces.delete_workspace(element.name)
-            self._project.workspaces.create_workspace(element.name, workspace.path)
+            workspaces.delete_workspace(element._get_full_name())
+            workspaces.create_workspace(element._get_full_name(), workspace.path)
 
             with element.timed_activity("Staging sources to {}".format(workspace.path)):
                 element._open_workspace()
 
             self._message(MessageType.INFO, "Reset workspace for {} at: {}".format(element.name, workspace.path))
 
-        self._project.workspaces.save_config()
+        workspaces.save_config()
 
     # workspace_exists
     #
@@ -566,11 +571,12 @@ class Stream():
     # True if there are any existing workspaces.
     #
     def workspace_exists(self, element_name=None):
+        workspaces = self._context.get_workspaces()
         if element_name:
-            workspace = self._project.workspaces.get_workspace(element_name)
+            workspace = workspaces.get_workspace(element_name)
             if workspace:
                 return True
-        elif any(self._project.workspaces.list()):
+        elif any(workspaces.list()):
             return True
 
         return False
@@ -581,7 +587,7 @@ class Stream():
     #
     def workspace_list(self):
         workspaces = []
-        for element_name, workspace_ in self._project.workspaces.list():
+        for element_name, workspace_ in self._context.get_workspaces().list():
             workspace_detail = {
                 'element': element_name,
                 'directory': workspace_.path,

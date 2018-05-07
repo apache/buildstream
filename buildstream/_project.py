@@ -34,7 +34,6 @@ from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
-from ._workspaces import Workspaces
 
 
 # The separator we use for user specified aliases
@@ -87,7 +86,6 @@ class Project():
         self.refs = ProjectRefs(self.directory, 'project.refs')
         self.junction_refs = ProjectRefs(self.directory, 'junction.refs')
 
-        self.workspaces = None                   # Workspaces
         self.options = None                      # OptionPool
         self.junction = junction                 # The junction Element object, if this is a subproject
         self.fail_on_overlap = False             # Whether overlaps are treated as errors
@@ -300,9 +298,6 @@ class Project():
 
         # Load artifacts pull/push configuration for this project
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config)
-
-        # Workspace configurations
-        self.workspaces = Workspaces(self)
 
         # Plugin origins and versions
         origins = _yaml.node_get(config, list, 'plugins', default_value=[])

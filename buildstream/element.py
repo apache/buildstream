@@ -673,7 +673,6 @@ class Element(Plugin):
         overlaps = OrderedDict()
         files_written = {}
         old_dep_keys = {}
-        project = self._get_project()
         workspace = self._get_workspace()
 
         if self.__can_build_incrementally() and workspace.last_successful:
@@ -702,7 +701,7 @@ class Element(Plugin):
                     # In case we are running `bst shell`, this happens in the
                     # main process and we need to update the workspace config
                     if utils._is_main_process():
-                        project.workspaces.save_config()
+                        self._get_context().get_workspaces().save_config()
 
             result = dep.stage_artifact(sandbox,
                                         path=path,
@@ -1393,12 +1392,11 @@ class Element(Plugin):
             # For this reason, it is safe to update and
             # save the workspaces configuration
             #
-            project = self._get_project()
             key = self._get_cache_key()
             workspace = self._get_workspace()
             workspace.last_successful = key
             workspace.clear_running_files()
-            project.workspaces.save_config()
+            self._get_context().get_workspaces().save_config()
 
     # _assemble():
     #
@@ -1763,8 +1761,8 @@ class Element(Plugin):
     #    (Workspace|None): A workspace associated with this element
     #
     def _get_workspace(self):
-        project = self._get_project()
-        return project.workspaces.get_workspace(self.name)
+        workspaces = self._get_context().get_workspaces()
+        return workspaces.get_workspace(self._get_full_name())
 
     # _write_script():
     #
@@ -1932,7 +1930,7 @@ class Element(Plugin):
                 'execution-environment': self.__sandbox_config.get_unique_key(),
                 'environment': cache_env,
                 'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
-                'workspace': '' if workspace is None else workspace.get_key(),
+                'workspace': '' if workspace is None else workspace.get_key(self._get_project()),
                 'public': self.__public,
                 'cache': type(self.__artifacts).__name__
             }

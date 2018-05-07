@@ -269,10 +269,11 @@ class Queue():
         # Handle any workspace modifications now
         #
         if job.workspace_dict:
-            project = element._get_project()
-            if project.workspaces.update_workspace(element.name, job.workspace_dict):
+            context = element._get_context()
+            workspaces = context.get_workspaces()
+            if workspaces.update_workspace(element._get_full_name(), job.workspace_dict):
                 try:
-                    project.workspaces.save_config()
+                    workspaces.save_config()
                 except BstError as e:
                     self._message(element, MessageType.ERROR, "Error saving workspaces", detail=str(e))
                 except Exception as e:   # pylint: disable=broad-except
