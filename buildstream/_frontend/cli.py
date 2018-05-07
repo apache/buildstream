@@ -275,9 +275,16 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
+    from .._pipeline import PipelineSelection
+
     if track_cross_junctions and not track_:
         click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
         sys.exit(-1)
+
+    if track_ and deps == PipelineSelection.PLAN:
+        click.echo("WARNING: --track specified for tracking of a build plan\n\n"
+                   "Since tracking modifies the build plan, all elements will be tracked.", err=True)
+        deps = PipelineSelection.ALL
 
     with app.initialized(session_name="Fetch"):
         app.stream.fetch(elements,
