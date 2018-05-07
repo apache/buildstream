@@ -540,14 +540,21 @@ class App():
     #
     # Args:
     #    target (Element): The element to reset the workspace for
+    #    soft (bool): Only reset workspace state
     #    track (bool): Whether to also track the source
     #
-    def reset_workspace(self, target, track):
+    def reset_workspace(self, target, soft, track):
         workspace = self.project.workspaces.get_workspace(target.name)
 
         if workspace is None:
             raise AppError("Workspace '{}' is currently not defined"
                            .format(target.name))
+
+        if soft:
+            workspace.prepared = False
+            self.project.workspaces.save_config()
+            self._message(MessageType.INFO, "Saved workspace configuration")
+            return
 
         self.close_workspace(target.name, True)
         self.open_workspace(target, workspace.path, False, track, False)

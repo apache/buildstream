@@ -667,6 +667,8 @@ def workspace_close(app, remove_dir, all_, elements):
 #                     Workspace Reset Command                    #
 ##################################################################
 @workspace.command(name='reset', short_help="Reset a workspace to its original state")
+@click.option('--soft', default=False, is_flag=True,
+              help="Reset workspace state without affecting its contents")
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch the latest source before resetting")
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
@@ -674,14 +676,14 @@ def workspace_close(app, remove_dir, all_, elements):
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_reset(app, track_, all_, elements):
+def workspace_reset(app, soft, track_, all_, elements):
     """Reset a workspace to its original state"""
 
     if not (all_ or elements):
         click.echo('ERROR: no elements specified', err=True)
         sys.exit(-1)
 
-    if app.interactive:
+    if app.interactive and not soft:
         if not click.confirm('This will remove all your changes, are you sure?'):
             click.echo('Aborting', err=True)
             sys.exit(-1)
@@ -692,7 +694,7 @@ def workspace_reset(app, track_, all_, elements):
 
     with app.initialized(elements):
         for target in app.pipeline.targets:
-            app.reset_workspace(target, track_)
+            app.reset_workspace(target, soft, track_)
 
 
 ##################################################################
