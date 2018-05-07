@@ -72,7 +72,3 @@ def test_missing_variable(cli, datafiles, tmpdir):
     ])
     result.assert_main_error(ErrorDomain.LOAD,
                              LoadErrorReason.UNRESOLVED_VARIABLE)
-    expected = ("Error loading pipeline: "
-                "manual.bst [line 5 column 6]: "
-                "Unresolved variable 'foo'")
-    assert expected in result.stderr.splitlines()
