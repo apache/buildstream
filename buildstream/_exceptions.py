@@ -88,6 +88,7 @@ class ErrorDomain(Enum):
     ELEMENT = 11
     APP = 12
     STREAM = 13
+    VIRTUAL_FS = 14
 
 
 # BstError is an internal base exception class for BuildSream
