@@ -56,7 +56,9 @@ class SandboxBwrap(Sandbox):
 
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
-        root_directory = self.get_directory()
+
+        # Allowable access to underlying storage as we're part of the sandbox
+        root_directory = self.get_virtual_directory().external_directory
 
         # Fallback to the sandbox default settings for
         # the cwd and env.
