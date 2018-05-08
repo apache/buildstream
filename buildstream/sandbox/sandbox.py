@@ -30,6 +30,7 @@ See also: :ref:`sandboxing`.
 
 import os
 from .._exceptions import ImplError, BstError
+from ..storage._filebaseddirectory import FileBasedDirectory
 
 
 class SandboxFlags():
@@ -120,6 +121,20 @@ class Sandbox():
             return self._root
         else:
             raise BstError("You can't use get_directory")
+
+    def get_virtual_directory(self):
+        """Fetches the sandbox root directory
+
+        The root directory is where artifacts for the base
+        runtime environment should be staged. Only works if
+        BST_VIRTUAL_DIRECTORY is not set.
+
+        Returns:
+           (str): The sandbox root directory
+
+        """
+        # For now, just create a new Directory every time we're asked
+        return FileBasedDirectory(self._root)
 
     def set_environment(self, environment):
         """Sets the environment variables for the sandbox
