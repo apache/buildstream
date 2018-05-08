@@ -99,11 +99,12 @@ class Sandbox():
         self.__stdout = kwargs['stdout']
         self.__stderr = kwargs['stderr']
 
-        # Setup the directories
+        # Setup the directories. Root should be available to subclasses, hence
+        # being single-underscore. The others are private to this class.
+        self._root = os.path.join(directory, 'root')
         self.__directory = directory
-        self.__root = os.path.join(self.__directory, 'root')
         self.__scratch = os.path.join(self.__directory, 'scratch')
-        for directory_ in [self.__root, self.__scratch]:
+        for directory_ in [self._root, self.__scratch]:
             os.makedirs(directory_, exist_ok=True)
 
     def get_directory(self):
@@ -118,7 +119,7 @@ class Sandbox():
 
         """
         if self.__allow_real_directory:
-            return self.__root
+            return self._root
         else:
             raise BstError("You can't use get_directory")
 
