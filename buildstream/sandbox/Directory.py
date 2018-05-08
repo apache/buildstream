@@ -110,11 +110,22 @@ class Directory():
         """
         raise NotImplementedError()
 
-    def list_relative_paths_with_mtimes(self) -> Dict[str, float]:
-        """Provide a list of relative paths with modification times for
-        each. Used to detect changed changed files during a Compose
-        operation.
+    def mark_unmodified(self) -> None:
+        """ Marks all files in this directory (recursively) as unmodified.
+        """
+        raise NotImplementedError()
 
-        Return value: Dict(str->float) - dictionary with all paths and mtime in seconds.
+    def list_modified_paths(self) -> List[str]:
+        """Provide a list of relative paths which have been modified since the
+        last call to mark_unmodified.
+
+        Return value: List(str) - dictionary with all paths
+        """
+        raise NotImplementedError()
+
+    def list_relative_paths(self) -> List[str]:
+        """Provide a list of all relative paths in this directory.
+
+        Return value: List(str) - dictionary with all paths
         """
         raise NotImplementedError()
