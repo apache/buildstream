@@ -119,23 +119,20 @@ class ComposeElement(Element):
                 if require_split:
 
                     # Make a snapshot of all the files before integration-commands are run.
-                    snapshot = vbasedir.list_relative_paths_with_mtimes()
+                    snapshot = vbasedir.list_relative_paths()
+                    vbasedir.mark_unmodified()
 
                 for dep in self.dependencies(Scope.BUILD):
                     dep.integrate(sandbox)
 
                 if require_split:
                     # Calculate added, modified and removed files
-                    post_integration_snapshot = vbasedir.list_relative_paths_with_mtimes()
-
-                    basedir_contents = set(post_integration_snapshot.keys())
+                    post_integration_snapshot = vbasedir.list_relative_paths()
+                    modified_files = vbasedir.list_modified_paths()
+                    basedir_contents = set(post_integration_snapshot)
                     for path in manifest:
                         if path in basedir_contents:
-                            if path in snapshot:
-                                preintegration_mtime = snapshot[path]
-                                if preintegration_mtime != post_integration_snapshot[path]:
-                                    modified_files.add(path)
-                            else:
+                            if path not in snapshot:
                                 # If the path appears in the manifest but not the initial snapshot,
                                 # it may be a file staged inside a directory symlink. In this case
                                 # the path we got from the manifest won't show up in the snapshot

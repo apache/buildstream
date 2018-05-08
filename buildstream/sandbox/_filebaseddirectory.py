@@ -30,6 +30,7 @@ See also: :ref:`sandboxing`.
 from typing import List
 from collections import OrderedDict
 
+import calendar
 import os
 import time
 from .._exceptions import BstError, ErrorDomain
@@ -210,11 +211,29 @@ class FileBasedDirectory(Directory):
         self._populate_index()
         return len(self.index) == 0
 
-    def list_relative_paths_with_mtimes(self) -> Dict[str, float]:
-        return {
-            f: getmtime(os.path.join(self.external_directory, f))
-            for f in list_relative_paths(self.external_directory)
-        }
+    def mark_unmodified(self) -> None:
+        """ Marks all files in this directory (recursively) as unmodified.
+        """
+        _set_deterministic_mtime(self.external_directory)
+
+    def list_modified_paths(self) -> List[str]:
+        """Provide a list of relative paths which have been modified since the
+        last call to mark_unmodified.
+
+        Return value: List(str) - list of modified paths
+        """
+        magic_timestamp = calendar.timegm([2011, 11, 11, 11, 11, 11])
+
+        return [f for f in list_relative_paths(self.external_directory)
+                if getmtime(os.path.join(self.external_directory, f)) > magic_timestamp]
+
+    def list_relative_paths(self) -> List[str]:
+        """Provide a list of all relative paths.
+
+        Return value: List(str) - list of all paths
+        """
+
+        return list_relative_paths(self.external_directory)
 
     def __str__(self) -> str:
         # This returns the whole path (since we don't know where the directory started)
