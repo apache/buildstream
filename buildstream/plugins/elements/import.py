@@ -31,13 +31,15 @@ The empty configuration is as such:
 """
 
 import os
-import shutil
 from buildstream import Element, BuildElement, ElementError
 
 
 # Element implementation for the 'import' kind.
 class ImportElement(BuildElement):
     # pylint: disable=attribute-defined-outside-init
+
+    # This plugin has been modified to avoid the use of Sandbox.get_directory
+    BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
         self.source = self.node_subst_member(node, 'source')
@@ -68,27 +70,22 @@ class ImportElement(BuildElement):
         # Do not mount workspaces as the files are copied from outside the sandbox
         self._stage_sources_in_sandbox(sandbox, 'input', mount_workspaces=False)
 
-        rootdir = sandbox.get_directory()
-        inputdir = os.path.join(rootdir, 'input')
-        outputdir = os.path.join(rootdir, 'output')
+        rootdir = sandbox.get_virtual_directory()
+        inputdir = rootdir.descend(['input'])
+        outputdir = rootdir.descend(['output'], create=True)
 
         # The directory to grab
-        inputdir = os.path.join(inputdir, self.source.lstrip(os.sep))
-        inputdir = inputdir.rstrip(os.sep)
+        inputdir = inputdir.descend(self.source.strip(os.sep).split(os.sep))
 
         # The output target directory
-        outputdir = os.path.join(outputdir, self.target.lstrip(os.sep))
-        outputdir = outputdir.rstrip(os.sep)
+        outputdir = outputdir.descend(self.target.strip(os.sep).split(os.sep), create=True)
 
-        # Ensure target directory parent
-        os.makedirs(os.path.dirname(outputdir), exist_ok=True)
-
-        if not os.path.exists(inputdir):
+        if inputdir.is_empty():
             raise ElementError("{}: No files were found inside directory '{}'"
                                .format(self, self.source))
 
         # Move it over
-        shutil.move(inputdir, outputdir)
+        outputdir.import_files(inputdir)
 
         # And we're done
         return '/output'
