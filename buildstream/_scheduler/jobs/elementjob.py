@@ -70,11 +70,16 @@ from .job import Job
 #                         if `success` is False
 #
 class ElementJob(Job):
-    def __init__(self, *args, element, action_cb, complete_cb, **kwargs):
+    def __init__(self, *args, element, queue, action_cb, complete_cb, **kwargs):
         super().__init__(*args, **kwargs)
+        self.queue = queue
         self._element = element
         self._action_cb = action_cb            # The action callable function
         self._complete_cb = complete_cb        # The complete callable function
+
+    @property
+    def element(self):
+        return self._element
 
     # _child_process()
     #

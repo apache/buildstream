@@ -350,9 +350,13 @@ class Scheduler():
     #    job (Job): The completed Job
     #    success (bool): Whether the Job completed with a success status
     #
-    def job_completed(self, job):
+    def job_completed(self, job, success):
         self.active_jobs.remove(job)
         self.schedule_queue_jobs()
+
+        # Notify frontend
+        if self._job_complete_callback:
+            self._job_complete_callback(job, success)
 
     # get_job_token():
     #
@@ -485,8 +489,6 @@ class Scheduler():
             timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
             if not job.terminate_wait(timeout):
                 job.kill()
-
-        self.loop.stop()
 
     # Regular timeout for driving status in the UI
     def _tick(self):

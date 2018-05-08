@@ -551,7 +551,7 @@ class Job():
             return
 
         self._parent_complete(returncode == 0, self._result)
-        self._scheduler.job_completed(self)
+        self._scheduler.job_completed(self, returncode == 0)
 
     # _parent_process_envelope()
     #
