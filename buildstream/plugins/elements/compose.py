@@ -34,7 +34,6 @@ The default configuration and possible options are as such:
 """
 
 import os
-from buildstream import utils
 from buildstream import Element, Scope
 
 
@@ -55,6 +54,9 @@ class ComposeElement(Element):
     # This element ignores sources, so we should forbid them from being
     # added, to reduce the potential for confusion
     BST_FORBID_SOURCES = True
+
+    # This plugin has been modified to avoid the use of Sandbox.get_directory
+    BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
         self.node_validate(node, [
@@ -104,7 +106,8 @@ class ComposeElement(Element):
                                                  orphans=self.include_orphans)
                     manifest.update(files)
 
-        basedir = sandbox.get_directory()
+        # Make a snapshot of all the files.
+        vbasedir = sandbox.get_virtual_directory()
         modified_files = set()
         removed_files = set()
         added_files = set()
@@ -116,38 +119,24 @@ class ComposeElement(Element):
                 if require_split:
 
                     # Make a snapshot of all the files before integration-commands are run.
-                    snapshot = {
-                        f: getmtime(os.path.join(basedir, f))
-                        for f in utils.list_relative_paths(basedir)
-                    }
+                    snapshot = set(vbasedir.list_relative_paths())
+                    vbasedir.mark_unmodified()
 
                 for dep in self.dependencies(Scope.BUILD):
                     dep.integrate(sandbox)
 
                 if require_split:
-
                     # Calculate added, modified and removed files
-                    basedir_contents = set(utils.list_relative_paths(basedir))
+                    post_integration_snapshot = vbasedir.list_relative_paths()
+                    modified_files = set(vbasedir.list_modified_paths())
+                    basedir_contents = set(post_integration_snapshot)
                     for path in manifest:
-                        if path in basedir_contents:
-                            if path in snapshot:
-                                preintegration_mtime = snapshot[path]
-                                if preintegration_mtime != getmtime(os.path.join(basedir, path)):
-                                    modified_files.add(path)
-                            else:
-                                # If the path appears in the manifest but not the initial snapshot,
-                                # it may be a file staged inside a directory symlink. In this case
-                                # the path we got from the manifest won't show up in the snapshot
-                                # because utils.list_relative_paths() doesn't recurse into symlink
-                                # directories.
-                                pass
-                        elif path in snapshot:
+                        if path in snapshot and path not in basedir_contents:
                             removed_files.add(path)
 
                     for path in basedir_contents:
                         if path not in snapshot:
                             added_files.add(path)
-
                     self.info("Integration modified {}, added {} and removed {} files"
                               .format(len(modified_files), len(added_files), len(removed_files)))
 
@@ -166,8 +155,7 @@ class ComposeElement(Element):
         # instead of into a subdir. The element assemble() method should
         # support this in some way.
         #
-        installdir = os.path.join(basedir, 'buildstream', 'install')
-        os.makedirs(installdir, exist_ok=True)
+        installdir = vbasedir.descend(['buildstream', 'install'], create=True)
 
         # We already saved the manifest for created files in the integration phase,
         # now collect the rest of the manifest.
@@ -191,7 +179,7 @@ class ComposeElement(Element):
 
         with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
             self.info("Composing {} files".format(len(manifest)))
-            utils.link_files(basedir, installdir, files=manifest)
+            installdir.import_files(vbasedir, files=manifest, can_link=True)
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
