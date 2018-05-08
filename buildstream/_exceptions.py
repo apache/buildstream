@@ -89,6 +89,7 @@ class ErrorDomain(Enum):
     ELEMENT = 11
     APP = 12
     STREAM = 13
+    VIRTUAL_FS = 14
     CAS = 15
 
 

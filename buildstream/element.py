@@ -97,8 +97,7 @@ from . import _signals
 from . import _site
 from ._platform import Platform
 from .sandbox._config import SandboxConfig
-from .types import _KeyStrength, CoreWarnings
-
+from .types import CoreWarnings, _KeyStrength
 
 class Scope(Enum):
     """Types of scope for a given element"""
