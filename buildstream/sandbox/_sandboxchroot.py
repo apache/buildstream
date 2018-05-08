@@ -90,7 +90,7 @@ class SandboxChroot(Sandbox):
             # Nonetheless a better solution could perhaps be found.
 
             rootfs = stack.enter_context(utils._tempdir(dir='/var/run/buildstream'))
-            stack.enter_context(self.create_devices(self.get_directory(), flags))
+            stack.enter_context(self.create_devices(self._root, flags))
             stack.enter_context(self.mount_dirs(rootfs, flags, stdout, stderr))
 
             if flags & SandboxFlags.INTERACTIVE:
