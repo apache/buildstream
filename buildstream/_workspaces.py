@@ -173,17 +173,14 @@ class Workspace():
     #
     def get_key(self, recalculate=False):
         def unique_key(filename):
-            if os.path.isdir(filename):
-                return "0"
-            elif os.path.islink(filename):
-                return "1"
-
             try:
-                return utils.sha256sum(filename)
-            except FileNotFoundError as e:
+                stat = os.lstat(filename)
+            except OSError as e:
                 raise LoadError(LoadErrorReason.MISSING_FILE,
-                                "Failed loading workspace. Did you remove the "
-                                "workspace directory? {}".format(e))
+                                "Failed to stat file in workspace: {}".format(e))
+
+            # Use the mtime of any file with sub second precision
+            return stat.st_mtime_ns
 
         if recalculate or self._key is None:
             fullpath = self.get_absolute_path()
