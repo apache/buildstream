@@ -97,31 +97,4 @@ project's main directory.
 
 .. click:: buildstream._frontend.cli:workspace
    :prog: bst workspace
-
-----
-
-.. _invoking_workspace_open:
-
-.. click:: buildstream._frontend.cli:workspace_open
-   :prog: bst workspace open
-
-----
-
-.. _invoking_workspace_close:
-
-.. click:: buildstream._frontend.cli:workspace_close
-   :prog: bst workspace close
-
-----
-
-.. _invoking_workspace_reset:
-
-.. click:: buildstream._frontend.cli:workspace_reset
-   :prog: bst workspace reset
-
-----
-
-.. _invoking_workspace_list:
-
-.. click:: buildstream._frontend.cli:workspace_list
-   :prog: bst workspace list
+   :show-nested:
