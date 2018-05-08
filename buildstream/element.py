@@ -1850,6 +1850,18 @@ class Element(Plugin):
             for dep in self.dependencies(Scope.ALL):
                 dep._set_log_handle(logfile, False)
 
+    # Returns the element whose sources this element is ultimately derived from.
+    #
+    # This is intended for being used to redirect commands that operate on an
+    # element to the element whose sources it is ultimately derived from.
+    #
+    # For example, element A is a build element depending on source foo,
+    # element B is a filter element that depends on element A. The source
+    # element of B is A, since B depends on A, and A has sources.
+    #
+    def _get_source_element(self):
+        return self
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
