@@ -80,7 +80,6 @@ from collections import Mapping, OrderedDict
 from contextlib import contextmanager
 from enum import Enum
 import tempfile
-import time
 import shutil
 
 from . import _yaml
@@ -98,6 +97,10 @@ from . import _site
 from ._platform import Platform
 from .sandbox._config import SandboxConfig
 from .types import CoreWarnings, _KeyStrength
+
+from .storage.directory import Directory
+from .storage._filebaseddirectory import FileBasedDirectory, VirtualDirectoryError
+
 
 class Scope(Enum):
     """Types of scope for a given element"""
@@ -632,10 +635,10 @@ class Element(Plugin):
 
             # Hard link it into the staging area
             #
-            basedir = sandbox.get_directory()
-            stagedir = basedir \
+            vbasedir = sandbox.get_virtual_directory()
+            vstagedir = vbasedir \
                 if path is None \
-                else os.path.join(basedir, path.lstrip(os.sep))
+                else vbasedir.descend(path.lstrip(os.sep).split(os.sep))
 
             files = list(self.__compute_splits(include, exclude, orphans))
 
@@ -647,15 +650,8 @@ class Element(Plugin):
                 link_files = files
                 copy_files = []
 
-            link_result = utils.link_files(artifact, stagedir, files=link_files,
-                                           report_written=True)
-            copy_result = utils.copy_files(artifact, stagedir, files=copy_files,
-                                           report_written=True)
-
-            cur_time = time.time()
-
-            for f in copy_result.files_written:
-                os.utime(os.path.join(stagedir, f), times=(cur_time, cur_time))
+            link_result = vstagedir.import_files(artifact, files=link_files, report_written=True, can_link=True)
+            copy_result = vstagedir.import_files(artifact, files=copy_files, report_written=True, update_utimes=True)
 
         return link_result.combine(copy_result)
 
@@ -1352,41 +1348,45 @@ class Element(Plugin):
             sandbox._set_mount_source(directory, workspace.get_absolute_path())
 
         # Stage all sources that need to be copied
-        sandbox_root = sandbox.get_directory()
-        host_directory = os.path.join(sandbox_root, directory.lstrip(os.sep))
-        self._stage_sources_at(host_directory, mount_workspaces=mount_workspaces)
+        sandbox_vroot = sandbox.get_virtual_directory()
+        host_vdirectory = sandbox_vroot.descend(directory.lstrip(os.sep).split(os.sep), create=True)
+        self._stage_sources_at(host_vdirectory, mount_workspaces=mount_workspaces)
 
     # _stage_sources_at():
     #
     # Stage this element's sources to a directory
     #
     # Args:
-    #     directory (str): An absolute path to stage the sources at
+    #     vdirectory (:class:`.storage.Directory`): A virtual directory object to stage sources into.
     #     mount_workspaces (bool): mount workspaces if True, copy otherwise
     #
-    def _stage_sources_at(self, directory, mount_workspaces=True):
+    def _stage_sources_at(self, vdirectory, mount_workspaces=True):
         with self.timed_activity("Staging sources", silent_nested=True):
 
-            if os.path.isdir(directory) and os.listdir(directory):
-                raise ElementError("Staging directory '{}' is not empty".format(directory))
+            if not isinstance(vdirectory, Directory):
+                vdirectory = FileBasedDirectory(vdirectory)
+            if not vdirectory.is_empty():
+                raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
-            workspace = self._get_workspace()
-            if workspace:
-                # If mount_workspaces is set and we're doing incremental builds,
-                # the workspace is already mounted into the sandbox.
-                if not (mount_workspaces and self.__can_build_incrementally()):
-                    with self.timed_activity("Staging local files at {}"
-                                             .format(workspace.get_absolute_path())):
-                        workspace.stage(directory)
-            else:
-                # No workspace, stage directly
-                for source in self.sources():
-                    source._stage(directory)
+            with tempfile.TemporaryDirectory() as temp_staging_directory:
 
+                workspace = self._get_workspace()
+                if workspace:
+                    # If mount_workspaces is set and we're doing incremental builds,
+                    # the workspace is already mounted into the sandbox.
+                    if not (mount_workspaces and self.__can_build_incrementally()):
+                        with self.timed_activity("Staging local files at {}".format(workspace.get_absolute_path())):
+                            workspace.stage(temp_staging_directory)
+                else:
+                    # No workspace, stage directly
+                    for source in self.sources():
+                        source._stage(temp_staging_directory)
+
+                vdirectory.import_files(temp_staging_directory)
         # Ensure deterministic mtime of sources at build time
-        utils._set_deterministic_mtime(directory)
+        vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time
-        utils._set_deterministic_user(directory)
+        vdirectory.set_deterministic_user()
 
     # _set_required():
     #
@@ -1516,7 +1516,7 @@ class Element(Plugin):
             with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # nopep8
 
-                sandbox_root = sandbox.get_directory()
+                sandbox_vroot = sandbox.get_virtual_directory()
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
@@ -1546,19 +1546,20 @@ class Element(Plugin):
                     #
                     workspace = self._get_workspace()
                     if workspace and self.__staged_sources_directory:
-                        sandbox_root = sandbox.get_directory()
-                        sandbox_path = os.path.join(sandbox_root,
-                                                    self.__staged_sources_directory.lstrip(os.sep))
+                        sandbox_vroot = sandbox.get_virtual_directory()
+                        path_components = self.__staged_sources_directory.lstrip(os.sep).split(os.sep)
+                        sandbox_vpath = sandbox_vroot.descend(path_components)
                         try:
-                            utils.copy_files(workspace.get_absolute_path(), sandbox_path)
+                            sandbox_vpath.import_files(workspace.get_absolute_path())
                         except UtilError as e:
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
                                       .format(e))
 
                     raise
 
-                collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
-                if not os.path.exists(collectdir):
+                try:
+                    collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
+                except VirtualDirectoryError:
                     raise ElementError(
                         "Directory '{}' was not found inside the sandbox, "
                         "unable to collect artifact contents"
@@ -1578,7 +1579,7 @@ class Element(Plugin):
                 os.mkdir(metadir)
 
                 # Hard link files from collect dir to files directory
-                utils.link_files(collectdir, filesdir)
+                collectvdir.export_files(filesdir, can_link=True)
 
                 # Copy build log
                 log_filename = context.get_log_filename()
