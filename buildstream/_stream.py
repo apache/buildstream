@@ -927,12 +927,10 @@ class Stream():
             raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
 
         if removed:
-            # TODO: Direct rename is no longer possible with the new Virtual Directory interface.
-            # See what options there are to restore it.
             os.makedirs(directory, exist_ok=True)
-            sandbox_vroot.export_files(directory, can_link=True)
+            sandbox_vroot.export_files(directory, can_link=True, can_destroy=True)
         else:
-            sandbox_vroot.export_files(directory, can_link=True)
+            sandbox_vroot.export_files(directory, can_link=True, can_destroy=False)
 
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
