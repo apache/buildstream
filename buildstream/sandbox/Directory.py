@@ -53,7 +53,7 @@ class Directory():
     # Import and export of files and links
     def import_files(self, external_pathspec: any, files: List[str] = None,
                      report_written: bool = True, update_utimes: bool = False,
-                     link_ok: bool = False) -> FileListResult:
+                     can_link: bool = False) -> FileListResult:
         """Imports some or all files from external_path into this directory.
 
         Keyword arguments: external_pathspec: Either a string
@@ -80,7 +80,7 @@ class Directory():
 
         raise NotImplementedError()
 
-    def export_files(self, to_directory: str, link_ok: bool = False) -> None:
+    def export_files(self, to_directory: str, can_link: bool = False) -> None:
         """Copies everything from this into to_directory.
 
         Arguments:
