@@ -80,7 +80,7 @@ class Directory():
 
         raise NotImplementedError()
 
-    def export_files(self, to_directory: str, can_link: bool = False) -> None:
+    def export_files(self, to_directory: str, can_link: bool = False, can_destroy: bool = False) -> None:
         """Copies everything from this into to_directory.
 
         Arguments:
@@ -91,6 +91,9 @@ class Directory():
         can_link (bool): Whether we can create hard links in to_directory
         instead of copying. Setting this does not guarantee hard links will be used.
 
+        can_destroy (bool): Can we destroy the data already in this
+        directory when exporting? If set, this may allow data to be
+        moved rather than copied which will be quicker.
         """
 
         raise NotImplementedError()
