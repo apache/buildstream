@@ -188,7 +188,7 @@ class FileBasedDirectory(Directory):
         """
         _set_deterministic_user(self.external_directory)
 
-    def export_files(self, to_directory: str, can_link: bool = False) -> None:
+    def export_files(self, to_directory: str, can_link: bool = False, can_destroy: bool = False) -> None:
         """Copies everything from this into to_directory.
 
         Arguments:
@@ -200,6 +200,17 @@ class FileBasedDirectory(Directory):
         instead of copying.
 
         """
+
+        if can_destroy:
+            # Try a simple rename of the sandbox root; if that
+            # doesnt cut it, then do the regular link files code path
+            try:
+                os.rename(self.external_directory, to_directory)
+                return
+            except OSError:
+                # Proceed using normal link/copy
+                pass
+
         if can_link:
             link_files(self.external_directory, to_directory)
         else:
