@@ -103,18 +103,15 @@ class Stream():
     #    targets (list of str): Targets to pull
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
-    #    downloadable (bool): Whether the downloadable state of elements should be resolved
     #
     # Returns:
     #    (list of Element): The selected elements
     def load_selection(self, targets, *,
                        selection=PipelineSelection.NONE,
-                       except_targets=(),
-                       downloadable=False):
+                       except_targets=()):
         elements, _ = self._load(targets, (),
                                  selection=selection,
                                  except_targets=except_targets,
-                                 use_artifact_config=downloadable,
                                  fetch_subprojects=False)
         return elements
 
