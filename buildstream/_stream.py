@@ -181,7 +181,8 @@ class Stream():
                        track_except_targets=track_except,
                        track_cross_junctions=track_cross_junctions,
                        use_artifact_config=True,
-                       fetch_subprojects=True)
+                       fetch_subprojects=True,
+                       dynamic_plan=True)
 
         # Remove the tracking elements from the main targets
         elements = self._pipeline.subtract_elements(elements, track_elements)
@@ -755,7 +756,8 @@ class Stream():
               track_cross_junctions=False,
               use_artifact_config=False,
               artifact_remote_url=None,
-              fetch_subprojects=False):
+              fetch_subprojects=False,
+              dynamic_plan=False):
 
         # Load rewritable if we have any tracking selection to make
         rewritable = False
@@ -805,6 +807,16 @@ class Stream():
         selected = self._pipeline.except_elements(elements,
                                                   selected,
                                                   except_elements)
+
+        if selection == PipelineSelection.PLAN and dynamic_plan:
+            # We use a dynamic build plan, only request artifacts of top-level targets,
+            # others are requested dynamically as needed.
+            # This avoids pulling, fetching, or building unneeded build-only dependencies.
+            for element in elements:
+                element._set_required()
+        else:
+            for element in selected:
+                element._set_required()
 
         return selected, track_selected
 

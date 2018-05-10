@@ -225,6 +225,7 @@ class Element(Plugin):
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
+        self.__required = False                 # Whether the artifact is required in the current session
 
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
@@ -1069,7 +1070,7 @@ class Element(Plugin):
             # until the full cache query below.
             cached = self.__artifacts.contains(self, self.__weak_cache_key)
             if (not self.__assemble_scheduled and not self.__assemble_done and
-                    not cached and not self._pull_pending()):
+                    not cached and not self._pull_pending() and self._is_required()):
                 self._schedule_assemble()
                 return
 
@@ -1091,7 +1092,7 @@ class Element(Plugin):
             self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
-                not self.__cached and not self._pull_pending()):
+                not self.__cached and not self._pull_pending() and self._is_required()):
             # Workspaced sources are considered unstable if a build is pending
             # as the build will modify the contents of the workspace.
             # Determine as early as possible if a build is pending to discard
@@ -1322,14 +1323,44 @@ class Element(Plugin):
         # Ensure deterministic owners of sources at build time
         utils._set_deterministic_user(directory)
 
+    # _set_required():
+    #
+    # Mark this element and its runtime dependencies as required.
+    # This unblocks pull/fetch/build.
+    #
+    def _set_required(self):
+        if self.__required:
+            # Already done
+            return
+
+        self.__required = True
+
+        # Request artifacts of runtime dependencies
+        for dep in self.dependencies(Scope.RUN, recurse=False):
+            dep._set_required()
+
+        self._update_state()
+
+    # _is_required():
+    #
+    # Returns whether this element has been marked as required.
+    #
+    def _is_required(self):
+        return self.__required
+
     # _schedule_assemble():
     #
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
     def _schedule_assemble(self):
+        assert self._is_required()
         assert not self.__assemble_scheduled
         self.__assemble_scheduled = True
+
+        # Requests artifacts of build dependencies
+        for dep in self.dependencies(Scope.BUILD, recurse=False):
+            dep._set_required()
 
         # Invalidate workspace key as the build modifies the workspace directory
         workspace = self._get_workspace()
