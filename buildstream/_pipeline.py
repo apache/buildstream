@@ -193,7 +193,11 @@ class Pipeline():
     #    (list of Element): A depth sorted list of the build plan
     #
     def plan(self, elements):
-        return _Planner().plan(elements)
+        # Keep locally cached elements in the plan if remote artifact cache is used
+        # to allow pulling artifact with strict cache key, if available.
+        plan_cached = not self._context.get_strict() and self._artifacts.has_fetch_remotes()
+
+        return _Planner().plan(elements, plan_cached)
 
     # get_selection()
     #
@@ -478,9 +482,9 @@ class _Planner():
         self.depth_map[element] = depth
         self.visiting_elements.remove(element)
 
-    def plan(self, roots):
+    def plan(self, roots, plan_cached):
         for root in roots:
             self.plan_element(root, 0)
 
         depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
-        return [item[0] for item in depth_sorted if not item[0]._cached()]
+        return [item[0] for item in depth_sorted if plan_cached or not item[0]._cached()]
