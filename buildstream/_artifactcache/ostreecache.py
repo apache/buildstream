@@ -210,10 +210,10 @@ class OSTreeCache(ArtifactCache):
         return any_pushed
 
     def initialize_remotes(self, *, on_failure=None):
-        remote_specs = self.global_remote_specs
+        remote_specs = self.global_remote_specs.copy()
 
         for project in self.project_remote_specs:
-            remote_specs += self.project_remote_specs[project]
+            remote_specs.extend(self.project_remote_specs[project])
 
         remote_specs = list(utils._deduplicate(remote_specs))
 
