@@ -65,6 +65,7 @@ source_dist:
   # Diagnostics
   - mount
   - df -h
+  - bwrap --version
 
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
