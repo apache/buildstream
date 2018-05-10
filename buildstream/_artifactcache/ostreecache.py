@@ -64,8 +64,17 @@ class OSTreeCache(ArtifactCache):
     ################################################
     #     Implementation of abstract methods       #
     ################################################
-    def has_fetch_remotes(self):
-        return self._has_fetch_remotes
+    def has_fetch_remotes(self, *, element=None):
+        if not self._has_fetch_remotes:
+            # No project has push remotes
+            return False
+        elif element is None:
+            # At least one (sub)project has fetch remotes
+            return True
+        else:
+            # Check whether the specified element's project has fetch remotes
+            remotes_for_project = self._remotes[element._get_project()]
+            return bool(remotes_for_project)
 
     def has_push_remotes(self, *, element=None):
         if not self._has_push_remotes:

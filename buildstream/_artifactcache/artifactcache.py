@@ -254,9 +254,12 @@ class ArtifactCache():
     #
     # Check whether any remote repositories are available for fetching.
     #
+    # Args:
+    #     element (Element): The Element to check
+    #
     # Returns: True if any remote repositories are configured, False otherwise
     #
-    def has_fetch_remotes(self):
+    def has_fetch_remotes(self, *, element=None):
         return False
 
     # has_push_remotes():
