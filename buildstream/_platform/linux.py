@@ -39,6 +39,12 @@ class Linux(Platform):
         self._user_ns_available = self._check_user_ns_available(context)
         self._artifact_cache = OSTreeCache(context, enable_push=self._user_ns_available)
 
+        context.message(
+            Message(None, MessageType.INFO,
+                    "Linux platform initialized",
+                    detail="die with parent available: {}\n".format(self._die_with_parent_available) +
+                    "user namespaces available: {}".format(self._user_ns_available)))
+
     @property
     def artifactcache(self):
         return self._artifact_cache
