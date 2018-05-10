@@ -504,9 +504,10 @@ class Stream():
     #
     # Args:
     #    targets (list of str): The target elements to reset the workspace for
+    #    soft (bool): Only reset workspace state
     #    track_first (bool): Whether to also track the sources first
     #
-    def workspace_reset(self, targets, *, track_first):
+    def workspace_reset(self, targets, *, soft, track_first):
 
         if track_first:
             track_targets = targets
@@ -521,6 +522,12 @@ class Stream():
 
         for element in elements:
             workspace = self._project.workspaces.get_workspace(element.name)
+
+            if soft:
+                workspace.prepared = False
+                self._message(MessageType.INFO, "Reset workspace state for {} at: {}"
+                              .format(element.name, workspace.path))
+                continue
 
             with element.timed_activity("Removing workspace directory {}"
                                         .format(workspace.path)):
