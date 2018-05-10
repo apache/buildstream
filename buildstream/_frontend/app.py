@@ -200,14 +200,6 @@ class App():
         except BstError as e:
             self._error_exit(e, "Error loading project")
 
-        # Create the stream right away, we'll need to pass it around
-        self.stream = Stream(self.context, self.project, self._session_start,
-                             session_start_callback=self.session_start_cb,
-                             interrupt_callback=self._interrupt_handler,
-                             ticker_callback=self._tick,
-                             job_start_callback=self._job_started,
-                             job_complete_callback=self._job_completed)
-
         # Create the logger right before setting the message handler
         self.logger = LogLine(self.context,
                               self._content_profile,
@@ -217,18 +209,26 @@ class App():
                               self._detail_profile,
                               indent=INDENT)
 
-        # Create our status printer, only available in interactive
-        self._status = Status(self.context,
-                              self._content_profile, self._format_profile,
-                              self._success_profile, self._error_profile,
-                              self.stream, colors=self.colors)
-
         # Propagate pipeline feedback to the user
         self.context.set_message_handler(self._message_handler)
 
         # Now that we have a logger and message handler,
         # we can override the global exception hook.
         sys.excepthook = self._global_exception_handler
+
+        # Create the stream right away, we'll need to pass it around
+        self.stream = Stream(self.context, self.project, self._session_start,
+                             session_start_callback=self.session_start_cb,
+                             interrupt_callback=self._interrupt_handler,
+                             ticker_callback=self._tick,
+                             job_start_callback=self._job_started,
+                             job_complete_callback=self._job_completed)
+
+        # Create our status printer, only available in interactive
+        self._status = Status(self.context,
+                              self._content_profile, self._format_profile,
+                              self._success_profile, self._error_profile,
+                              self.stream, colors=self.colors)
 
         # Mark the beginning of the session
         if session_name:
