@@ -66,6 +66,7 @@ source_dist:
   - mount
   - df -h
   - bwrap --version
+  - bwrap --help
 
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
