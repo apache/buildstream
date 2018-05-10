@@ -60,7 +60,7 @@ source_dist:
 .linux-tests-template: &linux-tests
   stage: test
   variables:
-    PYTEST_ADDOPTS: "--color=yes"
+    PYTEST_ADDOPTS: "--color=yes -s"
   script:
   # Diagnostics
   - mount
