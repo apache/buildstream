@@ -20,7 +20,6 @@
 
 import subprocess
 
-from .. import _site
 from .. import utils
 from .._artifactcache.ostreecache import OSTreeCache
 from .._message import Message, MessageType
@@ -35,8 +34,8 @@ class Linux(Platform):
 
         super().__init__(context, project)
 
-        self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
         self._user_ns_available = self._check_user_ns_available(context)
+        self._die_with_parent_available = self._check_die_with_parent_available(context)
         self._artifact_cache = OSTreeCache(context, enable_push=self._user_ns_available)
 
     @property
@@ -81,4 +80,21 @@ class Linux(Platform):
                         "Unable to create user namespaces with bubblewrap, resorting to fallback",
                         detail="Some builds may not function due to lack of uid / gid 0, " +
                         "artifacts created will not be trusted for push purposes."))
+            return False
+
+    def _check_die_with_parent_available(self, context):
+
+        # bwrap supports --die-with-parent since 0.1.8.
+        # Let's check whether the host bwrap supports it.
+        bwrap = utils.get_host_tool('bwrap')
+
+        try:
+            subprocess.check_call([
+                bwrap,
+                '--ro-bind', '/', '/',
+                '--die-with-parent',
+                'true'
+            ], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        except subprocess.CalledProcessError:
             return False
