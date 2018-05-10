@@ -456,7 +456,7 @@ class _Planner():
     # Here we want to traverse the same element more than once when
     # it is reachable from multiple places, with the interest of finding
     # the deepest occurance of every element
-    def plan_element(self, element, depth, ignore_cache):
+    def plan_element(self, element, depth):
         if element in self.visiting_elements:
             # circular dependency, already being processed
             return
@@ -468,19 +468,19 @@ class _Planner():
 
         self.visiting_elements.add(element)
         for dep in element.dependencies(Scope.RUN, recurse=False):
-            self.plan_element(dep, depth, ignore_cache)
+            self.plan_element(dep, depth)
 
         # Dont try to plan builds of elements that are cached already
-        if ignore_cache or (not element._cached() and not element._remotely_cached()):
+        if not element._cached() and not element._remotely_cached():
             for dep in element.dependencies(Scope.BUILD, recurse=False):
-                self.plan_element(dep, depth + 1, ignore_cache)
+                self.plan_element(dep, depth + 1)
 
         self.depth_map[element] = depth
         self.visiting_elements.remove(element)
 
-    def plan(self, roots, ignore_cache=False):
+    def plan(self, roots):
         for root in roots:
-            self.plan_element(root, 0, ignore_cache)
+            self.plan_element(root, 0)
 
         depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
-        return [item[0] for item in depth_sorted if ignore_cache or not item[0]._cached()]
+        return [item[0] for item in depth_sorted if not item[0]._cached()]
