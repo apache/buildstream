@@ -1864,17 +1864,11 @@ class Element(Plugin):
         if self.__tracking_scheduled:
             return
 
-        # Determine overall consistency of the element
-        consistency = Consistency.CACHED
-        for source in self.__sources:
-            source._update_state()
-            source_consistency = source._get_consistency()
-            consistency = min(consistency, source_consistency)
-        self.__consistency = consistency
+        self.__consistency = Consistency.CACHED
+        workspace = self._get_workspace()
 
         # Special case for workspaces
-        workspace = self._get_workspace()
-        if workspace and self.__consistency > Consistency.INCONSISTENT:
+        if workspace:
 
             # A workspace is considered inconsistent in the case
             # that it's directory went missing
@@ -1882,6 +1876,13 @@ class Element(Plugin):
             fullpath = workspace.get_absolute_path()
             if not os.path.exists(fullpath):
                 self.__consistency = Consistency.INCONSISTENT
+        else:
+
+            # Determine overall consistency of the element
+            for source in self.__sources:
+                source._update_state()
+                source_consistency = source._get_consistency()
+                self.__consistency = min(self.__consistency, source_consistency)
 
     # __calculate_cache_key():
     #

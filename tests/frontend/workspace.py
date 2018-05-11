@@ -356,6 +356,38 @@ def test_build(cli, tmpdir, datafiles, kind, strict):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_buildable_no_ref(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'workspace-test-no-ref.bst'
+    element_path = os.path.join(project, 'elements')
+
+    # Write out our test target without any source ref
+    repo = create_repo('git', str(tmpdir))
+    element = {
+        'kind': 'import',
+        'sources': [
+            repo.source_config()
+        ]
+    }
+    _yaml.dump(element,
+               os.path.join(element_path,
+                            element_name))
+
+    # Assert that this target is not buildable when no workspace is associated.
+    assert cli.get_element_state(project, element_name) == 'no reference'
+
+    # Now open the workspace. We don't need to checkout the source though.
+    workspace = os.path.join(str(tmpdir), 'workspace-no-ref')
+    os.makedirs(workspace)
+    args = ['workspace', 'open', '--no-checkout', element_name, workspace]
+    result = cli.run(project=project, args=args)
+    result.assert_success()
+
+    # Assert that the target is now buildable.
+    assert cli.get_element_state(project, element_name) == 'buildable'
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("modification", [("addfile"), ("removefile"), ("modifyfile")])
 @pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
 def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
