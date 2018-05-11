@@ -13,3 +13,4 @@ This section details how to use the BuildStream command line interface and work 
    getting_started
    commands
    user_config
+   examples

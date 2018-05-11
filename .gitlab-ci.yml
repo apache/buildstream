@@ -78,7 +78,7 @@ source_dist:
 
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
+  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --example --integration'
 
   # Go back to the toplevel and collect our reports
   - cd ../..
