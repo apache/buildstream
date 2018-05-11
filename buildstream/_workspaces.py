@@ -46,7 +46,7 @@ _WORKSPACE_MEMBERS = [
 # methods.
 #
 # Args:
-#    project (Project): The project this workspace is part of
+#    toplevel_project (Project): Top project. Will be used for resolving relative workspace paths.
 #    path (str): The path that should host this workspace
 #    last_successful (str): The key of the last successful build of this workspace
 #    running_files (dict): A dict mapping dependency elements to files
@@ -54,13 +54,13 @@ _WORKSPACE_MEMBERS = [
 #                          made obsolete with failed build artifacts.
 #
 class Workspace():
-    def __init__(self, project, *, last_successful=None, path=None, prepared=False, running_files=None):
+    def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False, running_files=None):
         self.prepared = prepared
         self.last_successful = last_successful
         self.path = path
         self.running_files = running_files if running_files is not None else {}
 
-        self._project = project
+        self._toplevel_project = toplevel_project
         self._key = None
 
     # to_dict()
@@ -81,17 +81,17 @@ class Workspace():
     # when loading from a YAML file.
     #
     # Args:
-    #    project (Project): The Project to load this for
+    #    toplevel_project (Project): Top project. Will be used for resolving relative workspace paths.
     #    dictionary: A simple dictionary object
     #
     # Returns:
     #    (Workspace): A newly instantiated Workspace
     #
     @classmethod
-    def from_dict(cls, project, dictionary):
+    def from_dict(cls, toplevel_project, dictionary):
 
         # Just pass the dictionary as kwargs
-        return cls(project, **dictionary)
+        return cls(toplevel_project, **dictionary)
 
     # differs()
     #
@@ -201,7 +201,7 @@ class Workspace():
     # Returns: The absolute path of the element's workspace.
     #
     def get_absolute_path(self):
-        return os.path.join(self._project.directory, self.path)
+        return os.path.join(self._toplevel_project.directory, self.path)
 
 
 # Workspaces()
@@ -209,11 +209,12 @@ class Workspace():
 # A class to manage Workspaces for multiple elements.
 #
 # Args:
-#    project (Project): The project the workspaces should be associated to
+#    toplevel_project (Project): Top project used to resolve paths.
 #
 class Workspaces():
-    def __init__(self, project):
-        self._project = project
+    def __init__(self, toplevel_project):
+        self._toplevel_project = toplevel_project
+        self._bst_directory = os.path.join(toplevel_project.directory, ".bst")
         self._workspaces = self._load_config()
 
     # list()
@@ -236,7 +237,7 @@ class Workspaces():
     #    path (str) - The path in which the workspace should be kept
     #
     def create_workspace(self, element_name, path):
-        self._workspaces[element_name] = Workspace(self._project, path=path)
+        self._workspaces[element_name] = Workspace(self._toplevel_project, path=path)
 
         return self._workspaces[element_name]
 
@@ -270,7 +271,7 @@ class Workspaces():
     def update_workspace(self, element_name, workspace_dict):
         assert element_name in self._workspaces
 
-        workspace = Workspace.from_dict(self._project, workspace_dict)
+        workspace = Workspace.from_dict(self._toplevel_project, workspace_dict)
         if self._workspaces[element_name].differs(workspace):
             self._workspaces[element_name] = workspace
             return True
@@ -305,9 +306,9 @@ class Workspaces():
                 for element, workspace in _yaml.node_items(self._workspaces)
             }
         }
-        os.makedirs(os.path.join(self._project.directory, ".bst"), exist_ok=True)
+        os.makedirs(self._bst_directory, exist_ok=True)
         _yaml.dump(_yaml.node_sanitize(config),
-                   os.path.join(self._project.directory, ".bst", "workspaces.yml"))
+                   self._get_filename())
 
     # _load_config()
     #
@@ -319,7 +320,7 @@ class Workspaces():
     # Raises: LoadError if there was a problem with the workspace config
     #
     def _load_config(self):
-        workspace_file = os.path.join(self._project.directory, ".bst", "workspaces.yml")
+        workspace_file = self._get_filename()
         try:
             node = _yaml.load(workspace_file)
         except LoadError as e:
@@ -361,8 +362,7 @@ class Workspaces():
                                  "This is not supported anymore.\n" + \
                                  "Please remove this element from '{}'."
                         raise LoadError(LoadErrorReason.INVALID_DATA,
-                                        detail.format(element,
-                                                      os.path.join(self._project.directory, ".bst", "workspaces.yml")))
+                                        detail.format(element, self._get_filename()))
 
                     workspaces[element] = sources[0][1]
 
@@ -371,13 +371,13 @@ class Workspaces():
                                     "Workspace config is in unexpected format.")
 
             res = {
-                element: Workspace(self._project, path=config)
+                element: Workspace(self._toplevel_project, path=config)
                 for element, config in _yaml.node_items(workspaces)
             }
 
         elif version >= 1 and version <= BST_WORKSPACE_FORMAT_VERSION:
             workspaces = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
-            res = {element: self._load_workspace(self._project, node)
+            res = {element: self._load_workspace(node)
                    for element, node in _yaml.node_items(workspaces)}
 
         else:
@@ -394,16 +394,24 @@ class Workspaces():
     #
     # Args:
     #    node: A YAML Node
-    #    project (Project): The Project to load this for
     #
     # Returns:
     #    (Workspace): A newly instantiated Workspace
     #
-    def _load_workspace(self, project, node):
+    def _load_workspace(self, node):
         dictionary = {
             'prepared': _yaml.node_get(node, bool, 'prepared', default_value=False),
             'path': _yaml.node_get(node, str, 'path'),
             'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
             'running_files': _yaml.node_get(node, dict, 'running_files', default_value=None),
         }
-        return Workspace.from_dict(self._project, dictionary)
+        return Workspace.from_dict(self._toplevel_project, dictionary)
+
+    # _get_filename():
+    #
+    # Get the workspaces.yml file path.
+    #
+    # Returns:
+    #    (str): The path to workspaces.yml file.
+    def _get_filename(self):
+        return os.path.join(self._bst_directory, "workspaces.yml")
