@@ -7,6 +7,10 @@ buildstream 1.1.4
     `bst track` on a filter element will track the sources on the
     element that it depends on (if it has sources).
 
+  o Switch to Remote Execution CAS-based artifact cache on all platforms.
+
+    Artifact servers need to be migrated.
+
 
 =================
 buildstream 1.1.3
