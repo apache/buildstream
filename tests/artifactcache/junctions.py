@@ -2,7 +2,6 @@ import os
 import shutil
 import pytest
 from tests.testutils import cli, create_artifact_share
-from tests.testutils.site import IS_LINUX
 
 from buildstream import _yaml
 
@@ -37,7 +36,6 @@ def project_set_artifacts(project, url):
     _yaml.dump(_yaml.node_sanitize(project_config), filename=project_conf_file)
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), 'foo')
