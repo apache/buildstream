@@ -12,3 +12,4 @@ This section details how to use the BuildStream command line interface and work 
 
    commands
    user_config
+   examples
