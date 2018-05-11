@@ -9,6 +9,10 @@ buildstream 1.1.4
 
   o Added new simple `make` element
 
+  o Switch to Remote Execution CAS-based artifact cache on all platforms.
+
+    Artifact servers need to be migrated.
+
 
 =================
 buildstream 1.1.3
