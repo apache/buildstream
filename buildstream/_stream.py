@@ -170,7 +170,7 @@ class Stream():
               track_cross_junctions=False,
               build_all=False):
 
-        if build_all or track_targets:
+        if build_all:
             selection = PipelineSelection.ALL
         else:
             selection = PipelineSelection.PLAN
