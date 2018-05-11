@@ -37,6 +37,9 @@ def test_all_options(cli, tmpdir):
     assert project_conf['format-version'] == str(2)
     assert project_conf['element-path'] == 'ponies'
 
+    elements_dir = os.path.join(project, 'ponies')
+    assert os.path.isdir(elements_dir)
+
 
 def test_no_project_name(cli, tmpdir):
     result = cli.run(project=str(tmpdir), args=['init'])

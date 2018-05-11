@@ -270,14 +270,14 @@ class App():
     # Args:
     #    project_name (str): The project name, must be a valid symbol name
     #    format_version (int): The project format version, default is the latest version
-    #    element_directory (str): The subdirectory to store elements in, default is 'elements'
+    #    element_path (str): The subdirectory to store elements in, default is 'elements'
     #    force (bool): Allow overwriting an existing project.conf
     #
     def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements', force=False):
         directory = self._main_options['directory']
         directory = os.path.abspath(directory)
         project_path = os.path.join(directory, 'project.conf')
-        elements_path = os.path.join(directory, 'elements')
+        elements_path = os.path.join(directory, element_path)
 
         try:
             # Abort if the project.conf already exists, unless `--force` was specified in `bst init`
