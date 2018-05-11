@@ -458,11 +458,3 @@ class Project():
                 # paths are passed in relative to the project, but must be absolute
                 origin_dict['path'] = os.path.join(self.directory, origin_dict['path'])
             destination.append(origin_dict)
-
-    def _extract_plugin_paths(self, node, name):
-        if not node:
-            return
-        path_list = _yaml.node_get(node, list, name, default_value=[])
-        for i in range(len(path_list)):
-            path = _yaml.node_get(node, str, name, indices=[i])
-            yield path
