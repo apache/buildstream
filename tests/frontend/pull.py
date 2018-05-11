@@ -2,7 +2,6 @@ import os
 import shutil
 import pytest
 from tests.testutils import cli, create_artifact_share
-from tests.testutils.site import IS_LINUX
 
 from . import generate_junction
 
@@ -42,7 +41,6 @@ def assert_not_shared(cli, share, project, element_name):
 #  * `bst build` pushes all build elements to configured 'push' cache
 #  * `bst pull --deps all` downloads everything from cache after local deletion
 #
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_all(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -86,7 +84,6 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 #  * `bst build` pushes all build elements ONLY to configured 'push' cache
 #  * `bst pull` finds artifacts that are available only in the secondary cache
 #
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_secondary_cache(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -128,7 +125,6 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
 #  * `bst push --remote` pushes to the given remote, not one from the config
 #  * `bst pull --remote` pulls from the given remote
 #
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_specific_remote(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -178,7 +174,6 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
 #
 #  * In non-strict mode, dependency changes don't block artifact reuse
 #
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_non_strict(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -230,7 +225,6 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
 
 
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/202
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -274,7 +268,6 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
         assert set(result.get_pulled_elements()) == all_elements
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_cross_junction(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)

@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli, create_artifact_share, create_element_size
-from tests.testutils.site import IS_LINUX
 from . import configure_project, generate_junction
 
 
@@ -45,7 +44,6 @@ def assert_not_shared(cli, share, project, element_name):
 #  * `bst push` fails if there are no remotes configured for pushing
 #  * `bst push` successfully pushes to any remote that is configured for pushing
 #
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push(cli, tmpdir, datafiles):
     project = str(datafiles)
@@ -103,7 +101,6 @@ def test_push(cli, tmpdir, datafiles):
 
 # Tests that `bst push --deps all` pushes all dependencies of the given element.
 #
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_all(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -153,7 +150,6 @@ def test_push_all(cli, tmpdir, datafiles):
 # Tests that `bst build` won't push artifacts to the cache it just pulled from.
 #
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/233.
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_after_pull(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
