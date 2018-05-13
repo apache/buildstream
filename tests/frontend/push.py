@@ -1,5 +1,4 @@
 import os
-import shutil
 import pytest
 from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli, create_artifact_share
@@ -54,47 +53,47 @@ def test_push(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Set up two artifact shares.
-    share1 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1'))
-    share2 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2'))
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as share1:
 
-    # Try pushing with no remotes configured. This should fail.
-    result = cli.run(project=project, args=['push', 'target.bst'])
-    result.assert_main_error(ErrorDomain.STREAM, None)
+        with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as share2:
 
-    # Configure bst to pull but not push from a cache and run `bst push`.
-    # This should also fail.
-    cli.configure({
-        'artifacts': {'url': share1.repo, 'push': False},
-    })
-    result = cli.run(project=project, args=['push', 'target.bst'])
-    result.assert_main_error(ErrorDomain.STREAM, None)
+            # Try pushing with no remotes configured. This should fail.
+            result = cli.run(project=project, args=['push', 'target.bst'])
+            result.assert_main_error(ErrorDomain.STREAM, None)
 
-    # Configure bst to push to one of the caches and run `bst push`. This works.
-    cli.configure({
-        'artifacts': [
-            {'url': share1.repo, 'push': False},
-            {'url': share2.repo, 'push': True},
-        ]
-    })
-    result = cli.run(project=project, args=['push', 'target.bst'])
+            # Configure bst to pull but not push from a cache and run `bst push`.
+            # This should also fail.
+            cli.configure({
+                'artifacts': {'url': share1.repo, 'push': False},
+            })
+            result = cli.run(project=project, args=['push', 'target.bst'])
+            result.assert_main_error(ErrorDomain.STREAM, None)
 
-    assert_not_shared(cli, share1, project, 'target.bst')
-    assert_shared(cli, share2, project, 'target.bst')
+            # Configure bst to push to one of the caches and run `bst push`. This works.
+            cli.configure({
+                'artifacts': [
+                    {'url': share1.repo, 'push': False},
+                    {'url': share2.repo, 'push': True},
+                ]
+            })
+            result = cli.run(project=project, args=['push', 'target.bst'])
 
-    # Now try pushing to both (making sure to empty the cache we just pushed
-    # to).
-    shutil.rmtree(share2.directory)
-    share2 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2'))
-    cli.configure({
-        'artifacts': [
-            {'url': share1.repo, 'push': True},
-            {'url': share2.repo, 'push': True},
-        ]
-    })
-    result = cli.run(project=project, args=['push', 'target.bst'])
+            assert_not_shared(cli, share1, project, 'target.bst')
+            assert_shared(cli, share2, project, 'target.bst')
 
-    assert_shared(cli, share1, project, 'target.bst')
-    assert_shared(cli, share2, project, 'target.bst')
+        # Now try pushing to both
+
+        with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as share2:
+            cli.configure({
+                'artifacts': [
+                    {'url': share1.repo, 'push': True},
+                    {'url': share2.repo, 'push': True},
+                ]
+            })
+            result = cli.run(project=project, args=['push', 'target.bst'])
+
+            assert_shared(cli, share1, project, 'target.bst')
+            assert_shared(cli, share2, project, 'target.bst')
 
 
 # Tests that `bst push --deps all` pushes all dependencies of the given element.
@@ -103,46 +102,47 @@ def test_push(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_all(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
 
-    # First build it without the artifact cache configured
-    result = cli.run(project=project, args=['build', 'target.bst'])
-    result.assert_success()
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
-    # Assert that we are now cached locally
-    assert cli.get_element_state(project, 'target.bst') == 'cached'
+        # First build it without the artifact cache configured
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
 
-    # Configure artifact share
-    cli.configure({
-        #
-        # FIXME: This test hangs "sometimes" if we allow
-        #        concurrent push.
-        #
-        #        It's not too bad to ignore since we're
-        #        using the local artifact cache functionality
-        #        only, but it should probably be fixed.
-        #
-        'scheduler': {
-            'pushers': 1
-        },
-        'artifacts': {
-            'url': share.repo,
-            'push': True,
-        }
-    })
+        # Assert that we are now cached locally
+        assert cli.get_element_state(project, 'target.bst') == 'cached'
 
-    # Now try bst push all the deps
-    result = cli.run(project=project, args=[
-        'push', 'target.bst',
-        '--deps', 'all'
-    ])
-    result.assert_success()
+        # Configure artifact share
+        cli.configure({
+            #
+            # FIXME: This test hangs "sometimes" if we allow
+            #        concurrent push.
+            #
+            #        It's not too bad to ignore since we're
+            #        using the local artifact cache functionality
+            #        only, but it should probably be fixed.
+            #
+            'scheduler': {
+                'pushers': 1
+            },
+            'artifacts': {
+                'url': share.repo,
+                'push': True,
+            }
+        })
 
-    # And finally assert that all the artifacts are in the share
-    assert_shared(cli, share, project, 'target.bst')
-    assert_shared(cli, share, project, 'import-bin.bst')
-    assert_shared(cli, share, project, 'import-dev.bst')
-    assert_shared(cli, share, project, 'compose-all.bst')
+        # Now try bst push all the deps
+        result = cli.run(project=project, args=[
+            'push', 'target.bst',
+            '--deps', 'all'
+        ])
+        result.assert_success()
+
+        # And finally assert that all the artifacts are in the share
+        assert_shared(cli, share, project, 'target.bst')
+        assert_shared(cli, share, project, 'import-bin.bst')
+        assert_shared(cli, share, project, 'import-dev.bst')
+        assert_shared(cli, share, project, 'compose-all.bst')
 
 
 # Tests that `bst build` won't push artifacts to the cache it just pulled from.
@@ -154,44 +154,44 @@ def test_push_after_pull(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Set up two artifact shares.
-    share1 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1'))
-    share2 = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2'))
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as share1,\
+        create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as share2:
 
-    # Set the scene: share1 has the artifact, share2 does not.
-    #
-    cli.configure({
-        'artifacts': {'url': share1.repo, 'push': True},
-    })
+        # Set the scene: share1 has the artifact, share2 does not.
+        #
+        cli.configure({
+            'artifacts': {'url': share1.repo, 'push': True},
+        })
 
-    result = cli.run(project=project, args=['build', 'target.bst'])
-    result.assert_success()
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
 
-    cli.remove_artifact_from_cache(project, 'target.bst')
+        cli.remove_artifact_from_cache(project, 'target.bst')
 
-    assert_shared(cli, share1, project, 'target.bst')
-    assert_not_shared(cli, share2, project, 'target.bst')
-    assert cli.get_element_state(project, 'target.bst') != 'cached'
+        assert_shared(cli, share1, project, 'target.bst')
+        assert_not_shared(cli, share2, project, 'target.bst')
+        assert cli.get_element_state(project, 'target.bst') != 'cached'
 
-    # Now run the build again. Correct `bst build` behaviour is to download the
-    # artifact from share1 but not push it back again.
-    #
-    result = cli.run(project=project, args=['build', 'target.bst'])
-    result.assert_success()
-    assert result.get_pulled_elements() == ['target.bst']
-    assert result.get_pushed_elements() == []
+        # Now run the build again. Correct `bst build` behaviour is to download the
+        # artifact from share1 but not push it back again.
+        #
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+        assert result.get_pulled_elements() == ['target.bst']
+        assert result.get_pushed_elements() == []
 
-    # Delete the artifact locally again.
-    cli.remove_artifact_from_cache(project, 'target.bst')
+        # Delete the artifact locally again.
+        cli.remove_artifact_from_cache(project, 'target.bst')
 
-    # Now we add share2 into the mix as a second push remote. This time,
-    # `bst build` should push to share2 after pulling from share1.
-    cli.configure({
-        'artifacts': [
-            {'url': share1.repo, 'push': True},
-            {'url': share2.repo, 'push': True},
-        ]
-    })
-    result = cli.run(project=project, args=['build', 'target.bst'])
-    result.assert_success()
-    assert result.get_pulled_elements() == ['target.bst']
-    assert result.get_pushed_elements() == ['target.bst']
+        # Now we add share2 into the mix as a second push remote. This time,
+        # `bst build` should push to share2 after pulling from share1.
+        cli.configure({
+            'artifacts': [
+                {'url': share1.repo, 'push': True},
+                {'url': share2.repo, 'push': True},
+            ]
+        })
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+        assert result.get_pulled_elements() == ['target.bst']
+        assert result.get_pushed_elements() == ['target.bst']

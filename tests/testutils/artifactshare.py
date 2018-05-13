@@ -2,6 +2,9 @@ import string
 import pytest
 import subprocess
 import os
+import shutil
+
+from contextlib import contextmanager
 
 from buildstream import _yaml
 
@@ -90,11 +93,22 @@ class ArtifactShare():
 
         return False
 
+    # close():
+    #
+    # Remove the artifact share.
+    #
+    def close(self):
+        shutil.rmtree(self.directory)
+
 
 # create_artifact_share()
 #
 # Create an ArtifactShare for use in a test case
 #
+@contextmanager
 def create_artifact_share(directory):
-
-    return ArtifactShare(directory)
+    share = ArtifactShare(directory)
+    try:
+        yield share
+    finally:
+        share.close()
