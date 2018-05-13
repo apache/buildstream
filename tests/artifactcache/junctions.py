@@ -43,48 +43,48 @@ def test_push_pull(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), 'foo')
     base_project = os.path.join(str(project), 'base')
 
-    share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-foo'))
-    base_share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-base'))
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-foo')) as share,\
+        create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-base')) as base_share:
 
-    # First build it without the artifact cache configured
-    result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code == 0
+        # First build it without the artifact cache configured
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        assert result.exit_code == 0
 
-    # Assert that we are now cached locally
-    state = cli.get_element_state(project, 'target.bst')
-    assert state == 'cached'
-    state = cli.get_element_state(base_project, 'target.bst')
-    assert state == 'cached'
+        # Assert that we are now cached locally
+        state = cli.get_element_state(project, 'target.bst')
+        assert state == 'cached'
+        state = cli.get_element_state(base_project, 'target.bst')
+        assert state == 'cached'
 
-    project_set_artifacts(project, share.repo)
-    project_set_artifacts(base_project, base_share.repo)
+        project_set_artifacts(project, share.repo)
+        project_set_artifacts(base_project, base_share.repo)
 
-    # Now try bst push
-    result = cli.run(project=project, args=['push', '--deps', 'all', 'target.bst'])
-    assert result.exit_code == 0
+        # Now try bst push
+        result = cli.run(project=project, args=['push', '--deps', 'all', 'target.bst'])
+        assert result.exit_code == 0
 
-    # And finally assert that the artifacts are in the right shares
-    assert_shared(cli, share, 'foo', project, 'target.bst')
-    assert_shared(cli, base_share, 'base', base_project, 'target.bst')
+        # And finally assert that the artifacts are in the right shares
+        assert_shared(cli, share, 'foo', project, 'target.bst')
+        assert_shared(cli, base_share, 'base', base_project, 'target.bst')
 
-    # Now we've pushed, delete the user's local artifact cache
-    # directory and try to redownload it from the share
-    #
-    artifacts = os.path.join(cli.directory, 'artifacts')
-    shutil.rmtree(artifacts)
+        # Now we've pushed, delete the user's local artifact cache
+        # directory and try to redownload it from the share
+        #
+        artifacts = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifacts)
 
-    # Assert that nothing is cached locally anymore
-    state = cli.get_element_state(project, 'target.bst')
-    assert state != 'cached'
-    state = cli.get_element_state(base_project, 'target.bst')
-    assert state != 'cached'
+        # Assert that nothing is cached locally anymore
+        state = cli.get_element_state(project, 'target.bst')
+        assert state != 'cached'
+        state = cli.get_element_state(base_project, 'target.bst')
+        assert state != 'cached'
 
-    # Now try bst pull
-    result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
-    assert result.exit_code == 0
+        # Now try bst pull
+        result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
+        assert result.exit_code == 0
 
-    # And assert that they are again in the local cache, without having built
-    state = cli.get_element_state(project, 'target.bst')
-    assert state == 'cached'
-    state = cli.get_element_state(base_project, 'target.bst')
-    assert state == 'cached'
+        # And assert that they are again in the local cache, without having built
+        state = cli.get_element_state(project, 'target.bst')
+        assert state == 'cached'
+        state = cli.get_element_state(base_project, 'target.bst')
+        assert state == 'cached'
