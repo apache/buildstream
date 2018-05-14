@@ -346,6 +346,8 @@ class Pipeline():
     # lists targetted at tracking.
     #
     # Args:
+    #    project (Project): Project used for cross_junction filtering.
+    #                       All elements are expected to belong to that project.
     #    elements (list of Element): The list of elements to filter
     #    cross_junction_requested (bool): Whether the user requested
     #                                     cross junction tracking
@@ -353,12 +355,11 @@ class Pipeline():
     # Returns:
     #    (list of Element): The filtered or asserted result
     #
-    def track_cross_junction_filter(self, elements, cross_junction_requested):
+    def track_cross_junction_filter(self, project, elements, cross_junction_requested):
         # Filter out cross junctioned elements
-        if cross_junction_requested:
-            self._assert_junction_tracking(elements)
-        else:
-            elements = self._filter_cross_junctions(elements)
+        if not cross_junction_requested:
+            elements = self._filter_cross_junctions(project, elements)
+        self._assert_junction_tracking(elements)
 
         return elements
 
@@ -403,16 +404,17 @@ class Pipeline():
     # Filters out cross junction elements from the elements
     #
     # Args:
+    #    project (Project): The project on which elements are allowed
     #    elements (list of Element): The list of elements to be tracked
     #
     # Returns:
     #    (list): A filtered list of `elements` which does
     #            not contain any cross junction elements.
     #
-    def _filter_cross_junctions(self, elements):
+    def _filter_cross_junctions(self, project, elements):
         return [
             element for element in elements
-            if element._get_project() is self._project
+            if element._get_project() is project
         ]
 
     # _assert_junction_tracking()

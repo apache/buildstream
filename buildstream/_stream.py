@@ -831,12 +831,30 @@ class Stream():
         # done before resolving element states.
         #
         assert track_selection != PipelineSelection.PLAN
-        track_selected = self._pipeline.get_selection(track_elements, track_selection)
+
+        # Tracked elements are split by owner projects in order to
+        # filter cross junctions tracking dependencies on their
+        # respective project.
+        track_projects = {}
+        for element in track_elements:
+            project = element._get_project()
+            if project not in track_projects:
+                track_projects[project] = [element]
+            else:
+                track_projects[project].append(element)
+
+        track_selected = []
+
+        for project, project_elements in track_projects.items():
+            selected = self._pipeline.get_selection(project_elements, track_selection)
+            selected = self._pipeline.track_cross_junction_filter(project,
+                                                                  selected,
+                                                                  track_cross_junctions)
+            track_selected.extend(selected)
+
         track_selected = self._pipeline.except_elements(track_elements,
                                                         track_selected,
                                                         track_except_elements)
-        track_selected = self._pipeline.track_cross_junction_filter(track_selected,
-                                                                    track_cross_junctions)
 
         for element in track_selected:
             element._schedule_tracking()

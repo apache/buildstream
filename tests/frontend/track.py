@@ -437,3 +437,46 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
 
     # Now assert element state (via bst show under the hood) of the dep again
     assert cli.get_element_state(project, 'junction-dep.bst') == 'waiting'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    etc_files = os.path.join(subproject_path, 'files', 'etc-files')
+    repo_element_path = os.path.join(subproject_path, 'elements',
+                                     'import-etc-repo.bst')
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    repo = create_repo(kind, str(tmpdir.join('element_repo')))
+    ref = repo.create(etc_files)
+
+    generate_element(repo, repo_element_path)
+
+    generate_junction(str(tmpdir.join('junction_repo')),
+                      subproject_path, junction_path, store_ref=False)
+
+    # Track the junction itself first.
+    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result.assert_success()
+
+    assert cli.get_element_state(project, 'junction.bst:import-etc-repo.bst') == 'no reference'
+
+    # Track the cross junction element. -J is not given, it is implied.
+    result = cli.run(project=project, args=['track', 'junction.bst:import-etc-repo.bst'])
+
+    if ref_storage == 'inline':
+        # This is not allowed to track cross junction without project.refs.
+        result.assert_main_error(ErrorDomain.PIPELINE, 'untrackable-sources')
+    else:
+        result.assert_success()
+
+        assert cli.get_element_state(project, 'junction.bst:import-etc-repo.bst') == 'buildable'
+
+        assert os.path.exists(os.path.join(project, 'project.refs'))
