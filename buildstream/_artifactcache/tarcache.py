@@ -46,7 +46,7 @@ class TarCache(ArtifactCache):
         return os.path.isfile(path)
 
     def commit(self, element, content, keys):
-        os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
+        os.makedirs(os.path.join(self.tardir, element._get_project().name, element.name), exist_ok=True)
 
         with utils._tempdir() as temp:
             for key in keys:
@@ -75,7 +75,7 @@ class TarCache(ArtifactCache):
         with utils._tempdir(dir=self.extractdir) as tmpdir:
             _Tar.extract(os.path.join(self.tardir, path), tmpdir)
 
-            os.makedirs(os.path.join(self.extractdir, element._get_project().name, element.normal_name),
+            os.makedirs(os.path.join(self.extractdir, element._get_project().name, element.name),
                         exist_ok=True)
             try:
                 os.rename(os.path.join(tmpdir, key), dest)
@@ -105,7 +105,7 @@ class TarCache(ArtifactCache):
 #
 def _tarpath(element, key):
     project = element._get_project()
-    return os.path.join(project.name, element.normal_name, key + '.tar.bz2')
+    return os.path.join(project.name, element.name, key + '.tar.bz2')
 
 
 # A helper class that contains tar archive/extract functions

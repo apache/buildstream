@@ -497,7 +497,7 @@ class Loader():
 
         # Stage sources
         os.makedirs(self._context.builddir, exist_ok=True)
-        basedir = tempfile.mkdtemp(prefix="{}-".format(element.normal_name), dir=self._context.builddir)
+        basedir = tempfile.mkdtemp(prefix="{}-".format(element.name), dir=self._context.builddir)
         element._stage_sources_at(basedir, mount_workspaces=False)
 
         # Load the project

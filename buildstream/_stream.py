@@ -617,7 +617,7 @@ class Stream():
         self._message(MessageType.INFO, "Bundling sources for target {}".format(target.name))
 
         # Find the correct filename for the compression algorithm
-        tar_location = os.path.join(directory, target.normal_name + ".tar")
+        tar_location = os.path.join(directory, target.name + ".tar")
         if compression != "none":
             tar_location += "." + compression
 
@@ -641,7 +641,7 @@ class Stream():
 
         # Create a temporary directory to build the source tree in
         builddir = self._context.builddir
-        prefix = "{}-".format(target.normal_name)
+        prefix = "{}-".format(target.name)
 
         with TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:
             source_directory = os.path.join(tempdir, 'source')
@@ -661,7 +661,7 @@ class Stream():
             self._write_element_sources(tempdir, elements)
             self._write_build_script(tempdir, elements)
             self._collect_sources(tempdir, tar_location,
-                                  target.normal_name, compression)
+                                  target.name, compression)
 
     #############################################################
     #                 Scheduler API forwarding                  #
@@ -958,7 +958,7 @@ class Stream():
     def _write_element_sources(self, directory, elements):
         for element in elements:
             source_dir = os.path.join(directory, "source")
-            element_source_dir = os.path.join(source_dir, element.normal_name)
+            element_source_dir = os.path.join(source_dir, element.name)
 
             element._stage_sources_at(element_source_dir)
 
@@ -967,7 +967,7 @@ class Stream():
 
         module_string = ""
         for element in elements:
-            module_string += shlex.quote(element.normal_name) + " "
+            module_string += shlex.quote(element.name) + " "
 
         script_path = os.path.join(directory, "build.sh")
 

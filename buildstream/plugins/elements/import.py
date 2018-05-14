@@ -103,7 +103,7 @@ class ImportElement(BuildElement):
         commands = []
 
         # The directory to grab
-        inputdir = os.path.join(build_root, self.normal_name, self.source.lstrip(os.sep))
+        inputdir = os.path.join(build_root, self.name, self.source.lstrip(os.sep))
         inputdir = inputdir.rstrip(os.sep)
 
         # The output target directory

@@ -196,14 +196,6 @@ class Element(Plugin):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
-        self.normal_name = os.path.splitext(self.name.replace(os.sep, '-'))[0]
-        """A normalized element name
-
-        This is the original element without path separators or
-        the extension, it's used mainly for composing log file names
-        and creating directory names and such.
-        """
-
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__sources = []                     # List of Sources
@@ -348,7 +340,7 @@ class Element(Plugin):
         generated script is run:
 
         - All element variables have been exported.
-        - The cwd is `self.get_variable('build_root')/self.normal_name`.
+        - The cwd is `self.get_variable('build_root')/self.name`.
         - $PREFIX is set to `self.get_variable('install_root')`.
         - The directory indicated by $PREFIX is an empty directory.
 
@@ -1419,7 +1411,7 @@ class Element(Plugin):
 
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
-            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
+            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
 
             # Cleanup the build directory on explicit SIGTERM
             def cleanup_rootdir():
@@ -1750,7 +1742,7 @@ class Element(Plugin):
         #
         os.makedirs(context.builddir, exist_ok=True)
         with utils._tempdir(dir=context.builddir, prefix='workspace-{}'
-                            .format(self.normal_name)) as temp:
+                            .format(self.name)) as temp:
             for source in self.sources():
                 source._init_workspace(temp)
 
@@ -1778,7 +1770,7 @@ class Element(Plugin):
             variable_string += "{0}={1} ".format(var, val)
 
         script = script_template.format(
-            name=self.normal_name,
+            name=self.name,
             build_root=self.get_variable('build-root'),
             install_root=self.get_variable('install-root'),
             variables=variable_string,
@@ -1786,7 +1778,7 @@ class Element(Plugin):
         )
 
         os.makedirs(directory, exist_ok=True)
-        script_path = os.path.join(directory, "build-" + self.normal_name)
+        script_path = os.path.join(directory, "build-" + self.name)
 
         with self.timed_activity("Writing build script", silent_nested=True):
             with utils.save_file_atomic(script_path, "w") as script_file:
@@ -2002,7 +1994,9 @@ class Element(Plugin):
         logfile = "{key}-{action}.{pid}.log".format(
             key=key, action=action, pid=pid)
 
-        directory = os.path.join(context.logdir, project.name, self.normal_name)
+        element_name = (self.name[:-4] if self.name.endswith('.bst') else self.name) + '.log'
+
+        directory = os.path.join(context.logdir, project.name, element_name)
 
         os.makedirs(directory, exist_ok=True)
         return os.path.join(directory, logfile)
@@ -2073,7 +2067,7 @@ class Element(Plugin):
 
         else:
             os.makedirs(context.builddir, exist_ok=True)
-            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
+            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.name), dir=context.builddir)
 
             # Recursive contextmanager...
             with self.__sandbox(rootdir, stdout=stdout, stderr=stderr, config=config) as sandbox:

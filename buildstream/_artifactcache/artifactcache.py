@@ -97,8 +97,11 @@ class ArtifactCache():
         valid_chars = string.digits + string.ascii_letters + '-._'
         element_name = ''.join([
             x if x in valid_chars else '_'
-            for x in element.normal_name
+            for x in element.name
         ])
+
+        if element_name.endswith('.bst'):
+            element_name = element_name[:-4]
 
         assert key is not None
 
