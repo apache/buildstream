@@ -216,7 +216,6 @@ def test_updated_dependency_nested(cli, tmpdir, datafiles):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(not IS_LINUX, reason='Incremental builds are not supported by the unix platform')
 def test_incremental_configure_commands_run_only_once(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
