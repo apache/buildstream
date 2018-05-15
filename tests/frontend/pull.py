@@ -55,7 +55,6 @@ def test_push_pull_all(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Assert that everything is now cached in the remote.
-    share.update_summary()
     all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
     for element_name in all_elements:
         assert_shared(cli, share, project, element_name)
@@ -101,9 +100,6 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
     })
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-
-    share1.update_summary()
-    share2.update_summary()
 
     assert_not_shared(cli, share1, project, 'target.bst')
     assert_shared(cli, share2, project, 'target.bst')
@@ -156,9 +152,6 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
     ])
     result.assert_success()
 
-    good_share.update_summary()
-    bad_share.update_summary()
-
     # Assert that all the artifacts are in the share we pushed
     # to, and not the other.
     assert_shared(cli, good_share, project, 'target.bst')
@@ -201,7 +194,6 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Assert that everything is now cached in the remote.
-    share.update_summary()
     all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
     for element_name in all_elements:
         assert_shared(cli, share, project, element_name)
@@ -252,7 +244,6 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Assert that everything is now cached in the remote.
-    share.update_summary()
     all_elements = {'target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst'}
     for element_name in all_elements:
         assert_shared(cli, share, project, element_name)

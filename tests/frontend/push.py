@@ -165,7 +165,6 @@ def test_push_after_pull(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
 
-    share1.update_summary()
     cli.remove_artifact_from_cache(project, 'target.bst')
 
     assert_shared(cli, share1, project, 'target.bst')
