@@ -67,12 +67,6 @@ def test_push_pull(cli, tmpdir, datafiles):
     assert_shared(cli, share, 'foo', project, 'target.bst')
     assert_shared(cli, base_share, 'base', base_project, 'target.bst')
 
-    # Make sure we update the summary in our artifact shares,
-    # we dont have a real server around to do it
-    #
-    share.update_summary()
-    base_share.update_summary()
-
     # Now we've pushed, delete the user's local artifact cache
     # directory and try to redownload it from the share
     #
