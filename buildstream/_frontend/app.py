@@ -387,7 +387,21 @@ class App():
     #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
     #
-    def open_workspace(self, target, directory, no_checkout, track_first, force, no_cache=False):
+    def open_workspace(self, target, directory, no_checkout, track_first, force, cached_build_tree):
+
+        # If there is a remote cache, and the default value of cached_build_tree is used (flag not declared)
+        # Set default to False (Don't want to pull from server by default)
+
+        # Potentially have the default be `None` and check:
+
+       if cached_build_tree is 'use-cached' or 'auto':
+            if remote_cache_exists():
+                cached_build_tree = False
+            else: 
+                cached_build_tree = True
+        else cached_build_tree is 'ignore-cached':
+            cached_build_tree = False:
+        
 
         workdir = os.path.abspath(directory)
 
@@ -395,15 +409,15 @@ class App():
             with target.timed_activity("Extracting cached build tree"):
                 build_tree_path = target._build_tree_path(target._get_cache_key())
             if build_tree_path is None:
-                no_cache = True
+                cached_build_tree = False
         else:
-            no_cache = True
+            cached_build_tree = False
 
         # Check for workspace config
         if self.project.workspaces.get_workspace(target):
             raise AppError("Workspace '{}' is already defined.".format(target.name))
 
-        if no_cache:
+        if not cached_build_tree:
             if not list(target.sources()):
                 build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
                 if not build_depends:
@@ -483,7 +497,7 @@ class App():
     #    target (Element): The element to reset the workspace for
     #    track (bool): Whether to also track the source
     #
-    def reset_workspace(self, target, track, no_cache):
+    def reset_workspace(self, target, track, cached_build_tree):
         workspace = self.project.workspaces.get_workspace(target.name)
 
         if workspace is None:
@@ -491,7 +505,7 @@ class App():
                            .format(target.name))
 
         self.close_workspace(target.name, True)
-        self.open_workspace(target, workspace.path, False, track, False, no_cache)
+        self.open_workspace(target, workspace.path, False, track, False, cached_build_tree)
 
     ############################################################
     #                      Local Functions                     #

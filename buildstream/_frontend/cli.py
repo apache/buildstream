@@ -216,9 +216,9 @@ def init(app, project_name, format_version, element_path, force):
               help="Except certain dependencies from tracking")
 @click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
               help="Allow tracking to cross junction boundaries")
-@click.option('--cached-build-tree', default='False',
-              type=click.Choice(['True', 'False']),
-              help="Toggle the download of the cached build tree")
+@click.option('--cached-build-tree', 'cached_build_tree',  default='auto',
+              type=click.Choice(['use-cached', 'ignore-cached', 'auto']),
+              help="Use Cached build tree if available")
 @click.option('--track-save', default=False, is_flag=True,
               help="Deprecated: This is ignored")
 @click.argument('elements', nargs=-1,
@@ -238,7 +238,6 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
     if track_all:
         track_ = elements
 
-    with app.initialized(session_name="Build"):
         app.stream.build(elements,
                          track_targets=track_,
                          track_except=track_except,
@@ -342,9 +341,9 @@ def track(app, elements, deps, except_, cross_junctions):
               help='The dependency artifacts to pull (default: none)')
 @click.option('--remote', '-r',
               help="The URL of the remote cache (defaults to the first configured cache)")
-@click.option('--cached-build-tree', default='False',
-              type=click.Choice(['True', 'False']),
-              help="Toggle the download of the cached build tree")
+@click.option('--cached-build-tree', 'cached_build_tree',  default='auto',
+              type=click.Choice(['use-cached', 'ignore-cached', 'auto']),
+              help="Use Cached build tree if available")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
@@ -586,14 +585,14 @@ def workspace():
               help="Overwrite files existing in checkout directory")
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
-@click.option('--no-cache', 'no_cache',  default='False',
-              type=click.Choice(['True', 'False']),
+@click.option('--cached-build-tree', 'cached_build_tree',  default='auto',
+              type=click.Choice(['use-cached', 'ignore-cached', 'auto']),
               help="Use Cached build tree if available")
 @click.argument('element',
                 type=click.Path(dir_okay=False, readable=True))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track_, no_cache, element, directory):
+def workspace_open(app, no_checkout, force, track_, cached_build_tree, element, directory):
     """Open a workspace for manual source modification"""
 
     if os.path.exists(directory):
@@ -611,7 +610,7 @@ def workspace_open(app, no_checkout, force, track_, no_cache, element, directory
                                   no_checkout=no_checkout,
                                   track_first=track_,
                                   force=force,
-                                  no_cache)
+                                  cached_build_tree)
 
 
 ##################################################################
@@ -666,13 +665,13 @@ def workspace_close(app, remove_dir, all_, elements):
               help="Track and fetch the latest source before resetting")
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Reset all open workspaces")
-@click.option('--no-cache', 'no_cache',  default='False',
-              type=click.Choice(['True', 'False']),
+@click.option('--cached-build-tree', 'cached_build_tree',  default='auto',
+              type=click.Choice(['use-cached', 'ignore-cached', 'auto']),
               help="Use Cached build tree if available")
 @click.argument('elements', nargs=-1,
                 type=click.Path(dir_okay=False, readable=True))
 @click.pass_obj
-def workspace_reset(app, track_, all_, elements, no_cache):
+def workspace_reset(app, track_, all_, elements, cached_build_tree):
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
@@ -699,13 +698,7 @@ def workspace_reset(app, track_, all_, elements, no_cache):
         if all_:
             elements = tuple(element_name for element_name, _ in app.project.workspaces.list())
 
-<<<<<<< HEAD
-        app.stream.workspace_reset(elements, track_first=track_, no_cache)
-=======
-    with app.initialized(elements):
-        for target in app.pipeline.targets:
-            app.reset_workspace(target, track_, no_cache)
->>>>>>> Original commit required additional functionality to test
+        app.stream.workspace_reset(elements, track_first=track_, cached_build_tree)
 
 
 ##################################################################
