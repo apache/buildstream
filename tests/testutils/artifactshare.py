@@ -40,7 +40,6 @@ class ArtifactShare():
         os.makedirs(self.repo)
 
         self.init()
-        self.update_summary()
 
     # init():
     #
@@ -54,15 +53,6 @@ class ArtifactShare():
         subprocess.call(['ostree', 'init',
                          '--repo', self.repo,
                          '--mode', 'archive-z2'])
-
-    # update_summary():
-    #
-    # Ensure that the summary is up to date
-    #
-    def update_summary(self):
-        subprocess.call(['ostree', 'summary',
-                         '--update',
-                         '--repo', self.repo])
 
     # has_artifact():
     #

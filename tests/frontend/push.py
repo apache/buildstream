@@ -170,7 +170,6 @@ def test_push_after_pull(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
 
-    share1.update_summary()
     cli.remove_artifact_from_cache(project, 'target.bst')
 
     assert_shared(cli, share1, project, 'target.bst')
@@ -235,9 +234,6 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     result = cli.run(project=project, args=['build', 'element2.bst'])
     result.assert_success()
 
-    # update the share
-    share.update_summary()
-
     # check that element's 1 and 2 are cached both locally and remotely
     assert cli.get_element_state(project, 'element1.bst') == 'cached'
     assert_shared(cli, share, project, 'element1.bst')
@@ -253,9 +249,6 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     create_element_size('element3.bst', element_path, [], int(5e6))
     result = cli.run(project=project, args=['build', 'element3.bst'])
     result.assert_success()
-
-    # update the share
-    share.update_summary()
 
     # Ensure it is cached both locally and remotely
     assert cli.get_element_state(project, 'element3.bst') == 'cached'
@@ -297,9 +290,6 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
     create_element_size('large_element.bst', element_path, [], int(6e6))
     result = cli.run(project=project, args=['build', 'large_element.bst'])
     result.assert_success()
-
-    # update the cache
-    share.update_summary()
 
     # Ensure that the small artifact is still in the share
     assert cli.get_element_state(project, 'small_element.bst') == 'cached'
@@ -343,8 +333,6 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     result = cli.run(project=project, args=['build', 'element2.bst'])
     result.assert_success()
 
-    share.update_summary()
-
     # Ensure they are cached locally
     assert cli.get_element_state(project, 'element1.bst') == 'cached'
     assert cli.get_element_state(project, 'element2.bst') == 'cached'
@@ -369,8 +357,6 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     create_element_size('element3.bst', element_path, [], int(5e6))
     result = cli.run(project=project, args=['build', 'element3.bst'])
     result.assert_success()
-
-    share.update_summary()
 
     # Make sure it's cached locally and remotely
     assert cli.get_element_state(project, 'element3.bst') == 'cached'
