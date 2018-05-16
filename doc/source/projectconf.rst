@@ -144,6 +144,8 @@ and the order that the elements were overlapped.
   fail-on-overlap: true
 
 
+.. _project_source_aliases:
+
 Source aliases
 ~~~~~~~~~~~~~~
 In order to abstract the download location of source code and
