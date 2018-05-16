@@ -14,6 +14,22 @@ DATA_DIR = os.path.join(
 )
 
 
+# FIXME: Workaround a setuptools bug which fails to include symbolic
+#        links in the source distribution.
+#
+#        Remove this hack once setuptools is fixed
+def workaround_setuptools_bug(project):
+    os.makedirs(os.path.join(project, "files", "links"), exist_ok=True)
+    try:
+        os.symlink(os.path.join("usr", "lib"), os.path.join(project, "files", "links", "lib"))
+        os.symlink(os.path.join("usr", "bin"), os.path.join(project, "files", "links", "bin"))
+        os.symlink(os.path.join("usr", "etc"), os.path.join(project, "files", "links", "etc"))
+    except FileExistsError:
+        # If the files exist, we're running from a git checkout and
+        # not a source distribution, no need to complain
+        pass
+
+
 # Test that a build upon flatpak runtime 'works' - we use the autotools sample
 # amhello project for this.
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
@@ -21,6 +37,7 @@ DATA_DIR = os.path.join(
 def test_autotools_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
+    workaround_setuptools_bug(project)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0
@@ -40,6 +57,7 @@ def test_autotools_build(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+    workaround_setuptools_bug(project)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0
