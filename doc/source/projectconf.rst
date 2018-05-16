@@ -317,6 +317,8 @@ All option types accept the following common attributes
      digit.
 
 
+.. _project_options_bool:
+
 Boolean
 ~~~~~~~
 The ``bool`` option type allows specifying boolean values which
@@ -363,6 +365,8 @@ When exporting boolean options as variables, a ``True`` option value
 will be exported as ``1`` and a ``False`` option as ``0``
 
 
+.. _project_options_enum:
+
 Enumeration
 ~~~~~~~~~~~
 The ``enum`` option type allows specifying a string value
@@ -403,6 +407,8 @@ expressions:
 When exporting enumeration options as variables, the value is
 exported as a variable directly, as it is a simple string.
 
+
+.. _project_options_flags:
 
 Flags
 ~~~~~
@@ -449,6 +455,8 @@ When exporting flags options as variables, the value is
 exported as a comma separated list of selected value strings.
 
 
+.. _project_options_arch:
+
 Architecture
 ~~~~~~~~~~~~
 The ``arch`` option type is special enumeration option which
@@ -471,6 +479,8 @@ assigning any default in the project configuration.
 Architecture options can be tested with the same expressions
 as other Enumeration options.
 
+
+.. _project_options_element_mask:
 
 Element mask
 ~~~~~~~~~~~~
