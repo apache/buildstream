@@ -27,6 +27,7 @@ MAIN_OPTIONS = [
     "--colors ",
     "--config ",
     "--debug ",
+    "--default-mirror ",
     "--directory ",
     "--error-lines ",
     "--fetchers ",
