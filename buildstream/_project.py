@@ -67,7 +67,7 @@ class HostMount():
 #
 class Project():
 
-    def __init__(self, directory, context, *, junction=None, cli_options=None):
+    def __init__(self, directory, context, *, junction=None, cli_options=None, default_mirror=None):
 
         # The project name
         self.name = None
@@ -92,7 +92,7 @@ class Project():
         self.element_overrides = {}              # Element specific configurations
         self.source_overrides = {}               # Source specific configurations
         self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
-        self.default_mirror = None               # The name of the preferred mirror.
+        self.default_mirror = default_mirror     # The name of the preferred mirror.
 
         #
         # Private Members
@@ -318,6 +318,10 @@ class Project():
         # or conditionally specifying the project name; will be ignored.
         #
         self.options.process_node(config)
+
+        # Override default_mirror if not set by command-line
+        if not self.default_mirror:
+            self.default_mirror = _yaml.node_get(overrides, str, 'default-mirror', default_value=None)
 
         #
         # Now all YAML composition is done, from here on we just load
