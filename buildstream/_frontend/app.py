@@ -204,7 +204,8 @@ class App():
         # Load the Project
         #
         try:
-            self.project = Project(directory, self.context, cli_options=self._main_options['option'])
+            self.project = Project(directory, self.context, cli_options=self._main_options['option'],
+                                   default_mirror=self._main_options.get('default_mirror'))
         except LoadError as e:
 
             # Let's automatically start a `bst init` session in this case

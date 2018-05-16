@@ -101,6 +101,9 @@ class Context():
         # What to do when a build fails in non interactive mode
         self.sched_error_action = 'continue'
 
+        # The default mirror to fetch from
+        self.default_mirror = None
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -152,6 +155,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
+            'default-mirror',
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -195,6 +199,8 @@ class Context():
 
         # Load per-projects overrides
         self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
+
+        self.default_mirror = _yaml.node_get(defaults, str, "default-mirror", default_value=None)
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.

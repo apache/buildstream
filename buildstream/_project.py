@@ -65,7 +65,7 @@ class HostMount():
 #
 class Project():
 
-    def __init__(self, directory, context, *, junction=None, cli_options=None):
+    def __init__(self, directory, context, *, junction=None, cli_options=None, default_mirror=None):
 
         # The project name
         self.name = None
@@ -91,7 +91,8 @@ class Project():
         self.element_overrides = {}              # Element specific configurations
         self.source_overrides = {}               # Source specific configurations
         self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
-        self.default_mirror = None               # The name of the preferred mirror.
+
+        self.default_mirror = default_mirror or context.default_mirror  # The name of the preferred mirror.
 
         #
         # Private Members

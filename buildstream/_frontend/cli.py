@@ -159,6 +159,8 @@ def print_version(ctx, param, value):
               help="Elements must be rebuilt when their dependencies have changed")
 @click.option('--option', '-o', type=click.Tuple([str, str]), multiple=True, metavar='OPTION VALUE',
               help="Specify a project option")
+@click.option('--default-mirror', default=None,
+              help="The mirror to fetch from first, before attempting other mirrors")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
