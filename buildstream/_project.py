@@ -476,7 +476,6 @@ class Project():
             self._shell_host_files.append(mount)
 
         mirrors = _yaml.node_get(config, list, 'mirrors', default_value=[])
-        default_mirror_set = False
         for mirror in mirrors:
             allowed_mirror_fields = [
                 'location-name', 'aliases'
@@ -488,9 +487,8 @@ class Project():
                 assert isinstance(uris, list)
                 alias_mappings[alias_mapping] = list(uris)
             self.mirrors[mirror_location] = alias_mappings
-            if not default_mirror_set:
+            if not self.default_mirror:
                 self.default_mirror = mirror_location
-                default_mirror_set = True
 
     # _assert_plugin_format()
     #
