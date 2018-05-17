@@ -224,14 +224,26 @@ class Project():
     #      and            {'foo': 'upstream-A', 'bar': 'upstream-B'},
     #
     # Args:
-    #    aliases (list): A list of aliases to generate combinations for
+    #    URLs (list): A list of URLs to generate combinations for if they're
+    #                 prefixed with an appropriate alias.
     #
     # Yields:
-    #    a dict mapping aliases to a mirror URI
+    #    a dict mapping URLs to a mirrored URL
     #
-    def generate_alias_combinations(self, aliases):
-        # We numerically address the aliases
-        aliases = list(aliases)
+    def generate_alias_combinations(self, urls):
+
+        aliases = set()
+        urls_to_aliases = {}
+        # Generate the aliases
+        for url in urls:
+            if utils._ALIAS_SEPARATOR in url:
+                url_alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+                if url_alias in self._aliases:
+                    aliases.add(url_alias)
+                    urls_to_aliases[url] = url_alias
+
+        # We numerically address urls
+        url = list(urls)
 
         # Flatten the mirrors and put them in the right order
         flattened_mirrors = {}
@@ -248,17 +260,22 @@ class Project():
             flattened_mirrors[alias].append(self._aliases[alias])
 
         combinations = [[]]
-        for alias in aliases:
+        for url in urls:
             new_combinations = []
-            for x in combinations:
-                for y in flattened_mirrors[alias]:
-                    new_combinations.append(x + [y])
+            for combination in combinations:
+                alias = urls_to_aliases[url]
+                for mirror_uri in flattened_mirrors[alias]:
+                    # TODO: MAKE NICE
+                    _, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
+                    new_url = mirror_uri + url_body
+
+                    new_combinations.append(combination + [new_url])
             combinations = new_combinations
 
         for combination in combinations:
             out_combination = {}
-            for i, alias in enumerate(aliases):
-                out_combination[alias] = combination[i]
+            for i, url in enumerate(urls):
+                out_combination[url] = combination[i]
             yield out_combination
 
     # _load():

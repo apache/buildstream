@@ -124,8 +124,9 @@ class Source(Plugin):
     """
     __defaults = {}          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
+    __protocol_prefix = "http://"  # Default URI prefix that most source protocols accept
 
-    def __init__(self, context, project, meta, *, alias_overrides=None):
+    def __init__(self, context, project, meta, *, uri_overrides=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source")
@@ -135,8 +136,8 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
-        self.__alias_overrides = alias_overrides        # Aliases to use instead of the one from the project
-        self._expected_aliases = set()                  # A hacky way to store which aliases the source used
+        self.__uri_overrides = uri_overrides            # URIs to use directly instead of resolving aliases
+        self._used_urls = set()                         # A hacky way of tracking which URLs were used.
         self.__meta = meta                              # MetaSource stored so we can copy this source later.
 
         # Collect the composited element configuration and
@@ -303,6 +304,17 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
+    def get_normalised_mirror_path(self, upstream_url, *, prefix="", suffix=""):
+        """Constructs a path for the mirror from the given URL
+
+        Returns:
+           (str): The path for the mirror
+        """
+
+        kind = self.get_kind()
+        normalised_url = utils.url_directory_name(upstream_url)
+        return os.path.join(self.__protocol_prefix, prefix, kind, normalised_url, suffix)
+
     def translate_url(self, url):
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
@@ -313,20 +325,19 @@ class Source(Plugin):
         Returns:
            str: The fully qualified url, with aliases resolved
         """
-        if self.__alias_overrides:
-            if url and utils._ALIAS_SEPARATOR in url:
-                url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-                url = self.__alias_overrides[url_alias] + url_body
+        if self.__uri_overrides:
+            if url:
+                url = self.__uri_overrides[url]
             return url
         else:
             project = self._get_project()
-            # Sneakily store the alias
+            # Sneakily store the URL if it uses an alias.
             if url and utils._ALIAS_SEPARATOR in url:
                 url_alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
                 # The alias must already be defined in the project's aliases
                 # otherwise http://foo gets treated like it contains an alias
                 if project.get_alias_uri(url_alias):
-                    self._expected_aliases.add(url_alias)
+                    self._used_urls.add(url)
 
             return project.translate_url(url)
 
@@ -620,14 +631,14 @@ class Source(Plugin):
     #
     def _mirrored_fetch(self):
         # Mirrors can't do anything if this source doesn't use aliases
-        if not self._expected_aliases:
+        if not self._used_urls:
             return False
 
         context = self._get_context()
         project = self._get_project()
         source_kind = type(self)
-        for combination in project.generate_alias_combinations(self._expected_aliases):
-            new_source = source_kind(context, project, self.__meta, alias_overrides=combination)
+        for combination in project.generate_alias_combinations(self._used_urls):
+            new_source = source_kind(context, project, self.__meta, uri_overrides=combination)
             new_source._preflight()
             try:
                 new_source._fetch()
