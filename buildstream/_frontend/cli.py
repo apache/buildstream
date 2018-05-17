@@ -170,7 +170,7 @@ def cli(context, **kwargs):
     from .app import App
 
     # Create the App, giving it the main arguments
-    context.obj = App(dict(kwargs))
+    context.obj = App.create(dict(kwargs))
     context.call_on_close(context.obj.cleanup)
 
 

@@ -125,6 +125,25 @@ class App():
             # Set soft limit to hard limit
             resource.setrlimit(resource.RLIMIT_NOFILE, (limits[1], limits[1]))
 
+    # create()
+    #
+    # Should be used instead of the regular constructor.
+    #
+    # This will select a platform specific App implementation
+    #
+    # Args:
+    #    The same args as the App() constructor
+    #
+    @classmethod
+    def create(cls, *args, **kwargs):
+        if sys.platform.startswith('linux'):
+            # Use an App with linux specific features
+            from .linuxapp import LinuxApp
+            return LinuxApp(*args, **kwargs)
+        else:
+            # The base App() class is default
+            return App(*args, **kwargs)
+
     # initialized()
     #
     # Context manager to initialize the application and optionally run a session
@@ -373,6 +392,24 @@ class App():
             self.stream.cleanup()
 
     ############################################################
+    #                   Abstract Class Methods                 #
+    ############################################################
+
+    # notify()
+    #
+    # Notify the user of something which occurred, this
+    # is intended to grab attention from the user.
+    #
+    # This is guaranteed to only be called in interactive mode
+    #
+    # Args:
+    #    title (str): The notification title
+    #    text (str): The notification text
+    #
+    def notify(self, title, text):
+        pass
+
+    ############################################################
     #                      Local Functions                     #
     ############################################################
 
@@ -520,6 +557,9 @@ class App():
             choice = ''
             while choice not in ['continue', 'quit', 'terminate', 'retry']:
                 click.echo(summary, err=True)
+
+                self.notify("BuildStream failure", "{} on element {}"
+                            .format(failure.action_name, element.name))
 
                 try:
                     choice = click.prompt("Choice:", default='continue', err=True,
