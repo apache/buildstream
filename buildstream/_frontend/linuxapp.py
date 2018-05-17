@@ -29,6 +29,6 @@ class LinuxApp(App):
 
     def notify(self, title, text):
 
-        term = os.environ('TERM')
+        term = os.environ['TERM']
         if term in ('xterm', 'vte'):
             click.echo("\033]777;notify;{};{}\007".format(title, text))
