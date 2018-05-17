@@ -122,7 +122,6 @@ class ComposeElement(Element):
                     snapshot = set(vbasedir.list_relative_paths())
                     vbasedir.mark_unmodified()
 
-
                 for dep in self.dependencies(Scope.BUILD):
                     dep.integrate(sandbox)
 
@@ -132,7 +131,7 @@ class ComposeElement(Element):
                     modified_files = set(vbasedir.list_modified_paths())
                     basedir_contents = set(post_integration_snapshot)
                     for path in manifest:
-                        if path in snapshot and not path in basedir_contents:
+                        if path in snapshot and path not in basedir_contents:
                             removed_files.add(path)
 
                     for path in basedir_contents:
