@@ -212,11 +212,19 @@ class Pipeline():
     # use in the result, this function reports a list that is appropriate for
     # the selected option.
     #
-    def get_selection(self, targets, mode):
+    def get_selection(self, targets, mode, *, silent=True):
 
         elements = None
         if mode == PipelineSelection.NONE:
-            elements = targets
+            # Redirect and log if permitted
+            elements = []
+            for t in targets:
+                new_elm = t._get_source_element()
+                if new_elm != t and not silent:
+                    self._message(MessageType.INFO, "Element '{}' redirected to '{}'"
+                                  .format(t.name, new_elm.name))
+                if new_elm not in elements:
+                    elements.append(new_elm)
         elif mode == PipelineSelection.PLAN:
             elements = self.plan(targets)
         else:

@@ -514,6 +514,13 @@ class Stream():
 
         elements, track_elements = self._load(targets, track_targets)
 
+        nonexisting = []
+        for element in elements:
+            if not self.workspace_exists(element.name):
+                nonexisting.append(element.name)
+        if nonexisting:
+            raise StreamError("Workspace does not exist", detail="\n".join(nonexisting))
+
         # Do the tracking first
         if track_first:
             self._fetch(elements, track_elements=track_elements)
@@ -663,6 +670,37 @@ class Stream():
             self._collect_sources(tempdir, tar_location,
                                   target.normal_name, compression)
 
+    # redirect_element_names()
+    #
+    # Takes a list of element names and returns a list where elements have been
+    # redirected to their source elements if the element file exists, and just
+    # the name, if not.
+    #
+    # Args:
+    #    elements (list of str): The element names to redirect
+    #
+    # Returns:
+    #    (list of str): The element names after redirecting
+    #
+    def redirect_element_names(self, elements):
+        element_dir = self._project.element_path
+        load_elements = []
+        output_elements = set()
+
+        for e in elements:
+            element_path = os.path.join(element_dir, e)
+            if os.path.exists(element_path):
+                load_elements.append(e)
+            else:
+                output_elements.add(e)
+        if load_elements:
+            loaded_elements, _ = self._load(load_elements, ())
+
+            for e in loaded_elements:
+                output_elements.add(e.name)
+
+        return list(output_elements)
+
     #############################################################
     #                 Scheduler API forwarding                  #
     #############################################################
@@ -803,7 +841,7 @@ class Stream():
         # Now move on to loading primary selection.
         #
         self._pipeline.resolve_elements(elements)
-        selected = self._pipeline.get_selection(elements, selection)
+        selected = self._pipeline.get_selection(elements, selection, silent=False)
         selected = self._pipeline.except_elements(elements,
                                                   selected,
                                                   except_elements)
