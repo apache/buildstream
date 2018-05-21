@@ -34,7 +34,7 @@ import calendar
 import os
 import time
 from .._exceptions import BstError, ErrorDomain
-from .Directory import Directory
+from .directory import Directory
 from ..utils import link_files, copy_files, FileListResult, list_relative_paths
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
 

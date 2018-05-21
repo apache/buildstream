@@ -32,7 +32,7 @@ See also: :ref:`sandboxing`.
 
 import os
 from .._exceptions import ImplError, BstError
-from ._filebaseddirectory import FileBasedDirectory
+from ..storage._filebaseddirectory import FileBasedDirectory
 
 
 class SandboxFlags():

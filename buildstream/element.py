@@ -97,8 +97,8 @@ from . import _site
 from ._platform import Platform
 from .sandbox._config import SandboxConfig
 
-from .sandbox.Directory import Directory
-from .sandbox._filebaseddirectory import FileBasedDirectory, VirtualDirectoryError
+from .storage.directory import Directory
+from .storage._filebaseddirectory import FileBasedDirectory, VirtualDirectoryError
 
 
 # _KeyStrength():
