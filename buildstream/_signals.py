@@ -20,6 +20,7 @@
 import os
 import signal
 import sys
+import threading
 import traceback
 from contextlib import contextmanager, ExitStack
 from collections import deque
@@ -71,6 +72,11 @@ def terminator_handler(signal_, frame):
 @contextmanager
 def terminator(terminate_func):
     global terminator_stack                   # pylint: disable=global-statement
+
+    # Signal handling only works in the main thread
+    if threading.current_thread() != threading.main_thread():
+        yield
+        return
 
     outermost = False if terminator_stack else True
 
