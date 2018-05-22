@@ -541,7 +541,7 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
 #     (str) The path whose size to check.
 #
 # Returns:
-#     (int) The size on disk.
+#     (int) The size on disk in bytes.
 #
 def _get_dir_size(path):
     scandir = None
@@ -564,11 +564,10 @@ def _get_dir_size(path):
         total = 0
 
         for f in scandir(path):
+            total += f.stat(follow_symlinks=False).st_size
+
             if f.is_dir(follow_symlinks=False):
-                total += f.stat(follow_symlinks=False).st_size
                 total += get_scandir_dir_size(f.path)
-            elif f.is_file(follow_symlinks=False):
-                total += f.stat(follow_symlinks=False).st_size
 
         return total
 
