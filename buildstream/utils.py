@@ -578,13 +578,17 @@ def _get_dir_size(path):
         for dirpath, dirs, files in os.walk(path):
             for d in dirs:
                 path = os.path.join(dirpath, d)
-                if os.path.exists(path):
-                    total += os.stat(path, follow_symlinks=False).st_size
+                try:
+                    total += os.lstat(path).st_size
+                except FileNotFoundError:
+                    pass
 
             for f in files:
                 path = os.path.join(dirpath, f)
-                if os.path.exists(path):
-                    total += os.stat(path, follow_symlinks=False).st_size
+                try:
+                    total += os.lstat(path).st_size
+                except FileNotFoundError:
+                    pass
 
         return total
 
