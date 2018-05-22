@@ -28,7 +28,7 @@
 
 ## Other relevant information
 
-[//] # (Add the BuildStream version. Substitute below the "x" by "1", "2" or the right version. Add more than one versioni f necessary)
+[//]: # (Add the BuildStream version. Substitute below the "x" by "1", "2" or the right version. Add more than one version if necessary)
 
 * BuildStream version affected: /milestone %BuildStream_v1.x
 
