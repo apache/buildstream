@@ -596,23 +596,3 @@ def __list_all_refs(repo):
         return refs
     except GLib.GError as e:
         raise OSTreeError(message=e.message) from e
-
-
-# __list_remote_refs():
-#
-# Fetch list of refs from a remote.
-#
-# Args:
-#    repo (OSTree.Repo): The repo
-#    remote (str): An optional remote name, defaults to 'origin'
-#
-# Returns:
-#    (dict): A dict of refs to checksums.
-#
-def __list_remote_refs(repo, remote="origin"):
-    try:
-        _, refs = repo.remote_list_refs(remote)
-        return refs
-    except GLib.GError as e:
-        (_, remote_url) = repo.remote_get_url(remote)
-        raise OSTreeError(message="{} when attempting to fetch from {}".format(e.message, remote_url)) from e
