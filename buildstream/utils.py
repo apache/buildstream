@@ -544,7 +544,7 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
 #     (str) The path whose size to check.
 #
 # Returns:
-#     (int) The size on disk.
+#     (int) The size on disk in bytes.
 #
 def _get_dir_size(path):
     path = os.path.abspath(path)
