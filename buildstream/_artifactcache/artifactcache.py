@@ -356,7 +356,7 @@ class ArtifactCache():
     #
     def _initialize_remotes(self):
         def remote_failed(url, error):
-            self._message(MessageType.WARN, "Failed to fetch remote refs from {}: {}".format(url, error))
+            self._message(MessageType.WARN, "Failed to initialize remote {}: {}".format(url, error))
 
         with self.context.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)
