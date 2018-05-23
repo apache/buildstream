@@ -25,12 +25,11 @@ Users can declare additional remote caches in the :ref:`user configuration
 define its own cache, it may be useful to have a local mirror of its cache, or
 you may have a reason to share artifacts privately.
 
-Remote artifact caches are identified by their URL. There are currently three
+Remote artifact caches are identified by their URL. There are currently two
 supported protocols:
 
-* ``http``: Pull-only access, without transport-layer security
-* ``https``: Pull-only access, with transport-layer security
-* ``ssh``: Push access, authenticated via SSH
+* ``http``: Pull and push access, without transport-layer security
+* ``https``: Pull and push access, with transport-layer security
 
 BuildStream allows you to configure as many caches as you like, and will query
 them in a specific order:
@@ -54,17 +53,23 @@ The rest of this page outlines how to set up a shared artifact cache.
 
 Setting up the user
 ~~~~~~~~~~~~~~~~~~~
-A specific user is not needed for downloading artifacts, but since we
-are going to use ssh to upload the artifacts, you will want a dedicated
-user to own the artifact cache.
+A specific user is not needed, however, a dedicated user to own the
+artifact cache is recommended.
 
 .. code:: bash
 
    useradd artifacts
 
+The recommended approach is to run two instances on different ports.
+One instance has push disabled and doesn't require client authentication.
+The other instance has push enabled and requires client authentication.
 
-Installing the receiver
-~~~~~~~~~~~~~~~~~~~~~~~
+Alternatively, you can set up a reverse proxy and handle authentication
+and authorization there.
+
+
+Installing the server
+~~~~~~~~~~~~~~~~~~~~~
 You will also need to install BuildStream on the artifact server in order
 to receive uploaded artifacts over ssh. Follow the instructions for installing
 BuildStream :ref:`here <install>`
@@ -74,10 +79,10 @@ in a system wide location, with ``pip3 install .`` in the BuildStream
 checkout directory.
 
 Otherwise, some tinkering is required to ensure BuildStream is available
-in ``PATH`` when it's companion ``bst-artifact-receive`` program is run
+in ``PATH`` when it's companion ``bst-artifact-server`` program is run
 remotely.
 
-You can install only the artifact receiver companion program without
+You can install only the artifact server companion program without
 requiring BuildStream's more exigent dependencies by setting the
 ``BST_ARTIFACTS_ONLY`` environment variable at install time, like so:
 
@@ -86,81 +91,57 @@ requiring BuildStream's more exigent dependencies by setting the
     BST_ARTIFACTS_ONLY=1 pip3 install .
 
 
-Initializing the cache
-~~~~~~~~~~~~~~~~~~~~~~
-Now that you have a dedicated user to own the artifact cache, change
-to that user, and create the artifact cache ostree repository directly
-in it's home directory as such:
+Command reference
+~~~~~~~~~~~~~~~~~
+
+.. click:: buildstream._artifactcache.casserver:server_main
+   :prog: bst-artifact-server
+
+
+Key pair for the server
+~~~~~~~~~~~~~~~~~~~~~~~
+
+For TLS you need a key pair for the server. The following example creates
+a self-signed key, which requires clients to have a copy of the server certificate
+(e.g., in the project directory).
+You can also use a key pair obtained from a trusted certificate authority instead.
 
 .. code:: bash
 
-   ostree init --mode archive-z2 --repo artifacts
+    openssl req -new -newkey rsa:4096 -x509 -sha256 -days 3650 -nodes -batch -subj "/CN=artifacts.com" -out server.crt -keyout server.key
 
-This should result in an artifact cache residing at the path ``/home/artifacts/artifacts``
+
+Authenticating users
+~~~~~~~~~~~~~~~~~~~~
+In order to give permission to a given user to upload
+artifacts, create a TLS key pair on the client.
+
+.. code:: bash
+
+    openssl req -new -newkey rsa:4096 -x509 -sha256 -days 3650 -nodes -batch -subj "/CN=client" -out client.crt -keyout client.key
+
+Copy the public client certificate ``client.crt`` to the server and then add it
+to the authorized keys, like so:
+
+.. code:: bash
+
+   cat client.crt >> /home/artifacts/authorized.crt
 
 
 Serve the cache over https
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-This part should be pretty simple, you can do this with various technologies, all
-we really require is that you make the artifacts available over https (you can use
-http but until we figure out using gpg signed ostree commits for the artifacts, it's
-better to serve over https).
 
-Here is an example, note that you must have a certificate **pem** file to use, as
-is the case for hosting anything over https.
-
-.. code:: python
-
-   import http.server, ssl, os
-
-   # Maybe use a custom port, especially if you are serving
-   # other web pages on the same computer
-   server_address = ('localhost', 443)
-   artifact_path = '/home/artifacts'
-
-   # The http server will serve from it's current
-   # working directory
-   os.chdir(artifact_path)
-
-   # Create Server
-   httpd = http.server.HTTPServer(
-       server_address,
-       http.server.SimpleHTTPRequestHandler)
-
-   # Add ssl
-   httpd.socket = ssl.wrap_socket(httpd.socket,
-                                  server_side=True,
-                                  certfile='localhost.pem',
-                                  ssl_version=ssl.PROTOCOL_TLSv1)
-
-   # Run it
-   httpd.serve_forever()
-
-
-Configure and run sshd
-~~~~~~~~~~~~~~~~~~~~~~
-You will need to run the sshd service to allow uploading artifacts.
-
-For this you will want something like the following in your ``/etc/ssh/sshd_config``
+Public instance without push:
 
 .. code:: bash
 
-   # Allow ssh logins/commands with the artifacts user
-   AllowUsers artifacts
+    bst-artifact-server --port 11001 --server-key server.key --server-cert server.crt /home/artifacts/artifacts
 
-   # Some specifics for the artifacts user
-   Match user artifacts
+Instance with push and requiring client authentication:
 
-        # Dont allow password authentication for artifacts user
-	#
-        PasswordAuthentication no
+.. code:: bash
 
-        # Also lets dedicate this login for only running the
-	# bst-artifact-receive program, note that the full
-	# command must be specified here; 'artifacts' is
-	# the HOME relative path to the artifact cache.
-	# The exact pull URL must also be specified.
-        ForceCommand bst-artifact-receive --pull-url https://example.com/artifacts --verbose artifacts
+    bst-artifact-server --port 11002 --server-key server.key --server-cert server.crt --client-certs authorized.crt --enable-push /home/artifacts/artifacts
 
 
 User configuration
@@ -172,6 +153,8 @@ Assuming you have the same setup used in this document, and that your
 host is reachable on the internet as ``artifacts.com`` (for example),
 then a user can use the following user configuration:
 
+Pull-only:
+
 .. code:: yaml
 
    #
@@ -179,22 +162,27 @@ then a user can use the following user configuration:
    #
    artifacts:
 
-     url: https://artifacts.com/artifacts
+     url: https://artifacts.com:11001
 
-     # Alternative form if you have push access to the cache
-     #url: ssh://artifacts@artifacts.com:22200/artifacts
-     #push: true
+     # Optional server certificate if not trusted by system root certificates
+     server-cert: server.crt
 
+Pull and push:
 
-Authenticating users
-~~~~~~~~~~~~~~~~~~~~
-In order to give permission to a given user to upload
-artifacts, simply use the regular ``ssh`` method.
+.. code:: yaml
 
-First obtain the user's public ssh key, and add it
-to the authorized keys, like so:
+   #
+   #    Artifacts
+   #
+   artifacts:
 
-.. code:: bash
+     url: https://artifacts.com:11002
 
-   cat user_id_rsa.pub >> /home/artifacts/.ssh/authorized_keys
+     # Optional server certificate if not trusted by system root certificates
+     server-cert: server.crt
 
+     # Optional client key pair for authentication
+     client-key: client.key
+     client-cert: client.crt
+
+     push: true
