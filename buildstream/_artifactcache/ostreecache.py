@@ -227,7 +227,7 @@ class OSTreeCache(ArtifactCache):
             except Exception as e:               # pylint: disable=broad-except
                 # Whatever happens, we need to return it to the calling process
                 #
-                q.put((str(e), None, None, None))
+                q.put((str(e), None, None))
 
         # Kick off all the initialization jobs one by one.
         #
