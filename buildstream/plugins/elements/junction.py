@@ -70,6 +70,22 @@ However, junction elements do not produce any artifacts, which means that
 they cannot be built or staged. It also means that another element cannot
 depend on a junction element itself.
 
+.. note::
+
+   BuildStream does not implicitly track junction elements. This means
+   that if we were to invoke: `bst build --track-all ELEMENT` on an element
+   which uses a junction element, the ref of the junction element
+   will not automatically be updated if a more recent version exists.
+
+   Therefore, if you require the most up-to-date version of a subproject,
+   you must explicitly track the junction element by invoking:
+   `bst track JUNCTION_ELEMENT`.
+
+   Furthermore, elements within the subproject are also not tracked by default.
+   For this, we must specify the `--track-cross-junctions` option. This option
+   must be preceeded by `--track ELEMENT` or `--track-all`.
+
+
 Sources
 -------
 ``bst show`` does not implicitly fetch junction sources if they haven't been
