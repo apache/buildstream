@@ -35,6 +35,7 @@ from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 from ._workspaces import Workspaces
+from ._mirror import MirrorKind, DefaultMirror, BstGeneratedMirror
 
 
 # HostMount()
@@ -245,30 +246,21 @@ class Project():
         # We numerically address urls
         url = list(urls)
 
-        # Flatten the mirrors and put them in the right order
-        flattened_mirrors = {}
-        for alias in aliases:
-            flattened_mirrors[alias] = []
-            for mirror_location, alias_mappings in self.mirrors.items():
-                if alias in alias_mappings:
-                    mapping_list = list(alias_mappings[alias])
-                    if mirror_location == self.default_mirror:
-                        # The default mirror goes first
-                        flattened_mirrors[alias] = mapping_list + flattened_mirrors[alias]
-                    else:
-                        flattened_mirrors[alias].extend(mapping_list)
-            flattened_mirrors[alias].append(self._aliases[alias])
+        reordered_mirrors = OrderedDict(self.mirrors)
+        reordered_mirrors.move_to_end(self.default_mirror, last=False)  # pylint: disable=no-member
 
         combinations = [[]]
         for url in urls:
             new_combinations = []
             for combination in combinations:
                 alias = urls_to_aliases[url]
-                for mirror_uri in flattened_mirrors[alias]:
-                    # TODO: MAKE NICE
-                    _, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-                    new_url = mirror_uri + url_body
-
+                for mirror in reordered_mirrors.values():
+                    for uri in mirror.get_mirror_uris(url, self):
+                        new_combinations.append(combination + [uri])
+                if alias in self._aliases:
+                    default_alias = self._aliases[alias]
+                    _, body = url.split(utils._ALIAS_SEPARATOR, 1)
+                    new_url = default_alias + body
                     new_combinations.append(combination + [new_url])
             combinations = new_combinations
 
@@ -493,20 +485,29 @@ class Project():
 
             self._shell_host_files.append(mount)
 
-        mirrors = _yaml.node_get(config, list, 'mirrors', default_value=[])
-        for mirror in mirrors:
-            allowed_mirror_fields = [
-                'location-name', 'aliases'
-            ]
-            _yaml.node_validate(mirror, allowed_mirror_fields)
-            mirror_location = _yaml.node_get(mirror, str, 'location-name')
-            alias_mappings = {}
-            for alias_mapping, uris in _yaml.node_items(mirror['aliases']):
-                assert isinstance(uris, list)
-                alias_mappings[alias_mapping] = list(uris)
-            self.mirrors[mirror_location] = alias_mappings
+        self._load_mirrors(config)
+
+    def _load_mirrors(self, config):
+        mirrors_node = _yaml.node_get(config, list, 'mirrors', default_value=[])
+        for mirror_node in mirrors_node:
+            # different kinds of mirror expect different fields
+            mirror_kind = _yaml.node_get(mirror_node, str, 'mirror-kind',
+                                         default_value=MirrorKind.DEFAULT)
+            if mirror_kind == MirrorKind.DEFAULT:
+                mirror = DefaultMirror(mirror_node)
+                self.mirrors[mirror.location] = mirror
+
+            elif mirror_kind == MirrorKind.BST_GENERATED:
+                mirror = BstGeneratedMirror(mirror_node)
+                self.mirrors[mirror.location] = mirror
+
+            else:
+                provenance = _yaml.node_get_provenance(mirror_node, key='mirror-kind')
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Unexpected mirror-kind: {}".format(provenance, mirror_kind))
+
             if not self.default_mirror:
-                self.default_mirror = mirror_location
+                self.default_mirror = mirror.location
 
     # _assert_plugin_format()
     #

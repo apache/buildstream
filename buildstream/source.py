@@ -304,7 +304,7 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
-    def get_normalised_mirror_path(self, upstream_url, *, prefix="", suffix=""):
+    def get_normalised_mirror_path(self, upstream_url, *, prefix=""):
         """Constructs a path for the mirror from the given URL
 
         Returns:
@@ -313,7 +313,7 @@ class Source(Plugin):
 
         kind = self.get_kind()
         normalised_url = utils.url_directory_name(upstream_url)
-        return os.path.join(self.__protocol_prefix, prefix, kind, normalised_url, suffix)
+        return os.path.join(self.__protocol_prefix, prefix, kind, normalised_url)
 
     def translate_url(self, url):
         """Translates the given url which may be specified with an alias
@@ -634,8 +634,12 @@ class Source(Plugin):
         if not self._used_urls:
             return False
 
-        context = self._get_context()
+        # Skip if we have no mirrors defined to fetch from
         project = self._get_project()
+        if not project.mirrors:
+            return False
+
+        context = self._get_context()
         source_kind = type(self)
         for combination in project.generate_alias_combinations(self._used_urls):
             new_source = source_kind(context, project, self.__meta, uri_overrides=combination)

@@ -107,7 +107,6 @@ class GitMirror():
             # system configured tmpdir is not on the same partition.
             #
             with self.source.tempdir() as tmpdir:
-                self.source.info("*** url is '{}'".format(self.url))
                 self.source.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir],
                                  fail="Failed to clone git repository {}".format(self.url))
 
