@@ -307,7 +307,7 @@ def safe_remove(path):
     """Removes a file or directory
 
     This will remove a file if it exists, and will
-    remove a directory if the directory is not empty.
+    remove a directory if the directory is empty.
 
     Args:
        path (str): The path to remove
