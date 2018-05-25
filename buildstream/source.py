@@ -642,7 +642,8 @@ class Source(Plugin):
         context = self._get_context()
         source_kind = type(self)
         for combination in project.generate_alias_combinations(self._used_urls):
-            new_source = source_kind(context, project, self.__meta, uri_overrides=combination)
+            uri_overrides = {k: v[0] for k, v in combination.items()}
+            new_source = source_kind(context, project, self.__meta, uri_overrides=uri_overrides)
             new_source._preflight()
             try:
                 new_source._fetch()

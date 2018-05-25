@@ -217,19 +217,22 @@ class Project():
 
     # generate_alias_combinations()
     #
-    # Yields every unique combination of mirrors for each alias
+    # Yields every unique combination of mirrors for each alias, including a flag for
+    # whether a numerical suffix should be appended.
     #
     # e.g. alias 'foo' has a mirror at 'mirror-A', and the normal alias at 'upstream-A'
     #      alias 'bar' has no mirror, but does have the normal alias at 'upstream-B'
-    #      We would yield {'foo': 'mirror-A', 'bar': 'upstream-B'},
-    #      and            {'foo': 'upstream-A', 'bar': 'upstream-B'},
+    #      'mirror-A' should have a numerical suffix appended.
+    #      We would yield {'foo': ('mirror-A', True), 'bar': ('upstream-B', False)},
+    #      and            {'foo': ('upstream-A', False), 'bar': ('upstream-B', False)},
     #
     # Args:
     #    URLs (list): A list of URLs to generate combinations for if they're
     #                 prefixed with an appropriate alias.
     #
     # Yields:
-    #    a dict mapping URLs to a mirrored URL
+    #    a dict mapping URLs to a tuple of the mirrored URL and whether that URL
+    #    should have a numbered suffix appended.
     #
     def generate_alias_combinations(self, urls):
 
@@ -249,26 +252,29 @@ class Project():
         reordered_mirrors = OrderedDict(self.mirrors)
         reordered_mirrors.move_to_end(self.default_mirror, last=False)  # pylint: disable=no-member
 
-        combinations = [[]]
+        combinations = [OrderedDict()]
         for url in urls:
             new_combinations = []
             for combination in combinations:
                 alias = urls_to_aliases[url]
                 for mirror in reordered_mirrors.values():
-                    for uri in mirror.get_mirror_uris(url, self):
-                        new_combinations.append(combination + [uri])
+                    for uri, append_number in mirror.get_mirror_uris(url, self):
+                        new_combination = OrderedDict(combination)
+                        new_combination[url] = (uri, append_number)
+                        new_combinations.append(new_combination)
+
+                # Add the default aliases as valid mirrors
                 if alias in self._aliases:
                     default_alias = self._aliases[alias]
                     _, body = url.split(utils._ALIAS_SEPARATOR, 1)
                     new_url = default_alias + body
-                    new_combinations.append(combination + [new_url])
+                    new_combination = OrderedDict(combination)
+                    new_combination[url] = (new_url, False)
+                    new_combinations.append(new_combination)
             combinations = new_combinations
 
         for combination in combinations:
-            out_combination = {}
-            for i, url in enumerate(urls):
-                out_combination[url] = combination[i]
-            yield out_combination
+            yield combination
 
     # _load():
     #

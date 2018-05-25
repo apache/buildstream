@@ -58,7 +58,7 @@ class DefaultMirror(Mirror):
     def get_mirror_uris(self, uri, source):
         url_prefix, url_body = uri.split(utils._ALIAS_SEPARATOR, 1)
         for alias_uri in self.aliases.get(url_prefix, []):
-            yield alias_uri + url_body
+            yield alias_uri + url_body, False
 
 
 class BstGeneratedMirror(Mirror):
@@ -76,4 +76,4 @@ class BstGeneratedMirror(Mirror):
         self.aliases_covered = _yaml.node_get(node, list, 'aliases-covered')
 
     def get_mirror_uris(self, uri, source):
-        yield source.get_normalised_mirror_path(uri, prefix=self.site)
+        yield source.get_normalised_mirror_path(uri, prefix=self.site), True
