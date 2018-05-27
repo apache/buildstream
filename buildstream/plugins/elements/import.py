@@ -36,6 +36,10 @@ from buildstream import Element, BuildElement, ElementError
 
 # Element implementation for the 'import' kind.
 class ImportElement(BuildElement):
+
+    # This plugin has been modified to avoid the use of Sandbox.get_directory
+    BST_VIRTUAL_DIRECTORY = True
+
     # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
