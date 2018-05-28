@@ -31,7 +31,8 @@ See also: :ref:`sandboxing`.
 """
 
 import os
-from .._exceptions import ImplError
+from .._exceptions import ImplError, BstError
+from ..storage._filebaseddirectory import FileBasedDirectory
 
 
 class SandboxFlags():
@@ -92,28 +93,63 @@ class Sandbox():
         self.__cwd = None
         self.__env = None
         self.__mount_sources = {}
+        self.__allow_real_directory = kwargs['allow_real_directory']
+
         # Configuration from kwargs common to all subclasses
         self.__config = kwargs['config']
         self.__stdout = kwargs['stdout']
         self.__stderr = kwargs['stderr']
 
-        # Setup the directories
+        # Setup the directories. Root should be available to subclasses, hence
+        # being single-underscore. The others are private to this class.
+        self._root = os.path.join(directory, 'root')
         self.__directory = directory
-        self.__root = os.path.join(self.__directory, 'root')
         self.__scratch = os.path.join(self.__directory, 'scratch')
-        for directory_ in [self.__root, self.__scratch]:
+        for directory_ in [self._root, self.__scratch]:
             os.makedirs(directory_, exist_ok=True)
 
     def get_directory(self):
         """Fetches the sandbox root directory
 
         The root directory is where artifacts for the base
-        runtime environment should be staged.
+        runtime environment should be staged. Only works if
+        BST_VIRTUAL_DIRECTORY is not set.
 
         Returns:
            (str): The sandbox root directory
+
         """
-        return self.__root
+        if self.__allow_real_directory:
+            return self._root
+        else:
+            raise BstError("You can't use get_directory")
+
+    def get_virtual_directory(self):
+        """Fetches the sandbox root directory
+
+        The root directory is where artifacts for the base
+        runtime environment should be staged. Only works if
+        BST_VIRTUAL_DIRECTORY is not set.
+
+        Returns:
+           (str): The sandbox root directory
+
+        """
+        # For now, just create a new Directory every time we're asked
+        return FileBasedDirectory(self._root)
+
+    def get_virtual_toplevel_directory(self):
+        """Fetches the sandbox's toplevel directory
+
+        The toplevel directory contains 'root', 'scratch' and later
+        'artifact' where output is copied to.
+
+        Returns:
+           (str): The sandbox toplevel directory
+
+        """
+        # For now, just create a new Directory every time we're asked
+        return FileBasedDirectory(self.__directory)
 
     def set_environment(self, environment):
         """Sets the environment variables for the sandbox

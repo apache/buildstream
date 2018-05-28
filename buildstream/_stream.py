@@ -388,13 +388,13 @@ class Stream():
             with target._prepare_sandbox(Scope.RUN, None, integrate=integrate) as sandbox:
 
                 # Copy or move the sandbox to the target directory
-                sandbox_root = sandbox.get_directory()
+                sandbox_vroot = sandbox.get_virtual_directory()
                 with target.timed_activity("Checking out files in {}".format(directory)):
                     try:
                         if hardlinks:
-                            self._checkout_hardlinks(sandbox_root, directory)
+                            self._checkout_hardlinks(sandbox_vroot, directory)
                         else:
-                            utils.copy_files(sandbox_root, directory)
+                            sandbox_vroot.export_files(directory)
                     except OSError as e:
                         raise StreamError("Failed to checkout files: {}".format(e)) from e
         except BstError as e:
@@ -967,22 +967,17 @@ class Stream():
 
     # Helper function for checkout()
     #
-    def _checkout_hardlinks(self, sandbox_root, directory):
+    def _checkout_hardlinks(self, sandbox_vroot, directory):
         try:
             removed = utils.safe_remove(directory)
         except OSError as e:
             raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
 
         if removed:
-            # Try a simple rename of the sandbox root; if that
-            # doesnt cut it, then do the regular link files code path
-            try:
-                os.rename(sandbox_root, directory)
-            except OSError:
-                os.makedirs(directory, exist_ok=True)
-                utils.link_files(sandbox_root, directory)
+            os.makedirs(directory, exist_ok=True)
+            sandbox_vroot.export_files(directory, can_link=True, can_destroy=True)
         else:
-            utils.link_files(sandbox_root, directory)
+            sandbox_vroot.export_files(directory, can_link=True, can_destroy=False)
 
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
