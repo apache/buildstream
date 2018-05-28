@@ -111,7 +111,13 @@ class FileBasedDirectory(Directory):
         if subdirectory_spec[0] == "":
             return self.descend(subdirectory_spec[1:], create)
 
+        # Forcibly re-read the directory.
+        # TODO: This shouldn't be necessary. Any extra directories created using
+        # 'descend' should have caused the index to be updated there, and we should
+        # never need to call _populate_index again. Find out why.
+        self._directory_read = False
         self._populate_index()
+
         if subdirectory_spec[0] in self.index:
             entry = self.index[subdirectory_spec[0]]
             if isinstance(entry, FileBasedDirectory):
