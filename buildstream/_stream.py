@@ -435,6 +435,29 @@ class Stream():
             raise StreamError("Error while staging dependencies into a sandbox"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
+    # __stage_cached_buildtree
+    #
+    # Stage a cached build tree if it exists
+    #
+    # Args:
+    #     use_cached_buildtree (bool): Whether or not to use cached buildtrees
+    #     element: element in use
+    #     cache_activity, stage_activity, message: (str)
+    #
+    # Returns:
+    #    (bool): True if the build tree was staged
+    #
+    def __stage_cached_buildtree(self, element, target_dir):
+        buildtree_path = None
+        if element._cached():
+            with element.timed_activity("Extracting cached build tree"):
+                buildtree_path = element._buildtree_path(element._get_cache_key())
+        if buildtree_path is not None:
+            with element.timed_activity("Staging cached build tree to {}".format(target_dir)):
+                shutil.copytree(buildtree_path, target_dir)
+                return True
+        return False
+
     # workspace_open
     #
     # Open a project workspace
@@ -445,11 +468,25 @@ class Stream():
     #    no_checkout (bool): Whether to skip checking out the source
     #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
+    #    use_cached_buildtree(str): Whether or not to use cached buildtrees
     #
     def workspace_open(self, target, directory, *,
                        no_checkout,
                        track_first,
-                       force):
+                       force,
+                       use_cached_buildtree):
+
+        workspaces = self._context.get_workspaces()
+        assert use_cached_buildtree in ('use-cached', 'when-local', 'ignore-cached')
+
+        # Make cached_buildtree a boolean based on the flag assigned to it
+        # If flag was `when-local`, assigning value based on whether or not the project uses a remote cache
+        if use_cached_buildtree == 'use-cached':
+            use_cached_buildtree = True
+        elif use_cached_buildtree == 'when-local' and not self._artifacts.has_fetch_remotes():
+            use_cached_buildtree = True
+        else:
+            use_cached_buildtree = False
 
         if track_first:
             track_targets = (target,)
@@ -462,22 +499,6 @@ class Stream():
         target = elements[0]
         workdir = os.path.abspath(directory)
 
-        if not list(target.sources()):
-            build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
-            if not build_depends:
-                raise StreamError("The given element has no sources")
-            detail = "Try opening a workspace on one of its dependencies instead:\n"
-            detail += "  \n".join(build_depends)
-            raise StreamError("The given element has no sources", detail=detail)
-
-        workspaces = self._context.get_workspaces()
-
-        # Check for workspace config
-        workspace = workspaces.get_workspace(target._get_full_name())
-        if workspace and not force:
-            raise StreamError("Workspace '{}' is already defined at: {}"
-                              .format(target.name, workspace.path))
-
         # If we're going to checkout, we need at least a fetch,
         # if we were asked to track first, we're going to fetch anyway.
         #
@@ -486,6 +507,26 @@ class Stream():
             if track_first:
                 track_elements = elements
             self._fetch(elements, track_elements=track_elements)
+
+        # Check for workspace config
+        workspace = workspaces.get_workspace(target._get_full_name())
+        if workspace and not force:
+            raise StreamError("Workspace '{}' is already defined at: {}"
+                              .format(target.name, workspace.path))
+
+        if use_cached_buildtree:
+            if self.__stage_cached_buildtree(target, workdir):
+                workspaces.save_config()
+                self._message(MessageType.INFO, "Saved workspace configuration")
+                return
+
+        if not list(target.sources()):
+            build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
+            if not build_depends:
+                raise StreamError("The given element has no sources")
+            detail = "Try opening a workspace on one of its dependencies instead:\n"
+            detail += "  \n".join(build_depends)
+            raise StreamError("The given element has no sources", detail=detail)
 
         if not no_checkout and target._get_consistency() != Consistency.CACHED:
             raise StreamError("Could not stage uncached source. " +
@@ -547,8 +588,9 @@ class Stream():
     #    targets (list of str): The target elements to reset the workspace for
     #    soft (bool): Only reset workspace state
     #    track_first (bool): Whether to also track the sources first
+    #    use_cached_buildtree(str): Whether or not to use cached buildtrees
     #
-    def workspace_reset(self, targets, *, soft, track_first):
+    def workspace_reset(self, targets, *, soft, track_first, use_cached_buildtree):
 
         if track_first:
             track_targets = targets
@@ -592,6 +634,15 @@ class Stream():
             workspaces.delete_workspace(element._get_full_name())
             workspaces.create_workspace(element._get_full_name(), workspace.path)
 
+            if use_cached_buildtree == 'when-local':
+                use_cached_buildtree = os.path.isdir(os.path.join(workspace.path, 'buildtree'))
+
+            if use_cached_buildtree and self.__stage_cached_buildtree(element, workspace.path):
+                self._message(MessageType.INFO, "Reset workspace state for {} at: {}"
+                              .format(element.name, workspace.path))
+                return
+
+            workspaces.create_workspace(element.name, workspace.path)
             with element.timed_activity("Staging sources to {}".format(workspace.path)):
                 element._open_workspace()
 

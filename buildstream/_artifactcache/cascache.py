@@ -75,12 +75,14 @@ class CASCache(ArtifactCache):
         # This assumes that the repository doesn't have any dangling pointers
         return os.path.exists(refpath)
 
-    def extract(self, element, key):
+    def extract(self, element, key, dest=None):
         ref = self.get_artifact_fullname(element, key)
 
         tree = self.resolve_ref(ref, update_mtime=True)
 
-        dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, tree.hash)
+        if dest is None:
+            dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, tree.hash)
+
         if os.path.isdir(dest):
             # artifact has already been extracted
             return dest
@@ -105,6 +107,9 @@ class CASCache(ArtifactCache):
                                         .format(ref, e)) from e
 
         return dest
+
+    def get_buildtree_dir(self, element, key):
+        return os.path.join(self.extract(element, key), "buildtree")
 
     def commit(self, element, content, keys):
         refs = [self.get_artifact_fullname(element, key) for key in keys]

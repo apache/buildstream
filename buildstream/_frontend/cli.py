@@ -446,7 +446,9 @@ def pull(app, elements, deps, remote):
         all:   All dependencies
     """
     with app.initialized(session_name="Pull"):
-        app.stream.pull(elements, selection=deps, remote=remote)
+        app.stream.pull(elements,
+                        selection=deps,
+                        remote=remote)
 
 
 ##################################################################
@@ -681,11 +683,14 @@ def workspace():
               help="Overwrite files existing in checkout directory")
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
+@click.option('--use-cached-buildtree', 'use_cached_buildtree', default='when-local',
+              type=click.Choice(['use-cached', 'ignore-cached', 'when-local']),
+              help="Using cached build trees")
 @click.argument('element',
                 type=click.Path(readable=False))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track_, element, directory):
+def workspace_open(app, no_checkout, force, track_, element, directory, use_cached_buildtree):
     """Open a workspace for manual source modification"""
 
     if os.path.exists(directory):
@@ -702,7 +707,8 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
         app.stream.workspace_open(element, directory,
                                   no_checkout=no_checkout,
                                   track_first=track_,
-                                  force=force)
+                                  force=force,
+                                  use_cached_buildtree=use_cached_buildtree)
 
 
 ##################################################################
@@ -762,10 +768,13 @@ def workspace_close(app, remove_dir, all_, elements):
               help="Track and fetch the latest source before resetting")
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Reset all open workspaces")
+@click.option('--use-cached-buildtree', 'use_cached_buildtree', default='when-local',
+              type=click.Choice(['use-cached', 'ignore-cached', 'when-local']),
+              help="Using cached build trees")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def workspace_reset(app, soft, track_, all_, elements):
+def workspace_reset(app, soft, track_, all_, elements, use_cached_buildtree):
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
@@ -785,7 +794,10 @@ def workspace_reset(app, soft, track_, all_, elements):
         if all_:
             elements = tuple(element_name for element_name, _ in app.context.get_workspaces().list())
 
-        app.stream.workspace_reset(elements, soft=soft, track_first=track_)
+        app.stream.workspace_reset(elements,
+                                   soft=soft,
+                                   track_first=track_,
+                                   use_cached_buildtree=use_cached_buildtree)
 
 
 ##################################################################

@@ -366,7 +366,7 @@ class ArtifactCache():
     #
     # Returns: path to extracted artifact
     #
-    def extract(self, element, key):
+    def extract(self, element, key, dest=None):
         raise ImplError("Cache '{kind}' does not implement extract()"
                         .format(kind=type(self).__name__))
 
@@ -481,6 +481,21 @@ class ArtifactCache():
     #
     def calculate_cache_size(self):
         raise ImplError("Cache '{kind}' does not implement calculate_cache_size()"
+                        .format(kind=type(self).__name__))
+
+    # does get_buildtree_dir():
+    #
+    # Returns build tree from cache if exists
+    #
+    # Args:
+    #    element (Element): The Element whose cache is being checked
+    #    key: the related cache key
+    #    directory: the directory to return if exists
+    # Returns:
+    # string: directory path or None
+    #
+    def get_buildtree_dir(self, element, key):
+        raise ImplError("Cache '{kind}' does not implement get_buildtree_dir()"
                         .format(kind=type(self).__name__))
 
     ################################################

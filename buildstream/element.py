@@ -893,6 +893,13 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # _buildtree_path():
+    #
+    # Returns the path of the cached build tree if it exists
+    #
+    def _buildtree_path(self, key):
+        return self.__artifacts.get_buildtree_dir(self, key)
+
     # _new_from_meta():
     #
     # Recursively instantiate a new Element instance, it's sources
