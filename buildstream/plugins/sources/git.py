@@ -158,7 +158,6 @@ class GitMirror():
             if all_tags:
                 tags_since_sha = self.source.check_output([self.source.host_git,
                                                            'tag',
-                                                           '--sort',
                                                            '--contains',
                                                            self.ref],
                                                           cwd=self.mirror)[1]
@@ -167,60 +166,64 @@ class GitMirror():
                 preceeding_tags = [x for x in all_tags if x not in tags_since_sha]
                 if preceeding_tags:
                     last_tag_before_ref = preceeding_tags[-1]
+                    print("\nWe have a tag!!!!!\n")
                 else:
-                    last_tag_before_ref = 'HEAD'
-
-                # find number of commits since last_tag_before_ref
-                target_depth = self.source.check_output([self.source.host_git,
-                                                         'rev-list',
-                                                         '--count',
-                                                         'HEAD...{}'.format(last_tag_before_ref)])[1]
-
+                    last_tag_before_ref = self.ref
+                    print("\nWe have No tag!!!!!\n")
             else:
-                target_depth = self.source.check_output([self.source.host_git,
-                                                         'rev-list',
-                                                         '--count',
-                                                         'HEAD...{}'.format(self.ref)], cwd=self.mirror)[1]
-
-        if int(target_depth) == 0:
-            target_depth = 1
-
-        branch = self.source.check_output([self.source.host_git,
-                                           'rev-parse',
-                                           '--abbrev-ref',
-                                           'HEAD'], cwd=self.mirror)[1]
+                last_tag_before_ref = self.ref
+                print("\nWe have No tag!!!!!\n")
 
         self.source.call([self.source.host_git,
                           'init',
                           fullpath])
 
-        self.source.call([self.source.host_git,
-                          'fetch',
-                          '--depth={}'.format(int(target_depth)),
-                          'ext::git -c uploadpack.allowReachableSHA1InWant=true %s {}'
-                          .format(shlex.quote(self.mirror)),
-                          self.ref],
-                         env=dict(os.environ, GIT_ALLOW_PROTOCOL="ext"), cwd=fullpath)
+        rev_list = self.source.check_output([self.source.host_git,
+                                             'rev-list',
+                                             '-n1',
+                                             '--parents',
+                                             last_tag_before_ref],
+                                            cwd=self.mirror)[1]
+
+        rev_list = [x.strip() for x in rev_list.split(' ')]
+        rev_list.pop(0)
+
+        print("ref: {}".format(last_tag_before_ref))
+        print("Rev List: {}".format(rev_list))
+
+        # Adding ext::git line allows bst to fetch a specific commit using its SHA
+        # without changing the remote configuration
+        r = self.source.check_output([self.source.host_git,
+                                      'log'], cwd=self.mirror)
+
+        print("r1: {}".format(r))
+        if not rev_list:
+            print("\n\n\nBANANA1\n\n\n")
+            self.source.call([self.source.host_git,
+                              'fetch',
+                              'ext::git -c uploadpack.allowReachableSHA1InWant=true %s {}'
+                              .format(shlex.quote(self.mirror)),
+                              self.ref],
+                             env=dict(os.environ, GIT_ALLOW_PROTOCOL="ext"), cwd=fullpath)
+
+        else:
+            print("\n\n\nBANANA2\n\n\n")
+            self.source.call([self.source.host_git,
+                              'fetch'] +
+                             ['--shallow-exclude={}'.format(parent) for parent in rev_list] +
+                             ['ext::git -c uploadpack.allowReachableSHA1InWant=true %s {}'
+                              .format(shlex.quote(self.mirror)),
+                              self.ref],
+                             env=dict(os.environ, GIT_ALLOW_PROTOCOL="ext"), cwd=fullpath)
 
         self.source.call([self.source.host_git,
                           'checkout',
                           'FETCH_HEAD'], cwd=fullpath)
 
-        if "master" not in branch:
-            self.source.call([self.source.host_git,
-                              'branch',
-                              '-D',
-                              'master'], cwd=fullpath)
+        r = self.source.check_output([self.source.host_git,
+                                     'log'], cwd=fullpath)
 
-        self.source.call([self.source.host_git,
-                          'reflog',
-                          'expire',
-                          '--expire-unreachable=all'
-                          '--all'], cwd=fullpath)
-
-        self.source.call([self.source.host_git,
-                          'repack',
-                          '-ad'], cwd=fullpath)
+        print("r2: {}".format(r))
 
     def init_workspace(self, directory):
         fullpath = os.path.join(directory, self.path)

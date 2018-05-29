@@ -121,6 +121,8 @@ class BzrSource(Source):
                    self._get_branch_dir(), directory],
                   fail="Failed to checkout revision {} from branch {} to {}"
                   .format(self.ref, self._get_branch_dir(), directory))
+        # Remove .bzr dir
+        shutil.rmtree(os.path.join(directory, ".bzr"))
 
     def init_workspace(self, directory):
         url = os.path.join(self.url, self.tracking)
