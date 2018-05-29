@@ -796,7 +796,7 @@ def push(repo, remote, branches, output):
 @click.option('--debug', '-d', is_flag=True, default=False, help="Debug mode")
 @click.option('--pull-url', type=str, required=True,
               help="Clients who try to pull over SSH will be redirected here")
-@click.argument('repo')
+@click.argument('repo', type=click.Path(file_okay=False, dir_okay=True, writable=True, exists=True))
 def receive_main(verbose, debug, pull_url, repo):
     """A BuildStream sister program for receiving artifacts send to a shared artifact cache
     """
