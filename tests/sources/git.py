@@ -288,6 +288,7 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project-override'))
 def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
+    print("\n\n\nTemp Directory: {}\n\n\n".format(tmpdir))
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 

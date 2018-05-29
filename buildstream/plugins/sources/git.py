@@ -70,6 +70,7 @@ git - stage files from a git repository
 import os
 import re
 import shutil
+import shlex
 from collections import Mapping
 from io import StringIO
 
@@ -150,15 +151,76 @@ class GitMirror():
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
-        # We need to pass '--no-hardlinks' because there's nothing to
-        # stop the build from overwriting the files in the .git directory
-        # inside the sandbox.
-        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--no-hardlinks', self.mirror, fullpath],
-                         fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath))
+        # Need to get every commit since the last tagged object until the tracking commit
+        if self.has_ref():
+            all_tags = self.source.check_output([self.source.host_git, 'tag'], cwd=self.mirror)[1]
+            all_tags = [x.strip() for x in all_tags.split('\n')]
+            if all_tags:
+                tags_since_sha = self.source.check_output([self.source.host_git,
+                                                           'tag',
+                                                           '--sort',
+                                                           '--contains',
+                                                           self.ref],
+                                                          cwd=self.mirror)[1]
 
-        self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
-                         fail="Failed to checkout git ref {}".format(self.ref),
-                         cwd=fullpath)
+                tags_since_sha = [x.strip() for x in tags_since_sha.split('\n')]
+                preceeding_tags = [x for x in all_tags if x not in tags_since_sha]
+                if preceeding_tags:
+                    last_tag_before_ref = preceeding_tags[-1]
+                else:
+                    last_tag_before_ref = 'HEAD'
+
+                # find number of commits since last_tag_before_ref
+                target_depth = self.source.check_output([self.source.host_git,
+                                                         'rev-list',
+                                                         '--count',
+                                                         'HEAD...{}'.format(last_tag_before_ref)])[1]
+
+            else:
+                target_depth = self.source.check_output([self.source.host_git,
+                                                         'rev-list',
+                                                         '--count',
+                                                         'HEAD...{}'.format(self.ref)], cwd=self.mirror)[1]
+
+        if int(target_depth) == 0:
+            target_depth = 1
+
+        branch = self.source.check_output([self.source.host_git,
+                                           'rev-parse',
+                                           '--abbrev-ref',
+                                           'HEAD'], cwd=self.mirror)[1]
+
+        self.source.call([self.source.host_git,
+                          'init',
+                          fullpath])
+
+        self.source.call([self.source.host_git,
+                          'fetch',
+                          '--depth={}'.format(int(target_depth)),
+                          'ext::git -c uploadpack.allowReachableSHA1InWant=true %s {}'
+                          .format(shlex.quote(self.mirror)),
+                          self.ref],
+                         env=dict(os.environ, GIT_ALLOW_PROTOCOL="ext"), cwd=fullpath)
+
+        self.source.call([self.source.host_git,
+                          'checkout',
+                          'FETCH_HEAD'], cwd=fullpath)
+
+        if "master" not in branch:
+            self.source.call([self.source.host_git,
+                              'branch',
+                              '-D',
+                              'master'], cwd=fullpath)
+
+        self.source.call([self.source.host_git,
+                          'reflog',
+                          'expire',
+                          '--expire-unreachable=all'
+                          '--all'], cwd=fullpath)
+
+        self.source.call([self.source.host_git,
+                          'repack',
+                          '-ad'], cwd=fullpath)
 
     def init_workspace(self, directory):
         fullpath = os.path.join(directory, self.path)
