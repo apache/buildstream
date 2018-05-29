@@ -5,6 +5,7 @@ from buildstream import _yaml
 from tests.testutils import cli_integration as cli
 from tests.testutils.site import IS_LINUX
 from tests.testutils.integration import walk_dir
+from tests.frontend import configure_project
 
 
 pytestmark = pytest.mark.integration
@@ -255,3 +256,119 @@ def test_incremental_configure_commands_run_only_once(cli, tmpdir, datafiles):
     res = cli.run(project=project, args=['build', element_name])
     res.assert_success()
     assert not os.path.exists(os.path.join(workspace, 'prepared-again'))
+
+
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+def test_use_cached_buildtree(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'workspace/workspace-use-cached-buildtree.bst'
+
+    element = {
+        'kind': 'manual',
+        'depends': [{
+            'filename': 'base.bst',
+            'type': 'build'
+        }],
+        'sources': [{
+            'kind': 'local',
+            'path': 'files/workspace-use-cached-buildtree'
+        }],
+        'config': {
+            'build-commands': [
+                'make'
+            ]
+        }
+    }
+    os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
+    _yaml.dump(element, os.path.join(element_path, element_name))
+
+    res = cli.run(project=project, args=['build', element_name])
+    res.assert_success()
+
+    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res.assert_success()
+    assert os.path.isdir(workspace)
+    assert os.path.exists(os.path.join(workspace, "test.o"))
+
+
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+def test_dont_use_cached_buildtree(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'workspace/workspace-use-cached-buildtree.bst'
+
+    element = {
+        'kind': 'manual',
+        'depends': [{
+            'filename': 'base.bst',
+            'type': 'build'
+        }],
+        'sources': [{
+            'kind': 'local',
+            'path': 'files/workspace-use-cached-buildtree'
+        }],
+        'config': {
+            'build-commands': [
+                'make'
+            ]
+        }
+    }
+    os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
+    _yaml.dump(element, os.path.join(element_path, element_name))
+
+    res = cli.run(project=project, args=['build', element_name])
+    res.assert_success()
+
+    res = cli.run(project=project, args=['workspace', 'open',
+                                         '--use-cached-buildtree=ignore-cached',
+                                         element_name, workspace])
+    res.assert_success()
+    assert os.path.isdir(workspace)
+    assert not os.path.exists(os.path.join(workspace, "test.o"))
+
+
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+# This tests the output if a build is done with the caching of build trees disabled
+# and then is reenabled and a workspace is opened
+def test_no_existing_cached_buildtree(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'workspace/workspace-no-existing-cached-buildtree.bst'
+
+    element = {
+        'kind': 'manual',
+        'depends': [{
+            'filename': 'base.bst',
+            'type': 'build'
+        }],
+        'sources': [{
+            'kind': 'local',
+            'path': 'files/workspace-no-existing-cached-buildtree'
+        }],
+        'config': {
+            'build-commands': [
+                'make'
+            ]
+        }
+    }
+    os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
+    _yaml.dump(element, os.path.join(element_path, element_name))
+
+    res = cli.run(project=project,
+                  project_config={'variables': {'cache-buildtree': False}},
+                  args=['build', element_name])
+    res.assert_success()
+
+    res = cli.run(project=project,
+                  project_config={'variables': {'cache-buildtrees': True}},
+                  args=['workspace', 'open', element_name, workspace])
+    res.assert_success()
+    assert os.path.isdir(workspace)
+    assert not os.path.exists(os.path.join(workspace, "test.o"))
