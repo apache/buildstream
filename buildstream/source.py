@@ -114,6 +114,18 @@ class SourceError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason)
 
 
+class RefNotFound(SourceError):
+    """This exception should be raised by :class:`.Source` implementations
+    to report to the user that an error occurred because it couldn't find
+    the given ref.
+
+    Args:
+       message (str): The brief error description to report to the user
+       detail (str): A possibly multiline, more detailed error message
+       reason (str): An optional machine readable reason string, used for test cases
+    """
+
+
 class Source(Plugin):
     """Source()
 
@@ -642,16 +654,77 @@ class Source(Plugin):
         context = self._get_context()
         source_kind = type(self)
         for combination in project.generate_alias_combinations(self._used_urls):
-            uri_overrides = {k: v[0] for k, v in combination.items()}
-            new_source = source_kind(context, project, self.__meta, uri_overrides=uri_overrides)
-            new_source._preflight()
-            try:
-                new_source._fetch()
-            except SourceError:
-                # SourceErrors from fetch are caused by network error
-                # or ref not found
-                continue
-            return True
+            known_maxima = {}
+            current_suffixes = {}
+            for url, v in combination.items():
+                if v[1]:
+                    current_suffixes[url] = 0
+            while True:
+
+                # Compose uri_overrides
+                uri_overrides = {}
+                for url, v in combination.items():
+                    if v[1]:
+                        uri_overrides[url] = os.path.join(v[0], current_suffixes[url])
+                    else:
+                        uri_overrides[url] = v[0]
+
+                # Try it
+                new_source = source_kind(context, project, self.__meta,
+                                         uri_overrides=uri_overrides)
+                new_source._preflight()
+                try:
+                    new_source._fetch()
+                except RefNotFound:
+
+                    if all([known_maxima.get(url) == current_suffixes[url] for url in current_suffixes]):
+                        # Every suffix has been tried without success
+                        break
+
+                    # repos exist, but a ref wasn't found
+                    # Increment current_suffixes
+                    increment_suffix = False
+                    for url, suffix in current_suffixes.items():
+                        if increment_suffix:
+                            current_suffixes[url] += 1
+                            break
+                        if url in known_maxima and suffix == known_maxima[url]:
+                            # Maxmimum for this suffix reached, reset to zero and raise the next url
+                            # ??? Is it safe to change values of dictionaries as I iterate?
+                            current_suffixes[url] = 0
+                            increment_suffix = True
+                        else:
+                            # Don't know it's too high or know it isn't, increment
+                            current_suffixes[url] += 1
+                            break
+                    continue
+                except SourceError:
+
+                    # SourceErrors from fetch are caused by network error
+                    # or repo not found
+                    if not any(current_suffixes.values()):
+                        # All suffixes are zero, failure is because this is a bad combination
+                        break
+
+                    if all([known_maxima.get(url) == current_suffixes[url] for url in current_suffixes]):
+                        # Every suffix has been tried without success
+                        break
+
+                    # One of the suffixes went over. Log the maximum, reset to zero and raise
+                    # the next url's suffix.
+                    # Current url is the one that doesn't have a maximum defined yet.
+                    increment_suffix = False
+                    for url in current_suffixes:
+                        if increment_suffix:
+                            current_suffixes[url] += 1
+                            break
+                        if url not in known_maxima:
+                            known_maxima[url] = current_suffixes[url] - 1
+                            current_suffixes[url] = 0
+                            increment_suffix = True
+                    continue
+
+                return True
 
     #############################################################
     #                   Local Private Methods                   #
