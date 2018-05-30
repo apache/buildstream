@@ -56,6 +56,11 @@ class PushExistsException(Exception):
     pass
 
 
+# Trying to push an artifact that is too large
+class ArtifactTooLargeException(Exception):
+    pass
+
+
 class PushCommandType(Enum):
     info = 0
     update = 1
@@ -285,6 +290,7 @@ class PushMessageReader(object):
         # which mounts the repo
         stats = os.statvfs(repopath)
         free_disk_space = stats.f_bfree * stats.f_bsize
+        total_disk_space = stats.f_blocks * stats.f_bsize
 
         # Open a TarFile for reading uncompressed tar from a stream
         tar = tarfile.TarFile.open(mode='r|', fileobj=self.file)
@@ -308,6 +314,11 @@ class PushMessageReader(object):
 
             # obtain size of tar object in bytes
             artifact_size = tar_info.size
+
+            if artifact_size > total_disk_space - buffer_:
+                raise ArtifactTooLargeException("Artifact of size: {} is too large for "
+                                                "the filesystem which mounts the remote "
+                                                "cache".format(artifact_size))
 
             if artifact_size > free_disk_space - buffer_:
                 # Clean up the cache with a buffer of 2GB
@@ -579,7 +590,13 @@ class OSTreePusher(object):
         objects = self.needed_objects(commits)
 
         # Send all the objects to receiver, checking status after each
-        self.writer.send_putobjects(self.repo, objects)
+        try:
+            self.writer.send_putobjects(self.repo, objects)
+        except BrokenPipeError:
+            # If the remote closes, we receive a BrokenPipeError
+            # Return 1 to notify the frontend that something went
+            # wrong on the server.
+            return 1
 
         # Inform receiver that all objects have been sent
         self.writer.send_done()
@@ -626,14 +643,20 @@ class OSTreeReceiver(object):
     def run(self):
         try:
             exit_code = self.do_run()
-            self.close()
-            return exit_code
+        except ArtifactTooLargeException:
+            logging.warning("The artifact was too large for the filesystem which mounts "
+                            "the remote cache.")
+            exit_code = 0
+
         except:
             # BLIND EXCEPT - Just abort if we receive any exception, this
             # can be a broken pipe, a tarfile read error when the remote
             # connection is closed, a bug; whatever happens we want to cleanup.
             self.close()
             raise
+
+        self.close()
+        return exit_code
 
     def do_run(self):
         # Receive remote info
@@ -844,8 +867,12 @@ def clean_up_cache(repo, artifact_size, free_disk_space, buffer_):
         try:
             to_remove = LRP_artifacts.pop(0)  # The first element in the list is the LRP artifact
         except IndexError:
-            logging.info("There are no more artifacts left in the cache. Adding artifact...")
-            break
+            # This exception is caught if there are no more artifacts in the list
+            # LRP_artifacts. This means the the artifact is too large for the filesystem
+            # so we abort the process
+            raise ArtifactTooLargeException("Artifact of size {} is too large for "
+                                            "the filesystem which mounts the remote "
+                                            "cache".format(artifact_size))
 
         removed_size += _ostree.remove(repo, to_remove, defer_prune=False)
 

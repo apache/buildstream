@@ -267,7 +267,6 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 
 # Test that a large artifact, whose size exceeds the quota, is not pushed
 # to the remote share
-@pytest.mark.xfail
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_too_large(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
