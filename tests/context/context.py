@@ -47,6 +47,23 @@ def test_context_load(context_fixture):
     assert(context.logdir == os.path.join(cache_home, 'buildstream', 'logs'))
 
 
+# Assert that a changed XDG_CACHE_HOME doesn't cause issues
+def test_context_load_envvar(context_fixture):
+    os.environ['XDG_CACHE_HOME'] = '/some/path/'
+
+    context = context_fixture['context']
+    assert(isinstance(context, Context))
+
+    context.load(config=os.devnull)
+    assert(context.sourcedir == os.path.join('/', 'some', 'path', 'buildstream', 'sources'))
+    assert(context.builddir == os.path.join('/', 'some', 'path', 'buildstream', 'build'))
+    assert(context.artifactdir == os.path.join('/', 'some', 'path', 'buildstream', 'artifacts'))
+    assert(context.logdir == os.path.join('/', 'some', 'path', 'buildstream', 'logs'))
+
+    # Reset the environment variable
+    del os.environ['XDG_CACHE_HOME']
+
+
 # Test that values in a user specified config file
 # override the defaults
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
