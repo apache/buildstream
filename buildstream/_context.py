@@ -161,6 +161,7 @@ class Context():
             path = _yaml.node_get(defaults, str, directory)
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
+            path = os.path.normpath(path)
             setattr(self, directory, path)
 
         # Load artifact share configuration
