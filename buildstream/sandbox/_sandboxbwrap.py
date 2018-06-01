@@ -207,7 +207,7 @@ class SandboxBwrap(Sandbox):
 
                 # Skip removal of directories which already existed before
                 # launching bwrap
-                if not existing_basedirs[basedir]:
+                if existing_basedirs[basedir]:
                     continue
 
                 base_directory = os.path.join(root_mount_source, basedir)
