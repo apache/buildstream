@@ -33,21 +33,9 @@ from collections import OrderedDict
 import calendar
 import os
 import time
-from .._exceptions import BstError, ErrorDomain
-from .directory import Directory
+from .directory import Directory, VirtualDirectoryError
 from ..utils import link_files, copy_files, FileListResult, list_relative_paths
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
-
-
-class VirtualDirectoryError(BstError):
-    """Raised by Directory functions when system calls fail.
-    This will be handled internally by the BuildStream core,
-    if you need to handle this error, then it should be reraised,
-    or either of the :class:`.ElementError` or :class:`.SourceError`
-    exceptions should be raised from this error.
-    """
-    def __init__(self, message, reason=None):
-        super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
 
 
 # Like os.path.getmtime(), but doesnt explode on symlinks
