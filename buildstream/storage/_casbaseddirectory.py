@@ -196,9 +196,8 @@ class CasBasedDirectory(Directory):
                 collection.remove(name)
         if name in self.index:
             del self.index[name]
-
     def descend(self, subdirectory_spec: List[str], create: bool = False) -> Directory:
-        """Descend one or more levels of directory hierarchy and return a new
+        """ Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
         Arguments:
