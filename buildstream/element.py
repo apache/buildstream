@@ -216,6 +216,7 @@ class Element(Plugin):
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__cached = None                    # Whether we have a cached artifact
         self.__strong_cached = None             # Whether we have a cached artifact
+        self.__weak_cached = None               # Whether we have a cached artifact
         self.__assemble_scheduled = False       # Element is scheduled to be assembled
         self.__assemble_done = False            # Element is assembled
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
@@ -951,7 +952,7 @@ class Element(Plugin):
     #            the artifact cache
     #
     def _cached(self):
-        return self.__cached
+        return self.__is_cached(keystrength=None)
 
     # _buildable():
     #
@@ -1039,6 +1040,7 @@ class Element(Plugin):
             self.__weak_cache_key = None
             self.__strict_cache_key = None
             self.__strong_cached = None
+            self.__weak_cached = None
             return
 
         if self.__weak_cache_key is None:
@@ -1061,6 +1063,9 @@ class Element(Plugin):
                 # Weak cache key could not be calculated yet
                 return
 
+            if not self.__weak_cached:
+                self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
+
         if not context.get_strict():
             # Full cache query in non-strict mode requires both the weak and
             # strict cache keys. However, we need to determine as early as
@@ -1068,9 +1073,9 @@ class Element(Plugin):
             # for workspaced elements. For this cache check the weak cache keys
             # are sufficient. However, don't update the `cached` attributes
             # until the full cache query below.
-            cached = self.__artifacts.contains(self, self.__weak_cache_key)
             if (not self.__assemble_scheduled and not self.__assemble_done and
-                    not cached and not self._pull_pending() and self._is_required()):
+                    not self.__is_cached(keystrength=_KeyStrength.WEAK) and
+                    not self._pull_pending() and self._is_required()):
                 self._schedule_assemble()
                 return
 
@@ -1090,6 +1095,9 @@ class Element(Plugin):
             self.__cached = self.__artifacts.contains(self, key_for_cache_lookup)
         if not self.__strong_cached:
             self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
+        if key_for_cache_lookup == self.__weak_cache_key:
+            if not self.__weak_cached:
+                self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
                 not self.__cached and not self._pull_pending() and self._is_required()):
@@ -1983,12 +1991,19 @@ class Element(Plugin):
             if workspace:
                 workspace.prepared = True
 
+    def __is_cached(self, keystrength):
+        if keystrength is None:
+            return self.__cached
+
+        return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
+
     # __assert_cached()
     #
     # Raises an error if the artifact is not cached.
     #
-    def __assert_cached(self):
-        assert self._cached(), "{}: Missing artifact {}".format(self, self._get_brief_display_key())
+    def __assert_cached(self, keystrength=_KeyStrength.STRONG):
+        assert self.__is_cached(keystrength=keystrength), "{}: Missing artifact {}".format(
+            self, self._get_brief_display_key())
 
     # __get_tainted():
     #
