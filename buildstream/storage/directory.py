@@ -31,6 +31,19 @@ See also: :ref:`sandboxing`.
 
 """
 
+from .._exceptions import BstError, ErrorDomain
+
+
+class VirtualDirectoryError(BstError):
+    """Raised by Directory functions when system calls fail.
+    This will be handled internally by the BuildStream core,
+    if you need to handle this error, then it should be reraised,
+    or either of the :class:`.ElementError` or :class:`.SourceError`
+    exceptions should be raised from this error.
+    """
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
+
 
 class Directory():
     def __init__(self, external_directory=None):
