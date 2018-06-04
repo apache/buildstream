@@ -43,7 +43,7 @@ class BuildQueue(Queue):
             # Keep it in the queue.
             return QueueStatus.WAIT
 
-        if element._cached():
+        if element._cached_success():
             return QueueStatus.SKIP
 
         if not element._buildable():

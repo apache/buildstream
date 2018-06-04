@@ -489,7 +489,7 @@ class _Planner():
             self.plan_element(dep, depth)
 
         # Dont try to plan builds of elements that are cached already
-        if not element._cached():
+        if not element._cached_success():
             for dep in element.dependencies(Scope.BUILD, recurse=False):
                 self.plan_element(dep, depth + 1)
 
@@ -501,4 +501,4 @@ class _Planner():
             self.plan_element(root, 0)
 
         depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
-        return [item[0] for item in depth_sorted if plan_cached or not item[0]._cached()]
+        return [item[0] for item in depth_sorted if plan_cached or not item[0]._cached_success()]
