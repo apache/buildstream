@@ -289,8 +289,9 @@ class PushMessageReader(object):
         # Determine the available disk space, in bytes, of the file system
         # which mounts the repo
         stats = os.statvfs(repopath)
-        free_disk_space = stats.f_bfree * stats.f_bsize
-        total_disk_space = stats.f_blocks * stats.f_bsize
+        buffer_ = int(2e9)                # Add a 2 GB buffer
+        free_disk_space = (stats.f_bfree * stats.f_bsize) - buffer_
+        total_disk_space = (stats.f_blocks * stats.f_bsize) - buffer_
 
         # Open a TarFile for reading uncompressed tar from a stream
         tar = tarfile.TarFile.open(mode='r|', fileobj=self.file)
@@ -299,7 +300,6 @@ class PushMessageReader(object):
         #
         # This should block while tar.next() reads the next
         # tar object from the stream.
-        buffer_ = int(2e9)
         while True:
             filepos = tar.fileobj.tell()
             tar_info = tar.next()
@@ -315,14 +315,14 @@ class PushMessageReader(object):
             # obtain size of tar object in bytes
             artifact_size = tar_info.size
 
-            if artifact_size > total_disk_space - buffer_:
+            if artifact_size > total_disk_space:
                 raise ArtifactTooLargeException("Artifact of size: {} is too large for "
                                                 "the filesystem which mounts the remote "
                                                 "cache".format(artifact_size))
 
-            if artifact_size > free_disk_space - buffer_:
+            if artifact_size > free_disk_space:
                 # Clean up the cache with a buffer of 2GB
-                removed_size = clean_up_cache(repo, artifact_size, free_disk_space, buffer_)
+                removed_size = clean_up_cache(repo, artifact_size, free_disk_space)
                 free_disk_space += removed_size
 
             tar.extract(tar_info, self.tmpdir)
@@ -853,17 +853,16 @@ def push(repo, remote, branches, output):
 #   repo: OSTree.Repo object
 #   free_disk_space: The available disk space on the file system in bytes
 #   artifact_size: The size of the artifact in bytes
-#   buffer_: The amount of headroom we want on disk.
 #
 # Returns:
 #   int: The total bytes removed on the filesystem
 #
-def clean_up_cache(repo, artifact_size, free_disk_space, buffer_):
+def clean_up_cache(repo, artifact_size, free_disk_space):
     # obtain a list of LRP artifacts
     LRP_artifacts = _ostree.list_artifacts(repo)
 
     removed_size = 0  # in bytes
-    while artifact_size - removed_size > free_disk_space - buffer_:
+    while artifact_size - removed_size > free_disk_space:
         try:
             to_remove = LRP_artifacts.pop(0)  # The first element in the list is the LRP artifact
         except IndexError:
