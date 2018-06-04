@@ -368,7 +368,9 @@ class LogLine(Widget):
             if consistency == Consistency.INCONSISTENT:
                 line = p.fmt_subst(line, 'state', "no reference", fg='red')
             else:
-                if element._cached_success():
+                if element._cached_failure():
+                    line = p.fmt_subst(line, 'state', "failed", fg='red')
+                elif element._cached_success():
                     line = p.fmt_subst(line, 'state', "cached", fg='magenta')
                 elif consistency == Consistency.RESOLVED:
                     line = p.fmt_subst(line, 'state', "fetch needed", fg='red')
