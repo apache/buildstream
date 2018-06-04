@@ -227,6 +227,7 @@ class Element(Plugin):
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
         self.__required = False                 # Whether the artifact is required in the current session
         self.__artifact_size = None             # The size of data committed to the artifact cache
+        self.__build_result = None              # The result of assembling this Element
 
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
@@ -953,6 +954,50 @@ class Element(Plugin):
     def _cached(self):
         return self.__is_cached(keystrength=None)
 
+    # _get_build_result():
+    #
+    # Returns:
+    #    (bool): Whether the artifact of this element present in the artifact cache is of a success
+    #    (str): Short description of the result
+    #    (str): Detailed description of the result
+    #
+    def _get_build_result(self):
+        return self.__get_build_result(keystrength=None)
+
+    # __set_build_result():
+    #
+    # Sets the assembly result
+    #
+    # Args:
+    #    success (bool): Whether the result is a success
+    #    description (str): Short description of the result
+    #    detail (str): Detailed description of the result
+    #
+    def __set_build_result(self, success, description, detail=None):
+        self.__build_result = (success, description, detail)
+
+    # _cached_success():
+    #
+    # Returns:
+    #    (bool): Whether this element is already present in
+    #            the artifact cache and the element assembled successfully
+    #
+    def _cached_success(self):
+        return self.__cached_success(keystrength=None)
+
+    # _cached_failure():
+    #
+    # Returns:
+    #    (bool): Whether this element is already present in
+    #            the artifact cache and the element did not assemble successfully
+    #
+    def _cached_failure(self):
+        if not self._cached():
+            return False
+
+        success, _, _ = self._get_build_result()
+        return not success
+
     # _buildable():
     #
     # Returns:
@@ -1040,6 +1085,7 @@ class Element(Plugin):
             self.__strict_cache_key = None
             self.__strong_cached = None
             self.__weak_cached = None
+            self.__build_result = None
             return
 
         if self.__weak_cache_key is None:
@@ -1473,6 +1519,7 @@ class Element(Plugin):
                     self.__prepare(sandbox)
                     # Step 4 - Assemble
                     collect = self.assemble(sandbox)
+                    self.__set_build_result(success=True, description="succeeded")
                 except BstError as e:
                     # If an error occurred assembling an element in a sandbox,
                     # then tack on the sandbox directory to the error
@@ -1535,6 +1582,11 @@ class Element(Plugin):
 
                 # Store public data
                 _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+                # Store result
+                build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
+                if self.__build_result[2] is not None:
+                    build_result_dict["detail"] = self.__build_result[2]
+                _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
 
                 # ensure we have cache keys
                 self._assemble_done()
@@ -2461,6 +2513,38 @@ class Element(Plugin):
         artifact_base, _ = self.__extract()
         metadir = os.path.join(artifact_base, 'meta')
         self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
+
+    def __load_build_result(self, keystrength):
+        self.__assert_cached(keystrength=keystrength)
+        assert self.__build_result is None
+
+        artifact_base, _ = self.__extract(key=self.__weak_cache_key if keystrength is _KeyStrength.WEAK
+                                          else self.__strict_cache_key)
+
+        metadir = os.path.join(artifact_base, 'meta')
+        result_path = os.path.join(metadir, 'build-result.yaml')
+        if not os.path.exists(result_path):
+            self.__build_result = (True, "succeeded", None)
+            return
+
+        data = _yaml.load(result_path)
+        self.__build_result = (data["success"], data.get("description"), data.get("detail"))
+
+    def __get_build_result(self, keystrength):
+        if keystrength is None:
+            keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
+
+        if self.__build_result is None:
+            self.__load_build_result(keystrength)
+
+        return self.__build_result
+
+    def __cached_success(self, keystrength):
+        if not self.__is_cached(keystrength=keystrength):
+            return False
+
+        success, _, _ = self.__get_build_result(keystrength=keystrength)
+        return success
 
     def __get_cache_keys_for_commit(self):
         keys = []
