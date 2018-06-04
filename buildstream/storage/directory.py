@@ -132,3 +132,9 @@ class Directory():
         Return value: List(str) - dictionary with all paths
         """
         raise NotImplementedError()
+
+    def get_underlying_directory(self) -> str:
+        """ Returns the underlying (real) file system directory this
+        object refers to. This will throw an exception if there isn't
+        a real directory behind the object. """
+        raise NotImplementedError()

@@ -34,7 +34,7 @@ class Mount():
     def __init__(self, sandbox, mount_point, safe_hardlinks):
         scratch_directory = sandbox._get_scratch_directory()
         # Getting external_directory here is acceptable as we're part of the sandbox code.
-        root_directory = sandbox.get_virtual_directory().external_directory
+        root_directory = sandbox.get_virtual_directory().get_underlying_directory()
 
         self.mount_point = mount_point
         self.safe_hardlinks = safe_hardlinks
