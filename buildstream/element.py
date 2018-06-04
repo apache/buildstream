@@ -1013,7 +1013,7 @@ class Element(Plugin):
             # if the pull job is still pending as the remote cache may have an artifact
             # that matches the strict cache key, which is preferred over a locally
             # cached artifact with a weak cache key match.
-            if not dependency._cached() or not dependency._get_cache_key(strength=_KeyStrength.STRONG):
+            if not dependency._cached_success() or not dependency._get_cache_key(strength=_KeyStrength.STRONG):
                 return False
 
         if not self.__assemble_scheduled:
@@ -1119,7 +1119,7 @@ class Element(Plugin):
             # are sufficient. However, don't update the `cached` attributes
             # until the full cache query below.
             if (not self.__assemble_scheduled and not self.__assemble_done and
-                    not self.__is_cached(keystrength=_KeyStrength.WEAK) and
+                    not self.__cached_success(keystrength=_KeyStrength.WEAK) and
                     not self._pull_pending() and self._is_required()):
                 self._schedule_assemble()
                 return
@@ -1145,7 +1145,7 @@ class Element(Plugin):
                 self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
-                not self.__cached and not self._pull_pending() and self._is_required()):
+                not self._cached_success() and not self._pull_pending() and self._is_required()):
             # Workspaced sources are considered unstable if a build is pending
             # as the build will modify the contents of the workspace.
             # Determine as early as possible if a build is pending to discard
@@ -1487,7 +1487,7 @@ class Element(Plugin):
     def _assemble(self):
 
         # Assert call ordering
-        assert not self._cached()
+        assert not self._cached_success()
 
         context = self._get_context()
         with self._output_file() as output_file:
