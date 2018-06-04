@@ -31,6 +31,7 @@ See also: :ref:`sandboxing`.
 import os
 from .._exceptions import ImplError, BstError
 from ..storage._filebaseddirectory import FileBasedDirectory
+from ..storage._casbaseddirectory import CasBasedDirectory
 
 
 class SandboxFlags():
@@ -105,6 +106,7 @@ class Sandbox():
         self.__scratch = os.path.join(self.__directory, 'scratch')
         for directory_ in [self._root, self.__scratch]:
             os.makedirs(directory_, exist_ok=True)
+        self.__vdir = None
 
     def get_directory(self):
         """Fetches the sandbox root directory
@@ -133,8 +135,12 @@ class Sandbox():
            (str): The sandbox root directory
 
         """
-        # For now, just create a new Directory every time we're asked
-        return FileBasedDirectory(self._root)
+        if not self.__vdir:
+            if self.__allow_real_directory:
+                self.__vdir = FileBasedDirectory(self._root)
+            else:
+                self.__vdir = CasBasedDirectory(self.__context, ref=None)
+        return self.__vdir
 
     def get_virtual_toplevel_directory(self):
         """Fetches the sandbox's toplevel directory
