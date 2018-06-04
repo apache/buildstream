@@ -240,4 +240,5 @@ class BuildElement(Element):
             exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
                                    SandboxFlags.ROOT_READ_ONLY)
             if exitcode != 0:
-                raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+                raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode),
+                                   collect=self.get_variable('install-root'))
