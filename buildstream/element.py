@@ -140,10 +140,13 @@ class ElementError(BstError):
        message (str): The error message to report to the user
        detail (str): A possibly multiline, more detailed error message
        reason (str): An optional machine readable reason string, used for test cases
+       collect (str): An optional directory containing partial install contents
        temporary (bool): An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
     """
-    def __init__(self, message, *, detail=None, reason=None, temporary=False):
+    def __init__(self, message, *, detail=None, reason=None, collect=None, temporary=False):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason, temporary=temporary)
+
+        self.collect = collect
 
 
 class Element(Plugin):
@@ -1511,6 +1514,7 @@ class Element(Plugin):
                 self.__dynamic_public = _yaml.node_copy(self.__public)
 
                 # Call the abstract plugin methods
+                collect = None
                 try:
                     # Step 1 - Configure
                     self.configure_sandbox(sandbox)
@@ -1544,81 +1548,87 @@ class Element(Plugin):
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
                                       .format(e))
 
+                    if isinstance(e, ElementError):
+                        collect = e.collect  # pylint: disable=no-member
+
+                    self.__set_build_result(success=False, description=str(e), detail=e.detail)
                     raise
+                finally:
+                    if collect is not None:
+                        collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
 
-                collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
-                if not os.path.exists(collectdir):
-                    raise ElementError(
-                        "Directory '{}' was not found inside the sandbox, "
-                        "unable to collect artifact contents"
-                        .format(collect))
+                    # Create artifact directory structure
+                    assembledir = os.path.join(rootdir, 'artifact')
+                    filesdir = os.path.join(assembledir, 'files')
+                    logsdir = os.path.join(assembledir, 'logs')
+                    metadir = os.path.join(assembledir, 'meta')
+                    buildtreedir = os.path.join(assembledir, 'buildtree')
+                    os.mkdir(assembledir)
+                    if collect is not None and os.path.exists(collectdir):
+                        os.mkdir(filesdir)
+                    os.mkdir(logsdir)
+                    os.mkdir(metadir)
+                    os.mkdir(buildtreedir)
 
-                # At this point, we expect an exception was raised leading to
-                # an error message, or we have good output to collect.
+                    # Hard link files from collect dir to files directory
+                    if collect is not None and os.path.exists(collectdir):
+                        utils.link_files(collectdir, filesdir)
 
-                # Create artifact directory structure
-                assembledir = os.path.join(rootdir, 'artifact')
-                filesdir = os.path.join(assembledir, 'files')
-                logsdir = os.path.join(assembledir, 'logs')
-                metadir = os.path.join(assembledir, 'meta')
-                buildtreedir = os.path.join(assembledir, 'buildtree')
-                os.mkdir(assembledir)
-                os.mkdir(filesdir)
-                os.mkdir(logsdir)
-                os.mkdir(metadir)
-                os.mkdir(buildtreedir)
+                    sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root').lstrip(os.sep))
+                    # Hard link files from build-root dir to buildtreedir directory
+                    if os.path.isdir(sandbox_build_dir):
+                        utils.link_files(sandbox_build_dir, buildtreedir)
 
-                # Hard link files from collect dir to files directory
-                utils.link_files(collectdir, filesdir)
+                    # Copy build log
+                    log_filename = context.get_log_filename()
+                    if log_filename:
+                        shutil.copyfile(log_filename, os.path.join(logsdir, 'build.log'))
 
-                sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root').lstrip(os.sep))
-                # Hard link files from build-root dir to buildtreedir directory
-                if os.path.isdir(sandbox_build_dir):
-                    utils.link_files(sandbox_build_dir, buildtreedir)
+                    # Store public data
+                    _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
-                # Copy build log
-                log_filename = context.get_log_filename()
-                if log_filename:
-                    shutil.copyfile(log_filename, os.path.join(logsdir, 'build.log'))
+                    # Store result
+                    build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
+                    if self.__build_result[2] is not None:
+                        build_result_dict["detail"] = self.__build_result[2]
+                    _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
 
-                # Store public data
-                _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
-                # Store result
-                build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
-                if self.__build_result[2] is not None:
-                    build_result_dict["detail"] = self.__build_result[2]
-                _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
+                    # ensure we have cache keys
+                    self._assemble_done()
 
-                # ensure we have cache keys
-                self._assemble_done()
+                    # Store keys.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'strong': self._get_cache_key(),
+                        'weak': self._get_cache_key(_KeyStrength.WEAK),
+                    }), os.path.join(metadir, 'keys.yaml'))
 
-                # Store keys.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'strong': self._get_cache_key(),
-                    'weak': self._get_cache_key(_KeyStrength.WEAK),
-                }), os.path.join(metadir, 'keys.yaml'))
+                    # Store dependencies.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                    }), os.path.join(metadir, 'dependencies.yaml'))
 
-                # Store dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                }), os.path.join(metadir, 'dependencies.yaml'))
+                    # Store workspaced.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'workspaced': True if self._get_workspace() else False
+                    }), os.path.join(metadir, 'workspaced.yaml'))
 
-                # Store workspaced.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced': True if self._get_workspace() else False
-                }), os.path.join(metadir, 'workspaced.yaml'))
+                    # Store workspaced-dependencies.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'workspaced-dependencies': [
+                            e.name for e in self.dependencies(Scope.BUILD)
+                            if e._get_workspace()
+                        ]
+                    }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
-                # Store workspaced-dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced-dependencies': [
-                        e.name for e in self.dependencies(Scope.BUILD)
-                        if e._get_workspace()
-                    ]
-                }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
+                    with self.timed_activity("Caching artifact"):
+                        self.__artifact_size = utils._get_dir_size(assembledir)
+                        self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
 
-                with self.timed_activity("Caching artifact"):
-                    self.__artifact_size = utils._get_dir_size(assembledir)
-                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+                    if collect is not None and not os.path.exists(collectdir):
+                        raise ElementError(
+                            "Directory '{}' was not found inside the sandbox, "
+                            "unable to collect artifact contents"
+                            .format(collect))
 
             # Finally cleanup the build dir
             cleanup_rootdir()
