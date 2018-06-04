@@ -18,8 +18,12 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+from datetime import timedelta
+
 from . import Queue, QueueStatus
+from ..jobs import ElementJob
 from ..resources import ResourceType
+from ..._message import MessageType
 
 
 # A queue which assembles elements
@@ -29,6 +33,37 @@ class BuildQueue(Queue):
     action_name = "Build"
     complete_name = "Built"
     resources = [ResourceType.PROCESS]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._tried = set()
+
+    def enqueue(self, elts):
+        to_queue = []
+
+        for element in elts:
+            if not element._cached_failure() or element in self._tried:
+                to_queue.append(element)
+                continue
+
+            # Bypass queue processing entirely the first time it's tried.
+            self._tried.add(element)
+            _, description, detail = element._get_build_result()
+            logfile = element._get_build_log()
+            self._message(element, MessageType.FAIL, description,
+                          detail=detail, action_name=self.action_name,
+                          elapsed=timedelta(seconds=0),
+                          logfile=logfile)
+            job = ElementJob(self._scheduler, self.action_name,
+                             logfile, element=element, queue=self,
+                             resources=self.resources,
+                             action_cb=self.process,
+                             complete_cb=self._job_done,
+                             max_retries=self._max_retries)
+            self.failed_elements.append(element)
+            self._scheduler._job_complete_callback(job, False)
+
+        return super().enqueue(to_queue)
 
     def process(self, element):
         element._assemble()
