@@ -32,8 +32,10 @@ from .._fuse import SafeHardlinks
 class Mount():
     def __init__(self, sandbox, mount_point, safe_hardlinks):
         scratch_directory = sandbox._get_scratch_directory()
-        # Getting external_directory here is acceptable as we're part of the sandbox code.
-        root_directory = sandbox.get_virtual_directory().external_directory
+        # Getting _get_underlying_directory() here is acceptable as
+        # we're part of the sandbox code. This will fail if our
+        # directory is CAS-based.
+        root_directory = sandbox.get_virtual_directory()._get_underlying_directory()
 
         self.mount_point = mount_point
         self.safe_hardlinks = safe_hardlinks
