@@ -40,7 +40,6 @@ from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, App
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION
-from .. import __version__ as build_stream_version
 from .. import _yaml
 
 # Import frontend assets
