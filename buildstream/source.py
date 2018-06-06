@@ -736,7 +736,7 @@ class Source(Plugin):
     # Wrapper for track()
     #
     def _track(self):
-        new_ref = self.track()
+        new_ref = self.__do_track()
         current_ref = self.get_ref()
 
         if new_ref is None:
@@ -762,6 +762,33 @@ class Source(Plugin):
     #############################################################
     #                   Local Private Methods                   #
     #############################################################
+
+    # Tries to call track for every mirror, stopping once it succeeds
+    def __do_track(self):
+        project = self._get_project()
+        # If there are no mirrors, or no aliases to replace, there's nothing to do here.
+        alias = self._get_alias()
+        if not project.mirrors or not alias:
+            return self.track()
+
+        context = self._get_context()
+        source_kind = type(self)
+
+        # NOTE: We are assuming here that tracking only requires substituting the
+        #       first alias used
+        for uri in reversed(project.get_alias_uris(alias)):
+            new_source = source_kind(context, project, self.__meta,
+                                     alias_override=(alias, uri))
+            new_source._preflight()
+            try:
+                ref = new_source.track()
+            # FIXME: Need to consider temporary vs. permanent failures,
+            #        and how this works with retries.
+            except BstError as e:
+                last_error = e
+                continue
+            return ref
+        raise last_error
 
     # Ensures a fully constructed path and returns it
     def __ensure_directory(self, directory):
