@@ -23,6 +23,10 @@
 This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
 using GNU make based build.
 
+.. note::
+
+   The ``make`` element is available since :ref:`format version 9 <project_format_version>`
+
 Here is the default configuration for the ``make`` element in full:
 
   .. literalinclude:: ../../../buildstream/plugins/elements/make.yaml
