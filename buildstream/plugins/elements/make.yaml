@@ -1,8 +1,8 @@
 # make default configurations
 
 variables:
-  make: make
-  make-install: make -j1 DESTDIR="%{install-root}" install
+  make: make PREFIX="%{prefix}"
+  make-install: make -j1 PREFIX="%{prefix}" DESTDIR="%{install-root}" install
 
   # Set this if the sources cannot handle parallelization.
   #
