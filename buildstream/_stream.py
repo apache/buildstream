@@ -150,7 +150,12 @@ class Stream():
                 raise StreamError("Elements need to be built or downloaded before staging a shell environment",
                                   detail="\n".join(missing_deps))
 
-        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command)
+        with element._prepare_sandbox(scope, directory) as sandbox:
+            for dep in self._pipeline.dependencies([element], scope):
+                dep.stage_sources(sandbox, dep.get_variable('build-root'))
+
+            return element._shell(scope, directory, mounts=mounts, isolate=isolate,
+                                  prompt=prompt, command=command, sandbox=sandbox)
 
     # build()
     #

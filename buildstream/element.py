@@ -78,7 +78,7 @@ import re
 import stat
 import copy
 from collections import Mapping, OrderedDict
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from enum import Enum
 import tempfile
 import time
@@ -1243,7 +1243,7 @@ class Element(Plugin):
     # is used to stage things by the `bst checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, directory, integrate=True):
+    def _prepare_sandbox(self, scope, directory, integrate=True, dep=False):
 
         with self.__sandbox(directory, config=self.__sandbox_config) as sandbox:
 
@@ -1263,8 +1263,8 @@ class Element(Plugin):
                     # once they are all staged and ready
                     if integrate:
                         with self.timed_activity("Integrating sandbox"):
-                            for dep in self.dependencies(scope):
-                                dep.integrate(sandbox)
+                            for depend in self.dependencies(scope):
+                                depend.integrate(sandbox)
 
             yield sandbox
 
@@ -1677,9 +1677,12 @@ class Element(Plugin):
     # Returns: Exit code
     #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None):
+    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False,
+               prompt=None, command=None, sandbox=None):
 
-        with self._prepare_sandbox(scope, directory) as sandbox:
+        with ExitStack() as stack:
+            if sandbox is None:
+                sandbox = stack.enter_context(self._prepare_sandbox(scope, directory))
             environment = self.get_environment()
             environment = copy.copy(environment)
             flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
