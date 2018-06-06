@@ -7,6 +7,8 @@ buildstream 1.1.4
     `bst track` on a filter element will track the sources on the
     element that it depends on (if it has sources).
 
+  o Added new simple `make` element
+
 
 =================
 buildstream 1.1.3
