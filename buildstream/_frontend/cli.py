@@ -20,6 +20,18 @@ def complete_target(args, incomplete):
     :return: all the possible user-specified completions for the param
     """
 
+    project_conf = 'project.conf'
+
+    def ensure_project_dir(directory):
+        directory = os.path.abspath(directory)
+        while not os.path.isfile(os.path.join(directory, project_conf)):
+            parent_dir = os.path.dirname(directory)
+            if directory == parent_dir:
+                break
+            directory = parent_dir
+
+        return directory
+
     # First resolve the directory, in case there is an
     # active --directory/-C option
     #
@@ -35,10 +47,14 @@ def complete_target(args, incomplete):
 
     if idx >= 0 and len(args) > idx + 1:
         base_directory = args[idx + 1]
+    else:
+        # Check if this directory or any of its parent directories
+        # contain a project config file
+        base_directory = ensure_project_dir(base_directory)
 
     # Now parse the project.conf just to find the element path,
     # this is unfortunately a bit heavy.
-    project_file = os.path.join(base_directory, 'project.conf')
+    project_file = os.path.join(base_directory, project_conf)
     try:
         project = _yaml.load(project_file)
     except LoadError:

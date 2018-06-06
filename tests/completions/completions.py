@@ -174,8 +174,9 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
      ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], None),
 
     # When running from the files subdir
-    ('project', 'bst show ', 2, [], 'files'),
-    ('project', 'bst build com', 2, [], 'files'),
+    ('project', 'bst show ', 2, [e + ' ' for e in PROJECT_ELEMENTS], 'files'),
+    ('project', 'bst build com', 2,
+     ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], 'files'),
 
     # When passing the project directory
     ('project', 'bst --directory ../ show ', 4, [e + ' ' for e in PROJECT_ELEMENTS], 'files'),
@@ -193,8 +194,10 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
      ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], None),
 
     # When running from the files subdir
-    ('no-element-path', 'bst show ', 2, [], 'files'),
-    ('no-element-path', 'bst build com', 2, [], 'files'),
+    ('no-element-path', 'bst show ', 2,
+     [e + ' ' for e in (PROJECT_ELEMENTS + ['project.conf'])] + ['files/'], 'files'),
+    ('no-element-path', 'bst build com', 2,
+     ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], 'files'),
 
     # When passing the project directory
     ('no-element-path', 'bst --directory ../ show ', 4,
