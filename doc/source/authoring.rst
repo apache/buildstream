@@ -48,6 +48,7 @@ Build elements
 ''''''''''''''
 
 * :mod:`manual <elements.manual>` - Manual Build Element
+* :mod:`make <elements.make>` - Make Build Element
 * :mod:`autotools <elements.autotools>` - Autotools Build Element
 * :mod:`cmake <elements.cmake>` - CMake Build Element
 * :mod:`qmake <elements.qmake>` - QMake Build Element
