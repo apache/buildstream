@@ -207,7 +207,23 @@ class Loader():
 
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
-        node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
+        try:
+            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
+        except LoadError as e:
+            if e.reason == LoadErrorReason.MISSING_FILE:
+                # If we can't find the file, try to suggest plausible
+                # alternatives by stripping the element-path from the given
+                # filename, and verifying that it exists.
+                message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
+                detail = None
+                elements_dir = os.path.relpath(self._basedir, self.project.directory)
+                element_relpath = os.path.relpath(filename, elements_dir)
+                if filename.startswith(elements_dir) and os.path.exists(os.path.join(self._basedir, element_relpath)):
+                    detail = "Did you mean '{}'?".format(element_relpath)
+                raise LoadError(LoadErrorReason.MISSING_FILE,
+                                message, detail=detail) from e
+            else:
+                raise
         self._options.process_node(node)
 
         element = LoadElement(node, filename, self)
