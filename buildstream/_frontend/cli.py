@@ -189,6 +189,10 @@ def cli(context, **kwargs):
     context.obj = App.create(dict(kwargs))
     context.call_on_close(context.obj.cleanup)
 
+@cli.command(short_help="Print usage information")
+@click.pass_context
+def help(ctx):
+    click.echo(ctx.parent.get_help())
 
 ##################################################################
 #                           Init Command                         #
