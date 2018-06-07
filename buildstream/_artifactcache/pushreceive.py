@@ -643,9 +643,8 @@ class OSTreeReceiver(object):
     def run(self):
         try:
             exit_code = self.do_run()
-        except ArtifactTooLargeException:
-            logging.warning("The artifact was too large for the filesystem which mounts "
-                            "the remote cache.")
+        except ArtifactTooLargeException as e:
+            logging.warning(str(e))
             exit_code = 0
 
         except:
