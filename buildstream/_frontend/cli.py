@@ -189,10 +189,22 @@ def cli(context, **kwargs):
     context.obj = App.create(dict(kwargs))
     context.call_on_close(context.obj.cleanup)
 
-@cli.command(short_help="Print usage information")
+
+##################################################################
+#                           Help Command                         #
+##################################################################
+@cli.command(name="help", short_help="Print usage information",
+             context_settings={"help_option_names": []})
+@click.argument("arg", nargs=-1)
 @click.pass_context
-def help(ctx):
-    click.echo(ctx.parent.get_help())
+def help_command(ctx, **kwargs):
+    click.echo(ctx.parent.get_help(), err=True)
+    # TODO support bst help <command> but currently
+    # seems non obvious how to do this with click.
+    if kwargs["arg"]:
+        click.echo("\n{} {} --help for more usage on a specific command\n".format(
+            ctx.parent.info_name, " ".join(kwargs["arg"])), err=True)
+
 
 ##################################################################
 #                           Init Command                         #
