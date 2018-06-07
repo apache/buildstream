@@ -96,6 +96,7 @@ from . import _signals
 from . import _site
 from ._platform import Platform
 from .sandbox._config import SandboxConfig
+from .sourcetransform import SourceTransform
 
 
 # _KeyStrength():
@@ -1180,6 +1181,10 @@ class Element(Plugin):
             # Prepend provenance to the error
             raise ElementError("{}: {}".format(self, e), reason=e.reason) from e
 
+        if self.__sources and isinstance(self.__sources[0], SourceTransform):
+            raise ElementError("{}: A SourceTransform plugin can't be the first source of a build element"
+                               .format(self))
+
         # Preflight the sources
         for source in self.sources():
             source._preflight()
@@ -1223,9 +1228,11 @@ class Element(Plugin):
     #
     def _track(self):
         refs = []
-        for source in self.__sources:
+        for index, source in enumerate(self.__sources):
             old_ref = source.get_ref()
-            new_ref = source._track()
+            # `previous_sources` is SourceTransform specific and is swallowed
+            # by `**kwargs` in `Source`
+            new_ref = source._track(previous_sources=self.__sources[0:index])
             refs.append((source._get_unique_id(), new_ref))
 
             # Complimentary warning that the new ref will be unused.

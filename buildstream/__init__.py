@@ -33,3 +33,4 @@ if "_BST_COMPLETION" not in os.environ:
     from .element import Element, ElementError, Scope
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement
+    from .sourcetransform import SourceTransform

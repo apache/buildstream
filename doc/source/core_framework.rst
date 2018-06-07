@@ -14,6 +14,7 @@ useful for working on BuildStream itself.
 
    buildstream.plugin
    buildstream.source
+   buildstream.sourcetransform
    buildstream.element
    buildstream.buildelement
    buildstream.scriptelement

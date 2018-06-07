@@ -373,7 +373,7 @@ class Source(Plugin):
 
     # Wrapper function around plugin provided fetch method
     #
-    def _fetch(self):
+    def _fetch(self, **kwargs):
         self.fetch()
 
     # Wrapper for stage() api which gives the source
@@ -580,7 +580,7 @@ class Source(Plugin):
 
     # Wrapper for track()
     #
-    def _track(self):
+    def _track(self, **kwargs):
         new_ref = self.track()
         current_ref = self.get_ref()
 
