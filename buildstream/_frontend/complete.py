@@ -209,7 +209,7 @@ def is_incomplete_argument(current_params, cmd_param):
     return False
 
 
-def get_user_autocompletions(args, incomplete, cmd_param, override):
+def get_user_autocompletions(args, incomplete, cmd, cmd_param, override):
     """
     :param args: full list of args typed before the incomplete arg
     :param incomplete: the incomplete text of the arg to autocomplete
@@ -222,7 +222,8 @@ def get_user_autocompletions(args, incomplete, cmd_param, override):
 
     # Use the type specific default completions unless it was overridden
     try:
-        return override(cmd_param=cmd_param,
+        return override(cmd=cmd,
+                        cmd_param=cmd_param,
                         args=args,
                         incomplete=incomplete)
     except CompleteUnhandled:
@@ -268,14 +269,14 @@ def get_choices(cli, prog_name, args, incomplete, override):
         # completion for option values by choices
         for cmd_param in ctx.command.params:
             if isinstance(cmd_param, Option) and is_incomplete_option(all_args, cmd_param):
-                choices.extend(get_user_autocompletions(all_args, incomplete, cmd_param, override))
+                choices.extend(get_user_autocompletions(all_args, incomplete, ctx.command, cmd_param, override))
                 found_param = True
                 break
     if not found_param:
         # completion for argument values by choices
         for cmd_param in ctx.command.params:
             if isinstance(cmd_param, Argument) and is_incomplete_argument(ctx.params, cmd_param):
-                choices.extend(get_user_autocompletions(all_args, incomplete, cmd_param, override))
+                choices.extend(get_user_autocompletions(all_args, incomplete, ctx.command, cmd_param, override))
                 found_param = True
                 break
 

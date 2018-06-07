@@ -12,6 +12,45 @@ from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 #            Override of click's main entry point                #
 ##################################################################
 
+# search_command()
+#
+# Helper function to get a command and context object
+# for a given command.
+#
+# Args:
+#    commands (list): A list of command words following `bst` invocation
+#    context (click.Context): An existing toplevel context, or None
+#
+# Returns:
+#    context (click.Context): The context of the associated command, or None
+#
+def search_command(args, *, context=None):
+    if context is None:
+        context = cli.make_context('bst', args, resilient_parsing=True)
+
+    # Loop into the deepest command
+    command = cli
+    command_ctx = context
+    for cmd in args:
+        command = command_ctx.command.get_command(command_ctx, cmd)
+        if command is None:
+            return None
+        command_ctx = command.make_context(command.name, [command.name],
+                                           parent=command_ctx,
+                                           resilient_parsing=True)
+
+    return command_ctx
+
+
+# Completion for completing command names as help arguments
+def complete_commands(cmd, args, incomplete):
+    command_ctx = search_command(args[1:])
+    if command_ctx and command_ctx.command and isinstance(command_ctx.command, click.MultiCommand):
+        return [subcommand + " " for subcommand in command_ctx.command.list_commands(command_ctx)]
+
+    return []
+
+
 # Special completion for completing the bst elements in a project dir
 def complete_target(args, incomplete):
     """
@@ -73,13 +112,16 @@ def complete_target(args, incomplete):
     return complete_path("File", incomplete, base_directory=base_directory)
 
 
-def override_completions(cmd_param, args, incomplete):
+def override_completions(cmd, cmd_param, args, incomplete):
     """
     :param cmd_param: command definition
     :param args: full list of args typed before the incomplete arg
     :param incomplete: the incomplete text to autocomplete
     :return: all the possible user-specified completions for the param
     """
+
+    if cmd.name == 'help':
+        return complete_commands(cmd, args, incomplete)
 
     # We can't easily extend click's data structures without
     # modifying click itself, so just do some weak special casing
@@ -195,15 +237,26 @@ def cli(context, **kwargs):
 ##################################################################
 @cli.command(name="help", short_help="Print usage information",
              context_settings={"help_option_names": []})
-@click.argument("arg", nargs=-1)
+@click.argument("command", nargs=-1, metavar='COMMAND')
 @click.pass_context
-def help_command(ctx, **kwargs):
-    click.echo(ctx.parent.get_help(), err=True)
-    # TODO support bst help <command> but currently
-    # seems non obvious how to do this with click.
-    if kwargs["arg"]:
-        click.echo("\n{} {} --help for more usage on a specific command\n".format(
-            ctx.parent.info_name, " ".join(kwargs["arg"])), err=True)
+def help_command(ctx, command):
+    """Print usage information about a given command
+    """
+    command_ctx = search_command(command, context=ctx.parent)
+    if not command_ctx:
+        click.echo("Not a valid command: '{} {}'"
+                   .format(ctx.parent.info_name, " ".join(command)), err=True)
+        sys.exit(-1)
+
+    click.echo(command_ctx.command.get_help(command_ctx), err=True)
+
+    # Hint about available sub commands
+    if isinstance(command_ctx.command, click.MultiCommand):
+        detail = " "
+        if command:
+            detail = " {} ".format(" ".join(command))
+        click.echo("\nFor usage on a specific command: {} help{}COMMAND"
+                   .format(ctx.parent.info_name, detail), err=True)
 
 
 ##################################################################
