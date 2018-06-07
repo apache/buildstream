@@ -217,3 +217,16 @@ def test_argument_element(datafiles, cli, project, cmd, word_idx, expected, subd
     if subdir:
         cwd = os.path.join(cwd, subdir)
     assert_completion(cli, cmd, word_idx, expected, cwd=cwd)
+
+
+@pytest.mark.parametrize("cmd,word_idx,expected", [
+    ('bst he', 1, ['help ']),
+    ('bst help ', 2, MAIN_COMMANDS),
+    ('bst help fe', 2, ['fetch ']),
+    ('bst help p', 2, ['pull ', 'push ']),
+    ('bst help p', 2, ['pull ', 'push ']),
+    ('bst help w', 2, ['workspace ']),
+    ('bst help workspace ', 3, WORKSPACE_COMMANDS),
+])
+def test_help_commands(cli, cmd, word_idx, expected):
+    assert_completion(cli, cmd, word_idx, expected)
