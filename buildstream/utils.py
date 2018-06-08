@@ -472,6 +472,10 @@ def get_bst_version():
     from . import __version__
     versions = __version__.split('.')[:2]
 
+    if versions[0] == '0+untagged':
+        raise UtilError("Your git repository has no tags - BuildStream can't "
+                        "determine its version. Please run `git fetch --tags`.")
+
     return (int(versions[0]), int(versions[1]))
 
 
