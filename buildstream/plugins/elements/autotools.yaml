@@ -4,10 +4,12 @@ variables:
 
   autogen: |
     export NOCONFIGURE=1;
-    if [ -e autogen ]; then ./autogen;
-    elif [ -e autogen.sh ]; then ./autogen.sh;
-    elif [ -e bootstrap ]; then ./bootstrap;
-    elif [ -e bootstrap.sh ]; then ./bootstrap.sh;
+
+    if [ -x %{conf-cmd} ]; then true;
+    elif [ -x autogen ]; then ./autogen;
+    elif [ -x autogen.sh ]; then ./autogen.sh;
+    elif [ -x bootstrap ]; then ./bootstrap;
+    elif [ -x bootstrap.sh ]; then ./bootstrap.sh;
     else autoreconf -ivf;
     fi
 
