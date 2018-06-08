@@ -102,7 +102,7 @@ project's main directory.
 
 .. _invoking_workspace_open:
 
-.. click:: buildstream._frontend.cli:workspace_open
+.. click:: buildstream._frontend.cli:workspace_open_base
    :prog: bst workspace open
 
 ----
