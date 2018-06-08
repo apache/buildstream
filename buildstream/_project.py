@@ -27,7 +27,7 @@ from . import _cachekey
 from . import _site
 from . import _yaml
 from ._profile import Topics, profile_start, profile_end
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import AppError, LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
@@ -237,6 +237,11 @@ class Project():
         format_version = _yaml.node_get(config, int, 'format-version')
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
+
+            if (major, minor) == (None, None):
+                raise AppError("Your git repository has no tags - BuildStream can't"
+                               " determine its version. Please run `git fetch --tags`.")
+
             raise LoadError(
                 LoadErrorReason.UNSUPPORTED_PROJECT,
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"

@@ -472,6 +472,9 @@ def get_bst_version():
     from . import __version__
     versions = __version__.split('.')[:2]
 
+    if versions[0] == '0+untagged':
+        return (None, None)
+
     return (int(versions[0]), int(versions[1]))
 
 

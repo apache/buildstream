@@ -21,7 +21,7 @@
 import os
 import inspect
 
-from ._exceptions import PluginError
+from ._exceptions import AppError, PluginError
 from . import utils
 
 
@@ -210,6 +210,10 @@ class PluginContext():
 
         # Now assert BuildStream version
         bst_major, bst_minor = utils.get_bst_version()
+
+        if (bst_major, bst_minor) == (None, None):
+            raise AppError("Your git repository has no tags - BuildStream can't"
+                           " determine its version. Please run `git fetch --tags`.")
 
         if bst_major < plugin_type.BST_REQUIRED_VERSION_MAJOR or \
            (bst_major == plugin_type.BST_REQUIRED_VERSION_MAJOR and
