@@ -15,7 +15,7 @@ Later sections provide detailed information on BuilStream internals.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    about
    main_install
