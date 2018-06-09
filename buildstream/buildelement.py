@@ -18,8 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 """
-BuildElement
-============
+BuildElement - Abstract class for build elements
+================================================
 The BuildElement class is a convenience element one can derive from for
 implementing the most common case of element.
 

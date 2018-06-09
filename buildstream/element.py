@@ -19,8 +19,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-Element
-=======
+Element - Base element class
+============================
 
 
 .. _core_element_abstract_methods:

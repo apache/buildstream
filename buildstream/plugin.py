@@ -18,8 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 """
-Plugin
-======
+Plugin - Base plugin class
+==========================
 BuildStream supports third party plugins to define additional kinds of
 :mod:`Elements <buildstream.element>` and :mod:`Sources <buildstream.source>`.
 

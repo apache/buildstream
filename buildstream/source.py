@@ -18,8 +18,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 """
-Source
-======
+Source - base source class
+==========================
 
 
 .. _core_source_abstract_methods:

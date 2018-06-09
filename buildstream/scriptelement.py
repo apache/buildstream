@@ -19,9 +19,8 @@
 #        Jonathan Maw <jonathan.maw@codethink.co.uk>
 
 """
-ScriptElement
-=============
-
+ScriptElement - Abstract class for scripting elements
+=====================================================
 The ScriptElement class is a convenience class one can derive for
 implementing elements that stage elements and run command-lines on them.
 

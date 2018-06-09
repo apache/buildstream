@@ -19,9 +19,8 @@
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 """
-Sandbox
-=======
-
+Sandbox - The build sandbox
+===========================
 :class:`.Element` plugins which want to interface with the sandbox
 need only understand this interface, while it may be given a different
 sandbox implementation, any sandbox implementation it is given will
