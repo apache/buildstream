@@ -1,7 +1,5 @@
 
 
-.. _authoring:
-
 Authoring projects
 ==================
 This section details how to use the BuildStream YAML format to
