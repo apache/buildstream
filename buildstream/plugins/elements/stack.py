@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Stack element
-
+"""
+stack - Symbolic Element for dependency grouping
+================================================
 Stack elements are simply a symbolic element used for representing
 a logical group of elements.
 """

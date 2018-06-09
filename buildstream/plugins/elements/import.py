@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Import element
-
+"""
+import - Import sources directly
+================================
 Import elements produce artifacts directly from its sources
 without any kind of processing. These are typically used to
 import an SDK to build on top of or to overlay your build with

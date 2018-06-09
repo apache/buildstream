@@ -17,7 +17,9 @@
 #  Authors:
 #        Jonathan Maw <jonathan.maw@codethink.co.uk>
 
-"""A source implementation for staging bazaar branches
+"""
+bzr - stage files from a bazaar repository
+==========================================
 
 **Usage:**
 

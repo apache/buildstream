@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Manual build element
-
+"""
+manual - Manual build element
+=============================
 The most basic build element does nothing but allows users to
 add custom build commands to the array understood by the :mod:`BuildElement <buildstream.buildelement>`
 

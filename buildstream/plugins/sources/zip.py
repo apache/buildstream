@@ -18,7 +18,9 @@
 #  Authors:
 #        Mathieu Bridon <bochecha@daitauha.fr>
 
-"""A source implementation for staging zip files
+"""
+zip - stage files from zip archives
+===================================
 
 **Usage:**
 

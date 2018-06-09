@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Compose element
-
+"""
+compose - Compose the output of multiple elements
+=================================================
 This element creates a selective composition of its dependencies.
 
 This is normally used at near the end of a pipeline to prepare

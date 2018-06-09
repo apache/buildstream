@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Python Distutils element
-
+"""
+distutils - Python distutils element
+====================================
 A :mod:`BuildElement <buildstream.buildelement>` implementation for using
 python distutils
 

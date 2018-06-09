@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""CMake build element
-
+"""
+cmake - CMake build element
+===========================
 This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
 using the `CMake <https://cmake.org/>`_ build system.
 

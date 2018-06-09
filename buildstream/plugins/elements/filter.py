@@ -18,8 +18,9 @@
 #  Authors:
 #        Jonathan Maw <jonathan.maw@codethink.co.uk>
 
-"""Filter element
-
+"""
+filter - Extract a subset of files from another element
+=======================================================
 This filters another element by producing an output that is a subset of
 the filtered element.
 

@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Perl Module::Build build element
-
+"""
+modulebuild - Perl Module::Build build element
+==============================================
 A :mod:`BuildElement <buildstream.buildelement>` implementation for using
 the Perl Module::Build build system
 

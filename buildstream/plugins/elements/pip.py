@@ -18,8 +18,9 @@
 #  Authors:
 #        Mathieu Bridon <bochecha@daitauha.fr>
 
-"""Pip build element
-
+"""
+pip - Pip build element
+=======================
 A :mod:`BuildElement <buildstream.buildelement>` implementation for installing
 Python modules with pip
 

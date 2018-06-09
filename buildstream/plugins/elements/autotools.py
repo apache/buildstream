@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Autotools build element
-
+"""
+autotools - Autotools build element
+===================================
 This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
 using Autotools build scripts (also known as the `GNU Build System
 <https://en.wikipedia.org/wiki/GNU_Build_System>`_).

@@ -28,49 +28,49 @@ given element specify their plugin specific configuration directly
 :ref:`in their source declarations <format_sources>`.
 
 
-Elements
-~~~~~~~~
-The following element types are provided with BuildStream:
-
-
 General elements
-''''''''''''''''
+~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
 
-* :mod:`stack <elements.stack>` - Symbolic Element for dependency grouping
-* :mod:`import <elements.import>` - Import sources directly
-* :mod:`compose <elements.compose>` - Compose the output of multiple elements
-* :mod:`script <elements.script>` - Run scripts to create output
-* :mod:`junction <elements.junction>` - Integrate subprojects
-* :mod:`filter <elements.filter>` - Extract a subset of files from another element
+   elements/stack
+   elements/import
+   elements/compose
+   elements/script
+   elements/junction
+   elements/filter
 
 
 Build elements
-''''''''''''''
+~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
 
-* :mod:`manual <elements.manual>` - Manual Build Element
-* :mod:`make <elements.make>` - Make Build Element
-* :mod:`autotools <elements.autotools>` - Autotools Build Element
-* :mod:`cmake <elements.cmake>` - CMake Build Element
-* :mod:`qmake <elements.qmake>` - QMake Build Element
-* :mod:`distutils <elements.distutils>` - Python Distutils Build Element
-* :mod:`makemaker <elements.makemaker>` - Perl MakeMaker Build Element
-* :mod:`modulebuild <elements.modulebuild>` - Perl Module::Build Build Element
-* :mod:`meson <elements.meson>` - Meson Build Element
-* :mod:`pip <elements.pip>` - Pip build element
+   elements/manual
+   elements/make
+   elements/autotools
+   elements/cmake
+   elements/qmake
+   elements/distutils
+   elements/makemaker
+   elements/modulebuild
+   elements/meson
+   elements/pip
 
 
 Sources
 ~~~~~~~
-The following source types are provided with BuildStream:
+.. toctree::
+   :maxdepth: 1
 
-* :mod:`local <sources.local>` - A Source implementation for local files and directories
-* :mod:`tar <sources.tar>` - A Source implementation for tarballs
-* :mod:`zip <sources.zip>` - A Source implementation for zip archives
-* :mod:`git <sources.git>` - A Source implementation for git
-* :mod:`bzr <sources.bzr>` - A Source implementation for bazaar
-* :mod:`ostree <sources.ostree>` - A Source implementation for ostree
-* :mod:`patch <sources.patch>` - A Source implementation for applying local patches
-* :mod:`deb <sources.deb>` - A Source implementation for deb packages
+   sources/local
+   sources/tar
+   sources/zip
+   sources/git
+   sources/bzr
+   sources/ostree
+   sources/patch
+   sources/deb
 
 
 External plugins

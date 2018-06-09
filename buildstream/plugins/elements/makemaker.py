@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""Perl MakeMaker build element
-
+"""
+makemaker - Perl MakeMaker build element
+========================================
 A :mod:`BuildElement <buildstream.buildelement>` implementation for using
 the Perl ExtUtil::MakeMaker build system
 

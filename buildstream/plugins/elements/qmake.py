@@ -18,8 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""CMake build element
-
+"""
+qmake - QMake build element
+===========================
 A :mod:`BuildElement <buildstream.buildelement>` implementation for using
 the qmake build system
 

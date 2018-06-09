@@ -18,7 +18,9 @@
 #  Authors:
 #        Chandan Singh <csingh43@bloomberg.net>
 
-"""A Source implementation for applying local patches
+"""
+patch - apply locally stored patches
+====================================
 
 **Usage:**
 

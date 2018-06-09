@@ -19,8 +19,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jonathan Maw <jonathan.maw@codethink.co.uk>
 
-"""Script element
-
+"""
+script - Run scripts to create output
+=====================================
 This element allows one to run some commands to mutate the
 input and create some output.
 

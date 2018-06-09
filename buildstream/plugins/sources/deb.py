@@ -19,7 +19,9 @@
 #        Jonathan Maw <jonathan.maw@codethink.co.uk>
 #        Richard Maw <richard.maw@codethink.co.uk>
 
-"""A source implementation for staging deb files
+"""
+deb - stage files from .deb packages
+====================================
 
 **Usage:**
 

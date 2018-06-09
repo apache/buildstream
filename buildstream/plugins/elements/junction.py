@@ -18,8 +18,9 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-"""Junction element
-
+"""
+junction - Integrate subprojects
+================================
 This element is a link to another BuildStream project. It allows integration
 of multiple projects into a single pipeline.
 

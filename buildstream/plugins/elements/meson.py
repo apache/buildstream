@@ -14,8 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-"""Meson build element
-
+"""
+meson - Meson build element
+===========================
 This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
 using `Meson <http://mesonbuild.com/>`_ build scripts.
 

@@ -18,7 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""A Source implementation for staging local project files
+"""
+local - stage local files and directories
+=========================================
 
 **Usage:**
 

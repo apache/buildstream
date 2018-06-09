@@ -18,7 +18,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-"""A Source implementation for staging git checkouts
+"""
+git - stage files from a git repository
+=======================================
 
 **Usage:**
 

@@ -18,7 +18,9 @@
 #  Authors:
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
 
-"""A Source implementation for importing/staging of OSTree checkouts.
+"""
+ostree - stage files from an OSTree repository
+==============================================
 
 **Usage:**
 

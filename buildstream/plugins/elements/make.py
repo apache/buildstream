@@ -18,8 +18,9 @@
 #  Authors:
 #        Ed Baunton <ebaunton1@bloomberg.net>
 
-"""Make build element
-
+"""
+make - Make build element
+=========================
 This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
 using GNU make based build.
 
