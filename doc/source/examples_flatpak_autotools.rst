@@ -6,6 +6,13 @@ Building on a Flatpak SDK
 Here we demonstrate how to build and run software using
 a Flatpak SDK for the base runtime.
 
+.. note::
+
+   This example is distributed with BuildStream
+   in the `doc/examples/flatpak-autotools
+   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/flatpak-autotools>`_
+   subdirectory.
+
 
 Project structure
 -----------------
@@ -108,14 +115,11 @@ Using the project
 Now that we've explained the basic layout of the project, here are
 just a few things you can try to do with the project.
 
-
 .. note::
 
    The following examples assume that you have first changed your working
-   directory to the project root.
-
-   This example is a part of the BuildStream source repository in
-   the doc/examples/flatpak-autotools subdirectory.
+   directory to the
+   `project root <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/flatpak-autotools>`_.
 
 
 Build the hello.bst element
