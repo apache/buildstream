@@ -64,7 +64,7 @@ all: html devhelp
 templates:
 	mkdir -p source/elements
 	mkdir -p source/sources
-	$(SPHINXAPIDOC) --force --separate --module-first --no-headings -o source $(CURDIR)/../buildstream
+	$(SPHINXAPIDOC) --force --separate --module-first --no-headings --no-toc -o source $(CURDIR)/../buildstream
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
 
