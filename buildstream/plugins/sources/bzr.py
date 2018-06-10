@@ -20,6 +20,10 @@
 bzr - stage files from a bazaar repository
 ==========================================
 
+**Host dependencies:**
+
+  * bzr
+
 **Usage:**
 
 .. code:: yaml
