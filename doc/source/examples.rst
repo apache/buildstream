@@ -9,6 +9,6 @@ maintained and work as expected.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    examples_flatpak_autotools
