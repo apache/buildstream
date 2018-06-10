@@ -1,6 +1,4 @@
 
-.. _format:
-
 Element constructs
 ==================
 

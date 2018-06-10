@@ -1,10 +1,6 @@
 
-.. _public:
-
-
 Builtin public data
 ===================
-
 Elements can provide public data which can be read by other elements
 later in the pipeline, the format for exposing public data on a given
 element is :ref:`described here <format_public>`.
