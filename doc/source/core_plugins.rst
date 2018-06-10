@@ -42,6 +42,8 @@ Build elements
    elements/pip
 
 
+.. _authoring_source_plugins:
+
 Sources
 -------
 .. toctree::
