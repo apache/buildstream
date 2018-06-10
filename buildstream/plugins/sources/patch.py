@@ -21,6 +21,10 @@
 patch - apply locally stored patches
 ====================================
 
+**Host dependencies:**
+
+  * patch
+
 **Usage:**
 
 .. code:: yaml
