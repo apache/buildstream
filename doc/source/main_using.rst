@@ -10,6 +10,6 @@ This section details how to use the BuildStream command line interface and work 
 .. toctree::
    :maxdepth: 2
 
-   commands
-   user_config
    examples
+   user_config
+   commands
