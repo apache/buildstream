@@ -21,6 +21,10 @@
 git - stage files from a git repository
 =======================================
 
+**Host dependencies:**
+
+  * git
+
 **Usage:**
 
 .. code:: yaml
