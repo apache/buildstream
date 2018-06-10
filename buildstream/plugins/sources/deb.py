@@ -22,6 +22,10 @@
 deb - stage files from .deb packages
 ====================================
 
+**Host dependencies:**
+
+  * arpy (python package)
+
 **Usage:**
 
 .. code:: yaml
