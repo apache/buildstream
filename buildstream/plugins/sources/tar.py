@@ -21,6 +21,10 @@
 tar - stage files from tar archives
 ===================================
 
+**Host dependencies:**
+
+  * lzip (for .tar.lz files)
+
 **Usage:**
 
 .. code:: yaml
