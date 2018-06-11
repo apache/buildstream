@@ -1,10 +1,9 @@
 import os
 import shutil
 import pytest
-from tests.testutils import cli, create_artifact_share
+from tests.testutils import cli, create_artifact_share, generate_junction
 from tests.testutils.site import IS_LINUX
 
-from . import generate_junction
 
 # Project directory
 DATA_DIR = os.path.join(

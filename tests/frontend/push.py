@@ -5,9 +5,9 @@ from collections import namedtuple
 from unittest.mock import MagicMock
 
 from buildstream._exceptions import ErrorDomain
-from tests.testutils import cli, create_artifact_share, create_element_size
+from tests.testutils import cli, create_artifact_share, create_element_size, generate_junction
 from tests.testutils.site import IS_LINUX
-from . import configure_project, generate_junction
+from . import configure_project
 
 
 # Project directory

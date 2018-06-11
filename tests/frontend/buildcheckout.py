@@ -1,11 +1,11 @@
 import os
 import pytest
-from tests.testutils import cli, create_repo, ALL_REPO_KINDS
+from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
-from . import configure_project, generate_junction
+from . import configure_project
 
 # Project directory
 DATA_DIR = os.path.join(
