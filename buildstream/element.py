@@ -887,16 +887,17 @@ class Element(Plugin):
     @classmethod
     def _new_from_meta(cls, meta, artifacts):
 
+        plugins = meta.project.plugins
+
         if meta in cls.__instantiated_elements:
             return cls.__instantiated_elements[meta]
 
-        project = meta.project
-        element = project.create_element(artifacts, meta)
+        element = plugins.create_element(artifacts, meta)
         cls.__instantiated_elements[meta] = element
 
         # Instantiate sources
         for meta_source in meta.sources:
-            source = project.create_source(meta_source)
+            source = plugins.create_source(meta_source)
             redundant_ref = source._load_ref()
             element.__sources.append(source)
 

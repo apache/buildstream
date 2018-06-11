@@ -65,6 +65,140 @@ class HostMount():
             self.host_path = self.path
 
 
+class PluginCollection:
+
+    def __init__(self, project, context, directory, config):
+        self._project = project
+        self._context = context
+        self._directory = directory
+        self._plugin_source_origins = []   # Origins of custom sources
+        self._plugin_element_origins = []  # Origins of custom elements
+
+        # Plugin origins and versions
+        origins = _yaml.node_get(config, list, 'plugins', default_value=[])
+        self._source_format_versions = {}
+        self._element_format_versions = {}
+        for origin in origins:
+            allowed_origin_fields = [
+                'origin', 'sources', 'elements',
+                'package-name', 'path',
+            ]
+            allowed_origins = ['core', 'local', 'pip']
+            _yaml.node_validate(origin, allowed_origin_fields)
+
+            if origin['origin'] not in allowed_origins:
+                raise LoadError(
+                    LoadErrorReason.INVALID_YAML,
+                    "Origin '{}' is not one of the allowed types"
+                    .format(origin['origin']))
+
+            # Store source versions for checking later
+            source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
+            for key, _ in _yaml.node_items(source_versions):
+                if key in self._source_format_versions:
+                    raise LoadError(
+                        LoadErrorReason.INVALID_YAML,
+                        "Duplicate listing of source '{}'".format(key))
+                self._source_format_versions[key] = _yaml.node_get(source_versions, int, key)
+
+            # Store element versions for checking later
+            element_versions = _yaml.node_get(origin, Mapping, 'elements', default_value={})
+            for key, _ in _yaml.node_items(element_versions):
+                if key in self._element_format_versions:
+                    raise LoadError(
+                        LoadErrorReason.INVALID_YAML,
+                        "Duplicate listing of element '{}'".format(key))
+                self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
+
+            # Store the origins if they're not 'core'.
+            # core elements are loaded by default, so storing is unnecessary.
+            if _yaml.node_get(origin, str, 'origin') != 'core':
+                self._store_origin(origin, 'sources', self._plugin_source_origins)
+                self._store_origin(origin, 'elements', self._plugin_element_origins)
+
+        pluginbase = PluginBase(package='buildstream.plugins')
+        self._element_factory = ElementFactory(pluginbase, self._plugin_element_origins)
+        self._source_factory = SourceFactory(pluginbase, self._plugin_source_origins)
+
+    # _store_origin()
+    #
+    # Helper function to store plugin origins
+    #
+    # Args:
+    #    origin (dict) - a dictionary indicating the origin of a group of
+    #                    plugins.
+    #    plugin_group (str) - The name of the type of plugin that is being
+    #                         loaded
+    #    destination (list) - A list of dicts to store the origins in
+    #
+    # Raises:
+    #    LoadError if 'origin' is an unexpected value
+    def _store_origin(self, origin, plugin_group, destination):
+        expected_groups = ['sources', 'elements']
+        if plugin_group not in expected_groups:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Unexpected plugin group: {}, expecting {}"
+                            .format(plugin_group, expected_groups))
+        if plugin_group in origin:
+            origin_dict = _yaml.node_copy(origin)
+            plugins = _yaml.node_get(origin, Mapping, plugin_group, default_value={})
+            origin_dict['plugins'] = [k for k, _ in _yaml.node_items(plugins)]
+            for group in expected_groups:
+                if group in origin_dict:
+                    del origin_dict[group]
+            if origin_dict['origin'] == 'local':
+                # paths are passed in relative to the project, but must be absolute
+                origin_dict['path'] = os.path.join(self._directory, origin_dict['path'])
+            destination.append(origin_dict)
+
+    # create_element()
+    #
+    # Instantiate and return an element
+    #
+    # Args:
+    #    artifacts (ArtifactCache): The artifact cache
+    #    meta (MetaElement): The loaded MetaElement
+    #
+    # Returns:
+    #    (Element): A newly created Element object of the appropriate kind
+    #
+    def create_element(self, artifacts, meta):
+        element = self._element_factory.create(self._context, self._project, artifacts, meta)
+        version = self._element_format_versions.get(meta.kind, 0)
+        self._assert_plugin_format(element, version)
+        return element
+
+    def get_element_type(self, kind):
+        return self._element_factory.lookup(kind)
+
+    # create_source()
+    #
+    # Instantiate and return a Source
+    #
+    # Args:
+    #    meta (MetaSource): The loaded MetaSource
+    #
+    # Returns:
+    #    (Source): A newly created Source object of the appropriate kind
+    #
+    def create_source(self, meta):
+        source = self._source_factory.create(self._context, self._project, meta)
+        version = self._source_format_versions.get(meta.kind, 0)
+        self._assert_plugin_format(source, version)
+        return source
+
+    # _assert_plugin_format()
+    #
+    # Helper to raise a PluginError if the loaded plugin is of a lesser version then
+    # the required version for this plugin
+    #
+    def _assert_plugin_format(self, plugin, version):
+        if plugin.BST_FORMAT_VERSION < version:
+            raise LoadError(LoadErrorReason.UNSUPPORTED_PLUGIN,
+                            "{}: Format version {} is too old for requested version {}"
+                            .format(plugin, plugin.BST_FORMAT_VERSION, version))
+
+
 # Project()
 #
 # The Project Configuration
@@ -87,6 +221,7 @@ class Project():
         self.refs = ProjectRefs(self.directory, 'project.refs')
         self.junction_refs = ProjectRefs(self.directory, 'junction.refs')
 
+        self.plugins = None                      # PluginCollection
         self.options = None                      # OptionPool
         self.junction = junction                 # The junction Element object, if this is a subproject
         self.fail_on_overlap = False             # Whether overlaps are treated as errors
@@ -102,13 +237,9 @@ class Project():
         #
         self._context = context  # The invocation Context
         self._aliases = {}       # Aliases dictionary
-        self._plugin_source_origins = []   # Origins of custom sources
-        self._plugin_element_origins = []  # Origins of custom elements
 
         self._cli_options = cli_options
         self._cache_key = None
-        self._source_format_versions = {}
-        self._element_format_versions = {}
 
         self._shell_command = []      # The default interactive shell command
         self._shell_environment = {}  # Statically set environment vars
@@ -174,39 +305,6 @@ class Project():
             self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key
-
-    # create_element()
-    #
-    # Instantiate and return an element
-    #
-    # Args:
-    #    artifacts (ArtifactCache): The artifact cache
-    #    meta (MetaElement): The loaded MetaElement
-    #
-    # Returns:
-    #    (Element): A newly created Element object of the appropriate kind
-    #
-    def create_element(self, artifacts, meta):
-        element = self._element_factory.create(self._context, self, artifacts, meta)
-        version = self._element_format_versions.get(meta.kind, 0)
-        self._assert_plugin_format(element, version)
-        return element
-
-    # create_source()
-    #
-    # Instantiate and return a Source
-    #
-    # Args:
-    #    meta (MetaSource): The loaded MetaSource
-    #
-    # Returns:
-    #    (Source): A newly created Source object of the appropriate kind
-    #
-    def create_source(self, meta):
-        source = self._source_factory.create(self._context, self, meta)
-        version = self._source_format_versions.get(meta.kind, 0)
-        self._assert_plugin_format(source, version)
-        return source
 
     # _load():
     #
@@ -304,50 +402,7 @@ class Project():
         # Load artifacts pull/push configuration for this project
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config)
 
-        # Plugin origins and versions
-        origins = _yaml.node_get(config, list, 'plugins', default_value=[])
-        for origin in origins:
-            allowed_origin_fields = [
-                'origin', 'sources', 'elements',
-                'package-name', 'path',
-            ]
-            allowed_origins = ['core', 'local', 'pip']
-            _yaml.node_validate(origin, allowed_origin_fields)
-
-            if origin['origin'] not in allowed_origins:
-                raise LoadError(
-                    LoadErrorReason.INVALID_YAML,
-                    "Origin '{}' is not one of the allowed types"
-                    .format(origin['origin']))
-
-            # Store source versions for checking later
-            source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
-            for key, _ in _yaml.node_items(source_versions):
-                if key in self._source_format_versions:
-                    raise LoadError(
-                        LoadErrorReason.INVALID_YAML,
-                        "Duplicate listing of source '{}'".format(key))
-                self._source_format_versions[key] = _yaml.node_get(source_versions, int, key)
-
-            # Store element versions for checking later
-            element_versions = _yaml.node_get(origin, Mapping, 'elements', default_value={})
-            for key, _ in _yaml.node_items(element_versions):
-                if key in self._element_format_versions:
-                    raise LoadError(
-                        LoadErrorReason.INVALID_YAML,
-                        "Duplicate listing of element '{}'".format(key))
-                self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
-
-            # Store the origins if they're not 'core'.
-            # core elements are loaded by default, so storing is unnecessary.
-            if _yaml.node_get(origin, str, 'origin') != 'core':
-                self._store_origin(origin, 'sources', self._plugin_source_origins)
-                self._store_origin(origin, 'elements', self._plugin_element_origins)
-
-        pluginbase = PluginBase(package='buildstream.plugins')
-        self._element_factory = ElementFactory(pluginbase, self._plugin_element_origins)
-        self._source_factory = SourceFactory(pluginbase, self._plugin_source_origins)
-
+        self.plugins = PluginCollection(self, self._context, self.directory, config)
         # Source url aliases
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
 
@@ -419,48 +474,6 @@ class Project():
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
-
-    # _assert_plugin_format()
-    #
-    # Helper to raise a PluginError if the loaded plugin is of a lesser version then
-    # the required version for this plugin
-    #
-    def _assert_plugin_format(self, plugin, version):
-        if plugin.BST_FORMAT_VERSION < version:
-            raise LoadError(LoadErrorReason.UNSUPPORTED_PLUGIN,
-                            "{}: Format version {} is too old for requested version {}"
-                            .format(plugin, plugin.BST_FORMAT_VERSION, version))
-
-    # _store_origin()
-    #
-    # Helper function to store plugin origins
-    #
-    # Args:
-    #    origin (dict) - a dictionary indicating the origin of a group of
-    #                    plugins.
-    #    plugin_group (str) - The name of the type of plugin that is being
-    #                         loaded
-    #    destination (list) - A list of dicts to store the origins in
-    #
-    # Raises:
-    #    LoadError if 'origin' is an unexpected value
-    def _store_origin(self, origin, plugin_group, destination):
-        expected_groups = ['sources', 'elements']
-        if plugin_group not in expected_groups:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Unexpected plugin group: {}, expecting {}"
-                            .format(plugin_group, expected_groups))
-        if plugin_group in origin:
-            origin_dict = _yaml.node_copy(origin)
-            plugins = _yaml.node_get(origin, Mapping, plugin_group, default_value={})
-            origin_dict['plugins'] = [k for k, _ in _yaml.node_items(plugins)]
-            for group in expected_groups:
-                if group in origin_dict:
-                    del origin_dict[group]
-            if origin_dict['origin'] == 'local':
-                # paths are passed in relative to the project, but must be absolute
-                origin_dict['path'] = os.path.join(self.directory, origin_dict['path'])
-            destination.append(origin_dict)
 
     # _ensure_project_dir()
     #
