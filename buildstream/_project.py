@@ -33,6 +33,7 @@ from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
+from ._loader import Loader
 
 
 # The separator we use for user specified aliases
@@ -70,7 +71,8 @@ class HostMount():
 #
 class Project():
 
-    def __init__(self, directory, context, *, junction=None, cli_options=None):
+    def __init__(self, directory, context, *, junction=None, cli_options=None,
+                 parent_loader=None, tempdir=None):
 
         # The project name
         self.name = None
@@ -117,6 +119,10 @@ class Project():
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
         self._context.add_project(self)
+
+        self.loader = Loader(self._context, self,
+                             parent=parent_loader,
+                             tempdir=tempdir)
 
     # translate_url():
     #

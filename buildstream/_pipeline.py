@@ -25,7 +25,6 @@ from operator import itemgetter
 
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
-from ._loader import Loader
 from ._profile import Topics, profile_start, profile_end
 from .element import Element
 from . import Scope, Consistency
@@ -77,7 +76,6 @@ class Pipeline():
         # Private members
         #
         self._artifacts = artifacts
-        self._loader = None
 
     # load()
     #
@@ -106,11 +104,9 @@ class Pipeline():
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        self._loader = Loader(self._context, self._project,
-                              fetch_subprojects=fetch_subprojects)
-
         with self._context.timed_activity("Loading pipeline", silent_nested=True):
-            meta_elements = self._loader.load(targets, rewritable, None)
+            meta_elements = self._project.loader.load(targets, rewritable, None,
+                                                      fetch_subprojects=fetch_subprojects)
 
         # Resolve the real elements now that we've loaded the project
         with self._context.timed_activity("Resolving pipeline"):
@@ -388,8 +384,7 @@ class Pipeline():
     # Cleans up resources used by the Pipeline.
     #
     def cleanup(self):
-        if self._loader:
-            self._loader.cleanup()
+        self._project.loader.cleanup()
 
         # Reset the element loader state
         Element._reset_load_state()

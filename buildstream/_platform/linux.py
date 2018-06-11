@@ -30,9 +30,9 @@ from . import Platform
 
 class Linux(Platform):
 
-    def __init__(self, context, project):
+    def __init__(self, context):
 
-        super().__init__(context, project)
+        super().__init__(context)
 
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
         self._user_ns_available = self._check_user_ns_available(context)
