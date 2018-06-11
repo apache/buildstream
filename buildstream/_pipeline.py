@@ -106,11 +106,11 @@ class Pipeline():
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        self._loader = Loader(self._context, self._project, targets,
+        self._loader = Loader(self._context, self._project,
                               fetch_subprojects=fetch_subprojects)
 
         with self._context.timed_activity("Loading pipeline", silent_nested=True):
-            meta_elements = self._loader.load(rewritable, None)
+            meta_elements = self._loader.load(targets, rewritable, None)
 
         # Resolve the real elements now that we've loaded the project
         with self._context.timed_activity("Resolving pipeline"):
