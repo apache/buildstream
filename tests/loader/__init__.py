@@ -11,4 +11,4 @@ from buildstream._loader import Loader
 def make_loader(basedir):
     context = Context()
     project = Project(basedir, context)
-    return Loader(context, project)
+    return project.loader
