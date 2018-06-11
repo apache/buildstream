@@ -8,6 +8,10 @@ from .repo import Repo
 
 class Tar(Repo):
 
+    def __init__(self, directory, subdir):
+        # the repo is the file, not the dir it's in, so subdir is removed.
+        super().__init__(directory, '')
+
     def create(self, directory):
         tarball = os.path.join(self.repo, 'file.tar.gz')
 
