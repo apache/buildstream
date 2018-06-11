@@ -46,7 +46,6 @@ from . import MetaSource
 # Args:
 #    context (Context): The Context object
 #    project (Project): The toplevel Project object
-#    filenames (list of str): Target, element-path relative bst filenames in the project
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
 #    tempdir (str): A directory to cleanup with the Loader, given to the loader by a parent
 #                   loader in the case that this loader is a subproject loader.
@@ -54,21 +53,12 @@ from . import MetaSource
 #
 class Loader():
 
-    def __init__(self, context, project, filenames, *, parent=None, tempdir=None, fetch_subprojects=False):
+    def __init__(self, context, project, *, parent=None, tempdir=None, fetch_subprojects=False):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
         if not os.path.isabs(basedir):
             basedir = os.path.abspath(basedir)
-
-        for filename in filenames:
-            if os.path.isabs(filename):
-                # XXX Should this just be an assertion ?
-                # Expect that the caller gives us the right thing at least ?
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Target '{}' was not specified as a relative "
-                                "path to the base project directory: {}"
-                                .format(filename, basedir))
 
         #
         # Public members
@@ -82,7 +72,6 @@ class Loader():
         self._context = context
         self._options = project.options      # Project options (OptionPool)
         self._basedir = basedir              # Base project directory
-        self._targets = filenames            # Target bst elements
         self._tempdir = tempdir              # A directory to cleanup
         self._parent = parent                # The parent loader
 
@@ -98,17 +87,27 @@ class Loader():
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
     #    ticker (callable): An optional function for tracking load progress
+    #    targets (list of str): Target, element-path relative bst filenames in the project
     #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, rewritable=False, ticker=None):
+    def load(self, targets, rewritable=False, ticker=None):
+
+        for filename in targets:
+            if os.path.isabs(filename):
+                # XXX Should this just be an assertion ?
+                # Expect that the caller gives us the right thing at least ?
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "Target '{}' was not specified as a relative "
+                                "path to the base project directory: {}"
+                                .format(filename, self._basedir))
 
         # First pass, recursively load files and populate our table of LoadElements
         #
         deps = []
 
-        for target in self._targets:
+        for target in targets:
             profile_start(Topics.LOAD_PROJECT, target)
             junction, name, loader = self._parse_name(target, rewritable, ticker)
             loader._load_file(name, rewritable, ticker)
@@ -126,7 +125,7 @@ class Loader():
         dummy = DummyTarget(name='', full_name='', deps=deps)
         self._elements[''] = dummy
 
-        profile_key = "_".join(t for t in self._targets)
+        profile_key = "_".join(t for t in targets)
         profile_start(Topics.CIRCULAR_CHECK, profile_key)
         self._check_circular_deps('')
         profile_end(Topics.CIRCULAR_CHECK, profile_key)
@@ -135,7 +134,7 @@ class Loader():
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
-        for target in self._targets:
+        for target in targets:
             profile_start(Topics.SORT_DEPENDENCIES, target)
             junction, name, loader = self._parse_name(target, rewritable, ticker)
             loader._sort_dependencies(name)
@@ -546,7 +545,7 @@ class Loader():
             else:
                 raise
 
-        loader = Loader(self._context, project, [],
+        loader = Loader(self._context, project,
                         parent=self,
                         tempdir=basedir,
                         fetch_subprojects=self._fetch_subprojects)
