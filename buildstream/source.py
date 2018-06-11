@@ -73,7 +73,7 @@ from contextlib import contextmanager
 
 from . import Plugin
 from . import _yaml, utils
-from ._exceptions import BstError, ImplError, ErrorDomain
+from ._exceptions import BstError, ImplError, ErrorDomain, PluginError
 from ._projectrefs import ProjectRefStorage
 
 
@@ -400,6 +400,92 @@ class Source(Plugin, SourceDownloader):
            list: A list of SourceDownloaders
         """
         return [self]
+
+    def call(self, *popenargs, fail=None, **kwargs):
+        """A wrapper for subprocess.call()
+
+        Args:
+           popenargs (list): Popen() arguments
+           fail (str): A message to display if the process returns
+                       a non zero exit code
+           rest_of_args (kwargs): Remaining arguments to subprocess.call()
+
+        Returns:
+           (int): The process exit code.
+
+        Raises:
+           (:class:`.PluginError`): If a non-zero return code is received and *fail* is specified
+
+        Note: If *fail* is not specified, then the return value of subprocess.call()
+              is returned even on error, and no exception is automatically raised.
+
+        **Example**
+
+        .. code:: python
+
+          # Call some host tool
+          self.tool = utils.get_host_tool('toolname')
+          self.call(
+              [self.tool, '--download-ponies', self.mirror_directory],
+              "Failed to download ponies from {}".format(
+                  self.mirror_directory))
+        """
+        try:
+            return super().call(*popenargs, fail=fail, **kwargs)
+        except PluginError as e:
+            raise SourceError("{}: {}".format(self, e),
+                              detail=e.detail, reason=e.reason) from e
+
+    def check_output(self, *popenargs, fail=None, **kwargs):
+        """A wrapper for subprocess.check_output()
+
+        Args:
+           popenargs (list): Popen() arguments
+           fail (str): A message to display if the process returns
+                       a non zero exit code
+           rest_of_args (kwargs): Remaining arguments to subprocess.call()
+
+        Returns:
+           (int): The process exit code
+           (str): The process standard output
+
+        Raises:
+           (:class:`.PluginError`): If a non-zero return code is received and *fail* is specified
+
+        Note: If *fail* is not specified, then the return value of subprocess.check_output()
+              is returned even on error, and no exception is automatically raised.
+
+        **Example**
+
+        .. code:: python
+
+          # Get the tool at preflight time
+          self.tool = utils.get_host_tool('toolname')
+
+          # Call the tool, automatically raise an error
+          _, output = self.check_output(
+              [self.tool, '--print-ponies'],
+              "Failed to print the ponies in {}".format(
+                  self.mirror_directory),
+              cwd=self.mirror_directory)
+
+          # Call the tool, inspect exit code
+          exit_code, output = self.check_output(
+              [self.tool, 'get-ref', tracking],
+              cwd=self.mirror_directory)
+
+          if exit_code == 128:
+              return
+          elif exit_code != 0:
+              fmt = "{plugin}: Failed to get ref for tracking: {track}"
+              raise SourceError(
+                  fmt.format(plugin=self, track=tracking)) from e
+        """
+        try:
+            return super().check_output(*popenargs, fail=fail, **kwargs)
+        except PluginError as e:
+            raise SourceError("{}: {}".format(self, e),
+                              detail=e.detail, reason=e.reason) from e
 
     #############################################################
     #            Private Methods used in BuildStream            #
