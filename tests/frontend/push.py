@@ -3,7 +3,8 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli, create_artifact_share, create_element_size
-from . import configure_project, generate_junction
+from tests.testutils import generate_junction
+from . import configure_project
 
 
 # Project directory
