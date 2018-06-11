@@ -45,6 +45,7 @@ from . import Scope, Consistency
 #    context (Context): The Context object
 #    project (Project): The Project object
 #    session_start (datetime): The time when the session started
+#    loader (Loader): The Loader object
 #    session_start_callback (callable): A callback to invoke when the session starts
 #    interrupt_callback (callable): A callback to invoke when we get interrupted
 #    ticker_callback (callable): Invoked every second while running the scheduler
@@ -53,7 +54,7 @@ from . import Scope, Consistency
 #
 class Stream():
 
-    def __init__(self, context, project, session_start, *,
+    def __init__(self, context, project, session_start, loader, *,
                  session_start_callback=None,
                  interrupt_callback=None,
                  ticker_callback=None,
@@ -71,7 +72,6 @@ class Stream():
         #
         # Private members
         #
-        Platform.create_instance(context, project)
         self._platform = Platform.get_platform()
         self._artifacts = self._platform.artifactcache
         self._context = context
@@ -90,8 +90,8 @@ class Stream():
     # Cleans up application state
     #
     def cleanup(self):
-        if self._pipeline:
-            self._pipeline.cleanup()
+        if self._project:
+            self._project.cleanup()
 
     # load_selection()
     #

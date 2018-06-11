@@ -34,6 +34,9 @@ from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
+from ._loader import Loader
+from .element import Element
+from ._message import Message, MessageType
 
 
 # Project Configuration file
@@ -68,7 +71,8 @@ class HostMount():
 #
 class Project():
 
-    def __init__(self, directory, context, *, junction=None, cli_options=None, default_mirror=None):
+    def __init__(self, directory, context, *, junction=None, cli_options=None,
+                 default_mirror=None, parent_loader=None, tempdir=None):
 
         # The project name
         self.name = None
@@ -117,6 +121,10 @@ class Project():
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
         self._context.add_project(self)
+
+        self.loader = Loader(self._context, self,
+                             parent=parent_loader,
+                             tempdir=tempdir)
 
     # translate_url():
     #
@@ -231,6 +239,59 @@ class Project():
                     mirror_list += alias_mapping[alias]
         mirror_list.append(self._aliases[alias])
         return mirror_list
+
+    # load_elements()
+    #
+    # Loads elements from target names.
+    #
+    # Args:
+    #    targets (list): Target names
+    #    artifacts (ArtifactCache): Artifact cache
+    #    rewritable (bool): Whether the loaded files should be rewritable
+    #                       this is a bit more expensive due to deep copies
+    #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
+    #                              loading process, if they are not yet locally cached
+    #
+    # Returns:
+    #    (list): A list of loaded Element
+    #
+    def load_elements(self, targets, artifacts, *,
+                      rewritable=False, fetch_subprojects=False):
+        with self._context.timed_activity("Loading elements", silent_nested=True):
+            meta_elements = self.loader.load(targets, rewritable=rewritable,
+                                             ticker=None,
+                                             fetch_subprojects=fetch_subprojects)
+
+        with self._context.timed_activity("Resolving elements"):
+            elements = [
+                Element._new_from_meta(meta, artifacts)
+                for meta in meta_elements
+            ]
+
+        # Now warn about any redundant source references which may have
+        # been discovered in the resolve() phase.
+        redundant_refs = Element._get_redundant_source_refs()
+        if redundant_refs:
+            detail = "The following inline specified source references will be ignored:\n\n"
+            lines = [
+                "{}:{}".format(source._get_provenance(), ref)
+                for source, ref in redundant_refs
+            ]
+            detail += "\n".join(lines)
+            self._context.message(
+                Message(None, MessageType.WARN, "Ignoring redundant source references", detail=detail))
+
+        return elements
+
+    # cleanup()
+    #
+    # Cleans up resources used loading elements
+    #
+    def cleanup(self):
+        self.loader.cleanup()
+
+        # Reset the element loader state
+        Element._reset_load_state()
 
     # _load():
     #
