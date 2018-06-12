@@ -24,7 +24,9 @@ ALLSPHINXOPTS   = -W -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) 
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-.PHONY: all templates html devhelp
+BST2HTML = $(CURDIR)/bst2html.py
+
+.PHONY: all clean templates templates-clean html devhelp
 
 # Canned recipe for generating plugin api skeletons
 #   $1 = the plugin directory
@@ -56,8 +58,13 @@ define plugin-doc-skeleton
 	done
 endef
 
+
+
 # We set PYTHONPATH here because source/conf.py sys.modules hacks dont seem to help sphinx-build import the plugins
 all: html devhelp
+
+clean: templates-clean
+	rm -rf build
 
 # Generate rst templates for the docs using a mix of sphinx-apidoc and
 # our 'plugin-doc-skeleton' routine for plugin pages.
@@ -68,10 +75,23 @@ templates:
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
 
+# Generate the html fragments of colorized BuildStream terminal output only
+# if they don't yet exist. This is expensive so you need to run `make clean` first
+# if you want to regenerate them.
+#
+SESSION_HTML = $(patsubst sessions/%.run,source/sessions/%.html,$(wildcard sessions/*.run))
+source/sessions/%.html:
+	$(BST2HTML) -o $@ --description $(patsubst source/sessions/%.html,sessions/%.run,$@)
+
+templates-clean:
+	rm -rf source/elements
+	rm -rf source/sources
+	rm -rf source/sessions
+
 # Targets which generate docs with sphinx build
 #
 #
-html devhelp: templates
+html devhelp: templates $(SESSION_HTML)
 	@echo "Building $@..."
 	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
