@@ -29,7 +29,7 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 4:
     sys.exit(1)
 
 try:
-    from setuptools import setup, find_packages
+    from setuptools import setup, find_packages, Command
     from setuptools.command.easy_install import ScriptWriter
 except ImportError:
     print("BuildStream requires setuptools in order to build. Install it using"
@@ -82,47 +82,6 @@ def assert_bwrap():
             exit_bwrap("Bubblewrap too old")
 
 
-##################################################################
-# OSTree version requirements
-##################################################################
-REQUIRED_OSTREE_YEAR = 2017
-REQUIRED_OSTREE_RELEASE = 8
-
-
-def exit_ostree(reason):
-    print(reason +
-          "\nBuildStream requires OSTree >= v{}.{} with Python bindings. "
-          .format(REQUIRED_OSTREE_YEAR, REQUIRED_OSTREE_RELEASE) +
-          "Install it using your package manager (usually ostree or gir1.2-ostree-1.0).")
-    sys.exit(1)
-
-
-def assert_ostree_version():
-    platform = os.environ.get('BST_FORCE_BACKEND', '') or sys.platform
-    if platform.startswith('linux'):
-        try:
-            import gi
-        except ImportError:
-            print("BuildStream requires PyGObject (aka PyGI). Install it using"
-                  " your package manager (usually pygobject3 or python-gi).")
-            sys.exit(1)
-
-        try:
-            gi.require_version('OSTree', '1.0')
-            from gi.repository import OSTree
-        except ValueError:
-            exit_ostree("OSTree not found")
-
-        try:
-            if OSTree.YEAR_VERSION < REQUIRED_OSTREE_YEAR or \
-               (OSTree.YEAR_VERSION == REQUIRED_OSTREE_YEAR and
-                OSTree.RELEASE_VERSION < REQUIRED_OSTREE_RELEASE):
-                exit_ostree("OSTree v{}.{} is too old."
-                            .format(OSTree.YEAR_VERSION, OSTree.RELEASE_VERSION))
-        except AttributeError:
-            exit_ostree("OSTree is too old.")
-
-
 ###########################################
 # List the pre-built man pages to install #
 ###########################################
@@ -154,13 +113,12 @@ def list_man_pages():
 # So screw it, lets just use an env var.
 bst_install_entry_points = {
     'console_scripts': [
-        'bst-artifact-receive = buildstream._artifactcache.pushreceive:receive_main'
+        'bst-artifact-server = buildstream._artifactcache.casserver:server_main'
     ],
 }
 
 if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
     assert_bwrap()
-    assert_ostree_version()
     bst_install_entry_points['console_scripts'] += [
         'bst = buildstream._frontend:cli'
     ]
@@ -206,12 +164,46 @@ ScriptWriter.get_args = get_args
 
 
 #####################################################
+#         gRPC command for code generation          #
+#####################################################
+class BuildGRPC(Command):
+    """Command to generate project *_pb2.py modules from proto files."""
+
+    description = 'build gRPC protobuf modules'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        try:
+            import grpc_tools.command
+        except ImportError:
+            print("BuildStream requires grpc_tools in order to build gRPC modules.\n"
+                  "Install it via pip (pip3 install grpcio-tools).")
+            exit(1)
+
+        grpc_tools.command.build_package_protos('.')
+
+
+def get_cmdclass():
+    cmdclass = {
+        'build_grpc': BuildGRPC,
+    }
+    cmdclass.update(versioneer.get_cmdclass())
+    return cmdclass
+
+
+#####################################################
 #             Main setup() Invocation               #
 #####################################################
 setup(name='BuildStream',
       # Use versioneer
       version=versioneer.get_version(),
-      cmdclass=versioneer.get_cmdclass(),
+      cmdclass=get_cmdclass(),
 
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
@@ -243,6 +235,8 @@ setup(name='BuildStream',
           'Click',
           'blessings',
           'jinja2 >= 2.10',
+          'protobuf >= 3.5',
+          'grpcio',
       ],
       entry_points=bst_install_entry_points,
       setup_requires=['pytest-runner'],

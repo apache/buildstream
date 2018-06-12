@@ -19,8 +19,6 @@ import pytest
 #
 from _pytest.capture import MultiCapture, FDCapture
 
-from tests.testutils.site import IS_LINUX
-
 # Import the main cli entrypoint
 from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml
@@ -203,10 +201,7 @@ class Cli():
     def remove_artifact_from_cache(self, project, element_name):
         cache_dir = os.path.join(project, 'cache', 'artifacts')
 
-        if IS_LINUX:
-            cache_dir = os.path.join(cache_dir, 'ostree', 'refs', 'heads')
-        else:
-            cache_dir = os.path.join(cache_dir, 'tar')
+        cache_dir = os.path.join(cache_dir, 'cas', 'refs', 'heads')
 
         cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', element_name))[0]
         shutil.rmtree(cache_dir)
