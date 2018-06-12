@@ -125,9 +125,10 @@ just a few things you can try to do with the project.
 Build the hello.bst element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To build the project, run :ref:`bst build <invoking_build>` in the
-following way::
+following way:
 
-   bst build hello.bst
+.. raw:: html
+   :file: sessions/flatpak-autotools-build.html
 
 
 Run the hello world program
@@ -137,6 +138,7 @@ and will automatically be in the default ``PATH`` for running things
 in a :ref:`bst shell <invoking_shell>`.
 
 To just run the program, run :ref:`bst shell <invoking_shell>` in the
-following way::
+following way:
 
-   bst shell hello.bst -- hello
+.. raw:: html
+   :file: sessions/flatpak-autotools-shell.html
