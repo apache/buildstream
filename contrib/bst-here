@@ -86,16 +86,9 @@ done
 test "$OPTIND" -gt 1 &&
     shift $(( OPTIND - 1 ))
 
-create_volume_if_not_exists () {
-    if ! docker volume inspect "$1" >/dev/null 2>&1
-    then
-        docker volume create --name "$1"
-    fi
-}
-
 for vol in buildstream-cache buildstream-config
 do
-    create_volume_if_not_exists "$vol"
+    docker volume create "$vol" >/dev/null
 done
 
 BST_HERE_PS1="\[\033[01;34m\]\w\[\033[00m\]> "
