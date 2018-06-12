@@ -22,7 +22,7 @@ project.conf
 ~~~~~~~~~~~~
 The following is a simple :ref:`project <projectconf>` definition:
 
-.. literalinclude:: ../examples/flatpak-autotools/project.conf
+.. literalinclude:: ../../examples/flatpak-autotools/project.conf
    :language: yaml
 
 Here we use an :ref:`arch option <project_options_arch>` to allow
@@ -40,7 +40,7 @@ This is the :mod:`import <elements.import>` element used to import the
 actual Flatpak SDK, it uses an :mod:`ostree <sources.ostree>` source to
 download the Flatpak since these are hosted in OSTree repositories.
 
-.. literalinclude:: ../examples/flatpak-autotools/elements/base/sdk.bst
+.. literalinclude:: ../../examples/flatpak-autotools/elements/base/sdk.bst
    :language: yaml
 
 While declaring the :mod:`ostree <sources.ostree>` source, we specify a GPG
@@ -72,7 +72,7 @@ This is another :mod:`import <elements.import>` element, and it uses
 the :mod:`local <sources.local>` source type so that we can stage files
 literally stored in the same repository as the project.
 
-.. literalinclude:: ../examples/flatpak-autotools/elements/base/usrmerge.bst
+.. literalinclude:: ../../examples/flatpak-autotools/elements/base/usrmerge.bst
    :language: yaml
 
 The purpose of this element is simply to add the symlinks for
@@ -88,7 +88,7 @@ base.bst
 ~~~~~~~~
 This is just a :mod:`stack <elements.stack>` element for convenience sake.
 
-.. literalinclude:: ../examples/flatpak-autotools/elements/base.bst
+.. literalinclude:: ../../examples/flatpak-autotools/elements/base.bst
    :language: yaml
 
 Often times you will have a more complex base to build things on, and it
@@ -102,7 +102,7 @@ hello.bst
 Finally, we show an example of an :mod:`autotools <elements.autotools>` element
 to build our sample "Hello World" program.
 
-.. literalinclude:: ../examples/flatpak-autotools/elements/hello.bst
+.. literalinclude:: ../../examples/flatpak-autotools/elements/hello.bst
    :language: yaml
 
 We use another :mod:`local <sources.local>` source to obtain the sample
@@ -128,7 +128,7 @@ To build the project, run :ref:`bst build <invoking_build>` in the
 following way:
 
 .. raw:: html
-   :file: sessions/flatpak-autotools-build.html
+   :file: ../sessions/flatpak-autotools-build.html
 
 
 Run the hello world program
@@ -141,4 +141,4 @@ To just run the program, run :ref:`bst shell <invoking_shell>` in the
 following way:
 
 .. raw:: html
-   :file: sessions/flatpak-autotools-shell.html
+   :file: ../sessions/flatpak-autotools-shell.html

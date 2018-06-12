@@ -96,6 +96,7 @@ html devhelp: templates $(SESSION_HTML)
 	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
 	    $(wildcard source/*.rst) \
+	    $(wildcard source/examples/*.rst) \
 	    $(wildcard source/elements/*.rst) \
 	    $(wildcard source/sources/*.rst)
 	@echo
