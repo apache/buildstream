@@ -257,7 +257,7 @@ using pip or some other mechanism::
   pip3 install --user arpy
 
 Furthermore, the documentation build requires that BuildStream itself
-be installed.
+be installed, as it will be used in the process of generating its docs.
 
 To build the documentation, just run the following::
 
@@ -265,6 +265,24 @@ To build the documentation, just run the following::
 
 This will give you a ``doc/build/html`` directory with the html docs which
 you can view in your browser locally to test.
+
+
+Regenerating session html
+'''''''''''''''''''''''''
+The documentation build will only build the session files if they
+are not yet built, and we revision the session files to make it easier
+for developers to try documentation changes.
+
+To explicitly rebuild the session snapshot html files, it is recommended that you
+first set the ``BST_SOURCE_CACHE`` environment variable to your source cache, this
+will make the docs build reuse already downloaded sources::
+
+  export BST_SOURCE_CACHE=~/.cache/buildstream/sources
+
+To force rebuild, simply run the following::
+
+  make -C doc clean
+  make -C doc
 
 
 Man pages
@@ -312,6 +330,65 @@ format::
   A detailed description can go here if one is needed, only
   after the above part documents the calling conventions.
   """
+
+
+Documentation Examples
+~~~~~~~~~~~~~~~~~~~~~~
+The examples section of the documentation contains a series of standalone
+examples, here are the criteria for an example addition.
+
+* The example has a ``${name}``
+
+* The example has a project users can copy and use
+
+  * This project is added in the directory ``doc/examples/${name}``
+
+* The example has a documentation component
+
+  * This is added at ``doc/source/examples/${name}.rst``
+  * A reference to ``examples/${name}`` is added to the toctree in ``doc/source/examples.rst``
+  * This documentation discusses the project elements declared in the project and may
+    provide some BuildStream command examples
+  * This documentation links out to the reference manual at every opportunity
+
+* The example has a CI test component
+
+  * This is an integration test added at ``tests/examples/${name}``
+  * This test runs BuildStream in the ways described in the example
+    and assert that we get the results which we advertize to users in
+    the said examples.
+
+
+Adding BuildStream command output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+As a part of building the docs, BuildStream will run itself and extract
+some html for the colorized output which is produced.
+
+If you want to run BuildStream to produce some nice html for your
+documentation, then you can do so by adding new ``.run`` files to the
+``doc/sessions/`` directory.
+
+Any files added as ``doc/sessions/${example}.run`` will result in generated
+file at ``doc/source/sessions/${example}.html``, and these files can be
+included in the reStructuredText documentation at any time with::
+
+  .. raw:: html
+     :file: sessions/${example}.html
+
+The ``.run`` file format is just another YAML dictionary with a few options:
+
+* ``directory``: The project directory to run commands on, relative to the ``.run`` file.
+
+* ``height``: An optional string denoting that the height of the generated HTML should
+  be limited, possibly resulting in vertical scrolling.
+
+* ``prepare-commands``: A list of command strings which should be run first
+
+* ``command``: The command to capture the output of
+
+When adding a new ``.run`` file, one should normally also commit a new
+generated ``.html`` file at the same time, this ensures that other developers
+do not need to regenerate them locally in order to build the docs.
 
 
 Testing BuildStream
