@@ -296,6 +296,7 @@ class Queue():
     # See the Job object for an explanation of the call signature
     #
     def _job_done(self, job, element, success, result):
+        element._update_state()
 
         # Update values that need to be synchronized in the main task
         # before calling any queue implementation
@@ -335,8 +336,9 @@ class Queue():
 
             # No exception occured, handle the success/failure state in the normal way
             #
+            self._done_queue.append(job)
+
             if success:
-                self._done_queue.append(job)
                 if processed:
                     self.processed_elements.append(element)
                 else:
