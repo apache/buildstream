@@ -141,11 +141,13 @@ tests-unix:
 docs:
   stage: test
   script:
+  - export BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources"
   - pip3 install sphinx
   - pip3 install sphinx-click
   - pip3 install sphinx_rtd_theme
   - cd dist && ./unpack.sh && cd buildstream
   - pip3 install .
+  - make -C doc clean
   - make -C doc
   - cd ../..
   - mv dist/buildstream/doc/build/html public
