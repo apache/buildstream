@@ -25,7 +25,7 @@
 usage() {
     cat <<EOF
 
-USAGE: $(basename "$0") [-i BST_HERE_IMAGE] [-p] [-t] [-T] [-v VOLUME ...] [-h] [COMMAND] [ARG..]
+USAGE: $(basename "$0") [-i BST_HERE_IMAGE] [-p] [-t] [-T] [-v VOLUME ...] [-h] [COMMAND [ARG..]]
 
 Run a bst command in a new BuildStream container.
 
