@@ -60,6 +60,7 @@ class BuildQueue(Queue):
                              action_cb=self.process,
                              complete_cb=self._job_done,
                              max_retries=self._max_retries)
+            self._done_queue.append(job)
             self.failed_elements.append(element)
             self._scheduler._job_complete_callback(job, False)
 
