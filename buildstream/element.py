@@ -1155,7 +1155,7 @@ class Element(Plugin):
     def _preflight(self):
 
         if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.RUN, recurse=False)):
+            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
                 raise ElementError("{}: Dependencies are forbidden for '{}' elements"
                                    .format(self, self.get_kind()), reason="element-forbidden-depends")
 
