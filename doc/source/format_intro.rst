@@ -289,3 +289,36 @@ free form and not validated.
        # This element's `make install` is broken, replace it.
        (=):
        - cp src/program %{bindir}
+
+(@) Include
+~~~~~~~~~~~
+Indicates that content should be loaded from files.
+
+The include directive expects a list of strings. Those are file names
+relative to project directory. Or they can be prefixed with a junction
+name and a colon (':'). In that case, the remain of the string is a
+file name relative to the project of the junction.
+
+The include directive can be used in ``project.conf`` or in a ``.bst``
+file.  It can also be used in a file included by another include
+directive.
+
+Included files are composed into the including file. The files should
+take care of composition using list directives.
+
+Some ``project.conf`` configuration is not overridable by includes:
+``name``, ``format-version`` and ``element-path``.
+
+Junction elements never use values from included files from
+``project.conf``.  Variables, element overrides and source overrides
+required by junctions should all be directly in the ``project.conf``.
+
+Junction elements cannot use the include directive.
+
+**Example:**
+
+.. code:: yaml
+
+   elements:
+     (@):
+       - junction.bst:includes/element-overrides.bst
