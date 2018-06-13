@@ -18,7 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 """
-Source - base source class
+Source - Base source class
 ==========================
 
 

@@ -6,5 +6,5 @@ Additional writings
 .. toctree::
    :maxdepth: 2
 
-   cachekeys
-   sandboxing
+   additional_cachekeys
+   additional_sandboxing

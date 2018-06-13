@@ -1,7 +1,7 @@
 
 
-Reference documentation
-=======================
+Reference
+=========
 This section details the core API reference along with
 other more elaborate details about BuildStream internals.
 
@@ -9,7 +9,8 @@ other more elaborate details about BuildStream internals.
 .. toctree::
    :maxdepth: 2
 
-   authoring
+   core_format
+   core_plugins
    core_framework
    core_additional
 

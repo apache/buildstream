@@ -2,8 +2,8 @@
 
 .. _core_framework:
 
-Core framework
---------------
+Plugin API reference
+====================
 The core public APIs are of interest to anyone who wishes to
 implement custom :mod:`Element <buildstream.element>` or
 :mod:`Source <buildstream.source>` plugins, and can also be

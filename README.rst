@@ -1,5 +1,5 @@
-About BuildStream
------------------
+About
+-----
 .. image:: https://gitlab.com/BuildStream/buildstream/badges/master/pipeline.svg
    :target: https://gitlab.com/BuildStream/buildstream/commits/master
 

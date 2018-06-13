@@ -1,5 +1,5 @@
-Hacking on BuildStream
-======================
+Contributing
+============
 Some tips and guidelines for developers hacking on BuildStream
 
 
