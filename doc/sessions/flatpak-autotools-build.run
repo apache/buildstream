@@ -1,9 +1,6 @@
 # Project directory
 directory: ../examples/flatpak-autotools
 
-# This takes a lot of space, limit it's height
-height: '350px'
-
 # Make sure it's fetched in the source cache
 prepare-commands:
 - fetch hello.bst

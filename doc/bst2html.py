@@ -213,10 +213,6 @@ def run_bst(directory, source_cache, description, palette, output, command):
        directory: path/to/project
 
     \b
-       # An optional string indicating the height limit (making it scrollable)
-       height: '300px'
-
-    \b
        # A list of commands to run in preparation
        prepare-commands:
        - fetch hello.bst
@@ -226,7 +222,6 @@ def run_bst(directory, source_cache, description, palette, output, command):
        command: build hello.bst
     """
     prepare_commands = []
-    height = None
 
     if description:
         desc = _yaml.load(description, shortname=os.path.basename(description))
@@ -234,8 +229,6 @@ def run_bst(directory, source_cache, description, palette, output, command):
 
         command_str = _yaml.node_get(desc, str, 'command')
         command = command_str.split()
-
-        height = _yaml.node_get(desc, str, 'height', default_value=None)
 
         # The directory should be relative to where the description file was
         # stored
@@ -312,9 +305,6 @@ def run_bst(directory, source_cache, description, palette, output, command):
 
     # Now convert to HTML and add some surrounding sugar
     div_style = 'font-size:x-small'
-    if height is not None:
-        div_style += ";height:{};overflow-y:auto".format(height)
-
     converted = ansi2html(decoded, palette=palette)
     converted = '<div class="highlight" style="{}">'.format(div_style) + \
                 '<pre>\n' + \

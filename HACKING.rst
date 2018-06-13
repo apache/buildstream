@@ -379,9 +379,6 @@ The ``.run`` file format is just another YAML dictionary with a few options:
 
 * ``directory``: The project directory to run commands on, relative to the ``.run`` file.
 
-* ``height``: An optional string denoting that the height of the generated HTML should
-  be limited, possibly resulting in vertical scrolling.
-
 * ``prepare-commands``: A list of command strings which should be run first
 
 * ``command``: The command to capture the output of
