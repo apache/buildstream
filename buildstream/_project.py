@@ -34,6 +34,7 @@ from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 from ._loader import Loader
+from ._includes import Includes
 
 
 # The separator we use for user specified aliases
@@ -199,11 +200,32 @@ class PluginCollection:
                             .format(plugin, plugin.BST_FORMAT_VERSION, version))
 
 
+class ProjectConfig:
+    def __init__(self):
+        self.plugins = None
+        self.options = None                      # OptionPool
+        self.base_variables = {}                 # The base set of variables
+        self.element_overrides = {}              # Element specific configurations
+        self.source_overrides = {}               # Source specific configurations
+
+
 # Project()
 #
 # The Project Configuration
 #
 class Project():
+
+    INCLUDE_CONFIG_KEYS = ['variables',
+                           'environment', 'environment-nocache',
+                           'split-rules', 'elements', 'plugins',
+                           'aliases', 'artifacts',
+                           'fail-on-overlap', 'shell',
+                           'ref-storage', 'sandbox',
+                           'options']
+
+    MAIN_FILE_CONFIG_KEYS = ['format-version',
+                             'element-path',
+                             'name']
 
     def __init__(self, directory, context, *, junction=None, cli_options=None,
                  parent_loader=None, tempdir=None):
@@ -221,16 +243,14 @@ class Project():
         self.refs = ProjectRefs(self.directory, 'project.refs')
         self.junction_refs = ProjectRefs(self.directory, 'junction.refs')
 
-        self.plugins = None                      # PluginCollection
-        self.options = None                      # OptionPool
+        self.config = ProjectConfig()
+        self.first_pass_config = ProjectConfig()
+
         self.junction = junction                 # The junction Element object, if this is a subproject
         self.fail_on_overlap = False             # Whether overlaps are treated as errors
         self.ref_storage = None                  # ProjectRefStorage setting
-        self.base_variables = {}                 # The base set of variables
         self.base_environment = {}               # The base set of environment variables
         self.base_env_nocache = None             # The base nocache mask (list) for the environment
-        self.element_overrides = {}              # Element specific configurations
-        self.source_overrides = {}               # Source specific configurations
 
         #
         # Private Members
@@ -245,15 +265,42 @@ class Project():
         self._shell_environment = {}  # Statically set environment vars
         self._shell_host_files = []   # A list of HostMount objects
 
-        profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
-        self._load()
-        profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
+        self.artifact_cache_specs = None
+        self._sandbox = None
+        self._splits = None
 
         self._context.add_project(self)
 
-        self.loader = Loader(self._context, self,
-                             parent=parent_loader,
-                             tempdir=tempdir)
+        self._loaded = False
+
+        profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
+        self._load(parent_loader=parent_loader, tempdir=tempdir)
+        profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
+
+        self._loaded = True
+
+    @property
+    def plugins(self):
+        return self.config.plugins
+
+    @property
+    def options(self):
+        return self.config.options
+
+    @property
+    def base_variables(self):
+        return self.config.base_variables
+
+    @property
+    def element_overrides(self):
+        return self.config.element_overrides
+
+    @property
+    def source_overrides(self):
+        return self.config.source_overrides
+
+    def is_loaded(self):
+        return self._loaded
 
     # translate_url():
     #
@@ -312,7 +359,7 @@ class Project():
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self):
+    def _load(self, parent_loader=None, tempdir=None):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
@@ -327,15 +374,6 @@ class Project():
 
         _yaml.composite(config, project_conf)
 
-        # Element and Source  type configurations will be composited later onto
-        # element/source types, so we delete it from here and run our final
-        # assertion after.
-        self.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
-        self.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
-        config.pop('elements', None)
-        config.pop('sources', None)
-        _yaml.node_final_assertions(config)
-
         # Assert project's format version early, before validating toplevel keys
         format_version = _yaml.node_get(config, int, 'format-version')
         if BST_FORMAT_VERSION < format_version:
@@ -344,17 +382,6 @@ class Project():
                 LoadErrorReason.UNSUPPORTED_PROJECT,
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
                 .format(format_version, major, minor, BST_FORMAT_VERSION))
-
-        _yaml.node_validate(config, [
-            'format-version',
-            'element-path', 'variables',
-            'environment', 'environment-nocache',
-            'split-rules', 'elements', 'plugins',
-            'aliases', 'name',
-            'artifacts', 'options',
-            'fail-on-overlap', 'shell',
-            'ref-storage', 'sandbox'
-        ])
 
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
@@ -369,30 +396,21 @@ class Project():
             _yaml.node_get(config, str, 'element-path')
         )
 
-        # Load project options
-        options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
-        self.options = OptionPool(self.element_path)
-        self.options.load(options_node)
-        if self.junction:
-            # load before user configuration
-            self.options.load_yaml_values(self.junction.options, transform=self.junction._subst_string)
+        self.config.options = OptionPool(self.element_path)
+        self.first_pass_config.options = OptionPool(self.element_path)
 
-        # Collect option values specified in the user configuration
-        overrides = self._context.get_overrides(self.name)
-        override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
-        self.options.load_yaml_values(override_options)
-        if self._cli_options:
-            self.options.load_cli_values(self._cli_options)
+        self.loader = Loader(self._context, self,
+                             parent=parent_loader,
+                             tempdir=tempdir)
 
-        # We're done modifying options, now we can use them for substitutions
-        self.options.resolve()
+        self._load_pass(_yaml.node_copy(config), self.first_pass_config, True)
 
-        #
-        # Now resolve any conditionals in the remaining configuration,
-        # any conditionals specified for project option declarations,
-        # or conditionally specifying the project name; will be ignored.
-        #
-        self.options.process_node(config)
+        project_includes = Includes(self.loader, self.INCLUDE_CONFIG_KEYS + ['elements', 'sources'])
+        project_includes.process(config)
+
+        self._load_pass(config, self.config, False)
+
+        _yaml.node_validate(config, self.INCLUDE_CONFIG_KEYS + self.MAIN_FILE_CONFIG_KEYS)
 
         #
         # Now all YAML composition is done, from here on we just load
@@ -402,22 +420,8 @@ class Project():
         # Load artifacts pull/push configuration for this project
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config)
 
-        self.plugins = PluginCollection(self, self._context, self.directory, config)
         # Source url aliases
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
-
-        # Load base variables
-        self.base_variables = _yaml.node_get(config, Mapping, 'variables')
-
-        # Add the project name as a default variable
-        self.base_variables['project-name'] = self.name
-
-        # Extend variables with automatic variables and option exports
-        # Initialize it as a string as all variables are processed as strings.
-        self.base_variables['max-jobs'] = str(multiprocessing.cpu_count())
-
-        # Export options into variables, if that was requested
-        self.options.export_variables(self.base_variables)
 
         # Load sandbox environment variables
         self.base_environment = _yaml.node_get(config, Mapping, 'environment')
@@ -474,6 +478,56 @@ class Project():
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
+
+    def _load_pass(self, config, output, ignore_unknown):
+
+        # Element and Source  type configurations will be composited later onto
+        # element/source types, so we delete it from here and run our final
+        # assertion after.
+        output.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
+        output.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
+        config.pop('elements', None)
+        config.pop('sources', None)
+        _yaml.node_final_assertions(config)
+
+        output.plugins = PluginCollection(self, self._context, self.directory, config)
+
+        # Load project options
+        options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
+        output.options.load(options_node)
+        if self.junction:
+            # load before user configuration
+            output.options.load_yaml_values(self.junction.options, transform=self.junction._subst_string)
+
+        # Collect option values specified in the user configuration
+        overrides = self._context.get_overrides(self.name)
+        override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
+        output.options.load_yaml_values(override_options)
+        if self._cli_options:
+            output.options.load_cli_values(self._cli_options, ignore_unknown=ignore_unknown)
+
+        # We're done modifying options, now we can use them for substitutions
+        output.options.resolve()
+
+        #
+        # Now resolve any conditionals in the remaining configuration,
+        # any conditionals specified for project option declarations,
+        # or conditionally specifying the project name; will be ignored.
+        #
+        output.options.process_node(config)
+
+        # Load base variables
+        output.base_variables = _yaml.node_get(config, Mapping, 'variables')
+
+        # Add the project name as a default variable
+        output.base_variables['project-name'] = self.name
+
+        # Extend variables with automatic variables and option exports
+        # Initialize it as a string as all variables are processed as strings.
+        output.base_variables['max-jobs'] = str(multiprocessing.cpu_count())
+
+        # Export options into variables, if that was requested
+        output.options.export_variables(output.base_variables)
 
     # _ensure_project_dir()
     #

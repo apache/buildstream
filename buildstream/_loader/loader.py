@@ -23,12 +23,13 @@ from collections import Mapping, namedtuple
 import tempfile
 import shutil
 
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError, LoadErrorReason, PluginError
 from .. import Consistency
 from .. import _yaml
 from ..element import Element
 from .._profile import Topics, profile_start, profile_end
 from .._platform import Platform
+from .._includes import Includes
 
 from .types import Symbol, Dependency
 from .loadelement import LoadElement
@@ -69,12 +70,15 @@ class Loader():
         self._context = context
         self._options = project.options      # Project options (OptionPool)
         self._basedir = basedir              # Base project directory
+        self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._tempdir = tempdir              # A directory to cleanup
         self._parent = parent                # The parent loader
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}       # Dict of elements
         self._loaders = {}        # Dict of junction loaders
+
+        self._includes = Includes(self)
 
     # load():
     #
@@ -241,7 +245,22 @@ class Loader():
                                 message, detail=detail) from e
             else:
                 raise
-        self._options.process_node(node)
+        kind = _yaml.node_get(node, str, Symbol.KIND)
+        try:
+            kind_type, _ = self.project.first_pass_config.plugins.get_element_type(kind)
+        except PluginError:
+            kind_type = None
+        if kind_type and hasattr(kind_type, 'BST_NO_PROJECT_DEFAULTS') and kind_type.BST_NO_PROJECT_DEFAULTS:
+            self._first_pass_options.process_node(node)
+        else:
+            if not self.project.is_loaded():
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Cannot pre-load. Element depends on project defaults."
+                                .format(filename))
+
+            self._includes.process(node)
+
+            self._options.process_node(node)
 
         element = LoadElement(node, filename, self)
 
@@ -506,7 +525,8 @@ class Loader():
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
 
         platform = Platform.get_platform()
-        element = Element._new_from_meta(meta_element, platform.artifactcache)
+        element = Element._new_from_meta(meta_element, platform.artifactcache,
+                                         first_pass=True)
         element._preflight()
 
         for source in element.sources():

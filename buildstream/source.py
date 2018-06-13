@@ -137,8 +137,9 @@ class Source(Plugin):
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
-        self.__init_defaults()
+        self.__init_defaults(meta)
         self.__config = self.__extract_config(meta)
+
         self.configure(self.__config)
 
     COMMON_CONFIG_KEYS = ['kind', 'directory']
@@ -611,10 +612,13 @@ class Source(Plugin):
                               reason="ensure-stage-dir-fail") from e
         return directory
 
-    def __init_defaults(self):
+    def __init_defaults(self, meta):
         if not self.__defaults_set:
             project = self._get_project()
-            sources = project.source_overrides
+            if meta.first_pass:
+                sources = project.first_pass_config.source_overrides
+            else:
+                sources = project.source_overrides
             type(self).__defaults = sources.get(self.get_kind(), {})
             type(self).__defaults_set = True
 

@@ -38,3 +38,4 @@ class MetaSource():
         self.kind = kind
         self.config = config
         self.directory = directory
+        self.first_pass = False

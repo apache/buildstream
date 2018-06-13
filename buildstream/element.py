@@ -191,9 +191,18 @@ class Element(Plugin):
     *Since: 1.2*
     """
 
+    BST_NO_PROJECT_DEFAULTS = False
+    """
+
+    """
+
     def __init__(self, context, project, artifacts, meta, plugin_conf):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
+
+        if not project.is_loaded() and not self.BST_NO_PROJECT_DEFAULTS:
+            raise ElementError("{}: Cannot load element before project"
+                               .format(self), reason="project-not-loaded")
 
         self.normal_name = os.path.splitext(self.name.replace(os.sep, '-'))[0]
         """A normalized element name
@@ -885,9 +894,12 @@ class Element(Plugin):
     #    (Element): A newly created Element instance
     #
     @classmethod
-    def _new_from_meta(cls, meta, artifacts):
+    def _new_from_meta(cls, meta, artifacts, first_pass=False):
 
-        plugins = meta.project.plugins
+        if first_pass:
+            plugins = meta.project.first_pass_config.plugins
+        else:
+            plugins = meta.project.plugins
 
         if meta in cls.__instantiated_elements:
             return cls.__instantiated_elements[meta]
@@ -897,6 +909,7 @@ class Element(Plugin):
 
         # Instantiate sources
         for meta_source in meta.sources:
+            meta_source.first_pass = element.BST_NO_PROJECT_DEFAULTS
             source = plugins.create_source(meta_source)
             redundant_ref = source._load_ref()
             element.__sources.append(source)
@@ -907,10 +920,10 @@ class Element(Plugin):
 
         # Instantiate dependencies
         for meta_dep in meta.dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts)
+            dependency = Element._new_from_meta(meta_dep, artifacts, first_pass=first_pass)
             element.__runtime_dependencies.append(dependency)
         for meta_dep in meta.build_dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts)
+            dependency = Element._new_from_meta(meta_dep, artifacts, first_pass=first_pass)
             element.__build_dependencies.append(dependency)
 
         return element
@@ -2095,16 +2108,24 @@ class Element(Plugin):
 
     def __compose_default_splits(self, defaults):
         project = self._get_project()
-        project_splits = _yaml.node_chain_copy(project._splits)
 
         element_public = _yaml.node_get(defaults, Mapping, 'public', default_value={})
         element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 
-        # Extend project wide split rules with any split rules defined by the element
-        _yaml.composite(project_splits, element_splits)
+        if self.BST_NO_PROJECT_DEFAULTS:
+            splits = _yaml.node_chain_copy(element_splits)
+        elif project._splits is None:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Project was not fully loaded while loading element. "
+                            "Only non-artifact elements (e.g. junctions) are allowed in this context."
+                            .format(self.name))
+        else:
+            splits = _yaml.node_chain_copy(project._splits)
+            # Extend project wide split rules with any split rules defined by the element
+            _yaml.composite(splits, element_splits)
 
-        element_bst['split-rules'] = project_splits
+        element_bst['split-rules'] = splits
         element_public['bst'] = element_bst
         defaults['public'] = element_public
 
@@ -2128,7 +2149,11 @@ class Element(Plugin):
             # Override the element's defaults with element specific
             # overrides from the project.conf
             project = self._get_project()
-            elements = project.element_overrides
+            if self.BST_NO_PROJECT_DEFAULTS:
+                elements = project.first_pass_config.element_overrides
+            else:
+                elements = project.element_overrides
+
             overrides = elements.get(self.get_kind())
             if overrides:
                 _yaml.composite(defaults, overrides)
@@ -2141,10 +2166,14 @@ class Element(Plugin):
     # creating sandboxes for this element
     #
     def __extract_environment(self, meta):
-        project = self._get_project()
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
-        environment = _yaml.node_chain_copy(project.base_environment)
+        if self.BST_NO_PROJECT_DEFAULTS:
+            environment = {}
+        else:
+            project = self._get_project()
+            environment = _yaml.node_chain_copy(project.base_environment)
+
         _yaml.composite(environment, default_env)
         _yaml.composite(environment, meta.environment)
         _yaml.node_final_assertions(environment)
@@ -2157,8 +2186,13 @@ class Element(Plugin):
         return final_env
 
     def __extract_env_nocache(self, meta):
-        project = self._get_project()
-        project_nocache = project.base_env_nocache
+        if self.BST_NO_PROJECT_DEFAULTS:
+            project_nocache = []
+        else:
+            project = self._get_project()
+            assert project.is_loaded()
+            project_nocache = project.base_env_nocache
+
         default_nocache = _yaml.node_get(self.__defaults, list, 'environment-nocache', default_value=[])
         element_nocache = meta.env_nocache
 
@@ -2173,10 +2207,15 @@ class Element(Plugin):
     # substituting command strings to be run in the sandbox
     #
     def __extract_variables(self, meta):
-        project = self._get_project()
         default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
 
-        variables = _yaml.node_chain_copy(project.base_variables)
+        project = self._get_project()
+        if self.BST_NO_PROJECT_DEFAULTS:
+            variables = _yaml.node_chain_copy(project.first_pass_config.base_variables)
+        else:
+            assert project.is_loaded()
+            variables = _yaml.node_chain_copy(project.base_variables)
+
         _yaml.composite(variables, default_vars)
         _yaml.composite(variables, meta.variables)
         _yaml.node_final_assertions(variables)
@@ -2200,13 +2239,18 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     def __extract_sandbox_config(self, meta):
-        project = self._get_project()
+        if self.BST_NO_PROJECT_DEFAULTS:
+            sandbox_config = {'build-uid': 0,
+                              'build-gid': 0}
+        else:
+            project = self._get_project()
+            assert project.is_loaded()
+            sandbox_config = _yaml.node_chain_copy(project._sandbox)
 
         # The default config is already composited with the project overrides
         sandbox_defaults = _yaml.node_get(self.__defaults, Mapping, 'sandbox', default_value={})
         sandbox_defaults = _yaml.node_chain_copy(sandbox_defaults)
 
-        sandbox_config = _yaml.node_chain_copy(project._sandbox)
         _yaml.composite(sandbox_config, sandbox_defaults)
         _yaml.composite(sandbox_config, meta.sandbox)
         _yaml.node_final_assertions(sandbox_config)

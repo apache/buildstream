@@ -75,6 +75,7 @@ class Stream():
         self._artifacts = self._platform.artifactcache
         self._context = context
         self._project = project
+
         self._pipeline = Pipeline(context, project, self._artifacts)
         self._scheduler = Scheduler(context, session_start,
                                     interrupt_callback=interrupt_callback,

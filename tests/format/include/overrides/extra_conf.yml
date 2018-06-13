@@ -1,0 +1,16 @@
+elements:
+  junction:
+    variables:
+      included_override: True
+  manual:
+    variables:
+      manual_included_override: True
+    config:
+      build-commands:
+        (>):
+          - "second"
+
+sources:
+  git:
+    variables:
+      from_included: True
