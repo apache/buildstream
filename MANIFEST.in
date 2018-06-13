@@ -1,5 +1,5 @@
 # Basic toplevel package includes
-include buildstream.doap
+include BuildStream.doap
 include COPYING
 include HACKING.rst
 include MAINTAINERS
