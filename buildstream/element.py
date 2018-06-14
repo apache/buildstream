@@ -1928,6 +1928,11 @@ class Element(Plugin):
     def _subst_string(self, value):
         return self.__variables.subst(value)
 
+    def _get_build_log(self):
+        self.__assert_cached()
+        artifact_base, _ = self.__extract()
+        return os.path.join(artifact_base, 'logs', 'build.log')
+
     # Returns the element whose sources this element is ultimately derived from.
     #
     # This is intended for being used to redirect commands that operate on an
