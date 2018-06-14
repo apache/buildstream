@@ -83,7 +83,7 @@ templates-clean:
 # if you want to regenerate them.
 #
 sessions:
-	for file in "$(wildcard sessions/*.run)"; do	\
+	for file in $(wildcard sessions/*.run); do	\
 	    $(BST2HTML) --description $$file;		\
 	done
 
