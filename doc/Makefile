@@ -26,7 +26,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 BST2HTML = $(CURDIR)/bst2html.py
 
-.PHONY: all clean templates templates-clean html devhelp
+.PHONY: all clean templates templates-clean sessions sessions-clean html devhelp
 
 # Canned recipe for generating plugin api skeletons
 #   $1 = the plugin directory
@@ -59,11 +59,10 @@ define plugin-doc-skeleton
 endef
 
 
-
 # We set PYTHONPATH here because source/conf.py sys.modules hacks dont seem to help sphinx-build import the plugins
 all: html devhelp
 
-clean: templates-clean
+clean: templates-clean sessions-clean
 	rm -rf build
 
 # Generate rst templates for the docs using a mix of sphinx-apidoc and
@@ -75,23 +74,26 @@ templates:
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
 	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
 
+templates-clean:
+	rm -rf source/elements
+	rm -rf source/sources
+
 # Generate the html fragments of colorized BuildStream terminal output only
 # if they don't yet exist. This is expensive so you need to run `make clean` first
 # if you want to regenerate them.
 #
-SESSION_HTML = $(patsubst sessions/%.run,source/sessions/%.html,$(wildcard sessions/*.run))
-source/sessions/%.html:
-	$(BST2HTML) -o $@ --description $(patsubst source/sessions/%.html,sessions/%.run,$@)
+sessions:
+	for file in "$(wildcard sessions/*.run)"; do	\
+	    $(BST2HTML) --description $$file;		\
+	done
 
-templates-clean:
-	rm -rf source/elements
-	rm -rf source/sources
+sessions-clean:
 	rm -rf source/sessions
 
 # Targets which generate docs with sphinx build
 #
 #
-html devhelp: templates $(SESSION_HTML)
+html devhelp: templates
 	@echo "Building $@..."
 	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
@@ -101,7 +103,3 @@ html devhelp: templates $(SESSION_HTML)
 	    $(wildcard source/sources/*.rst)
 	@echo
 	@echo "Build of $@ finished, output: $(CURDIR)/$(BUILDDIR)/$@"
-
-testy:
-	@echo "Using $(SPHINXBUILD)"
-	@echo "Py is $(PYV)"

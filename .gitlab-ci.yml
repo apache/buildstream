@@ -147,7 +147,7 @@ docs:
   - pip3 install sphinx_rtd_theme
   - cd dist && ./unpack.sh && cd buildstream
   - pip3 install .
-  - make -C doc clean
+  - make -C doc sessions
   - make -C doc
   - cd ../..
   - mv dist/buildstream/doc/build/html public

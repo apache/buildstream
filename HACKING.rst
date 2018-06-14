@@ -269,9 +269,9 @@ you can view in your browser locally to test.
 
 Regenerating session html
 '''''''''''''''''''''''''
-The documentation build will only build the session files if they
-are not yet built, and we revision the session files to make it easier
-for developers to try documentation changes.
+The documentation build will only build the session files if explicitly
+asked to. We revision the generated session html files in order to reduce
+the burden on documentation contributors.
 
 To explicitly rebuild the session snapshot html files, it is recommended that you
 first set the ``BST_SOURCE_CACHE`` environment variable to your source cache, this
@@ -279,10 +279,9 @@ will make the docs build reuse already downloaded sources::
 
   export BST_SOURCE_CACHE=~/.cache/buildstream/sources
 
-To force rebuild, simply run the following::
+To force build the session html, simply run the following::
 
-  make -C doc clean
-  make -C doc
+  make -C doc sessions
 
 
 Man pages
@@ -375,17 +374,36 @@ included in the reStructuredText documentation at any time with::
   .. raw:: html
      :file: sessions/${example}.html
 
-The ``.run`` file format is just another YAML dictionary with a few options:
+The ``.run`` file format is just another YAML dictionary which consists of a
+``commands`` list, instructing the program what to do command by command.
 
-* ``directory``: The project directory to run commands on, relative to the ``.run`` file.
+Each *command* is a dictionary, the members of which are listed here:
 
-* ``prepare-commands``: A list of command strings which should be run first
+* ``directory``: The input file relative project directory
 
-* ``command``: The command to capture the output of
+* ``output``: The input file relative output html file to generate (optional)
 
-When adding a new ``.run`` file, one should normally also commit a new
-generated ``.html`` file at the same time, this ensures that other developers
-do not need to regenerate them locally in order to build the docs.
+* ``command``: The command to run, without the leading ``bst``
+
+When adding a new ``.run`` file, one should normally also commit the new
+resulting generated ``.html`` file(s) at the same time, this ensures that
+other developers do not need to regenerate them locally in order to build
+the docs.
+
+**Example**:
+
+.. code:: yaml
+
+   commands:
+
+   # Make it fetch first
+   - directory: ../examples/foo
+     command: fetch hello.bst
+
+   # Capture a build output
+   - directory: ../examples/foo
+     output: ../source/sessions/foo-build.html
+     command: build hello.bst
 
 
 Testing BuildStream

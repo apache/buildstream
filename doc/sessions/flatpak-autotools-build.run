@@ -1,9 +1,0 @@
-# Project directory
-directory: ../examples/flatpak-autotools
-
-# Make sure it's fetched in the source cache
-prepare-commands:
-- fetch hello.bst
-
-# Build it with everything already fetched
-command: build hello.bst

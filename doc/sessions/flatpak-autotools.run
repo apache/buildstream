@@ -1,0 +1,21 @@
+# Workaround setuptools bug for our symlinks here
+#
+workaround-symlinks:
+  ../examples/flatpak-autotools/files/links/bin: usr/bin
+  ../examples/flatpak-autotools/files/links/etc: usr/etc
+  ../examples/flatpak-autotools/files/links/lib: usr/lib
+
+commands:
+# Make it fetch first
+- directory: ../examples/flatpak-autotools
+  command: fetch hello.bst
+
+# Capture a build output
+- directory: ../examples/flatpak-autotools
+  output: ../source/sessions/flatpak-autotools-build.html
+  command: build hello.bst
+
+# Capture a shell output
+- directory: ../examples/flatpak-autotools
+  output: ../source/sessions/flatpak-autotools-shell.html
+  command: shell hello.bst -- hello
