@@ -2,8 +2,8 @@
 
 Alpine Demo
 ===========
-This is a simple example using Buildstream to build a sandbox using a minimal
-`Alpine <https://alpinelinux.org/>`_ image. The example will use autotools to
+This is a simple example using Buildstream to build a sandbox from a tarball containing a minimal
+`Alpine <https://alpinelinux.org/>`_ image as the base runtime. The example will use autotools to
 build the hello world example from `automake
 <https://www.gnu.org/software/automake/manual/automake.html#Hello-World>`_
 and install it in the sandbox.
