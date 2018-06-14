@@ -423,6 +423,17 @@ class LogLine(Widget):
                     line = p.fmt_subst(
                         line, 'workspace-dirs', '')
 
+            # Logs
+            if "%{build-log" in format_:
+                if element._cached():
+                    log_path = element._get_build_log()
+                    content = open(log_path, 'r').read()
+                    line = p.fmt_subst(
+                        line, 'build-log', content)
+                else:
+                    line = p.fmt_subst(
+                        line, 'build-log', '')
+
             report += line + '\n'
 
         return report.rstrip('\n')

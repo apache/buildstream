@@ -491,10 +491,12 @@ def push(app, elements, deps, remote):
 @click.option('--format', '-f', 'format_', metavar='FORMAT', default=None,
               type=click.STRING,
               help='Format string for each element')
+@click.option('--logs', 'logs', default=False,
+              is_flag=True, help='Display logs in summary')
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def show(app, elements, deps, except_, order, format_):
+def show(app, elements, deps, except_, order, format_, logs):
     """Show elements in the pipeline
 
     By default this will show all of the dependencies of the
@@ -526,6 +528,7 @@ def show(app, elements, deps, except_, order, format_):
         %{public}         Public domain data
         %{workspaced}     If the element is workspaced
         %{workspace-dirs} A list of workspace directories
+        %{build-log}      Content of build log
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
@@ -551,6 +554,9 @@ def show(app, elements, deps, except_, order, format_):
 
         if not format_:
             format_ = app.context.log_element_format
+
+        if logs:
+            format_ += "\n%{build-log}"
 
         report = app.logger.show_pipeline(dependencies, format_)
         click.echo(report, color=app.colors)
