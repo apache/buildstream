@@ -32,7 +32,8 @@ import psutil
 from .. import utils, _signals
 from ._mount import MountMap
 from . import Sandbox, SandboxFlags
-
+from ..storage._filebaseddirectory import FileBasedDirectory
+from ..storage._casbaseddirectory import CasBasedDirectory
 
 # SandboxBwrap()
 #
@@ -59,6 +60,20 @@ class SandboxBwrap(Sandbox):
 
         # Allowable access to underlying storage as we're part of the sandbox
         root_directory = self.get_virtual_directory().get_underlying_directory()
+
+        # Upload sources
+        upload_vdir = self.get_virtual_directory()
+        if isinstance(upload_vdir, FileBasedDirectory):
+            upload_vdir = self.get_temporary_vdir()
+            print("Importing {}".format(root_directory))
+            upload_vdir.import_files(root_directory)
+
+        print("Running command: {}".format(command))
+            #print("Source directory for sandbox is now stored in CAS at {}".format(upload_vdir.ref))
+
+        # Now, push that key (without necessarily needing a ref) to the remote.
+        #cascache = CASCache(self._get_context())
+        #cascache.push_key_only(upload_vdir.ref, self._get_project())
 
         # Fallback to the sandbox default settings for
         # the cwd and env.

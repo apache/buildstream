@@ -143,6 +143,8 @@ class Sandbox():
             else:
                 self.__vdir = CasBasedDirectory(self.__context, ref=None)
         return self.__vdir
+    def get_temporary_vdir(self):
+        return CasBasedDirectory(self.__context, ref=None)
 
     def get_virtual_toplevel_directory(self):
         """Fetches the sandbox's toplevel directory
