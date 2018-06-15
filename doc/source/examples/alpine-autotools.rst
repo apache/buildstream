@@ -56,31 +56,25 @@ Using the project
 The instructions here assume you are in the alpine-demo root directory (the
 directory containing project.conf).
 
-Running::
-
-    bst show amhello.bst
-
-will show the pipeline that needs to be built in order to use the amhello.bst
+Running *bst show* will show the pipeline that needs to be built in order to use the amhello.bst
 element. This includes the element's dependencies, in this case only base.bst.
 
+.. raw:: html
+    :file: ../sessions/alpine-autotools-show.html
+
 To build this pipeline, use the `bst build` command. For the purpose of this
-example, we will :ref:`track <invoking_track>` all the elements in the pipeline this tells buildstream to use the most recent reference for each element::
+example, we will :ref:`track <invoking_track>` all the elements in the pipeline this tells buildstream to use the most recent reference for each element
 
-   bst build --track-all amhello.bst
+.. raw:: html
+    :file: ../sessions/alpine-autotools-build.html
 
-After building, it is now possible to :ref:`shell <invoking_shell>` into the sandbox with::
+After building, it is now possible to :ref:`shell <invoking_shell>` into the sandbox with
+the *bst shell* command. The hello world example will be installed in the sandbox.
 
-   bst shell amhello.bst
+.. raw:: html
+    :file: ../sessions/alpine-autotools-shell.html
 
-The hello world example will be installed in the sandbox, to run it type::
-
-   hello
-
-Running::
-
-   bst show amhello.bst
-
-will now show that both base.bst and amhello.bst have been cached with associated
+Running *bst show* again will show that both base.bst and amhello.bst have been cached with associated
 :ref:`keys <cachekeys>`. Running `bst build` again will only rebuild cached elements
 if the key generated from the current state of an element does not match the
 cached key.

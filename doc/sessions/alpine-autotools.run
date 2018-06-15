@@ -1,0 +1,27 @@
+# Workaround setuptools bug for our symlinks here
+#
+workaround-symlinks:
+  ../examples/alpine-autotools/files/links/bin: usr/bin
+  ../examples/alpine-autotools/files/links/etc: usr/etc
+  ../examples/alpine-autotools/files/links/lib: usr/lib
+
+commands:
+# Make it fetch first
+- directory: ../examples/alpine-autotools
+  output: ../source/sessions/alpine-autotools-fetch.html
+  command: fetch amhello.bst
+
+# Make it show the build pipline for amhell.bst
+- directory: ../examples/alpine-autotools
+  output: ../source/sessions/alpine-autotools-show.html
+  command: show amhello.bst
+
+# Capture a build output
+- directory: ../examples/alpine-autotools
+  output: ../source/sessions/alpine-autotools-build.html
+  command: build --track-all amhello.bst
+
+# Capture a shell output
+- directory: ../examples/alpine-autotools
+  output: ../source/sessions/alpine-autotools-shell.html
+  command: shell amhello.bst -- hello
