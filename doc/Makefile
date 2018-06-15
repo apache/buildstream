@@ -24,7 +24,13 @@ ALLSPHINXOPTS   = -W -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) 
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
+# Set BST_FORCE_SESSION_REBUILD to force rebuild the docs
 BST2HTML = $(CURDIR)/bst2html.py
+BST2HTMLOPTS =
+ifneq ($(strip $(BST_FORCE_SESSION_REBUILD)),)
+BST2HTMLOPTS = --force
+endif
+
 
 .PHONY: all clean templates templates-clean sessions sessions-clean html devhelp
 
@@ -83,8 +89,8 @@ templates-clean:
 # if you want to regenerate them.
 #
 sessions:
-	for file in $(wildcard sessions/*.run); do	\
-	    $(BST2HTML) --description $$file;		\
+	for file in $(wildcard sessions/*.run); do		\
+	    $(BST2HTML) $(BST2HTMLOPTS) --description $$file;	\
 	done
 
 sessions-clean:
@@ -93,7 +99,7 @@ sessions-clean:
 # Targets which generate docs with sphinx build
 #
 #
-html devhelp: templates
+html devhelp: templates sessions
 	@echo "Building $@..."
 	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \

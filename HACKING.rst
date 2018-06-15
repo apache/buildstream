@@ -269,9 +269,9 @@ you can view in your browser locally to test.
 
 Regenerating session html
 '''''''''''''''''''''''''
-The documentation build will only build the session files if explicitly
-asked to. We revision the generated session html files in order to reduce
-the burden on documentation contributors.
+The documentation build will build the session files if they are missing,
+or if explicitly asked to rebuild. We revision the generated session html files
+in order to reduce the burden on documentation contributors.
 
 To explicitly rebuild the session snapshot html files, it is recommended that you
 first set the ``BST_SOURCE_CACHE`` environment variable to your source cache, this
@@ -279,9 +279,9 @@ will make the docs build reuse already downloaded sources::
 
   export BST_SOURCE_CACHE=~/.cache/buildstream/sources
 
-To force build the session html, simply run the following::
+To force rebuild session html while building the doc, simply build the docs like this::
 
-  make -C doc sessions
+  make BST_FORCE_SESSION_REBUILD=1 -C doc
 
 
 Man pages

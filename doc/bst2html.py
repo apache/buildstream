@@ -278,10 +278,51 @@ def generate_html(output, directory, config_file, source_cache, tempdir, palette
     return final_output
 
 
-def run_session(description, tempdir, source_cache, palette, config_file):
+# check_needs_build()
+#
+# Checks whether filename, specified relative to basedir,
+# needs to be built (based on whether it exists).
+#
+# Args:
+#    basedir (str): The base directory to check relative of, or None for CWD
+#    filename (str): The basedir relative path to the file
+#    force (bool): Whether force rebuilding of existing things is enabled
+#
+# Returns:
+#    (bool): Whether the file needs to be built
+#
+def check_needs_build(basedir, filename, force=False):
+    if force:
+        return True
 
+    if basedir is None:
+        basedir = os.getcwd()
+
+    filename = os.path.join(basedir, filename)
+    filename = os.path.realpath(filename)
+    if not os.path.exists(filename):
+        return True
+
+    return False
+
+
+def run_session(description, tempdir, source_cache, palette, config_file, force):
     desc = _yaml.load(description, shortname=os.path.basename(description))
     desc_dir = os.path.dirname(description)
+
+    # Preflight commands and check if we can skip this session
+    #
+    if not force:
+        needs_build = False
+        commands = _yaml.node_get(desc, list, 'commands')
+        for command in commands:
+            output = _yaml.node_get(command, str, 'output', default_value=None)
+            if output is not None and check_needs_build(desc_dir, output, force=False):
+                needs_build = True
+                break
+        if not needs_build:
+            click.echo("Skipping '{}' as no files need to be built".format(description), err=True)
+            return
 
     # FIXME: Workaround a setuptools bug where the symlinks
     #        we store in git dont get carried into a release
@@ -365,6 +406,8 @@ def run_session(description, tempdir, source_cache, palette, config_file):
 @click.option('--directory', '-C',
               type=click.Path(file_okay=False, dir_okay=True),
               help="The project directory where to run the command")
+@click.option('--force', is_flag=True, default=False,
+              help="Force rebuild, even if the file exists")
 @click.option('--source-cache',
               type=click.Path(file_okay=False, dir_okay=True),
               help="A shared source cache")
@@ -378,7 +421,7 @@ def run_session(description, tempdir, source_cache, palette, config_file):
               type=click.Path(file_okay=True, dir_okay=False, readable=True),
               help="A file describing what to do")
 @click.argument('command', type=click.STRING, nargs=-1)
-def run_bst(directory, source_cache, description, palette, output, command):
+def run_bst(directory, force, source_cache, description, palette, output, command):
     """Run a bst command and capture stdout/stderr in html
 
     This command normally takes a description yaml file, see the HACKING
@@ -387,11 +430,15 @@ def run_bst(directory, source_cache, description, palette, output, command):
     if not source_cache and os.environ.get('BST_SOURCE_CACHE'):
         source_cache = os.environ['BST_SOURCE_CACHE']
 
+    if output is not None and not check_needs_build(None, output, force=force):
+        click.echo("No need to rebuild {}".format(output))
+        return 0
+
     with workdir(source_cache=source_cache) as (tempdir, config_file, source_cache):
 
         if description:
-            run_session(description, tempdir, source_cache, palette, config_file)
-            return
+            run_session(description, tempdir, source_cache, palette, config_file, force)
+            return 0
 
         # Run a command specified on the CLI
         #
