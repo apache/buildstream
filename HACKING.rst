@@ -383,6 +383,9 @@ Each *command* is a dictionary, the members of which are listed here:
 
 * ``output``: The input file relative output html file to generate (optional)
 
+* ``fake-output``: Don't really run the command, just pretend to and pretend
+  this was the output, an empty string will enable this too.
+
 * ``command``: The command to run, without the leading ``bst``
 
 When adding a new ``.run`` file, one should normally also commit the new
