@@ -32,7 +32,7 @@ BST2HTMLOPTS = --force
 endif
 
 
-.PHONY: all clean templates templates-clean sessions sessions-clean html devhelp
+.PHONY: all clean templates templates-clean sessions sessions-prep sessions-clean html devhelp
 
 # Canned recipe for generating plugin api skeletons
 #   $1 = the plugin directory
@@ -84,11 +84,24 @@ templates-clean:
 	rm -rf source/elements
 	rm -rf source/sources
 
-# Generate the html fragments of colorized BuildStream terminal output only
-# if they don't yet exist. This is expensive so you need to run `make clean` first
-# if you want to regenerate them.
+# Stage the stored sessions into the place where they will
+# be used in the build.
 #
-sessions:
+# This is separated so that the git tree does not become
+# dirty as a result of a documentation build process - which
+# messes up the docs version number and the version number
+# printed in some command line output.
+#
+sessions-prep:
+	mkdir -p source/sessions
+	cp source/sessions-stored/*.html source/sessions
+
+# By default, this will generate the html fragments of colorized BuildStream terminal
+# output only if they don't yet exist.
+#
+# Specify BST_FORCE_SESSION_REBUILD=1 to force rebuild all session html files.
+#
+sessions: sessions-prep
 	for file in $(wildcard sessions/*.run); do		\
 	    $(BST2HTML) $(BST2HTMLOPTS) --description $$file;	\
 	done

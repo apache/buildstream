@@ -389,9 +389,9 @@ Each *command* is a dictionary, the members of which are listed here:
 * ``command``: The command to run, without the leading ``bst``
 
 When adding a new ``.run`` file, one should normally also commit the new
-resulting generated ``.html`` file(s) at the same time, this ensures that
-other developers do not need to regenerate them locally in order to build
-the docs.
+resulting generated ``.html`` file(s) into the ``doc/source/sessions-stored/``
+directory at the same time, this ensures that other developers do not need to
+regenerate them locally in order to build the docs.
 
 **Example**:
 
