@@ -1,0 +1,37 @@
+# Re-create project.conf using `bst init`
+remove-files:
+  - ../examples/first-project/project.conf
+  - ../examples/first-project/here
+
+commands:
+# Use bst init to create the project.conf
+- directory: ../examples/first-project
+  output: ../source/sessions/first-project-init.html
+  command: init --project-name first-project
+
+# Use bst init to create the project.conf
+- directory: ../examples/first-project
+  output: ../source/sessions/first-project-touch.html
+  command: touch hello.world
+  fake-output: ''
+
+# Capture a build output
+- directory: ../examples/first-project
+  output: ../source/sessions/first-project-build.html
+  command: build hello.bst
+
+# Capture a show output
+- directory: ../examples/first-project
+  output: ../source/sessions/first-project-show.html
+  command: show hello.bst
+
+# Checkout the output
+- directory: ../examples/first-project
+  output: ../source/sessions/first-project-checkout.html
+  command: checkout hello.bst here
+
+# Checkout the output
+- directory: ../examples/first-project
+  output: ../source/sessions/first-project-ls.html
+  command: ls ./here
+  fake-output: hello.world

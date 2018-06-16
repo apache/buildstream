@@ -104,6 +104,7 @@ html devhelp: templates sessions
 	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
 	    $(wildcard source/*.rst) \
+	    $(wildcard source/tutorial/*.rst) \
 	    $(wildcard source/examples/*.rst) \
 	    $(wildcard source/elements/*.rst) \
 	    $(wildcard source/sources/*.rst)

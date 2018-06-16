@@ -7,6 +7,7 @@ This section details how to use the BuildStream command line interface and work 
 .. toctree::
    :maxdepth: 2
 
+   using_tutorial
    using_examples
    using_config
    using_commands

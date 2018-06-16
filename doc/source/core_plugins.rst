@@ -1,4 +1,5 @@
 
+.. _plugins:
 
 Plugin specific documentation
 =============================
