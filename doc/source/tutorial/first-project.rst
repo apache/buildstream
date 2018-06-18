@@ -1,4 +1,7 @@
 
+
+.. _tutorial_first_project:
+
 Your first project
 ==================
 To get a feel for the basics, we'll start with the most basic BuildStream project we
@@ -87,8 +90,8 @@ for us.
 
 Now the artifact is ready.
 
-Using ``bst show``, we can observe that the artifact's state, which was reported
-as ``buildable`` in the ``bst build`` command above, has now changed to ``cached``:
+Using :ref:`bst show <invoking_show>`, we can observe that the artifact's state, which was reported
+as ``buildable`` in the :ref:`bst build <invoking_build>` command above, has now changed to ``cached``:
 
 .. raw:: html
    :file: ../sessions/first-project-show.html
@@ -97,7 +100,7 @@ as ``buildable`` in the ``bst build`` command above, has now changed to ``cached
 Observe the output
 ------------------
 Now that we've finished building, we can checkout the output of the
-artifact we've created:
+artifact we've created using :ref:`bst checkout <invoking_checkout>`
 
 .. raw:: html
    :file: ../sessions/first-project-checkout.html
