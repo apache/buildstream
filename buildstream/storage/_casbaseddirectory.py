@@ -360,13 +360,14 @@ class CasBasedDirectory(Directory):
         currently in use, but may be useful later. """
         self._recalculate_recursing_up()
         self._recalculate_recursing_down()
-        refdir = os.path.join(self.cas_directory, 'refs', 'heads')
-        refname = os.path.join(refdir, name)
+        (rel_refpath, refname) = os.path.split(name)
+        refdir = os.path.join(self.cas_directory, 'refs', 'heads', rel_refpath)
+        refname = os.path.join(refdir, refname)
 
         if not os.path.exists(refdir):
             os.makedirs(refdir)
-        with open(refname, "wt") as f:
-            f.write(self.ref.hash)
+        with open(refname, "wb") as f:
+            f.write(self.ref.SerializeToString())
 
     def import_files(self, external_pathspec: any, files: List[str] = None,
                      report_written: bool = True, update_utimes: bool = False,
