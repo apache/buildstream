@@ -34,6 +34,7 @@ from ._mount import MountMap
 from . import Sandbox, SandboxFlags
 from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
+from .._artifactcache.cascache import CASCache
 
 # SandboxBwrap()
 #
@@ -68,12 +69,12 @@ class SandboxBwrap(Sandbox):
             print("Importing {}".format(root_directory))
             upload_vdir.import_files(root_directory)
 
-        print("Running command: {}".format(command))
-            #print("Source directory for sandbox is now stored in CAS at {}".format(upload_vdir.ref))
-
         # Now, push that key (without necessarily needing a ref) to the remote.
-        #cascache = CASCache(self._get_context())
-        #cascache.push_key_only(upload_vdir.ref, self._get_project())
+        cascache = CASCache(self._get_context())
+        cascache.setup_remotes(use_config=True) # Should do that once per sandbox really (or less often)
+        ref = 'worker-source/{}'.format(upload_vdir.ref.hash)
+        upload_vdir._save(ref)
+        cascache.push_key_only(ref, self._get_project())
 
         # Fallback to the sandbox default settings for
         # the cwd and env.
