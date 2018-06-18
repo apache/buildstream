@@ -1,5 +1,7 @@
 
 
+.. _tutorial_running_commands:
+
 Running commands
 ================
 In :ref:`the first chapter <tutorial_first_project>` we only imported
@@ -58,6 +60,8 @@ Let's first take a peek at what we need to build using :ref:`bst show <invoking_
 This time we have loaded a pipeline with 3 elements, let's go over what they do
 in detail.
 
+
+.. _tutorial_running_commands_project_conf:
 
 ``project.conf``
 ~~~~~~~~~~~~~~~~
@@ -193,7 +197,7 @@ the element is *built*:
 Run the hello world program
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Now that we've built everything, we can indulge ourselves in running
-the hello world program using :ref:`bst shell <invoking_build>`:
+the hello world program using :ref:`bst shell <invoking_shell>`:
 
 .. raw:: html
    :file: ../sessions/running-commands-shell.html
@@ -203,3 +207,20 @@ the ``hello.bst`` element. This was done by staging all of the dependencies of
 ``hello.bst`` including the ``hello.bst`` output itself into a directory. Once a directory
 with all of the dependencies was staged and ready, we ran the ``hello`` command from
 within the build sandbox environment.
+
+
+Summary
+-------
+In this chapter we've explored how to use the :mod:`manual <elements.manual>` element,
+which forms the basis of all build elements.
+
+We've also observed how the directory tree from the output *artifact* of one element
+is later *staged* at the root of the sandbox, as input for use by any build elements
+which :ref:`depend <format_dependencies>` on that element.
+
+.. tip::
+
+   The way that elements consume their dependency input can vary across the
+   different *kinds* of elements. This chapter describes how it works for
+   :mod:`build elements <buildstream.buildelement>` implementations, which
+   are the most commonly used element type.
