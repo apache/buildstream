@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #  Copyright (C) 2017 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or

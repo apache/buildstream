@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 #  Copyright (C) 2016 Stavros Korokithakis
 #  Copyright (C) 2017 Codethink Limited
