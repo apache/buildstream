@@ -34,6 +34,7 @@ from ._mount import MountMap
 from . import Sandbox, SandboxFlags
 from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
+from google.devtools.remoteexecution.v1test import remote_execution_pb2, remote_execution_pb2_grpc
 from .._artifactcache.cascache import CASCache
 
 # SandboxBwrap()
@@ -88,6 +89,22 @@ class SandboxBwrap(Sandbox):
         # We want command args as a list of strings
         if isinstance(command, str):
             command = [command]
+
+        # Now transmit the command to execute
+        remote_command = remote_execution_pb2.Command(arguments=command)
+        # (Ignore environment for now)
+        # Serialise this into the cascache...
+        digest = cascache.add_object(buffer=remote_command.SerializeToString())
+
+        command_ref = 'worker-command/{}'.format(digest.hash)
+        cascache.set_ref(command_ref, digest)
+        print("Pushing key from local to remote: {}".format(command_ref))
+
+        # TODO: push_key_only isn't really meant to work with refs to Command
+        # objects - it will try and find the dependencies of it; there are none,
+        # but it expects to find a directory. We may need to pass a flag to tell
+        # it not to look for any.
+        cascache.push_key_only(command_ref, self._get_project())
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
