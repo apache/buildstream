@@ -609,6 +609,9 @@ class CASCache(ArtifactCache):
             q.put(str(e))
 
     def _required_blobs(self, tree):
+        if not isinstance(tree, remote_execution_pb2.Directory):
+            # If it's not a tree, it has no dependencies
+            return
         # parse directory, and recursively add blobs
         d = remote_execution_pb2.Digest()
         d.hash = tree.hash
