@@ -10,3 +10,4 @@ projects.
 
    tutorial/first-project
    tutorial/running-commands
+   tutorial/autotools
