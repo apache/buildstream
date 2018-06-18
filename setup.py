@@ -257,5 +257,6 @@ setup(name='BuildStream',
                      'pytest-cov',
                      # Provide option to run tests in parallel, less reliable
                      'pytest-xdist',
-                     'pytest >= 3.1.0'],
+                     'pytest >= 3.1.0',
+                     'pylint >= 1.8 , < 2'],
       zip_safe=False)
