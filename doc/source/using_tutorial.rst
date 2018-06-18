@@ -6,6 +6,7 @@ familiar with the fundamentals of creating and using BuildStream
 projects.
 
 .. toctree::
+   :numbered:
    :maxdepth: 1
 
    tutorial/first-project
