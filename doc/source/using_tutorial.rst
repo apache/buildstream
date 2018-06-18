@@ -9,3 +9,4 @@ projects.
    :maxdepth: 1
 
    tutorial/first-project
+   tutorial/running-commands

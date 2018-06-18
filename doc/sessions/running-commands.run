@@ -1,0 +1,25 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/running-commands
+  command: fetch hello.bst
+
+# Capture a show output
+- directory: ../examples/running-commands
+  output: ../source/sessions/running-commands-show-before.html
+  command: show hello.bst
+
+# Capture a build output
+- directory: ../examples/running-commands
+  output: ../source/sessions/running-commands-build.html
+  command: build hello.bst
+
+# Capture another show output
+- directory: ../examples/running-commands
+  output: ../source/sessions/running-commands-show-after.html
+  command: show hello.bst
+
+# Capture a shell output
+- directory: ../examples/running-commands
+  output: ../source/sessions/running-commands-shell.html
+  command: shell hello.bst -- hello

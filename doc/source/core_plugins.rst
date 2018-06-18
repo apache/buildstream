@@ -23,6 +23,8 @@ General elements
    elements/filter
 
 
+.. _plugins_build_elements:
+
 Build elements
 --------------
 .. toctree::
