@@ -476,7 +476,7 @@ class Stream():
                                               selection=PipelineSelection.REDIRECT,
                                               track_selection=PipelineSelection.REDIRECT)
         target = elements[0]
-        workdir = os.path.abspath(directory)
+        directory = os.path.abspath(directory)
 
         if not list(target.sources()):
             build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
@@ -492,7 +492,7 @@ class Stream():
         workspace = workspaces.get_workspace(target._get_full_name())
         if workspace and not force:
             raise StreamError("Workspace '{}' is already defined at: {}"
-                              .format(target.name, workspace.path))
+                              .format(target.name, workspace.get_absolute_path()))
 
         # If we're going to checkout, we need at least a fetch,
         # if we were asked to track first, we're going to fetch anyway.
@@ -518,7 +518,7 @@ class Stream():
         except OSError as e:
             raise StreamError("Failed to create workspace directory: {}".format(e)) from e
 
-        workspaces.create_workspace(target._get_full_name(), workdir)
+        workspaces.create_workspace(target._get_full_name(), directory)
 
         if not no_checkout:
             with target.timed_activity("Staging sources to {}".format(directory)):
@@ -542,12 +542,12 @@ class Stream():
         # Remove workspace directory if prompted
         if remove_dir:
             with self._context.timed_activity("Removing workspace directory {}"
-                                              .format(workspace.path)):
+                                              .format(workspace.get_absolute_path())):
                 try:
-                    shutil.rmtree(workspace.path)
+                    shutil.rmtree(workspace.get_absolute_path())
                 except OSError as e:
                     raise StreamError("Could not remove  '{}': {}"
-                                      .format(workspace.path, e)) from e
+                                      .format(workspace.get_absolute_path(), e)) from e
 
         # Delete the workspace and save the configuration
         workspaces.delete_workspace(element_name)
@@ -590,28 +590,30 @@ class Stream():
 
         for element in elements:
             workspace = workspaces.get_workspace(element._get_full_name())
-
+            workspace_path = workspace.get_absolute_path()
             if soft:
                 workspace.prepared = False
                 self._message(MessageType.INFO, "Reset workspace state for {} at: {}"
-                              .format(element.name, workspace.path))
+                              .format(element.name, workspace_path))
                 continue
 
             with element.timed_activity("Removing workspace directory {}"
-                                        .format(workspace.path)):
+                                        .format(workspace_path)):
                 try:
-                    shutil.rmtree(workspace.path)
+                    shutil.rmtree(workspace_path)
                 except OSError as e:
                     raise StreamError("Could not remove  '{}': {}"
-                                      .format(workspace.path, e)) from e
+                                      .format(workspace_path, e)) from e
 
             workspaces.delete_workspace(element._get_full_name())
-            workspaces.create_workspace(element._get_full_name(), workspace.path)
+            workspaces.create_workspace(element._get_full_name(), workspace_path)
 
-            with element.timed_activity("Staging sources to {}".format(workspace.path)):
+            with element.timed_activity("Staging sources to {}".format(workspace_path)):
                 element._open_workspace()
 
-            self._message(MessageType.INFO, "Reset workspace for {} at: {}".format(element.name, workspace.path))
+            self._message(MessageType.INFO,
+                          "Reset workspace for {} at: {}".format(element.name,
+                                                                 workspace_path))
 
         workspaces.save_config()
 
@@ -648,7 +650,7 @@ class Stream():
         for element_name, workspace_ in self._context.get_workspaces().list():
             workspace_detail = {
                 'element': element_name,
-                'directory': workspace_.path,
+                'directory': workspace_.get_absolute_path(),
             }
             workspaces.append(workspace_detail)
 

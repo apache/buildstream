@@ -26,14 +26,6 @@ from ._exceptions import LoadError, LoadErrorReason
 
 BST_WORKSPACE_FORMAT_VERSION = 3
 
-# Hold on to a list of members which get serialized
-_WORKSPACE_MEMBERS = [
-    'prepared',
-    'path',
-    'last_successful',
-    'running_files'
-]
-
 
 # Workspace()
 #
@@ -56,7 +48,7 @@ class Workspace():
     def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False, running_files=None):
         self.prepared = prepared
         self.last_successful = last_successful
-        self.path = path
+        self._path = path
         self.running_files = running_files if running_files is not None else {}
 
         self._toplevel_project = toplevel_project
@@ -64,14 +56,20 @@ class Workspace():
 
     # to_dict()
     #
-    # Convert this object to a dict for serialization purposes
+    # Convert a list of members which get serialized to a dict for serialization purposes
     #
     # Returns:
     #     (dict) A dict representation of the workspace
     #
     def to_dict(self):
-        return {key: val for key, val in self.__dict__.items()
-                if key in _WORKSPACE_MEMBERS and val is not None}
+        ret = {
+            'prepared': self.prepared,
+            'path': self._path,
+            'running_files': self.running_files
+        }
+        if self.last_successful is not None:
+            ret["last_successful"] = self.last_successful
+        return ret
 
     # from_dict():
     #
@@ -103,15 +101,7 @@ class Workspace():
     #    True if the workspace differs from 'other', otherwise False
     #
     def differs(self, other):
-
-        for member in _WORKSPACE_MEMBERS:
-            member_a = getattr(self, member)
-            member_b = getattr(other, member)
-
-            if member_a != member_b:
-                return True
-
-        return False
+        return self.to_dict() != other.to_dict()
 
     # invalidate_key()
     #
@@ -133,7 +123,7 @@ class Workspace():
         if os.path.isdir(fullpath):
             utils.copy_files(fullpath, directory)
         else:
-            destfile = os.path.join(directory, os.path.basename(self.path))
+            destfile = os.path.join(directory, os.path.basename(self.get_absolute_path()))
             utils.safe_copy(fullpath, destfile)
 
     # add_running_files()
@@ -189,7 +179,7 @@ class Workspace():
                 filelist = utils.list_relative_paths(fullpath)
                 filelist = [(relpath, os.path.join(fullpath, relpath)) for relpath in filelist]
             else:
-                filelist = [(self.path, fullpath)]
+                filelist = [(self.get_absolute_path(), fullpath)]
 
             self._key = [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
 
@@ -200,7 +190,7 @@ class Workspace():
     # Returns: The absolute path of the element's workspace.
     #
     def get_absolute_path(self):
-        return os.path.join(self._toplevel_project.directory, self.path)
+        return os.path.join(self._toplevel_project.directory, self._path)
 
 
 # Workspaces()
@@ -236,6 +226,9 @@ class Workspaces():
     #    path (str) - The path in which the workspace should be kept
     #
     def create_workspace(self, element_name, path):
+        if path.startswith(self._toplevel_project.directory):
+            path = os.path.relpath(path, self._toplevel_project.directory)
+
         self._workspaces[element_name] = Workspace(self._toplevel_project, path=path)
 
         return self._workspaces[element_name]
