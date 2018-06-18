@@ -17,6 +17,10 @@ buildstream 1.1.5
     to not be scheduled and fail during artifact assembly,
     and display the retry prompt during an interactive session.
 
+  o Due to enabling the use of relative workspaces, "Legacy" workspaces
+    may need to be closed and remade before the changes will affect them.
+    Downgrading after using this feature may result in workspaces
+    not functioning correctly
 
 =================
 buildstream 1.1.4
