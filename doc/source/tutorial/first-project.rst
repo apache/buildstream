@@ -23,7 +23,11 @@ command to create a little project structure:
 .. raw:: html
    :file: ../sessions/first-project-init.html
 
+
 This will give you a :ref:`project.conf <projectconf>` which will look like this:
+
+``project.conf``
+~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../examples/first-project/project.conf
    :language: yaml
@@ -48,6 +52,10 @@ Here we're going to declare a simple :mod:`import <elements.import>` element
 which will import the ``hello.world`` file we've created in the previous step.
 
 Create ``elements/hello.bst`` with the following content:
+
+
+``elements/hello.bst``
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../examples/first-project/elements/hello.bst
    :language: yaml

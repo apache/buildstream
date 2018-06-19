@@ -18,8 +18,8 @@ Project structure
 -----------------
 
 
-project.conf
-~~~~~~~~~~~~
+``project.conf``
+~~~~~~~~~~~~~~~~
 The following is a simple :ref:`project <projectconf>` definition:
 
 .. literalinclude:: ../../examples/flatpak-autotools/project.conf
@@ -34,8 +34,8 @@ Note that we've added a :ref:`source alias <project_source_aliases>` for
 the ``https://sdk.gnome.org/`` repository to download the SDK from.
 
 
-base/sdk.bst
-~~~~~~~~~~~~
+``elements/base/sdk.bst``
+~~~~~~~~~~~~~~~~~~~~~~~~~
 This is the :mod:`import <elements.import>` element used to import the
 actual Flatpak SDK, it uses an :mod:`ostree <sources.ostree>` source to
 download the Flatpak since these are hosted in OSTree repositories.
@@ -66,8 +66,8 @@ it's important to note two things:
   with the appropriate symlinks setup from ``/``.
 
 
-base/usrmerge.bst
-~~~~~~~~~~~~~~~~~
+``elements/base/usrmerge.bst``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This is another :mod:`import <elements.import>` element, and it uses
 the :mod:`local <sources.local>` source type so that we can stage files
 literally stored in the same repository as the project.
@@ -84,8 +84,8 @@ As suggested by the ``.bst`` file, the symlinks themselves are a part
 of the project and they are stored in the ``files/links`` directory.
 
 
-base.bst
-~~~~~~~~
+``elements/base.bst``
+~~~~~~~~~~~~~~~~~~~~~
 This is just a :mod:`stack <elements.stack>` element for convenience sake.
 
 .. literalinclude:: ../../examples/flatpak-autotools/elements/base.bst
@@ -97,8 +97,8 @@ your elements to depend on without needing to know about the inner workings
 of the base system build.
 
 
-hello.bst
-~~~~~~~~~
+``elements/hello.bst``
+~~~~~~~~~~~~~~~~~~~~~~
 Finally, we show an example of an :mod:`autotools <elements.autotools>` element
 to build our sample "Hello World" program.
 
