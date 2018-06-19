@@ -17,10 +17,10 @@ a Flatpak SDK for the base runtime.
 Project structure
 -----------------
 
+The following is a simple :ref:`project <projectconf>` definition:
 
 ``project.conf``
 ~~~~~~~~~~~~~~~~
-The following is a simple :ref:`project <projectconf>` definition:
 
 .. literalinclude:: ../../examples/flatpak-autotools/project.conf
    :language: yaml
@@ -36,12 +36,13 @@ the ``https://sdk.gnome.org/`` repository to download the SDK from.
 
 ``elements/base/sdk.bst``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-This is the :mod:`import <elements.import>` element used to import the
-actual Flatpak SDK, it uses an :mod:`ostree <sources.ostree>` source to
-download the Flatpak since these are hosted in OSTree repositories.
 
 .. literalinclude:: ../../examples/flatpak-autotools/elements/base/sdk.bst
    :language: yaml
+
+This is the :mod:`import <elements.import>` element used to import the
+actual Flatpak SDK, it uses an :mod:`ostree <sources.ostree>` source to
+download the Flatpak since these are hosted in OSTree repositories.
 
 While declaring the :mod:`ostree <sources.ostree>` source, we specify a GPG
 public key to verify the OSTree download. This configuration is optional
@@ -68,12 +69,13 @@ it's important to note two things:
 
 ``elements/base/usrmerge.bst``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This is another :mod:`import <elements.import>` element, and it uses
-the :mod:`local <sources.local>` source type so that we can stage files
-literally stored in the same repository as the project.
 
 .. literalinclude:: ../../examples/flatpak-autotools/elements/base/usrmerge.bst
    :language: yaml
+
+This is another :mod:`import <elements.import>` element, and it uses
+the :mod:`local <sources.local>` source type so that we can stage files
+literally stored in the same repository as the project.
 
 The purpose of this element is simply to add the symlinks for
 ``/lib -> /usr/lib``, ``/bin -> /usr/bin`` and ``/etc -> /usr/etc``, we
@@ -86,10 +88,11 @@ of the project and they are stored in the ``files/links`` directory.
 
 ``elements/base.bst``
 ~~~~~~~~~~~~~~~~~~~~~
-This is just a :mod:`stack <elements.stack>` element for convenience sake.
 
 .. literalinclude:: ../../examples/flatpak-autotools/elements/base.bst
    :language: yaml
+
+This is just a :mod:`stack <elements.stack>` element for convenience sake.
 
 Often times you will have a more complex base to build things on, and it
 is convenient to just use a :mod:`stack <elements.stack>` element for
@@ -99,11 +102,12 @@ of the base system build.
 
 ``elements/hello.bst``
 ~~~~~~~~~~~~~~~~~~~~~~
-Finally, we show an example of an :mod:`autotools <elements.autotools>` element
-to build our sample "Hello World" program.
 
 .. literalinclude:: ../../examples/flatpak-autotools/elements/hello.bst
    :language: yaml
+
+Finally, we show an example of an :mod:`autotools <elements.autotools>` element
+to build our sample "Hello World" program.
 
 We use another :mod:`local <sources.local>` source to obtain the sample
 autotools project, but normally you would probably use a :mod:`git <sources.git>`
