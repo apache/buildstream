@@ -2,7 +2,7 @@ import os
 import shutil
 import pytest
 from collections import namedtuple
-from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli, create_artifact_share, create_element_size
@@ -15,6 +15,20 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project",
 )
+
+
+# The original result of os.statvfs so that we can mock it
+NORMAL_STAT = os.statvfs('/')
+
+
+def stat_tuple():
+    stat = NORMAL_STAT
+    bsize = stat.f_bsize
+
+    fields = [var for var in dir(stat) if isinstance(getattr(stat, var), int)][0:stat.n_fields]
+    statvfs_result = namedtuple('statvfs_result', ' '.join(fields))
+
+    return statvfs_result(*[getattr(stat, var) for var in fields])
 
 
 # Assert that a given artifact is in the share
@@ -213,13 +227,6 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
     share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
 
-    # Mock the os.statvfs() call to return a named tuple which emulates an
-    # os.statvfs_result object
-    statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
-    os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(10e9),
-                                                       f_bfree=(int(12e6) + int(2e9)),
-                                                       f_bsize=1))
-
     # Configure bst to push to the cache
     cli.configure({
         'artifacts': {'url': share.repo, 'push': True},
@@ -227,16 +234,26 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 
     # Create and build an element of 5 MB
     create_element_size('element1.bst', element_path, [], int(5e6))  # [] => no deps
-    result = cli.run(project=project, args=['build', 'element1.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'element1.bst'])
     result.assert_success()
 
     # Create and build an element of 5 MB
     create_element_size('element2.bst', element_path, [], int(5e6))  # [] => no deps
-    result = cli.run(project=project, args=['build', 'element2.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'element2.bst'])
     result.assert_success()
+
+    # Mock the os.statvfs() call to return a named tuple which emulates an
+    # os.statvfs_result object
+    free_space = int(12e6)
+
+    free = stat_tuple()._replace(f_blocks=int(10e9), f_bfree=free_space + int(2e9), f_bsize=1)
+    with patch('os.statvfs', return_value=free):
+        result = cli.run(project=project, args=['push', 'element1.bst', 'element2.bst'])
+        result.assert_success()
 
     # update the share
     share.update_summary()
+    free_space -= 10e6
 
     # check that element's 1 and 2 are cached both locally and remotely
     assert cli.get_element_state(project, 'element1.bst') == 'cached'
@@ -244,18 +261,19 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     assert cli.get_element_state(project, 'element2.bst') == 'cached'
     assert_shared(cli, share, project, 'element2.bst')
 
-    # update mocked available disk space now that two 5 MB artifacts have been added
-    os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(10e9),
-                                                       f_bfree=(int(2e6) + int(2e9)),
-                                                       f_bsize=1))
-
     # Create and build another element of 5 MB (This will exceed the free disk space available)
     create_element_size('element3.bst', element_path, [], int(5e6))
-    result = cli.run(project=project, args=['build', 'element3.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'element3.bst'])
     result.assert_success()
+
+    free = stat_tuple()._replace(f_blocks=int(10e9), f_bfree=free_space + int(2e9), f_bsize=1)
+    with patch('os.statvfs', return_value=free):
+        result = cli.run(project=project, args=['push', 'element3.bst'])
+        result.assert_success()
 
     # update the share
     share.update_summary()
+    free_space -= 5e6
 
     # Ensure it is cached both locally and remotely
     assert cli.get_element_state(project, 'element3.bst') == 'cached'
@@ -277,12 +295,6 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
 
-    # Mock a file system with 5 MB total space
-    statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
-    os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(5e6) + int(2e9),
-                                                       f_bfree=(int(5e6) + int(2e9)),
-                                                       f_bsize=1))
-
     # Configure bst to push to the remote cache
     cli.configure({
         'artifacts': {'url': share.repo, 'push': True},
@@ -290,13 +302,19 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 
     # Create and push a 3MB element
     create_element_size('small_element.bst', element_path, [], int(3e6))
-    result = cli.run(project=project, args=['build', 'small_element.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'small_element.bst'])
     result.assert_success()
 
     # Create and try to push a 6MB element.
     create_element_size('large_element.bst', element_path, [], int(6e6))
-    result = cli.run(project=project, args=['build', 'large_element.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'large_element.bst'])
     result.assert_success()
+
+    # Mock a file system with 5 MB total space
+    free = stat_tuple()._replace(f_blocks=int(5e6) + int(2e9), f_bfree=int(5e6) + int(2e9), f_bsize=1)
+    with patch('os.statvfs', return_value=free):
+        result = cli.run(project=project, args=['push', 'small_element.bst', 'large_element.bst'])
+        result.assert_success()
 
     # update the cache
     share.update_summary()
@@ -323,12 +341,6 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     share = create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'))
 
-    # Mock a file system with 12 MB free disk space
-    statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
-    os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(10e9) + int(2e9),
-                                                       f_bfree=(int(12e6) + int(2e9)),
-                                                       f_bsize=1))
-
     # Configure bst to push to the cache
     cli.configure({
         'artifacts': {'url': share.repo, 'push': True},
@@ -336,14 +348,23 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
 
     # Create and build 2 elements, each of 5 MB.
     create_element_size('element1.bst', element_path, [], int(5e6))
-    result = cli.run(project=project, args=['build', 'element1.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'element1.bst'])
     result.assert_success()
 
     create_element_size('element2.bst', element_path, [], int(5e6))
-    result = cli.run(project=project, args=['build', 'element2.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'element2.bst'])
     result.assert_success()
 
+    # Mock a file system with 12 MB free disk space
+    free_space = int(12e6)
+
+    free = stat_tuple()._replace(f_blocks=int(10e9) + int(2e9), f_bfree=free_space + int(2e9), f_bsize=1)
+    with patch('os.statvfs', return_value=free):
+        result = cli.run(project=project, args=['push', 'element1.bst', 'element2.bst'])
+        result.assert_success()
+
     share.update_summary()
+    free_space -= int(10e6)
 
     # Ensure they are cached locally
     assert cli.get_element_state(project, 'element1.bst') == 'cached'
@@ -367,10 +388,16 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
 
     # Create and build the element3 (of 5 MB)
     create_element_size('element3.bst', element_path, [], int(5e6))
-    result = cli.run(project=project, args=['build', 'element3.bst'])
+    result = cli.run(project=project, args=['--pushers', '0', 'build', 'element3.bst'])
     result.assert_success()
 
+    free = stat_tuple()._replace(f_blocks=int(10e9) + int(2e9), f_bfree=free_space + int(2e9), f_bsize=1)
+    with patch('os.statvfs', return_value=free):
+        result = cli.run(project=project, args=['push', 'element3.bst'])
+        result.assert_success()
+
     share.update_summary()
+    free_space -= 5e6
 
     # Make sure it's cached locally and remotely
     assert cli.get_element_state(project, 'element3.bst') == 'cached'
