@@ -1,6 +1,8 @@
 import os
-import pytest
+import sys
+import shutil
 import itertools
+import pytest
 from tests.testutils import cli, generate_junction
 
 from buildstream import _yaml
@@ -232,3 +234,58 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name):
 
     results = result.output.strip().splitlines()
     assert 'junction.bst:import-etc.bst-buildable' in results
+
+
+###############################################################
+#                   Testing recursion depth                   #
+###############################################################
+@pytest.mark.parametrize("dependency_depth", [100, 500, 1200])
+def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
+    project_name = "recursion-test"
+    path = str(tmpdir)
+    project_path = os.path.join(path, project_name)
+
+    def setup_test():
+        """
+        Creates a bst project with dependencydepth + 1 elements, each of which
+        depends of the previous element to be created. Each element created
+        is of type import and has an empty source file.
+        """
+        os.mkdir(project_path)
+
+        result = cli.run(project=project_path, silent=True,
+                         args=['init', '--project-name', project_name])
+        result.assert_success()
+
+        sourcefiles_path = os.path.join(project_path, "files")
+        os.mkdir(sourcefiles_path)
+
+        element_path = os.path.join(project_path, "elements")
+        for i in range(0, dependency_depth + 1):
+            element = {
+                'kind': 'import',
+                'sources': [{'kind': 'local',
+                             'path': 'files/source{}'.format(str(i))}],
+                'depends': ['element{}.bst'.format(str(i - 1))]
+            }
+            if i == 0:
+                del element['depends']
+            _yaml.dump(element, os.path.join(element_path, "element{}.bst".format(str(i))))
+
+            source = os.path.join(sourcefiles_path, "source{}".format(str(i)))
+            open(source, 'x').close()
+            assert os.path.exists(source)
+
+    setup_test()
+    result = cli.run(project=project_path, silent=True,
+                     args=['show', "element{}.bst".format(str(dependency_depth))])
+
+    recursion_limit = sys.getrecursionlimit()
+    if dependency_depth <= recursion_limit:
+        result.assert_success()
+    else:
+        #  Assert exception is thown and handled
+        assert not result.unhandled_exception
+        assert result.exit_code == -1
+
+    shutil.rmtree(project_path)
