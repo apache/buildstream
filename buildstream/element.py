@@ -1464,7 +1464,7 @@ class Element(Plugin):
                                       .format(e))
 
                     raise
-                
+                 
                 collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
                 if not os.path.exists(collectdir):
                     raise ElementError(
@@ -1829,7 +1829,7 @@ class Element(Plugin):
                     os.fsync(logfile.fileno())
                 except ValueError:
                     raise ElementError('Action {} for element {} tried to write to a closed log file.'
-                                    .format(action_name, self.name))
+                                       .format(action_name, self.name))
 
             self._set_log_handle(logfile)
             with _signals.terminator(flush_log):
