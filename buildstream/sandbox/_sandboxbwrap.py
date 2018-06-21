@@ -94,10 +94,10 @@ class SandboxBwrap(Sandbox):
         remote_command = remote_execution_pb2.Command(arguments=command)
         # (Ignore environment for now)
         # Serialise this into the cascache...
-        digest = cascache.add_object(buffer=remote_command.SerializeToString())
+        command_digest = cascache.add_object(buffer=remote_command.SerializeToString())
 
-        command_ref = 'worker-command/{}'.format(digest.hash)
-        cascache.set_ref(command_ref, digest)
+        command_ref = 'worker-command/{}'.format(command_digest.hash)
+        cascache.set_ref(command_ref, command_digest)
         print("Pushing key from local to remote: {}".format(command_ref))
 
         # TODO: push_key_only isn't really meant to work with refs to Command
@@ -105,6 +105,32 @@ class SandboxBwrap(Sandbox):
         # but it expects to find a directory. We may need to pass a flag to tell
         # it not to look for any.
         cascache.push_key_only(command_ref, self._get_project())
+
+
+        # Next, try to create a communication channel
+        port = 50051
+        channel = grpc.insecure_channel('dekatron.office.codethink.co.uk:{}'.format(port))
+        stub = remote_execution_pb2_grpc.ExecutionStub(channel)
+
+        # Having done that, create and send the action.
+
+        action = remote_execution_pb2.Action(command_digest = command_digest,
+                                     input_root_digest = upload_vdir.ref,
+                                     output_files = [],
+                                     output_directories = None,
+                                     platform = None,
+                                     timeout = None,
+                                     do_not_cache = True)
+
+        request = remote_execution_pb2.ExecuteRequest(instance_name = 'default',
+                                              action = action,
+                                              skip_cache_lookup = True)
+
+        response = stub.Execute(request)
+
+        print("Response name: {}".format(response.name))
+
+
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
