@@ -32,6 +32,7 @@ import grpc
 from google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from google.devtools.remoteexecution.v1test import remote_execution_pb2, remote_execution_pb2_grpc
 from buildstream import buildstream_pb2, buildstream_pb2_grpc
+from google.protobuf.message import DecodeError
 
 from .. import _signals, utils
 from .._exceptions import ArtifactError
@@ -609,9 +610,6 @@ class CASCache(ArtifactCache):
             q.put(str(e))
 
     def _required_blobs(self, tree):
-        if not isinstance(tree, remote_execution_pb2.Directory):
-            # If it's not a tree, it has no dependencies
-            return
         # parse directory, and recursively add blobs
         d = remote_execution_pb2.Digest()
         d.hash = tree.hash
@@ -621,7 +619,11 @@ class CASCache(ArtifactCache):
         directory = remote_execution_pb2.Directory()
 
         with open(self.objpath(tree), 'rb') as f:
-            directory.ParseFromString(f.read())
+            try:
+                directory.ParseFromString(f.read())
+            except DecodeError as d:
+                # OK, that probably wasn't a directory. In which case, it has no dependencies.
+                return
 
         for filenode in directory.files:
             d = remote_execution_pb2.Digest()
