@@ -11,7 +11,7 @@ using BuildStream.
 
 They begin with a basic introduction to BuildStream, background
 information on basic concepts, and a guide to the BuildStream command line interface.
-Later sections provide detailed information on BuilStream internals.
+Later sections provide detailed information on BuildStream internals.
 
 
 .. toctree::
