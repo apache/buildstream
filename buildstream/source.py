@@ -299,7 +299,7 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
-    def translate_url(self, url):
+    def translate_url(self, url, alias_override=None):
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
 
@@ -310,7 +310,7 @@ class Source(Plugin):
            str: The fully qualified url, with aliases resolved
         """
         project = self._get_project()
-        return project.translate_url(url)
+        return project.translate_url(url, alias_override)
 
     def get_project_directory(self):
         """Fetch the project base directory
