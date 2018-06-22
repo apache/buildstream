@@ -504,7 +504,7 @@ class Loader():
                 if self._fetch_subprojects:
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
-                    source.fetch()
+                    source._fetch()
                 else:
                     detail = "Try fetching the project with `bst fetch {}`".format(filename)
                     raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
