@@ -83,7 +83,7 @@ class PatchSource(Source):
     def set_ref(self, ref, node):
         pass  # pragma: nocover
 
-    def fetch(self):
+    def fetch(self, alias_overide=None):
         # Nothing to do here for a local source
         pass  # pragma: nocover
 
