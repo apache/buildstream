@@ -250,7 +250,9 @@ class Loader():
             kind_type, _ = self.project.first_pass_config.plugins.get_element_type(kind)
         except PluginError:
             kind_type = None
-        if kind_type and hasattr(kind_type, 'BST_NO_PROJECT_DEFAULTS') and kind_type.BST_NO_PROJECT_DEFAULTS:
+        if (kind_type and
+                hasattr(kind_type, 'BST_PROJECT_INCLUDES_PROCESSED') and
+                not kind_type.BST_PROJECT_INCLUDES_PROCESSED):
             self._first_pass_options.process_node(node)
         else:
             if not self.project.is_loaded():
