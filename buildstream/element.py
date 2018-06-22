@@ -1464,7 +1464,7 @@ class Element(Plugin):
                                       .format(e))
 
                     raise
-                 
+
                 collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
                 if not os.path.exists(collectdir):
                     raise ElementError(
