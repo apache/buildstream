@@ -87,7 +87,7 @@ class LocalSource(Source):
     def set_ref(self, ref, node):
         pass  # pragma: nocover
 
-    def fetch(self):
+    def fetch(self, alias_override=None):
         # Nothing to do here for a local source
         pass  # pragma: nocover
 
@@ -101,6 +101,10 @@ class LocalSource(Source):
             else:
                 destfile = os.path.join(directory, os.path.basename(self.path))
                 utils.safe_copy(self.fullpath, destfile)
+
+    def get_alias(self):
+        # Local sources do not need mirrors
+        return None  # pragma: nocover
 
 
 # Create a unique key for a file
