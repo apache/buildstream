@@ -78,7 +78,7 @@ class TarSource(DownloadableFileSource):
 
     def preflight(self):
         self.host_lzip = None
-        if self.url.endswith('.lz'):
+        if self.original_url.endswith('.lz'):
             self.host_lzip = utils.get_host_tool('lzip')
 
     def get_unique_key(self):
@@ -99,7 +99,7 @@ class TarSource(DownloadableFileSource):
 
     @contextmanager
     def _get_tar(self):
-        if self.url.endswith('.lz'):
+        if self.original_url.endswith('.lz'):
             with self._run_lzip() as lzip_dec:
                 with tarfile.open(fileobj=lzip_dec, mode='r:') as tar:
                     yield tar
