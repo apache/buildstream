@@ -133,10 +133,14 @@ class Project():
     # This method is provided for :class:`.Source` objects to resolve
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
-    def translate_url(self, url):
+    def translate_url(self, url, alias_override=None):
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-            alias_url = self._aliases.get(url_alias)
+            if alias_override:
+                alias_url = alias_override
+            else:
+                alias_url = self._aliases.get(url_alias)
+
             if alias_url:
                 url = alias_url + url_body
 
