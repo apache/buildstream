@@ -42,7 +42,7 @@ Build elements
    elements/pip
 
 
-.. _authoring_source_plugins:
+.. _plugins_sources:
 
 Sources
 -------

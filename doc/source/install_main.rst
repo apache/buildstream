@@ -14,7 +14,7 @@ BuildStream requires the following base system requirements:
 * psutil python library (so you don't have to install GCC and python-devel to build it yourself)
 
 BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
-Refer to the respective :ref:`authoring_source_plugins` documentation for host tool
+Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
 requirements of specific plugins.
 
 If you intend to push built artifacts to a remote artifact server,
