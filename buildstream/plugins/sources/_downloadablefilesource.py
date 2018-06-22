@@ -18,7 +18,6 @@ class DownloadableFileSource(Source):
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
         self.ref = self.node_get_member(node, str, 'ref', None)
-        self.url = self.translate_url(self.original_url)
         self._warn_deprecated_etag(node)
 
     def preflight(self):
@@ -47,24 +46,26 @@ class DownloadableFileSource(Source):
     def set_ref(self, ref, node):
         node['ref'] = self.ref = ref
 
-    def track(self):
+    def track(self, alias_override=None):
         # there is no 'track' field in the source to determine what/whether
         # or not to update refs, because tracking a ref is always a conscious
         # decision by the user.
-        with self.timed_activity("Tracking {}".format(self.url),
+        url = self.translate_url(self.original_url, alias_override=alias_override)
+        with self.timed_activity("Tracking {}".format(url),
                                  silent_nested=True):
-            new_ref = self._ensure_mirror()
+            new_ref = self._ensure_mirror(url)
 
             if self.ref and self.ref != new_ref:
                 detail = "When tracking, new ref differs from current ref:\n" \
-                    + "  Tracked URL: {}\n".format(self.url) \
+                    + "  Tracked URL: {}\n".format(url) \
                     + "  Current ref: {}\n".format(self.ref) \
                     + "  New ref: {}\n".format(new_ref)
                 self.warn("Potential man-in-the-middle attack!", detail=detail)
 
             return new_ref
 
-    def fetch(self):
+    def fetch(self, alias_override=None):
+        url = self.translate_url(self.original_url, alias_override=alias_override)
 
         # Just a defensive check, it is impossible for the
         # file to be already cached because Source.fetch() will
@@ -75,11 +76,11 @@ class DownloadableFileSource(Source):
 
         # Download the file, raise hell if the sha256sums don't match,
         # and mirror the file otherwise.
-        with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
-            sha256 = self._ensure_mirror()
+        with self.timed_activity("Fetching {}".format(url), silent_nested=True):
+            sha256 = self._ensure_mirror(url)
             if sha256 != self.ref:
                 raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
-                                  .format(self.url, sha256, self.ref))
+                                  .format(url, sha256, self.ref))
 
     def _warn_deprecated_etag(self, node):
         etag = self.node_get_member(node, str, 'etag', None)
@@ -100,12 +101,12 @@ class DownloadableFileSource(Source):
         with utils.save_file_atomic(etagfilename) as etagfile:
             etagfile.write(etag)
 
-    def _ensure_mirror(self):
+    def _ensure_mirror(self, url):
         # Downloads from the url and caches it according to its sha256sum.
         try:
             with self.tempdir() as td:
-                default_name = os.path.basename(self.url)
-                request = urllib.request.Request(self.url)
+                default_name = os.path.basename(url)
+                request = urllib.request.Request(url)
                 request.add_header('Accept', '*/*')
 
                 # We do not use etag in case what we have in cache is
@@ -150,11 +151,11 @@ class DownloadableFileSource(Source):
                 # we would have downloaded.
                 return self.ref
             raise SourceError("{}: Error mirroring {}: {}"
-                              .format(self, self.url, e)) from e
+                              .format(self, url, e)) from e
 
         except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError) as e:
             raise SourceError("{}: Error mirroring {}: {}"
-                              .format(self, self.url, e)) from e
+                              .format(self, url, e)) from e
 
     def _get_mirror_dir(self):
         return os.path.join(self.get_mirror_directory(),
