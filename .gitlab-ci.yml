@@ -159,6 +159,22 @@ docs:
 #                    Post stage                     #
 #####################################################
 
+license_management:
+  image: docker:stable
+  stage: post
+  variables:
+    DOCKER_DRIVER: overlay2
+  allow_failure: true
+  services:
+    - docker:stable-dind
+  script:
+    - export LICENSE_MANAGEMENT_VERSION=$(echo "$CI_SERVER_VERSION" | sed 's/^\([0-9]*\)\.\([0-9]*\).*/\1-\2-stable/')
+    - docker run
+        --volume "$PWD:/code"
+        "registry.gitlab.com/gitlab-org/security-products/license-management:$LICENSE_MANAGEMENT_VERSION" analyze /code
+  artifacts:
+    paths: [gl-license-management-report.json]
+
 # Check code quality with codeclimate
 # This needs some refactoring; we probably just want to provide the codeclimate.json directly
 # as an output of radon, with some conversion
