@@ -18,7 +18,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+import os
 from . import Queue, QueueStatus, QueueType
+from ..jobs import JobType
 
 
 # A queue which assembles elements
@@ -28,6 +30,7 @@ class BuildQueue(Queue):
     action_name = "Build"
     complete_name = "Built"
     queue_type = QueueType.BUILD
+    job_type = JobType.BUILD
 
     def process(self, element):
         element._assemble()

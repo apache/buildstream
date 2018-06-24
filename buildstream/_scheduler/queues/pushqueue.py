@@ -20,6 +20,7 @@
 
 # Local imports
 from . import Queue, QueueStatus, QueueType
+from ..jobs import JobType
 
 
 # A queue which pushes element artifacts
@@ -29,6 +30,7 @@ class PushQueue(Queue):
     action_name = "Push"
     complete_name = "Pushed"
     queue_type = QueueType.PUSH
+    job_type = JobType.PUSH
 
     def process(self, element):
         # returns whether an artifact was uploaded or not

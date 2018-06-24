@@ -21,11 +21,13 @@
 # System imports
 import os
 import asyncio
+from itertools import chain
 import signal
 import datetime
 from contextlib import contextmanager
 
 # Local imports
+from .jobs import JobType
 from .queues import QueueType
 
 
@@ -34,6 +36,59 @@ class SchedStatus():
     SUCCESS = 0
     ERROR = -1
     TERMINATED = 1
+
+
+# A set of rules that dictates in which order jobs should run.
+#
+# The first tuple defines jobs that are not allowed to be executed
+# before the current job completes (even if the job is still waiting
+# to be executed).
+#
+# The second tuple defines jobs that the current job is not allowed to
+# be run in parallel with.
+#
+# Note that this is very different from the element job
+# dependencies. Both a build and fetch job can be ready at the same
+# time, this has nothing to do with the requirement to fetch sources
+# before building. These rules are purely in place to maintain cache
+# consistency.
+#
+JOB_RULES = {
+    JobType.CLEAN: {
+        # Build and pull jobs are not allowed to run when we are about
+        # to start a cleanup job, because they will add more data to
+        # the artifact cache.
+        'priority': (JobType.BUILD, JobType.PULL),
+        # Cleanup jobs are not allowed to run in parallel with any
+        # jobs that might need to access the artifact cache, because
+        # we cannot guarantee atomicity otherwise.
+        'exclusive': (JobType.BUILD, JobType.PULL, JobType.PUSH)
+    },
+    JobType.BUILD: {
+        'priority': (),
+        'exclusive': ()
+    },
+    JobType.FETCH: {
+        'priority': (),
+        'exclusive': ()
+    },
+    JobType.PULL: {
+        'priority': (),
+        'exclusive': ()
+    },
+    JobType.PUSH: {
+        'priority': (),
+        'exclusive': ()
+    },
+    JobType.SIZE: {
+        'priority': (),
+        'exclusive': ()
+    },
+    JobType.TRACK: {
+        'priority': (),
+        'exclusive': ()
+    }
+}
 
 
 # Scheduler()
@@ -69,6 +124,8 @@ class Scheduler():
         #
         # Public members
         #
+        self.waiting_jobs = []      # Jobs waiting for execution
+        self.active_jobs = []       # Jobs currently being run in the scheduler
         self.queues = None          # Exposed for the frontend to print summaries
         self.context = context      # The Context object shared with Queues
         self.terminated = False     # Whether the scheduler was asked to terminate or has terminated
@@ -129,7 +186,7 @@ class Scheduler():
         self._connect_signals()
 
         # Run the queues
-        self.sched()
+        self.schedule_queue_jobs()
         self.loop.run_forever()
         self.loop.close()
 
@@ -220,11 +277,38 @@ class Scheduler():
     # and process anything that is ready.
     #
     def sched(self):
+        for job in self.waiting_jobs:
+            # If our job is not allowed to run with any job currently
+            # running, we don't start it.
+            if any(running_job.job_type in JOB_RULES[job.job_type]['exclusive']
+                   for running_job in self.active_jobs):
+                continue
 
+            # If any job currently waiting has priority over this one,
+            # we don't start it.
+            if any(job.job_type in JOB_RULES[waiting_job.job_type]['priority']
+                   for waiting_job in self.waiting_jobs):
+                continue
+
+            job.spawn()
+            self.waiting_jobs.remove(job)
+            self.active_jobs.append(job)
+
+            if self._job_start_callback:
+                self._job_start_callback(job)
+
+        # If nothings ticking, time to bail out
+        if not self.active_jobs and not self.waiting_jobs:
+            self.loop.stop()
+
+    def schedule_jobs(self, jobs):
+        self.waiting_jobs.extend(jobs)
+
+    def schedule_queue_jobs(self):
+        ready = []
         process_queues = True
 
         while self._queue_jobs and process_queues:
-
             # Pull elements forward through queues
             elements = []
             for queue in self.queues:
@@ -233,31 +317,42 @@ class Scheduler():
 
                 # Dequeue processed elements for the next queue
                 elements = list(queue.dequeue())
-                elements = list(elements)
 
             # Kickoff whatever processes can be processed at this time
             #
-            # We start by queuing from the last queue first, because we want to
-            # give priority to queues later in the scheduling process in the case
-            # that multiple queues share the same token type.
+            # We start by queuing from the last queue first, because
+            # we want to give priority to queues later in the
+            # scheduling process in the case that multiple queues
+            # share the same token type.
             #
-            # This avoids starvation situations where we dont move on to fetch
-            # tasks for elements which failed to pull, and thus need all the pulls
-            # to complete before ever starting a build
-            for queue in reversed(self.queues):
-                queue.process_ready()
+            # This avoids starvation situations where we dont move on
+            # to fetch tasks for elements which failed to pull, and
+            # thus need all the pulls to complete before ever starting
+            # a build
+            ready.extend(chain.from_iterable(
+                queue.process_ready() for queue in reversed(self.queues)
+            ))
 
-            # process_ready() may have skipped jobs, adding them to the done_queue.
-            # Pull these skipped elements forward to the next queue and process them.
+            # process_ready() may have skipped jobs, adding them to
+            # the done_queue.  Pull these skipped elements forward to
+            # the next queue and process them.
             process_queues = any(q.dequeue_ready() for q in self.queues)
 
-        # If nothings ticking, time to bail out
-        ticking = 0
-        for queue in self.queues:
-            ticking += len(queue.active_jobs)
+        self.schedule_jobs(ready)
+        self.sched()
 
-        if ticking == 0:
-            self.loop.stop()
+    # job_completed():
+    #
+    # Called when a Job completes
+    #
+    # Args:
+    #    queue (Queue): The Queue holding a complete job
+    #    job (Job): The completed Job
+    #    success (bool): Whether the Job completed with a success status
+    #
+    def job_completed(self, job):
+        self.active_jobs.remove(job)
+        self.schedule_queue_jobs()
 
     # get_job_token():
     #
@@ -289,30 +384,6 @@ class Scheduler():
     #
     def put_job_token(self, queue_type):
         self._job_tokens[queue_type] += 1
-
-    # job_starting():
-    #
-    # Called by the Queue when starting a Job
-    #
-    # Args:
-    #    job (Job): The starting Job
-    #
-    def job_starting(self, job, element):
-        if self._job_start_callback:
-            self._job_start_callback(element, job.action_name)
-
-    # job_completed():
-    #
-    # Called by the Queue when a Job completes
-    #
-    # Args:
-    #    queue (Queue): The Queue holding a complete job
-    #    job (Job): The completed Job
-    #    success (bool): Whether the Job completed with a success status
-    #
-    def job_completed(self, queue, job, element, success):
-        if self._job_complete_callback:
-            self._job_complete_callback(element, queue, job.action_name, success)
 
     #######################################################
     #                  Local Private Methods              #
@@ -400,18 +471,20 @@ class Scheduler():
         wait_start = datetime.datetime.now()
         wait_limit = 20.0
 
-        # First tell all jobs to terminate
+        active_jobs = self.active_jobs
         for queue in self.queues:
-            for job in queue.active_jobs:
-                job.terminate()
+            active_jobs.extend(queue.active_jobs)
+
+        # First tell all jobs to terminate
+        for job in active_jobs:
+            job.terminate()
 
         # Now wait for them to really terminate
-        for queue in self.queues:
-            for job in queue.active_jobs:
-                elapsed = datetime.datetime.now() - wait_start
-                timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-                if not job.terminate_wait(timeout):
-                    job.kill()
+        for job in active_jobs:
+            elapsed = datetime.datetime.now() - wait_start
+            timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
+            if not job.terminate_wait(timeout):
+                job.kill()
 
         self.loop.stop()
 

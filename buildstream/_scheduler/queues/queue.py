@@ -71,6 +71,7 @@ class Queue():
     action_name = None
     complete_name = None
     queue_type = None
+    job_type = None
 
     def __init__(self, scheduler):
 
@@ -241,15 +242,13 @@ class Queue():
             logfile = self._element_log_path(element)
             self.prepare(element)
 
-            job = ElementJob(scheduler, self.action_name,
-                             logfile, element=element,
+            job = ElementJob(scheduler, self.job_type,
+                             self.action_name, logfile,
+                             element=element, queue=self,
                              action_cb=self.process,
                              complete_cb=self._job_done,
                              max_retries=self._max_retries)
             scheduler.job_starting(job, element)
-
-            job.spawn()
-            self.active_jobs.append(job)
 
         # These were not ready but were in the beginning, give em
         # first priority again next time around
@@ -349,11 +348,6 @@ class Queue():
         # Give the token for this job back to the scheduler
         # immediately before invoking another round of scheduling
         self._scheduler.put_job_token(self.queue_type)
-
-        # Notify frontend
-        self._scheduler.job_completed(self, job, element, success)
-
-        self._scheduler.sched()
 
     # Convenience wrapper for Queue implementations to send
     # a message for the element they are processing

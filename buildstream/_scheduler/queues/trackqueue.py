@@ -24,6 +24,7 @@ from ... import SourceError
 
 # Local imports
 from . import Queue, QueueStatus, QueueType
+from ..jobs import JobType
 
 
 # A queue which tracks sources
@@ -33,6 +34,7 @@ class TrackQueue(Queue):
     action_name = "Track"
     complete_name = "Tracked"
     queue_type = QueueType.FETCH
+    job_type = JobType.TRACK
 
     def process(self, element):
         return element._track()

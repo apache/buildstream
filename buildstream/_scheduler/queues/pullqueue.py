@@ -20,6 +20,7 @@
 
 # Local imports
 from . import Queue, QueueStatus, QueueType
+from ..jobs import JobType
 
 
 # A queue which pulls element artifacts
@@ -29,6 +30,7 @@ class PullQueue(Queue):
     action_name = "Pull"
     complete_name = "Pulled"
     queue_type = QueueType.FETCH
+    job_type = JobType.PULL
 
     def process(self, element):
         # returns whether an artifact was downloaded or not

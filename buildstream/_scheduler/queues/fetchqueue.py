@@ -23,6 +23,7 @@ from ... import Consistency
 
 # Local imports
 from . import Queue, QueueStatus, QueueType
+from ..jobs import JobType
 
 
 # A queue which fetches element sources
@@ -32,6 +33,7 @@ class FetchQueue(Queue):
     action_name = "Fetch"
     complete_name = "Fetched"
     queue_type = QueueType.FETCH
+    job_type = JobType.FETCH
 
     def __init__(self, scheduler, skip_cached=False):
         super().__init__(scheduler)

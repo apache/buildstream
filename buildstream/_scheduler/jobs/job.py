@@ -52,6 +52,14 @@ class Process(multiprocessing.Process):
         self._sentinel = self._popen.sentinel
 
 
+class JobType():
+    FETCH = 1
+    TRACK = 2
+    BUILD = 3
+    PULL = 4
+    PUSH = 5
+
+
 # Job()
 #
 # The Job object represents a parallel task, when calling Job.spawn(),
@@ -61,6 +69,7 @@ class Process(multiprocessing.Process):
 #
 # Args:
 #    scheduler (Scheduler): The scheduler
+#    job_type (QueueType): The type of the job
 #    action_name (str): The queue action name
 #    logfile (str): A template string that points to the logfile
 #                   that should be used - should contain {pid}.
@@ -68,13 +77,14 @@ class Process(multiprocessing.Process):
 #
 class Job():
 
-    def __init__(self, scheduler, action_name, logfile, *, max_retries=0):
+    def __init__(self, scheduler, job_type, action_name, logfile, *, max_retries=0):
 
         #
         # Public members
         #
         self.action_name = action_name   # The action name for the Queue
-        self.child_data = None
+        self.child_data = None           # Data to be sent to the main process
+        self.job_type = job_type         # The type of the job
 
         #
         # Private members
@@ -541,6 +551,7 @@ class Job():
             return
 
         self._parent_complete(returncode == 0, self._result)
+        self._scheduler.job_completed(self)
 
     # _parent_process_envelope()
     #
