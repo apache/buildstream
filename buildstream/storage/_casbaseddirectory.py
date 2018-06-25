@@ -115,7 +115,7 @@ class CasBasedDirectory(Directory):
         if self.parent:
             self.parent._recalculate_recursing_up(self)
 
-    def _recalculate_recursing_down(self) -> None:
+    def _recalculate_recursing_down(self, parent=None) -> None:
         """Recalcuate the hash for this directory and any
         subdirectories. Hashes for subdirectories should be calculated
         and stored after a significant operation (e.g. an
@@ -123,9 +123,13 @@ class CasBasedDirectory(Directory):
         is extremely wasteful.
 
         """
-        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         for entry in self.pb2_directory.directories:
-            self.index[entry.name].buildstream_object._recalculate_recursing_down()
+            self.index[entry.name].buildstream_object._recalculate_recursing_down(entry)
+
+        if parent:
+            self.ref = self.cas_cache.add_object(digest=parent.digest, buffer=self.pb2_directory.SerializeToString())
+        else:
+            self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         # We don't need to do anything more than that; files were already added ealier, and symlinks are
         # part of the directory structure.
 
