@@ -27,6 +27,7 @@ import subprocess
 import shutil
 from contextlib import ExitStack
 
+import grpc
 import psutil
 
 from .. import utils, _signals
