@@ -208,6 +208,16 @@ the ``hello.bst`` element. This was done by staging all of the dependencies of
 with all of the dependencies was staged and ready, we ran the ``hello`` command from
 within the build sandbox environment.
 
+.. tip::
+
+   When specifying a command for :ref:`bst shell <invoking_shell>` to run,
+   we always specify ``--`` first. This is a commonly understood shell syntax
+   to indicate that the remaining arguments are to be treated literally.
+
+   Specifying ``--`` is optional and disambiguates BuildStream's arguments
+   and options from those of the program being run by
+   :ref:`bst shell <invoking_shell>`.
+
 
 Summary
 -------
