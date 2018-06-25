@@ -6,7 +6,7 @@ In :ref:`the last chapter <tutorial_running_commands>` we observed how the
 :mod:`manual <elements.manual>` element works, allowing one to specify and
 run commands manually in the process of constructing an *artifact*.
 
-In this section, we'll go over a mostly automated build of a similar
+In this chapter, we'll go over a mostly automated build of a similar
 hello world example. We will observe how our configurations of the
 :mod:`autotools <elements.autotools>` element translate to configurations
 on the :mod:`manual <elements.manual>` element, and observe how
