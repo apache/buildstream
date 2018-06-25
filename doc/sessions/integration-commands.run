@@ -1,0 +1,15 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/integration-commands
+  command: fetch hello.bst
+
+# Capture a build output
+- directory: ../examples/integration-commands
+  output: ../source/sessions/integration-commands-build.html
+  command: build hello.bst
+
+# Capture a shell output
+- directory: ../examples/integration-commands
+  output: ../source/sessions/integration-commands-shell.html
+  command: shell hello.bst -- hello pony
