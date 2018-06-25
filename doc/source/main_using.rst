@@ -1,7 +1,9 @@
 
+
 Using
 =====
-This section details how to use the BuildStream command line interface and work with existing BuildStream projects.
+This section includes user facing documentation including tutorials,
+guides and information on user preferences and configuration.
 
 
 .. toctree::
