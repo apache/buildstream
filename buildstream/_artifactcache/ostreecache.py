@@ -167,6 +167,7 @@ class OSTreeCache(ArtifactCache):
                 # fetch the artifact from highest priority remote using the specified cache key
                 remote_name = self._ensure_remote(self.repo, remote.pull_url)
                 _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
+                element.info("Pulled artifact {} from {}".format(ref, remote.pull_url))
                 return True
             except OSTreeError:
                 # Try next remote
