@@ -197,7 +197,7 @@ building sources which use autotools. Element default configurations can be over
 in the ``project.conf`` file and additionally overridden in the declaration of an element.
 
 For meaningful documentation on what can be specified in the ``config`` section for a given
-element ``kind``, refer to the element specific documentation. 
+element ``kind``, refer to the :ref:`element specific documentation <plugins>`.
 
 
 .. _format_public:
@@ -222,6 +222,9 @@ environment where the given element is installed but before anything should be r
 An element is allowed to read domain data from any element it depends on, and users
 may specify additional domains to be understood and processed by their own element
 plugins.
+
+The public data keys which are recognized under the ``bst`` domain
+can be viewed in detail in the :ref:`builtin public data <public_builtin>` section.
 
 
 .. _format_sandbox:
