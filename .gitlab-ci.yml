@@ -49,6 +49,9 @@ source_dist:
   artifacts:
     paths:
     - dist/
+  cache:
+    paths:
+    - dist/
 
 
 #####################################################
