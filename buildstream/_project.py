@@ -479,6 +479,16 @@ class Project():
 
             self._shell_host_files.append(mount)
 
+    # _load_pass():
+    #
+    # Loads parts of the project configuration that are different
+    # for first and second pass configurations.
+    #
+    # Args:
+    #    config (dict) - YaML node of the configuration file.
+    #    output (ProjectConfig) - ProjectConfig to load configuration onto.
+    #    ignore_unknown (bool) - Whether option loader shoud ignore unknown options.
+    #
     def _load_pass(self, config, output, ignore_unknown):
 
         # Element and Source  type configurations will be composited later onto
