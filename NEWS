@@ -5,6 +5,9 @@ buildstream 1.1.5
   o Add a `--tar` option to `bst checkout` which allows a tarball to be
     created from the artifact contents.
 
+  o Fetching and tracking will consult mirrors defined in project config,
+    and the preferred mirror to fetch from can be defined in the command
+    line or user config.
 
 =================
 buildstream 1.1.4
