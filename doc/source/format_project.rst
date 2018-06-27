@@ -198,6 +198,39 @@ You can also specify a list of caches here; earlier entries in the list
 will have higher priority than later ones.
 
 
+.. _project_essentials_mirrors:
+
+Mirrors
+~~~~~~~
+
+A list of mirrors can be defined that couple a location to a mapping of aliases to a
+list of URIs, e.g.
+
+.. code:: yaml
+
+  mirrors:
+  - location-name: middle-earth
+    aliases:
+      foo:
+      - http://www.middle-earth.com/foo/1
+      - http://www.middle-earth.com/foo/2
+      bar:
+      - http://www.middle-earth.com/bar/1
+      - http://www.middle-earth.com/bar/2
+  - location-name: oz
+    aliases:
+      foo:
+      - http://www.oz.com/foo
+      bar:
+      - http://www.oz.com/bar
+
+The order that the mirrors (and the URIs therein) are consulted is in the order
+they are defined when fetching, and in reverse-order when tracking.
+
+A default mirror to consult first can be defined via
+:ref:`user config <config_default_mirror>`, or the command-line argument
+:ref:`--default-mirror <invoking_bst>`.
+
 .. _project_plugins:
 
 External plugins
