@@ -90,8 +90,8 @@ class Stream():
     # Cleans up application state
     #
     def cleanup(self):
-        if self._pipeline:
-            self._pipeline.cleanup()
+        if self._project:
+            self._project.cleanup()
 
     # load_selection()
     #

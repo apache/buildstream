@@ -26,7 +26,6 @@ from operator import itemgetter
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
-from .element import Element
 from . import Scope, Consistency
 from ._project import ProjectRefStorage
 
@@ -104,28 +103,9 @@ class Pipeline():
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        with self._context.timed_activity("Loading pipeline", silent_nested=True):
-            meta_elements = self._project.loader.load(targets, rewritable, None,
-                                                      fetch_subprojects=fetch_subprojects)
-
-        # Resolve the real elements now that we've loaded the project
-        with self._context.timed_activity("Resolving pipeline"):
-            elements = [
-                Element._new_from_meta(meta, self._artifacts)
-                for meta in meta_elements
-            ]
-
-        # Now warn about any redundant source references which may have
-        # been discovered in the resolve() phase.
-        redundant_refs = Element._get_redundant_source_refs()
-        if redundant_refs:
-            detail = "The following inline specified source references will be ignored:\n\n"
-            lines = [
-                "{}:{}".format(source._get_provenance(), ref)
-                for source, ref in redundant_refs
-            ]
-            detail += "\n".join(lines)
-            self._message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
+        elements = self._project.load_elements(targets, self._artifacts,
+                                               rewritable=rewritable,
+                                               fetch_subprojects=fetch_subprojects)
 
         # Now create element groups to match the input target groups
         elt_iter = iter(elements)
@@ -378,16 +358,6 @@ class Pipeline():
             for element in inconsistent:
                 detail += "  " + element._get_full_name() + "\n"
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
-
-    # cleanup()
-    #
-    # Cleans up resources used by the Pipeline.
-    #
-    def cleanup(self):
-        self._project.loader.cleanup()
-
-        # Reset the element loader state
-        Element._reset_load_state()
 
     #############################################################
     #                     Private Methods                       #
