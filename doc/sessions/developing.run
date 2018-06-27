@@ -1,0 +1,49 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/developing/
+  command: fetch hello.bst
+
+# Capture workspace open output 
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-workspace-open.html
+  command: workspace open hello.bst workspace_hello
+
+# Catpure output from workspace list
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-workspace-list.html
+  command: workspace list
+
+# Apply a patch in the workspace
+- directory: ../examples/developing/
+  command: show hello.bst; patch workspace_hello/files/src/hello.c update.patch;
+
+# Rebuild
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-build-after-changes.html
+  command: build hello.bst
+
+# Capture shell output with changes
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-shell-after-changes.html
+  command: shell hello.bst -- hello
+
+# Close workspace
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-close-workspace.html
+  command: workspace close hello.bst 
+
+# Reopen workspace
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-reopen-workspace.html
+  command: workspace open --no-checkout hello.bst workspace_hello
+
+# Reset workspace
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-reset-workspace.html
+  command: workspace reset hello.bst 
+
+# Discard workspace
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-discard-workspace.html
+  command: workspace close --remove-dir hello.bst 
