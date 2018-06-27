@@ -136,7 +136,6 @@ class JunctionElement(Element):
     # Junctions are not allowed any dependencies
     BST_FORBID_BDEPENDS = True
     BST_FORBID_RDEPENDS = True
-    BST_PROJECT_INCLUDES_PROCESSED = False
 
     def configure(self, node):
         self.path = self.node_get_member(node, str, 'path', default='')

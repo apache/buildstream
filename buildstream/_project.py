@@ -169,9 +169,6 @@ class PluginCollection:
         self._assert_plugin_format(element, version)
         return element
 
-    def get_element_type(self, kind):
-        return self._element_factory.lookup(kind)
-
     # create_source()
     #
     # Instantiate and return a Source

@@ -191,19 +191,13 @@ class Element(Plugin):
     *Since: 1.2*
     """
 
-    BST_PROJECT_INCLUDES_PROCESSED = True
-    """Whether to load the plugin before processing include directives in
-    project.conf.
-
-    *Since: 1.2*
-
-    """
-
     def __init__(self, context, project, artifacts, meta, plugin_conf):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
-        if not project.is_loaded() and self.BST_PROJECT_INCLUDES_PROCESSED:
+        self.__is_junction = meta.kind == "junction"
+
+        if not project.is_loaded() and not self.__is_junction:
             raise ElementError("{}: Cannot load element before project"
                                .format(self), reason="project-not-loaded")
 
@@ -912,7 +906,7 @@ class Element(Plugin):
 
         # Instantiate sources
         for meta_source in meta.sources:
-            meta_source.first_pass = not element.BST_PROJECT_INCLUDES_PROCESSED
+            meta_source.first_pass = meta.kind == "junction"
             source = plugins.create_source(meta_source)
             redundant_ref = source._load_ref()
             element.__sources.append(source)
@@ -2116,7 +2110,7 @@ class Element(Plugin):
         element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 
-        if not self.BST_PROJECT_INCLUDES_PROCESSED:
+        if self.__is_junction:
             splits = _yaml.node_chain_copy(element_splits)
         elif project._splits is None:
             raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -2152,7 +2146,7 @@ class Element(Plugin):
             # Override the element's defaults with element specific
             # overrides from the project.conf
             project = self._get_project()
-            if not self.BST_PROJECT_INCLUDES_PROCESSED:
+            if self.__is_junction:
                 elements = project.first_pass_config.element_overrides
             else:
                 elements = project.element_overrides
@@ -2171,7 +2165,7 @@ class Element(Plugin):
     def __extract_environment(self, meta):
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
-        if not self.BST_PROJECT_INCLUDES_PROCESSED:
+        if self.__is_junction:
             environment = {}
         else:
             project = self._get_project()
@@ -2189,7 +2183,7 @@ class Element(Plugin):
         return final_env
 
     def __extract_env_nocache(self, meta):
-        if not self.BST_PROJECT_INCLUDES_PROCESSED:
+        if self.__is_junction:
             project_nocache = []
         else:
             project = self._get_project()
@@ -2213,7 +2207,7 @@ class Element(Plugin):
         default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
 
         project = self._get_project()
-        if not self.BST_PROJECT_INCLUDES_PROCESSED:
+        if self.__is_junction:
             variables = _yaml.node_chain_copy(project.first_pass_config.base_variables)
         else:
             assert project.is_loaded()
@@ -2242,7 +2236,7 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     def __extract_sandbox_config(self, meta):
-        if not self.BST_PROJECT_INCLUDES_PROCESSED:
+        if self.__is_junction:
             sandbox_config = {'build-uid': 0,
                               'build-gid': 0}
         else:

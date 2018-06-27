@@ -23,7 +23,7 @@ from collections import Mapping, namedtuple
 import tempfile
 import shutil
 
-from .._exceptions import LoadError, LoadErrorReason, PluginError
+from .._exceptions import LoadError, LoadErrorReason
 from .. import Consistency
 from .. import _yaml
 from ..element import Element
@@ -246,13 +246,7 @@ class Loader():
             else:
                 raise
         kind = _yaml.node_get(node, str, Symbol.KIND)
-        try:
-            kind_type, _ = self.project.first_pass_config.plugins.get_element_type(kind)
-        except PluginError:
-            kind_type = None
-        if (kind_type and
-                hasattr(kind_type, 'BST_PROJECT_INCLUDES_PROCESSED') and
-                not kind_type.BST_PROJECT_INCLUDES_PROCESSED):
+        if kind == "junction":
             self._first_pass_options.process_node(node)
         else:
             if not self.project.is_loaded():
