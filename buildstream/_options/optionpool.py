@@ -107,8 +107,9 @@ class OptionPool():
     #
     # Args:
     #    cli_options (list): A list of (str, str) tuples
+    #    ignore_unknown (bool): Whether to silently ignore unknown options.
     #
-    def load_cli_values(self, cli_options, ignore_unknown=False):
+    def load_cli_values(self, cli_options, *, ignore_unknown=False):
         for option_name, option_value in cli_options:
             try:
                 option = self._options[option_name]
