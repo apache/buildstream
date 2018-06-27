@@ -5,9 +5,8 @@ from . import _yaml
 
 class Includes:
 
-    def __init__(self, loader, valid_keys=None):
+    def __init__(self, loader):
         self._loader = loader
-        self._valid_keys = valid_keys
         self._loaded = {}
 
     def process(self, node):
@@ -21,9 +20,6 @@ class Includes:
 
             for include in includes:
                 include_node = self._include_file(include)
-                if self._valid_keys:
-                    _yaml.node_validate(include_node, self._valid_keys)
-
                 _yaml.composite(node, include_node)
 
         for _, value in _yaml.node_items(node):

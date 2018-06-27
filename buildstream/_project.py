@@ -405,7 +405,7 @@ class Project():
 
         self._load_pass(_yaml.node_copy(config), self.first_pass_config, True)
 
-        project_includes = Includes(self.loader, self.INCLUDE_CONFIG_KEYS + ['elements', 'sources'])
+        project_includes = Includes(self.loader)
         project_includes.process(config)
 
         self._load_pass(config, self.config, False)

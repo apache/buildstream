@@ -60,17 +60,6 @@ def test_include_junction_options(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_project_defines_name(cli, datafiles):
-    project = os.path.join(str(datafiles), 'defines_name')
-    result = cli.run(project=project, args=[
-        'show',
-        '--deps', 'none',
-        '--format', '%{vars}',
-        'element.bst'])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
-
-
-@pytest.mark.datafiles(DATA_DIR)
 def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
     """
     Junction elements never depend on fully include processed project.
