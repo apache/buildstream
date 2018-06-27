@@ -33,7 +33,7 @@ def assert_provenance(filename, line, col, node, key=None, indices=[]):
     else:
         assert(isinstance(provenance, _yaml.DictProvenance))
 
-    assert(provenance.filename == filename)
+    assert(provenance.filename.shortname == filename)
     assert(provenance.line == line)
     assert(provenance.col == col)
 

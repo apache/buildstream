@@ -26,15 +26,19 @@ class Includes:
             self._process_value(value)
 
     def _include_file(self, include):
+        shortname = include
         if ':' in include:
             junction, include = include.split(':', 1)
             junction_loader = self._loader._get_loader(junction, fetch_subprojects=True)
-            directory = junction_loader.project.directory
+            project = junction_loader.project
         else:
-            directory = self._loader.project.directory
+            project = self._loader.project
+        directory = project.directory
         file_path = os.path.join(directory, include)
         if file_path not in self._loaded:
-            self._loaded[file_path] = _yaml.load(os.path.join(directory, include))
+            self._loaded[file_path] = _yaml.load(os.path.join(directory, include),
+                                                 shortname=shortname,
+                                                 project=project)
         return self._loaded[file_path]
 
     def _process_value(self, value):

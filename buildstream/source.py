@@ -524,6 +524,7 @@ class Source(Plugin):
         toplevel = context.get_toplevel_project()
         toplevel_refs = self._project_refs(toplevel)
         provenance = self._get_provenance()
+        assert provenance.filename.project is not None
 
         element_name = self.__element_name
         element_idx = self.__element_index
@@ -558,24 +559,24 @@ class Source(Plugin):
         #
         # Step 3 - Apply the change in project data
         #
-        if project is toplevel:
-            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                do_save_refs(toplevel_refs)
-            else:
+        if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            do_save_refs(toplevel_refs)
+        else:
+            if provenance.filename.project is toplevel:
                 # Save the ref in the originating file
                 #
-                fullname = os.path.join(toplevel.element_path, provenance.filename)
                 try:
-                    _yaml.dump(provenance.toplevel, fullname)
+                    _yaml.dump(_yaml.node_sanitize(provenance.toplevel), provenance.filename.name)
                 except OSError as e:
                     raise SourceError("{}: Error saving source reference to '{}': {}"
-                                      .format(self, provenance.filename, e),
+                                      .format(self, provenance.filename.name, e),
                                       reason="save-ref-error") from e
-        else:
-            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                do_save_refs(toplevel_refs)
-            else:
+            elif provenance.filename.project is project:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))
+            else:
+                raise SourceError("{}: Cannot track source in a fragment from a junction"
+                                  .format(provenance.filename.shortname),
+                                  reason="tracking-junction-fragment")
 
         return changed
 

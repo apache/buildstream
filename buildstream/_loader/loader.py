@@ -219,7 +219,7 @@ class Loader():
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
-            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
+            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable, project=self.project)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
                 # If we can't find the file, try to suggest plausible
