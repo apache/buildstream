@@ -187,3 +187,19 @@ def test_junction_do_not_use_included_overrides(cli, tmpdir, datafiles):
     loaded = _yaml.load_data(result.output)
     assert 'main_override' in loaded
     assert 'included_override' not in loaded
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_conditional_in_fragment(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'conditional')
+
+    result = cli.run(project=project, args=[
+        '-o', 'build_arch', 'x86_64',
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert 'size' in loaded
+    assert loaded['size'] == '8'
