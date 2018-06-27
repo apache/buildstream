@@ -65,6 +65,33 @@ these methods are mandatory to implement.
 
   **Optional**: If left unimplemented, this will default to calling
   :func:`Source.stage() <buildstream.source.Source.stage>`
+
+* :func:`Source.get_source_fetchers() <buildstream.source.Source.get_source_fetchers>`
+
+  Get the objects that are used for fetching.
+
+  **Optional**: This only needs to be implemented for sources that need to
+  download from multiple URLs while fetching (e.g. a git repo and its
+  submodules). For details on how to define a SourceFetcher, see
+  :ref:`SourceFetcher <core_source_fetcher>`.
+
+
+.. _core_source_fetcher:
+
+SourceFetcher - Object for fetching individual URLs
+===================================================
+
+
+Abstract Methods
+----------------
+SourceFetchers expose the following abstract methods. Unless explicitly
+mentioned, these methods are mandatory to implement.
+
+* :func:`SourceFetcher.fetch() <buildstream.source.SourceFetcher.fetch>`
+
+  Fetches the URL associated with this SourceFetcher, optionally taking an
+  alias override.
+
 """
 
 import os

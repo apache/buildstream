@@ -89,6 +89,27 @@ modifying some low level component.
    the ``--strict`` and ``--no-strict`` command line options.
 
 
+.. _config_default_mirror:
+
+Default Mirror
+~~~~~~~~~~~~~~
+When using :ref:`mirrors <project_essentials_mirrors>`, a default mirror can
+be defined to be fetched first.
+The default mirror is defined by its name, e.g.
+
+.. code:: yaml
+
+  projects:
+    project-name:
+      default-mirror: oz
+
+
+.. note::
+
+   It is possible to override this at invocation time using the
+   ``--default-mirror`` command-line option.
+
+
 Default configuration
 ---------------------
 The default BuildStream configuration is specified here for reference:
