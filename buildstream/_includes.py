@@ -8,6 +8,7 @@ class Includes:
     def __init__(self, loader, valid_keys=None):
         self._loader = loader
         self._valid_keys = valid_keys
+        self._loaded = {}
 
     def process(self, node):
         while True:
@@ -35,7 +36,10 @@ class Includes:
             directory = junction_loader.project.directory
         else:
             directory = self._loader.project.directory
-        return _yaml.load(os.path.join(directory, include))
+        file_path = os.path.join(directory, include)
+        if file_path not in self._loaded:
+            self._loaded[file_path] = _yaml.load(os.path.join(directory, include))
+        return self._loaded[file_path]
 
     def _process_value(self, value):
         if isinstance(value, Mapping):
