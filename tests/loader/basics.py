@@ -84,3 +84,15 @@ def test_invalid_key(datafiles):
         element = loader.load()[0]
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
+def test_invalid_directory_load(datafiles):
+
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = make_loader(basedir, ['elements/'])
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load()[0]
+
+    assert (exc.value.reason == LoadErrorReason.LOADING_DIRECTORY)

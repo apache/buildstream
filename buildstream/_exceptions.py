@@ -197,6 +197,9 @@ class LoadErrorReason(Enum):
     # A project.conf file was missing
     MISSING_PROJECT_CONF = 17
 
+    # Try to load a directory not a yaml file
+    LOADING_DIRECTORY = 18
+
 
 # LoadError
 #

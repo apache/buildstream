@@ -184,6 +184,10 @@ def load(filename, shortname=None, copy_tree=False):
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Could not find file at {}".format(filename)) from e
+    except IsADirectoryError as e:
+        raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
+                        "{} is a directory. bst command is expecting a .bst file"
+                        .format(filename)) from e
 
 
 # Like load(), but doesnt require the data to be in a file
