@@ -53,7 +53,7 @@ class DepTransform(SourceTransform):
 
     def configure(self, node):
         self.node_validate(node, ['ref'] + Source.COMMON_CONFIG_KEYS)
-        self.ref = self.node_get_member(node, str, 'ref', '').strip()
+        self.ref = self.node_get_member(node, str, 'ref', None)
 
     @property
     def mirror(self):
@@ -70,12 +70,10 @@ class DepTransform(SourceTransform):
         self.host_dep = utils.get_host_tool('dep')
 
     def get_unique_key(self):
-        # TODO: This plugin's inputs are actually previous source. What should
-        # we do here?
         return (self.ref,)
 
     def get_consistency(self):
-        if self.ref == '':
+        if self.ref is None:
             return Consistency.INCONSISTENT
         for dest in (GOPKG_LOCK_FILE, GOPKG_VENDOR_DIR):
             dest_path = os.path.join(self.mirror, dest)
@@ -83,7 +81,7 @@ class DepTransform(SourceTransform):
                 return Consistency.RESOLVED
         lock_file_path = os.path.join(self.mirror, GOPKG_LOCK_FILE)
         with open(lock_file_path, encoding='utf-8') as lock_file:
-            if lock_file.read().strip() == self.ref:
+            if lock_file.read().strip() == self.ref.strip():
                 return Consistency.CACHED
         return Consistency.RESOLVED
 
@@ -169,20 +167,16 @@ class DepTransform(SourceTransform):
 
     def stage(self, directory):
         with self.timed_activity("Staging DepTransform source from based on Gopkg.lock", silent_nested=True):
-            shutil.copy(os.path.join(self.mirror, GOPKG_LOCK_FILE),
+            utils.safe_copy(os.path.join(self.mirror, GOPKG_LOCK_FILE),
                         os.path.join(directory, GOPKG_LOCK_FILE))
             # FIXME: Should we ever need to support one, this may
             #        break on platforms that don't support symlinks if
             #        a project contains broken symlinks.
             target_vendor_dir = os.path.join(directory, GOPKG_VENDOR_DIR)
             try:
-                shutil.copytree(os.path.join(self.mirror, GOPKG_VENDOR_DIR),
-                                target_vendor_dir,
-                                symlinks=True)
-            except FileExistsError:
-                raise SourceError("{}: Unable to stage vendor directory because it already exists here '{}'"
-                                  .format(self, target_vendor_dir))
-            except shutil.Error as err:
+                utils.copy_files(os.path.join(self.mirror, GOPKG_VENDOR_DIR),
+                                target_vendor_dir)
+            except utils.UtilError as err:
                 raise SourceError("{}: Unable to stage vendor directory at '{}'"
                                   .format(self, target_vendor_dir)) from err
 
