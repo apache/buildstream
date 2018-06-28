@@ -76,7 +76,7 @@ class SandboxBwrap(Sandbox):
         cascache.setup_remotes(use_config=True) # Should do that once per sandbox really (or less often)
         ref = 'worker-source/{}'.format(upload_vdir.ref.hash)
         upload_vdir._save(ref)
-        cascache.push_key_only(ref, self._get_project())
+        source_push_successful = cascache.push_key_only(ref, self._get_project())
         # Fallback to the sandbox default settings for
         # the cwd and env.
         #
@@ -91,50 +91,51 @@ class SandboxBwrap(Sandbox):
             command = [command]
 
         # Now transmit the command to execute
-        remote_command = remote_execution_pb2.Command(arguments=command)
-        # (Ignore environment for now)
-        # Serialise this into the cascache...
-        command_digest = cascache.add_object(buffer=remote_command.SerializeToString())
+        if source_push_successful:
+            remote_command = remote_execution_pb2.Command(arguments=command)
+            # (Ignore environment for now)
+            # Serialise this into the cascache...
+            command_digest = cascache.add_object(buffer=remote_command.SerializeToString())
 
-        command_ref = 'worker-command/{}'.format(command_digest.hash)
-        cascache.set_ref(command_ref, command_digest)
+            command_ref = 'worker-command/{}'.format(command_digest.hash)
+            cascache.set_ref(command_ref, command_digest)
 
-        # TODO: push_key_only isn't really meant to work with refs to Command
-        # objects - it will try and find the dependencies of it; there are none,
-        # but it expects to find a directory. We may need to pass a flag to tell
-        # it not to look for any.
-        cascache.push_key_only(command_ref, self._get_project())
+            # TODO: push_key_only isn't really meant to work with refs to Command
+            # objects - it will try and find the dependencies of it; there are none,
+            # but it expects to find a directory. We may need to pass a flag to tell
+            # it not to look for any.
+            command_push_successful = cascache.push_key_only(command_ref, self._get_project())
+            if command_push_successful:
+                # Next, try to create a communication channel
+                port = 50051
+                channel = grpc.insecure_channel('dekatron.office.codethink.co.uk:{}'.format(port))
+                stub = remote_execution_pb2_grpc.ExecutionStub(channel)
+                ops_stub = operations_pb2_grpc.OperationsStub(channel)
 
-        # Next, try to create a communication channel
-        port = 50051
-        channel = grpc.insecure_channel('dekatron.office.codethink.co.uk:{}'.format(port))
-        stub = remote_execution_pb2_grpc.ExecutionStub(channel)
-        ops_stub = operations_pb2_grpc.OperationsStub(channel)
+                # Having done that, create and send the action.
 
-        # Having done that, create and send the action.
+                action = remote_execution_pb2.Action(command_digest = command_digest,
+                                                     input_root_digest = upload_vdir.ref,
+                                                     output_files = [],
+                                                     output_directories = None, # TODO: This should be the collect directory
+                                                     platform = None,
+                                                     timeout = None,
+                                                     do_not_cache = True)
 
-        action = remote_execution_pb2.Action(command_digest = command_digest,
-                                     input_root_digest = upload_vdir.ref,
-                                     output_files = [],
-                                     output_directories = None, # TODO: This should be the collect directory
-                                     platform = None,
-                                     timeout = None,
-                                     do_not_cache = True)
+                request = remote_execution_pb2.ExecuteRequest(instance_name = 'default',
+                                                              action = action,
+                                                              skip_cache_lookup = True)
 
-        request = remote_execution_pb2.ExecuteRequest(instance_name = 'default',
-                                              action = action,
-                                              skip_cache_lookup = True)
+                response = stub.Execute(request)
+                job_name = response.name
 
-        response = stub.Execute(request)
-        job_name = response.name
-
-        while True:
-            # TODO: Timeout
-            request = operations_pb2.GetOperationRequest(name=job_name)
-            response = ops_stub.GetOperation(request)
-            time.sleep(1)
-            if response.done:
-                break
+            while True:
+                # TODO: Timeout
+                request = operations_pb2.GetOperationRequest(name=job_name)
+                response = ops_stub.GetOperation(request)
+                time.sleep(1)
+                if response.done:
+                    break
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
