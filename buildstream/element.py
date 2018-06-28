@@ -1182,7 +1182,7 @@ class Element(Plugin):
             raise ElementError("{}: {}".format(self, e), reason=e.reason) from e
 
         if self.__sources and isinstance(self.__sources[0], SourceTransform):
-            raise ElementError("{}: A SourceTransform plugin can't be the first source of a build element"
+            raise ElementError("{}: A SourceTransform plugin can't be the first source of an element"
                                .format(self))
 
         # Preflight the sources

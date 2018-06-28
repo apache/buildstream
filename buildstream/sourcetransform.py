@@ -66,7 +66,6 @@ class SourceTransform(Source):
                 src._save_ref(new_ref)
                 src._fetch()
 
-    # Needs explanation
     def track(self, previous_staging_dir):
         """Resolve a new ref from the plugin's track option
 
@@ -86,7 +85,6 @@ class SourceTransform(Source):
         """
         raise ImplError("SourceTransform plugin '{}' does not implement track()".format(self.get_kind()))
 
-    # Needs explanation
     def fetch(self, previous_staging_dir):
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
@@ -109,7 +107,7 @@ class SourceTransform(Source):
     def _track(self, previous_sources):
         self.__ensure_previous_sources(previous_sources)
 
-        with utils._tempdir(suffix="tracking") as staging_directory:
+        with self.tempdir() as staging_directory:
             for src in previous_sources:
                 src._stage(staging_directory)
 
@@ -129,7 +127,7 @@ class SourceTransform(Source):
     def _fetch(self, previous_sources):
         self.__ensure_previous_sources(previous_sources)
 
-        with utils._tempdir(suffix="fetch") as staging_directory:
+        with self.tempdir() as staging_directory:
             for src in previous_sources:
                 src._stage(staging_directory)
 
