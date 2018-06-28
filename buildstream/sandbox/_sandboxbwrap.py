@@ -68,7 +68,6 @@ class SandboxBwrap(Sandbox):
         upload_vdir = self.get_virtual_directory()
         if isinstance(upload_vdir, FileBasedDirectory):
             upload_vdir = self.get_temporary_vdir()
-            print("Importing {}".format(root_directory))
             upload_vdir.import_files(root_directory)
 
         # Now, push that key (without necessarily needing a ref) to the remote.
@@ -77,7 +76,6 @@ class SandboxBwrap(Sandbox):
         ref = 'worker-source/{}'.format(upload_vdir.ref.hash)
         upload_vdir._save(ref)
         cascache.push_key_only(ref, self._get_project())
-
         # Fallback to the sandbox default settings for
         # the cwd and env.
         #
@@ -99,7 +97,6 @@ class SandboxBwrap(Sandbox):
 
         command_ref = 'worker-command/{}'.format(command_digest.hash)
         cascache.set_ref(command_ref, command_digest)
-        print("Pushing key from local to remote: {}".format(command_ref))
 
         # TODO: push_key_only isn't really meant to work with refs to Command
         # objects - it will try and find the dependencies of it; there are none,
