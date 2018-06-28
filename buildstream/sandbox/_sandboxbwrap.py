@@ -36,6 +36,7 @@ from . import Sandbox, SandboxFlags
 from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 from google.devtools.remoteexecution.v1test import remote_execution_pb2, remote_execution_pb2_grpc
+from google.longrunning import operations_pb2, operations_pb2_grpc
 from .._artifactcache.cascache import CASCache
 
 # SandboxBwrap()
@@ -104,18 +105,18 @@ class SandboxBwrap(Sandbox):
         # it not to look for any.
         cascache.push_key_only(command_ref, self._get_project())
 
-
         # Next, try to create a communication channel
         port = 50051
         channel = grpc.insecure_channel('dekatron.office.codethink.co.uk:{}'.format(port))
         stub = remote_execution_pb2_grpc.ExecutionStub(channel)
+        ops_stub = operations_pb2_grpc.OperationsStub(channel)
 
         # Having done that, create and send the action.
 
         action = remote_execution_pb2.Action(command_digest = command_digest,
                                      input_root_digest = upload_vdir.ref,
                                      output_files = [],
-                                     output_directories = None,
+                                     output_directories = None, # TODO: This should be the collect directory
                                      platform = None,
                                      timeout = None,
                                      do_not_cache = True)
@@ -125,10 +126,15 @@ class SandboxBwrap(Sandbox):
                                               skip_cache_lookup = True)
 
         response = stub.Execute(request)
+        job_name = response.name
 
-        print("Response name: {}".format(response.name))
-
-
+        while True:
+            # TODO: Timeout
+            request = operations_pb2.GetOperationRequest(name=job_name)
+            response = ops_stub.GetOperation(request)
+            time.sleep(1)
+            if response.done:
+                break
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
