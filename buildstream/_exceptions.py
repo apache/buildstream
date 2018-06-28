@@ -200,6 +200,9 @@ class LoadErrorReason(Enum):
     # Try to load a directory not a yaml file
     LOADING_DIRECTORY = 18
 
+    # A recursive include has been encountered.
+    RECURSIVE_INCLUDE = 19
+
 
 # LoadError
 #

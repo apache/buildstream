@@ -1,6 +1,7 @@
 import os
 from collections import Mapping
 from . import _yaml
+from ._exceptions import LoadError, LoadErrorReason
 
 
 class Includes:
@@ -9,17 +10,24 @@ class Includes:
         self._loader = loader
         self._loaded = {}
 
-    def process(self, node):
-        while True:
-            includes = _yaml.node_get(node, list, '(@)', default_value=None)
-            if '(@)' in node:
-                del node['(@)']
+    def process(self, node, *, included=set()):
+        includes = _yaml.node_get(node, list, '(@)', default_value=None)
+        if '(@)' in node:
+            del node['(@)']
 
-            if not includes:
-                break
-
+        if includes:
             for include in includes:
-                include_node = self._include_file(include)
+                include_node, file_path = self._include_file(include)
+                if file_path in included:
+                    provenance = _yaml.node_get_provenance(node)
+                    raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
+                                    "{}: trying to recursively include {}". format(provenance,
+                                                                                   file_path))
+                try:
+                    included.add(file_path)
+                    self.process(include_node, included=included)
+                finally:
+                    included.remove(file_path)
                 _yaml.composite(node, include_node)
 
         for _, value in _yaml.node_items(node):
@@ -39,7 +47,7 @@ class Includes:
             self._loaded[file_path] = _yaml.load(os.path.join(directory, include),
                                                  shortname=shortname,
                                                  project=project)
-        return self._loaded[file_path]
+        return self._loaded[file_path], file_path
 
     def _process_value(self, value):
         if isinstance(value, Mapping):

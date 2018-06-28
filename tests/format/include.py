@@ -203,3 +203,15 @@ def test_conditional_in_fragment(cli, tmpdir, datafiles):
     loaded = _yaml.load_data(result.output)
     assert 'size' in loaded
     assert loaded['size'] == '8'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_recusive_include(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'recursive')
+
+    result = cli.run(project=project, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_INCLUDE)
