@@ -229,6 +229,16 @@ class Loader():
                     detail = "Did you mean '{}'?".format(element_relpath)
                 raise LoadError(LoadErrorReason.MISSING_FILE,
                                 message, detail=detail) from e
+            elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
+                # If a <directory>.bst file exists in the element path,
+                # let's suggest this as a plausible alternative.
+                message = str(e)
+                detail = None
+                if os.path.exists(os.path.join(self._basedir, filename + '.bst')):
+                    element_name = filename + '.bst'
+                    detail = "Did you mean '{}'?\n".format(element_name)
+                raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
+                                message, detail=detail) from e
             else:
                 raise
         self._options.process_node(node)

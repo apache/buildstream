@@ -186,7 +186,7 @@ def load(filename, shortname=None, copy_tree=False):
                         "Could not find file at {}".format(filename)) from e
     except IsADirectoryError as e:
         raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
-                        "{} is a directory. bst command is expecting a .bst file"
+                        "{} is a directory. bst command expects a .bst file."
                         .format(filename)) from e
 
 
