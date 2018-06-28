@@ -279,3 +279,25 @@ class Sandbox():
     #              data passed in during construction.
     def _get_config(self):
         return self.__config
+
+    # _has_command()
+    #
+    #  Tests whether a command exists inside the sandbox
+    #
+    #     Args:
+    #         command (list): The command to test.
+    #         env (dict): A dictionary of string key, value pairs to set as environment
+    #                     variables inside the sandbox environment.
+    #     Returns:
+    #         (bool): Whether a command exists inside the sandbox.
+    def _has_command(self, command, env=None):
+        if os.path.isabs(command):
+            return os.path.exists(os.path.join(
+                self.get_directory(), command.lstrip(os.sep)))
+
+        for path in env.get('PATH').split(':'):
+            if os.path.exists(os.path.join(
+                    self.get_directory(), path.lstrip(os.sep), command)):
+                return True
+
+        return False

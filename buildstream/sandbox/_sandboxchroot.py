@@ -58,6 +58,11 @@ class SandboxChroot(Sandbox):
         if env is None:
             env = self._get_environment()
 
+        if not self._has_command(command[0], env):
+            raise SandboxError("Staged artifacts do not provide command "
+                               "'{}'".format(command[0]),
+                               reason='missing-command')
+
         # Command must be a list
         if isinstance(command, str):
             command = [command]

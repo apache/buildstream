@@ -28,6 +28,7 @@ from contextlib import ExitStack
 
 import psutil
 
+from .._exceptions import SandboxError
 from .. import utils, _signals
 from ._mount import MountMap
 from . import Sandbox, SandboxFlags
@@ -65,6 +66,11 @@ class SandboxBwrap(Sandbox):
 
         if env is None:
             env = self._get_environment()
+
+        if not self._has_command(command[0], env):
+            raise SandboxError("Staged artifacts do not provide command "
+                               "'{}'".format(command[0]),
+                               reason='missing-command')
 
         # We want command args as a list of strings
         if isinstance(command, str):
