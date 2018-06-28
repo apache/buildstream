@@ -2112,12 +2112,9 @@ class Element(Plugin):
 
         if self.__is_junction:
             splits = _yaml.node_chain_copy(element_splits)
-        elif project._splits is None:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Project was not fully loaded while loading element. "
-                            "Only non-artifact elements (e.g. junctions) are allowed in this context."
-                            .format(self.name))
         else:
+            assert project._splits is not None
+
             splits = _yaml.node_chain_copy(project._splits)
             # Extend project wide split rules with any split rules defined by the element
             _yaml.composite(splits, element_splits)
