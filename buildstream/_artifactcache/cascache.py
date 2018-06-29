@@ -215,6 +215,29 @@ class CASCache(ArtifactCache):
             remotes_for_project = self._remotes[element._get_project()]
             return any(remote.spec.push for remote in remotes_for_project)
 
+
+    def pull_key_only(self, key, size_bytes, project):
+        """ Like pull but doesn't need an element and takes a key instead of a ref"""
+
+        for remote in self._remotes[project]:
+            try:
+                remote.init()
+
+                tree = remote_execution_pb2.Digest()
+                tree.hash = key
+                tree.size_bytes = size_bytes
+
+                self._fetch_directory(remote, tree)
+
+                # no need to pull from additional remotes
+                return True
+
+            except grpc.RpcError as e:
+                if e.code() != grpc.StatusCode.NOT_FOUND:
+                    raise
+
+        return False
+
     def pull(self, element, key, *, progress=None):
         ref = self.get_artifact_fullname(element, key)
 
