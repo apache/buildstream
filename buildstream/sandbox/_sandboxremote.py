@@ -39,7 +39,7 @@ from google.devtools.remoteexecution.v1test import remote_execution_pb2, remote_
 from google.longrunning import operations_pb2, operations_pb2_grpc
 from .._artifactcache.cascache import CASCache
 
-class SandboxError(Error):
+class SandboxError(Exception):
     pass
 
 # SandboxRemote()
@@ -131,7 +131,7 @@ class SandboxRemote(Sandbox):
         # Now do a pull to ensure we have the necessary parts
         cascache.pull_key_only(digest.hash, self._get_project())
         
-        directory_head = os.path.join(path_components([:-1]))
+        directory_head = os.path.join(path_components[:-1])
         directory_tail = path_components([-1])
 
         containing_dir = self.get_virtual_directory().descend(directory_head)
@@ -183,6 +183,7 @@ class SandboxRemote(Sandbox):
                     self.process_job_output(actionResult.output_directories, actionResult.output_files)
                 else:
                     sys.stderr.write("Received unknown message from server.\n")
+                    return 1
         else:
             sys.stderr.write("Failed to verify source on remote artifact cache.\n")
             return 1
