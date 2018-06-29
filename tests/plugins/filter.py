@@ -21,6 +21,20 @@ def test_filter_include(datafiles, cli, tmpdir):
     result = cli.run(project=project, args=['checkout', 'output-include.bst', checkout])
     result.assert_success()
     assert os.path.exists(os.path.join(checkout, "foo"))
+    assert not os.path.exists(os.path.join(checkout, "bar"))
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_filter_include_dynamic(datafiles, cli, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=['build', 'output-dynamic-include.bst'])
+    result.assert_success()
+
+    checkout = os.path.join(tmpdir.dirname, tmpdir.basename, 'checkout')
+    result = cli.run(project=project, args=['checkout', 'output-dynamic-include.bst', checkout])
+    result.assert_success()
+    assert os.path.exists(os.path.join(checkout, "foo"))
+    assert not os.path.exists(os.path.join(checkout, "bar"))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -32,6 +46,7 @@ def test_filter_exclude(datafiles, cli, tmpdir):
     checkout = os.path.join(tmpdir.dirname, tmpdir.basename, 'checkout')
     result = cli.run(project=project, args=['checkout', 'output-exclude.bst', checkout])
     result.assert_success()
+    assert not os.path.exists(os.path.join(checkout, "foo"))
     assert os.path.exists(os.path.join(checkout, "bar"))
 
 
