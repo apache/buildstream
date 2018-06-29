@@ -215,3 +215,17 @@ def test_recusive_include(cli, tmpdir, datafiles):
         '--format', '%{vars}',
         'element.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_INCLUDE)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_inner(cli, datafiles):
+    project = os.path.join(str(datafiles), 'inner')
+    result = cli.run(project=project, args=[
+        '-o', 'build_arch', 'x86_64',
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert loaded['build_arch'] == 'x86_64'

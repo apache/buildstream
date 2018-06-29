@@ -10,6 +10,16 @@ class Includes:
         self._loader = loader
         self._loaded = {}
 
+    def ignore_includes(self, node):
+        if isinstance(node, Mapping):
+            if '(@)' in node:
+                del node['(@)']
+            for _, value in _yaml.node_items(node):
+                self.ignore_includes(value)
+        elif isinstance(node, list):
+            for value in node:
+                self.ignore_includes(value)
+
     def process(self, node, *, included=set()):
         includes = _yaml.node_get(node, list, '(@)', default_value=None)
         if '(@)' in node:

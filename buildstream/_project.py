@@ -455,9 +455,13 @@ class Project():
                              parent=parent_loader,
                              tempdir=tempdir)
 
-        self._load_pass(_yaml.node_copy(config), self.first_pass_config, True)
-
         project_includes = Includes(self.loader)
+
+        config_no_include = _yaml.node_copy(config)
+        project_includes.ignore_includes(config_no_include)
+
+        self._load_pass(config_no_include, self.first_pass_config, True)
+
         project_includes.process(config)
 
         self._load_pass(config, self.config, False)
