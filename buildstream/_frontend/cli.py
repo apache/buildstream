@@ -291,20 +291,20 @@ def init(app, project_name, format_version, element_path, force):
 @click.option('--all', 'all_', default=False, is_flag=True,
               help="Build elements that would not be needed for the current build plan")
 @click.option('--track', 'track_', multiple=True,
-              type=click.Path(dir_okay=False, readable=True),
+              type=click.Path(readable=False),
               help="Specify elements to track during the build. Can be used "
                    "repeatedly to specify multiple elements")
 @click.option('--track-all', default=False, is_flag=True,
               help="Track all elements in the pipeline")
 @click.option('--track-except', multiple=True,
-              type=click.Path(dir_okay=False, readable=True),
+              type=click.Path(readable=False),
               help="Except certain dependencies from tracking")
 @click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
               help="Allow tracking to cross junction boundaries")
 @click.option('--track-save', default=False, is_flag=True,
               help="Deprecated: This is ignored")
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions):
     """Build elements in a pipeline"""
@@ -333,7 +333,7 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 ##################################################################
 @cli.command(short_help="Fetch sources in a pipeline")
 @click.option('--except', 'except_', multiple=True,
-              type=click.Path(dir_okay=False, readable=True),
+              type=click.Path(readable=False),
               help="Except certain dependencies from fetching")
 @click.option('--deps', '-d', default='plan',
               type=click.Choice(['none', 'plan', 'all']),
@@ -343,7 +343,7 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 @click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
               help="Allow tracking to cross junction boundaries")
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def fetch(app, elements, deps, track_, except_, track_cross_junctions):
     """Fetch sources required to build the pipeline
@@ -384,7 +384,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 ##################################################################
 @cli.command(short_help="Track new source references")
 @click.option('--except', 'except_', multiple=True,
-              type=click.Path(dir_okay=False, readable=True),
+              type=click.Path(readable=False),
               help="Except certain dependencies from tracking")
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
@@ -392,7 +392,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 @click.option('--cross-junctions', '-J', default=False, is_flag=True,
               help="Allow crossing junction boundaries")
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def track(app, elements, deps, except_, cross_junctions):
     """Consults the specified tracking branches for new versions available
@@ -424,7 +424,7 @@ def track(app, elements, deps, except_, cross_junctions):
 @click.option('--remote', '-r',
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def pull(app, elements, deps, remote):
     """Pull a built artifact from the configured remote artifact cache.
@@ -453,7 +453,7 @@ def pull(app, elements, deps, remote):
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def push(app, elements, deps, remote):
     """Push a built artifact to a remote artifact cache.
@@ -476,7 +476,7 @@ def push(app, elements, deps, remote):
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
 @click.option('--except', 'except_', multiple=True,
-              type=click.Path(dir_okay=False, readable=True),
+              type=click.Path(readable=False),
               help="Except certain dependencies")
 @click.option('--deps', '-d', default='all',
               type=click.Choice(['none', 'plan', 'run', 'build', 'all']),
@@ -488,7 +488,7 @@ def push(app, elements, deps, remote):
               type=click.STRING,
               help='Format string for each element')
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def show(app, elements, deps, except_, order, format_):
     """Show elements in the pipeline
@@ -567,7 +567,7 @@ def show(app, elements, deps, except_, order, format_):
 @click.option('--isolate', is_flag=True, default=False,
               help='Create an isolated build sandbox')
 @click.argument('element',
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
 def shell(app, element, sysroot, mount, isolate, build_, command):
@@ -628,7 +628,7 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 @click.option('--hardlinks', default=False, is_flag=True,
               help="Checkout hardlinks instead of copies (handle with care)")
 @click.argument('element',
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
 def checkout(app, element, directory, force, integrate, hardlinks):
@@ -662,7 +662,7 @@ def workspace():
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
 @click.argument('element',
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
 def workspace_open(app, no_checkout, force, track_, element, directory):
@@ -694,7 +694,7 @@ def workspace_open(app, no_checkout, force, track_, element, directory):
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Close all open workspaces")
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def workspace_close(app, remove_dir, all_, elements):
     """Close a workspace"""
@@ -743,7 +743,7 @@ def workspace_close(app, remove_dir, all_, elements):
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Reset all open workspaces")
 @click.argument('elements', nargs=-1,
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def workspace_reset(app, soft, track_, all_, elements):
     """Reset a workspace to its original state"""
@@ -785,7 +785,7 @@ def workspace_list(app):
 ##################################################################
 @cli.command(name="source-bundle", short_help="Produce a build bundle to be manually executed")
 @click.option('--except', 'except_', multiple=True,
-              type=click.Path(dir_okay=False, readable=True),
+              type=click.Path(readable=False),
               help="Elements to except from the tarball")
 @click.option('--compression', default='gz',
               type=click.Choice(['none', 'gz', 'bz2', 'xz']),
@@ -797,7 +797,7 @@ def workspace_list(app):
 @click.option('--directory', default=os.getcwd(),
               help="The directory to write the tarball to")
 @click.argument('element',
-                type=click.Path(dir_okay=False, readable=True))
+                type=click.Path(readable=False))
 @click.pass_obj
 def source_bundle(app, element, force, directory,
                   track_, compression, except_):
