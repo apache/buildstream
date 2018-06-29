@@ -269,6 +269,21 @@ class CASCache(ArtifactCache):
 
         return pushed
 
+    def verify_key_pushed(self, key, project):
+        ref = key
+
+        push_remotes = [r for r in self._remotes[project] if r.spec.push]
+
+        pushed = False
+
+        for remote in push_remotes:
+            remote.init()
+
+            if self._verify_ref_on_remote(ref, remote):
+                pushed = True
+
+        return pushed
+
     def _push_refs_to_remote(self, refs, remote):
         pushed = False
         for ref in refs:
@@ -340,6 +355,27 @@ class CASCache(ArtifactCache):
 
             pushed = True
         return pushed
+
+    def _verify_ref_on_remote(self, ref, remote):
+        pushed = False
+        tree = self.resolve_ref(ref)
+
+        # Check whether ref is already on the server in which case
+        # there is no need to push the artifact
+        try:
+            request = buildstream_pb2.GetArtifactRequest()
+            request.key = ref
+            response = remote.artifact_cache.GetArtifact(request)
+
+            if response.artifact.hash == tree.hash and response.artifact.size_bytes == tree.size_bytes:
+                # ref is already on the server with the same tree
+                return True
+
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.NOT_FOUND:
+                raise
+
+        return False
 
     def push(self, element, keys):
         keys = list(keys)
