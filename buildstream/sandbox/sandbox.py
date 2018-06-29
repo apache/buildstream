@@ -101,9 +101,11 @@ class Sandbox():
         self.__stdout = kwargs['stdout']
         self.__stderr = kwargs['stderr']
 
-        # Setup the directories. Root should be available to subclasses, hence
-        # being single-underscore. The others are private to this class.
+        # Setup the directories. Root and output_directory should be
+        # available to subclasses, hence being single-underscore. The
+        # others are private to this class.
         self._root = os.path.join(directory, 'root')
+        self._output_directory = None
         self.__directory = directory
         self.__scratch = os.path.join(self.__directory, 'scratch')
         for directory_ in [self._root, self.__scratch]:
@@ -174,6 +176,15 @@ class Sandbox():
            directory (str): An absolute path within the sandbox
         """
         self.__cwd = directory
+
+    def set_output_directory(self, directory):
+        """Sets the output directory - the directory which is preserved
+        as an artifact after assembly.
+
+        Args:
+           directory (str): An absolute path within the sandbox
+        """
+        self._output_directory = directory
 
     def mark_directory(self, directory, *, artifact=False):
         """Marks a sandbox directory and ensures it will exist
