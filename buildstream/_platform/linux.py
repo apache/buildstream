@@ -25,6 +25,7 @@ from .. import utils
 from .._artifactcache.cascache import CASCache
 from .._message import Message, MessageType
 from ..sandbox import SandboxBwrap
+from ..sandbox import SandboxRemote
 
 from . import Platform
 
@@ -47,7 +48,7 @@ class Linux(Platform):
         # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
         kwargs['user_ns_available'] = self._user_ns_available
         kwargs['die_with_parent_available'] = self._die_with_parent_available
-        return SandboxBwrap(*args, **kwargs)
+        return SandboxRemote(*args, **kwargs)
 
     ################################################
     #              Private Methods                 #
