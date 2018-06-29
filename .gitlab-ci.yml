@@ -96,6 +96,9 @@ tests-fedora-27:
   image: buildstream/testsuite-fedora:27-master-102-9067e269
   <<: *linux-tests
 
+tests-ubuntu-18.04:
+  image: buildstream/testsuite-ubuntu:18.04-master-112-a9f63c5e
+  <<: *linux-tests
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
