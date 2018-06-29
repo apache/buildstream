@@ -229,3 +229,22 @@ def test_inner(cli, datafiles):
     result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['build_arch'] == 'x86_64'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_local_to_junction(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'local_to_junction')
+
+    generate_junction(tmpdir,
+                      os.path.join(project, 'subproject'),
+                      os.path.join(project, 'junction.bst'),
+                      store_ref=True)
+
+    result = cli.run(project=project, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert loaded['included'] == 'True'

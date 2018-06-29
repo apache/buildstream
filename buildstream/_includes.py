@@ -20,14 +20,20 @@ class Includes:
             for value in node:
                 self.ignore_includes(value)
 
-    def process(self, node, *, included=set()):
+    def process(self, node, *,
+                included=set(),
+                current_loader=None):
+        if current_loader is None:
+            current_loader = self._loader
+
         includes = _yaml.node_get(node, list, '(@)', default_value=None)
         if '(@)' in node:
             del node['(@)']
 
         if includes:
             for include in includes:
-                include_node, file_path = self._include_file(include)
+                include_node, file_path, sub_loader = self._include_file(include,
+                                                                         current_loader)
                 if file_path in included:
                     provenance = _yaml.node_get_provenance(node)
                     raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
@@ -35,36 +41,39 @@ class Includes:
                                                                                    file_path))
                 try:
                     included.add(file_path)
-                    self.process(include_node, included=included)
+                    self.process(include_node, included=included,
+                                 current_loader=sub_loader)
                 finally:
                     included.remove(file_path)
                 _yaml.composite(node, include_node)
 
         for _, value in _yaml.node_items(node):
-            self._process_value(value)
+            self._process_value(value, current_loader=current_loader)
 
-    def _include_file(self, include):
+    def _include_file(self, include, loader):
         shortname = include
         if ':' in include:
             junction, include = include.split(':', 1)
-            junction_loader = self._loader._get_loader(junction, fetch_subprojects=True)
-            project = junction_loader.project
+            junction_loader = loader._get_loader(junction, fetch_subprojects=True)
+            current_loader = junction_loader
         else:
-            project = self._loader.project
+            current_loader = loader
+        project = current_loader.project
         directory = project.directory
         file_path = os.path.join(directory, include)
+        key = (current_loader, file_path)
         if file_path not in self._loaded:
-            self._loaded[file_path] = _yaml.load(os.path.join(directory, include),
-                                                 shortname=shortname,
-                                                 project=project)
-        return self._loaded[file_path], file_path
+            self._loaded[key] = _yaml.load(os.path.join(directory, include),
+                                           shortname=shortname,
+                                        project=project)
+        return self._loaded[key], file_path, current_loader
 
-    def _process_value(self, value):
+    def _process_value(self, value, *, current_loader=None):
         if isinstance(value, Mapping):
-            self.process(value)
+            self.process(value, current_loader=current_loader)
         elif isinstance(value, list):
-            self._process_list(value)
+            self._process_list(value, current_loader=current_loader)
 
-    def _process_list(self, values):
+    def _process_list(self, values, *, current_loader=None):
         for value in values:
-            self._process_value(value)
+            self._process_value(value, current_loader=current_loader)
