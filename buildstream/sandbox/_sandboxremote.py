@@ -39,6 +39,9 @@ from google.devtools.remoteexecution.v1test import remote_execution_pb2, remote_
 from google.longrunning import operations_pb2, operations_pb2_grpc
 from .._artifactcache.cascache import CASCache
 
+class SandboxError(Error):
+    pass
+
 # SandboxRemote()
 #
 # This isn't really a sandbox, it's a stub which sends all the source to a remote server and retrieves the results from it.
@@ -85,19 +88,58 @@ class SandboxRemote(Sandbox):
                                                           action = action,
                                                           skip_cache_lookup = True)
 
-            response = stub.Execute(request)
-            job_name = response.name
+            operation = stub.Execute(request) # Returns Operation
+            job_name = operation.name
         else:
             # Source push failed
             return None
         while True:
             # TODO: Timeout
+            # Refresh the operation data periodically using the name
             request = operations_pb2.GetOperationRequest(name=job_name)
-            response = ops_stub.GetOperation(request)
+            operation = ops_stub.GetOperation(request)
+            sys.stderr.write("Operation {} is in stage <{}>\n".format(operation.name, operation.metadata))
+            sys.stderr.write("......... {} has response <{}>\n".format(operation.name, operation.response))
             time.sleep(1)
-            if response.done:
+            if operation.done:
                 break
-        return response
+        return operation
+
+    """ output_directories is an array of OutputDirectory objects
+    output_files is an array of OutputFile objects """
+    def process_job_output(self, output_directories, output_files):
+        # We only specify one output_directory, so it's an error
+        # for there to be any output files or more than one directory at the moment.
+
+        if len(output_files)>0:
+            raise SandboxError("Output files were returned when we didn't request any.")
+        if len(output_directories)>0:
+            raise SandboxError("More than one output directory was returned from the build server.")
+
+        digest = output_directories[0].tree_digest
+        # Now what we have is a digest for the output. Once we return, the calling process will
+        # attempt to descend into our directory and find that directory, so we need to overwrite
+        # that.
+
+        path_components = os.path.split(self._output_dir)
+        if len(path_components)==0:
+            # The artifact wants the whole directory; we could just return the returned hash in its
+            # place, but we don't have a means to do that yet.
+            raise SandboxError("Unimplimented: Output directory is empty or equal to the sandbox root.")
+
+
+        # Now do a pull to ensure we have the necessary parts
+        cascache.pull_key_only(digest.hash, self._get_project())
+        
+        directory_head = os.path.join(path_components([:-1]))
+        directory_tail = path_components([-1])
+
+        containing_dir = self.get_virtual_directory().descend(directory_head)
+
+       
+        # This requires a new interface in the virtual directory. Since we need to overwrite a specific
+        # directory by name with a new hash, we need this function instead of import_files.
+        containing_dir._replace_directory(directory_tail, digest.hash)
 
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
@@ -133,11 +175,19 @@ class SandboxRemote(Sandbox):
                 return 1
             else:
                 # If we succeeded, expect response.response to be a... what?
-                sys.stderr.write("Received non-error response from server: {}".format(type(response.response)))
+                executeResponse = remote_execution_pb2.ExecuteResponse()
+                if response.response.Is(executeResponse.DESCRIPTOR):
+                    response.response.Unpack(executeResponse)
+                    actionResult = remote_execution_pb2.ActionResult()
+                    a.result.Unpack(actionResult)
+                    self.process_job_output(actionResult.output_directories, actionResult.output_files)
+                else:
+                    sys.stderr.write("Received unknown message from server.\n")
         else:
-            sys.stderr.write("Failed to push source to remote artifact cache.\n")
+            sys.stderr.write("Failed to verify source on remote artifact cache.\n")
             return 1
         # TODO: Pull the results
+        sys.stderr.write("Completed remote run with sandbox.\n")
         return 0
 
     def run_bwrap(self, argv, stdin, stdout, stderr, env, interactive):
