@@ -76,7 +76,7 @@ class SandboxRemote(Sandbox):
             action = remote_execution_pb2.Action(command_digest = command_digest,
                                                  input_root_digest = input_root_digest,
                                                  output_files = [],
-                                                 output_directories = [self.__output_directory],
+                                                 output_directories = [self._output_directory],
                                                  platform = None,
                                                  timeout = None,
                                                  do_not_cache = True)
