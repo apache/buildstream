@@ -263,7 +263,7 @@ class Stream():
     # are rewritten inline.
     #
     def track(self, targets, *,
-              selection=PipelineSelection.NONE,
+              selection=PipelineSelection.REDIRECT,
               except_targets=None,
               cross_junctions=False):
 
@@ -421,7 +421,9 @@ class Stream():
         else:
             track_targets = ()
 
-        elements, track_elements = self._load((target,), track_targets)
+        elements, track_elements = self._load((target,), track_targets,
+                                              selection=PipelineSelection.REDIRECT,
+                                              track_selection=PipelineSelection.REDIRECT)
         target = elements[0]
         workdir = os.path.abspath(directory)
 
@@ -514,7 +516,9 @@ class Stream():
         else:
             track_targets = ()
 
-        elements, track_elements = self._load(targets, track_targets)
+        elements, track_elements = self._load(targets, track_targets,
+                                              selection=PipelineSelection.REDIRECT,
+                                              track_selection=PipelineSelection.REDIRECT)
 
         nonexisting = []
         for element in elements:
@@ -699,7 +703,9 @@ class Stream():
             else:
                 output_elements.add(e)
         if load_elements:
-            loaded_elements, _ = self._load(load_elements, ())
+            loaded_elements, _ = self._load(load_elements, (),
+                                            selection=PipelineSelection.REDIRECT,
+                                            track_selection=PipelineSelection.REDIRECT)
 
             for e in loaded_elements:
                 output_elements.add(e.name)

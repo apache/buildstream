@@ -408,6 +408,10 @@ def track(app, elements, deps, except_, cross_junctions):
         all:   All dependencies of all specified elements
     """
     with app.initialized(session_name="Track"):
+        # Substitute 'none' for 'redirect' so that element redirections
+        # will be done
+        if deps == 'none':
+            deps = 'redirect'
         app.stream.track(elements,
                          selection=deps,
                          except_targets=except_,

@@ -44,6 +44,9 @@ class PipelineSelection():
     # Select only the target elements in the associated targets
     NONE = 'none'
 
+    # As NONE, but redirect elements that are capable of it
+    REDIRECT = 'redirect'
+
     # Select elements which must be built for the associated targets to be built
     PLAN = 'plan'
 
@@ -215,6 +218,8 @@ class Pipeline():
 
         elements = None
         if mode == PipelineSelection.NONE:
+            elements = targets
+        elif mode == PipelineSelection.REDIRECT:
             # Redirect and log if permitted
             elements = []
             for t in targets:
