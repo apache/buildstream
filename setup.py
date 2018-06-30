@@ -224,6 +224,13 @@ def get_cmdclass():
 with open('dev-requirements.txt') as dev_reqs:
     dev_requires = dev_reqs.read().splitlines()
 
+#####################################################
+#     Prepare package description from README       #
+#####################################################
+with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                       'README.rst')) as readme:
+    long_description = readme.read()
+
 
 #####################################################
 #             Main setup() Invocation               #
@@ -233,8 +240,13 @@ setup(name='BuildStream',
       version=versioneer.get_version(),
       cmdclass=get_cmdclass(),
 
+      author='BuildStream Developers',
+      author_email='buildstream-list@gnome.org',
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
+      long_description=long_description,
+      long_description_content_type='text/x-rst; charset=UTF-8',
+      url='https://gitlab.com/BuildStream/buildstream',
       packages=find_packages(exclude=('tests', 'tests.*')),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
                                     'data/*.yaml', 'data/*.sh.in']},
