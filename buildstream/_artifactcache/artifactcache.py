@@ -125,6 +125,7 @@ class ArtifactCache():
             has_remote_caches = True
         if use_config:
             for project in self.context.get_projects():
+                project.ensure_fully_loaded()
                 artifact_caches = _configured_remote_artifact_cache_specs(self.context, project)
                 if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
                     self._set_remotes(artifact_caches, project=project)

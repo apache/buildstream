@@ -480,8 +480,11 @@ class LogLine(Widget):
             text += '\n'
 
         # Plugins
-        text += self._format_plugins(project.plugins._element_factory.loaded_dependencies,
-                                     project.plugins._source_factory.loaded_dependencies)
+        text += self._format_plugins(project.first_pass_config.plugins._element_factory.loaded_dependencies,
+                                     project.first_pass_config.plugins._source_factory.loaded_dependencies)
+        if project.plugins:
+            text += self._format_plugins(project.plugins._element_factory.loaded_dependencies,
+                                         project.plugins._source_factory.loaded_dependencies)
 
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)

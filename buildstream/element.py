@@ -197,9 +197,8 @@ class Element(Plugin):
 
         self.__is_junction = meta.kind == "junction"
 
-        if not project.is_loaded() and not self.__is_junction:
-            raise ElementError("{}: Cannot load element before project"
-                               .format(self), reason="project-not-loaded")
+        if not self.__is_junction:
+            project.ensure_fully_loaded()
 
         self.normal_name = os.path.splitext(self.name.replace(os.sep, '-'))[0]
         """A normalized element name
@@ -896,6 +895,7 @@ class Element(Plugin):
         if meta.first_pass:
             plugins = meta.project.first_pass_config.plugins
         else:
+            meta.project.ensure_fully_loaded()
             plugins = meta.project.plugins
 
         if meta in cls.__instantiated_elements:
@@ -2184,7 +2184,7 @@ class Element(Plugin):
             project_nocache = []
         else:
             project = self._get_project()
-            assert project.is_loaded()
+            project.ensure_fully_loaded()
             project_nocache = project.base_env_nocache
 
         default_nocache = _yaml.node_get(self.__defaults, list, 'environment-nocache', default_value=[])
@@ -2207,7 +2207,7 @@ class Element(Plugin):
         if self.__is_junction:
             variables = _yaml.node_chain_copy(project.first_pass_config.base_variables)
         else:
-            assert project.is_loaded()
+            project.ensure_fully_loaded()
             variables = _yaml.node_chain_copy(project.base_variables)
 
         _yaml.composite(variables, default_vars)
@@ -2238,7 +2238,7 @@ class Element(Plugin):
                               'build-gid': 0}
         else:
             project = self._get_project()
-            assert project.is_loaded()
+            project.ensure_fully_loaded()
             sandbox_config = _yaml.node_chain_copy(project._sandbox)
 
         # The default config is already composited with the project overrides

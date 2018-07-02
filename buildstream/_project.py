@@ -270,13 +270,16 @@ class Project():
 
         self._context.add_project(self)
 
-        self._loaded = False
+        self._partially_loaded = False
+        self._fully_loaded = False
+        self._project_includes = None
+        self._config_node = None
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load(parent_loader=parent_loader, tempdir=tempdir)
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
-        self._loaded = True
+        self._partially_loaded = True
 
     @property
     def plugins(self):
@@ -298,8 +301,6 @@ class Project():
     def source_overrides(self):
         return self.config.source_overrides
 
-    def is_loaded(self):
-        return self._loaded
 
     # translate_url():
     #
@@ -415,7 +416,7 @@ class Project():
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
-        config = _yaml.load(_site.default_project_config)
+        self._config_node = _yaml.load(_site.default_project_config)
 
         # Load project local config and override the builtin
         try:
@@ -424,10 +425,10 @@ class Project():
             # Raise a more specific error here
             raise LoadError(LoadErrorReason.MISSING_PROJECT_CONF, str(e))
 
-        _yaml.composite(config, project_conf)
+        _yaml.composite(self._config_node, project_conf)
 
         # Assert project's format version early, before validating toplevel keys
-        format_version = _yaml.node_get(config, int, 'format-version')
+        format_version = _yaml.node_get(self._config_node, int, 'format-version')
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
@@ -437,15 +438,15 @@ class Project():
 
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
-        self.name = _yaml.node_get(config, str, 'name')
+        self.name = _yaml.node_get(self._config_node, str, 'name')
 
         # Validate that project name is a valid symbol name
-        _yaml.assert_symbol_name(_yaml.node_get_provenance(config, 'name'),
+        _yaml.assert_symbol_name(_yaml.node_get_provenance(self._config_node, 'name'),
                                  self.name, "project name")
 
         self.element_path = os.path.join(
             self.directory,
-            _yaml.node_get(config, str, 'element-path')
+            _yaml.node_get(self._config_node, str, 'element-path')
         )
 
         self.config.options = OptionPool(self.element_path)
@@ -455,18 +456,38 @@ class Project():
                              parent=parent_loader,
                              tempdir=tempdir)
 
-        project_includes = Includes(self.loader)
+        self._project_includes = Includes(self.loader)
 
-        config_no_include = _yaml.node_copy(config)
-        project_includes.ignore_includes(config_no_include)
+        config_no_include = _yaml.node_copy(self._config_node)
+        self._project_includes.ignore_includes(config_no_include)
 
         self._load_pass(config_no_include, self.first_pass_config, True)
 
-        project_includes.process(config)
+        # Use separate file for storing source references
+        self.ref_storage = _yaml.node_get(self._config_node, str, 'ref-storage')
+        if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
+            p = _yaml.node_get_provenance(self._config_node, 'ref-storage')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Invalid value '{}' specified for ref-storage"
+                            .format(p, self.ref_storage))
 
-        self._load_pass(config, self.config, False)
+        if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            self.junction_refs.load(self.first_pass_config.options)
 
-        _yaml.node_validate(config, self.INCLUDE_CONFIG_KEYS + self.MAIN_FILE_CONFIG_KEYS)
+    def ensure_fully_loaded(self):
+        if self._fully_loaded:
+            return
+        assert self._partially_loaded
+        self._fully_loaded = True
+
+        if self.junction:
+            self.junction._get_project().ensure_fully_loaded()
+
+        self._project_includes.process(self._config_node)
+
+        self._load_pass(self._config_node, self.config, False)
+
+        _yaml.node_validate(self._config_node, self.INCLUDE_CONFIG_KEYS + self.MAIN_FILE_CONFIG_KEYS)
 
         #
         # Now all YAML composition is done, from here on we just load
@@ -474,39 +495,30 @@ class Project():
         #
 
         # Load artifacts pull/push configuration for this project
-        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config)
+        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(self._config_node)
 
         # Source url aliases
-        self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
+        self._aliases = _yaml.node_get(self._config_node, Mapping, 'aliases', default_value={})
 
         # Load sandbox environment variables
-        self.base_environment = _yaml.node_get(config, Mapping, 'environment')
-        self.base_env_nocache = _yaml.node_get(config, list, 'environment-nocache')
+        self.base_environment = _yaml.node_get(self._config_node, Mapping, 'environment')
+        self.base_env_nocache = _yaml.node_get(self._config_node, list, 'environment-nocache')
 
         # Load sandbox configuration
-        self._sandbox = _yaml.node_get(config, Mapping, 'sandbox')
+        self._sandbox = _yaml.node_get(self._config_node, Mapping, 'sandbox')
 
         # Load project split rules
-        self._splits = _yaml.node_get(config, Mapping, 'split-rules')
+        self._splits = _yaml.node_get(self._config_node, Mapping, 'split-rules')
 
         # Fail on overlap
-        self.fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap')
-
-        # Use separate file for storing source references
-        self.ref_storage = _yaml.node_get(config, str, 'ref-storage')
-        if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
-            p = _yaml.node_get_provenance(config, 'ref-storage')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Invalid value '{}' specified for ref-storage"
-                            .format(p, self.ref_storage))
+        self.fail_on_overlap = _yaml.node_get(self._config_node, bool, 'fail-on-overlap')
 
         # Load project.refs if it exists, this may be ignored.
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
             self.refs.load(self.options)
-            self.junction_refs.load(self.options)
 
         # Parse shell options
-        shell_options = _yaml.node_get(config, Mapping, 'shell')
+        shell_options = _yaml.node_get(self._config_node, Mapping, 'shell')
         _yaml.node_validate(shell_options, ['command', 'environment', 'host-files'])
         self._shell_command = _yaml.node_get(shell_options, list, 'command')
 
@@ -534,6 +546,8 @@ class Project():
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
+
+        self._config_node = None
 
     # _load_pass():
     #

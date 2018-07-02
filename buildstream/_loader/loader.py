@@ -249,10 +249,7 @@ class Loader():
         if kind == "junction":
             self._first_pass_options.process_node(node)
         else:
-            if not self.project.is_loaded():
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Cannot pre-load. Element depends on project defaults."
-                                .format(filename))
+            self.project.ensure_fully_loaded()
 
             self._includes.process(node)
 
