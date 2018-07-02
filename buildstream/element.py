@@ -891,9 +891,9 @@ class Element(Plugin):
     #    (Element): A newly created Element instance
     #
     @classmethod
-    def _new_from_meta(cls, meta, artifacts, first_pass=False):
+    def _new_from_meta(cls, meta, artifacts):
 
-        if first_pass:
+        if meta.first_pass:
             plugins = meta.project.first_pass_config.plugins
         else:
             plugins = meta.project.plugins
@@ -917,10 +917,10 @@ class Element(Plugin):
 
         # Instantiate dependencies
         for meta_dep in meta.dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts, first_pass=first_pass)
+            dependency = Element._new_from_meta(meta_dep, artifacts)
             element.__runtime_dependencies.append(dependency)
         for meta_dep in meta.build_dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts, first_pass=first_pass)
+            dependency = Element._new_from_meta(meta_dep, artifacts)
             element.__build_dependencies.append(dependency)
 
         return element

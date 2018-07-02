@@ -448,7 +448,8 @@ class Loader():
                                    _yaml.node_get(node, Mapping, Symbol.ENVIRONMENT, default_value={}),
                                    _yaml.node_get(node, list, Symbol.ENV_NOCACHE, default_value=[]),
                                    _yaml.node_get(node, Mapping, Symbol.PUBLIC, default_value={}),
-                                   _yaml.node_get(node, Mapping, Symbol.SANDBOX, default_value={}))
+                                   _yaml.node_get(node, Mapping, Symbol.SANDBOX, default_value={}),
+                                   element_kind == 'junction')
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element_name] = meta_element
@@ -521,8 +522,7 @@ class Loader():
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
 
         platform = Platform.get_platform()
-        element = Element._new_from_meta(meta_element, platform.artifactcache,
-                                         first_pass=True)
+        element = Element._new_from_meta(meta_element, platform.artifactcache)
         element._preflight()
 
         for source in element.sources():
