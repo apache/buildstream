@@ -155,6 +155,9 @@ class DownloadableFileSource(Source):
         except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError) as e:
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e)) from e
+        except ValueError as e:
+            raise SourceError("{}: Error mirroring {}: {}"
+                              .format(self, self.url, e)) from e
 
     def _get_mirror_dir(self):
         return os.path.join(self.get_mirror_directory(),
