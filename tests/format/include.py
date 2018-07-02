@@ -93,7 +93,7 @@ def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_junction_element_partial_project_file(cli, tmpdir, datafiles):
+def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
     """
     Junction elements never depend on fully include processed project.
     """
@@ -122,7 +122,7 @@ def test_junction_element_partial_project_file(cli, tmpdir, datafiles):
         'junction.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert 'included' not in loaded
+    assert 'included' in loaded
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -171,7 +171,7 @@ def test_include_element_overrides_sub_include(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_junction_do_not_use_included_overrides(cli, tmpdir, datafiles):
-    project = os.path.join(str(datafiles), 'overrides')
+    project = os.path.join(str(datafiles), 'overrides-junction')
 
     generate_junction(tmpdir,
                       os.path.join(project, 'subproject'),

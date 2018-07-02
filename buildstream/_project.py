@@ -301,7 +301,6 @@ class Project():
     def source_overrides(self):
         return self.config.source_overrides
 
-
     # translate_url():
     #
     # Translates the given url which may be specified with an alias
@@ -459,7 +458,7 @@ class Project():
         self._project_includes = Includes(self.loader)
 
         config_no_include = _yaml.node_copy(self._config_node)
-        self._project_includes.ignore_includes(config_no_include)
+        self._project_includes.process(config_no_include, only_local=True)
 
         self._load_pass(config_no_include, self.first_pass_config, True)
 

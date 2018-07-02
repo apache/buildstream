@@ -10,19 +10,10 @@ class Includes:
         self._loader = loader
         self._loaded = {}
 
-    def ignore_includes(self, node):
-        if isinstance(node, Mapping):
-            if '(@)' in node:
-                del node['(@)']
-            for _, value in _yaml.node_items(node):
-                self.ignore_includes(value)
-        elif isinstance(node, list):
-            for value in node:
-                self.ignore_includes(value)
-
     def process(self, node, *,
                 included=set(),
-                current_loader=None):
+                current_loader=None,
+                only_local=False):
         if current_loader is None:
             current_loader = self._loader
 
@@ -32,6 +23,8 @@ class Includes:
 
         if includes:
             for include in includes:
+                if only_local and ':' in include:
+                    continue
                 include_node, file_path, sub_loader = self._include_file(include,
                                                                          current_loader)
                 if file_path in included:
@@ -42,13 +35,15 @@ class Includes:
                 try:
                     included.add(file_path)
                     self.process(include_node, included=included,
-                                 current_loader=sub_loader)
+                                 current_loader=sub_loader,
+                                 only_local=only_local)
                 finally:
                     included.remove(file_path)
                 _yaml.composite(node, include_node)
 
         for _, value in _yaml.node_items(node):
-            self._process_value(value, current_loader=current_loader)
+            self._process_value(value, current_loader=current_loader,
+                                only_local=only_local)
 
     def _include_file(self, include, loader):
         shortname = include
@@ -68,12 +63,16 @@ class Includes:
                                            project=project)
         return self._loaded[key], file_path, current_loader
 
-    def _process_value(self, value, *, current_loader=None):
+    def _process_value(self, value, *,
+                       current_loader=None,
+                       only_local=False):
         if isinstance(value, Mapping):
-            self.process(value, current_loader=current_loader)
+            self.process(value, current_loader=current_loader, only_local=only_local)
         elif isinstance(value, list):
-            self._process_list(value, current_loader=current_loader)
+            self._process_list(value, current_loader=current_loader, only_local=only_local)
 
-    def _process_list(self, values, *, current_loader=None):
+    def _process_list(self, values, *,
+                      current_loader=None,
+                      only_local=False):
         for value in values:
-            self._process_value(value, current_loader=current_loader)
+            self._process_value(value, current_loader=current_loader, only_local=only_local)
