@@ -17,17 +17,16 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from contextlib import contextmanager
 import os
 import sys
 import resource
 import traceback
 import datetime
 from textwrap import TextWrapper
-from contextlib import contextmanager
-from blessings import Terminal
-
 import click
 from click import UsageError
+from blessings import Terminal
 
 # Import buildstream public symbols
 from .. import Scope
