@@ -65,7 +65,7 @@ class Includes:
         if file_path not in self._loaded:
             self._loaded[key] = _yaml.load(os.path.join(directory, include),
                                            shortname=shortname,
-                                        project=project)
+                                           project=project)
         return self._loaded[key], file_path, current_loader
 
     def _process_value(self, value, *, current_loader=None):
