@@ -359,7 +359,7 @@ class OSTreeCache(ArtifactCache):
 
             with element.timed_activity("Sending artifact"), \
                 element._output_file() as output_file:
-                element.info("Pushing artifact {} to {}".format(refs, remote.push_url))
+                element.info("Pushing artifact {} to {}".format(element.name, remote.push_url))
                 try:
                     pushed = push_artifact(temp_repo.get_path().get_path(),
                                            remote.push_url,
