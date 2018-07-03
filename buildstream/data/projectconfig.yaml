@@ -68,7 +68,7 @@ variables:
   # Generic implementation for stripping debugging symbols
   strip-binaries: |
 
-    find "%{install-root}" -type f \
+    cd "%{install-root}" && find -type f \
       '(' -perm -111 -o -name '*.so*' \
           -o -name '*.cmxs' -o -name '*.node' ')' \
       -exec sh -ec \
@@ -76,7 +76,7 @@ variables:
        if [ "$hdr" != "$(printf \\x7fELF)" ]; then
            exit 0
        fi
-       debugfile="%{install-root}%{debugdir}/$(basename "$1")"
+       debugfile="%{install-root}%{debugdir}/$1"
        mkdir -p "$(dirname "$debugfile")"
        objcopy %{objcopy-extract-args} "$1" "$debugfile"
        chmod 644 "$debugfile"

@@ -29,7 +29,9 @@ def test_autotools_build(cli, tmpdir, datafiles):
 
     assert_contains(checkout, ['/usr', '/usr/lib', '/usr/bin',
                                '/usr/share', '/usr/lib/debug',
-                               '/usr/lib/debug/hello', '/usr/bin/hello'])
+                               '/usr/lib/debug/usr', '/usr/lib/debug/usr/bin',
+                               '/usr/lib/debug/usr/bin/hello',
+                               '/usr/bin/hello'])
 
 
 # Test the unmodified hello command works as expected.
