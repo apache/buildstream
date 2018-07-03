@@ -155,6 +155,9 @@ class BuildElement(Element):
             command_dir = build_root
         sandbox.set_work_directory(command_dir)
 
+        # Tell sandbox which directory is preserved in the finished artifact
+        sandbox.set_output_directory(install_root)
+
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
