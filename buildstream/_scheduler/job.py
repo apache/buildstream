@@ -173,8 +173,8 @@ class Job():
         # First resume the job if it's suspended
         self.resume(silent=True)
 
-        self._message(self.element, MessageType.STATUS,
-                      "{} terminating".format(self.action_name))
+        self._message("{} terminating".format(self.action_name),
+                      MessageType.STATUS, self.element)
 
         # Make sure there is no garbage on the queue
         self._parent_stop_listening()
@@ -205,8 +205,9 @@ class Job():
     def kill(self):
 
         # Force kill
-        self._message(self.element, MessageType.WARN,
-                      "{} did not terminate gracefully, killing".format(self.action_name))
+        self._message("{} did not terminate gracefully, killing"
+                      .format(self.action_name), self.element,
+                      MessageType.WARN)
         utils._kill_process_tree(self._process.pid)
 
     # suspend()
@@ -215,8 +216,8 @@ class Job():
     #
     def suspend(self):
         if not self._suspended:
-            self._message(self.element, MessageType.STATUS,
-                          "{} suspending".format(self.action_name))
+            self._message("{} suspending".format(self.action_name),
+                          self.element, MessageType.STATUS)
 
             try:
                 # Use SIGTSTP so that child processes may handle and propagate
@@ -240,8 +241,8 @@ class Job():
     def resume(self, silent=False):
         if self._suspended:
             if not silent:
-                self._message(self.element, MessageType.STATUS,
-                              "{} resuming".format(self.action_name))
+                self._message("{} resuming".format(self.action_name),
+                              self.element, MessageType.STATUS)
 
             os.kill(self._process.pid, signal.SIGCONT)
             self._suspended = False
@@ -268,14 +269,15 @@ class Job():
     #    message (str): The message
     #    kwargs: Remaining Message() constructor arguments
     #
-    def _message(self, plugin, message_type, message, **kwargs):
+    def _message(self, message, message_type, plugin, **kwargs):
         args = dict(kwargs)
         args['scheduler'] = True
-        self._scheduler.context.message(
-            Message(plugin._get_unique_id(),
-                    message_type,
-                    message,
-                    **args))
+        self._scheduler.context.msg(
+            message,
+            plugin=plugin._get_unique_id(),
+            msg_type=message_type,
+            **args
+        )
 
     # _child_action()
     #
@@ -324,15 +326,15 @@ class Job():
         with _signals.suspendable(stop_time, resume_time), \
             element._logging_enabled(self.action_name) as filename:
 
-            self._message(element, MessageType.START, self.action_name, logfile=filename)
+            self._message(self.action_name, MessageType.START, element, logfile=filename)
 
             # Print the element's environment at the beginning of any element's log file.
             #
             # This should probably be omitted for non-build tasks but it's harmless here
             elt_env = element.get_environment()
             env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
-            self._message(element, MessageType.LOG,
-                          "Build environment for element {}".format(element.name),
+            self._message("Build environment for element {}".format(element.name),
+                          MessageType.LOG, element,
                           detail=env_dump, logfile=filename)
 
             try:

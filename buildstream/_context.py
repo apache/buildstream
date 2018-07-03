@@ -425,8 +425,7 @@ class Context():
         with _signals.suspendable(stop_time, resume_time):
             try:
                 # Push activity depth for status messages
-                message = Message(unique_id, MessageType.START, activity_name, detail=detail)
-                self.message(message)
+                self.start(activity_name, detail=detail, plugin=unique_id)
                 self._push_message_depth(silent_nested)
                 yield
 
@@ -434,15 +433,14 @@ class Context():
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
                 elapsed = datetime.datetime.now() - starttime
-                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
                 self._pop_message_depth()
-                self.message(message)
+                self.failure(activity_name, detail=detail, elapsed=elapsed, plugin=unique_id)
                 raise
 
             elapsed = datetime.datetime.now() - starttime
-            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
             self._pop_message_depth()
-            self.message(message)
+            self.success(activity_name, detail=detail,
+                         elapsed=elapsed, plugin=unique_id)
 
     # _push_message_depth() / _pop_message_depth()
     #

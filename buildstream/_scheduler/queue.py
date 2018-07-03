@@ -274,7 +274,9 @@ class Queue():
                 try:
                     workspaces.save_config()
                 except BstError as e:
-                    self._message(element, MessageType.ERROR, "Error saving workspaces", detail=str(e))
+                    element._get_context().error("Error saving workspaces",
+                                                 detail=str(e),
+                                                 plugin=element._get_unique_id())
                 except Exception as e:   # pylint: disable=broad-except
                     self._message(element, MessageType.BUG,
                                   "Unhandled exception while saving workspaces",
@@ -351,5 +353,5 @@ class Queue():
     # a message for the element they are processing
     def _message(self, element, message_type, brief, **kwargs):
         context = element._get_context()
-        message = Message(element._get_unique_id(), message_type, brief, **kwargs)
-        context.message(message)
+        context._message(brief, plugin=element._get_unique_id(),
+                         msg_type=message_type, **kwargs)

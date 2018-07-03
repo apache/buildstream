@@ -129,7 +129,7 @@ class Pipeline():
                 for source, ref in redundant_refs
             ]
             detail += "\n".join(lines)
-            self._message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
+            self._context.warn("Ignoring redundant source references", detail=detail)
 
         # Now create element groups to match the input target groups
         elt_iter = iter(elements)
@@ -220,8 +220,8 @@ class Pipeline():
             for t in targets:
                 new_elm = t._get_source_element()
                 if new_elm != t and not silent:
-                    self._message(MessageType.INFO, "Element '{}' redirected to '{}'"
-                                  .format(t.name, new_elm.name))
+                    self._context.info("Element '{}' redirected to '{}'"
+                                       .format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
         elif mode == PipelineSelection.PLAN:
@@ -443,15 +443,6 @@ class Pipeline():
                          "in a project which does not use project.refs ref-storage."
 
                 raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
-
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self._context.message(
-            Message(None, message_type, message, **args))
 
 
 # _Planner()

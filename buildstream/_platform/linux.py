@@ -75,9 +75,9 @@ class Linux(Platform):
             return True
 
         else:
-            context.message(
-                Message(None, MessageType.WARN,
-                        "Unable to create user namespaces with bubblewrap, resorting to fallback",
-                        detail="Some builds may not function due to lack of uid / gid 0, " +
-                        "artifacts created will not be trusted for push purposes."))
+            context.warn(
+                "Unable to create user namespaces with bubblewrap, resorting to fallback",
+                detail="Some builds may not function due to lack of uid / gid 0, " +
+                "artifacts created will not be trusted for push purposes."
+            )
             return False

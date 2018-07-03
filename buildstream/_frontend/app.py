@@ -249,7 +249,7 @@ class App():
 
         # Mark the beginning of the session
         if session_name:
-            self._message(MessageType.START, session_name)
+            self.context.start(session_name)
 
         # Run the body of the session here, once everything is loaded
         try:
@@ -261,9 +261,9 @@ class App():
                 elapsed = self.stream.elapsed_time
 
                 if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
-                    self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
+                    self.context.warn(session_name + ' Terminated', elapsed=elapsed)
                 else:
-                    self._message(MessageType.FAIL, session_name, elapsed=elapsed)
+                    self.context.failure(session_name, elapsed=elapsed)
 
                 if self._started:
                     self._print_summary()
@@ -274,7 +274,7 @@ class App():
         else:
             # No exceptions occurred, print session time and summary
             if session_name:
-                self._message(MessageType.SUCCESS, session_name, elapsed=self.stream.elapsed_time)
+                self.context.success(session_name, elapsed=self.stream.elapsed_time)
                 if self._started:
                     self._print_summary()
 
@@ -411,21 +411,13 @@ class App():
     #                      Local Functions                     #
     ############################################################
 
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.message(
-            Message(None, message_type, message, **args))
-
     # Exception handler
     #
     def _global_exception_handler(self, etype, value, tb):
 
         # Print the regular BUG message
         formatted = "".join(traceback.format_exception(etype, value, tb))
-        self._message(MessageType.BUG, str(value),
-                      detail=formatted)
+        self.context.bug(str(value), detail=formatted)
 
         # If the scheduler has started, try to terminate all jobs gracefully,
         # otherwise exit immediately.
