@@ -25,6 +25,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from . import _yaml
+from .plugin import Plugin
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
@@ -324,8 +325,7 @@ class Context():
     # Args:
     #    message: A Message object
     #
-    def message(self, message):
-
+    def _send_message(self, message):
         # Tag message only once
         if message.depth is None:
             message.depth = len(list(self._message_depth))
@@ -336,7 +336,50 @@ class Context():
         assert self._message_handler
 
         self._message_handler(message, context=self)
-        return
+
+    # _message():
+    #
+    # The global message API. Any message-sending functions should go
+    # through here. This will call `_send_message` to deliver the
+    # final message.
+    #
+    def _message(self, text, *, plugin=None, msg_type=None, **kwargs):
+        if isinstance(plugin, Plugin):
+            plugin_id = plugin._get_unique_id()
+        else:
+            plugin_id = plugin
+
+        self._send_message(Message(plugin, msg_type, str(text), **kwargs))
+
+    def start(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.START, **kwargs)
+
+    def success(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.SUCCESS, **kwargs)
+
+    def failure(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.FAIL, **kwargs)
+
+    def debug(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.DEBUG, **kwargs)
+
+    def status(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.STATUS, **kwargs)
+
+    def info(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.INFO, **kwargs)
+
+    def warn(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.WARN, **kwargs)
+
+    def error(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.ERROR, **kwargs)
+
+    def bug(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.BUG, **kwargs)
+
+    def log(self, text, *, plugin=None, **kwargs):
+        self._message(text, plugin=plugin, msg_type=MessageType.LOG, **kwargs)
 
     # silence()
     #
