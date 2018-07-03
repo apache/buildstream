@@ -193,6 +193,9 @@ class Element(Plugin):
 
     def __init__(self, context, project, artifacts, meta, plugin_conf):
 
+        self.__cache_key_dict = None            # Dict for cache key calculation
+        self.__cache_key = None                 # Our cached cache key
+
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
         self.normal_name = os.path.splitext(self.name.replace(os.sep, '-'))[0]
@@ -206,8 +209,6 @@ class Element(Plugin):
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__sources = []                     # List of Sources
-        self.__cache_key_dict = None            # Dict for cache key calculation
-        self.__cache_key = None                 # Our cached cache key
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = artifacts            # Artifact cache
