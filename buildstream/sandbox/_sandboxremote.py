@@ -70,7 +70,7 @@ class SandboxRemote(Sandbox):
         if command_push_successful or cascache.verify_key_pushed(command_ref, self._get_project()):
             # Next, try to create a communication channel
             port = 50051
-            channel = grpc.insecure_channel('dekatron.office.codethink.co.uk:{}'.format(port))
+            channel = grpc.insecure_channel('localhost:{}'.format(port))
             stub = remote_execution_pb2_grpc.ExecutionStub(channel)
             ops_stub = operations_pb2_grpc.OperationsStub(channel)
 
@@ -107,21 +107,22 @@ class SandboxRemote(Sandbox):
 
     """ output_directories is an array of OutputDirectory objects
     output_files is an array of OutputFile objects """
-    def process_job_output(self, output_directories, output_files):
+    def process_job_output(self, output_directories, output_files, cascache):
         # We only specify one output_directory, so it's an error
         # for there to be any output files or more than one directory at the moment.
 
         if len(output_files)>0:
             raise SandboxError("Output files were returned when we didn't request any.")
-        if len(output_directories)>0:
-            raise SandboxError("More than one output directory was returned from the build server.")
+        #if len(output_directories)>0:
+        #    raise SandboxError("More than one output directory was returned from the build server.")
 
-        digest = output_directories[0].tree_digest
+        #digest = output_directories[0].tree_digest
+        digest = output_directories.tree_digest
         # Now what we have is a digest for the output. Once we return, the calling process will
         # attempt to descend into our directory and find that directory, so we need to overwrite
         # that.
 
-        path_components = os.path.split(self._output_dir)
+        path_components = os.path.split(self._output_directory)
         if len(path_components)==0:
             # The artifact wants the whole directory; we could just return the returned hash in its
             # place, but we don't have a means to do that yet.
@@ -129,10 +130,13 @@ class SandboxRemote(Sandbox):
 
 
         # Now do a pull to ensure we have the necessary parts
-        cascache.pull_key_only(digest.hash, self._get_project())
         
-        directory_head = os.path.join(path_components[:-1])
-        directory_tail = path_components([-1])
+        cascache.pull_key_only(key = digest.hash,
+                               size_bytes = digest.size_bytes,
+                               project = self._get_project())
+
+        directory_head = os.path.join(path_components[0], path_components[1])
+        directory_tail = os.path.join(path_components[1])
 
         containing_dir = self.get_virtual_directory().descend(directory_head)
 
@@ -169,21 +173,31 @@ class SandboxRemote(Sandbox):
         # Now transmit the command to execute
         if source_push_successful or cascache.verify_key_pushed(ref, self._get_project()):
             response = self.__run_remote_command(cascache, command, upload_vdir.ref)
-
+            
             if response is None or response.HasField("error"):
                 # Build failed, so return a failure code
                 return 1
             else:
                 # If we succeeded, expect response.response to be a... what?
-                executeResponse = remote_execution_pb2.ExecuteResponse()
+                """executeResponse = remote_execution_pb2.ExecuteResponse()
                 if response.response.Is(executeResponse.DESCRIPTOR):
                     response.response.Unpack(executeResponse)
                     actionResult = remote_execution_pb2.ActionResult()
                     a.result.Unpack(actionResult)
-                    self.process_job_output(actionResult.output_directories, actionResult.output_files)
+                    sys.stderr.write(">>{}.\n".format(actionResult))
+                self.process_job_output(actionResult.output_directories, actionResult.output_files)
+
                 else:
                     sys.stderr.write("Received unknown message from server.\n")
                     return 1
+
+                """
+                executeResponse = remote_execution_pb2.OutputDirectory()
+                
+                response.response.Unpack(executeResponse)
+                
+                self.process_job_output(executeResponse, [], cascache)
+                
         else:
             sys.stderr.write("Failed to verify source on remote artifact cache.\n")
             return 1
