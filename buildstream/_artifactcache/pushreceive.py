@@ -222,6 +222,7 @@ class PushMessageWriter(object):
         self.write(command)
 
     def send_done(self):
+        logging.info('Sending done')
         command = PushCommand(PushCommandType.done, {})
         self.write(command)
 
@@ -497,7 +498,6 @@ class OSTreePusher(object):
             if parent is None:
                 break
         if remote is not None and parent != remote:
-            self.writer.send_done()
             raise PushExistsException('Remote commit {} not descendent of '
                                       'commit {}'.format(remote, local))
 
@@ -552,7 +552,6 @@ class OSTreePusher(object):
                 update_refs[branch] = remote_rev, rev
         if not update_refs:
             logging.info('Nothing to update')
-            self.writer.send_done()
             raise PushExistsException('Nothing to update')
 
         # Send update command
@@ -583,6 +582,7 @@ class OSTreePusher(object):
 
         # Re-raise PushExistsException if all refs exist already
         if ref_count == 0 and exc_info:
+            self.writer.send_done()
             raise exc_info[0].with_traceback(exc_info[1], exc_info[2])
 
         logging.info('Enumerating objects to send')
