@@ -24,7 +24,6 @@ import itertools
 from operator import itemgetter
 
 from ._exceptions import PipelineError
-from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from . import Scope, Consistency
 from ._project import ProjectRefStorage
@@ -201,8 +200,8 @@ class Pipeline():
             for t in targets:
                 new_elm = t._get_source_element()
                 if new_elm != t and not silent:
-                    self._message(MessageType.INFO, "Element '{}' redirected to '{}'"
-                                  .format(t.name, new_elm.name))
+                    self._context.info("Element '{}' redirected to '{}'"
+                                       .format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
         elif mode == PipelineSelection.PLAN:
@@ -432,15 +431,6 @@ class Pipeline():
                          "in a project which does not use project.refs ref-storage."
 
                 raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
-
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self._context.message(
-            Message(None, message_type, message, **args))
 
 
 # _Planner()

@@ -37,7 +37,6 @@ from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 from ._loader import Loader
 from .element import Element
-from ._message import Message, MessageType
 from ._includes import Includes
 from ._platform import Platform
 
@@ -337,8 +336,7 @@ class Project():
                 for source, ref in redundant_refs
             ]
             detail += "\n".join(lines)
-            self._context.message(
-                Message(None, MessageType.WARN, "Ignoring redundant source references", detail=detail))
+            self._context.warn("Ignoring redundant source references", detail=detail)
 
         return elements
 
@@ -514,13 +512,9 @@ class Project():
 
         # Deprecation check
         if fail_on_overlap is not None:
-            self._context.message(
-                Message(
-                    None,
-                    MessageType.WARN,
-                    "Use of fail-on-overlap within project.conf " +
-                    "is deprecated. Consider using fatal-warnings instead."
-                )
+            self._context.warn(
+                "Use of fail-on-overlap within project.conf " +
+                "is deprecated. Consider using fatal-warnings instead."
             )
 
         # Load project.refs if it exists, this may be ignored.

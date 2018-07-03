@@ -34,7 +34,7 @@ from .._context import Context
 from .._platform import Platform
 from .._project import Project
 from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
-from .._message import Message, MessageType, unconditional_messages
+from .._message import MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION
 from .. import _yaml
@@ -250,7 +250,7 @@ class App():
 
         # Mark the beginning of the session
         if session_name:
-            self._message(MessageType.START, session_name)
+            self.context.message(session_name, msg_type=MessageType.START)
 
         # Run the body of the session here, once everything is loaded
         try:
@@ -262,9 +262,9 @@ class App():
                 elapsed = self.stream.elapsed_time
 
                 if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
-                    self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
+                    self.context.warn(session_name + ' Terminated', elapsed=elapsed)
                 else:
-                    self._message(MessageType.FAIL, session_name, elapsed=elapsed)
+                    self.context.message(session_name, elapsed=elapsed, msg_type=MessageType.FAIL)
 
                     # Notify session failure
                     self._notify("{} failed".format(session_name), "{}".format(e))
@@ -282,7 +282,9 @@ class App():
         else:
             # No exceptions occurred, print session time and summary
             if session_name:
-                self._message(MessageType.SUCCESS, session_name, elapsed=self.stream.elapsed_time)
+                self.context.message(session_name,
+                                     elapsed=self.stream.elapsed_time,
+                                     msg_type=MessageType.SUCCESS)
                 if self._started:
                     self._print_summary()
 
@@ -428,21 +430,13 @@ class App():
         if self.interactive:
             self.notify(title, text)
 
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.message(
-            Message(None, message_type, message, **args))
-
     # Exception handler
     #
     def _global_exception_handler(self, etype, value, tb):
 
         # Print the regular BUG message
         formatted = "".join(traceback.format_exception(etype, value, tb))
-        self._message(MessageType.BUG, str(value),
-                      detail=formatted)
+        self.context.message(value, detail=formatted, msg_type=MessageType.BUG)
 
         # If the scheduler has started, try to terminate all jobs gracefully,
         # otherwise exit immediately.

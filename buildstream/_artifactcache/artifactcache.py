@@ -24,7 +24,6 @@ from collections.abc import Mapping
 
 from ..types import _KeyStrength
 from .._exceptions import ArtifactError, ImplError, LoadError, LoadErrorReason
-from .._message import Message, MessageType
 from .. import utils
 from .. import _yaml
 
@@ -589,15 +588,6 @@ class ArtifactCache():
     #               Local Private Methods          #
     ################################################
 
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.message(
-            Message(None, message_type, message, **args))
-
     # _set_remotes():
     #
     # Set the list of remote caches. If project is None, the global list of
@@ -621,7 +611,7 @@ class ArtifactCache():
     #
     def _initialize_remotes(self):
         def remote_failed(url, error):
-            self._message(MessageType.WARN, "Failed to initialize remote {}: {}".format(url, error))
+            self.context.warn("Failed to fetch remote refs from {}: {}".format(url, error))
 
         with self.context.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)

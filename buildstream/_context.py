@@ -27,6 +27,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from . import _yaml
+from .plugin import Plugin
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
@@ -326,7 +327,7 @@ class Context():
     # the context.
     #
     # The message handler should have the same signature as
-    # the message() method
+    # the _send_message() method
     def set_message_handler(self, handler):
         self._message_handler = handler
 
@@ -341,15 +342,19 @@ class Context():
                 return True
         return False
 
-    # message():
+    # _send_message():
     #
-    # Proxies a message back to the caller, this is the central
+    # Proxies a message back through the message handler, this is the central
     # point through which all messages pass.
     #
     # Args:
     #    message: A Message object
     #
-    def message(self, message):
+    def _send_message(self, message):
+        # Debug messages should only be displayed when they are
+        # configured to be
+        if not self.log_debug and message.message_type == MessageType.DEBUG:
+            return
 
         # Tag message only once
         if message.depth is None:
@@ -364,6 +369,86 @@ class Context():
         assert self._message_handler
 
         self._message_handler(message, context=self)
+
+    # message():
+    #
+    # The global message API. Any message-sending functions should go
+    # through here. This will call `_send_message` to deliver the
+    # final message.
+    #
+    # Args:
+    #     text (str): The text of the message.
+    #
+    # Kwargs:
+    #     msg_type (MessageType): The type of the message (required).
+    #     plugin (Plugin|str|None): The id of the plugin
+    #                               (i.e. Element, Source subclass
+    #                               instance) sending the message. If
+    #                               a plugin is given, this will be
+    #                               determined automatically, if
+    #                               omitted the message will be sent
+    #                               without a plugin context.
+    #
+    #    For other kwargs, see `Message`.
+    #
+    def message(self, text, *, plugin=None, msg_type=None, **kwargs):
+        assert msg_type is not None
+
+        if isinstance(plugin, Plugin):
+            plugin_id = plugin._get_unique_id()
+        else:
+            plugin_id = plugin
+
+        self._send_message(Message(plugin_id, msg_type, str(text), **kwargs))
+
+    # skipped():
+    #
+    # Produce and send a skipped message through the context.
+    #
+    def skipped(self, text, **kwargs):
+        self.message(text, msg_type=MessageType.SKIPPED, **kwargs)
+
+    # debug():
+    #
+    # Produce and send a debug message through the context.
+    #
+    def debug(self, text, **kwargs):
+        self.message(text, msg_type=MessageType.DEBUG, **kwargs)
+
+    # status():
+    #
+    # Produce and send a status message through the context.
+    #
+    def status(self, text, **kwargs):
+        self.message(text, msg_type=MessageType.STATUS, **kwargs)
+
+    # info():
+    #
+    # Produce and send a info message through the context.
+    #
+    def info(self, text, **kwargs):
+        self.message(text, msg_type=MessageType.INFO, **kwargs)
+
+    # warn():
+    #
+    # Produce and send a warning message through the context.
+    #
+    def warn(self, text, **kwargs):
+        self.message(text, msg_type=MessageType.WARN, **kwargs)
+
+    # error():
+    #
+    # Produce and send a error message through the context.
+    #
+    def error(self, text, **kwargs):
+        self.message(text, msg_type=MessageType.ERROR, **kwargs)
+
+    # log():
+    #
+    # Produce and send a log message through the context.
+    #
+    def log(self, text, **kwargs):
+        self.message(text, msg_type=MessageType.LOG, **kwargs)
 
     # silence()
     #
@@ -409,8 +494,8 @@ class Context():
         with _signals.suspendable(stop_time, resume_time):
             try:
                 # Push activity depth for status messages
-                message = Message(unique_id, MessageType.START, activity_name, detail=detail)
-                self.message(message)
+                self.message(activity_name, detail=detail, plugin=unique_id,
+                             msg_type=MessageType.START)
                 self._push_message_depth(silent_nested)
                 yield
 
@@ -418,15 +503,16 @@ class Context():
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
                 elapsed = datetime.datetime.now() - starttime
-                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
                 self._pop_message_depth()
-                self.message(message)
+                self.message(activity_name, detail=detail, elapsed=elapsed, plugin=unique_id,
+                             msg_type=MessageType.FAIL)
                 raise
 
             elapsed = datetime.datetime.now() - starttime
-            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
             self._pop_message_depth()
-            self.message(message)
+            self.message(activity_name, detail=detail,
+                         elapsed=elapsed, plugin=unique_id,
+                         msg_type=MessageType.SUCCESS)
 
     # recorded_messages()
     #

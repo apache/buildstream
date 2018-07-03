@@ -30,7 +30,7 @@ from ..resources import ResourceType
 
 # BuildStream toplevel imports
 from ..._exceptions import BstError, set_last_task_error
-from ..._message import Message, MessageType
+from ..._message import MessageType
 
 
 # Queue status for a given element
@@ -72,6 +72,7 @@ class Queue():
         # Private members
         #
         self._scheduler = scheduler
+        self._context = scheduler.context
         self._wait_queue = deque()
         self._done_queue = deque()
         self._max_retries = 0
@@ -270,17 +271,19 @@ class Queue():
         # Handle any workspace modifications now
         #
         if workspace_dict:
-            context = element._get_context()
-            workspaces = context.get_workspaces()
+            workspaces = self._context.get_workspaces()
             if workspaces.update_workspace(element._get_full_name(), workspace_dict):
                 try:
                     workspaces.save_config()
                 except BstError as e:
-                    self._message(element, MessageType.ERROR, "Error saving workspaces", detail=str(e))
-                except Exception as e:   # pylint: disable=broad-except
-                    self._message(element, MessageType.BUG,
-                                  "Unhandled exception while saving workspaces",
-                                  detail=traceback.format_exc())
+                    self._context.error("Error saving workspaces",
+                                        detail=str(e),
+                                        plugin=element)
+                except Exception as e:  # pylint: disable=broad-except
+                    self._context.message("Unhandled exception while saving workspaces",
+                                          msg_type=MessageType.BUG,
+                                          detail=traceback.format_exc(),
+                                          plugin=element)
 
     # _job_done()
     #
@@ -304,10 +307,10 @@ class Queue():
         try:
             self.done(job, element, result, success)
         except BstError as e:
-
             # Report error and mark as failed
             #
-            self._message(element, MessageType.ERROR, "Post processing error", detail=str(e))
+            self._context.error("Post processing error",
+                                plugin=element, detail=traceback.format_exc())
             self.failed_elements.append(element)
 
             # Treat this as a task error as it's related to a task
@@ -317,13 +320,12 @@ class Queue():
             #
             set_last_task_error(e.domain, e.reason)
 
-        except Exception as e:   # pylint: disable=broad-except
-
+        except Exception:   # pylint: disable=broad-except
             # Report unhandled exceptions and mark as failed
             #
-            self._message(element, MessageType.BUG,
-                          "Unhandled exception in post processing",
-                          detail=traceback.format_exc())
+            self._context.message("Unhandled exception in post processing",
+                                  plugin=element, msg_type=MessageType.BUG,
+                                  detail=traceback.format_exc())
             self.failed_elements.append(element)
         else:
             #
@@ -342,13 +344,6 @@ class Queue():
                 self.processed_elements.append(element)
             else:
                 self.failed_elements.append(element)
-
-    # Convenience wrapper for Queue implementations to send
-    # a message for the element they are processing
-    def _message(self, element, message_type, brief, **kwargs):
-        context = element._get_context()
-        message = Message(element._get_unique_id(), message_type, brief, **kwargs)
-        context.message(message)
 
     def _element_log_path(self, element):
         project = element._get_project()

@@ -51,10 +51,10 @@ class BuildQueue(Queue):
             self._tried.add(element)
             _, description, detail = element._get_build_result()
             logfile = element._get_build_log()
-            self._message(element, MessageType.FAIL, description,
-                          detail=detail, action_name=self.action_name,
-                          elapsed=timedelta(seconds=0),
-                          logfile=logfile)
+            self._context.message(description, msg_type=MessageType.FAIL, plugin=element,
+                                  detail=detail, action_name=self.action_name,
+                                  elapsed=timedelta(seconds=0),
+                                  logfile=logfile)
             job = ElementJob(self._scheduler, self.action_name,
                              logfile, element=element, queue=self,
                              resources=self.resources,

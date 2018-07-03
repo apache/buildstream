@@ -25,11 +25,11 @@ import stat
 import shlex
 import shutil
 import tarfile
+import traceback
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
-from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
 from . import utils, _yaml, _site
@@ -517,7 +517,7 @@ class Stream():
                 target._open_workspace()
 
         workspaces.save_config()
-        self._message(MessageType.INFO, "Saved workspace configuration")
+        self._context.info("Saved workspace configuration")
 
     # workspace_close
     #
@@ -544,7 +544,7 @@ class Stream():
         # Delete the workspace and save the configuration
         workspaces.delete_workspace(element_name)
         workspaces.save_config()
-        self._message(MessageType.INFO, "Closed workspace for {}".format(element_name))
+        self._context.info("Closed workspace for {}".format(element_name))
 
     # workspace_reset
     #
@@ -585,8 +585,8 @@ class Stream():
             workspace_path = workspace.get_absolute_path()
             if soft:
                 workspace.prepared = False
-                self._message(MessageType.INFO, "Reset workspace state for {} at: {}"
-                              .format(element.name, workspace_path))
+                self._context.info("Reset workspace state for {} at: {}"
+                                   .format(element.name, workspace.path))
                 continue
 
             with element.timed_activity("Removing workspace directory {}"
@@ -603,9 +603,8 @@ class Stream():
             with element.timed_activity("Staging sources to {}".format(workspace_path)):
                 element._open_workspace()
 
-            self._message(MessageType.INFO,
-                          "Reset workspace for {} at: {}".format(element.name,
-                                                                 workspace_path))
+            self._context.info("Reset workspace for {} at: {}"
+                               .format(element.name, workspace._path))
 
         workspaces.save_config()
 
@@ -681,7 +680,7 @@ class Stream():
         # source-bundle only supports one target
         target = self.targets[0]
 
-        self._message(MessageType.INFO, "Bundling sources for target {}".format(target.name))
+        self._context.info("Bundling sources for target {}".format(target.name))
 
         # Find the correct filename for the compression algorithm
         tar_location = os.path.join(directory, target.normal_name + ".tar")
@@ -961,15 +960,6 @@ class Stream():
 
         return selected, track_selected
 
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self._context.message(
-            Message(None, message_type, message, **args))
-
     # _add_queue()
     #
     # Adds a queue to the stream
@@ -1020,10 +1010,11 @@ class Stream():
             for element in self.total_elements:
                 element._update_state()
         except BstError as e:
-            self._message(MessageType.ERROR, "Error resolving final state", detail=str(e))
+            self._context.error("Error resolving final state", detail=e)
             set_last_task_error(e.domain, e.reason)
-        except Exception as e:   # pylint: disable=broad-except
-            self._message(MessageType.BUG, "Unhandled exception while resolving final state", detail=str(e))
+        except Exception as e:  # pylint: disable=broad-except
+            self._context.message("Unhandled exception while resolving final state",
+                                  detail=traceback.format_exc())
 
         if status == SchedStatus.ERROR:
             raise StreamError()

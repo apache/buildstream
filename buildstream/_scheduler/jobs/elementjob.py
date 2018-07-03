@@ -18,8 +18,6 @@
 #
 from ruamel import yaml
 
-from ..._message import Message, MessageType
-
 from .job import Job
 
 
@@ -86,24 +84,14 @@ class ElementJob(Job):
         # This should probably be omitted for non-build tasks but it's harmless here
         elt_env = self._element.get_environment()
         env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
-        self.message(MessageType.LOG,
-                     "Build environment for element {}".format(self._element.name),
-                     detail=env_dump)
+        self._log("Build environment for element {}".format(self._element.name),
+                  detail=env_dump, plugin=self.element, scheduler=True)
 
         # Run the action
         return self._action_cb(self._element)
 
     def parent_complete(self, success, result):
         self._complete_cb(self, self._element, success, self._result)
-
-    def message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        args['scheduler'] = True
-        self._scheduler.context.message(
-            Message(self._element._get_unique_id(),
-                    message_type,
-                    message,
-                    **args))
 
     def child_process_data(self):
         data = {}
@@ -113,3 +101,10 @@ class ElementJob(Job):
             data['workspace'] = workspace.to_dict()
 
         return data
+
+    # _fail()
+    #
+    # Override _fail to set scheduler kwarg to true.
+    #
+    def _fail(self, text, **kwargs):
+        super()._fail(text, scheduler=True, **kwargs)

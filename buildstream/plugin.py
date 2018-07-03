@@ -117,7 +117,6 @@ from weakref import WeakValueDictionary
 from . import _yaml
 from . import utils
 from ._exceptions import PluginError, ImplError
-from ._message import Message, MessageType
 
 
 class Plugin():
@@ -464,8 +463,7 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
         """
-        if self.__context.log_debug:
-            self.__message(MessageType.DEBUG, brief, detail=detail)
+        self.__context.debug(brief, detail=detail, plugin=self)
 
     def status(self, brief, *, detail=None):
         """Print a status message
@@ -474,9 +472,9 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
 
-        Note: Status messages tell about what a plugin is currently doing
+        Note: Status messages tell the user what a plugin is currently doing
         """
-        self.__message(MessageType.STATUS, brief, detail=detail)
+        self.__context.status(brief, detail=detail, plugin=self)
 
     def info(self, brief, *, detail=None):
         """Print an informative message
@@ -488,7 +486,7 @@ class Plugin():
         Note: Informative messages tell the user something they might want
               to know, like if refreshing an element caused it to change.
         """
-        self.__message(MessageType.INFO, brief, detail=detail)
+        self.__context.info(brief, detail=detail, plugin=self)
 
     def warn(self, brief, *, detail=None, warning_token=None):
         """Print a warning message, checks warning_token against project configuration
@@ -512,7 +510,7 @@ class Plugin():
                 detail = detail if detail else ""
                 raise PluginError(message="{}\n{}".format(brief, detail), reason=warning_token)
 
-        self.__message(MessageType.WARN, brief=brief, detail=detail)
+        self.__context.warn(brief, detail=detail, plugin=self)
 
     def log(self, brief, *, detail=None):
         """Log a message into the plugin's log file
@@ -524,7 +522,7 @@ class Plugin():
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
         """
-        self.__message(MessageType.LOG, brief, detail=detail)
+        self.__context.log(brief, detail=detail, plugin=self)
 
     @contextmanager
     def timed_activity(self, activity_name, *, detail=None, silent_nested=False):
@@ -745,10 +743,6 @@ class Plugin():
                                   temporary=fail_temporarily)
 
         return (exit_code, output)
-
-    def __message(self, message_type, brief, **kwargs):
-        message = Message(self.__unique_id, message_type, brief, **kwargs)
-        self.__context.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
         workdir = kwargs.get('cwd', os.getcwd())
