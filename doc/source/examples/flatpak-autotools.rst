@@ -47,7 +47,7 @@ download the Flatpak since these are hosted in OSTree repositories.
 While declaring the :mod:`ostree <sources.ostree>` source, we specify a GPG
 public key to verify the OSTree download. This configuration is optional
 but recommended for OSTree repositories. The key is stored in the project directory
-at ``keys/gnome-sdk.gpg``.
+at ``keys/gnome-sdk.gpg``, and can be downloaded from https://sdk.gnome.org/keys/.
 
 We also use :ref:`conditional statements <format_directives_conditional>` to decide
 which branch to download.
