@@ -73,6 +73,11 @@ At this point you should be able to get the system requirements with::
   sudo apt-get install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
 
+Buildstream has a number of plugins that are installed by default which
+depend on the system packages::
+
+  sudo apt-get install \
+      lzip git bzr patch python3-arpy
 
 Buster or Sid
 ^^^^^^^^^^^^^
