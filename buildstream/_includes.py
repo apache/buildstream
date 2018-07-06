@@ -1,4 +1,5 @@
 import os
+import copy
 from collections import Mapping
 from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
@@ -39,8 +40,16 @@ class Includes:
                                  only_local=only_local)
                 finally:
                     included.remove(file_path)
-                _yaml.composite(node, include_node)
 
+                old_node = copy.copy(node)
+                while True:
+                    try:
+                        node.popitem()
+                    except KeyError:
+                        break
+                _yaml.composite(node, include_node)
+                _yaml.composite(node, old_node)
+                
         for _, value in _yaml.node_items(node):
             self._process_value(value, current_loader=current_loader,
                                 only_local=only_local)
