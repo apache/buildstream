@@ -152,6 +152,9 @@ class SandboxBwrap(Sandbox):
                 gid = self._get_config().build_gid
                 bwrap_command += ['--uid', str(uid), '--gid', str(gid)]
 
+        for k, v in env.items():
+            bwrap_command += ['--setenv', k, v]
+
         # Add the command
         bwrap_command += command
 
