@@ -1,9 +1,8 @@
 
-
 .. _install:
 
-Installing BuildStream
-======================
+Installing BuildStream on a Linux distro
+========================================
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.4
