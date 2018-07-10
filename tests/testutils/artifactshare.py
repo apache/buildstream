@@ -3,6 +3,7 @@ import pytest
 import subprocess
 import os
 import shutil
+from collections import namedtuple
 
 from contextlib import contextmanager
 
@@ -18,10 +19,12 @@ from .site import HAVE_OSTREE_CLI
 #
 # Args:
 #    directory (str): The base temp directory for the test
+#    total_space (int): Mock total disk space on artifact server
+#    free_space (int): Mock free disk space on artifact server
 #
 class ArtifactShare():
 
-    def __init__(self, directory):
+    def __init__(self, directory, *, total_space=None, free_space=None):
 
         # We need the ostree CLI for tests which use this
         #
@@ -40,6 +43,9 @@ class ArtifactShare():
         #
         self.repo = os.path.join(self.directory, 'repo')
 
+        self.total_space = total_space
+        self.free_space = free_space
+
         os.makedirs(self.repo)
 
         self.init()
@@ -56,6 +62,12 @@ class ArtifactShare():
         subprocess.call(['ostree', 'init',
                          '--repo', self.repo,
                          '--mode', 'archive-z2'])
+
+        # Optionally mock statvfs
+        if self.total_space:
+            if self.free_space is None:
+                self.free_space = self.total_space
+            os.statvfs = self._mock_statvfs
 
     # has_artifact():
     #
@@ -100,15 +112,28 @@ class ArtifactShare():
     def close(self):
         shutil.rmtree(self.directory)
 
+    def _mock_statvfs(self, path):
+        repo_size = 0
+        for root, _, files in os.walk(self.repo):
+            for filename in files:
+                repo_size += os.path.getsize(os.path.join(root, filename))
+
+        return statvfs_result(f_blocks=self.total_space,
+                              f_bfree=self.free_space - repo_size,
+                              f_bsize=1)
+
 
 # create_artifact_share()
 #
 # Create an ArtifactShare for use in a test case
 #
 @contextmanager
-def create_artifact_share(directory):
-    share = ArtifactShare(directory)
+def create_artifact_share(directory, *, total_space=None, free_space=None):
+    share = ArtifactShare(directory, total_space=total_space, free_space=free_space)
     try:
         yield share
     finally:
         share.close()
+
+
+statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
