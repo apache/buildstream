@@ -218,7 +218,7 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
         response = buildstream_pb2.GetReferenceResponse()
 
         try:
-            tree = self.cas.resolve_ref(request.key)
+            tree = self.cas.resolve_ref(request.key, update_mtime=True)
 
             response.digest.hash = tree.hash
             response.digest.size_bytes = tree.size_bytes
