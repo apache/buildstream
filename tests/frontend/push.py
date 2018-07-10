@@ -282,10 +282,6 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 
 
 # Test that when an element is pulled recently, it is not considered the LRU element.
-# NOTE: We expect this test to fail as the current implementation of remote cache
-# expiry only expiries from least recently pushed. NOT least recently used. This will
-# hopefully change when we implement as CAS cache.
-@pytest.mark.xfail
 @pytest.mark.datafiles(DATA_DIR)
 def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
