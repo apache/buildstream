@@ -616,7 +616,8 @@ class Stream():
     def source_bundle(self, target, directory, *,
                       track_first=False,
                       force=False,
-                      compression="gz"):
+                      compression="gz",
+                      except_targets=()):
 
         if track_first:
             track_targets = (target,)
@@ -625,6 +626,7 @@ class Stream():
 
         elements, track_elements = self._load((target,), track_targets,
                                               selection=PipelineSelection.ALL,
+                                              except_targets=except_targets,
                                               track_selection=PipelineSelection.ALL,
                                               fetch_subprojects=True)
 
