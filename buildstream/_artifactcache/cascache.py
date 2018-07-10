@@ -431,15 +431,19 @@ class CASCache(ArtifactCache):
     #
     # Args:
     #     ref (str): The name of the ref
+    #     update_mtime (bool): Whether to update the mtime of the ref
     #
     # Returns:
     #     (Digest): The digest stored in the ref
     #
-    def resolve_ref(self, ref):
+    def resolve_ref(self, ref, *, update_mtime=False):
         refpath = self._refpath(ref)
 
         try:
             with open(refpath, 'rb') as f:
+                if update_mtime:
+                    os.utime(refpath)
+
                 digest = remote_execution_pb2.Digest()
                 digest.ParseFromString(f.read())
                 return digest
