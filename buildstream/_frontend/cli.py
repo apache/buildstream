@@ -815,4 +815,5 @@ def source_bundle(app, element, force, directory,
         app.stream.source_bundle(element, directory,
                                  track_first=track_,
                                  force=force,
-                                 compression=compression)
+                                 compression=compression,
+                                 except_targets=except_)
