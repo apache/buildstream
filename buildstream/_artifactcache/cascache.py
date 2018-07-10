@@ -222,6 +222,34 @@ class CASCache(ArtifactCache):
         except FileNotFoundError as e:
             raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
 
+    # remove():
+    #
+    # Removes the given symbolic ref from the repo.
+    #
+    # Args:
+    #    ref (str): A symbolic ref
+    #    defer_prune (bool): Whether to defer pruning to the caller. NOTE:
+    #                        The space won't be freed until you manually
+    #                        call prune.
+    #
+    # Returns:
+    #    (int|None) The amount of space pruned from the repository in
+    #               Bytes, or None if defer_prune is True
+    #
+    def remove(self, ref, *, defer_prune=False):
+
+        refpath = self._refpath(ref)
+        if not os.path.exists(refpath):
+            raise ArtifactError("Could not find artifact for ref '{}'".format(ref))
+
+        os.unlink(refpath)
+
+        if not defer_prune:
+            pruned = self.prune()
+            return pruned
+
+        return None
+
     # prune():
     #
     # Prune unreachable objects from the repo.
