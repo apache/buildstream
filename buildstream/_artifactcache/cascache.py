@@ -222,6 +222,31 @@ class CASCache(ArtifactCache):
         except FileNotFoundError as e:
             raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
 
+    # list_artifacts():
+    #
+    # List cached artifacts in Least Recently Modified (LRM) order.
+    #
+    # Returns:
+    #     (list) - A list of refs in LRM order
+    #
+    def list_artifacts(self):
+        # string of: /path/to/repo/refs/heads
+        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
+
+        refs = []
+        mtimes = []
+
+        for root, _, files in os.walk(ref_heads):
+            for filename in files:
+                ref_path = os.path.join(root, filename)
+                refs.append(os.path.relpath(ref_path, ref_heads))
+                # Obtain the mtime (the time a file was last modified)
+                mtimes.append(os.path.getmtime(ref_path))
+
+        # NOTE: Sorted will sort from earliest to latest, thus the
+        # first element of this list will be the file modified earliest.
+        return [ref for _, ref in sorted(zip(mtimes, refs))]
+
     # remove():
     #
     # Removes the given symbolic ref from the repo.
