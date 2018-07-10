@@ -1,7 +1,5 @@
 import os
 import pytest
-from collections import namedtuple
-from unittest.mock import MagicMock
 
 from buildstream._exceptions import ErrorDomain
 from tests.testutils import cli, create_artifact_share, create_element_size
@@ -211,14 +209,9 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     element_path = os.path.join(project, 'elements')
 
     # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
-    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
-
-        # Mock the os.statvfs() call to return a named tuple which emulates an
-        # os.statvfs_result object
-        statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
-        os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(10e9),
-                                                           f_bfree=(int(12e6) + int(2e9)),
-                                                           f_bsize=1))
+    # Mock a file system with 12 MB free disk space
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
+                               total_space=int(10e9), free_space=(int(12e6) + int(2e9))) as share:
 
         # Configure bst to push to the cache
         cli.configure({
@@ -240,11 +233,6 @@ def test_artifact_expires(cli, datafiles, tmpdir):
         assert_shared(cli, share, project, 'element1.bst')
         assert cli.get_element_state(project, 'element2.bst') == 'cached'
         assert_shared(cli, share, project, 'element2.bst')
-
-        # update mocked available disk space now that two 5 MB artifacts have been added
-        os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(10e9),
-                                                           f_bfree=(int(2e6) + int(2e9)),
-                                                           f_bsize=1))
 
         # Create and build another element of 5 MB (This will exceed the free disk space available)
         create_element_size('element3.bst', element_path, [], int(5e6))
@@ -269,13 +257,9 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
     element_path = os.path.join(project, 'elements')
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
-    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
-
-        # Mock a file system with 5 MB total space
-        statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
-        os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(5e6) + int(2e9),
-                                                           f_bfree=(int(5e6) + int(2e9)),
-                                                           f_bsize=1))
+    # Mock a file system with 5 MB total space
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
+                               total_space=int(5e6) + int(2e9)) as share:
 
         # Configure bst to push to the remote cache
         cli.configure({
@@ -312,13 +296,9 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     element_path = os.path.join(project, 'elements')
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
-    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
-
-        # Mock a file system with 12 MB free disk space
-        statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
-        os.statvfs = MagicMock(return_value=statvfs_result(f_blocks=int(10e9) + int(2e9),
-                                                           f_bfree=(int(12e6) + int(2e9)),
-                                                           f_bsize=1))
+    # Mock a file system with 12 MB free disk space
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
+                               total_space=int(10e9), free_space=(int(12e6) + int(2e9))) as share:
 
         # Configure bst to push to the cache
         cli.configure({
