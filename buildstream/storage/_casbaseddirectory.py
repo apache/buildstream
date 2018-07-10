@@ -370,6 +370,30 @@ class CasBasedDirectory(Directory):
         with open(refname, "wb") as f:
             f.write(self.ref.SerializeToString())
 
+    def _import_cas_into_cas(self, source_directory):
+        for entry in source_directory.pb2_directory.directories:
+            # Create a cloned CasBasedDirectory, to avoid modifying the old one
+            buildStreamDirectory = CasBasedDirectory(self.context, ref=entry.digest,
+                                                     parent=self, filename=entry.name)
+            new_pb2_dirnode = self.pb2_directory.directories.add(digest=entry.digest, name=entry.name)
+            self.index[entry.name] = IndexEntry(entry, buildstream_object=buildStreamDirectory)
+        for entry in source_directory.pb2_directory.files:
+            filenode = self.pb2_directory.files.add(name=entry.name, digest=entry.digest)
+            is_executable = entry.is_executable
+            filenode.is_executable = is_executable
+            self.index[entry.name] = IndexEntry(filenode, modified=(entry.name in self.index))
+        for entry in self.pb2_directory.symlinks:
+            existing_link = self.find_pb2_entry(entry.name)
+            if existing_link:
+                symlinknode = existing_link
+            else:
+                symlinknode = self.pb2_directory.symlinks.add()
+            symlinknode.name = entry.name
+            # A symlink node has no digest.
+            symlinknode.target = entry.target
+            self.index[entry.name] = IndexEntry(symlinknode, modified=(existing_link is not None))
+        # TODO: Return a list of things imported.
+
     def import_files(self, external_pathspec: any, files: List[str] = None,
                      report_written: bool = True, update_utimes: bool = False,
                      can_link: bool = False) -> FileListResult:
@@ -394,14 +418,8 @@ class CasBasedDirectory(Directory):
         if isinstance(external_pathspec, FileBasedDirectory):
             source_directory = external_pathspec.get_underlying_directory()
         elif isinstance(external_pathspec, CasBasedDirectory):
-            # TODO: This transfers from one CAS to another via the
-            # filesystem, which is very inefficient. Alter this so it
-            # transfers refs across directory.
-            with tempfile.TemporaryDirectory(prefix="roundtrip") as tmpdir:
-                external_pathspec.export_files(tmpdir)
-                if files is None:
-                    files = list_relative_paths(tmpdir)
-                result = self._import_files_from_directory(tmpdir, files=files)
+            result = self._import_cas_into_cas(external_pathspec)
+            # TODO: No result is returned?
             return result
         else:
             source_directory = external_pathspec
@@ -454,7 +472,7 @@ class CasBasedDirectory(Directory):
 
         for entry in self.pb2_directory.directories:
             if entry.name not in self.index:
-                raise VirtualDirectoryError("CasDir {} contained {} in directories but not in the index"
+                raise VirtualDirectoryError("CasDir {} contained '{}' in directories but not in the index"
                                             .format(str(self), entry.name))
             if not self._directory_read:
                 raise VirtualDirectoryError("CasDir {} has not been indexed yet".format(str(self)))
