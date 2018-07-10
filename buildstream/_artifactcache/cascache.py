@@ -222,6 +222,36 @@ class CASCache(ArtifactCache):
         except FileNotFoundError as e:
             raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
 
+    # prune():
+    #
+    # Prune unreachable objects from the repo.
+    #
+    def prune(self):
+        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
+
+        pruned = 0
+        reachable = set()
+
+        # Check which objects are reachable
+        for root, _, files in os.walk(ref_heads):
+            for filename in files:
+                ref_path = os.path.join(root, filename)
+                ref = os.path.relpath(ref_path, ref_heads)
+
+                tree = self.resolve_ref(ref)
+                self._reachable_refs_dir(reachable, tree)
+
+        # Prune unreachable objects
+        for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
+            for filename in files:
+                objhash = os.path.basename(root) + filename
+                if objhash not in reachable:
+                    obj_path = os.path.join(root, filename)
+                    pruned += os.stat(obj_path).st_size
+                    os.unlink(obj_path)
+
+        return pruned
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -346,3 +376,18 @@ class CASCache(ArtifactCache):
                                      path=os.path.join(path, dir_a.directories[a].name))
                 a += 1
                 b += 1
+
+    def _reachable_refs_dir(self, reachable, tree):
+        if tree.hash in reachable:
+            return
+
+        directory = remote_execution_pb2.Directory()
+
+        with open(self.objpath(tree), 'rb') as f:
+            directory.ParseFromString(f.read())
+
+        for filenode in directory.files:
+            reachable.add(filenode.digest.hash)
+
+        for dirnode in directory.directories:
+            self._reachable_refs_dir(reachable, dirnode.digest)
