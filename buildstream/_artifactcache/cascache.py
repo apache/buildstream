@@ -113,9 +113,6 @@ class CASCache(ArtifactCache):
         for ref in refs:
             self.set_ref(ref, tree)
 
-    def can_diff(self):
-        return True
-
     def diff(self, element, key_a, key_b, *, subdir=None):
         ref_a = self.get_artifact_fullname(element, key_a)
         ref_b = self.get_artifact_fullname(element, key_b)

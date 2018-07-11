@@ -242,15 +242,6 @@ class ArtifactCache():
         raise ImplError("Cache '{kind}' does not implement commit()"
                         .format(kind=type(self).__name__))
 
-    # can_diff():
-    #
-    # Whether this cache implementation can diff (unfortunately
-    # there's no way to tell if an implementation is going to throw
-    # ImplError without abc).
-    #
-    def can_diff(self):
-        return False
-
     # diff():
     #
     # Return a list of files that have been added or modified between
