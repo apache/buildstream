@@ -1948,7 +1948,7 @@ class Element(Plugin):
     #    (bool): Whether this element can be built incrementally
     #
     def __can_build_incrementally(self):
-        return self._get_workspace() and self.__artifacts.can_diff()
+        return bool(self._get_workspace())
 
     # __get_brief_display_key():
     #
