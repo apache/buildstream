@@ -393,13 +393,24 @@ class Scheduler():
     #                  Local Private Methods              #
     #######################################################
 
+    def _run_cleanup(self, cache_size):
+        if cache_size and cache_size < self.context.cache_quota:
+            return
+
+        logpath = os.path.join(self.context.logdir, 'cleanup.{pid}.log')
+        job = CleanupJob(self, 'cleanup', logpath,
+                         resources=[ResourceType.CACHE,
+                                    ResourceType.PROCESS],
+                         exclusive_resources=[ResourceType.CACHE],
+                         complete_cb=None)
+
     def _check_cache_size_real(self):
         logpath = os.path.join(self.context.logdir, 'cache_size.{pid}.log')
         job = CacheSizeJob(self, 'cache_size', logpath,
                            resources=[ResourceType.CACHE,
                                       ResourceType.PROCESS],
                            exclusive_resources=[ResourceType.CACHE],
-                           complete_cb=None)
+                           complete_cb=self._run_cleanup)
 
     # _suspend_jobs()
     #
