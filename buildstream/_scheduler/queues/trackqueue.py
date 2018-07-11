@@ -23,8 +23,8 @@ from ...plugin import _plugin_lookup
 from ... import SourceError
 
 # Local imports
-from . import Queue, QueueStatus, QueueType
-from ..jobs import JobType
+from . import Queue, QueueStatus
+from ..resources import ResourceType
 
 
 # A queue which tracks sources
@@ -33,8 +33,7 @@ class TrackQueue(Queue):
 
     action_name = "Track"
     complete_name = "Tracked"
-    queue_type = QueueType.FETCH
-    job_type = JobType.TRACK
+    resources = [ResourceType.DOWNLOAD]
 
     def process(self, element):
         return element._track()
