@@ -19,8 +19,8 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 # Local imports
-from . import Queue, QueueStatus, QueueType
-from ..jobs import JobType
+from . import Queue, QueueStatus
+from ..resources import ResourceType
 
 
 # A queue which pulls element artifacts
@@ -29,8 +29,7 @@ class PullQueue(Queue):
 
     action_name = "Pull"
     complete_name = "Pulled"
-    queue_type = QueueType.FETCH
-    job_type = JobType.PULL
+    resources = [ResourceType.UPLOAD]
 
     def process(self, element):
         # returns whether an artifact was downloaded or not
