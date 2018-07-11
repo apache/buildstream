@@ -27,8 +27,6 @@ import datetime
 from contextlib import contextmanager
 
 # Local imports
-from .jobs import JobType
-from .queues import QueueType
 
 
 # A decent return code for Scheduler.run()
@@ -36,59 +34,6 @@ class SchedStatus():
     SUCCESS = 0
     ERROR = -1
     TERMINATED = 1
-
-
-# A set of rules that dictates in which order jobs should run.
-#
-# The first tuple defines jobs that are not allowed to be executed
-# before the current job completes (even if the job is still waiting
-# to be executed).
-#
-# The second tuple defines jobs that the current job is not allowed to
-# be run in parallel with.
-#
-# Note that this is very different from the element job
-# dependencies. Both a build and fetch job can be ready at the same
-# time, this has nothing to do with the requirement to fetch sources
-# before building. These rules are purely in place to maintain cache
-# consistency.
-#
-JOB_RULES = {
-    JobType.CLEAN: {
-        # Build and pull jobs are not allowed to run when we are about
-        # to start a cleanup job, because they will add more data to
-        # the artifact cache.
-        'priority': (JobType.BUILD, JobType.PULL),
-        # Cleanup jobs are not allowed to run in parallel with any
-        # jobs that might need to access the artifact cache, because
-        # we cannot guarantee atomicity otherwise.
-        'exclusive': (JobType.BUILD, JobType.PULL, JobType.PUSH)
-    },
-    JobType.BUILD: {
-        'priority': (),
-        'exclusive': ()
-    },
-    JobType.FETCH: {
-        'priority': (),
-        'exclusive': ()
-    },
-    JobType.PULL: {
-        'priority': (),
-        'exclusive': ()
-    },
-    JobType.PUSH: {
-        'priority': (),
-        'exclusive': ()
-    },
-    JobType.SIZE: {
-        'priority': (),
-        'exclusive': ()
-    },
-    JobType.TRACK: {
-        'priority': (),
-        'exclusive': ()
-    }
-}
 
 
 # Scheduler()
@@ -146,15 +91,7 @@ class Scheduler():
         self._starttime = start_time
         self._suspendtime = None
         self._queue_jobs = True      # Whether we should continue to queue jobs
-        self._start_cleanup = False  # Whether we would like to launch a cleanup job
 
-        # Initialize task tokens with the number allowed by
-        # the user configuration
-        self._job_tokens = {
-            QueueType.FETCH: context.sched_fetchers,
-            QueueType.BUILD: context.sched_builders,
-            QueueType.PUSH: context.sched_pushers
-        }
 
     # run()
     #
@@ -279,16 +216,7 @@ class Scheduler():
     #
     def sched(self):
         for job in self.waiting_jobs:
-            # If our job is not allowed to run with any job currently
-            # running, we don't start it.
-            if any(running_job.job_type in JOB_RULES[job.job_type]['exclusive']
-                   for running_job in self.active_jobs):
-                continue
 
-            # If any job currently waiting has priority over this one,
-            # we don't start it.
-            if any(job.job_type in JOB_RULES[waiting_job.job_type]['priority']
-                   for waiting_job in self.waiting_jobs):
                 continue
 
             job.spawn()
