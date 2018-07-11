@@ -35,7 +35,8 @@ class CleanupJob(Job):
 
     def _parent_complete(self, success, result):
         self._cache._set_cache_size(result)
-        self._complete_cb()
+        if self._complete_cb:
+            self._complete_cb()
 
     @contextmanager
     def _child_logging_enabled(self, logfile):
