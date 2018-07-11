@@ -393,6 +393,14 @@ class Scheduler():
     #                  Local Private Methods              #
     #######################################################
 
+    def _check_cache_size_real(self):
+        logpath = os.path.join(self.context.logdir, 'cache_size.{pid}.log')
+        job = CacheSizeJob(self, 'cache_size', logpath,
+                           resources=[ResourceType.CACHE,
+                                      ResourceType.PROCESS],
+                           exclusive_resources=[ResourceType.CACHE],
+                           complete_cb=None)
+
     # _suspend_jobs()
     #
     # Suspend all ongoing jobs.
