@@ -52,16 +52,6 @@ class Process(multiprocessing.Process):
         self._sentinel = self._popen.sentinel
 
 
-class JobType():
-    FETCH = 1
-    TRACK = 2
-    BUILD = 3
-    PULL = 4
-    PUSH = 5
-    SIZE = 6
-    CLEAN = 7
-
-
 # Job()
 #
 # The Job object represents a parallel task, when calling Job.spawn(),
@@ -71,22 +61,44 @@ class JobType():
 #
 # Args:
 #    scheduler (Scheduler): The scheduler
-#    job_type (QueueType): The type of the job
 #    action_name (str): The queue action name
 #    logfile (str): A template string that points to the logfile
 #                   that should be used - should contain {pid}.
+#    resources (iter(ResourceType)) - A set of resources this job
+#                                     wants to use.
+#    exclusive_resources (iter(ResourceType)) - A set of resources
+#                                               this job wants to use
+#                                               exclusively.
 #    max_retries (int): The maximum number of retries
 #
 class Job():
 
-    def __init__(self, scheduler, job_type, action_name, logfile, *, max_retries=0):
+    def __init__(self, scheduler, action_name, logfile, *,
+                 resources=None, exclusive_resources=None, max_retries=0):
+
+        if resources is None:
+            resources = set()
+        else:
+            resources = set(resources)
+        if exclusive_resources is None:
+            exclusive_resources = set()
+        else:
+            exclusive_resources = set(resources)
+
+        # Ensure nobody tries not use an exclusive resource.
+        assert exclusive_resources <= resources, "All exclusive resources must also be resources!"
 
         #
         # Public members
         #
         self.action_name = action_name   # The action name for the Queue
         self.child_data = None           # Data to be sent to the main process
-        self.job_type = job_type         # The type of the job
+
+        # The resources this job wants to access
+        self.resources = resources
+        # Resources this job needs to access exclusively, i.e., no
+        # other job should be allowed to access them
+        self.exclusive_resources = exclusive_resources
 
         #
         # Private members
