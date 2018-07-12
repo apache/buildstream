@@ -23,7 +23,7 @@
 # This version is bumped whenever enhancements are made
 # to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 9
+BST_FORMAT_VERSION = 10
 
 
 # The base BuildStream artifact version
