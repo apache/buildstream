@@ -330,6 +330,7 @@ class CasBasedDirectory(Directory):
     def _import_files_from_directory(self, source_directory, files, path_prefix=""):
         result = FileListResult()
         for entry in sorted(files):
+            if entry == ".": continue
             split_path = entry.split(os.path.sep)
             # The actual file on the FS we're importing
             import_file = os.path.join(source_directory, entry)
@@ -341,8 +342,9 @@ class CasBasedDirectory(Directory):
                 # a better way would be to hand off all the files in this subdir at once.
                 subdir_result = self._import_directory_recursively(directory_name, source_directory,
                                                                    split_path[1:], path_prefix)
+
                 result.combine(subdir_result)
-            elif os.path.islink(import_file):
+            elif os.path.islink(import_file):  # careful about ordering here, as some cases overlap
                 if self._check_replacement(entry, path_prefix, result):
                     self._add_new_link(source_directory, entry)
                     result.files_written.append(relative_pathname)
@@ -370,29 +372,153 @@ class CasBasedDirectory(Directory):
         with open(refname, "wb") as f:
             f.write(self.ref.SerializeToString())
 
-    def _import_cas_into_cas(self, source_directory):
+    def find_updated_files(self, modified_directory, prefix=""):
+        """Find the list of written and overwritten files that would result
+        from importing 'modified_directory' into this one.  This does
+        not change either directory. The reason this exists is for
+        direct imports of cas directories into other ones, which can
+        be done by simply replacing a hash, but we still need the file
+        lists.
+
+        """
+        result = FileListResult()
+        for entry in modified_directory.pb2_directory.directories:
+            existing_dir = self.find_pb2_entry(entry.name)
+            if existing_dir:
+                updates_files = existing_dir.find_updated_files(modified_directory.descend(entry.name),
+                                                                os.path.join(prefix, entry.name))
+                result.combine(updated_files)
+            else:
+                for f in source_directory.descend(entry.name).list_relative_paths():
+                    result.files_written.append(os.path.join(prefix, f))
+                    # None of these can overwrite anything, since the original files don't exist
+        for entry in modified_directory.pb2_directory.files + modified_directory.pb2_directory.symlinks:
+            if self.find_pb2_entry(entry.name):
+                result.files_overwritten.apppend(os.path.join(prefix, entry.name))
+            result.file_written.apppend(os.path.join(prefix, entry.name))
+        return result
+
+    def filelist_iterator(sorted_files):
+        """ An interator which just returns the top level directories from sorted_files. It will return any directories listed as a single return value. The return value is a tuple consisting
+         of a path component and a list of sub-components. If the list is empty, this indicates that the return value is a file. """
+        last_directory = None
+        for f in sorted_files:
+            components = f.split(os.path.sep)
+            if len(components)>1:
+                if components[0] != last_directory:
+                    if last_directory is not None:
+                        yield (components[0], subcomponents)
+                    subcomponents = []
+                subcomponents.append(os.path.sep.join(components[1:]))
+            else:
+                if last_directory is not None:
+                    yield (last_directory, subcomponents)
+                yield(f, [])
+        if last_directory is not None:
+            yield (last_directory, subcomponents)
+
+    def files_in_subdir(sorted_files, dirname):
+        """ Filters sorted_files and returns only the ones which have 'dirname' as a prefix, with that prefix removed. """
+        if not dirname.endswith(os.path.sep):
+            dirname += os.path.sep
+        return [f.lstrip(dirname) for f in sorted_files if f.startswith(dirname) ]
+
+    def _partial_import_cas_into_cas(self, source_directory, files, path_prefix="", file_list_required=True):
+        result = FileListResult()
+        sorted_files = sorted(files) # Check if this is necessary
+        processed_entries = set()
+        for f in sorted_files:
+            if f == ".": continue
+            components = f.split(os.path.sep)
+            if len(components)>1 or isinstance(source_directory.index[components[0]].buildstream_object, CasBasedDirectory):
+                # Then we are importing a directory
+                dirname = components[0]
+                if dirname not in processed_entries:
+                    subcomponents = CasBasedDirectory.files_in_subdir(sorted_files, dirname)
+                    dest_subdir = self.descend(dirname, create=True)
+                    src_subdir = source_directory.descend(dirname)
+                    import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents, path_prefix=os.path.join(path_prefix,f), file_list_required=file_list_required)
+                    result.combine(import_result)
+                processed_entries.add(dirname)
+            else:
+                self._check_replacement(f, path_prefix, result)
+                fullname = os.path.join(path_prefix, f)
+                item = source_directory.index[f]
+                if isinstance(item.pb2_object, remote_execution_pb2.FileNode):
+                    filenode = self.pb2_directory.files.add(digest=item.pb2_object.digest)
+                    filenode.name = f
+                    is_executable = item.pb2_object.is_executable
+                    filenode.is_executable = is_executable
+                    self.index[f] = IndexEntry(filenode, modified=(fullname in result.overwritten))
+                else: # Must be a symlink
+                    symlinknode = self.pb2_directory.symlinks.add()
+                    symlinknode.name = fullname
+                    # A symlink node has no digest.
+                    symlinknode.target = item.pb2_object.target
+                    self.index[filename] = IndexEntry(symlinknode, modified=(fullname in result.overwritten))
+        return result
+
+    def _full_import_cas_into_cas(self, source_directory, path_prefix="", file_list_required=True):
+        result = FileListResult()
         for entry in source_directory.pb2_directory.directories:
-            # Create a cloned CasBasedDirectory, to avoid modifying the old one
-            buildStreamDirectory = CasBasedDirectory(self.context, ref=entry.digest,
-                                                     parent=self, filename=entry.name)
-            new_pb2_dirnode = self.pb2_directory.directories.add(digest=entry.digest, name=entry.name)
+            # Create a cloned CasBasedDirectory, since we may import more files
+            # into a subdirectory of it and we don't want to affect the original.
+            existing_dir = self.find_pb2_entry(entry.name)
+            if existing_dir:
+                existing_dir.digest = entry.digest
+            else:
+                new_pb2_dirnode = self.pb2_directory.directories.add(digest=entry.digest, name=entry.name)
+            buildStreamDirectory = CasBasedDirectory(self.context, ref=entry.digest, 
+                                                    parent=self, filename=entry.name)
             self.index[entry.name] = IndexEntry(entry, buildstream_object=buildStreamDirectory)
+
+            if file_list_required:
+                if existing_dir:
+                    updated_files = existing_dir.find_updated_files(source_directory.descend(entry.name), entry.name)
+                    result.combine(updated_files)
+                else:
+                    for i in source_directory.descend(entry.name).list_relative_paths():
+                        result.files_written.append(i)
+
         for entry in source_directory.pb2_directory.files:
-            filenode = self.pb2_directory.files.add(name=entry.name, digest=entry.digest)
+            existing_file = self.find_pb2_entry(entry.name)
+            if existing_file:
+                result.files_overwritten.append(relative_pathname)
+                filenode = existing_file
+                filenode.digest = entry.digest
+            else:
+                filenode = self.pb2_directory.files.add(name=entry.name, digest=entry.digest)
             is_executable = entry.is_executable
             filenode.is_executable = is_executable
-            self.index[entry.name] = IndexEntry(filenode, modified=(entry.name in self.index))
-        for entry in self.pb2_directory.symlinks:
+            self.index[entry.name] = IndexEntry(filenode, modified=(existing_file is not None))
+            relative_pathname = os.path.join(path_prefix, entry.name)
+            result.files_written.append(relative_pathname)
+
+        for entry in source_directory.pb2_directory.symlinks:
+            print("  Importing symlink {} into this directory.".format(entry.name))
             existing_link = self.find_pb2_entry(entry.name)
+            relative_pathname = os.path.join(path_prefix, entry.name)
             if existing_link:
                 symlinknode = existing_link
+                result.files_overwritten.append(relative_pathname)
             else:
                 symlinknode = self.pb2_directory.symlinks.add()
             symlinknode.name = entry.name
             # A symlink node has no digest.
             symlinknode.target = entry.target
             self.index[entry.name] = IndexEntry(symlinknode, modified=(existing_link is not None))
-        # TODO: Return a list of things imported.
+            result.files_written.append(relative_pathname)
+        return result
+
+    def _import_cas_into_cas(self, source_directory, files=None):
+        """ A full import is significantly easier than a partial import """
+        if files is None:
+            print("Performing FULL import of {} into {}".format(source_directory, self))
+            return self._full_import_cas_into_cas(source_directory)
+        else:
+            print("Performing PARTIAL import of {} into {}".format(source_directory, self))
+            print("File list is: {}".format(files))
+            return self._partial_import_cas_into_cas(source_directory, files)
 
     def import_files(self, external_pathspec: any, files: List[str] = None,
                      report_written: bool = True, update_utimes: bool = False,
@@ -415,22 +541,33 @@ class CasBasedDirectory(Directory):
 
         can_link (bool): Ignored, since hard links do not have any meaning within CAS.
         """
-        if isinstance(external_pathspec, FileBasedDirectory):
-            source_directory = external_pathspec.get_underlying_directory()
-        elif isinstance(external_pathspec, CasBasedDirectory):
-            result = self._import_cas_into_cas(external_pathspec)
-            # TODO: No result is returned?
-            return result
-        else:
-            source_directory = external_pathspec
 
-        if files is None:
-            files = list_relative_paths(source_directory)
+        duplicate_cas = None
+        if isinstance(external_pathspec, CasBasedDirectory):
+            result = self._import_cas_into_cas(external_pathspec, files=files)
+
+            # Duplicate the current directory and do an import that way.
+            duplicate_cas = CasBasedDirectory(self.context, ref=self.ref)
+            with tempfile.TemporaryDirectory(prefix="roundtrip") as tmpdir:
+                external_pathspec.export_files(tmpdir)
+                if files is None:
+                    files = list_relative_paths(tmpdir)
+                duplicate_cas._import_files_from_directory(tmpdir, files=files)
+                duplicate_cas._recalculate_recursing_down()
+                if duplicate_cas.parent:
+                    duplicate_cas.parent._recalculate_recursing_up(self)
+        else:
+            if isinstance(external_pathspec, FileBasedDirectory):
+                source_directory = external_pathspec.get_underlying_directory()
+            else:
+                source_directory = external_pathspec
+            if files is None:
+                files = list_relative_paths(external_pathspec)
+            result = self._import_files_from_directory(source_directory, files=files)
 
         # TODO: No notice is taken of report_written, update_utimes or can_link.
         # Current behaviour is to fully populate the report, which is inefficient,
         # but still correct.
-        result = self._import_files_from_directory(source_directory, files=files)
 
         # We need to recalculate and store the hashes of all directories both
         # up and down the tree; we have changed our directory by importing files
@@ -440,6 +577,10 @@ class CasBasedDirectory(Directory):
         self._recalculate_recursing_down()
         if self.parent:
             self.parent._recalculate_recursing_up(self)
+        if duplicate_cas:
+            if duplicate_cas.ref.hash != self.ref.hash:
+                print("Mismatch between file-imported result {} and cas-to-cas imported result {}.".format(duplicate_cas.ref.hash,self.ref.hash))
+
         return result
 
     def set_deterministic_mtime(self) -> None:
@@ -466,7 +607,6 @@ class CasBasedDirectory(Directory):
         instead of copying.
 
         """
-
         if not os.path.exists(to_directory):
             os.mkdir(to_directory)
 
