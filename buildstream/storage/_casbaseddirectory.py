@@ -448,7 +448,31 @@ class CasBasedDirectory(Directory):
                     self.index[filename] = IndexEntry(symlinknode, modified=(fullname in result.overwritten))
         return result
 
+    def transfer_node_contents(destination, source):
+        """Transfers all fields from the source PB2 node into the
+        destination. Destination and source must be of the same type and must
+        be a FileNode, SymlinkNode or DirectoryNode.
+        """
+        destination.name = source.name
+        if isinstance(destination, remote_execution_pb2.FileNode):
+            destination.digest = source.digest # Hmm!
+            destination.is_executable = source.is_executable
+        elif isinstance(destination, remote_execution_pb2.SymlinkNode):
+            destination.target = source.target
+        elif isinstance(destination, remote_execution_pb2.DirectoryNode):
+            destination.digest = source.digest # Hmm!
+        else:
+            raise VirtualDirectoryError("Incompatible type '{}' used as destination for transfer_node_contents"
+                                        .format(destination.type))
+
     def _full_import_cas_into_cas(self, source_directory, path_prefix="", file_list_required=True):
+        """ Import all files and symlinks from source_directory to this one.
+        Args:
+           source_directory (:class:`.CasBasedDirectory`): The directory to import from
+           path_prefix (str): Prefix used to add entries to the file list result.
+           file_list_required: Whether to update the file list while processing.
+        """
+
         result = FileListResult()
         for entry in source_directory.pb2_directory.directories:
             existing_item = self.find_pb2_entry(entry.name)
@@ -471,17 +495,16 @@ class CasBasedDirectory(Directory):
                         result.files_written.append(i)
 
         for entry in source_directory.pb2_directory.files:
+            # TODO: Note that this and the symlinks case are now almost identical
             existing_item = self.find_pb2_entry(entry.name)
+            relative_pathname = os.path.join(path_prefix, entry.name)
             if existing_item:
                 filenode = existing_item
-                filenode.digest = entry.digest
-                filenode.size_bytes = entry.size_bytes
                 result.files_overwritten.append(relative_pathname)
             else:
                 filenode = self.pb2_directory.files.add(name=entry.name, digest=entry.digest)
-            filenode.is_executable = entry.is_executable
+            CasBasedDirectory.transfer_node_contents(filenode, entry)
             self.index[entry.name] = IndexEntry(filenode, modified=(existing_item is not None))
-            relative_pathname = os.path.join(path_prefix, entry.name)
             result.files_written.append(relative_pathname)
 
         for entry in source_directory.pb2_directory.symlinks:
@@ -492,8 +515,7 @@ class CasBasedDirectory(Directory):
                 result.files_overwritten.append(relative_pathname)
             else:
                 symlinknode = self.pb2_directory.symlinks.add()
-            symlinknode.name = entry.name
-            symlinknode.target = entry.target
+            CasBasedDirectory.transfer_node_contents(symlinknode, entry)
             # A symlink node has no digest.
             self.index[entry.name] = IndexEntry(symlinknode, modified=(existing_item is not None))
             result.files_written.append(relative_pathname)
