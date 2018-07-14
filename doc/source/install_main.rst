@@ -91,7 +91,7 @@ For recent fedora systems, the following line should get you the system
 requirements you need::
 
   dnf install -y fuse ostree bubblewrap git \
-                 python3 python3-pip python3-gobject python3-psutil
+                 python3 python3-devel python3-pip python3-gobject python3-psutil
 
 
 Installing
