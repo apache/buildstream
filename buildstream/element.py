@@ -1934,6 +1934,10 @@ class Element(Plugin):
                 'cache': type(self.__artifacts).__name__
             }
 
+            # fail-on-overlap setting cannot affect elements without dependencies
+            if project.fail_on_overlap and dependencies:
+                self.__cache_key_dict['fail-on-overlap'] = True
+
         cache_key_dict = self.__cache_key_dict.copy()
         cache_key_dict['dependencies'] = dependencies
 
