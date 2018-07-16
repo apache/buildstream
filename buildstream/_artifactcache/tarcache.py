@@ -36,6 +36,7 @@ class TarCache(ArtifactCache):
 
         self.tardir = os.path.join(context.artifactdir, 'tar')
         os.makedirs(self.tardir, exist_ok=True)
+        self.cache_size = None
 
     ################################################
     #     Implementation of abstract methods       #
@@ -43,6 +44,34 @@ class TarCache(ArtifactCache):
     def contains(self, element, key):
         path = os.path.join(self.tardir, _tarpath(element, key))
         return os.path.isfile(path)
+
+    # list_artifacts():
+    #
+    # List artifacts in this cache in LRU order.
+    #
+    # Returns:
+    #     (list) - A list of refs in LRU order
+    #
+    def list_artifacts(self):
+        artifacts = list(utils.list_relative_paths(self.tardir, list_dirs=False))
+        mtimes = [os.path.getmtime(os.path.join(self.tardir, artifact))
+                  for artifact in artifacts if artifact]
+
+        # We need to get rid of the tarfile extension to get a proper
+        # ref - os.splitext doesn't do this properly, unfortunately.
+        artifacts = [artifact[:-len('.tar.bz2')] for artifact in artifacts]
+
+        return [name for _, name in sorted(zip(mtimes, artifacts))]
+
+    # remove()
+    #
+    # Implements artifactcache.remove().
+    #
+    def remove(self, artifact_name):
+        artifact = os.path.join(self.tardir, artifact_name + '.tar.bz2')
+        size = os.stat(artifact, follow_symlinks=False).st_size
+        os.remove(artifact)
+        self.cache_size -= size
 
     def commit(self, element, content, keys):
         os.makedirs(os.path.join(self.tardir, element._get_project().name, element.normal_name), exist_ok=True)
@@ -55,6 +84,21 @@ class TarCache(ArtifactCache):
                 shutil.copytree(content, refdir, symlinks=True)
 
                 _Tar.archive(os.path.join(self.tardir, ref), key, temp)
+
+            self.cache_size = None
+            self.append_required_artifacts([element])
+
+    # update_atime():
+    #
+    # Update the access time of an element.
+    #
+    # Args:
+    #     element (Element): The Element to mark
+    #     key (str): The cache key to use
+    #
+    def update_atime(self, element, key):
+        path = _tarpath(element, key)
+        os.utime(os.path.join(self.tardir, path))
 
     def extract(self, element, key):
 
@@ -89,6 +133,21 @@ class TarCache(ArtifactCache):
                                         .format(fullname, e)) from e
 
         return dest
+
+    # get_cache_size()
+    #
+    # Return the artifact cache size.
+    #
+    # Returns:
+    #
+    # (int) The size of the artifact cache.
+    #
+    def calculate_cache_size(self):
+        if self.cache_size is None:
+            self.cache_size = utils._get_dir_size(self.tardir)
+            self.estimated_size = self.cache_size
+
+        return self.cache_size
 
 
 # _tarpath()

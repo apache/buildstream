@@ -59,6 +59,9 @@ class OSTreeCache(ArtifactCache):
         self._has_fetch_remotes = False
         self._has_push_remotes = False
 
+        # A cached artifact cache size (irony?)
+        self.cache_size = None
+
     ################################################
     #     Implementation of abstract methods       #
     ################################################
@@ -90,6 +93,21 @@ class OSTreeCache(ArtifactCache):
         ref = self.get_artifact_fullname(element, key)
         return _ostree.exists(self.repo, ref)
 
+    def list_artifacts(self):
+        return _ostree.list_artifacts(self.repo)
+
+    def remove(self, artifact_name):
+        # We cannot defer pruning, unfortunately, because we could
+        # otherwise not figure out how much space was freed by the
+        # removal, and would therefore not be able to expire the
+        # correct number of artifacts.
+        self.cache_size -= _ostree.remove(self.repo, artifact_name, defer_prune=False)
+
+    def update_atime(self, element, key):
+        ref = self.get_artifact_fullname(element, key)
+        ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+        os.utime(ref_file)
+
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
 
@@ -98,6 +116,9 @@ class OSTreeCache(ArtifactCache):
 
         # Extracting a nonexistent artifact is a bug
         assert rev, "Artifact missing for {}".format(ref)
+
+        ref_file = os.path.join(self.repo.get_path().get_path(), 'refs', 'heads', ref)
+        os.utime(ref_file)
 
         dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, rev)
         if os.path.isdir(dest):
@@ -134,6 +155,10 @@ class OSTreeCache(ArtifactCache):
         except OSTreeError as e:
             raise ArtifactError("Failed to commit artifact: {}".format(e)) from e
 
+        self.append_required_artifacts([element])
+
+        self.cache_size = None
+
     def can_diff(self):
         return True
 
@@ -167,6 +192,9 @@ class OSTreeCache(ArtifactCache):
                 # fetch the artifact from highest priority remote using the specified cache key
                 remote_name = self._ensure_remote(self.repo, remote.pull_url)
                 _ostree.fetch(self.repo, remote=remote_name, ref=ref, progress=progress)
+
+                self.append_required_artifacts([element])
+
                 return True
             except OSTreeError:
                 # Try next remote
@@ -200,6 +228,13 @@ class OSTreeCache(ArtifactCache):
             any_pushed |= self._push_to_remote(remote, element, refs)
 
         return any_pushed
+
+    def calculate_cache_size(self):
+        if self.cache_size is None:
+            self.cache_size = utils._get_dir_size(self.repo.get_path().get_path())
+            self.estimated_size = self.cache_size
+
+        return self.cache_size
 
     def initialize_remotes(self, *, on_failure=None):
         remote_specs = self.global_remote_specs.copy()

@@ -21,7 +21,8 @@ import os
 import string
 from collections import Mapping, namedtuple
 
-from .._exceptions import ImplError, LoadError, LoadErrorReason
+from ..element import _KeyStrength
+from .._exceptions import ArtifactError, ImplError, LoadError, LoadErrorReason
 from .._message import Message, MessageType
 from .. import utils
 from .. import _yaml
@@ -61,7 +62,11 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push')):
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
+        self.required_artifacts = set()
         self.extractdir = os.path.join(context.artifactdir, 'extract')
+        self.max_size = context.cache_quota
+        self.estimated_size = None
+
         self.global_remote_specs = []
         self.project_remote_specs = {}
 
@@ -162,6 +167,102 @@ class ArtifactCache():
                                   (str(provenance)))
         return cache_specs
 
+    # append_required_artifacts():
+    #
+    # Append to the list of elements whose artifacts are required for
+    # the current run. Artifacts whose elements are in this list will
+    # be locked by the artifact cache and not touched for the duration
+    # of the current pipeline.
+    #
+    # Args:
+    #     elements (iterable): A set of elements to mark as required
+    #
+    def append_required_artifacts(self, elements):
+        # We lock both strong and weak keys - deleting one but not the
+        # other won't save space in most cases anyway, but would be a
+        # user inconvenience.
+
+        for element in elements:
+            strong_key = element._get_cache_key(strength=_KeyStrength.STRONG)
+            weak_key = element._get_cache_key(strength=_KeyStrength.WEAK)
+
+            for key in (strong_key, weak_key):
+                if key and key not in self.required_artifacts:
+                    self.required_artifacts.add(key)
+
+                    # We also update the usage times of any artifacts
+                    # we will be using, which helps preventing a
+                    # buildstream process that runs in parallel with
+                    # this one from removing artifacts in-use.
+                    try:
+                        self.update_atime(element, key)
+                    except FileNotFoundError:
+                        pass
+
+    # clean():
+    #
+    # Clean the artifact cache as much as possible.
+    #
+    def clean(self):
+        artifacts = self.list_artifacts()
+
+        while self.calculate_cache_size() >= self.context.cache_quota - self.context.cache_lower_threshold:
+            try:
+                to_remove = artifacts.pop(0)
+            except IndexError:
+                # If too many artifacts are required, and we therefore
+                # can't remove them, we have to abort the build.
+                #
+                # FIXME: Asking the user what to do may be neater
+                default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
+                                            'buildstream.conf')
+                detail = ("There is not enough space to build the given element.\n"
+                          "Please increase the cache-quota in {}."
+                          .format(self.context.config_origin or default_conf))
+
+                if self.calculate_cache_size() > self.context.cache_quota:
+                    raise ArtifactError("Cache too full. Aborting.",
+                                        detail=detail,
+                                        reason="cache-too-full")
+                else:
+                    break
+
+            key = to_remove.rpartition('/')[2]
+            if key not in self.required_artifacts:
+                self.remove(to_remove)
+
+        # This should be O(1) if implemented correctly
+        return self.calculate_cache_size()
+
+    # get_approximate_cache_size()
+    #
+    # A cheap method that aims to serve as an upper limit on the
+    # artifact cache size.
+    #
+    # The cache size reported by this function will normally be larger
+    # than the real cache size, since it is calculated using the
+    # pre-commit artifact size, but for very small artifacts in
+    # certain caches additional overhead could cause this to be
+    # smaller than, but close to, the actual size.
+    #
+    # Nonetheless, in practice this should be safe to use as an upper
+    # limit on the cache size.
+    #
+    # If the cache has built-in constant-time size reporting, please
+    # feel free to override this method with a more accurate
+    # implementation.
+    #
+    # Returns:
+    #     (int) An approximation of the artifact cache size.
+    #
+    def get_approximate_cache_size(self):
+        # If we don't currently have an estimate, figure out the real
+        # cache size.
+        if self.estimated_size is None:
+            self.estimated_size = self.calculate_cache_size()
+
+        return self.estimated_size
+
     ################################################
     # Abstract methods for subclasses to implement #
     ################################################
@@ -189,6 +290,44 @@ class ArtifactCache():
     #
     def contains(self, element, key):
         raise ImplError("Cache '{kind}' does not implement contains()"
+                        .format(kind=type(self).__name__))
+
+    # list_artifacts():
+    #
+    # List artifacts in this cache in LRU order.
+    #
+    # Returns:
+    #     ([str]) - A list of artifact names as generated by
+    #               `ArtifactCache.get_artifact_fullname` in LRU order
+    #
+    def list_artifacts(self):
+        raise ImplError("Cache '{kind}' does not implement list_artifacts()"
+                        .format(kind=type(self).__name__))
+
+    # remove():
+    #
+    # Removes the artifact for the specified ref from the local
+    # artifact cache.
+    #
+    # Args:
+    #     ref (artifact_name): The name of the artifact to remove (as
+    #                          generated by
+    #                          `ArtifactCache.get_artifact_fullname`)
+    #
+    def remove(self, artifact_name):
+        raise ImplError("Cache '{kind}' does not implement remove()"
+                        .format(kind=type(self).__name__))
+
+    # update_atime():
+    #
+    # Update the access time of an element.
+    #
+    # Args:
+    #     element (Element): The Element to mark
+    #     key (str): The cache key to use
+    #
+    def update_atime(self, element, key):
+        raise ImplError("Cache '{kind}' does not implement update_atime()"
                         .format(kind=type(self).__name__))
 
     # extract():
@@ -320,6 +459,20 @@ class ArtifactCache():
         raise ImplError("Cache '{kind}' does not implement link_key()"
                         .format(kind=type(self).__name__))
 
+    # calculate_cache_size()
+    #
+    # Return the real artifact cache size.
+    #
+    # Implementations should also use this to update estimated_size.
+    #
+    # Returns:
+    #
+    # (int) The size of the artifact cache.
+    #
+    def calculate_cache_size(self):
+        raise ImplError("Cache '{kind}' does not implement calculate_cache_size()"
+                        .format(kind=type(self).__name__))
+
     ################################################
     #               Local Private Methods          #
     ################################################
@@ -360,6 +513,30 @@ class ArtifactCache():
 
         with self.context.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)
+
+    # _add_artifact_size()
+    #
+    # Since we cannot keep track of the cache size between threads,
+    # this method will be called by the main process every time a
+    # process that added something to the cache finishes.
+    #
+    # This will then add the reported size to
+    # ArtifactCache.estimated_size.
+    #
+    def _add_artifact_size(self, artifact_size):
+        if not self.estimated_size:
+            self.estimated_size = self.calculate_cache_size()
+
+        self.estimated_size += artifact_size
+
+    # _set_cache_size()
+    #
+    # Similarly to the above method, when we calculate the actual size
+    # in a child thread, we can't update it. We instead pass the value
+    # back to the main thread and update it there.
+    #
+    def _set_cache_size(self, cache_size):
+        self.estimated_size = cache_size
 
 
 # _configured_remote_artifact_cache_specs():

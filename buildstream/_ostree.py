@@ -565,6 +565,8 @@ def list_artifacts(repo):
     ref_heads = os.path.join(repo.get_path().get_path(), 'refs', 'heads')
 
     # obtain list of <project>/<element>/<key>
+    # FIXME: ostree 2017.11+ supports a flag that would allow
+    #        listing only local refs
     refs = _list_all_refs(repo).keys()
 
     mtimes = []

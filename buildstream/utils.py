@@ -96,7 +96,7 @@ class FileListResult():
         return ret
 
 
-def list_relative_paths(directory):
+def list_relative_paths(directory, *, list_dirs=True):
     """A generator for walking directory relative paths
 
     This generator is useful for checking the full manifest of
@@ -110,6 +110,7 @@ def list_relative_paths(directory):
 
     Args:
        directory (str): The directory to list files in
+       list_dirs (bool): Whether to list directories
 
     Yields:
        Relative filenames in `directory`
@@ -136,15 +137,16 @@ def list_relative_paths(directory):
         # subdirectories in the walked `dirpath`, so we extract
         # these symlinks from `dirnames`
         #
-        for d in dirnames:
-            fullpath = os.path.join(dirpath, d)
-            if os.path.islink(fullpath):
-                yield os.path.join(basepath, d)
+        if list_dirs:
+            for d in dirnames:
+                fullpath = os.path.join(dirpath, d)
+                if os.path.islink(fullpath):
+                    yield os.path.join(basepath, d)
 
         # We've decended into an empty directory, in this case we
         # want to include the directory itself, but not in any other
         # case.
-        if not filenames:
+        if list_dirs and not filenames:
             yield relpath
 
         # List the filenames in the walked directory
@@ -534,6 +536,76 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
     except Exception:
         cleanup_tempfile()
         raise
+
+
+# _get_dir_size():
+#
+# Get the disk usage of a given directory in bytes.
+#
+# Arguments:
+#     (str) The path whose size to check.
+#
+# Returns:
+#     (int) The size on disk in bytes.
+#
+def _get_dir_size(path):
+    path = os.path.abspath(path)
+
+    def get_size(path):
+        total = 0
+
+        for f in os.scandir(path):
+            total += f.stat(follow_symlinks=False).st_size
+
+            if f.is_dir(follow_symlinks=False):
+                total += get_size(f.path)
+
+        return total
+
+    return get_size(path)
+
+
+# _parse_size():
+#
+# Convert a string representing data size to a number of
+# bytes. E.g. "2K" -> 2048.
+#
+# This uses the same format as systemd's
+# [resource-control](https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#).
+#
+# Arguments:
+#     size (str) The string to parse
+#     volume (str) A path on the volume to consider for percentage
+#                  specifications
+#
+# Returns:
+#     (int|None) The number of bytes, or None if 'infinity' was specified.
+#
+# Raises:
+#     UtilError if the string is not a valid data size.
+#
+def _parse_size(size, volume):
+    if size == 'infinity':
+        return None
+
+    matches = re.fullmatch(r'([0-9]+\.?[0-9]*)([KMGT%]?)', size)
+    if matches is None:
+        raise UtilError("{} is not a valid data size.".format(size))
+
+    num, unit = matches.groups()
+
+    if unit == '%':
+        num = float(num)
+        if num > 100:
+            raise UtilError("{}% is not a valid percentage value.".format(num))
+
+        stat_ = os.statvfs(volume)
+        disk_size = stat_.f_blocks * stat_.f_bsize
+
+        return disk_size * (num / 100)
+
+    units = ('', 'K', 'M', 'G', 'T')
+    return int(num) * 1024**units.index(unit)
 
 
 # A sentinel to be used as a default argument for functions that need

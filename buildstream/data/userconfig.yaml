@@ -23,6 +23,14 @@ artifactdir: ${XDG_CACHE_HOME}/buildstream/artifacts
 logdir: ${XDG_CACHE_HOME}/buildstream/logs
 
 #
+#    Cache
+#
+cache:
+  # Size of the artifact cache - BuildStream will attempt to keep the
+  # artifact cache within this size.
+  quota: infinity
+
+#
 #    Scheduler
 #
 scheduler:
