@@ -19,7 +19,8 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 # Local imports
-from . import Queue, QueueStatus, QueueType
+from . import Queue, QueueStatus
+from ..resources import ResourceType
 
 
 # A queue which pushes element artifacts
@@ -28,7 +29,7 @@ class PushQueue(Queue):
 
     action_name = "Push"
     complete_name = "Pushed"
-    queue_type = QueueType.PUSH
+    resources = [ResourceType.UPLOAD]
 
     def process(self, element):
         # returns whether an artifact was uploaded or not
@@ -40,7 +41,7 @@ class PushQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, element, result, success):
+    def done(self, _, element, result, success):
 
         if not success:
             return False

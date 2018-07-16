@@ -18,7 +18,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-from . import Queue, QueueStatus, QueueType
+from . import Queue, QueueStatus
+from ..resources import ResourceType
 
 
 # A queue which assembles elements
@@ -27,7 +28,7 @@ class BuildQueue(Queue):
 
     action_name = "Build"
     complete_name = "Built"
-    queue_type = QueueType.BUILD
+    resources = [ResourceType.PROCESS]
 
     def process(self, element):
         element._assemble()
@@ -50,7 +51,7 @@ class BuildQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, element, result, success):
+    def done(self, job, element, result, success):
 
         if success:
             # Inform element in main process that assembly is done
