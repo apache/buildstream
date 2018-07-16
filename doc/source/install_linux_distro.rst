@@ -5,7 +5,7 @@ Installing BuildStream on a Linux distro
 ========================================
 BuildStream requires the following base system requirements:
 
-* python3 >= 3.4
+* python3 >= 3.5
 * libostree >= v2017.8 with introspection data
 * bubblewrap >= 0.1.2
 * fuse2

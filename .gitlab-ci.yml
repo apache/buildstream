@@ -1,4 +1,4 @@
-image: buildstream/testsuite-debian:8-master-88-4d92c106
+image: buildstream/buildstream-debian:master-88-4d92c106
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -87,9 +87,6 @@ source_dist:
   artifacts:
     paths:
     - coverage-linux/
-
-tests-debian-8:
-  <<: *linux-tests
 
 tests-debian-9:
   image: buildstream/buildstream-debian:master-88-4d92c106
@@ -223,7 +220,6 @@ coverage:
     - coverage combine --rcfile=../.coveragerc -a coverage.*
     - coverage report --rcfile=../.coveragerc -m
   dependencies:
-  - tests-debian-8
   - tests-debian-9
   - tests-fedora-27
   - tests-unix

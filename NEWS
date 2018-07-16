@@ -13,6 +13,7 @@ buildstream 1.1.4
 
     Artifact servers need to be migrated.
 
+  o BuildStream now requires python version >= 3.5
 
 =================
 buildstream 1.1.3
