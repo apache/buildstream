@@ -297,3 +297,45 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
 
         # And assert that it's again in the local cache, without having built
         assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'cached'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_missing_blob(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        # First build the target element and push to the remote.
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+        assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+        # Assert that everything is now cached in the remote.
+        all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
+        for element_name in all_elements:
+            assert_shared(cli, share, project, element_name)
+
+        # Now we've pushed, delete the user's local artifact cache
+        # directory and try to redownload it from the share
+        #
+        artifacts = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifacts)
+
+        # Assert that nothing is cached locally anymore
+        for element_name in all_elements:
+            assert cli.get_element_state(project, element_name) != 'cached'
+
+        # Now delete blobs in the remote without deleting the artifact ref.
+        # This simulates scenarios with concurrent artifact expiry.
+        remote_objdir = os.path.join(share.repodir, 'cas', 'objects')
+        shutil.rmtree(remote_objdir)
+
+        # Now try bst build
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+
+        # Assert that no artifacts were pulled
+        assert len(result.get_pulled_elements()) == 0
