@@ -60,6 +60,42 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("deps", [("run"), ("none")])
+def test_build_checkout_deps(datafiles, cli, deps):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # First build it
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    # Assert that after a successful build, the builddir is empty
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    # Now check it out
+    result = cli.run(project=project, args=['checkout', 'target.bst', '--deps', deps, checkout])
+    result.assert_success()
+
+    # Check that the executable hello file is found in the checkout
+    filename = os.path.join(checkout, 'usr', 'bin', 'hello')
+
+    if deps == "run":
+        assert os.path.exists(filename)
+    else:
+        assert not os.path.exists(filename)
+
+    # Check that the executable hello file is found in the checkout
+    filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
+
+    if deps == "run":
+        assert os.path.exists(filename)
+    else:
+        assert not os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("hardlinks", [("copies"), ("hardlinks")])
 def test_build_checkout_nonempty(datafiles, cli, hardlinks):
     project = os.path.join(datafiles.dirname, datafiles.basename)
