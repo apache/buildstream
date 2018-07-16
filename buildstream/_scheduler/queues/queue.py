@@ -19,30 +19,18 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 # System imports
+import os
 from collections import deque
 from enum import Enum
 import traceback
 
 # Local imports
-from ..job import Job
+from ..jobs import ElementJob
+from ..resources import ResourceType
 
 # BuildStream toplevel imports
 from ..._exceptions import BstError, set_last_task_error
 from ..._message import Message, MessageType
-
-
-# Indicates the kind of activity
-#
-#
-class QueueType():
-    # Tasks which download stuff from the internet
-    FETCH = 1
-
-    # CPU/Disk intensive tasks
-    BUILD = 2
-
-    # Tasks which upload stuff to the internet
-    PUSH = 3
 
 
 # Queue status for a given element
@@ -69,14 +57,13 @@ class Queue():
     # These should be overridden on class data of of concrete Queue implementations
     action_name = None
     complete_name = None
-    queue_type = None
+    resources = []                     # Resources this queues' jobs want
 
     def __init__(self, scheduler):
 
         #
         # Public members
         #
-        self.active_jobs = []          # List of active ongoing Jobs, for scheduler observation
         self.failed_elements = []      # List of failed elements, for the frontend
         self.processed_elements = []   # List of processed elements, for the frontend
         self.skipped_elements = []     # List of skipped elements, for the frontend
@@ -88,13 +75,13 @@ class Queue():
         self._wait_queue = deque()
         self._done_queue = deque()
         self._max_retries = 0
-        if self.queue_type == QueueType.FETCH or self.queue_type == QueueType.PUSH:
-            self._max_retries = scheduler.context.sched_network_retries
 
         # Assert the subclass has setup class data
         assert self.action_name is not None
         assert self.complete_name is not None
-        assert self.queue_type is not None
+
+        if ResourceType.UPLOAD in self.resources or ResourceType.DOWNLOAD in self.resources:
+            self._max_retries = scheduler.context.sched_network_retries
 
     #####################################################
     #     Abstract Methods for Queue implementations    #
@@ -143,6 +130,7 @@ class Queue():
     # Abstract method for handling a successful job completion.
     #
     # Args:
+    #    job (Job): The job which completed processing
     #    element (Element): The element which completed processing
     #    result (any): The return value of the process() implementation
     #    success (bool): True if the process() implementation did not
@@ -152,7 +140,7 @@ class Queue():
     #    (bool): True if the element should appear to be processsed,
     #            Otherwise False will count the element as "skipped"
     #
-    def done(self, element, result, success):
+    def done(self, job, element, result, success):
         pass
 
     #####################################################
@@ -170,10 +158,22 @@ class Queue():
         if not elts:
             return
 
+        # Note: The internal lists work with jobs. This is not
+        #       reflected in any external methods (except
+        #       pop/peek_ready_jobs).
+        def create_job(element):
+            logfile = self._element_log_path(element)
+            return ElementJob(self._scheduler, self.action_name,
+                              logfile, element=element, queue=self,
+                              resources=self.resources,
+                              action_cb=self.process,
+                              complete_cb=self._job_done,
+                              max_retries=self._max_retries)
+
         # Place skipped elements directly on the done queue
-        elts = list(elts)
-        skip = [elt for elt in elts if self.status(elt) == QueueStatus.SKIP]
-        wait = [elt for elt in elts if elt not in skip]
+        jobs = [create_job(elt) for elt in elts]
+        skip = [job for job in jobs if self.status(job.element) == QueueStatus.SKIP]
+        wait = [job for job in jobs if job not in skip]
 
         self._wait_queue.extend(wait)
         self._done_queue.extend(skip)
@@ -189,7 +189,7 @@ class Queue():
     #
     def dequeue(self):
         while self._done_queue:
-            yield self._done_queue.popleft()
+            yield self._done_queue.popleft().element
 
     # dequeue_ready()
     #
@@ -201,7 +201,10 @@ class Queue():
     def dequeue_ready(self):
         return any(self._done_queue)
 
-    # process_ready()
+    # pop_ready_jobs()
+    #
+    # Returns:
+    #     ([Job]): A list of jobs to run
     #
     # Process elements in the queue, moving elements which were enqueued
     # into the dequeue pool, and processing them if necessary.
@@ -211,45 +214,44 @@ class Queue():
     #
     #   o Elements which are QueueStatus.WAIT will not be effected
     #
-    #   o Elements which are QueueStatus.READY will be processed
-    #     and added to the Queue.active_jobs list as a result,
-    #     given that the scheduler allows the Queue enough tokens
-    #     for the given queue's job type
-    #
     #   o Elements which are QueueStatus.SKIP will move directly
     #     to the dequeue pool
     #
-    def process_ready(self):
-        scheduler = self._scheduler
+    #   o For Elements which are QueueStatus.READY a Job will be
+    #     created and returned to the caller, given that the scheduler
+    #     allows the Queue enough resources for the given job
+    #
+    def pop_ready_jobs(self):
         unready = []
+        ready = []
 
-        while self._wait_queue and scheduler.get_job_token(self.queue_type):
-            element = self._wait_queue.popleft()
+        while self._wait_queue:
+            job = self._wait_queue.popleft()
+            element = job.element
 
             status = self.status(element)
             if status == QueueStatus.WAIT:
-                scheduler.put_job_token(self.queue_type)
-                unready.append(element)
+                unready.append(job)
                 continue
             elif status == QueueStatus.SKIP:
-                scheduler.put_job_token(self.queue_type)
-                self._done_queue.append(element)
+                self._done_queue.append(job)
                 self.skipped_elements.append(element)
                 continue
 
             self.prepare(element)
-
-            job = Job(scheduler, element, self.action_name,
-                      self.process, self._job_done,
-                      max_retries=self._max_retries)
-            scheduler.job_starting(job)
-
-            job.spawn()
-            self.active_jobs.append(job)
+            ready.append(job)
 
         # These were not ready but were in the beginning, give em
         # first priority again next time around
         self._wait_queue.extendleft(unready)
+
+        return ready
+
+    def peek_ready_jobs(self):
+        def ready(job):
+            return self.status(job.element) == QueueStatus.READY
+
+        yield from (job for job in self._wait_queue if ready(job))
 
     #####################################################
     #                 Private Methods                   #
@@ -265,12 +267,16 @@ class Queue():
     #    job (Job): The job which completed
     #
     def _update_workspaces(self, element, job):
+        workspace_dict = None
+        if job.child_data:
+            workspace_dict = job.child_data.get('workspace', None)
+
         # Handle any workspace modifications now
         #
-        if job.workspace_dict:
+        if workspace_dict:
             context = element._get_context()
             workspaces = context.get_workspaces()
-            if workspaces.update_workspace(element._get_full_name(), job.workspace_dict):
+            if workspaces.update_workspace(element._get_full_name(), workspace_dict):
                 try:
                     workspaces.save_config()
                 except BstError as e:
@@ -291,17 +297,15 @@ class Queue():
     #
     def _job_done(self, job, element, success, result):
 
-        # Remove from our jobs
-        self.active_jobs.remove(job)
-
-        # Update workspaces in the main task before calling any queue implementation
+        # Update values that need to be synchronized in the main task
+        # before calling any queue implementation
         self._update_workspaces(element, job)
 
         # Give the result of the job to the Queue implementor,
         # and determine if it should be considered as processed
         # or skipped.
         try:
-            processed = self.done(element, result, success)
+            processed = self.done(job, element, result, success)
 
         except BstError as e:
 
@@ -330,7 +334,7 @@ class Queue():
             # No exception occured, handle the success/failure state in the normal way
             #
             if success:
-                self._done_queue.append(element)
+                self._done_queue.append(job)
                 if processed:
                     self.processed_elements.append(element)
                 else:
@@ -338,18 +342,22 @@ class Queue():
             else:
                 self.failed_elements.append(element)
 
-        # Give the token for this job back to the scheduler
-        # immediately before invoking another round of scheduling
-        self._scheduler.put_job_token(self.queue_type)
-
-        # Notify frontend
-        self._scheduler.job_completed(self, job, success)
-
-        self._scheduler.sched()
-
     # Convenience wrapper for Queue implementations to send
     # a message for the element they are processing
     def _message(self, element, message_type, brief, **kwargs):
         context = element._get_context()
         message = Message(element._get_unique_id(), message_type, brief, **kwargs)
         context.message(message)
+
+    def _element_log_path(self, element):
+        project = element._get_project()
+        context = element._get_context()
+
+        key = element._get_display_key()[1]
+        action = self.action_name.lower()
+        logfile = "{key}-{action}.{{pid}}.log".format(key=key, action=action)
+
+        directory = os.path.join(context.logdir, project.name, element.normal_name)
+
+        os.makedirs(directory, exist_ok=True)
+        return os.path.join(directory, logfile)

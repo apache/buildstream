@@ -1,1 +1,1 @@
-from .queue import Queue, QueueStatus, QueueType
+from .queue import Queue, QueueStatus
