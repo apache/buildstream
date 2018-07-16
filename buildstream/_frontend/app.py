@@ -40,6 +40,7 @@ from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION
 from .. import _yaml
+from .._scheduler import ElementJob
 
 # Import frontend assets
 from . import Profile, LogLine, Status
@@ -492,30 +493,37 @@ class App():
     def _tick(self, elapsed):
         self._maybe_render_status()
 
-    def _job_started(self, element, action_name):
-        self._status.add_job(element, action_name)
+    def _job_started(self, job):
+        self._status.add_job(job)
         self._maybe_render_status()
 
-    def _job_completed(self, element, queue, action_name, success):
-        self._status.remove_job(element, action_name)
+    def _job_completed(self, job, success):
+        self._status.remove_job(job)
         self._maybe_render_status()
 
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
         if not success and not self.stream.terminated:
 
-            # Get the last failure message for additional context
-            failure = self._fail_messages.get(element._get_unique_id())
+            if isinstance(job, ElementJob):
+                element = job.element
+                queue = job.queue
 
-            # XXX This is dangerous, sometimes we get the job completed *before*
-            # the failure message reaches us ??
-            if not failure:
-                self._status.clear()
-                click.echo("\n\n\nBUG: Message handling out of sync, " +
-                           "unable to retrieve failure message for element {}\n\n\n\n\n"
-                           .format(element), err=True)
+                # Get the last failure message for additional context
+                failure = self._fail_messages.get(element._get_unique_id())
+
+                # XXX This is dangerous, sometimes we get the job completed *before*
+                # the failure message reaches us ??
+                if not failure:
+                    self._status.clear()
+                    click.echo("\n\n\nBUG: Message handling out of sync, " +
+                               "unable to retrieve failure message for element {}\n\n\n\n\n"
+                               .format(element), err=True)
+                else:
+                    self._handle_failure(element, queue, failure)
             else:
-                self._handle_failure(element, queue, failure)
+                click.echo("\nTerminating all jobs\n", err=True)
+                self.stream.terminate()
 
     def _handle_failure(self, element, queue, failure):
 

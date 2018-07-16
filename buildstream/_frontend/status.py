@@ -21,6 +21,7 @@ from blessings import Terminal
 
 # Import a widget internal for formatting time codes
 from .widget import TimeCode
+from .._scheduler import ElementJob
 
 
 # Status()
@@ -77,9 +78,9 @@ class Status():
     #    element (Element): The element of the job to track
     #    action_name (str): The action name for this job
     #
-    def add_job(self, element, action_name):
+    def add_job(self, job):
         elapsed = self._stream.elapsed_time
-        job = _StatusJob(self._context, element, action_name, self._content_profile, self._format_profile, elapsed)
+        job = _StatusJob(self._context, job, self._content_profile, self._format_profile, elapsed)
         self._jobs.append(job)
         self._need_alloc = True
 
@@ -91,7 +92,13 @@ class Status():
     #    element (Element): The element of the job to track
     #    action_name (str): The action name for this job
     #
-    def remove_job(self, element, action_name):
+    def remove_job(self, job):
+        action_name = job.action_name
+        if not isinstance(job, ElementJob):
+            element = None
+        else:
+            element = job.element
+
         self._jobs = [
             job for job in self._jobs
             if not (job.element is element and
@@ -358,15 +365,19 @@ class _StatusHeader():
 #
 # Args:
 #    context (Context): The Context
-#    element (Element): The element being processed
-#    action_name (str): The name of the action
+#    job (Job): The job being processed
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
 #    elapsed (datetime): The offset into the session when this job is created
 #
 class _StatusJob():
 
-    def __init__(self, context, element, action_name, content_profile, format_profile, elapsed):
+    def __init__(self, context, job, content_profile, format_profile, elapsed):
+        action_name = job.action_name
+        if not isinstance(job, ElementJob):
+            element = None
+        else:
+            element = job.element
 
         #
         # Public members
@@ -374,6 +385,7 @@ class _StatusJob():
         self.element = element            # The Element
         self.action_name = action_name    # The action name
         self.size = None                  # The number of characters required to render
+        self.full_name = element._get_full_name() if element else action_name
 
         #
         # Private members
@@ -386,7 +398,7 @@ class _StatusJob():
         # Calculate the size needed to display
         self.size = 10  # Size of time code with brackets
         self.size += len(action_name)
-        self.size += len(element._get_full_name())
+        self.size += len(self.full_name)
         self.size += 3  # '[' + ':' + ']'
 
     # render()
@@ -403,7 +415,7 @@ class _StatusJob():
             self._format_profile.fmt(']')
 
         # Add padding after the display name, before terminating ']'
-        name = self.element._get_full_name() + (' ' * padding)
+        name = self.full_name + (' ' * padding)
         text += self._format_profile.fmt('[') + \
             self._content_profile.fmt(self.action_name) + \
             self._format_profile.fmt(':') + \

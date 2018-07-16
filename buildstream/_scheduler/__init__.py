@@ -17,7 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .queues import Queue, QueueStatus, QueueType
+from .queues import Queue, QueueStatus
 
 from .queues.fetchqueue import FetchQueue
 from .queues.trackqueue import TrackQueue
@@ -26,3 +26,4 @@ from .queues.pushqueue import PushQueue
 from .queues.pullqueue import PullQueue
 
 from .scheduler import Scheduler, SchedStatus
+from .jobs import ElementJob
