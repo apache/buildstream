@@ -312,13 +312,6 @@ class Scheduler():
         self.schedule_jobs(ready)
         self._sched()
 
-
-
-        self.schedule_jobs([job])
-
-
-        self.schedule_jobs([job])
-
     def _run_cleanup(self, cache_size):
         if cache_size and cache_size < self.context.cache_quota:
             return
@@ -329,6 +322,7 @@ class Scheduler():
                                     ResourceType.PROCESS],
                          exclusive_resources=[ResourceType.CACHE],
                          complete_cb=None)
+        self.schedule_jobs([job])
 
     def _check_cache_size_real(self):
         logpath = os.path.join(self.context.logdir, 'cache_size.{pid}.log')
@@ -337,6 +331,7 @@ class Scheduler():
                                       ResourceType.PROCESS],
                            exclusive_resources=[ResourceType.CACHE],
                            complete_cb=self._run_cleanup)
+        self.schedule_jobs([job])
 
     # _suspend_jobs()
     #
