@@ -20,6 +20,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+import sys
 import stat
 import shlex
 import shutil
@@ -350,56 +351,91 @@ class Stream():
 
     # checkout()
     #
-    # Checkout the pipeline target artifact to the specified directory
+    # Checkout target artifact to the specified location
     #
     # Args:
     #    target (str): Target to checkout
-    #    directory (str): The directory to checkout the artifact to
-    #    force (bool): Force overwrite files which exist in `directory`
+    #    location (str): Location to checkout the artifact to
+    #    force (bool): Whether files can be overwritten if necessary
+    #    deps (str): The dependencies to checkout
     #    integrate (bool): Whether to run integration commands
     #    hardlinks (bool): Whether checking out files hardlinked to
     #                      their artifacts is acceptable
+    #    tar (bool): If true, a tarball from the artifact contents will
+    #                be created, otherwise the file tree of the artifact
+    #                will be placed at the given location. If true and
+    #                location is '-', the tarball will be dumped on the
+    #                standard output.
     #
     def checkout(self, target, *,
-                 deps='run',
-                 directory=None,
+                 location=None,
                  force=False,
+                 deps='run',
                  integrate=True,
-                 hardlinks=False):
+                 hardlinks=False,
+                 tar=False):
 
         # We only have one target in a checkout command
         elements, _ = self._load((target,), (), fetch_subprojects=True)
         target = elements[0]
 
-        try:
-            os.makedirs(directory, exist_ok=True)
-        except OSError as e:
-            raise StreamError("Failed to create checkout directory: {}".format(e)) from e
+        if not tar:
+            try:
+                os.makedirs(location, exist_ok=True)
+            except OSError as e:
+                raise StreamError("Failed to create checkout directory: '{}'"
+                                  .format(e)) from e
 
-        if not os.access(directory, os.W_OK):
-            raise StreamError("Directory {} not writable".format(directory))
-
-        if not force and os.listdir(directory):
-            raise StreamError("Checkout directory is not empty: {}"
-                              .format(directory))
+        if not tar:
+            if not os.access(location, os.W_OK):
+                raise StreamError("Checkout directory '{}' not writable"
+                                  .format(location))
+            if not force and os.listdir(location):
+                raise StreamError("Checkout directory '{}' not empty"
+                                  .format(location))
+        elif os.path.exists(location) and location != '-':
+            if not os.access(location, os.W_OK):
+                raise StreamError("Output file '{}' not writable"
+                                  .format(location))
+            if not force and os.path.exists(location):
+                raise StreamError("Output file '{}' already exists"
+                                  .format(location))
 
         # Stage deps into a temporary sandbox first
         try:
-            with target._prepare_sandbox(Scope.RUN, None, deps=deps, integrate=integrate) as sandbox:
+            with target._prepare_sandbox(Scope.RUN, None, deps=deps,
+                                         integrate=integrate) as sandbox:
 
                 # Copy or move the sandbox to the target directory
                 sandbox_root = sandbox.get_directory()
-                with target.timed_activity("Checking out files in {}".format(directory)):
-                    try:
-                        if hardlinks:
-                            self._checkout_hardlinks(sandbox_root, directory)
-                        else:
-                            utils.copy_files(sandbox_root, directory)
-                    except OSError as e:
-                        raise StreamError("Failed to checkout files: {}".format(e)) from e
+                if not tar:
+                    with target.timed_activity("Checking out files in '{}'"
+                                               .format(location)):
+                        try:
+                            if hardlinks:
+                                self._checkout_hardlinks(sandbox_root, location)
+                            else:
+                                utils.copy_files(sandbox_root, location)
+                        except OSError as e:
+                            raise StreamError("Failed to checkout files: '{}'"
+                                              .format(e)) from e
+                else:
+                    if location == '-':
+                        with target.timed_activity("Creating tarball"):
+                            with os.fdopen(sys.stdout.fileno(), 'wb') as fo:
+                                with tarfile.open(fileobj=fo, mode="w|") as tf:
+                                    Stream._add_directory_to_tarfile(
+                                        tf, sandbox_root, '.')
+                    else:
+                        with target.timed_activity("Creating tarball '{}'"
+                                                   .format(location)):
+                            with tarfile.open(location, "w:") as tf:
+                                Stream._add_directory_to_tarfile(
+                                    tf, sandbox_root, '.')
+
         except BstError as e:
-            raise StreamError("Error while staging dependencies into a sandbox: {}".format(e),
-                              reason=e.reason) from e
+            raise StreamError("Error while staging dependencies into a sandbox"
+                              ": '{}'".format(e), reason=e.reason) from e
 
     # workspace_open
     #
@@ -1026,6 +1062,30 @@ class Stream():
                 utils.link_files(sandbox_root, directory)
         else:
             utils.link_files(sandbox_root, directory)
+
+    # Add a directory entry deterministically to a tar file
+    #
+    # This function takes extra steps to ensure the output is deterministic.
+    # First, it sorts the results of os.listdir() to ensure the ordering of
+    # the files in the archive is the same.  Second, it sets a fixed
+    # timestamp for each entry. See also https://bugs.python.org/issue24465.
+    @staticmethod
+    def _add_directory_to_tarfile(tf, dir_name, dir_arcname, mtime=0):
+        for filename in sorted(os.listdir(dir_name)):
+            name = os.path.join(dir_name, filename)
+            arcname = os.path.join(dir_arcname, filename)
+
+            tarinfo = tf.gettarinfo(name, arcname)
+            tarinfo.mtime = mtime
+
+            if tarinfo.isreg():
+                with open(name, "rb") as f:
+                    tf.addfile(tarinfo, f)
+            elif tarinfo.isdir():
+                tf.addfile(tarinfo)
+                Stream._add_directory_to_tarfile(tf, name, arcname, mtime)
+            else:
+                tf.addfile(tarinfo)
 
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):

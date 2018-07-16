@@ -626,7 +626,7 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 ##################################################################
 @cli.command(short_help="Checkout a built artifact")
 @click.option('--force', '-f', default=False, is_flag=True,
-              help="Overwrite files existing in checkout directory")
+              help="Allow files to be overwritten")
 @click.option('--deps', '-d', default='run',
               type=click.Choice(['run', 'none']),
               help='The dependencies to checkout (default: run)')
@@ -634,20 +634,30 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
               help="Whether to run integration commands")
 @click.option('--hardlinks', default=False, is_flag=True,
               help="Checkout hardlinks instead of copies (handle with care)")
+@click.option('--tar', default=False, is_flag=True,
+              help="Create a tarball from the artifact contents instead "
+                   "of a file tree. If LOCATION is '-', the tarball "
+                   "will be dumped to the standard output.")
 @click.argument('element',
                 type=click.Path(readable=False))
-@click.argument('directory', type=click.Path(file_okay=False))
+@click.argument('location', type=click.Path())
 @click.pass_obj
-def checkout(app, element, directory, force, deps, integrate, hardlinks):
-    """Checkout a built artifact to the specified directory
+def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
+    """Checkout a built artifact to the specified location
     """
+
+    if hardlinks and tar:
+        click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
+        sys.exit(-1)
+
     with app.initialized():
         app.stream.checkout(element,
-                            directory=directory,
-                            deps=deps,
+                            location=location,
                             force=force,
+                            deps=deps,
                             integrate=integrate,
-                            hardlinks=hardlinks)
+                            hardlinks=hardlinks,
+                            tar=tar)
 
 
 ##################################################################
