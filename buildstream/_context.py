@@ -21,6 +21,7 @@ import os
 import datetime
 from collections import deque, Mapping
 from contextlib import contextmanager
+from . import utils
 from . import _cachekey
 from . import _signals
 from . import _site
@@ -61,6 +62,12 @@ class Context():
 
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = []
+
+        # The artifact cache quota
+        self.cache_quota = None
+
+        # The lower threshold to which we aim to reduce the cache size
+        self.cache_lower_threshold = None
 
         # The directory to store build logs
         self.logdir = None
@@ -153,6 +160,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
+            'cache'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -164,6 +172,53 @@ class Context():
             path = os.path.expandvars(path)
             path = os.path.normpath(path)
             setattr(self, directory, path)
+
+        # Load quota configuration
+        # We need to find the first existing directory in the path of
+        # our artifactdir - the artifactdir may not have been created
+        # yet.
+        cache = _yaml.node_get(defaults, Mapping, 'cache')
+        _yaml.node_validate(cache, ['quota'])
+
+        artifactdir_volume = self.artifactdir
+        while not os.path.exists(artifactdir_volume):
+            artifactdir_volume = os.path.dirname(artifactdir_volume)
+
+        # We read and parse the cache quota as specified by the user
+        cache_quota = _yaml.node_get(cache, str, 'quota', default_value='infinity')
+        try:
+            cache_quota = utils._parse_size(cache_quota, artifactdir_volume)
+        except utils.UtilError as e:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
+                            "\nValid values are, for example: 800M 10G 1T 50%\n"
+                            .format(str(e))) from e
+
+        # If we are asked not to set a quota, we set it to the maximum
+        # disk space available minus a headroom of 2GB, such that we
+        # at least try to avoid raising Exceptions.
+        #
+        # Of course, we might still end up running out during a build
+        # if we end up writing more than 2G, but hey, this stuff is
+        # already really fuzzy.
+        #
+        if cache_quota is None:
+            stat = os.statvfs(artifactdir_volume)
+            # Again, the artifact directory may not yet have been
+            # created
+            if not os.path.exists(self.artifactdir):
+                cache_size = 0
+            else:
+                cache_size = utils._get_dir_size(self.artifactdir)
+            cache_quota = cache_size + stat.f_bsize * stat.f_bavail
+
+        if 'BST_TEST_SUITE' in os.environ:
+            headroom = 0
+        else:
+            headroom = 2e9
+
+        self.cache_quota = cache_quota - headroom
+        self.cache_lower_threshold = self.cache_quota / 2
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)

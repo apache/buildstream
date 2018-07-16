@@ -538,6 +538,76 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
         raise
 
 
+# _get_dir_size():
+#
+# Get the disk usage of a given directory in bytes.
+#
+# Arguments:
+#     (str) The path whose size to check.
+#
+# Returns:
+#     (int) The size on disk in bytes.
+#
+def _get_dir_size(path):
+    path = os.path.abspath(path)
+
+    def get_size(path):
+        total = 0
+
+        for f in os.scandir(path):
+            total += f.stat(follow_symlinks=False).st_size
+
+            if f.is_dir(follow_symlinks=False):
+                total += get_size(f.path)
+
+        return total
+
+    return get_size(path)
+
+
+# _parse_size():
+#
+# Convert a string representing data size to a number of
+# bytes. E.g. "2K" -> 2048.
+#
+# This uses the same format as systemd's
+# [resource-control](https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#).
+#
+# Arguments:
+#     size (str) The string to parse
+#     volume (str) A path on the volume to consider for percentage
+#                  specifications
+#
+# Returns:
+#     (int|None) The number of bytes, or None if 'infinity' was specified.
+#
+# Raises:
+#     UtilError if the string is not a valid data size.
+#
+def _parse_size(size, volume):
+    if size == 'infinity':
+        return None
+
+    matches = re.fullmatch(r'([0-9]+\.?[0-9]*)([KMGT%]?)', size)
+    if matches is None:
+        raise UtilError("{} is not a valid data size.".format(size))
+
+    num, unit = matches.groups()
+
+    if unit == '%':
+        num = float(num)
+        if num > 100:
+            raise UtilError("{}% is not a valid percentage value.".format(num))
+
+        stat_ = os.statvfs(volume)
+        disk_size = stat_.f_blocks * stat_.f_bsize
+
+        return disk_size * (num / 100)
+
+    units = ('', 'K', 'M', 'G', 'T')
+    return int(num) * 1024**units.index(unit)
+
+
 # A sentinel to be used as a default argument for functions that need
 # to distinguish between a kwarg set to None and an unset kwarg.
 _sentinel = object()
