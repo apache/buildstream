@@ -361,6 +361,7 @@ class Stream():
     #                      their artifacts is acceptable
     #
     def checkout(self, target, *,
+                 deps='run',
                  directory=None,
                  force=False,
                  integrate=True,
@@ -384,7 +385,7 @@ class Stream():
 
         # Stage deps into a temporary sandbox first
         try:
-            with target._prepare_sandbox(Scope.RUN, None, integrate=integrate) as sandbox:
+            with target._prepare_sandbox(Scope.RUN, None, deps=deps, integrate=integrate) as sandbox:
 
                 # Copy or move the sandbox to the target directory
                 sandbox_root = sandbox.get_directory()

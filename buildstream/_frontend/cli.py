@@ -627,6 +627,9 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 @cli.command(short_help="Checkout a built artifact")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Overwrite files existing in checkout directory")
+@click.option('--deps', '-d', default='run',
+              type=click.Choice(['run', 'none']),
+              help='The dependencies to checkout (default: all')
 @click.option('--integrate/--no-integrate', default=True, is_flag=True,
               help="Whether to run integration commands")
 @click.option('--hardlinks', default=False, is_flag=True,
@@ -635,12 +638,13 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
                 type=click.Path(readable=False))
 @click.argument('directory', type=click.Path(file_okay=False))
 @click.pass_obj
-def checkout(app, element, directory, force, integrate, hardlinks):
+def checkout(app, element, directory, force, deps, integrate, hardlinks):
     """Checkout a built artifact to the specified directory
     """
     with app.initialized():
         app.stream.checkout(element,
                             directory=directory,
+                            deps=deps,
                             force=force,
                             integrate=integrate,
                             hardlinks=hardlinks)

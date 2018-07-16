@@ -1242,8 +1242,7 @@ class Element(Plugin):
     # is used to stage things by the `bst checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, directory, integrate=True):
-
+    def _prepare_sandbox(self, scope, directory, deps='run', integrate=True):
         with self.__sandbox(directory, config=self.__sandbox_config) as sandbox:
 
             # Configure always comes first, and we need it.
@@ -1255,15 +1254,16 @@ class Element(Plugin):
                     self.stage(sandbox)
                 elif scope == Scope.RUN:
                     # Stage deps in the sandbox root
-                    with self.timed_activity("Staging dependencies", silent_nested=True):
-                        self.stage_dependency_artifacts(sandbox, scope)
+                    if deps == 'run':
+                        with self.timed_activity("Staging dependencies", silent_nested=True):
+                            self.stage_dependency_artifacts(sandbox, scope)
 
-                    # Run any integration commands provided by the dependencies
-                    # once they are all staged and ready
-                    if integrate:
-                        with self.timed_activity("Integrating sandbox"):
-                            for dep in self.dependencies(scope):
-                                dep.integrate(sandbox)
+                        # Run any integration commands provided by the dependencies
+                        # once they are all staged and ready
+                        if integrate:
+                            with self.timed_activity("Integrating sandbox"):
+                                for dep in self.dependencies(scope):
+                                    dep.integrate(sandbox)
 
             yield sandbox
 
