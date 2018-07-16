@@ -14,6 +14,7 @@ buildstream 1.1.4
 buildstream 1.1.3
 =================
 
+  o BuildStream now requires python version >= 3.5
   o Added new `bst init` command to initialize a new project.
 
   o Cross junction tracking is now disabled by default for projects
