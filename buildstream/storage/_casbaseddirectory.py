@@ -455,12 +455,14 @@ class CasBasedDirectory(Directory):
         """
         destination.name = source.name
         if isinstance(destination, remote_execution_pb2.FileNode):
-            destination.digest = source.digest # Hmm!
+            destination.digest.hash = source.digest.hash
+            destination.digest.size_bytes = source.digest.size_bytes
             destination.is_executable = source.is_executable
         elif isinstance(destination, remote_execution_pb2.SymlinkNode):
             destination.target = source.target
         elif isinstance(destination, remote_execution_pb2.DirectoryNode):
-            destination.digest = source.digest # Hmm!
+            destination.digest.hash = source.digest.hash
+            destination.digest.size_bytes = source.digest.size_bytes
         else:
             raise VirtualDirectoryError("Incompatible type '{}' used as destination for transfer_node_contents"
                                         .format(destination.type))
