@@ -26,7 +26,7 @@ import datetime
 from contextlib import contextmanager
 
 # Local imports
-from .queue import QueueType
+from .queues import QueueType
 
 
 # A decent return code for Scheduler.run()
