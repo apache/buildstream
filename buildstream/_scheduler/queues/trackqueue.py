@@ -19,8 +19,8 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 # BuildStream toplevel imports
-from ..plugin import _plugin_lookup
-from .. import SourceError
+from ...plugin import _plugin_lookup
+from ... import SourceError
 
 # Local imports
 from . import Queue, QueueStatus, QueueType

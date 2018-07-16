@@ -24,11 +24,11 @@ from enum import Enum
 import traceback
 
 # Local imports
-from .job import Job
+from ..job import Job
 
 # BuildStream toplevel imports
-from .._exceptions import BstError, set_last_task_error
-from .._message import Message, MessageType
+from ..._exceptions import BstError, set_last_task_error
+from ..._message import Message, MessageType
 
 
 # Indicates the kind of activity
