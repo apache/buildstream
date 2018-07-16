@@ -25,8 +25,8 @@ import subprocess
 import sys
 import versioneer
 
-if sys.version_info[0] != 3 or sys.version_info[1] < 4:
-    print("BuildStream requires Python >= 3.4")
+if sys.version_info[0] != 3 or sys.version_info[1] < 5:
+    print("BuildStream requires Python >= 3.5")
     sys.exit(1)
 
 try:
