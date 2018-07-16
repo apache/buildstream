@@ -3,14 +3,14 @@
 bst\-checkout \- Checkout a built artifact
 .SH SYNOPSIS
 .B bst checkout
-[OPTIONS] ELEMENT DIRECTORY
+[OPTIONS] ELEMENT LOCATION
 .SH DESCRIPTION
-Checkout a built artifact to the specified directory
+Checkout a built artifact to the specified location
     
 .SH OPTIONS
 .TP
 \fB\-f,\fP \-\-force
-Overwrite files existing in checkout directory
+Allow files to be overwritten
 .TP
 \fB\-d,\fP \-\-deps [run|none]
 The dependencies to checkout (default: run)
@@ -20,3 +20,7 @@ Whether to run integration commands
 .TP
 \fB\-\-hardlinks\fP
 Checkout hardlinks instead of copies (handle with care)
+.TP
+\fB\-\-tar\fP
+Create a tarball from the artifact contents instead of a file tree. If
+LOCATION is '-', the tarball will be dumped to the standard output.

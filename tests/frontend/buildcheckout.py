@@ -1,4 +1,6 @@
 import os
+import tarfile
+import hashlib
 import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
 
@@ -54,7 +56,6 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
     filename = os.path.join(checkout, 'usr', 'bin', 'hello')
     assert os.path.exists(filename)
 
-    # Check that the executable hello file is found in the checkout
     filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
     assert os.path.exists(filename)
 
@@ -93,6 +94,88 @@ def test_build_checkout_deps(datafiles, cli, deps):
         assert os.path.exists(filename)
     else:
         assert not os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tarball(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout.tar')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['checkout', '--tar', 'target.bst', checkout]
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    tar = tarfile.TarFile(checkout)
+    assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
+    assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
+
+
+@pytest.mark.skip(reason="Capturing the binary output is causing a stacktrace")
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tarball_stdout(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    tarball = os.path.join(cli.directory, 'tarball.tar')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['checkout', '--tar', 'target.bst', '-']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    with open(tarball, 'wb') as f:
+        f.write(result.output)
+
+    tar = tarfile.TarFile(tarball)
+    assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
+    assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tarball_is_deterministic(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    tarball1 = os.path.join(cli.directory, 'tarball1.tar')
+    tarball2 = os.path.join(cli.directory, 'tarball2.tar')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['checkout', '--force', '--tar', 'target.bst']
+
+    checkout_args1 = checkout_args + [tarball1]
+    result = cli.run(project=project, args=checkout_args1)
+    result.assert_success()
+
+    checkout_args2 = checkout_args + [tarball2]
+    result = cli.run(project=project, args=checkout_args2)
+    result.assert_success()
+
+    with open(tarball1, 'rb') as f:
+        contents = f.read()
+    hash1 = hashlib.sha1(contents).hexdigest()
+
+    with open(tarball2, 'rb') as f:
+        contents = f.read()
+    hash2 = hashlib.sha1(contents).hexdigest()
+
+    assert hash1 == hash2
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -170,6 +253,30 @@ def test_build_checkout_force(datafiles, cli, hardlinks):
     filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
     assert os.path.exists(filename)
 
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_force_tarball(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    tarball = os.path.join(cli.directory, 'tarball.tar')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    with open(tarball, "w") as f:
+        f.write("Hello")
+
+    checkout_args = ['checkout', '--force', '--tar', 'target.bst', tarball]
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    tar = tarfile.TarFile(tarball)
+    assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
+    assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
 
 fetch_build_checkout_combos = \
     [("strict", kind) for kind in ALL_REPO_KINDS] + \
