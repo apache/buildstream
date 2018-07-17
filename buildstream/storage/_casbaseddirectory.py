@@ -453,6 +453,7 @@ class CasBasedDirectory(Directory):
         destination. Destination and source must be of the same type and must
         be a FileNode, SymlinkNode or DirectoryNode.
         """
+        assert(type(destination) == type(source))
         destination.name = source.name
         if isinstance(destination, remote_execution_pb2.FileNode):
             destination.digest.hash = source.digest.hash
@@ -496,31 +497,19 @@ class CasBasedDirectory(Directory):
                     for i in source_directory.descend(entry.name).list_relative_paths():
                         result.files_written.append(i)
 
-        for entry in source_directory.pb2_directory.files:
-            # TODO: Note that this and the symlinks case are now almost identical
-            existing_item = self.find_pb2_entry(entry.name)
-            relative_pathname = os.path.join(path_prefix, entry.name)
-            if existing_item:
-                filenode = existing_item
-                result.files_overwritten.append(relative_pathname)
-            else:
-                filenode = self.pb2_directory.files.add(name=entry.name, digest=entry.digest)
-            CasBasedDirectory.transfer_node_contents(filenode, entry)
-            self.index[entry.name] = IndexEntry(filenode, modified=(existing_item is not None))
-            result.files_written.append(relative_pathname)
-
-        for entry in source_directory.pb2_directory.symlinks:
-            existing_item = self.find_pb2_entry(entry.name)
-            relative_pathname = os.path.join(path_prefix, entry.name)
-            if existing_item:
-                symlinknode = existing_item
-                result.files_overwritten.append(relative_pathname)
-            else:
-                symlinknode = self.pb2_directory.symlinks.add()
-            CasBasedDirectory.transfer_node_contents(symlinknode, entry)
-            # A symlink node has no digest.
-            self.index[entry.name] = IndexEntry(symlinknode, modified=(existing_item is not None))
-            result.files_written.append(relative_pathname)
+        for collection in ('files', 'symlinks'):
+            for entry in getattr(source_directory.pb2_directory, collection):
+                # TODO: Note that this and the symlinks case are now almost identical
+                existing_item = self.find_pb2_entry(entry.name)
+                relative_pathname = os.path.join(path_prefix, entry.name)
+                if existing_item:
+                    node = existing_item
+                    result.files_overwritten.append(relative_pathname)
+                else:
+                    node = getattr(self.pb2_directory, collection).add()
+                CasBasedDirectory.transfer_node_contents(node, entry)
+                self.index[entry.name] = IndexEntry(node, modified=(existing_item is not None))
+                result.files_written.append(relative_pathname)
         return result
 
     def _import_cas_into_cas(self, source_directory, files=None):
