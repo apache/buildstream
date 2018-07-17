@@ -548,9 +548,8 @@ class CasBasedDirectory(Directory):
         replace one directory with another's hash, without doing any recursion.
         """
         if files is None:
-            return self._full_import_cas_into_cas(source_directory)
-        else:
-            return self._partial_import_cas_into_cas(source_directory, files)
+            files = source_directory.list_relative_paths()
+        return self._partial_import_cas_into_cas(source_directory, files)
 
     def import_files(self, external_pathspec: any, files: List[str] = None,
                      report_written: bool = True, update_utimes: bool = False,
