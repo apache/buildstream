@@ -629,7 +629,7 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
               help="Overwrite files existing in checkout directory")
 @click.option('--deps', '-d', default='run',
               type=click.Choice(['run', 'none']),
-              help='The dependencies to checkout (default: all')
+              help='The dependencies to checkout (default: run)')
 @click.option('--integrate/--no-integrate', default=True, is_flag=True,
               help="Whether to run integration commands")
 @click.option('--hardlinks', default=False, is_flag=True,
