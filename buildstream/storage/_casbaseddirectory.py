@@ -254,6 +254,33 @@ class CasBasedDirectory(Directory):
         else:
             return self
 
+    def _resolve_symlink(self, symlink, chain=True):
+        """ Resolve the symlink node given and return the file or directory it points at. Needs to return a CASBasedDirectory for directories, and a FileNode for files."""
+        absolute = symlink.target.startswith(os.path.sep)
+        if absolute:
+            root = self.find_root()
+        else:
+            root = self
+        directory = root
+        components = symlink.target.split(os.path.sep)
+        for c in components:
+            if c == "..":
+                directory = directory.parent
+            else:
+                item = self.find_pb2_entry(c)
+                if item is None:
+                    raise VirtualDirectoryErorr("Tried to resolve a broken symlink; source is '{}' and target is '{}'".format(symlink.source, symlink_node.target))
+                elif isinstance(item, remote_execution_pb2.FileNode):
+                    # TODO: if there are further things to descend in 'components', then we should throw an error here
+                    return item
+                elif isinstance(item, remote_execution_pb2.SymlinkNode):
+                    raise VirtualDirectoryError("Chained symlinks are not supported yet")
+                elif isinstance(item, remote_execution_pb2.DirectoryNode):
+                    directory = directory.descend(c, create=True)
+                else:
+                    raise VirtualDirectoryError("Internal error: Object '{}' in '{}' is not a recognised type".format(c, self))
+        return directory
+
     def _resolve_symlink_or_directory(self, name):
         """Used only by _import_files_from_directory. Tries to resolve a
         directory name or symlink name. 'name' must be an entry in this
@@ -406,6 +433,10 @@ class CasBasedDirectory(Directory):
         if not dirname.endswith(os.path.sep):
             dirname += os.path.sep
         return [f.lstrip(dirname) for f in sorted_files if f.startswith(dirname)]
+
+    def symlink_target_is_directory(self, symlink_node):
+        x = self._resolve_symlink(symlink_node)
+        return isinstance(x, CasBasedDirectory)
 
     def _partial_import_cas_into_cas(self, source_directory, files, path_prefix="", file_list_required=True):
         """ Import only the files and symlinks listed in 'files' from source_directory to this one.
