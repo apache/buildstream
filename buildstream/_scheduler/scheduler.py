@@ -27,7 +27,8 @@ import datetime
 from contextlib import contextmanager
 
 # Local imports
-from .resources import Resources
+from .resources import Resources, ResourceType
+from .jobs import CacheSizeJob
 
 
 # A decent return code for Scheduler.run()
@@ -311,6 +312,15 @@ class Scheduler():
 
         self.schedule_jobs(ready)
         self._sched()
+
+    def _check_cache_size_real(self):
+        logpath = os.path.join(self.context.logdir, 'cache_size.{pid}.log')
+        job = CacheSizeJob(self, 'cache_size', logpath,
+                           resources=[ResourceType.CACHE,
+                                      ResourceType.PROCESS],
+                           exclusive_resources=[ResourceType.CACHE],
+                           complete_cb=None)
+        self.schedule_jobs([job])
 
     # _suspend_jobs()
     #

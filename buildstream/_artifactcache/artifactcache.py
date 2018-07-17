@@ -85,6 +85,7 @@ class ArtifactCache():
         self.project_remote_specs = {}
 
         self._local = False
+        self.cache_size = None
 
         os.makedirs(context.artifactdir, exist_ok=True)
 
