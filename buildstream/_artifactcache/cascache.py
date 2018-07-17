@@ -450,6 +450,12 @@ class CASCache(ArtifactCache):
         except FileNotFoundError as e:
             raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
 
+    def update_atime(self, ref):
+        try:
+            os.utime(self._refpath(ref))
+        except FileNotFoundError as e:
+            raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
+
     def calculate_cache_size(self):
         if self.cache_size is None:
             self.cache_size = utils._get_dir_size(self.casdir)
