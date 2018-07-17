@@ -77,7 +77,7 @@ class CASCache(ArtifactCache):
     def extract(self, element, key):
         ref = self.get_artifact_fullname(element, key)
 
-        tree = self.resolve_ref(ref)
+        tree = self.resolve_ref(ref, update_mtime=True)
 
         dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, tree.hash)
         if os.path.isdir(dest):
@@ -112,6 +112,8 @@ class CASCache(ArtifactCache):
 
         for ref in refs:
             self.set_ref(ref, tree)
+
+        self.cache_size = None
 
     def diff(self, element, key_a, key_b, *, subdir=None):
         ref_a = self.get_artifact_fullname(element, key_a)
@@ -447,6 +449,13 @@ class CASCache(ArtifactCache):
 
         except FileNotFoundError as e:
             raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
+
+    def calculate_cache_size(self):
+        if self.cache_size is None:
+            self.cache_size = utils._get_dir_size(self.casdir)
+            self.estimated_size = self.cache_size
+
+        return self.cache_size
 
     # list_artifacts():
     #
