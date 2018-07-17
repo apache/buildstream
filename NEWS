@@ -15,6 +15,10 @@ buildstream 1.1.4
 
   o BuildStream now requires python version >= 3.5
 
+  o BuildStream will now automatically clean up old artifacts when it
+    runs out of space. The exact behavior is configurable in the user's
+    buildstream.conf.
+
 =================
 buildstream 1.1.3
 =================
