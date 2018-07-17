@@ -660,6 +660,8 @@ class CASCache(ArtifactCache):
         if tree.hash in reachable:
             return
 
+        reachable.add(tree.hash)
+
         directory = remote_execution_pb2.Directory()
 
         with open(self.objpath(tree), 'rb') as f:
