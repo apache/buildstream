@@ -43,7 +43,7 @@ class SchedStatus():
 # The scheduler operates on a list queues, each of which is meant to accomplish
 # a specific task. Elements enter the first queue when Scheduler.run() is called
 # and into the next queue when complete. Scheduler.run() returns when all of the
-# elements have been traversed or when an occurs.
+# elements have been traversed or when an error occurs.
 #
 # Using the scheduler is a matter of:
 #   a.) Deriving the Queue class and implementing its abstract methods
@@ -104,6 +104,8 @@ class Scheduler():
     #    queues (list): A list of Queue objects
     #
     # Returns:
+    #    (timedelta): The amount of time since the start of the session,
+    #                 discounting any time spent while jobs were suspended
     #    (SchedStatus): How the scheduling terminated
     #
     # Elements in the 'plan' will be processed by each
@@ -199,7 +201,7 @@ class Scheduler():
     # Fetches the current session elapsed time
     #
     # Returns:
-    #    (datetime): The amount of time since the start of the session,
+    #    (timedelta): The amount of time since the start of the session,
     #                discounting any time spent while jobs were suspended.
     #
     def elapsed_time(self):
