@@ -31,9 +31,13 @@ from .source import Source
 #
 class SourceFactory(PluginContext):
 
-    def __init__(self, plugin_base, plugin_origins=None):
+    def __init__(self, plugin_base, *,
+                 format_versions={},
+                 plugin_origins=None):
 
-        super().__init__(plugin_base, Source, [_site.source_plugins], plugin_origins)
+        super().__init__(plugin_base, Source, [_site.source_plugins],
+                         format_versions=format_versions,
+                         plugin_origins=plugin_origins)
 
     # create():
     #
@@ -54,4 +58,7 @@ class SourceFactory(PluginContext):
     #
     def create(self, context, project, meta):
         source_type, _ = self.lookup(meta.kind)
-        return source_type(context, project, meta)
+        source = source_type(context, project, meta)
+        version = self._format_versions.get(meta.kind, 0)
+        self._assert_plugin_format(source, version)
+        return source

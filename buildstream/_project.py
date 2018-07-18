@@ -104,17 +104,16 @@ class Project():
         #
         self._context = context  # The invocation Context
         self._aliases = {}       # Aliases dictionary
-        self._plugin_source_origins = []   # Origins of custom sources
-        self._plugin_element_origins = []  # Origins of custom elements
 
         self._cli_options = cli_options
         self._cache_key = None
-        self._source_format_versions = {}
-        self._element_format_versions = {}
 
         self._shell_command = []      # The default interactive shell command
         self._shell_environment = {}  # Statically set environment vars
         self._shell_host_files = []   # A list of HostMount objects
+
+        self._element_factory = None
+        self._source_factory = None
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
         self._load()
@@ -189,10 +188,7 @@ class Project():
     #    (Element): A newly created Element object of the appropriate kind
     #
     def create_element(self, artifacts, meta):
-        element = self._element_factory.create(self._context, self, artifacts, meta)
-        version = self._element_format_versions.get(meta.kind, 0)
-        self._assert_plugin_format(element, version)
-        return element
+        return self._element_factory.create(self._context, self, artifacts, meta)
 
     # create_source()
     #
@@ -205,10 +201,7 @@ class Project():
     #    (Source): A newly created Source object of the appropriate kind
     #
     def create_source(self, meta):
-        source = self._source_factory.create(self._context, self, meta)
-        version = self._source_format_versions.get(meta.kind, 0)
-        self._assert_plugin_format(source, version)
-        return source
+        return self._source_factory.create(self._context, self, meta)
 
     # get_alias_uri()
     #
@@ -394,49 +387,7 @@ class Project():
         # Load artifacts pull/push configuration for this project
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
 
-        # Plugin origins and versions
-        origins = _yaml.node_get(config, list, 'plugins', default_value=[])
-        for origin in origins:
-            allowed_origin_fields = [
-                'origin', 'sources', 'elements',
-                'package-name', 'path',
-            ]
-            allowed_origins = ['core', 'local', 'pip']
-            _yaml.node_validate(origin, allowed_origin_fields)
-
-            if origin['origin'] not in allowed_origins:
-                raise LoadError(
-                    LoadErrorReason.INVALID_YAML,
-                    "Origin '{}' is not one of the allowed types"
-                    .format(origin['origin']))
-
-            # Store source versions for checking later
-            source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
-            for key, _ in _yaml.node_items(source_versions):
-                if key in self._source_format_versions:
-                    raise LoadError(
-                        LoadErrorReason.INVALID_YAML,
-                        "Duplicate listing of source '{}'".format(key))
-                self._source_format_versions[key] = _yaml.node_get(source_versions, int, key)
-
-            # Store element versions for checking later
-            element_versions = _yaml.node_get(origin, Mapping, 'elements', default_value={})
-            for key, _ in _yaml.node_items(element_versions):
-                if key in self._element_format_versions:
-                    raise LoadError(
-                        LoadErrorReason.INVALID_YAML,
-                        "Duplicate listing of element '{}'".format(key))
-                self._element_format_versions[key] = _yaml.node_get(element_versions, int, key)
-
-            # Store the origins if they're not 'core'.
-            # core elements are loaded by default, so storing is unnecessary.
-            if _yaml.node_get(origin, str, 'origin') != 'core':
-                self._store_origin(origin, 'sources', self._plugin_source_origins)
-                self._store_origin(origin, 'elements', self._plugin_element_origins)
-
-        pluginbase = PluginBase(package='buildstream.plugins')
-        self._element_factory = ElementFactory(pluginbase, self._plugin_element_origins)
-        self._source_factory = SourceFactory(pluginbase, self._plugin_source_origins)
+        self._load_plugin_factories(config)
 
         # Source url aliases
         self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
@@ -525,16 +476,59 @@ class Project():
             if not self.default_mirror:
                 self.default_mirror = mirror_name
 
-    # _assert_plugin_format()
-    #
-    # Helper to raise a PluginError if the loaded plugin is of a lesser version then
-    # the required version for this plugin
-    #
-    def _assert_plugin_format(self, plugin, version):
-        if plugin.BST_FORMAT_VERSION < version:
-            raise LoadError(LoadErrorReason.UNSUPPORTED_PLUGIN,
-                            "{}: Format version {} is too old for requested version {}"
-                            .format(plugin, plugin.BST_FORMAT_VERSION, version))
+    def _load_plugin_factories(self, config):
+        plugin_source_origins = []   # Origins of custom sources
+        plugin_element_origins = []  # Origins of custom elements
+
+        # Plugin origins and versions
+        origins = _yaml.node_get(config, list, 'plugins', default_value=[])
+        source_format_versions = {}
+        element_format_versions = {}
+        for origin in origins:
+            allowed_origin_fields = [
+                'origin', 'sources', 'elements',
+                'package-name', 'path',
+            ]
+            allowed_origins = ['core', 'local', 'pip']
+            _yaml.node_validate(origin, allowed_origin_fields)
+
+            if origin['origin'] not in allowed_origins:
+                raise LoadError(
+                    LoadErrorReason.INVALID_YAML,
+                    "Origin '{}' is not one of the allowed types"
+                    .format(origin['origin']))
+
+            # Store source versions for checking later
+            source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
+            for key, _ in _yaml.node_items(source_versions):
+                if key in source_format_versions:
+                    raise LoadError(
+                        LoadErrorReason.INVALID_YAML,
+                        "Duplicate listing of source '{}'".format(key))
+                source_format_versions[key] = _yaml.node_get(source_versions, int, key)
+
+            # Store element versions for checking later
+            element_versions = _yaml.node_get(origin, Mapping, 'elements', default_value={})
+            for key, _ in _yaml.node_items(element_versions):
+                if key in element_format_versions:
+                    raise LoadError(
+                        LoadErrorReason.INVALID_YAML,
+                        "Duplicate listing of element '{}'".format(key))
+                element_format_versions[key] = _yaml.node_get(element_versions, int, key)
+
+            # Store the origins if they're not 'core'.
+            # core elements are loaded by default, so storing is unnecessary.
+            if _yaml.node_get(origin, str, 'origin') != 'core':
+                self._store_origin(origin, 'sources', plugin_source_origins)
+                self._store_origin(origin, 'elements', plugin_element_origins)
+
+        pluginbase = PluginBase(package='buildstream.plugins')
+        self._element_factory = ElementFactory(pluginbase,
+                                               plugin_origins=plugin_element_origins,
+                                               format_versions=element_format_versions)
+        self._source_factory = SourceFactory(pluginbase,
+                                             plugin_origins=plugin_source_origins,
+                                             format_versions=source_format_versions)
 
     # _store_origin()
     #
