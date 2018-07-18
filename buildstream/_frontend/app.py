@@ -67,7 +67,6 @@ class App():
         self.context = None        # The Context object
         self.stream = None         # The Stream object
         self.project = None        # The toplevel Project object
-        self.loader = None
         self.logger = None         # The LogLine object
         self.interactive = None    # Whether we are running in interactive mode
         self.colors = None         # Whether to use colors in logging
@@ -220,7 +219,6 @@ class App():
         try:
             self.project = Project(directory, self.context, cli_options=self._main_options['option'],
                                    default_mirror=self._main_options.get('default_mirror'))
-            self.loader = self.project.loader
         except LoadError as e:
 
             # Let's automatically start a `bst init` session in this case
@@ -241,7 +239,6 @@ class App():
 
         # Create the stream right away, we'll need to pass it around
         self.stream = Stream(self.context, self.project, self._session_start,
-                             self.loader,
                              session_start_callback=self.session_start_cb,
                              interrupt_callback=self._interrupt_handler,
                              ticker_callback=self._tick,

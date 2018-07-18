@@ -29,6 +29,7 @@ from .. import _yaml
 from ..element import Element
 from .._profile import Topics, profile_start, profile_end
 from .._platform import Platform
+from .._includes import Includes
 
 from .types import Symbol, Dependency
 from .loadelement import LoadElement
@@ -69,12 +70,15 @@ class Loader():
         self._context = context
         self._options = project.options      # Project options (OptionPool)
         self._basedir = basedir              # Base project directory
+        self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._tempdir = tempdir              # A directory to cleanup
         self._parent = parent                # The parent loader
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}       # Dict of elements
         self._loaders = {}        # Dict of junction loaders
+
+        self._includes = Includes(self)
 
     # load():
     #
@@ -215,7 +219,7 @@ class Loader():
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
-            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
+            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable, project=self.project)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
                 # If we can't find the file, try to suggest plausible
@@ -241,7 +245,15 @@ class Loader():
                                 message, detail=detail) from e
             else:
                 raise
-        self._options.process_node(node)
+        kind = _yaml.node_get(node, str, Symbol.KIND)
+        if kind == "junction":
+            self._first_pass_options.process_node(node)
+        else:
+            self.project.ensure_fully_loaded()
+
+            self._includes.process(node)
+
+            self._options.process_node(node)
 
         element = LoadElement(node, filename, self)
 
@@ -433,7 +445,8 @@ class Loader():
                                    _yaml.node_get(node, Mapping, Symbol.ENVIRONMENT, default_value={}),
                                    _yaml.node_get(node, list, Symbol.ENV_NOCACHE, default_value=[]),
                                    _yaml.node_get(node, Mapping, Symbol.PUBLIC, default_value={}),
-                                   _yaml.node_get(node, Mapping, Symbol.SANDBOX, default_value={}))
+                                   _yaml.node_get(node, Mapping, Symbol.SANDBOX, default_value={}),
+                                   element_kind == 'junction')
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element_name] = meta_element

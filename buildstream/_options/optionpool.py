@@ -107,16 +107,19 @@ class OptionPool():
     #
     # Args:
     #    cli_options (list): A list of (str, str) tuples
+    #    ignore_unknown (bool): Whether to silently ignore unknown options.
     #
-    def load_cli_values(self, cli_options):
+    def load_cli_values(self, cli_options, *, ignore_unknown=False):
         for option_name, option_value in cli_options:
             try:
                 option = self._options[option_name]
             except KeyError as e:
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Unknown option '{}' specified on the command line"
-                                .format(option_name)) from e
-            option.set_value(option_value)
+                if not ignore_unknown:
+                    raise LoadError(LoadErrorReason.INVALID_DATA,
+                                    "Unknown option '{}' specified on the command line"
+                                    .format(option_name)) from e
+            else:
+                option.set_value(option_value)
 
     # resolve()
     #

@@ -45,7 +45,6 @@ from . import Scope, Consistency
 #    context (Context): The Context object
 #    project (Project): The Project object
 #    session_start (datetime): The time when the session started
-#    loader (Loader): The Loader object
 #    session_start_callback (callable): A callback to invoke when the session starts
 #    interrupt_callback (callable): A callback to invoke when we get interrupted
 #    ticker_callback (callable): Invoked every second while running the scheduler
@@ -54,7 +53,7 @@ from . import Scope, Consistency
 #
 class Stream():
 
-    def __init__(self, context, project, session_start, loader, *,
+    def __init__(self, context, project, session_start, *,
                  session_start_callback=None,
                  interrupt_callback=None,
                  ticker_callback=None,
@@ -905,6 +904,10 @@ class Stream():
 
         for element in track_selected:
             element._schedule_tracking()
+
+        # ArtifactCache.setup_remotes expects all projects to be fully loaded
+        for project in self._context.get_projects():
+            project.ensure_fully_loaded()
 
         # Connect to remote caches, this needs to be done before resolving element state
         self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_remote_url)

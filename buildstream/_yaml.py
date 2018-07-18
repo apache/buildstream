@@ -38,6 +38,19 @@ RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:float', RoundTripConstr
 PROVENANCE_KEY = '__bst_provenance_info'
 
 
+# Provides information about file for provenance
+#
+# Args:
+#    name (str): Full path to the file
+#    shortname (str): Relative path to the file
+#    project (Project): Project where the shortname is relative from
+class ProvenanceFile():
+    def __init__(self, name, shortname, project):
+        self.name = name
+        self.shortname = shortname
+        self.project = project
+
+
 # Provenance tracks the origin of a given node in the parsed dictionary.
 #
 # Args:
@@ -57,7 +70,7 @@ class Provenance():
 
     # Convert a Provenance to a string for error reporting
     def __str__(self):
-        return "{} [line {:d} column {:d}]".format(self.filename, self.line, self.col)
+        return "{} [line {:d} column {:d}]".format(self.filename.shortname, self.line, self.col)
 
     # Abstract method
     def clone(self):
@@ -175,13 +188,15 @@ class CompositeTypeError(CompositeError):
 #
 # Raises: LoadError
 #
-def load(filename, shortname=None, copy_tree=False):
+def load(filename, shortname=None, copy_tree=False, *, project=None):
     if not shortname:
         shortname = filename
 
+    file = ProvenanceFile(filename, shortname, project)
+
     try:
         with open(filename) as f:
-            return load_data(f, shortname=shortname, copy_tree=copy_tree)
+            return load_data(f, file, copy_tree=copy_tree)
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Could not find file at {}".format(filename)) from e
@@ -193,7 +208,7 @@ def load(filename, shortname=None, copy_tree=False):
 
 # Like load(), but doesnt require the data to be in a file
 #
-def load_data(data, shortname=None, copy_tree=False):
+def load_data(data, file=None, copy_tree=False):
 
     try:
         contents = yaml.load(data, yaml.loader.RoundTripLoader, preserve_quotes=True)
@@ -208,9 +223,9 @@ def load_data(data, shortname=None, copy_tree=False):
         else:
             raise LoadError(LoadErrorReason.INVALID_YAML,
                             "YAML file has content of type '{}' instead of expected type 'dict': {}"
-                            .format(type(contents).__name__, shortname))
+                            .format(type(contents).__name__, file.name))
 
-    return node_decorated_copy(shortname, contents, copy_tree=copy_tree)
+    return node_decorated_copy(file, contents, copy_tree=copy_tree)
 
 
 # Dumps a previously loaded YAML node to a file
@@ -506,7 +521,7 @@ def node_items(node):
 def ensure_provenance(node):
     provenance = node.get(PROVENANCE_KEY)
     if not provenance:
-        provenance = DictProvenance('', node, node)
+        provenance = DictProvenance(ProvenanceFile('', '', None), node, node)
     node[PROVENANCE_KEY] = provenance
 
     return provenance
