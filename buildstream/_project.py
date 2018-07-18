@@ -37,6 +37,7 @@ from ._versions import BST_FORMAT_VERSION
 from ._loader import Loader
 from .element import Element
 from ._message import Message, MessageType
+from ._includes import Includes
 
 
 # Project Configuration file
@@ -65,6 +66,20 @@ class HostMount():
             self.host_path = self.path
 
 
+# Represents project configuration that can have different values for junctions.
+class ProjectConfig:
+    def __init__(self):
+        self.element_factory = None
+        self.source_factory = None
+        self.options = None                      # OptionPool
+        self.base_variables = {}                 # The base set of variables
+        self.element_overrides = {}              # Element specific configurations
+        self.source_overrides = {}               # Source specific configurations
+        self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
+        self.default_mirror = None               # The name of the preferred mirror.
+        self._aliases = {}                       # Aliases dictionary
+
+
 # Project()
 #
 # The Project Configuration
@@ -87,23 +102,21 @@ class Project():
         self.refs = ProjectRefs(self.directory, 'project.refs')
         self.junction_refs = ProjectRefs(self.directory, 'junction.refs')
 
-        self.options = None                      # OptionPool
+        self.config = ProjectConfig()
+        self.first_pass_config = ProjectConfig()
+
         self.junction = junction                 # The junction Element object, if this is a subproject
         self.fail_on_overlap = False             # Whether overlaps are treated as errors
         self.ref_storage = None                  # ProjectRefStorage setting
-        self.base_variables = {}                 # The base set of variables
         self.base_environment = {}               # The base set of environment variables
         self.base_env_nocache = None             # The base nocache mask (list) for the environment
-        self.element_overrides = {}              # Element specific configurations
-        self.source_overrides = {}               # Source specific configurations
-        self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
-        self.default_mirror = default_mirror     # The name of the preferred mirror.
 
         #
         # Private Members
         #
         self._context = context  # The invocation Context
-        self._aliases = {}       # Aliases dictionary
+
+        self._default_mirror = default_mirror    # The name of the preferred mirror.
 
         self._cli_options = cli_options
         self._cache_key = None
@@ -112,18 +125,37 @@ class Project():
         self._shell_environment = {}  # Statically set environment vars
         self._shell_host_files = []   # A list of HostMount objects
 
-        self._element_factory = None
-        self._source_factory = None
-
-        profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
-        self._load()
-        profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
+        self.artifact_cache_specs = None
+        self._sandbox = None
+        self._splits = None
 
         self._context.add_project(self)
 
-        self.loader = Loader(self._context, self,
-                             parent=parent_loader,
-                             tempdir=tempdir)
+        self._partially_loaded = False
+        self._fully_loaded = False
+        self._project_includes = None
+
+        profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
+        self._load(parent_loader=parent_loader, tempdir=tempdir)
+        profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
+
+        self._partially_loaded = True
+
+    @property
+    def options(self):
+        return self.config.options
+
+    @property
+    def base_variables(self):
+        return self.config.base_variables
+
+    @property
+    def element_overrides(self):
+        return self.config.element_overrides
+
+    @property
+    def source_overrides(self):
+        return self.config.source_overrides
 
     # translate_url():
     #
@@ -132,6 +164,7 @@ class Project():
     #
     # Args:
     #    url (str): A url, which may be using an alias
+    #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    str: The fully qualified url, with aliases resolved
@@ -139,10 +172,15 @@ class Project():
     # This method is provided for :class:`.Source` objects to resolve
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
-    def translate_url(self, url):
+    def translate_url(self, url, *, first_pass=False):
+        if first_pass:
+            config = self.first_pass_config
+        else:
+            config = self.config
+
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-            alias_url = self._aliases.get(url_alias)
+            alias_url = config._aliases.get(url_alias)
             if alias_url:
                 url = alias_url + url_body
 
@@ -183,12 +221,16 @@ class Project():
     # Args:
     #    artifacts (ArtifactCache): The artifact cache
     #    meta (MetaElement): The loaded MetaElement
+    #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    (Element): A newly created Element object of the appropriate kind
     #
-    def create_element(self, artifacts, meta):
-        return self._element_factory.create(self._context, self, artifacts, meta)
+    def create_element(self, artifacts, meta, *, first_pass=False):
+        if first_pass:
+            return self.first_pass_config.element_factory.create(self._context, self, artifacts, meta)
+        else:
+            return self.config.element_factory.create(self._context, self, artifacts, meta)
 
     # create_source()
     #
@@ -196,12 +238,16 @@ class Project():
     #
     # Args:
     #    meta (MetaSource): The loaded MetaSource
+    #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    (Source): A newly created Source object of the appropriate kind
     #
-    def create_source(self, meta):
-        return self._source_factory.create(self._context, self, meta)
+    def create_source(self, meta, *, first_pass=False):
+        if first_pass:
+            return self.first_pass_config.source_factory.create(self._context, self, meta)
+        else:
+            return self.config.source_factory.create(self._context, self, meta)
 
     # get_alias_uri()
     #
@@ -209,28 +255,43 @@ class Project():
     #
     # Args:
     #    alias (str): The alias.
+    #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    str: The URI for the given alias; or None: if there is no URI for
     #         that alias.
-    def get_alias_uri(self, alias):
-        return self._aliases.get(alias)
+    def get_alias_uri(self, alias, *, first_pass=False):
+        if first_pass:
+            config = self.first_pass_config
+        else:
+            config = self.config
+
+        return config._aliases.get(alias)
 
     # get_alias_uris()
     #
+    # Args:
+    #    alias (str): The alias.
+    #    first_pass (bool): Whether to use first pass configuration (for junctions)
+    #
     # Returns a list of every URI to replace an alias with
-    def get_alias_uris(self, alias):
-        if not alias or alias not in self._aliases:
+    def get_alias_uris(self, alias, *, first_pass=False):
+        if first_pass:
+            config = self.first_pass_config
+        else:
+            config = self.config
+
+        if not alias or alias not in config._aliases:
             return [None]
 
         mirror_list = []
-        for key, alias_mapping in self.mirrors.items():
+        for key, alias_mapping in config.mirrors.items():
             if alias in alias_mapping:
-                if key == self.default_mirror:
+                if key == config.default_mirror:
                     mirror_list = alias_mapping[alias] + mirror_list
                 else:
                     mirror_list += alias_mapping[alias]
-        mirror_list.append(self._aliases[alias])
+        mirror_list.append(config._aliases[alias])
         return mirror_list
 
     # load_elements()
@@ -276,6 +337,23 @@ class Project():
 
         return elements
 
+    # ensure_fully_loaded()
+    #
+    # Ensure project has finished loading. At first initialization, a
+    # project can only load junction elements. Other elements require
+    # project to be fully loaded.
+    #
+    def ensure_fully_loaded(self):
+        if self._fully_loaded:
+            return
+        assert self._partially_loaded
+        self._fully_loaded = True
+
+        if self.junction:
+            self.junction._get_project().ensure_fully_loaded()
+
+        self._load_second_pass()
+
     # cleanup()
     #
     # Cleans up resources used loading elements
@@ -288,42 +366,89 @@ class Project():
 
     # _load():
     #
-    # Loads the project configuration file in the project directory.
+    # Loads the project configuration file in the project
+    # directory process the first pass.
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self):
+    def _load(self, parent_loader=None, tempdir=None):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
-        config = _yaml.load(_site.default_project_config)
+        self._default_config_node = _yaml.load(_site.default_project_config)
 
         # Load project local config and override the builtin
         try:
-            project_conf = _yaml.load(projectfile)
+            self._project_conf = _yaml.load(projectfile)
         except LoadError as e:
             # Raise a more specific error here
             raise LoadError(LoadErrorReason.MISSING_PROJECT_CONF, str(e))
 
-        _yaml.composite(config, project_conf)
-
-        # Element and Source  type configurations will be composited later onto
-        # element/source types, so we delete it from here and run our final
-        # assertion after.
-        self.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
-        self.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
-        config.pop('elements', None)
-        config.pop('sources', None)
-        _yaml.node_final_assertions(config)
+        pre_config_node = _yaml.node_copy(self._default_config_node)
+        _yaml.composite(pre_config_node, self._project_conf)
 
         # Assert project's format version early, before validating toplevel keys
-        format_version = _yaml.node_get(config, int, 'format-version')
+        format_version = _yaml.node_get(pre_config_node, int, 'format-version')
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
                 LoadErrorReason.UNSUPPORTED_PROJECT,
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
                 .format(format_version, major, minor, BST_FORMAT_VERSION))
+
+        # The project name, element path and option declarations
+        # are constant and cannot be overridden by option conditional statements
+        self.name = _yaml.node_get(pre_config_node, str, 'name')
+
+        # Validate that project name is a valid symbol name
+        _yaml.assert_symbol_name(_yaml.node_get_provenance(pre_config_node, 'name'),
+                                 self.name, "project name")
+
+        self.element_path = os.path.join(
+            self.directory,
+            _yaml.node_get_project_path(pre_config_node, 'element-path', self.directory,
+                                        check_is_dir=True)
+        )
+
+        self.config.options = OptionPool(self.element_path)
+        self.first_pass_config.options = OptionPool(self.element_path)
+
+        self.loader = Loader(self._context, self,
+                             parent=parent_loader,
+                             tempdir=tempdir)
+
+        self._project_includes = Includes(self.loader)
+
+        project_conf_first_pass = _yaml.node_copy(self._project_conf)
+        self._project_includes.process(project_conf_first_pass, only_local=True)
+        config_no_include = _yaml.node_copy(self._default_config_node)
+        _yaml.composite(config_no_include, project_conf_first_pass)
+
+        self._load_pass(config_no_include, self.first_pass_config,
+                        ignore_unknown=True)
+
+        # Use separate file for storing source references
+        self.ref_storage = _yaml.node_get(pre_config_node, str, 'ref-storage')
+        if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
+            p = _yaml.node_get_provenance(pre_config_node, 'ref-storage')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Invalid value '{}' specified for ref-storage"
+                            .format(p, self.ref_storage))
+
+        if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            self.junction_refs.load(self.first_pass_config.options)
+
+    # _load_second_pass()
+    #
+    # Process the second pass of loading the project configuration.
+    #
+    def _load_second_pass(self):
+        project_conf_second_pass = _yaml.node_copy(self._project_conf)
+        self._project_includes.process(project_conf_second_pass)
+        config = _yaml.node_copy(self._default_config_node)
+        _yaml.composite(config, project_conf_second_pass)
+
+        self._load_pass(config, self.config)
 
         _yaml.node_validate(config, [
             'format-version',
@@ -333,51 +458,8 @@ class Project():
             'aliases', 'name',
             'artifacts', 'options',
             'fail-on-overlap', 'shell',
-            'ref-storage', 'sandbox', 'mirrors',
+            'ref-storage', 'sandbox', 'mirrors'
         ])
-
-        # The project name, element path and option declarations
-        # are constant and cannot be overridden by option conditional statements
-        self.name = _yaml.node_get(config, str, 'name')
-
-        # Validate that project name is a valid symbol name
-        _yaml.assert_symbol_name(_yaml.node_get_provenance(config, 'name'),
-                                 self.name, "project name")
-
-        self.element_path = os.path.join(
-            self.directory,
-            _yaml.node_get_project_path(config, 'element-path', self.directory,
-                                        check_is_dir=True)
-        )
-
-        # Load project options
-        options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
-        self.options = OptionPool(self.element_path)
-        self.options.load(options_node)
-        if self.junction:
-            # load before user configuration
-            self.options.load_yaml_values(self.junction.options, transform=self.junction._subst_string)
-
-        # Collect option values specified in the user configuration
-        overrides = self._context.get_overrides(self.name)
-        override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
-        self.options.load_yaml_values(override_options)
-        if self._cli_options:
-            self.options.load_cli_values(self._cli_options)
-
-        # We're done modifying options, now we can use them for substitutions
-        self.options.resolve()
-
-        #
-        # Now resolve any conditionals in the remaining configuration,
-        # any conditionals specified for project option declarations,
-        # or conditionally specifying the project name; will be ignored.
-        #
-        self.options.process_node(config)
-
-        # Override default_mirror if not set by command-line
-        if not self.default_mirror:
-            self.default_mirror = _yaml.node_get(overrides, str, 'default-mirror', default_value=None)
 
         #
         # Now all YAML composition is done, from here on we just load
@@ -386,24 +468,6 @@ class Project():
 
         # Load artifacts pull/push configuration for this project
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
-
-        self._load_plugin_factories(config)
-
-        # Source url aliases
-        self._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
-
-        # Load base variables
-        self.base_variables = _yaml.node_get(config, Mapping, 'variables')
-
-        # Add the project name as a default variable
-        self.base_variables['project-name'] = self.name
-
-        # Extend variables with automatic variables and option exports
-        # Initialize it as a string as all variables are processed as strings.
-        self.base_variables['max-jobs'] = str(multiprocessing.cpu_count())
-
-        # Export options into variables, if that was requested
-        self.options.export_variables(self.base_variables)
 
         # Load sandbox environment variables
         self.base_environment = _yaml.node_get(config, Mapping, 'environment')
@@ -418,18 +482,9 @@ class Project():
         # Fail on overlap
         self.fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap')
 
-        # Use separate file for storing source references
-        self.ref_storage = _yaml.node_get(config, str, 'ref-storage')
-        if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
-            p = _yaml.node_get_provenance(config, 'ref-storage')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Invalid value '{}' specified for ref-storage"
-                            .format(p, self.ref_storage))
-
         # Load project.refs if it exists, this may be ignored.
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
             self.refs.load(self.options)
-            self.junction_refs.load(self.options)
 
         # Parse shell options
         shell_options = _yaml.node_get(config, Mapping, 'shell')
@@ -461,6 +516,71 @@ class Project():
 
             self._shell_host_files.append(mount)
 
+    # _load_pass():
+    #
+    # Loads parts of the project configuration that are different
+    # for first and second pass configurations.
+    #
+    # Args:
+    #    config (dict) - YaML node of the configuration file.
+    #    output (ProjectConfig) - ProjectConfig to load configuration onto.
+    #    ignore_unknown (bool) - Whether option loader shoud ignore unknown options.
+    #
+    def _load_pass(self, config, output, *,
+                   ignore_unknown=False):
+
+        # Element and Source  type configurations will be composited later onto
+        # element/source types, so we delete it from here and run our final
+        # assertion after.
+        output.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
+        output.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
+        config.pop('elements', None)
+        config.pop('sources', None)
+        _yaml.node_final_assertions(config)
+
+        self._load_plugin_factories(config, output)
+
+        # Load project options
+        options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
+        output.options.load(options_node)
+        if self.junction:
+            # load before user configuration
+            output.options.load_yaml_values(self.junction.options, transform=self.junction._subst_string)
+
+        # Collect option values specified in the user configuration
+        overrides = self._context.get_overrides(self.name)
+        override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
+        output.options.load_yaml_values(override_options)
+        if self._cli_options:
+            output.options.load_cli_values(self._cli_options, ignore_unknown=ignore_unknown)
+
+        # We're done modifying options, now we can use them for substitutions
+        output.options.resolve()
+
+        #
+        # Now resolve any conditionals in the remaining configuration,
+        # any conditionals specified for project option declarations,
+        # or conditionally specifying the project name; will be ignored.
+        #
+        output.options.process_node(config)
+
+        # Load base variables
+        output.base_variables = _yaml.node_get(config, Mapping, 'variables')
+
+        # Add the project name as a default variable
+        output.base_variables['project-name'] = self.name
+
+        # Extend variables with automatic variables and option exports
+        # Initialize it as a string as all variables are processed as strings.
+        output.base_variables['max-jobs'] = str(multiprocessing.cpu_count())
+
+        # Export options into variables, if that was requested
+        output.options.export_variables(output.base_variables)
+
+        # Override default_mirror if not set by command-line
+        output.default_mirror = self._default_mirror or _yaml.node_get(overrides, str,
+                                                                       'default-mirror', default_value=None)
+
         mirrors = _yaml.node_get(config, list, 'mirrors', default_value=[])
         for mirror in mirrors:
             allowed_mirror_fields = [
@@ -472,11 +592,38 @@ class Project():
             for alias_mapping, uris in _yaml.node_items(mirror['aliases']):
                 assert isinstance(uris, list)
                 alias_mappings[alias_mapping] = list(uris)
-            self.mirrors[mirror_name] = alias_mappings
-            if not self.default_mirror:
-                self.default_mirror = mirror_name
+            output.mirrors[mirror_name] = alias_mappings
+            if not output.default_mirror:
+                output.default_mirror = mirror_name
 
-    def _load_plugin_factories(self, config):
+        # Source url aliases
+        output._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
+
+    # _ensure_project_dir()
+    #
+    # Returns path of the project directory, if a configuration file is found
+    # in given directory or any of its parent directories.
+    #
+    # Args:
+    #    directory (str) - directory from where the command was invoked
+    #
+    # Raises:
+    #    LoadError if project.conf is not found
+    #
+    def _ensure_project_dir(self, directory):
+        directory = os.path.abspath(directory)
+        while not os.path.isfile(os.path.join(directory, _PROJECT_CONF_FILE)):
+            parent_dir = os.path.dirname(directory)
+            if directory == parent_dir:
+                raise LoadError(
+                    LoadErrorReason.MISSING_PROJECT_CONF,
+                    '{} not found in current directory or any of its parent directories'
+                    .format(_PROJECT_CONF_FILE))
+            directory = parent_dir
+
+        return directory
+
+    def _load_plugin_factories(self, config, output):
         plugin_source_origins = []   # Origins of custom sources
         plugin_element_origins = []  # Origins of custom elements
 
@@ -523,12 +670,12 @@ class Project():
                 self._store_origin(origin, 'elements', plugin_element_origins)
 
         pluginbase = PluginBase(package='buildstream.plugins')
-        self._element_factory = ElementFactory(pluginbase,
-                                               plugin_origins=plugin_element_origins,
-                                               format_versions=element_format_versions)
-        self._source_factory = SourceFactory(pluginbase,
-                                             plugin_origins=plugin_source_origins,
-                                             format_versions=source_format_versions)
+        output.element_factory = ElementFactory(pluginbase,
+                                                plugin_origins=plugin_element_origins,
+                                                format_versions=element_format_versions)
+        output.source_factory = SourceFactory(pluginbase,
+                                              plugin_origins=plugin_source_origins,
+                                              format_versions=source_format_versions)
 
     # _store_origin()
     #
@@ -563,27 +710,3 @@ class Project():
                 # paths are passed in relative to the project, but must be absolute
                 origin_dict['path'] = os.path.join(self.directory, path)
             destination.append(origin_dict)
-
-    # _ensure_project_dir()
-    #
-    # Returns path of the project directory, if a configuration file is found
-    # in given directory or any of its parent directories.
-    #
-    # Args:
-    #    directory (str) - directory from where the command was invoked
-    #
-    # Raises:
-    #    LoadError if project.conf is not found
-    #
-    def _ensure_project_dir(self, directory):
-        directory = os.path.abspath(directory)
-        while not os.path.isfile(os.path.join(directory, _PROJECT_CONF_FILE)):
-            parent_dir = os.path.dirname(directory)
-            if directory == parent_dir:
-                raise LoadError(
-                    LoadErrorReason.MISSING_PROJECT_CONF,
-                    '{} not found in current directory or any of its parent directories'
-                    .format(_PROJECT_CONF_FILE))
-            directory = parent_dir
-
-        return directory

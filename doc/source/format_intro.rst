@@ -289,3 +289,47 @@ free form and not validated.
        # This element's `make install` is broken, replace it.
        (=):
        - cp src/program %{bindir}
+
+(@) Include
+~~~~~~~~~~~
+Indicates that content should be loaded from files.
+
+This include directive expects a string, or a list of strings when
+including multiple files. Each of these strings represent a project
+relative filename to include. Files can be included from subprojects
+by prefixing the string with the locally defined :mod:`junction
+element <elements.junction>` and colon (':').
+
+The include directive can be used in any dictionary declared in the
+:ref:`project.conf <projectconf>`, in any :ref:`.bst file
+<format_basics>`, or recursively included in a another include file.
+
+The including YAML fragment has priority over the files it includes,
+and overrides any values introduced by the includes. When including
+multiple files, files are included in the order they are declared in
+the include list, and each subsequent include file takes priority over
+the previous one.
+
+.. important::
+
+   Cross junction include files are not processed when loading
+   :mod:`junction elements <elements.junction>`. Variables,
+   :ref:`element overrides <project_element_overrides>`, :ref:`source
+   overrides <project_source_overrides>` and :ref:`mirrors
+   <project_essentials_mirrors>` used in the declaration of a junction
+   must be declared in the :ref:`project.conf <projectconf>` or in
+   included files which are local to the project declaring the
+   junction itself.
+
+:mod:`Junction elements <elements.junction>` cannot use include directives.
+
+**Example:**
+
+.. code:: yaml
+
+   elements:
+     (@): junction.bst:includes/element-overrides.bst
+
+.. note::
+
+   The include directive is available since :ref:`format version 12 <project_format_version>`

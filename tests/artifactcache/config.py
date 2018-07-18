@@ -98,6 +98,7 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     context = Context()
     context.load(config=user_config_file)
     project = Project(str(project_dir), context)
+    project.ensure_fully_loaded()
 
     # Use the helper from the artifactcache module to parse our configuration.
     parsed_cache_specs = _configured_remote_artifact_cache_specs(context, project)

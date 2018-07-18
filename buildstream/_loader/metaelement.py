@@ -36,9 +36,11 @@ class MetaElement():
     #    env_nocache: List of environment vars which should not be considered in cache keys
     #    public: Public domain data dictionary
     #    sandbox: Configuration specific to the sandbox environment
+    #    first_pass: The element is to be loaded with first pass configuration (junction)
     #
     def __init__(self, project, name, kind, provenance, sources, config,
-                 variables, environment, env_nocache, public, sandbox):
+                 variables, environment, env_nocache, public, sandbox,
+                 first_pass):
         self.project = project
         self.name = name
         self.kind = kind
@@ -52,3 +54,4 @@ class MetaElement():
         self.sandbox = sandbox
         self.build_dependencies = []
         self.dependencies = []
+        self.first_pass = first_pass
