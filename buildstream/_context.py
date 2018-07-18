@@ -31,6 +31,7 @@ from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
 from ._workspaces import Workspaces
+from .plugin import _plugin_lookup
 
 
 # Context()
@@ -121,6 +122,8 @@ class Context():
         self._projects = []
         self._project_overrides = {}
         self._workspaces = None
+        self._log_handle = None
+        self._log_filename = None
 
     # load()
     #
@@ -385,8 +388,11 @@ class Context():
         if message.depth is None:
             message.depth = len(list(self._message_depth))
 
+        # If we are recording messages, dump a copy into the open log file.
+        self._record_message(message)
+
         # Send it off to the log handler (can be the frontend,
-        # or it can be the child task which will log and propagate
+        # or it can be the child task which will propagate
         # to the frontend)
         assert self._message_handler
 
@@ -455,6 +461,137 @@ class Context():
             message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
             self._pop_message_depth()
             self.message(message)
+
+    # recorded_messages()
+    #
+    # Records all messages in a log file while the context manager
+    # is active.
+    #
+    # In addition to automatically writing all messages to the
+    # specified logging file, an open file handle for process stdout
+    # and stderr will be available via the Context.get_log_handle() API,
+    # and the full logfile path will be available via the
+    # Context.get_log_filename() API.
+    #
+    # Args:
+    #     filename (str): A logging directory relative filename,
+    #                     the pid and .log extension will be automatically
+    #                     appended
+    #
+    # Yields:
+    #     (str): The fully qualified log filename
+    #
+    @contextmanager
+    def recorded_messages(self, filename):
+
+        # We dont allow recursing in this context manager, and
+        # we also do not allow it in the main process.
+        assert self._log_handle is None
+        assert self._log_filename is None
+        assert not utils._is_main_process()
+
+        # Create the fully qualified logfile in the log directory,
+        # appending the pid and .log extension at the end.
+        self._log_filename = os.path.join(self.logdir,
+                                          '{}.{}.log'.format(filename, os.getpid()))
+
+        # Ensure the directory exists first
+        directory = os.path.dirname(self._log_filename)
+        os.makedirs(directory, exist_ok=True)
+
+        with open(self._log_filename, 'a') as logfile:
+
+            # Write one last line to the log and flush it to disk
+            def flush_log():
+
+                # If the process currently had something happening in the I/O stack
+                # then trying to reenter the I/O stack will fire a runtime error.
+                #
+                # So just try to flush as well as we can at SIGTERM time
+                try:
+                    logfile.write('\n\nForcefully terminated\n')
+                    logfile.flush()
+                except RuntimeError:
+                    os.fsync(logfile.fileno())
+
+            self._log_handle = logfile
+            with _signals.terminator(flush_log):
+                yield self._log_filename
+
+            self._log_handle = None
+            self._log_filename = None
+
+    # get_log_handle()
+    #
+    # Fetches the active log handle, this will return the active
+    # log file handle when the Context.recorded_messages() context
+    # manager is active
+    #
+    # Returns:
+    #     (file): The active logging file handle, or None
+    #
+    def get_log_handle(self):
+        return self._log_handle
+
+    # get_log_filename()
+    #
+    # Fetches the active log filename, this will return the active
+    # log filename when the Context.recorded_messages() context
+    # manager is active
+    #
+    # Returns:
+    #     (str): The active logging filename, or None
+    #
+    def get_log_filename(self):
+        return self._log_filename
+
+    # _record_message()
+    #
+    # Records the message if recording is enabled
+    #
+    # Args:
+    #    message (Message): The message to record
+    #
+    def _record_message(self, message):
+
+        if self._log_handle is None:
+            return
+
+        INDENT = "    "
+        EMPTYTIME = "--:--:--"
+        template = "[{timecode: <8}] {type: <7}"
+
+        # If this message is associated with a plugin, print what
+        # we know about the plugin.
+        plugin_name = ""
+        if message.unique_id:
+            template += " {plugin}"
+            plugin = _plugin_lookup(message.unique_id)
+            plugin_name = plugin.name
+
+        template += ": {message}"
+
+        detail = ''
+        if message.detail is not None:
+            template += "\n\n{detail}"
+            detail = message.detail.rstrip('\n')
+            detail = INDENT + INDENT.join(detail.splitlines(True))
+
+        timecode = EMPTYTIME
+        if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
+            hours, remainder = divmod(int(message.elapsed.total_seconds()), 60**2)
+            minutes, seconds = divmod(remainder, 60)
+            timecode = "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds)
+
+        text = template.format(timecode=timecode,
+                               plugin=plugin_name,
+                               type=message.message_type.upper(),
+                               message=message.message,
+                               detail=detail)
+
+        # Write to the open log file
+        self._log_handle.write('{}\n'.format(text))
+        self._log_handle.flush()
 
     # _push_message_depth() / _pop_message_depth()
     #
