@@ -219,7 +219,6 @@ class Element(Plugin):
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
         self.__tracking_done = False            # Sources have been tracked
         self.__pull_done = False                # Whether pull was attempted
-        self.__log_path = None                  # Path to dedicated log file or None
         self.__splits = None                    # Resolved regex objects for computing split domains
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
@@ -1501,8 +1500,9 @@ class Element(Plugin):
                 utils.link_files(collectdir, filesdir)
 
                 # Copy build log
-                if self.__log_path:
-                    shutil.copyfile(self.__log_path, os.path.join(logsdir, 'build.log'))
+                log_filename = context.get_log_filename()
+                if log_filename:
+                    shutil.copyfile(log_filename, os.path.join(logsdir, 'build.log'))
 
                 # Store public data
                 _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
@@ -1837,47 +1837,6 @@ class Element(Plugin):
     def _subst_string(self, value):
         return self.__variables.subst(value)
 
-    # Run some element methods with logging directed to
-    # a dedicated log file, here we yield the filename
-    # we decided on for logging
-    #
-    @contextmanager
-    def _logging_enabled(self, action_name):
-        self.__log_path = self.__logfile(action_name)
-        with open(self.__log_path, 'a') as logfile:
-
-            # Write one last line to the log and flush it to disk
-            def flush_log():
-
-                # If the process currently had something happening in the I/O stack
-                # then trying to reenter the I/O stack will fire a runtime error.
-                #
-                # So just try to flush as well as we can at SIGTERM time
-                try:
-                    logfile.write('\n\nAction {} for element {} forcefully terminated\n'
-                                  .format(action_name, self.name))
-                    logfile.flush()
-                except RuntimeError:
-                    os.fsync(logfile.fileno())
-
-            self._set_log_handle(logfile)
-            with _signals.terminator(flush_log):
-                yield self.__log_path
-            self._set_log_handle(None)
-            self.__log_path = None
-
-    # Override plugin _set_log_handle(), set it for our sources and dependencies too
-    #
-    # A log handle is set once in the context of a child task which will have only
-    # one log, so it's not harmful to modify the state of dependencies
-    def _set_log_handle(self, logfile, recurse=True):
-        super()._set_log_handle(logfile)
-        for source in self.sources():
-            source._set_log_handle(logfile)
-        if recurse:
-            for dep in self.dependencies(Scope.ALL):
-                dep._set_log_handle(logfile, False)
-
     # Returns the element whose sources this element is ultimately derived from.
     #
     # This is intended for being used to redirect commands that operate on an
@@ -2014,43 +1973,6 @@ class Element(Plugin):
 
             if workspace:
                 workspace.prepared = True
-
-    # __logfile()
-    #
-    # Compose the log file for this action & pid.
-    #
-    # Args:
-    #    action_name (str): The action name
-    #    pid (int): Optional pid, current pid is assumed if not provided.
-    #
-    # Returns:
-    #    (string): The log file full path
-    #
-    # Log file format, when there is a cache key, is:
-    #
-    #    '{logdir}/{project}/{element}/{cachekey}-{action}.{pid}.log'
-    #
-    # Otherwise, it is:
-    #
-    #    '{logdir}/{project}/{element}/{:0<64}-{action}.{pid}.log'
-    #
-    # This matches the order in which things are stored in the artifact cache
-    #
-    def __logfile(self, action_name, pid=None):
-        project = self._get_project()
-        context = self._get_context()
-        key = self.__get_brief_display_key()
-        if pid is None:
-            pid = os.getpid()
-
-        action = action_name.lower()
-        logfile = "{key}-{action}.{pid}.log".format(
-            key=key, action=action, pid=pid)
-
-        directory = os.path.join(context.logdir, project.name, self.normal_name)
-
-        os.makedirs(directory, exist_ok=True)
-        return os.path.join(directory, logfile)
 
     # __assert_cached()
     #

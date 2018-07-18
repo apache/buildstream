@@ -162,7 +162,6 @@ class Plugin():
         self.__provenance = provenance  # The Provenance information
         self.__type_tag = type_tag      # The type of plugin (element or source)
         self.__unique_id = _plugin_register(self)  # Unique ID
-        self.__log = None               # The log handle when running a task
 
         # Infer the kind identifier
         modulename = type(self).__module__
@@ -474,6 +473,7 @@ class Plugin():
               self.call(... command which takes time ...)
         """
         with self.__context.timed_activity(activity_name,
+                                           unique_id=self.__unique_id,
                                            detail=detail,
                                            silent_nested=silent_nested):
             yield
@@ -589,27 +589,18 @@ class Plugin():
     def _get_provenance(self):
         return self.__provenance
 
-    # Accessor for logging handle
-    #
-    def _get_log_handle(self, log):
-        return self.__log
-
-    # Mutator for logging handle
-    #
-    def _set_log_handle(self, log):
-        self.__log = log
-
     # Context manager for getting the open file handle to this
     # plugin's log. Used in the child context to add stuff to
     # a log.
     #
     @contextmanager
     def _output_file(self):
-        if not self.__log:
+        log = self.__context.get_log_handle()
+        if log is None:
             with open(os.devnull, "w") as output:
                 yield output
         else:
-            yield self.__log
+            yield log
 
     # _preflight():
     # Calls preflight() for the plugin, and allows generic preflight

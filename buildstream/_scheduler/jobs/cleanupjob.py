@@ -16,12 +16,8 @@
 #  Author:
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
-import os
-from contextlib import contextmanager
-
 from .job import Job
 from ..._platform import Platform
-from ..._message import Message
 
 
 class CleanupJob(Job):
@@ -37,27 +33,6 @@ class CleanupJob(Job):
         self._cache._set_cache_size(result)
         if self._complete_cb:
             self._complete_cb()
-
-    @contextmanager
-    def child_logging_enabled(self, logfile):
-        self._logfile = logfile.format(pid=os.getpid())
-        yield self._logfile
-        self._logfile = None
-
-    def message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        args['scheduler'] = True
-        self._scheduler.context.message(Message(None, message_type, message, **args))
-
-    def child_log(self, message):
-        message.action_name = self.action_name
-
-        with open(self._logfile, 'a+') as log:
-            message_text = self.decorate_message(message, '[cleanup]')
-            log.write('{}\n'.format(message_text))
-            log.flush()
-
-        return message
 
     def child_process_data(self):
         return {}

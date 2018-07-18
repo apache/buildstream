@@ -16,14 +16,9 @@
 #  Author:
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
-import os
-from contextlib import contextmanager
-
 from ruamel import yaml
 
 from ..._message import Message, MessageType
-from ...plugin import _plugin_lookup
-from ... import _signals
 
 from .job import Job
 
@@ -77,43 +72,29 @@ class ElementJob(Job):
         self._action_cb = action_cb            # The action callable function
         self._complete_cb = complete_cb        # The complete callable function
 
+        # Set the task wide ID for logging purposes
+        self.set_task_id(element._get_unique_id())
+
     @property
     def element(self):
         return self._element
 
     def child_process(self):
+
+        # Print the element's environment at the beginning of any element's log file.
+        #
+        # This should probably be omitted for non-build tasks but it's harmless here
+        elt_env = self._element.get_environment()
+        env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
+        self.message(MessageType.LOG,
+                     "Build environment for element {}".format(self._element.name),
+                     detail=env_dump)
+
+        # Run the action
         return self._action_cb(self._element)
 
     def parent_complete(self, success, result):
         self._complete_cb(self, self._element, success, self._result)
-
-    @contextmanager
-    def child_logging_enabled(self, logfile):
-        self._logfile = logfile.format(pid=os.getpid())
-
-        with open(self._logfile, 'a') as log:
-            # Write one last line to the log and flush it to disk
-            def flush_log():
-
-                # If the process currently had something happening in the I/O stack
-                # then trying to reenter the I/O stack will fire a runtime error.
-                #
-                # So just try to flush as well as we can at SIGTERM time
-                try:
-                    # FIXME: Better logging
-
-                    log.write('\n\nAction {} for element {} forcefully terminated\n'
-                              .format(self.action_name, self._element.name))
-                    log.flush()
-                except RuntimeError:
-                    os.fsync(log.fileno())
-
-            self._element._set_log_handle(log)
-            with _signals.terminator(flush_log):
-                self._print_start_message(self._element, self._logfile)
-                yield self._logfile
-            self._element._set_log_handle(None)
-            self._logfile = None
 
     def message(self, message_type, message, **kwargs):
         args = dict(kwargs)
@@ -123,34 +104,6 @@ class ElementJob(Job):
                     message_type,
                     message,
                     **args))
-
-    def _print_start_message(self, element, logfile):
-        self.message(MessageType.START, self.action_name, logfile=logfile)
-
-        # Print the element's environment at the beginning of any element's log file.
-        #
-        # This should probably be omitted for non-build tasks but it's harmless here
-        elt_env = element.get_environment()
-        env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
-        self.message(MessageType.LOG,
-                     "Build environment for element {}".format(element.name),
-                     detail=env_dump, logfile=logfile)
-
-    def child_log(self, message):
-        # Tag them on the way out the door...
-        message.action_name = self.action_name
-        message.task_id = self._element._get_unique_id()
-
-        # Use the plugin for the task for the output, not a plugin
-        # which might be acting on behalf of the task
-        plugin = _plugin_lookup(message.task_id)
-
-        with plugin._output_file() as output:
-            message_text = self.decorate_message(message, '[{}]'.format(plugin.name))
-            output.write('{}\n'.format(message_text))
-            output.flush()
-
-        return message
 
     def child_process_data(self):
         data = {}

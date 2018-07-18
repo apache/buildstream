@@ -353,13 +353,8 @@ class Queue():
 
     def _element_log_path(self, element):
         project = element._get_project()
-        context = element._get_context()
-
         key = element._get_display_key()[1]
         action = self.action_name.lower()
-        logfile = "{key}-{action}.{{pid}}.log".format(key=key, action=action)
+        logfile = "{key}-{action}".format(key=key, action=action)
 
-        directory = os.path.join(context.logdir, project.name, element.normal_name)
-
-        os.makedirs(directory, exist_ok=True)
-        return os.path.join(directory, logfile)
+        return os.path.join(project.name, element.normal_name, logfile)

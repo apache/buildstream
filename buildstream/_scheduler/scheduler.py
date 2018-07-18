@@ -317,8 +317,7 @@ class Scheduler():
         if cache_size and cache_size < self.context.cache_quota:
             return
 
-        logpath = os.path.join(self.context.logdir, 'cleanup.{pid}.log')
-        job = CleanupJob(self, 'cleanup', logpath,
+        job = CleanupJob(self, 'cleanup', 'cleanup',
                          resources=[ResourceType.CACHE,
                                     ResourceType.PROCESS],
                          exclusive_resources=[ResourceType.CACHE],
@@ -326,8 +325,7 @@ class Scheduler():
         self.schedule_jobs([job])
 
     def _check_cache_size_real(self):
-        logpath = os.path.join(self.context.logdir, 'cache_size.{pid}.log')
-        job = CacheSizeJob(self, 'cache_size', logpath,
+        job = CacheSizeJob(self, 'cache_size', 'cache_size',
                            resources=[ResourceType.CACHE,
                                       ResourceType.PROCESS],
                            exclusive_resources=[ResourceType.CACHE],
