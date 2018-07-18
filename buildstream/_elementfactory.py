@@ -31,9 +31,13 @@ from .element import Element
 #
 class ElementFactory(PluginContext):
 
-    def __init__(self, plugin_base, plugin_origins=None):
+    def __init__(self, plugin_base, *,
+                 format_versions={},
+                 plugin_origins=None):
 
-        super().__init__(plugin_base, Element, [_site.element_plugins], plugin_origins)
+        super().__init__(plugin_base, Element, [_site.element_plugins],
+                         plugin_origins=plugin_origins,
+                         format_versions=format_versions)
 
     # create():
     #
@@ -54,4 +58,7 @@ class ElementFactory(PluginContext):
     #
     def create(self, context, project, artifacts, meta):
         element_type, default_config = self.lookup(meta.kind)
-        return element_type(context, project, artifacts, meta, default_config)
+        element = element_type(context, project, artifacts, meta, default_config)
+        version = self._format_versions.get(meta.kind, 0)
+        self._assert_plugin_format(element, version)
+        return element
