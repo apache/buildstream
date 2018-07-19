@@ -440,7 +440,7 @@ class CasBasedDirectory(Directory):
         """
         if not dirname.endswith(os.path.sep):
             dirname += os.path.sep
-        return [f.lstrip(dirname) for f in sorted_files if f.startswith(dirname)]
+        return [f[len(dirname):] for f in sorted_files if f.startswith(dirname)]
 
     def symlink_target_is_directory(self, symlink_node):
         x = self._resolve_symlink(symlink_node)
