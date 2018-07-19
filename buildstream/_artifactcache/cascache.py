@@ -221,6 +221,8 @@ class CASCache(ArtifactCache):
             try:
                 remote.init()
 
+                element.info("Pulling {} <- {}".format(element._get_brief_display_key(), remote.spec.url))
+
                 request = buildstream_pb2.GetReferenceRequest()
                 request.key = ref
                 response = remote.ref_storage.GetReference(request)
@@ -238,6 +240,7 @@ class CASCache(ArtifactCache):
 
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
+                    element.info("{} not found at remote {}".format(element._get_brief_display_key(), remote.spec.url))
                     raise
 
         return False
