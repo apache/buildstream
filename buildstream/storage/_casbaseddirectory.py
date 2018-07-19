@@ -351,6 +351,9 @@ class CasBasedDirectory(Directory):
         as a directory tree is descended. """
         if directory_name in self.index:
             subdir = self._resolve_symlink_or_directory(directory_name)
+            if not isinstance(subdir, CasBasedDirectory):
+                raise VirtualDirectoryErorr("Attempted to import '{}' over an existing thing in '{}', but the destination isn't a directory or symlink to one.".format(directory_name, self))
+
         else:
             subdir = self._add_directory(directory_name)
         new_path_prefix = os.path.join(path_prefix, directory_name)
