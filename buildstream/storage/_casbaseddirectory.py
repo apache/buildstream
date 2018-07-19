@@ -732,6 +732,7 @@ class CasBasedDirectory(Directory):
         filelist = []
         for (k, v) in self.index.items():
             if isinstance(v.buildstream_object, CasBasedDirectory):
+                filelist.append(k)
                 filelist.extend([k + "/" + x for x in v.buildstream_object.list_relative_paths()])
             elif isinstance(v.pb2_object, remote_execution_pb2.FileNode):
                 filelist.append(k)
