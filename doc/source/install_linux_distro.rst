@@ -10,7 +10,6 @@ BuildStream requires the following base system requirements:
 * bubblewrap >= 0.1.2
 * fuse2
 * PyGObject introspection bindings
-* psutil python library (so you don't have to install GCC and python-devel to build it yourself)
 
 BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
 Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
@@ -44,8 +43,9 @@ Arch Linux
 ++++++++++
 Install the dependencies with::
 
-  sudo pacman -S fuse2 ostree bubblewrap git \
-                 python python-pip python-gobject python-psutil
+  sudo pacman -S \
+      python fuse2 ostree bubblewrap python-gobject \
+      python-pip git
 
 
 Debian
@@ -68,8 +68,8 @@ And then running::
 At this point you should be able to get the system requirements with::
 
   sudo apt-get install \
-      fuse ostree gir1.2-ostree-1.0 bubblewrap git \
-      python3 python3-pip python3-gi python3-psutil
+      python3 fuse ostree gir1.2-ostree-1.0 bubblewrap python3-gi \
+      python3-pip python3-dev git
   sudo apt-get install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
 
@@ -80,8 +80,8 @@ For debian unstable or testing, only the following line should be enough
 to get the base system requirements installed::
 
   sudo apt-get install \
-      fuse ostree gir1.2-ostree-1.0 bubblewrap git \
-      python3 python3-pip python3-gi python3-psutil
+      python3 fuse ostree gir1.2-ostree-1.0 bubblewrap python3-gi \
+      python3-pip python3-dev git
 
 
 Fedora
@@ -89,8 +89,9 @@ Fedora
 For recent fedora systems, the following line should get you the system
 requirements you need::
 
-  dnf install -y fuse ostree bubblewrap git \
-                 python3 python3-devel python3-pip python3-gobject python3-psutil
+  dnf install -y \
+      python3 fuse ostree bubblewrap python3-gobject \
+      python3-pip python3-devel git
 
 
 Installing
