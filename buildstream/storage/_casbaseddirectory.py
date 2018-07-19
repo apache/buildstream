@@ -227,9 +227,14 @@ class CasBasedDirectory(Directory):
             return self.descend(subdirectory_spec[1:], create)
 
         if subdirectory_spec[0] in self.index:
-            entry = self.index[subdirectory_spec[0]].buildstream_object
-            if isinstance(entry, CasBasedDirectory):
-                return entry.descend(subdirectory_spec[1:], create)
+            entry1 = self.index[subdirectory_spec[0]].pb2_object
+            entry2 = self.index[subdirectory_spec[0]].buildstream_object
+            if isinstance(entry2, CasBasedDirectory):
+                return entry2.descend(subdirectory_spec[1:], create)
+            elif isinstance(entry1, remote_execution_pb2.SymlinkNode):
+                # TODO: implement descend through symlink. To do this, we may need to look
+                # upwards, or to the root.
+                raise VirtualDirectoryError("Descend through symlink is not implemented")
             else:
                 error = "Cannot descend into {}, which is a '{}' in the directory {}"
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0],
