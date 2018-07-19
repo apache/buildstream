@@ -263,6 +263,8 @@ class CASCache(ArtifactCache):
         for remote in push_remotes:
             remote.init()
 
+            element.info("Pushing {} -> {}".format(element._get_brief_display_key(), remote.spec.url))
+
             try:
                 for ref in refs:
                     tree = self.resolve_ref(ref)
@@ -276,6 +278,8 @@ class CASCache(ArtifactCache):
 
                         if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
                             # ref is already on the server with the same tree
+                            element.info("Skipping {}, remote ({}) already has artifact cached".format(
+                                element._get_brief_display_key(), remote.spec.url))
                             continue
 
                     except grpc.RpcError as e:
