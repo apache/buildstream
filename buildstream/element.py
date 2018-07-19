@@ -618,7 +618,7 @@ class Element(Plugin):
         # Time to use the artifact, check once more that it's there
         self.__assert_cached()
 
-        with self.timed_activity("Staging {}/{}".format(self.name, self.__get_brief_display_key())):
+        with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
             # Get the extracted artifact
             artifact_base, _ = self.__extract()
             artifact = os.path.join(artifact_base, 'files')
@@ -1157,6 +1157,19 @@ class Element(Plugin):
         length = min(len(cache_key), context.log_key_length)
         return (cache_key, cache_key[0:length], dim_key)
 
+    # _get_brief_display_key()
+    #
+    # Returns an abbreviated cache key for display purposes
+    #
+    # Returns:
+    #    (str): An abbreviated hex digest cache key for this Element
+    #
+    # Question marks are returned if information for the cache key is missing.
+    #
+    def _get_brief_display_key(self):
+        _, display_key, _ = self._get_display_key()
+        return display_key
+
     # _preflight():
     #
     # A wrapper for calling the abstract preflight() method on
@@ -1631,7 +1644,7 @@ class Element(Plugin):
             return False
 
         # Notify successfull download
-        display_key = self.__get_brief_display_key()
+        display_key = self._get_brief_display_key()
         self.info("Downloaded artifact {}".format(display_key))
         return True
 
@@ -1671,14 +1684,14 @@ class Element(Plugin):
             self.warn("Not pushing tainted artifact.")
             return False
 
-        with self.timed_activity("Pushing artifact"):
+        display_key = self._get_brief_display_key()
+        with self.timed_activity("Pushing artifact {}".format(display_key)):
             # Push all keys used for local commit
             pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit())
             if not pushed:
                 return False
 
             # Notify successful upload
-            display_key = self.__get_brief_display_key()
             self.info("Pushed artifact {}".format(display_key))
             return True
 
@@ -1954,19 +1967,6 @@ class Element(Plugin):
     def __can_build_incrementally(self):
         return bool(self._get_workspace())
 
-    # __get_brief_display_key():
-    #
-    # Returns an abbreviated cache key for display purposes
-    #
-    # Returns:
-    #    (str): An abbreviated hex digest cache key for this Element
-    #
-    # Question marks are returned if information for the cache key is missing.
-    #
-    def __get_brief_display_key(self):
-        _, display_key, _ = self._get_display_key()
-        return display_key
-
     # __prepare():
     #
     # Internal method for calling public abstract prepare() method.
@@ -1989,7 +1989,7 @@ class Element(Plugin):
     # Raises an error if the artifact is not cached.
     #
     def __assert_cached(self):
-        assert self._cached(), "{}: Missing artifact {}".format(self, self.__get_brief_display_key())
+        assert self._cached(), "{}: Missing artifact {}".format(self, self._get_brief_display_key())
 
     # __get_tainted():
     #
