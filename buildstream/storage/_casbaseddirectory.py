@@ -462,7 +462,7 @@ class CasBasedDirectory(Directory):
             if f == ".": continue
             fullname = os.path.join(path_prefix, f)
             components = f.split(os.path.sep)
-            if len(components)>1 or isinstance(source_directory.index[components[0]].buildstream_object, CasBasedDirectory):
+            if len(components)>1:
                 # Then we are importing a directory
                 dirname = components[0]
                 if dirname not in processed_directories:
@@ -473,7 +473,21 @@ class CasBasedDirectory(Directory):
                                                                              path_prefix=fullname, file_list_required=file_list_required)
                     result.combine(import_result)
                 processed_directories.add(dirname)
+            elif isinstance(source_directory.index[f].buildstream_object, CasBasedDirectory):
+                print("This is a plain directory; creating it at the destination.")
+                # The thing in the input file list is a directory. In which case, replace any existing file, or symlink to file
+                # with the new, blank directory - if it's neither of those things, or doesn't exist, then just create the dir.
+                existing_item = self.find_pb2_entry(f)
+                if isinstance(existing_item, remote_execution_pb2.FileNode):
+                    self.remove_item(f)
+                elif isinstance(existing_item, remote_execution_pb2.SymlinkNode):
+                    if self.symlink_target_is_directory(existing_item):
+                        pass # That's fine
+                    else:
+                        self.remove_item(f) # Symlinks to files get replaced
+                self.descend(f, create=True) # Creates the directory if it doesn't already exist.
             else:
+                print("This is a normal file.")
                 self._check_replacement(f, path_prefix, result)
                 item = source_directory.index[f].pb2_object
                 if isinstance(item, remote_execution_pb2.FileNode):
