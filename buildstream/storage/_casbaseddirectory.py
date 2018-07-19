@@ -146,6 +146,27 @@ class CasBasedDirectory(Directory):
         self.index[name] = IndexEntry(new_pb2_dirnode, buildstream_object=bst_dir)
         return bst_dir
 
+    def create_directory(self, name: str) -> Directory:
+        """Creates a directory if it does not already exist. This does not
+        cause an error if something exists; it will remove files and
+        symlinks to files which have the same name in this
+        directory. Symlinks to directories with the name 'name' are
+        unaltered; it's assumed that the target of that symlink will
+        be used.
+
+        """
+        existing_item = self.find_pb2_entry(name)
+        if isinstance(existing_item, remote_execution_pb2.FileNode):
+            # Directory imported over file with same name
+            self.remove_item(name)
+        elif isinstance(existing_item, remote_execution_pb2.SymlinkNode):
+            # Directory imported over symlink with same source name
+            if self.symlink_target_is_directory(existing_item):
+                return # That's fine; any files in the source directory should end up at the target of the symlink.
+            else:
+                self.remove_item(name) # Symlinks to files get replaced
+        return self.descend(name, create=True) # Creates the directory if it doesn't already exist.
+
     def find_pb2_entry(self, name):
         if name in self.index:
             return self.index[name].pb2_object
@@ -456,38 +477,31 @@ class CasBasedDirectory(Directory):
         """
 
         result = FileListResult()
-        sorted_files = sorted(files) # Check if this is necessary
         processed_directories = set()
-        for f in sorted_files:
+        for f in files:
             if f == ".": continue
             fullname = os.path.join(path_prefix, f)
             components = f.split(os.path.sep)
             if len(components)>1:
-                # Then we are importing a directory
+                # We are importing a thing which is in a subdirectory. We may have already seen this dirname
+                # for a previous file.
                 dirname = components[0]
                 if dirname not in processed_directories:
-                    subcomponents = CasBasedDirectory.files_in_subdir(sorted_files, dirname)
-                    dest_subdir = self.descend(dirname, create=True)
+                    # Now strip off the first directory name and import files recursively.
+                    subcomponents = CasBasedDirectory.files_in_subdir(files, dirname)
+                    self.create_directory(dirname)
+                    dest_subdir = self.descend(dirname)
                     src_subdir = source_directory.descend(dirname)
                     import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
                                                                              path_prefix=fullname, file_list_required=file_list_required)
                     result.combine(import_result)
                 processed_directories.add(dirname)
             elif isinstance(source_directory.index[f].buildstream_object, CasBasedDirectory):
-                print("This is a plain directory; creating it at the destination.")
-                # The thing in the input file list is a directory. In which case, replace any existing file, or symlink to file
+                # The thing in the input file list is a directory on its own. In which case, replace any existing file, or symlink to file
                 # with the new, blank directory - if it's neither of those things, or doesn't exist, then just create the dir.
-                existing_item = self.find_pb2_entry(f)
-                if isinstance(existing_item, remote_execution_pb2.FileNode):
-                    self.remove_item(f)
-                elif isinstance(existing_item, remote_execution_pb2.SymlinkNode):
-                    if self.symlink_target_is_directory(existing_item):
-                        pass # That's fine
-                    else:
-                        self.remove_item(f) # Symlinks to files get replaced
-                self.descend(f, create=True) # Creates the directory if it doesn't already exist.
+                self.create_directory(f)
             else:
-                print("This is a normal file.")
+                # We're importing a file or symlink - replace anything with the same name.
                 self._check_replacement(f, path_prefix, result)
                 item = source_directory.index[f].pb2_object
                 if isinstance(item, remote_execution_pb2.FileNode):
@@ -495,10 +509,10 @@ class CasBasedDirectory(Directory):
                                                             is_executable=item.is_executable)
                     self.index[f] = IndexEntry(filenode, modified=(fullname in result.overwritten))
                 else:
-                    assert(isinstance(item.pb2_object, remote_execution_pb2.SymlinkNode))
-                    symlinknode = self.pb2_directory.symlinks.add(name=f, target=item.pb2_object.target)
+                    assert(isinstance(item, remote_execution_pb2.SymlinkNode))
+                    symlinknode = self.pb2_directory.symlinks.add(name=f, target=item.target)
                     # A symlink node has no digest.
-                    self.index[filename] = IndexEntry(symlinknode, modified=(fullname in result.overwritten))
+                    self.index[f] = IndexEntry(symlinknode, modified=(fullname in result.overwritten))
         return result
 
     def transfer_node_contents(destination, source):
@@ -521,6 +535,16 @@ class CasBasedDirectory(Directory):
             raise VirtualDirectoryError("Incompatible type '{}' used as destination for transfer_node_contents"
                                         .format(destination.type))
 
+    def _add_directory_from_node(self, source_node):
+        # Duplicate the given node and add it to our index with a CasBasedDirectory object.
+        # No existing entry with the source node's name can exist.
+        assert(self.find_pb_entry(source_node.name) is None)
+        new_dir_node = self.pb2_directory.directories.add()
+        CasBasedDirectory.transfer_node_contents(new_dir_node, source_node)
+        buildStreamDirectory = CasBasedDirectory(self.context, ref=source_node.digest,
+                                                 parent=self, filename=source_node.name)
+        self.index[source_node.name] = IndexEntry(source_node, buildstream_object=buildStreamDirectory, modified=True)
+
     def _full_import_cas_into_cas(self, source_directory, path_prefix="", file_list_required=True):
         """ Import all files and symlinks from source_directory to this one.
         Args:
@@ -530,26 +554,24 @@ class CasBasedDirectory(Directory):
         """
 
         result = FileListResult()
+
+        # First, deal with directories.
         for entry in source_directory.pb2_directory.directories:
             existing_item = self.find_pb2_entry(entry.name)
-            # Create a cloned CasBasedDirectory, since we may import more files
-            # into a subdirectory of it and we don't want to affect the original.
             if existing_item:
-                existing_item.digest = entry.digest
+                self.create_directory(entry.name) # Handles existing stuff
+                src_dir = source_directory.descend(entry.name)
+                dest_dir = self.descend(entry.name)
+                subdir_results = dest_dir._full_import_cas_into_cas(src_dir, os.path.join(path_prefix, entry.name), file_list_required=file_list_required)
+                result.combine(subdir_results)
             else:
-                new_pb2_dirnode = self.pb2_directory.directories.add(digest=entry.digest, name=entry.name)
-            buildStreamDirectory = CasBasedDirectory(self.context, ref=entry.digest,
-                                                    parent=self, filename=entry.name)
-            self.index[entry.name] = IndexEntry(entry, buildstream_object=buildStreamDirectory)
+                # If there was no existing item, we don't need to recurse - just add the directory in as is.
 
-            if file_list_required:
-                if existing_item:
-                    updated_files = existing_item.find_updated_files(source_directory.descend(entry.name), entry.name)
-                    result.combine(updated_files)
-                else:
-                    for i in source_directory.descend(entry.name).list_relative_paths():
-                        result.files_written.append(i)
-
+                # TODO: Although this is intended to be a quick import, it causes a full population with _populate_index, which will recurse through the
+                # new directory, causing a duplication in memory. Realistically, do we need to create the subdir's CasBasedDirectory object *on creation* or can we wait to descend? Same problem for all cases, really.
+                self._add_directory_from_node(entry)
+                # We still need to add all the new paths.
+                result.files_written.extend(self.descend(entry.name,create=True).list_relative_paths())
         for collection in ('files', 'symlinks'):
             for entry in getattr(source_directory.pb2_directory, collection):
                 # TODO: Note that this and the symlinks case are now almost identical
@@ -570,7 +592,9 @@ class CasBasedDirectory(Directory):
         replace one directory with another's hash, without doing any recursion.
         """
         if files is None:
+            return self._full_import_cas_into_cas(source_directory)
             files = source_directory.list_relative_paths()
+            print("Extracted all files from source directory '{}': {}".format(source_directory, files))
         return self._partial_import_cas_into_cas(source_directory, files)
 
     def import_files(self, external_pathspec: any, files: List[str] = None,
@@ -710,7 +734,7 @@ class CasBasedDirectory(Directory):
 
     def list_modified_paths(self) -> List[str]:
         """Provide a list of relative paths which have been modified since the
-        last call to mark_unmodified.
+        last call to mark_unmodified. Does not include directory objects.
 
         Return value: List(str) - list of modified paths
         """
@@ -735,6 +759,8 @@ class CasBasedDirectory(Directory):
                 filelist.append(k)
                 filelist.extend([k + "/" + x for x in v.buildstream_object.list_relative_paths()])
             elif isinstance(v.pb2_object, remote_execution_pb2.FileNode):
+                filelist.append(k)
+            elif isinstance(v.pb2_object, remote_execution_pb2.SymlinkNode):
                 filelist.append(k)
         return filelist
 
