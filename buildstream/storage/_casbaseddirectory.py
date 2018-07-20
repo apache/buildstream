@@ -535,17 +535,24 @@ class CasBasedDirectory(Directory):
             raise VirtualDirectoryError("Incompatible type '{}' used as destination for transfer_node_contents"
                                         .format(destination.type))
 
-    def _add_directory_from_node(self, source_node):
+    def _add_directory_from_node(self, source_node, source_casdir, can_hardlink=False):
         # Duplicate the given node and add it to our index with a CasBasedDirectory object.
         # No existing entry with the source node's name can exist.
-        assert(self.find_pb_entry(source_node.name) is None)
-        new_dir_node = self.pb2_directory.directories.add()
-        CasBasedDirectory.transfer_node_contents(new_dir_node, source_node)
-        buildStreamDirectory = CasBasedDirectory(self.context, ref=source_node.digest,
-                                                 parent=self, filename=source_node.name)
-        self.index[source_node.name] = IndexEntry(source_node, buildstream_object=buildStreamDirectory, modified=True)
+        # source_casdir is only needed if can_hardlink is True.
+        assert(self.find_pb2_entry(source_node.name) is None)
 
-    def _full_import_cas_into_cas(self, source_directory, path_prefix="", file_list_required=True):
+        if can_hardlink:
+            new_dir_node = self.pb2_directory.directories.add()
+            CasBasedDirectory.transfer_node_contents(new_dir_node, source_node)
+            self.index[source_node.name] = IndexEntry(source_node, buildstream_object=source_casdir, modified=True)
+        else:
+            new_dir_node = self.pb2_directory.directories.add()
+            CasBasedDirectory.transfer_node_contents(new_dir_node, source_node)
+            buildStreamDirectory = CasBasedDirectory(self.context, ref=source_node.digest,
+                                                     parent=self, filename=source_node.name)
+            self.index[source_node.name] = IndexEntry(source_node, buildstream_object=buildStreamDirectory, modified=True)
+
+    def _full_import_cas_into_cas(self, source_directory, path_prefix="", file_list_required=True, can_hardlink=False):
         """ Import all files and symlinks from source_directory to this one.
         Args:
            source_directory (:class:`.CasBasedDirectory`): The directory to import from
@@ -557,19 +564,17 @@ class CasBasedDirectory(Directory):
 
         # First, deal with directories.
         for entry in source_directory.pb2_directory.directories:
-            existing_item = self.find_pb2_entry(entry.name)
-            if existing_item:
+            if entry.name in self.index:
+                existing_item = self.index[entry.name].pb2_object
                 self.create_directory(entry.name) # Handles existing stuff
                 src_dir = source_directory.descend(entry.name)
                 dest_dir = self.descend(entry.name)
-                subdir_results = dest_dir._full_import_cas_into_cas(src_dir, os.path.join(path_prefix, entry.name), file_list_required=file_list_required)
+                subdir_results = dest_dir._full_import_cas_into_cas(src_dir, os.path.join(path_prefix, entry.name), file_list_required=file_list_required, can_hardlink=can_hardlink)
                 result.combine(subdir_results)
             else:
                 # If there was no existing item, we don't need to recurse - just add the directory in as is.
-
-                # TODO: Although this is intended to be a quick import, it causes a full population with _populate_index, which will recurse through the
-                # new directory, causing a duplication in memory. Realistically, do we need to create the subdir's CasBasedDirectory object *on creation* or can we wait to descend? Same problem for all cases, really.
-                self._add_directory_from_node(entry)
+                source_casdir = source_directory.index[entry.name].buildstream_object
+                self._add_directory_from_node(entry, source_casdir, can_hardlink)
                 # We still need to add all the new paths.
                 result.files_written.extend(self.descend(entry.name,create=True).list_relative_paths())
         for collection in ('files', 'symlinks'):
@@ -592,7 +597,7 @@ class CasBasedDirectory(Directory):
         replace one directory with another's hash, without doing any recursion.
         """
         if files is None:
-            return self._full_import_cas_into_cas(source_directory)
+            return self._full_import_cas_into_cas(source_directory, can_hardlink=True)
             files = source_directory.list_relative_paths()
             print("Extracted all files from source directory '{}': {}".format(source_directory, files))
         return self._partial_import_cas_into_cas(source_directory, files)
@@ -656,7 +661,7 @@ class CasBasedDirectory(Directory):
             self.parent._recalculate_recursing_up(self)
         if duplicate_cas:
             if duplicate_cas.ref.hash != self.ref.hash:
-                print("Mismatch between file-imported result {} and cas-to-cas imported result {}.".format(duplicate_cas.ref.hash,self.ref.hash))
+                raise VirtualDirectoryError("Mismatch between file-imported result {} and cas-to-cas imported result {}.".format(duplicate_cas.ref.hash,self.ref.hash))
 
         return result
 
