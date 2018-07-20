@@ -55,6 +55,11 @@ Install the dependencies with::
       python fuse2 ostree bubblewrap python-gobject \
       python-pip git
 
+For the default plugins::
+
+  sudo pacman -S \
+      lzip git bzr patch python-arpy
+
 
 Debian
 ++++++
@@ -81,8 +86,7 @@ At this point you should be able to get the system requirements with::
   sudo apt-get install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
 
-Buildstream has a number of plugins that are installed by default which
-depend on the system packages::
+For the default plugins::
 
   sudo apt-get install \
       lzip git bzr patch python3-arpy
@@ -96,6 +100,11 @@ to get the base system requirements installed::
       python3 fuse ostree gir1.2-ostree-1.0 bubblewrap python3-gi \
       python3-pip python3-dev git
 
+For the default plugins::
+
+  sudo apt-get install \
+      lzip git bzr patch python3-arpy
+
 
 Fedora
 ++++++
@@ -105,6 +114,11 @@ requirements you need::
   dnf install -y \
       python3 fuse ostree bubblewrap python3-gobject \
       python3-pip python3-devel git
+
+For the default plugins::
+
+  dnf install -y \
+      lzip git bzr patch python3-arpy
 
 
 Installing
