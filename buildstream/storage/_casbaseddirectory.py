@@ -259,7 +259,7 @@ class CasBasedDirectory(Directory):
             else:
                 error = "Cannot descend into {}, which is a '{}' in the directory {}"
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0],
-                                                         type(entry).__name__,
+                                                         type(entry1).__name__,
                                                          self))
         else:
             if create:
