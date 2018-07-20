@@ -15,6 +15,14 @@ BuildStream also depends on the host tools for the :mod:`Source <buildstream.sou
 Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
 requirements of specific plugins.
 
+The default plugins with extra host dependencies are:
+
+* bzr
+* deb
+* git
+* patch
+* tar
+
 If you intend to push built artifacts to a remote artifact server,
 which requires special permissions, you will also need:
 
