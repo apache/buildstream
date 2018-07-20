@@ -421,15 +421,16 @@ class Stream():
                                          integrate=integrate) as sandbox:
 
                 # Copy or move the sandbox to the target directory
-                sandbox_root = sandbox.get_directory()
+                sandbox_vroot = sandbox.get_virtual_directory()
+
                 if not tar:
                     with target.timed_activity("Checking out files in '{}'"
                                                .format(location)):
                         try:
                             if hardlinks:
-                                self._checkout_hardlinks(sandbox_root, location)
+                                self._checkout_hardlinks(sandbox_vroot, location)
                             else:
-                                utils.copy_files(sandbox_root, location)
+                                sandbox_vroot.export_files(location)
                         except OSError as e:
                             raise StreamError("Failed to checkout files: '{}'"
                                               .format(e)) from e
@@ -438,14 +439,12 @@ class Stream():
                         with target.timed_activity("Creating tarball"):
                             with os.fdopen(sys.stdout.fileno(), 'wb') as fo:
                                 with tarfile.open(fileobj=fo, mode="w|") as tf:
-                                    Stream._add_directory_to_tarfile(
-                                        tf, sandbox_root, '.')
+                                    sandbox_vroot.export_to_tar(tf, '.')
                     else:
                         with target.timed_activity("Creating tarball '{}'"
                                                    .format(location)):
                             with tarfile.open(location, "w:") as tf:
-                                Stream._add_directory_to_tarfile(
-                                    tf, sandbox_root, '.')
+                                sandbox_vroot.export_to_tar(tf, '.')
 
         except BstError as e:
             raise StreamError("Error while staging dependencies into a sandbox"
@@ -1066,46 +1065,13 @@ class Stream():
 
     # Helper function for checkout()
     #
-    def _checkout_hardlinks(self, sandbox_root, directory):
+    def _checkout_hardlinks(self, sandbox_vroot, directory):
         try:
-            removed = utils.safe_remove(directory)
+            utils.safe_remove(directory)
         except OSError as e:
             raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
 
-        if removed:
-            # Try a simple rename of the sandbox root; if that
-            # doesnt cut it, then do the regular link files code path
-            try:
-                os.rename(sandbox_root, directory)
-            except OSError:
-                os.makedirs(directory, exist_ok=True)
-                utils.link_files(sandbox_root, directory)
-        else:
-            utils.link_files(sandbox_root, directory)
-
-    # Add a directory entry deterministically to a tar file
-    #
-    # This function takes extra steps to ensure the output is deterministic.
-    # First, it sorts the results of os.listdir() to ensure the ordering of
-    # the files in the archive is the same.  Second, it sets a fixed
-    # timestamp for each entry. See also https://bugs.python.org/issue24465.
-    @staticmethod
-    def _add_directory_to_tarfile(tf, dir_name, dir_arcname, mtime=0):
-        for filename in sorted(os.listdir(dir_name)):
-            name = os.path.join(dir_name, filename)
-            arcname = os.path.join(dir_arcname, filename)
-
-            tarinfo = tf.gettarinfo(name, arcname)
-            tarinfo.mtime = mtime
-
-            if tarinfo.isreg():
-                with open(name, "rb") as f:
-                    tf.addfile(tarinfo, f)
-            elif tarinfo.isdir():
-                tf.addfile(tarinfo)
-                Stream._add_directory_to_tarfile(tf, name, arcname, mtime)
-            else:
-                tf.addfile(tarinfo)
+        sandbox_vroot.export_files(directory, can_link=True, can_destroy=True)
 
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
