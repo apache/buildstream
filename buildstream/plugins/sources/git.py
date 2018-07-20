@@ -163,6 +163,9 @@ class GitMirror():
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
 
+        # Remove .git dir
+        shutil.rmtree(os.path.join(fullpath, ".git"))
+
     def init_workspace(self, directory):
         fullpath = os.path.join(directory, self.path)
 
