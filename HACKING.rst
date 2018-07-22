@@ -27,6 +27,9 @@ Branches must be submitted as merge requests in gitlab. If the branch
 fixes an issue or is related to any issues, these issues must be mentioned
 in the merge request or preferably the commit messages themselves.
 
+Branch names for merge requests should be prefixed with the submitter's
+name or nickname, e.g. ``username/implement-flying-ponies``.
+
 You may open merge requests for the branches you create before you
 are ready to have them reviewed upstream, as long as your merge request
 is not yet ready for review then it must be prefixed with the ``WIP:``
