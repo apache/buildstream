@@ -23,26 +23,28 @@ a reasonable timeframe for identifying these.
 
 Patch submissions
 -----------------
-Branches must be submitted as merge requests in gitlab and should usually
-be associated to an issue report on gitlab.
+Branches must be submitted as merge requests in gitlab. If the branch
+fixes an issue or is related to any issues, these issues must be mentioned
+in the merge request or preferably the commit messages themselves.
 
-Commits in the branch which address specific issues must specify the
-issue number in the commit message.
-
-Merge requests that are not yet ready for review must be prefixed with the
-``WIP:`` identifier. A merge request is not ready for review until the
-submitter expects that the patch is ready to actually land.
+You may open merge requests for the branches you create before you
+are ready to have them reviewed upstream, as long as your merge request
+is not yet ready for review then it must be prefixed with the ``WIP:``
+identifier.
 
 Submitted branches must not contain a history of the work done in the
 feature branch. Please use git's interactive rebase feature in order to
 compose a clean patch series suitable for submission.
 
-We prefer that test case and documentation changes be submitted
-in separate commits from the code changes which they test.
+We prefer that documentation changes be submitted in separate commits from
+the code changes which they document, and new test cases are also preferred
+in separate commits.
 
-Ideally every commit in the history of master passes its test cases. This
-makes bisections more easy to perform, but is not always practical with
-more complex branches.
+If a commit in your branch modifies behavior such that a test must also
+be changed to match the new behavior, then the tests should be updated
+with the same commit. Ideally every commit in the history of master passes
+its test cases, this makes bisections more easy to perform, but is not
+always practical with more complex branches.
 
 
 Commit messages
@@ -54,9 +56,6 @@ the change.
 The summary line must start with what changed, followed by a colon and
 a very brief description of the change.
 
-If there is an associated issue, it **must** be mentioned somewhere
-in the commit message.
-
 **Example**::
 
   element.py: Added the frobnicator so that foos are properly frobbed.
@@ -64,8 +63,6 @@ in the commit message.
   The new frobnicator frobnicates foos all the way throughout
   the element. Elements that are not properly frobnicated raise
   an error to inform the user of invalid frobnication rules.
-
-  This fixes issue #123
 
 
 Coding style
