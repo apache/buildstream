@@ -612,6 +612,27 @@ def _parse_size(size, volume):
     return int(num) * 1024**units.index(unit)
 
 
+# _pretty_size()
+#
+# Converts a number of bytes into a string representation in KB, MB, GB, TB
+# represented as K, M, G, T etc.
+#
+# Args:
+#   size (int): The size to convert in bytes.
+#   dec_places (int): The number of decimal places to output to.
+#
+# Returns:
+#   (str): The string representation of the number of bytes in the largest
+def _pretty_size(size, dec_places=0):
+    psize = size
+    unit = 'B'
+    for unit in ('B', 'K', 'M', 'G', 'T'):
+        if psize < 1024:
+            break
+        else:
+            psize /= 1024
+    return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
+
 # A sentinel to be used as a default argument for functions that need
 # to distinguish between a kwarg set to None and an unset kwarg.
 _sentinel = object()
