@@ -99,7 +99,7 @@ class ErrorDomain(Enum):
 #
 class BstError(Exception):
 
-    def __init__(self, message, *, detail=None, domain=None, reason=None):
+    def __init__(self, message, *, detail=None, domain=None, reason=None, temporary=False):
         global _last_exception
 
         super().__init__(message)
@@ -113,6 +113,11 @@ class BstError(Exception):
         # error occurred at element assembly time.
         #
         self.sandbox = None
+
+        # When this exception occurred during the handling of a job, indicate
+        # whether or not there is any point retrying the job.
+        #
+        self.temporary = temporary
 
         # Error domain and reason
         #
