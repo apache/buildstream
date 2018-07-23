@@ -1505,13 +1505,20 @@ class Element(Plugin):
                 filesdir = os.path.join(assembledir, 'files')
                 logsdir = os.path.join(assembledir, 'logs')
                 metadir = os.path.join(assembledir, 'meta')
+                buildtreedir = os.path.join(assembledir, 'buildtree')
                 os.mkdir(assembledir)
                 os.mkdir(filesdir)
                 os.mkdir(logsdir)
                 os.mkdir(metadir)
+                os.mkdir(buildtreedir)
 
                 # Hard link files from collect dir to files directory
                 utils.link_files(collectdir, filesdir)
+
+                sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root').lstrip(os.sep))
+                # Hard link files from build-root dir to buildtreedir directory
+                if os.path.isdir(sandbox_build_dir):
+                    utils.link_files(sandbox_build_dir, buildtreedir)
 
                 # Copy build log
                 log_filename = context.get_log_filename()
