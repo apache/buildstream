@@ -108,9 +108,10 @@ class SourceError(BstError):
        message (str): The breif error description to report to the user
        detail (str): A possibly multiline, more detailed error message
        reason (str): An optional machine readable reason string, used for test cases
+       temporary(bool): An indicator to whether the error may occur if the operation was run again.  (*Added in 1.4*)
     """
-    def __init__(self, message, *, detail=None, reason=None):
-        super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason)
+    def __init__(self, message, *, detail=None, reason=None, temporary=False):
+        super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason, temporary=temporary)
 
 
 class Source(Plugin):
