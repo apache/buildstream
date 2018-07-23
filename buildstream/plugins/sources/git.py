@@ -153,10 +153,10 @@ class GitMirror():
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
-        # We need to pass '--no-hardlinks' because there's nothing to
-        # stop the build from overwriting the files in the .git directory
-        # inside the sandbox.
-        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--no-hardlinks', self.mirror, fullpath],
+        # Using --shared here avoids copying the objects into the checkout, in any
+        # case we're just checking out a specific commit and then removing the .git/
+        # directory.
+        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--shared', self.mirror, fullpath],
                          fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath))
 
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
