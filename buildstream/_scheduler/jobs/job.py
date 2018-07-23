@@ -35,6 +35,12 @@ from ..._exceptions import ImplError, BstError, set_last_task_error
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
 
+# Return code values shutdown of job handling child processes
+#
+RC_OK = 0
+RC_FAIL = 1
+RC_PERM_FAIL = 2
+
 
 # Used to distinguish between status messages and return values
 class Envelope():
@@ -111,6 +117,10 @@ class Job():
         self._max_retries = max_retries        # Maximum number of automatic retries
         self._result = None                    # Return value of child action in the parent
         self._tries = 0                        # Try count, for retryable jobs
+
+        # If False, a retry will not be attempted regardless of whether _tries is less than _max_retries.
+        #
+        self._retry_flag = True
         self._logfile = logfile
         self._task_id = None
 
@@ -388,8 +398,9 @@ class Job():
                 result = self.child_process()
             except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
+                self._retry_flag = e.temporary
 
-                if self._tries <= self._max_retries:
+                if self._retry_flag and (self._tries <= self._max_retries):
                     self.message(MessageType.FAIL,
                                  "Try #{} failed, retrying".format(self._tries),
                                  elapsed=elapsed)
@@ -402,7 +413,10 @@ class Job():
 
                 # Report the exception to the parent (for internal testing purposes)
                 self._child_send_error(e)
-                self._child_shutdown(1)
+
+                # Set return code based on whether or not the error was temporary.
+                #
+                self._child_shutdown(RC_FAIL if self._retry_flag else RC_PERM_FAIL)
 
             except Exception as e:                        # pylint: disable=broad-except
 
@@ -416,7 +430,7 @@ class Job():
                 self.message(MessageType.BUG, self.action_name,
                              elapsed=elapsed, detail=detail,
                              logfile=filename)
-                self._child_shutdown(1)
+                self._child_shutdown(RC_FAIL)
 
             else:
                 # No exception occurred in the action
@@ -430,7 +444,7 @@ class Job():
                 # Shutdown needs to stay outside of the above context manager,
                 # make sure we dont try to handle SIGTERM while the process
                 # is already busy in sys.exit()
-                self._child_shutdown(0)
+                self._child_shutdown(RC_OK)
 
     # _child_send_error()
     #
@@ -495,7 +509,8 @@ class Job():
         message.action_name = self.action_name
         message.task_id = self._task_id
 
-        if message.message_type == MessageType.FAIL and self._tries <= self._max_retries:
+        if (message.message_type == MessageType.FAIL and
+                self._tries <= self._max_retries and self._retry_flag):
             # Job will be retried, display failures as warnings in the frontend
             message.message_type = MessageType.WARN
 
@@ -529,12 +544,17 @@ class Job():
     def _parent_child_completed(self, pid, returncode):
         self._parent_shutdown()
 
-        if returncode != 0 and self._tries <= self._max_retries:
+        # We don't want to retry if we got OK or a permanent fail.
+        # This is set in _child_action but must also be set for the parent.
+        #
+        self._retry_flag = returncode not in (RC_OK, RC_PERM_FAIL)
+
+        if self._retry_flag and (self._tries <= self._max_retries):
             self.spawn()
             return
 
-        self.parent_complete(returncode == 0, self._result)
-        self._scheduler.job_completed(self, returncode == 0)
+        self.parent_complete(returncode == RC_OK, self._result)
+        self._scheduler.job_completed(self, returncode == RC_OK)
 
     # _parent_process_envelope()
     #
