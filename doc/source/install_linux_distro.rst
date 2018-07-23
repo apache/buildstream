@@ -6,10 +6,8 @@ Installing BuildStream on a Linux distro
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.5
-* libostree >= v2017.8 with introspection data
 * bubblewrap >= 0.1.2
 * fuse2
-* PyGObject introspection bindings
 
 BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
 Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
@@ -20,6 +18,7 @@ The default plugins with extra host dependencies are:
 * bzr
 * deb
 * git
+* ostree
 * patch
 * tar
 
@@ -52,18 +51,24 @@ Arch Linux
 Install the dependencies with::
 
   sudo pacman -S \
-      python fuse2 ostree bubblewrap python-gobject \
+      python fuse2 bubblewrap \
       python-pip git
 
 For the default plugins::
 
   sudo pacman -S \
-      lzip git bzr patch python-arpy
+      bzr git lzip ostree patch python-arpy python-gobject
 
 
 Debian
 ++++++
+Install the dependencies with::
 
+  sudo apt-get install \
+      python3 fuse bubblewrap \
+      python3-pip python3-dev git
+
+For the default plugins:
 
 Stretch
 ^^^^^^^
@@ -78,32 +83,20 @@ And then running::
 
   sudo apt-get update
 
-At this point you should be able to get the system requirements with::
+At this point you should be able to get the system requirements for the default plugins with::
 
   sudo apt-get install \
-      python3 fuse ostree gir1.2-ostree-1.0 bubblewrap python3-gi \
-      python3-pip python3-dev git
+      bzr git lzip patch python3-arpy python3-gi
   sudo apt-get install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
-
-For the default plugins::
-
-  sudo apt-get install \
-      lzip git bzr patch python3-arpy
 
 Buster or Sid
 ^^^^^^^^^^^^^
 For debian unstable or testing, only the following line should be enough
-to get the base system requirements installed::
+to get the system requirements for the default plugins installed::
 
   sudo apt-get install \
-      python3 fuse ostree gir1.2-ostree-1.0 bubblewrap python3-gi \
-      python3-pip python3-dev git
-
-For the default plugins::
-
-  sudo apt-get install \
-      lzip git bzr patch python3-arpy
+      lzip gir1.2-ostree-1.0 git bzr ostree patch python3-arpy python3-gi
 
 
 Fedora
@@ -112,13 +105,13 @@ For recent fedora systems, the following line should get you the system
 requirements you need::
 
   dnf install -y \
-      python3 fuse ostree bubblewrap python3-gobject \
+      python3 fuse bubblewrap \
       python3-pip python3-devel git
 
 For the default plugins::
 
   dnf install -y \
-      lzip git bzr patch python3-arpy
+      bzr git lzip patch ostree python3-arpy python3-gobject
 
 
 Installing
