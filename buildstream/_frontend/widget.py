@@ -160,6 +160,7 @@ class TypeName(Widget):
         MessageType.START: "blue",
         MessageType.SUCCESS: "green",
         MessageType.FAIL: "red",
+        MessageType.SKIPPED: "yellow",
         MessageType.ERROR: "red",
         MessageType.BUG: "red",
     }
