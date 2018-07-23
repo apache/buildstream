@@ -221,6 +221,8 @@ class CASCache(ArtifactCache):
             try:
                 remote.init()
 
+                element.info("Pulling {} <- {}".format(element._get_brief_display_key(), remote.spec.url))
+
                 request = buildstream_pb2.GetReferenceRequest()
                 request.key = ref
                 response = remote.ref_storage.GetReference(request)
@@ -238,6 +240,7 @@ class CASCache(ArtifactCache):
 
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
+                    element.info("{} not found at remote {}".format(element._get_brief_display_key(), remote.spec.url))
                     raise
 
         return False
@@ -262,6 +265,8 @@ class CASCache(ArtifactCache):
         for remote in push_remotes:
             remote.init()
 
+            element.info("Pushing {} -> {}".format(element._get_brief_display_key(), remote.spec.url))
+
             try:
                 for ref in refs:
                     tree = self.resolve_ref(ref)
@@ -275,6 +280,8 @@ class CASCache(ArtifactCache):
 
                         if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
                             # ref is already on the server with the same tree
+                            element.info("Skipping {}, remote ({}) already has artifact cached".format(
+                                element._get_brief_display_key(), remote.spec.url))
                             continue
 
                     except grpc.RpcError as e:
