@@ -45,7 +45,7 @@ def test_no_ref(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'no reference'
 
 
-# Test that when I fetch a nonexistent URL, errors are handled gracefully.
+# Test that when I fetch a nonexistent URL, errors are handled gracefully and a retry is performed.
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_url(cli, tmpdir, datafiles):
@@ -56,6 +56,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
     ])
+    assert "Try #" in result.stderr
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
 
