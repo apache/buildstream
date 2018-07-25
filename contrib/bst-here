@@ -94,12 +94,12 @@ done
 BST_HERE_PS1="\[\033[01;34m\]\w\[\033[00m\]> "
 
 if [ "$#" -eq 0 ]; then
-    command="/bin/bash -i"
+    set -- /bin/bash -i
 else
-    command="/usr/local/bin/bst $@"
+    set -- /bin/sh -c 'exec bst "$@"' - "$@"
 fi
 
-if "$update" == true
+if [ "$update" = true ]
 then
     docker pull "$bst_here_image"
 fi
@@ -123,4 +123,4 @@ exec docker run --rm -i${is_tty:+ -t} \
                 $extra_volumes_opt \
                 --workdir /src \
                 "$bst_here_image" \
-                $command
+                "$@"
