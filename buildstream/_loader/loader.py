@@ -522,14 +522,15 @@ class Loader():
         element = Element._new_from_meta(meta_element, platform.artifactcache)
         element._preflight()
 
-        for source in element.sources():
+        sources = list(element.sources())
+        for idx, source in enumerate(sources):
             # Handle the case where a subproject needs to be fetched
             #
             if source.get_consistency() == Consistency.RESOLVED:
                 if fetch_subprojects:
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
-                    source._fetch()
+                    source._fetch(sources[0:idx])
                 else:
                     detail = "Try fetching the project with `bst fetch {}`".format(filename)
                     raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
