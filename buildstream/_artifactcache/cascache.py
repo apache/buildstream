@@ -240,7 +240,6 @@ class CASCache(ArtifactCache):
 
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
-                    element.info("{} not found at remote {}".format(element._get_brief_display_key(), remote.spec.url))
                     raise
 
         return False
