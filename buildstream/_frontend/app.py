@@ -270,6 +270,10 @@ class App():
 
             # Exit with the error
             self._error_exit(e)
+        except RecursionError:
+            click.echo("RecursionError: Depency depth is too large. Maximum recursion depth exceeded.",
+                       err=True)
+            sys.exit(-1)
 
         else:
             # No exceptions occurred, print session time and summary
