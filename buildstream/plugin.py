@@ -559,7 +559,7 @@ class Plugin():
               raise SourceError(
                   fmt.format(plugin=self, track=tracking)) from e
         """
-        return self.__call(*popenargs, collect_stdout=True, fail=fail, fail_temporarily=fail_temporarily **kwargs)
+        return self.__call(*popenargs, collect_stdout=True, fail=fail, fail_temporarily=fail_temporarily, **kwargs)
 
     #############################################################
     #            Private Methods used in BuildStream            #
