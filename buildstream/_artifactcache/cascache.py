@@ -334,7 +334,7 @@ class CASCache(ArtifactCache):
 
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                    raise ArtifactError("Failed to push artifact {}: {}".format(refs, e)) from e
+                    raise ArtifactError("Failed to push artifact {}: {}".format(refs, e), temporary=True) from e
 
         return pushed
 
