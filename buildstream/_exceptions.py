@@ -136,8 +136,8 @@ class BstError(Exception):
 # or by the base :class:`.Plugin` element itself.
 #
 class PluginError(BstError):
-    def __init__(self, message, reason=None):
-        super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason)
+    def __init__(self, message, reason=None, temporary=False):
+        super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason, temporary=False)
 
 
 # LoadErrorReason
