@@ -540,11 +540,12 @@ class Loader():
         #
         if element._get_consistency() == Consistency.RESOLVED:
             if fetch_subprojects:
-                for source in element.sources():
+                sources = list(element.sources())
+                for idx, source in enumerate(sources):
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
                     if source._get_consistency() != Consistency.CACHED:
-                        source._fetch()
+                        source._fetch(sources[0:idx])
             else:
                 detail = "Try fetching the project with `bst fetch {}`".format(filename)
                 raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,

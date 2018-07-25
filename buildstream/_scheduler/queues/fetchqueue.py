@@ -41,8 +41,10 @@ class FetchQueue(Queue):
         self._skip_cached = skip_cached
 
     def process(self, element):
+        previous_sources = []
         for source in element.sources():
-            source._fetch()
+            source._fetch(previous_sources)
+            previous_sources.append(source)
 
     def status(self, element):
         if not element._is_required():

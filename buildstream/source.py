@@ -88,6 +88,39 @@ these methods are mandatory to implement.
   :ref:`SourceFetcher <core_source_fetcher>`.
 
 
+Accessing previous sources
+--------------------------
+*Since: 1.4*
+
+In the general case, all sources are fetched and tracked independently of one
+another. In situations where a source needs to access previous source(s) in
+order to perform its own track and/or fetch, following attributes can be set to
+request access to previous sources:
+
+* :attr:`~buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK`
+
+  Indicate that access to previous sources is required during track
+
+* :attr:`~buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH`
+
+  Indicate that access to previous sources is required during fetch
+
+The intended use of such plugins is to fetch external dependencies of other
+sources, typically using some kind of package manager, such that all the
+dependencies of the original source(s) are available at build time.
+
+When implementing such a plugin, implementors should adhere to the following
+guidelines:
+
+* Implementations must be able to store the obtained artifacts in a
+  subdirectory.
+
+* Implementations must be able to deterministically generate a unique ref, such
+  that two refs are different if and only if they produce different outputs.
+
+* Implementations must not introduce host contamination.
+
+
 .. _core_source_fetcher:
 
 SourceFetcher - Object for fetching individual URLs
@@ -104,6 +137,8 @@ mentioned, these methods are mandatory to implement.
   Fetches the URL associated with this SourceFetcher, optionally taking an
   alias override.
 
+Class Reference
+---------------
 """
 
 import os
@@ -175,7 +210,7 @@ class SourceFetcher():
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def fetch(self, alias_override=None):
+    def fetch(self, alias_override=None, **kwargs):
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
@@ -224,6 +259,32 @@ class Source(Plugin):
     """
     __defaults = {}          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
+
+    BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
+    """Whether access to previous sources is required during track
+
+    When set to True:
+      * all sources listed before this source in the given element will be
+        fetched before this source is tracked
+      * Source.track() will be called with an additional keyword argument
+        `previous_sources_dir` where previous sources will be staged
+      * this source can not be the first source for an element
+
+    *Since: 1.4*
+    """
+
+    BST_REQUIRES_PREVIOUS_SOURCES_FETCH = False
+    """Whether access to previous sources is required during fetch
+
+    When set to True:
+      * all sources listed before this source in the given element will be
+        fetched before this source is fetched
+      * Source.fetch() will be called with an additional keyword argument
+        `previous_sources_dir` where previous sources will be staged
+      * this source can not be the first source for an element
+
+    *Since: 1.4*
+    """
 
     def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
         provenance = _yaml.node_get_provenance(meta.config)
@@ -324,8 +385,14 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
-    def track(self):
+    def track(self, **kwargs):
         """Resolve a new ref from the plugin's track option
+
+        Args:
+           previous_sources_dir (str): directory where previous sources are staged.
+                                       Note that this keyword argument is available only when
+                                       :attr:`~buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK`
+                                       is set to True.
 
         Returns:
            (simple object): A new internal source reference, or None
@@ -345,9 +412,15 @@ class Source(Plugin):
         # Allow a non implementation
         return None
 
-    def fetch(self):
+    def fetch(self, **kwargs):
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
+
+        Args:
+           previous_sources_dir (str): directory where previous sources are staged.
+                                       Note that this keyword argument is available only when
+                                       :attr:`~buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH`
+                                       is set to True.
 
         Raises:
            :class:`.SourceError`
@@ -583,78 +656,19 @@ class Source(Plugin):
 
     # Wrapper function around plugin provided fetch method
     #
-    def _fetch(self):
-        project = self._get_project()
-        context = self._get_context()
+    # Args:
+    #   previous_sources (list): List of Sources listed prior to this source
+    #
+    def _fetch(self, previous_sources):
 
-        # Silence the STATUS messages which might happen as a result
-        # of checking the source fetchers.
-        with context.silence():
-            source_fetchers = self.get_source_fetchers()
-
-        # Use the source fetchers if they are provided
-        #
-        if source_fetchers:
-
-            # Use a contorted loop here, this is to allow us to
-            # silence the messages which can result from consuming
-            # the items of source_fetchers, if it happens to be a generator.
-            #
-            source_fetchers = iter(source_fetchers)
-            try:
-
-                while True:
-
-                    with context.silence():
-                        fetcher = next(source_fetchers)
-
-                    alias = fetcher._get_alias()
-                    for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
-                        try:
-                            fetcher.fetch(uri)
-                        # FIXME: Need to consider temporary vs. permanent failures,
-                        #        and how this works with retries.
-                        except BstError as e:
-                            last_error = e
-                            continue
-
-                        # No error, we're done with this fetcher
-                        break
-
-                    else:
-                        # No break occurred, raise the last detected error
-                        raise last_error
-
-            except StopIteration:
-                pass
-
-        # Default codepath is to reinstantiate the Source
-        #
+        if self.BST_REQUIRES_PREVIOUS_SOURCES_FETCH:
+            self.__ensure_previous_sources(previous_sources)
+            with self.tempdir() as staging_directory:
+                for src in previous_sources:
+                    src._stage(staging_directory)
+                self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
-            alias = self._get_alias()
-            if self.__first_pass:
-                mirrors = project.first_pass_config.mirrors
-            else:
-                mirrors = project.config.mirrors
-            if not mirrors or not alias:
-                self.fetch()
-                return
-
-            for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
-                new_source = self.__clone_for_uri(uri)
-                try:
-                    new_source.fetch()
-                # FIXME: Need to consider temporary vs. permanent failures,
-                #        and how this works with retries.
-                except BstError as e:
-                    last_error = e
-                    continue
-
-                # No error, we're done here
-                return
-
-            # Re raise the last detected error
-            raise last_error
+            self.__do_fetch()
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
@@ -866,8 +880,19 @@ class Source(Plugin):
 
     # Wrapper for track()
     #
-    def _track(self):
-        new_ref = self.__do_track()
+    # Args:
+    #   previous_sources (list): List of Sources listed prior to this source
+    #
+    def _track(self, previous_sources):
+        if self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
+            self.__ensure_previous_sources(previous_sources)
+            with self.tempdir() as staging_directory:
+                for src in previous_sources:
+                    src._stage(staging_directory)
+                new_ref = self.__do_track(previous_sources_dir=self.__ensure_directory(staging_directory))
+        else:
+            new_ref = self.__do_track()
+
         current_ref = self.get_ref()
 
         if new_ref is None:
@@ -878,6 +903,17 @@ class Source(Plugin):
             self.info("Found new revision: {}".format(new_ref))
 
         return new_ref
+
+    # _requires_previous_sources()
+    #
+    # If a plugin requires access to previous sources at track or fetch time,
+    # then it cannot be the first source of an elemenet.
+    #
+    # Returns:
+    #   (bool): Whether this source requires access to previous sources
+    #
+    def _requires_previous_sources(self):
+        return self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK or self.BST_REQUIRES_PREVIOUS_SOURCES_FETCH
 
     # Returns the alias if it's defined in the project
     def _get_alias(self):
@@ -928,8 +964,52 @@ class Source(Plugin):
 
         return clone
 
+    # Tries to call fetch for every mirror, stopping once it succeeds
+    def __do_fetch(self, **kwargs):
+        project = self._get_project()
+        source_fetchers = self.get_source_fetchers()
+        if source_fetchers:
+            for fetcher in source_fetchers:
+                alias = fetcher._get_alias()
+                success = False
+                for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
+                    try:
+                        fetcher.fetch(uri)
+                    # FIXME: Need to consider temporary vs. permanent failures,
+                    #        and how this works with retries.
+                    except BstError as e:
+                        last_error = e
+                        continue
+                    success = True
+                    break
+                if not success:
+                    raise last_error
+        else:
+            alias = self._get_alias()
+            if self.__first_pass:
+                mirrors = project.first_pass_config.mirrors
+            else:
+                mirrors = project.config.mirrors
+            if not mirrors or not alias:
+                self.fetch(**kwargs)
+                return
+
+            context = self._get_context()
+            source_kind = type(self)
+            for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
+                new_source = self.__clone_for_uri(uri)
+                try:
+                    new_source.fetch(**kwargs)
+                # FIXME: Need to consider temporary vs. permanent failures,
+                #        and how this works with retries.
+                except BstError as e:
+                    last_error = e
+                    continue
+                return
+            raise last_error
+
     # Tries to call track for every mirror, stopping once it succeeds
-    def __do_track(self):
+    def __do_track(self, **kwargs):
         project = self._get_project()
         alias = self._get_alias()
         if self.__first_pass:
@@ -938,14 +1018,14 @@ class Source(Plugin):
             mirrors = project.config.mirrors
         # If there are no mirrors, or no aliases to replace, there's nothing to do here.
         if not mirrors or not alias:
-            return self.track()
+            return self.track(**kwargs)
 
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
         for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass)):
             new_source = self.__clone_for_uri(uri)
             try:
-                ref = new_source.track()
+                ref = new_source.track(**kwargs)
             # FIXME: Need to consider temporary vs. permanent failures,
             #        and how this works with retries.
             except BstError as e:
@@ -989,6 +1069,17 @@ class Source(Plugin):
         _yaml.node_final_assertions(config)
 
         return config
+
+    # Ensures that previous sources have been tracked and fetched.
+    #
+    def __ensure_previous_sources(self, previous_sources):
+        for index, src in enumerate(previous_sources):
+            if src.get_consistency() == Consistency.RESOLVED:
+                src._fetch(previous_sources[0:index])
+            elif src.get_consistency() == Consistency.INCONSISTENT:
+                new_ref = src._track(previous_sources[0:index])
+                src._save_ref(new_ref)
+                src._fetch(previous_sources[0:index])
 
 
 def _extract_alias(url):
