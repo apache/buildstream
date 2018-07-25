@@ -113,7 +113,8 @@ class GitMirror():
             #
             with self.source.tempdir() as tmpdir:
                 self.source.call([self.source.host_git, 'clone', '--mirror', '-n', self.url, tmpdir],
-                                 fail="Failed to clone git repository {}".format(self.url))
+                                 fail="Failed to clone git repository {}".format(self.url),
+                                 fail_temporarily=True)
 
                 try:
                     shutil.move(tmpdir, self.mirror)
@@ -124,6 +125,7 @@ class GitMirror():
     def fetch(self):
         self.source.call([self.source.host_git, 'fetch', 'origin', '--prune'],
                          fail="Failed to fetch from remote git repository: {}".format(self.url),
+                         fail_temporarily=True,
                          cwd=self.mirror)
 
     def has_ref(self):
@@ -157,7 +159,8 @@ class GitMirror():
         # stop the build from overwriting the files in the .git directory
         # inside the sandbox.
         self.source.call([self.source.host_git, 'clone', '--no-checkout', '--no-hardlinks', self.mirror, fullpath],
-                         fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath))
+                         fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath),
+                         fail_temporarily=True)
 
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
                          fail="Failed to checkout git ref {}".format(self.ref),
@@ -167,7 +170,8 @@ class GitMirror():
         fullpath = os.path.join(directory, self.path)
 
         self.source.call([self.source.host_git, 'clone', '--no-checkout', self.mirror, fullpath],
-                         fail="Failed to clone git mirror {} in directory: {}".format(self.mirror, fullpath))
+                         fail="Failed to clone git mirror {} in directory: {}".format(self.mirror, fullpath),
+                         fail_temporarily=True)
 
         self.source.call([self.source.host_git, 'remote', 'set-url', 'origin', self.url],
                          fail='Failed to add remote origin "{}"'.format(self.url),
