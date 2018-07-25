@@ -89,6 +89,11 @@ class SandboxBwrap(Sandbox):
         # Grab the full path of the bwrap binary
         bwrap_command = [utils.get_host_tool('bwrap')]
 
+        for k, v in env.items():
+            bwrap_command += ['--setenv', k, v]
+        for k in os.environ.keys() - env.keys():
+            bwrap_command += ['--unsetenv', k]
+
         # Create a new pid namespace, this also ensures that any subprocesses
         # are cleaned up when the bwrap process exits.
         bwrap_command += ['--unshare-pid']
@@ -194,7 +199,7 @@ class SandboxBwrap(Sandbox):
                 stdin = stack.enter_context(open(os.devnull, "r"))
 
             # Run bubblewrap !
-            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr, env,
+            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr,
                                        (flags & SandboxFlags.INTERACTIVE))
 
             # Cleanup things which bwrap might have left behind, while
@@ -245,7 +250,7 @@ class SandboxBwrap(Sandbox):
 
         return exit_code
 
-    def run_bwrap(self, argv, stdin, stdout, stderr, env, interactive):
+    def run_bwrap(self, argv, stdin, stdout, stderr, interactive):
         # Wrapper around subprocess.Popen() with common settings.
         #
         # This function blocks until the subprocess has terminated.
@@ -321,7 +326,6 @@ class SandboxBwrap(Sandbox):
                 # The default is to share file descriptors from the parent process
                 # to the subprocess, which is rarely good for sandboxing.
                 close_fds=True,
-                env=env,
                 stdin=stdin,
                 stdout=stdout,
                 stderr=stderr,
