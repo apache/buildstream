@@ -254,8 +254,8 @@ class SandboxError(BstError):
 # Raised when errors are encountered in the artifact caches
 #
 class ArtifactError(BstError):
-    def __init__(self, message, *, detail=None, reason=None):
-        super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason)
+    def __init__(self, message, *, detail=None, reason=None, temporary=False):
+        super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason, temporary=True)
 
 
 # PipelineError
