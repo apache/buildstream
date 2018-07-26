@@ -109,7 +109,7 @@ changes the output.
 
 Observe where the variables are declared in the :ref:`builtin defaults
 <project_builtin_defaults>` and :mod:`autotools <elements.autotools>` element
-documentation, and how overriding these affects the resolved set of variables.
+documentation, and how overriding these effects the resolved set of variables.
 
 
 Using the project

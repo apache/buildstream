@@ -400,7 +400,7 @@ dependency and that all referenced variables are declared, the following is fine
    It should be noted that variable resolution only happens after all
    :ref:`Element Composition <format_composition>` has already taken place.
 
-   This is to say that overriding ``%{version}`` at a higher priority will effect
+   This is to say that overriding ``%{version}`` at a higher priority will affect
    the final result of ``%{release-text}``.
 
 

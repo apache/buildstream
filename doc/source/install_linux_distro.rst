@@ -77,17 +77,17 @@ setup as described `here <https://backports.debian.org/Instructions/>`_
 
 By adding the following line to your sources.list::
 
-  deb http://ftp.debian.org/debian stretch-backports main
+  deb http://deb.debian.org/debian stretch-backports main
 
 And then running::
 
-  sudo apt-get update
+  sudo apt update
 
 At this point you should be able to get the system requirements for the default plugins with::
 
-  sudo apt-get install \
+  sudo apt install \
       bzr git lzip patch python3-arpy python3-gi
-  sudo apt-get install -t stretch-backports \
+  sudo apt install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
 
 Buster or Sid
@@ -177,8 +177,8 @@ checkout::
   cd /path/to/buildstream
   git pull --rebase
 
-If you did not specify the ``-e`` option at install time, you will
-need to cleanly reinstall BuildStream::
+If you did not specify the ``-e`` option at install time or the dependancies
+have changed, you will need to cleanly reinstall BuildStream::
 
   pip3 uninstall buildstream
   cd /path/to/buildstream

@@ -58,7 +58,7 @@ it's important to note two things:
 * **source**: We only want to extract the ``files/`` directory from the SDK,
 
   This is becase Flatpak runtimes dont start at the root of the OSTree checkout,
-  instead the actual files start in the ``files//`` subdirectory
+  instead the actual files start in the ``files/`` subdirectory
 
 * **target**: The content we've extracted should be staged at ``/usr``
 

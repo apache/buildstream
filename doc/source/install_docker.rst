@@ -38,8 +38,8 @@ be able to integrate with Bash tab-completion if you invoke it in this way.
 
 Two Docker volumes are set up by the ``bst-here`` script:
 
- * buildstream-cache -- mounted at ``~/.cache/buildstream``
- * buildstream-config -- mounted at ``~/.config/``
+ * ``buildstream-cache --`` mounted at ``~/.cache/buildstream``
+ * ``buildstream-config --`` mounted at ``~/.config/``
 
 These are necessary so that your BuildStream cache and configuration files
 persist between invocations of ``bst-here``.
