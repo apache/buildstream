@@ -56,7 +56,7 @@ def test_path_in_filename(cli, tmpdir, datafiles):
     ])
 
     # The bst file has a / in the filename param
-    result.assert_main_error(ErrorDomain.SOURCE, None)
+    result.assert_main_error(ErrorDomain.SOURCE, "filename-contains-directory")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'single-file'))
