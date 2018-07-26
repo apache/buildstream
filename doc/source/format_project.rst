@@ -548,7 +548,7 @@ The defaults environment for the build sandbox is defined here.
      PATH: /usr/bin:/bin:/usr/sbin:/sbin
 
 Additionally, the special ``environment-nocache`` list which specifies
-which environment variables do not effect build output, and are thus
+which environment variables do not affect build output, and are thus
 not considered in the calculation of artifact keys can be defined here.
 
 .. code:: yaml
@@ -558,7 +558,7 @@ not considered in the calculation of artifact keys can be defined here.
 
 Note that the ``environment-nocache`` list only exists so that we can
 control parameters such as ``make -j ${MAXJOBS}``, allowing us to control
-the number of jobs for a given build without effecting the resulting
+the number of jobs for a given build without affecting the resulting
 cache key.
 
 
