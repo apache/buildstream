@@ -478,13 +478,15 @@ class Plugin():
                                            silent_nested=silent_nested):
             yield
 
-    def call(self, *popenargs, fail=None, **kwargs):
+    def call(self, *popenargs, fail=None, fail_temporarily=False, **kwargs):
         """A wrapper for subprocess.call()
 
         Args:
            popenargs (list): Popen() arguments
            fail (str): A message to display if the process returns
                        a non zero exit code
+           fail_temporarily (bool): Whether any exceptions should
+                                    be raised as temporary. (*Since: 1.4*)
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
@@ -507,16 +509,18 @@ class Plugin():
               "Failed to download ponies from {}".format(
                   self.mirror_directory))
         """
-        exit_code, _ = self.__call(*popenargs, fail=fail, **kwargs)
+        exit_code, _ = self.__call(*popenargs, fail=fail, fail_temporarily=fail_temporarily, **kwargs)
         return exit_code
 
-    def check_output(self, *popenargs, fail=None, **kwargs):
+    def check_output(self, *popenargs, fail=None, fail_temporarily=False, **kwargs):
         """A wrapper for subprocess.check_output()
 
         Args:
            popenargs (list): Popen() arguments
            fail (str): A message to display if the process returns
                        a non zero exit code
+           fail_temporarily (bool): Whether any exceptions should
+                                    be raised as temporary. (*Since: 1.4*)
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
@@ -555,7 +559,7 @@ class Plugin():
               raise SourceError(
                   fmt.format(plugin=self, track=tracking)) from e
         """
-        return self.__call(*popenargs, collect_stdout=True, fail=fail, **kwargs)
+        return self.__call(*popenargs, collect_stdout=True, fail=fail, fail_temporarily=fail_temporarily, **kwargs)
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -619,7 +623,7 @@ class Plugin():
 
     # Internal subprocess implementation for the call() and check_output() APIs
     #
-    def __call(self, *popenargs, collect_stdout=False, fail=None, **kwargs):
+    def __call(self, *popenargs, collect_stdout=False, fail=None, fail_temporarily=False, **kwargs):
 
         with self._output_file() as output_file:
             if 'stdout' not in kwargs:
@@ -634,7 +638,8 @@ class Plugin():
             exit_code, output = utils._call(*popenargs, **kwargs)
 
             if fail and exit_code:
-                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail))
+                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail),
+                                  temporary=fail_temporarily)
 
         return (exit_code, output)
 

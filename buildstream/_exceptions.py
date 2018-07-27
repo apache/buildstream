@@ -99,7 +99,7 @@ class ErrorDomain(Enum):
 #
 class BstError(Exception):
 
-    def __init__(self, message, *, detail=None, domain=None, reason=None):
+    def __init__(self, message, *, detail=None, domain=None, reason=None, temporary=False):
         global _last_exception
 
         super().__init__(message)
@@ -113,6 +113,11 @@ class BstError(Exception):
         # error occurred at element assembly time.
         #
         self.sandbox = None
+
+        # When this exception occurred during the handling of a job, indicate
+        # whether or not there is any point retrying the job.
+        #
+        self.temporary = temporary
 
         # Error domain and reason
         #
@@ -131,8 +136,8 @@ class BstError(Exception):
 # or by the base :class:`.Plugin` element itself.
 #
 class PluginError(BstError):
-    def __init__(self, message, reason=None):
-        super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason)
+    def __init__(self, message, reason=None, temporary=False):
+        super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason, temporary=False)
 
 
 # LoadErrorReason
@@ -249,8 +254,8 @@ class SandboxError(BstError):
 # Raised when errors are encountered in the artifact caches
 #
 class ArtifactError(BstError):
-    def __init__(self, message, *, detail=None, reason=None):
-        super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason)
+    def __init__(self, message, *, detail=None, reason=None, temporary=False):
+        super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason, temporary=True)
 
 
 # PipelineError
