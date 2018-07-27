@@ -240,7 +240,8 @@ class CASCache(ArtifactCache):
 
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
-                    raise
+                    raise ArtifactError("Failed to pull artifact {}: {}".format(
+                        element._get_brief_display_key(), e)) from e
 
         return False
 
@@ -285,6 +286,7 @@ class CASCache(ArtifactCache):
 
                     except grpc.RpcError as e:
                         if e.code() != grpc.StatusCode.NOT_FOUND:
+                            # Intentionally re-raise RpcError for outer except block.
                             raise
 
                     missing_blobs = {}
