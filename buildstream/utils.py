@@ -41,6 +41,9 @@ import psutil
 from . import _signals
 from ._exceptions import BstError, ErrorDomain
 
+# The magic number for timestamps: 2011-11-11 11:11:11
+_magic_timestamp = calendar.timegm([2011, 11, 11, 11, 11, 11])
+
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -943,9 +946,6 @@ def _set_deterministic_user(directory):
 #    directory (str): The directory to recursively set the mtime on
 #
 def _set_deterministic_mtime(directory):
-    # The magic number for timestamps: 2011-11-11 11:11:11
-    magic_timestamp = calendar.timegm([2011, 11, 11, 11, 11, 11])
-
     for dirname, _, filenames in os.walk(directory.encode("utf-8"), topdown=False):
         for filename in filenames:
             pathname = os.path.join(dirname, filename)
@@ -964,9 +964,9 @@ def _set_deterministic_mtime(directory):
             # However, nowadays it is possible at least on gnuish systems
             # with with the lutimes glibc function.
             if not os.path.islink(pathname):
-                os.utime(pathname, (magic_timestamp, magic_timestamp))
+                os.utime(pathname, (_magic_timestamp, _magic_timestamp))
 
-        os.utime(dirname, (magic_timestamp, magic_timestamp))
+        os.utime(dirname, (_magic_timestamp, _magic_timestamp))
 
 
 # _tempdir()
@@ -1207,6 +1207,14 @@ def _deduplicate(iterable, key=None):
             if k not in seen:
                 seen_add(k)
                 yield element
+
+
+# Like os.path.getmtime(), but returns the mtime of a link rather than
+# the target, if the filesystem supports that.
+#
+def _get_link_mtime(path):
+    path_stat = os.lstat(path)
+    return path_stat.st_mtime
 
 
 # _parse_version():
