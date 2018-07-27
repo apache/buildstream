@@ -10,3 +10,5 @@ maintained and work as expected.
    :maxdepth: 1
 
    examples/flatpak-autotools
+   examples/tar-mirror
+   examples/git-mirror
