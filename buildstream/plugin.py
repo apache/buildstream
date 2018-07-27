@@ -486,7 +486,7 @@ class Plugin():
            fail (str): A message to display if the process returns
                        a non zero exit code
            fail_temporarily (bool): Whether any exceptions should
-                                    be raised as temporary. (*Since: 1.4*)
+                                    be raised as temporary. (*Since: 1.2*)
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
@@ -520,7 +520,7 @@ class Plugin():
            fail (str): A message to display if the process returns
                        a non zero exit code
            fail_temporarily (bool): Whether any exceptions should
-                                    be raised as temporary. (*Since: 1.4*)
+                                    be raised as temporary. (*Since: 1.2*)
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
