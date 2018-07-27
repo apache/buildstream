@@ -74,13 +74,16 @@ BuildStream operates on a set of YAML files (.bst files), as follows:
 
 How can I get started?
 ======================
-The easiest way to get started is to explore some existing .bst files, for example:
+To start using BuildStream, first,
+`install <https://buildstream.gitlab.io/buildstream/main_install.html>`_
+BuildStream onto your machine and then follow our
+`tutorial <https://buildstream.gitlab.io/buildstream/using_tutorial.html>`_.
+
+We also recommend exploring some existing BuildStream projects:
 
 * https://gitlab.gnome.org/GNOME/gnome-build-meta/
 * https://gitlab.com/freedesktop-sdk/freedesktop-sdk
 * https://gitlab.com/baserock/definitions
-* https://gitlab.com/BuildStream/buildstream-examples/tree/master/build-x86image
-* https://gitlab.com/BuildStream/buildstream-examples/tree/master/netsurf-flatpak
 
 If you have any questions please ask on our `#buildstream <irc://irc.gnome.org/buildstream>`_ channel in `irc.gnome.org <irc://irc.gnome.org>`_
 
