@@ -197,29 +197,55 @@ class Context():
                             "\nValid values are, for example: 800M 10G 1T 50%\n"
                             .format(str(e))) from e
 
-        # If we are asked not to set a quota, we set it to the maximum
-        # disk space available minus a headroom of 2GB, such that we
-        # at least try to avoid raising Exceptions.
+        # Headroom intended to give BuildStream a bit of leeway.
+        # This acts as the minimum size of cache_quota and also
+        # is taken from the user requested cache_quota.
         #
-        # Of course, we might still end up running out during a build
-        # if we end up writing more than 2G, but hey, this stuff is
-        # already really fuzzy.
-        #
-        if cache_quota is None:
-            stat = os.statvfs(artifactdir_volume)
-            # Again, the artifact directory may not yet have been
-            # created
-            if not os.path.exists(self.artifactdir):
-                cache_size = 0
-            else:
-                cache_size = utils._get_dir_size(self.artifactdir)
-            cache_quota = cache_size + stat.f_bsize * stat.f_bavail
-
         if 'BST_TEST_SUITE' in os.environ:
             headroom = 0
         else:
             headroom = 2e9
 
+        stat = os.statvfs(artifactdir_volume)
+        available_space = (stat.f_bsize * stat.f_bavail)
+
+        # Again, the artifact directory may not yet have been created yet
+        #
+        if not os.path.exists(self.artifactdir):
+            cache_size = 0
+        else:
+            cache_size = utils._get_dir_size(self.artifactdir)
+
+        # Ensure system has enough storage for the cache_quota
+        #
+        # If cache_quota is none, set it to the maximum it could possibly be.
+        #
+        # Also check that cache_quota is atleast as large as our headroom.
+        #
+        if cache_quota is None:  # Infinity, set to max system storage
+            cache_quota = cache_size + available_space
+        if cache_quota < headroom:  # Check minimum
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
+                            "BuildStream requires a minimum cache quota of 2G.")
+        elif cache_quota > cache_size + available_space:  # Check maximum
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            ("Your system does not have enough available " +
+                             "space to support the cache quota specified.\n" +
+                             "You currently have:\n" +
+                             "- {used} of cache in use at {local_cache_path}\n" +
+                             "- {available} of available system storage").format(
+                                 used=utils._pretty_size(cache_size),
+                                 local_cache_path=self.artifactdir,
+                                 available=utils._pretty_size(available_space)))
+
+        # Place a slight headroom (2e9 (2GB) on the cache_quota) into
+        # cache_quota to try and avoid exceptions.
+        #
+        # Of course, we might still end up running out during a build
+        # if we end up writing more than 2G, but hey, this stuff is
+        # already really fuzzy.
+        #
         self.cache_quota = cache_quota - headroom
         self.cache_lower_threshold = self.cache_quota / 2
 
