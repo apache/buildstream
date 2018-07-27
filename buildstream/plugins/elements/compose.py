@@ -185,13 +185,6 @@ class ComposeElement(Element):
         return os.path.join(os.sep, 'buildstream', 'install')
 
 
-# Like os.path.getmtime(), but doesnt explode on symlinks
-#
-def getmtime(path):
-    stat = os.lstat(path)
-    return stat.st_mtime
-
-
 # Plugin entry point
 def setup():
     return ComposeElement
