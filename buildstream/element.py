@@ -369,8 +369,8 @@ class Element(Plugin):
         generated script is run:
 
         - All element variables have been exported.
-        - The cwd is `self.get_variable('build_root')/self.normal_name`.
-        - $PREFIX is set to `self.get_variable('install_root')`.
+        - The cwd is `self.get_variable('build-root')/self.normal_name`.
+        - $PREFIX is set to `self.get_variable('install-root')`.
         - The directory indicated by $PREFIX is an empty directory.
 
         Files are expected to be installed to $PREFIX.
