@@ -15,6 +15,7 @@ tmp
 .coverage
 .coverage.*
 .cache
+.pytest_cache/
 *.bst/
 
 # Pycache, in case buildstream is ran directly from within the source
