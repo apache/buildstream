@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2018 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -204,8 +205,9 @@ class BuildElement(Element):
     def prepare(self, sandbox):
         commands = self.__commands['configure-commands']
         if commands:
-            for cmd in commands:
-                self.__run_command(sandbox, cmd, 'configure-commands')
+            with self.timed_activity("Running configure-commands"):
+                for cmd in commands:
+                    self.__run_command(sandbox, cmd, 'configure-commands')
 
     def generate_script(self):
         script = ""
@@ -231,13 +233,12 @@ class BuildElement(Element):
         return commands
 
     def __run_command(self, sandbox, cmd, cmd_name):
-        with self.timed_activity("Running {}".format(cmd_name)):
-            self.status("Running {}".format(cmd_name), detail=cmd)
+        self.status("Running {}".format(cmd_name), detail=cmd)
 
-            # Note the -e switch to 'sh' means to exit with an error
-            # if any untested command fails.
-            #
-            exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                   SandboxFlags.ROOT_READ_ONLY)
-            if exitcode != 0:
-                raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+        # Note the -e switch to 'sh' means to exit with an error
+        # if any untested command fails.
+        #
+        exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+                               SandboxFlags.ROOT_READ_ONLY)
+        if exitcode != 0:
+            raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
