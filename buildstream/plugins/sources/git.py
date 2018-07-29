@@ -71,8 +71,8 @@ git - stage files from a git repository
 """
 
 import os
+import errno
 import re
-import shutil
 from collections import Mapping
 from io import StringIO
 
@@ -119,11 +119,21 @@ class GitMirror(SourceFetcher):
                                  fail="Failed to clone git repository {}".format(url),
                                  fail_temporarily=True)
 
+                # Attempt atomic rename into destination, this will fail if
+                # another process beat us to the punch
                 try:
-                    shutil.move(tmpdir, self.mirror)
-                except (shutil.Error, OSError) as e:
-                    raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}'"
-                                      .format(self.source, url, tmpdir, self.mirror)) from e
+                    os.rename(tmpdir, self.mirror)
+                except OSError as e:
+
+                    # When renaming and the destination repo already exists, os.rename()
+                    # will fail with ENOTEMPTY, since an empty directory will be silently
+                    # replaced
+                    if e.errno == errno.ENOTEMPTY:
+                        self.source.status("{}: Discarding duplicate clone of {}"
+                                           .format(self.source, url))
+                    else:
+                        raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}': {}"
+                                          .format(self.source, url, tmpdir, self.mirror, e)) from e
 
     def _fetch(self, alias_override=None):
         url = self.source.translate_url(self.url, alias_override=alias_override)
