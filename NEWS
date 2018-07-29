@@ -9,6 +9,8 @@ buildstream 1.1.5
     and the preferred mirror to fetch from can be defined in the command
     line or user config.
 
+  o Added new `remote` source plugin for downloading file blobs
+
 =================
 buildstream 1.1.4
 =================
