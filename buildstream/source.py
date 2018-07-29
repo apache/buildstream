@@ -65,6 +65,33 @@ these methods are mandatory to implement.
 
   **Optional**: If left unimplemented, this will default to calling
   :func:`Source.stage() <buildstream.source.Source.stage>`
+
+* :func:`Source.get_source_fetchers() <buildstream.source.Source.get_source_fetchers>`
+
+  Get the objects that are used for fetching.
+
+  **Optional**: This only needs to be implemented for sources that need to
+  download from multiple URLs while fetching (e.g. a git repo and its
+  submodules). For details on how to define a SourceFetcher, see
+  :ref:`SourceFetcher <core_source_fetcher>`.
+
+
+.. _core_source_fetcher:
+
+SourceFetcher - Object for fetching individual URLs
+===================================================
+
+
+Abstract Methods
+----------------
+SourceFetchers expose the following abstract methods. Unless explicitly
+mentioned, these methods are mandatory to implement.
+
+* :func:`SourceFetcher.fetch() <buildstream.source.SourceFetcher.fetch>`
+
+  Fetches the URL associated with this SourceFetcher, optionally taking an
+  alias override.
+
 """
 
 import os
@@ -114,6 +141,63 @@ class SourceError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason, temporary=temporary)
 
 
+class SourceFetcher():
+    """SourceFetcher()
+
+    This interface exists so that a source that downloads from multiple
+    places (e.g. a git source with submodules) has a consistent interface for
+    fetching and substituting aliases.
+
+    *Since: 1.2*
+    """
+    def __init__(self):
+        self.__alias = None
+
+    #############################################################
+    #                      Abstract Methods                     #
+    #############################################################
+    def fetch(self, alias_override=None):
+        """Fetch remote sources and mirror them locally, ensuring at least
+        that the specific reference is cached locally.
+
+        Args:
+           alias_override (str): The alias to use instead of the default one
+               defined by the :ref:`aliases <project_source_aliases>` field
+               in the project's config.
+
+        Raises:
+           :class:`.SourceError`
+
+        Implementors should raise :class:`.SourceError` if the there is some
+        network error or if the source reference could not be matched.
+        """
+        raise ImplError("Source fetcher '{}' does not implement fetch()".format(type(self)))
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
+    def mark_download_url(self, url):
+        """Identifies the URL that this SourceFetcher uses to download
+
+        This must be called during the fetcher's initialization
+
+        Args:
+           url (str): The url used to download.
+        """
+        # Not guaranteed to be a valid alias yet.
+        # Ensuring it's a valid alias currently happens in Project.get_alias_uris
+        alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+        self.__alias = alias
+
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
+
+    # Returns the alias used by this fetcher
+    def _get_alias(self):
+        return self.__alias
+
+
 class Source(Plugin):
     """Source()
 
@@ -125,7 +209,7 @@ class Source(Plugin):
     __defaults = {}          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
 
-    def __init__(self, context, project, meta):
+    def __init__(self, context, project, meta, *, alias_override=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source")
@@ -135,6 +219,11 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+        self.__alias_override = alias_override          # Tuple of alias and its override to use instead
+        self.__expected_alias = None                    # A hacky way to store the first alias used
+
+        # FIXME: Reconstruct a MetaSource from a Source instead of storing it.
+        self.__meta = meta                              # MetaSource stored so we can copy this source later.
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -284,6 +373,36 @@ class Source(Plugin):
         """
         self.stage(directory)
 
+    def mark_download_url(self, url):
+        """Identifies the URL that this Source uses to download
+
+        This must be called during :func:`~buildstream.plugin.Plugin.configure` if
+        :func:`~buildstream.source.Source.translate_url` is not called.
+
+        Args:
+           url (str): The url used to download
+
+        *Since: 1.2*
+        """
+        alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+        self.__expected_alias = alias
+
+    def get_source_fetchers(self):
+        """Get the objects that are used for fetching
+
+        If this source doesn't download from multiple URLs,
+        returning None and falling back on the default behaviour
+        is recommended.
+
+        Returns:
+           list: A list of SourceFetchers. If SourceFetchers are not supported,
+                 this will be an empty list.
+
+        *Since: 1.2*
+        """
+
+        return []
+
     #############################################################
     #                       Public Methods                      #
     #############################################################
@@ -300,18 +419,42 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
-    def translate_url(self, url):
+    def translate_url(self, url, *, alias_override=None):
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
 
         Args:
            url (str): A url, which may be using an alias
+           alias_override (str): Optionally, an URI to override the alias with. (*Since: 1.2*)
 
         Returns:
            str: The fully qualified url, with aliases resolved
         """
-        project = self._get_project()
-        return project.translate_url(url)
+        # Alias overriding can happen explicitly (by command-line) or
+        # implicitly (the Source being constructed with an __alias_override).
+        if alias_override or self.__alias_override:
+            url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
+            if url_alias:
+                if alias_override:
+                    url = alias_override + url_body
+                else:
+                    # Implicit alias overrides may only be done for one
+                    # specific alias, so that sources that fetch from multiple
+                    # URLs and use different aliases default to only overriding
+                    # one alias, rather than getting confused.
+                    override_alias = self.__alias_override[0]
+                    override_url = self.__alias_override[1]
+                    if url_alias == override_alias:
+                        url = override_url + url_body
+            return url
+        else:
+            # Sneakily store the alias if it hasn't already been stored
+            if not self.__expected_alias and url and utils._ALIAS_SEPARATOR in url:
+                url_alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
+                self.__expected_alias = url_alias
+
+            project = self._get_project()
+            return project.translate_url(url)
 
     def get_project_directory(self):
         """Fetch the project base directory
@@ -375,7 +518,45 @@ class Source(Plugin):
     # Wrapper function around plugin provided fetch method
     #
     def _fetch(self):
-        self.fetch()
+        project = self._get_project()
+        source_fetchers = self.get_source_fetchers()
+        if source_fetchers:
+            for fetcher in source_fetchers:
+                alias = fetcher._get_alias()
+                success = False
+                for uri in project.get_alias_uris(alias):
+                    try:
+                        fetcher.fetch(uri)
+                    # FIXME: Need to consider temporary vs. permanent failures,
+                    #        and how this works with retries.
+                    except BstError as e:
+                        last_error = e
+                        continue
+                    success = True
+                    break
+                if not success:
+                    raise last_error
+        else:
+            alias = self._get_alias()
+            if not project.mirrors or not alias:
+                self.fetch()
+                return
+
+            context = self._get_context()
+            source_kind = type(self)
+            for uri in project.get_alias_uris(alias):
+                new_source = source_kind(context, project, self.__meta,
+                                         alias_override=(alias, uri))
+                new_source._preflight()
+                try:
+                    new_source.fetch()
+                # FIXME: Need to consider temporary vs. permanent failures,
+                #        and how this works with retries.
+                except BstError as e:
+                    last_error = e
+                    continue
+                return
+            raise last_error
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
@@ -582,7 +763,7 @@ class Source(Plugin):
     # Wrapper for track()
     #
     def _track(self):
-        new_ref = self.track()
+        new_ref = self.__do_track()
         current_ref = self.get_ref()
 
         if new_ref is None:
@@ -594,9 +775,47 @@ class Source(Plugin):
 
         return new_ref
 
+    # Returns the alias if it's defined in the project
+    def _get_alias(self):
+        alias = self.__expected_alias
+        project = self._get_project()
+        if project.get_alias_uri(alias):
+            # The alias must already be defined in the project's aliases
+            # otherwise http://foo gets treated like it contains an alias
+            return alias
+        else:
+            return None
+
     #############################################################
     #                   Local Private Methods                   #
     #############################################################
+
+    # Tries to call track for every mirror, stopping once it succeeds
+    def __do_track(self):
+        project = self._get_project()
+        # If there are no mirrors, or no aliases to replace, there's nothing to do here.
+        alias = self._get_alias()
+        if not project.mirrors or not alias:
+            return self.track()
+
+        context = self._get_context()
+        source_kind = type(self)
+
+        # NOTE: We are assuming here that tracking only requires substituting the
+        #       first alias used
+        for uri in reversed(project.get_alias_uris(alias)):
+            new_source = source_kind(context, project, self.__meta,
+                                     alias_override=(alias, uri))
+            new_source._preflight()
+            try:
+                ref = new_source.track()
+            # FIXME: Need to consider temporary vs. permanent failures,
+            #        and how this works with retries.
+            except BstError as e:
+                last_error = e
+                continue
+            return ref
+        raise last_error
 
     # Ensures a fully constructed path and returns it
     def __ensure_directory(self, directory):

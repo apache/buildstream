@@ -19,7 +19,7 @@
 
 import os
 import multiprocessing  # for cpu_count()
-from collections import Mapping
+from collections import Mapping, OrderedDict
 from pluginbase import PluginBase
 from . import utils
 from . import _cachekey
@@ -34,9 +34,6 @@ from ._sourcefactory import SourceFactory
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 
-
-# The separator we use for user specified aliases
-_ALIAS_SEPARATOR = ':'
 
 # Project Configuration file
 _PROJECT_CONF_FILE = 'project.conf'
@@ -70,7 +67,7 @@ class HostMount():
 #
 class Project():
 
-    def __init__(self, directory, context, *, junction=None, cli_options=None):
+    def __init__(self, directory, context, *, junction=None, cli_options=None, default_mirror=None):
 
         # The project name
         self.name = None
@@ -94,6 +91,8 @@ class Project():
         self.base_env_nocache = None             # The base nocache mask (list) for the environment
         self.element_overrides = {}              # Element specific configurations
         self.source_overrides = {}               # Source specific configurations
+        self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
+        self.default_mirror = default_mirror     # The name of the preferred mirror.
 
         #
         # Private Members
@@ -133,8 +132,8 @@ class Project():
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
     def translate_url(self, url):
-        if url and _ALIAS_SEPARATOR in url:
-            url_alias, url_body = url.split(_ALIAS_SEPARATOR, 1)
+        if url and utils._ALIAS_SEPARATOR in url:
+            url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
             alias_url = self._aliases.get(url_alias)
             if alias_url:
                 url = alias_url + url_body
@@ -202,6 +201,36 @@ class Project():
         self._assert_plugin_format(source, version)
         return source
 
+    # get_alias_uri()
+    #
+    # Returns the URI for a given alias, if it exists
+    #
+    # Args:
+    #    alias (str): The alias.
+    #
+    # Returns:
+    #    str: The URI for the given alias; or None: if there is no URI for
+    #         that alias.
+    def get_alias_uri(self, alias):
+        return self._aliases.get(alias)
+
+    # get_alias_uris()
+    #
+    # Returns a list of every URI to replace an alias with
+    def get_alias_uris(self, alias):
+        if not alias or alias not in self._aliases:
+            return [None]
+
+        mirror_list = []
+        for key, alias_mapping in self.mirrors.items():
+            if alias in alias_mapping:
+                if key == self.default_mirror:
+                    mirror_list = alias_mapping[alias] + mirror_list
+                else:
+                    mirror_list += alias_mapping[alias]
+        mirror_list.append(self._aliases[alias])
+        return mirror_list
+
     # _load():
     #
     # Loads the project configuration file in the project directory.
@@ -249,7 +278,7 @@ class Project():
             'aliases', 'name',
             'artifacts', 'options',
             'fail-on-overlap', 'shell',
-            'ref-storage', 'sandbox'
+            'ref-storage', 'sandbox', 'mirrors',
         ])
 
         # The project name, element path and option declarations
@@ -289,6 +318,10 @@ class Project():
         # or conditionally specifying the project name; will be ignored.
         #
         self.options.process_node(config)
+
+        # Override default_mirror if not set by command-line
+        if not self.default_mirror:
+            self.default_mirror = _yaml.node_get(overrides, str, 'default-mirror', default_value=None)
 
         #
         # Now all YAML composition is done, from here on we just load
@@ -413,6 +446,21 @@ class Project():
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
+
+        mirrors = _yaml.node_get(config, list, 'mirrors', default_value=[])
+        for mirror in mirrors:
+            allowed_mirror_fields = [
+                'name', 'aliases'
+            ]
+            _yaml.node_validate(mirror, allowed_mirror_fields)
+            mirror_name = _yaml.node_get(mirror, str, 'name')
+            alias_mappings = {}
+            for alias_mapping, uris in _yaml.node_items(mirror['aliases']):
+                assert isinstance(uris, list)
+                alias_mappings[alias_mapping] = list(uris)
+            self.mirrors[mirror_name] = alias_mappings
+            if not self.default_mirror:
+                self.default_mirror = mirror_name
 
     # _assert_plugin_format()
     #
