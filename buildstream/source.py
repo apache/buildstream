@@ -148,7 +148,7 @@ class SourceFetcher():
     places (e.g. a git source with submodules) has a consistent interface for
     fetching and substituting aliases.
 
-    *Since: 1.4*
+    *Since: 1.2*
     """
     def __init__(self):
         self.__alias = None
@@ -382,7 +382,7 @@ class Source(Plugin):
         Args:
            url (str): The url used to download
 
-        *Since: 1.4*
+        *Since: 1.2*
         """
         alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
         self.__expected_alias = alias
@@ -398,7 +398,7 @@ class Source(Plugin):
            list: A list of SourceFetchers. If SourceFetchers are not supported,
                  this will be an empty list.
 
-        *Since: 1.4*
+        *Since: 1.2*
         """
 
         return []
@@ -425,7 +425,7 @@ class Source(Plugin):
 
         Args:
            url (str): A url, which may be using an alias
-           alias_override (str): Optionally, an URI to override the alias with. (*Since: 1.4*)
+           alias_override (str): Optionally, an URI to override the alias with. (*Since: 1.2*)
 
         Returns:
            str: The fully qualified url, with aliases resolved
