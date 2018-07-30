@@ -10,6 +10,7 @@ guides and information on user preferences and configuration.
    :maxdepth: 2
 
    using_tutorial
+   using_advanced_features
    using_examples
    using_config
    using_commands

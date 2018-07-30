@@ -118,8 +118,11 @@ html devhelp: templates sessions
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
 	    $(wildcard source/*.rst) \
 	    $(wildcard source/tutorial/*.rst) \
+            $(wildcard source/advanced-features/*.rst) \
 	    $(wildcard source/examples/*.rst) \
 	    $(wildcard source/elements/*.rst) \
 	    $(wildcard source/sources/*.rst)
 	@echo
 	@echo "Build of $@ finished, output: $(CURDIR)/$(BUILDDIR)/$@"
+# Makefile for Sphinx documentation
+#
