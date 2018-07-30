@@ -58,6 +58,7 @@ Sources
    sources/ostree
    sources/patch
    sources/deb
+   sources/pip
 
 
 External plugins
