@@ -6,9 +6,9 @@
 
 [//]: # (Short summary of the action to be executed)
 
-* [  ] Action 1
-* [  ] Action 2
-* [  ] Action 3
+* [ ] Action 1
+* [ ] Action 2
+* [ ] Action 3
 
 ## Acceptance Criteria
 
