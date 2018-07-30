@@ -1074,11 +1074,11 @@ class Source(Plugin):
     #
     def __ensure_previous_sources(self, previous_sources):
         for index, src in enumerate(previous_sources):
+            # BuildStream should track sources in the order they appear so
+            # previous sources should never be in an inconsistent state
+            assert src.get_consistency() != Consistency.INCONSISTENT
+
             if src.get_consistency() == Consistency.RESOLVED:
-                src._fetch(previous_sources[0:index])
-            elif src.get_consistency() == Consistency.INCONSISTENT:
-                new_ref = src._track(previous_sources[0:index])
-                src._save_ref(new_ref)
                 src._fetch(previous_sources[0:index])
 
 
