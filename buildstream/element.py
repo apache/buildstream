@@ -623,6 +623,12 @@ class Element(Plugin):
               dep.stage_artifact(sandbox)
         """
 
+        if not self._cached():
+            detail = "No artifacts have been cached yet for that element\n" + \
+                     "Try building the element first with `bst build`\n"
+            raise ElementError("No artifacts to stage",
+                               detail=detail, reason="uncached-checkout-attempt")
+
         if update_mtimes is None:
             update_mtimes = []
 
