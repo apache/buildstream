@@ -23,6 +23,11 @@ a reasonable timeframe for identifying these.
 
 Patch submissions
 -----------------
+If you want to submit a patch, do ask for developer permissions on our
+IRC channel first (GitLab's button also works, but you may need to
+shout about it - we often overlook this) - for CI reasons, it's much
+easier if patches are in branches of the main repository.
+
 Branches must be submitted as merge requests in gitlab. If the branch
 fixes an issue or is related to any issues, these issues must be mentioned
 in the merge request or preferably the commit messages themselves.
