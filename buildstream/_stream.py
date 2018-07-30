@@ -437,7 +437,7 @@ class Stream():
 
         except BstError as e:
             raise StreamError("Error while staging dependencies into a sandbox"
-                              ": '{}'".format(e), reason=e.reason) from e
+                              ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
     # workspace_open
     #
