@@ -34,6 +34,7 @@ The below bst file describes an element which depends on the hello.bst element
 from the autotools example:
 
 .. literalinclude:: ../../examples/junctions/elements/callHello.bst
+    :language: yaml
 
 This element consists of a script which calls hello.bst's hello command.
 
