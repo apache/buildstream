@@ -277,7 +277,8 @@ class ScriptElement(Element):
                     exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
                                            SandboxFlags.ROOT_READ_ONLY if self.__root_read_only else 0)
                     if exitcode != 0:
-                        raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+                        raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode),
+                                           collect=self.__install_root)
 
         # Return where the result can be collected from
         return self.__install_root

@@ -140,10 +140,13 @@ class ElementError(BstError):
        message (str): The error message to report to the user
        detail (str): A possibly multiline, more detailed error message
        reason (str): An optional machine readable reason string, used for test cases
+       collect (str): An optional directory containing partial install contents
        temporary (bool): An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
     """
-    def __init__(self, message, *, detail=None, reason=None, temporary=False):
+    def __init__(self, message, *, detail=None, reason=None, collect=None, temporary=False):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason, temporary=temporary)
+
+        self.collect = collect
 
 
 class Element(Plugin):
@@ -216,6 +219,7 @@ class Element(Plugin):
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__cached = None                    # Whether we have a cached artifact
         self.__strong_cached = None             # Whether we have a cached artifact
+        self.__weak_cached = None               # Whether we have a cached artifact
         self.__assemble_scheduled = False       # Element is scheduled to be assembled
         self.__assemble_done = False            # Element is assembled
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
@@ -227,6 +231,8 @@ class Element(Plugin):
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
         self.__required = False                 # Whether the artifact is required in the current session
         self.__artifact_size = None             # The size of data committed to the artifact cache
+        self.__build_result = None              # The result of assembling this Element
+        self._build_log_path = None            # The path of the build log for this Element
 
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
@@ -951,7 +957,51 @@ class Element(Plugin):
     #            the artifact cache
     #
     def _cached(self):
-        return self.__cached
+        return self.__is_cached(keystrength=None)
+
+    # _get_build_result():
+    #
+    # Returns:
+    #    (bool): Whether the artifact of this element present in the artifact cache is of a success
+    #    (str): Short description of the result
+    #    (str): Detailed description of the result
+    #
+    def _get_build_result(self):
+        return self.__get_build_result(keystrength=None)
+
+    # __set_build_result():
+    #
+    # Sets the assembly result
+    #
+    # Args:
+    #    success (bool): Whether the result is a success
+    #    description (str): Short description of the result
+    #    detail (str): Detailed description of the result
+    #
+    def __set_build_result(self, success, description, detail=None):
+        self.__build_result = (success, description, detail)
+
+    # _cached_success():
+    #
+    # Returns:
+    #    (bool): Whether this element is already present in
+    #            the artifact cache and the element assembled successfully
+    #
+    def _cached_success(self):
+        return self.__cached_success(keystrength=None)
+
+    # _cached_failure():
+    #
+    # Returns:
+    #    (bool): Whether this element is already present in
+    #            the artifact cache and the element did not assemble successfully
+    #
+    def _cached_failure(self):
+        if not self._cached():
+            return False
+
+        success, _, _ = self._get_build_result()
+        return not success
 
     # _buildable():
     #
@@ -968,7 +1018,7 @@ class Element(Plugin):
             # if the pull job is still pending as the remote cache may have an artifact
             # that matches the strict cache key, which is preferred over a locally
             # cached artifact with a weak cache key match.
-            if not dependency._cached() or not dependency._get_cache_key(strength=_KeyStrength.STRONG):
+            if not dependency._cached_success() or not dependency._get_cache_key(strength=_KeyStrength.STRONG):
                 return False
 
         if not self.__assemble_scheduled:
@@ -1039,6 +1089,8 @@ class Element(Plugin):
             self.__weak_cache_key = None
             self.__strict_cache_key = None
             self.__strong_cached = None
+            self.__weak_cached = None
+            self.__build_result = None
             return
 
         if self.__weak_cache_key is None:
@@ -1061,6 +1113,9 @@ class Element(Plugin):
                 # Weak cache key could not be calculated yet
                 return
 
+            if not self.__weak_cached:
+                self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
+
         if not context.get_strict():
             # Full cache query in non-strict mode requires both the weak and
             # strict cache keys. However, we need to determine as early as
@@ -1068,9 +1123,9 @@ class Element(Plugin):
             # for workspaced elements. For this cache check the weak cache keys
             # are sufficient. However, don't update the `cached` attributes
             # until the full cache query below.
-            cached = self.__artifacts.contains(self, self.__weak_cache_key)
             if (not self.__assemble_scheduled and not self.__assemble_done and
-                    not cached and not self._pull_pending() and self._is_required()):
+                    not self.__cached_success(keystrength=_KeyStrength.WEAK) and
+                    not self._pull_pending() and self._is_required()):
                 self._schedule_assemble()
                 return
 
@@ -1090,9 +1145,12 @@ class Element(Plugin):
             self.__cached = self.__artifacts.contains(self, key_for_cache_lookup)
         if not self.__strong_cached:
             self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
+        if key_for_cache_lookup == self.__weak_cache_key:
+            if not self.__weak_cached:
+                self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
-                not self.__cached and not self._pull_pending() and self._is_required()):
+                not self._cached_success() and not self._pull_pending() and self._is_required()):
             # Workspaced sources are considered unstable if a build is pending
             # as the build will modify the contents of the workspace.
             # Determine as early as possible if a build is pending to discard
@@ -1434,7 +1492,7 @@ class Element(Plugin):
     def _assemble(self):
 
         # Assert call ordering
-        assert not self._cached()
+        assert not self._cached_success()
 
         context = self._get_context()
         with self._output_file() as output_file:
@@ -1457,6 +1515,7 @@ class Element(Plugin):
                 self.__dynamic_public = _yaml.node_copy(self.__public)
 
                 # Call the abstract plugin methods
+                collect = None
                 try:
                     # Step 1 - Configure
                     self.configure_sandbox(sandbox)
@@ -1466,6 +1525,7 @@ class Element(Plugin):
                     self.__prepare(sandbox)
                     # Step 4 - Assemble
                     collect = self.assemble(sandbox)
+                    self.__set_build_result(success=True, description="succeeded")
                 except BstError as e:
                     # If an error occurred assembling an element in a sandbox,
                     # then tack on the sandbox directory to the error
@@ -1489,79 +1549,94 @@ class Element(Plugin):
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
                                       .format(e))
 
+                    if isinstance(e, ElementError):
+                        collect = e.collect  # pylint: disable=no-member
+
+                    self.__set_build_result(success=False, description=str(e), detail=e.detail)
                     raise
+                finally:
+                    if collect is not None:
+                        collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
 
-                collectdir = os.path.join(sandbox_root, collect.lstrip(os.sep))
-                if not os.path.exists(collectdir):
-                    raise ElementError(
-                        "Directory '{}' was not found inside the sandbox, "
-                        "unable to collect artifact contents"
-                        .format(collect))
+                    # Create artifact directory structure
+                    assembledir = os.path.join(rootdir, 'artifact')
+                    filesdir = os.path.join(assembledir, 'files')
+                    logsdir = os.path.join(assembledir, 'logs')
+                    metadir = os.path.join(assembledir, 'meta')
+                    buildtreedir = os.path.join(assembledir, 'buildtree')
+                    os.mkdir(assembledir)
+                    if collect is not None and os.path.exists(collectdir):
+                        os.mkdir(filesdir)
+                    os.mkdir(logsdir)
+                    os.mkdir(metadir)
+                    os.mkdir(buildtreedir)
 
-                # At this point, we expect an exception was raised leading to
-                # an error message, or we have good output to collect.
+                    # Hard link files from collect dir to files directory
+                    if collect is not None and os.path.exists(collectdir):
+                        utils.link_files(collectdir, filesdir)
 
-                # Create artifact directory structure
-                assembledir = os.path.join(rootdir, 'artifact')
-                filesdir = os.path.join(assembledir, 'files')
-                logsdir = os.path.join(assembledir, 'logs')
-                metadir = os.path.join(assembledir, 'meta')
-                buildtreedir = os.path.join(assembledir, 'buildtree')
-                os.mkdir(assembledir)
-                os.mkdir(filesdir)
-                os.mkdir(logsdir)
-                os.mkdir(metadir)
-                os.mkdir(buildtreedir)
+                    sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root').lstrip(os.sep))
+                    # Hard link files from build-root dir to buildtreedir directory
+                    if os.path.isdir(sandbox_build_dir):
+                        utils.link_files(sandbox_build_dir, buildtreedir)
 
-                # Hard link files from collect dir to files directory
-                utils.link_files(collectdir, filesdir)
+                    # Copy build log
+                    log_filename = context.get_log_filename()
+                    self._build_log_path = os.path.join(logsdir, 'build.log')
+                    if log_filename:
+                        shutil.copyfile(log_filename, self._build_log_path)
 
-                sandbox_build_dir = os.path.join(sandbox_root, self.get_variable('build-root').lstrip(os.sep))
-                # Hard link files from build-root dir to buildtreedir directory
-                if os.path.isdir(sandbox_build_dir):
-                    utils.link_files(sandbox_build_dir, buildtreedir)
+                    # Store public data
+                    _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
-                # Copy build log
-                log_filename = context.get_log_filename()
-                if log_filename:
-                    shutil.copyfile(log_filename, os.path.join(logsdir, 'build.log'))
+                    # Store result
+                    build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
+                    if self.__build_result[2] is not None:
+                        build_result_dict["detail"] = self.__build_result[2]
+                    _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
 
-                # Store public data
-                _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+                    # ensure we have cache keys
+                    self._assemble_done()
 
-                # ensure we have cache keys
-                self._assemble_done()
+                    # Store keys.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'strong': self._get_cache_key(),
+                        'weak': self._get_cache_key(_KeyStrength.WEAK),
+                    }), os.path.join(metadir, 'keys.yaml'))
 
-                # Store keys.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'strong': self._get_cache_key(),
-                    'weak': self._get_cache_key(_KeyStrength.WEAK),
-                }), os.path.join(metadir, 'keys.yaml'))
+                    # Store dependencies.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                    }), os.path.join(metadir, 'dependencies.yaml'))
 
-                # Store dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                }), os.path.join(metadir, 'dependencies.yaml'))
+                    # Store workspaced.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'workspaced': True if self._get_workspace() else False
+                    }), os.path.join(metadir, 'workspaced.yaml'))
 
-                # Store workspaced.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced': True if self._get_workspace() else False
-                }), os.path.join(metadir, 'workspaced.yaml'))
+                    # Store workspaced-dependencies.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'workspaced-dependencies': [
+                            e.name for e in self.dependencies(Scope.BUILD)
+                            if e._get_workspace()
+                        ]
+                    }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
-                # Store workspaced-dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced-dependencies': [
-                        e.name for e in self.dependencies(Scope.BUILD)
-                        if e._get_workspace()
-                    ]
-                }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
+                    with self.timed_activity("Caching artifact"):
+                        self.__artifact_size = utils._get_dir_size(assembledir)
+                        self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
 
-                with self.timed_activity("Caching artifact"):
-                    self.__artifact_size = utils._get_dir_size(assembledir)
-                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+                    if collect is not None and not os.path.exists(collectdir):
+                        raise ElementError(
+                            "Directory '{}' was not found inside the sandbox, "
+                            "unable to collect artifact contents"
+                            .format(collect))
 
             # Finally cleanup the build dir
             cleanup_rootdir()
+
+    def _get_build_log(self):
+        return self._build_log_path
 
     # _pull_pending()
     #
@@ -1983,12 +2058,19 @@ class Element(Plugin):
             if workspace:
                 workspace.prepared = True
 
+    def __is_cached(self, keystrength):
+        if keystrength is None:
+            return self.__cached
+
+        return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
+
     # __assert_cached()
     #
     # Raises an error if the artifact is not cached.
     #
-    def __assert_cached(self):
-        assert self._cached(), "{}: Missing artifact {}".format(self, self._get_brief_display_key())
+    def __assert_cached(self, keystrength=_KeyStrength.STRONG):
+        assert self.__is_cached(keystrength=keystrength), "{}: Missing artifact {}".format(
+            self, self._get_brief_display_key())
 
     # __get_tainted():
     #
@@ -2447,6 +2529,38 @@ class Element(Plugin):
         artifact_base, _ = self.__extract()
         metadir = os.path.join(artifact_base, 'meta')
         self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
+
+    def __load_build_result(self, keystrength):
+        self.__assert_cached(keystrength=keystrength)
+        assert self.__build_result is None
+
+        artifact_base, _ = self.__extract(key=self.__weak_cache_key if keystrength is _KeyStrength.WEAK
+                                          else self.__strict_cache_key)
+
+        metadir = os.path.join(artifact_base, 'meta')
+        result_path = os.path.join(metadir, 'build-result.yaml')
+        if not os.path.exists(result_path):
+            self.__build_result = (True, "succeeded", None)
+            return
+
+        data = _yaml.load(result_path)
+        self.__build_result = (data["success"], data.get("description"), data.get("detail"))
+
+    def __get_build_result(self, keystrength):
+        if keystrength is None:
+            keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
+
+        if self.__build_result is None:
+            self.__load_build_result(keystrength)
+
+        return self.__build_result
+
+    def __cached_success(self, keystrength):
+        if not self.__is_cached(keystrength=keystrength):
+            return False
+
+        success, _, _ = self.__get_build_result(keystrength=keystrength)
+        return success
 
     def __get_cache_keys_for_commit(self):
         keys = []

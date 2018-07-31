@@ -11,6 +11,13 @@ buildstream 1.1.5
 
   o Added new `remote` source plugin for downloading file blobs
 
+  o Failed builds are included in the cache as well.
+    `bst checkout` will provide anything in `%{install-root}`.
+    A build including cached fails will cause any dependant elements
+    to not be scheduled and fail during artifact assembly,
+    and display the retry prompt during an interactive session.
+
+
 =================
 buildstream 1.1.4
 =================
