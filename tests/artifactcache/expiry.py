@@ -5,7 +5,7 @@ import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
-from tests.testutils import cli
+from tests.testutils import cli, create_element_size
 
 
 DATA_DIR = os.path.join(
@@ -14,32 +14,12 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_element(name, path, dependencies, size):
-    os.makedirs(path, exist_ok=True)
-
-    # Create a file to be included in this element's artifact
-    with open(os.path.join(path, name + '_data'), 'wb+') as f:
-        f.write(os.urandom(size))
-
-    element = {
-        'kind': 'import',
-        'sources': [
-            {
-                'kind': 'local',
-                'path': os.path.join(path, name + '_data')
-            }
-        ],
-        'depends': dependencies
-    }
-    _yaml.dump(element, os.path.join(path, name))
-
-
 # Ensure that the cache successfully removes an old artifact if we do
 # not have enough space left.
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_expires(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
     cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
     checkout = os.path.join(project, 'checkout')
 
@@ -52,7 +32,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     # Create an element that uses almost the entire cache (an empty
     # ostree cache starts at about ~10KiB, so we need a bit of a
     # buffer)
-    create_element('target.bst', element_path, [], 6000000)
+    create_element_size('target.bst', project, element_path, [], 6000000)
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_success()
 
@@ -61,7 +41,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     # Our cache should now be almost full. Let's create another
     # artifact and see if we can cause buildstream to delete the old
     # one.
-    create_element('target2.bst', element_path, [], 6000000)
+    create_element_size('target2.bst', project, element_path, [], 6000000)
     res = cli.run(project=project, args=['build', 'target2.bst'])
     res.assert_success()
 
@@ -82,7 +62,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_too_large(cli, datafiles, tmpdir, size):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
 
     cli.configure({
         'cache': {
@@ -91,7 +71,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
     })
 
     # Create an element whose artifact is too large
-    create_element('target.bst', element_path, [], size)
+    create_element_size('target.bst', project, element_path, [], size)
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_main_error(ErrorDomain.STREAM, None)
 
@@ -99,7 +79,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
 @pytest.mark.datafiles(DATA_DIR)
 def test_expiry_order(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
     cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
     checkout = os.path.join(project, 'workspace')
 
@@ -110,21 +90,21 @@ def test_expiry_order(cli, datafiles, tmpdir):
     })
 
     # Create an artifact
-    create_element('dep.bst', element_path, [], 2000000)
+    create_element_size('dep.bst', project, element_path, [], 2000000)
     res = cli.run(project=project, args=['build', 'dep.bst'])
     res.assert_success()
 
     # Create another artifact
-    create_element('unrelated.bst', element_path, [], 2000000)
+    create_element_size('unrelated.bst', project, element_path, [], 2000000)
     res = cli.run(project=project, args=['build', 'unrelated.bst'])
     res.assert_success()
 
     # And build something else
-    create_element('target.bst', element_path, [], 2000000)
+    create_element_size('target.bst', project, element_path, [], 2000000)
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_success()
 
-    create_element('target2.bst', element_path, [], 2000000)
+    create_element_size('target2.bst', project, element_path, [], 2000000)
     res = cli.run(project=project, args=['build', 'target2.bst'])
     res.assert_success()
 
@@ -133,7 +113,7 @@ def test_expiry_order(cli, datafiles, tmpdir):
     res.assert_success()
 
     # Finally, build something that will cause the cache to overflow
-    create_element('expire.bst', element_path, [], 2000000)
+    create_element_size('expire.bst', project, element_path, [], 2000000)
     res = cli.run(project=project, args=['build', 'expire.bst'])
     res.assert_success()
 
@@ -153,7 +133,7 @@ def test_expiry_order(cli, datafiles, tmpdir):
 @pytest.mark.datafiles(DATA_DIR)
 def test_keep_dependencies(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
     cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
 
     cli.configure({
@@ -163,12 +143,12 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
     })
 
     # Create a pretty big dependency
-    create_element('dependency.bst', element_path, [], 5000000)
+    create_element_size('dependency.bst', project, element_path, [], 5000000)
     res = cli.run(project=project, args=['build', 'dependency.bst'])
     res.assert_success()
 
     # Now create some other unrelated artifact
-    create_element('unrelated.bst', element_path, [], 4000000)
+    create_element_size('unrelated.bst', project, element_path, [], 4000000)
     res = cli.run(project=project, args=['build', 'unrelated.bst'])
     res.assert_success()
 
@@ -184,7 +164,8 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
     # duplicating artifacts (bad!) we need to make this equal in size
     # or smaller than half the size of its dependencies.
     #
-    create_element('target.bst', element_path, ['dependency.bst'], 2000000)
+    create_element_size('target.bst', project,
+                        element_path, ['dependency.bst'], 2000000)
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_success()
 
@@ -197,7 +178,7 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
 @pytest.mark.datafiles(DATA_DIR)
 def test_never_delete_dependencies(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
 
     cli.configure({
         'cache': {
@@ -206,10 +187,14 @@ def test_never_delete_dependencies(cli, datafiles, tmpdir):
     })
 
     # Create a build tree
-    create_element('dependency.bst', element_path, [], 8000000)
-    create_element('related.bst', element_path, ['dependency.bst'], 8000000)
-    create_element('target.bst', element_path, ['related.bst'], 8000000)
-    create_element('target2.bst', element_path, ['target.bst'], 8000000)
+    create_element_size('dependency.bst', project,
+                        element_path, [], 8000000)
+    create_element_size('related.bst', project,
+                        element_path, ['dependency.bst'], 8000000)
+    create_element_size('target.bst', project,
+                        element_path, ['related.bst'], 8000000)
+    create_element_size('target2.bst', project,
+                        element_path, ['target.bst'], 8000000)
 
     # We try to build this pipeline, but it's too big for the
     # cache. Since all elements are required, the build should fail.

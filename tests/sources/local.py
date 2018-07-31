@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils import cli
 
 DATA_DIR = os.path.join(
@@ -15,13 +15,13 @@ def test_missing_file(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Removing the local file causes preflight to fail
-    localfile = os.path.join(datafiles.dirname, datafiles.basename, 'file.txt')
+    localfile = os.path.join(project, 'file.txt')
     os.remove(localfile)
 
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])
-    result.assert_main_error(ErrorDomain.SOURCE, None)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
