@@ -212,6 +212,10 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
     # Also try multi arguments together
     ('no-element-path', 'bst --directory ../ checkout t ', 4, ['target.bst '], 'files'),
     ('no-element-path', 'bst --directory ../ checkout target.bst ', 5, ['bin-files/', 'dev-files/'], 'files'),
+
+    # When element-path have sub-folders
+    ('sub-folders', 'bst show base', 2, ['base/wanted.bst '], None),
+    ('sub-folders', 'bst show base/', 2, ['base/wanted.bst '], None),
 ])
 def test_argument_element(datafiles, cli, project, cmd, word_idx, expected, subdir):
     cwd = os.path.join(str(datafiles), project)
