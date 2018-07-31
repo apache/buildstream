@@ -16,6 +16,7 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 import os
 import multiprocessing  # for cpu_count()
@@ -291,7 +292,8 @@ class Project():
 
         self.element_path = os.path.join(
             self.directory,
-            _yaml.node_get(config, str, 'element-path')
+            _yaml.node_get_project_path(config, 'element-path', self.directory,
+                                        check_is_dir=True)
         )
 
         # Load project options
