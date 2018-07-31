@@ -3,6 +3,7 @@ import sys
 
 import click
 from .. import _yaml
+from .. import _manifest
 from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
@@ -289,6 +290,15 @@ def init(app, project_name, format_version, element_path, force):
 ##################################################################
 #                          Build Command                         #
 ##################################################################
+def _validate_manifest_path(ctx, param, value):
+    if not value:
+        return
+    if value.lower().endswith(".yaml") or value.lower().endswith(".yml"):
+        return os.path.abspath(value)
+    else:
+        raise click.BadParameter("Manifest files are outputted as YAML\n\t" +
+                                 "Please provide a path with a valid file extension (yml, yaml)")
+
 @cli.command(short_help="Build elements in a pipeline")
 @click.option('--all', 'all_', default=False, is_flag=True,
               help="Build elements that would not be needed for the current build plan")
@@ -305,10 +315,16 @@ def init(app, project_name, format_version, element_path, force):
               help="Allow tracking to cross junction boundaries")
 @click.option('--track-save', default=False, is_flag=True,
               help="Deprecated: This is ignored")
+@click.option('--build-manifest', default=False, is_flag=True,
+              help="Produces a build manifest containing elements and sources.")
+@click.option('--manifest-path', default=None, type=click.Path(readable=False),
+              help="Provides a path for a build manifest to be written to.",
+              callback=_validate_manifest_path)
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions):
+def build(app, elements, all_, track_, track_save, build_manifest,
+          manifest_path, track_all, track_except, track_cross_junctions):
     """Build elements in a pipeline"""
 
     if (track_except or track_cross_junctions) and not (track_ or track_all):
@@ -328,6 +344,13 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
                          track_except=track_except,
                          track_cross_junctions=track_cross_junctions,
                          build_all=all_)
+
+        if build_manifest and not manifest_path:
+            manifest_path = os.path.join(app.project.directory,
+                                         "build_manifest.yaml")
+        if manifest_path:
+            _manifest.generate(app.context, app.stream.total_elements,
+                               app._session_start, manifest_path)
 
 
 ##################################################################

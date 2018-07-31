@@ -786,6 +786,9 @@ class Source(Plugin):
         else:
             return None
 
+    def _get_element_index(self):
+        return self.__element_index
+
     #############################################################
     #                   Local Private Methods                   #
     #############################################################
