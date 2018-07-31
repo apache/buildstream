@@ -522,12 +522,15 @@ class LogLine(Widget):
             text += "\n\n"
 
         if self._failure_messages:
-            text += self.content_profile.fmt("Failure Summary\n", bold=True)
             values = OrderedDict()
 
             for element, messages in sorted(self._failure_messages.items(), key=lambda x: x[0].name):
-                values[element.name] = ''.join(self._render(v) for v in messages)
-            text += self._format_values(values, style_value=False)
+                for queue in stream.queues:
+                    if any(el.name == element.name for el in queue.failed_elements):
+                        values[element.name] = ''.join(self._render(v) for v in messages)
+            if values:
+                text += self.content_profile.fmt("Failure Summary\n", bold=True)
+                text += self._format_values(values, style_value=False)
 
         text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
         values = OrderedDict()
