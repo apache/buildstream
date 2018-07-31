@@ -502,8 +502,11 @@ class Project():
                 if group in origin_dict:
                     del origin_dict[group]
             if origin_dict['origin'] == 'local':
+                path = _yaml.node_get_project_path(origin, 'path',
+                                                   self.directory,
+                                                   check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute
-                origin_dict['path'] = os.path.join(self.directory, origin_dict['path'])
+                origin_dict['path'] = os.path.join(self.directory, path)
             destination.append(origin_dict)
 
     # _ensure_project_dir()
