@@ -234,7 +234,7 @@ def test_never_delete_dependencies(cli, datafiles, tmpdir):
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, success):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    os.makedirs(os.path.join(project, 'elements'))
 
     cli.configure({
         'cache': {
