@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils import cli
 
 DATA_DIR = os.path.join(
@@ -15,13 +15,13 @@ def test_missing_patch(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Removing the local file causes preflight to fail
-    localfile = os.path.join(datafiles.dirname, datafiles.basename, 'file_1.patch')
+    localfile = os.path.join(project, 'file_1.patch')
     os.remove(localfile)
 
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])
-    result.assert_main_error(ErrorDomain.SOURCE, 'patch-no-exist')
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -29,13 +29,15 @@ def test_non_regular_file_patch(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Add a fifo, that's not a regular file, should cause explosions
-    patch_path = os.path.join(datafiles.dirname, datafiles.basename, 'irregular_file.patch')
+    patch_path = os.path.join(datafiles.dirname, datafiles.basename,
+                              'irregular_file.patch')
     os.mkfifo(patch_path)
 
     result = cli.run(project=project, args=[
         'show', 'irregular.bst'
     ])
-    result.assert_main_error(ErrorDomain.SOURCE, "patch-not-a-file")
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.PROJ_PATH_INVALID_KIND)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
