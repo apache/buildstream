@@ -2,7 +2,7 @@ import os
 import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from tests.testutils import cli
+from tests.testutils import cli, filetypegenerator
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -28,16 +28,43 @@ def test_missing_patch(cli, tmpdir, datafiles):
 def test_non_regular_file_patch(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
-    # Add a fifo, that's not a regular file, should cause explosions
-    patch_path = os.path.join(datafiles.dirname, datafiles.basename,
-                              'irregular_file.patch')
-    os.mkfifo(patch_path)
+    patch_path = os.path.join(project, 'irregular_file.patch')
+    for file_type in filetypegenerator.generate_file_types(patch_path):
+        result = cli.run(project=project, args=[
+            'show', 'irregular.bst'
+        ])
+        if os.path.isfile(patch_path) and not os.path.islink(patch_path):
+            result.assert_success()
+        else:
+            result.assert_main_error(ErrorDomain.LOAD,
+                                     LoadErrorReason.PROJ_PATH_INVALID_KIND)
 
-    result = cli.run(project=project, args=[
-        'show', 'irregular.bst'
-    ])
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_invalid_absolute_path(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    with open(os.path.join(project, "target.bst"), 'r') as f:
+        old_yaml = f.read()
+    new_yaml = old_yaml.replace("file_1.patch",
+                                os.path.join(project, "file_1.patch"))
+    assert old_yaml != new_yaml
+
+    with open(os.path.join(project, "target.bst"), 'w') as f:
+        f.write(new_yaml)
+
+    result = cli.run(project=project, args=['show', 'target.bst'])
     result.assert_main_error(ErrorDomain.LOAD,
-                             LoadErrorReason.PROJ_PATH_INVALID_KIND)
+                             LoadErrorReason.PROJ_PATH_INVALID)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'invalid-relative-path'))
+def test_invalid_relative_path(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    result = cli.run(project=project, args=['show', 'irregular.bst'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.PROJ_PATH_INVALID)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
