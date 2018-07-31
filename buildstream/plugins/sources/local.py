@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,6 +16,7 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 """
 local - stage local files and directories
@@ -36,7 +37,7 @@ local - stage local files and directories
 """
 
 import os
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, Consistency
 from buildstream import utils
 
 
@@ -51,14 +52,11 @@ class LocalSource(Source):
 
     def configure(self, node):
         self.node_validate(node, ['path'] + Source.COMMON_CONFIG_KEYS)
-
-        self.path = self.node_get_member(node, str, 'path')
+        self.path = self.node_get_project_path(node, 'path')
         self.fullpath = os.path.join(self.get_project_directory(), self.path)
 
     def preflight(self):
-        # Check if the configured file or directory really exists
-        if not os.path.exists(self.fullpath):
-            raise SourceError("Specified path '{}' does not exist".format(self.path))
+        pass
 
     def get_unique_key(self):
         if self.__unique_key is None:

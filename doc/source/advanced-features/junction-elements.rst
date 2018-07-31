@@ -21,8 +21,8 @@ Below is a simple example of bst file for a junction element:
 .. literalinclude:: ../../examples/junctions/elements/hello-junction.bst
     :language: yaml
 
-This element imports the autotools example project found in the BuildStream
-doc/examples/autotools subdirectory.
+This element imports the autotools example subproject found in the
+BuildStream doc/examples/junctions/autotools subdirectory.
 
 .. note::
 
