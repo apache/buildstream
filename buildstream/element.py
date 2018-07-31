@@ -232,6 +232,7 @@ class Element(Plugin):
         self.__required = False                 # Whether the artifact is required in the current session
         self.__artifact_size = None             # The size of data committed to the artifact cache
         self.__build_result = None              # The result of assembling this Element
+        self._build_log_path = None            # The path of the build log for this Element
 
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
@@ -1581,8 +1582,9 @@ class Element(Plugin):
 
                     # Copy build log
                     log_filename = context.get_log_filename()
+                    self._build_log_path = os.path.join(logsdir, 'build.log')
                     if log_filename:
-                        shutil.copyfile(log_filename, os.path.join(logsdir, 'build.log'))
+                        shutil.copyfile(log_filename, self._build_log_path)
 
                     # Store public data
                     _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
@@ -1632,6 +1634,9 @@ class Element(Plugin):
 
             # Finally cleanup the build dir
             cleanup_rootdir()
+
+    def _get_build_log(self):
+        return self._build_log_path
 
     # _pull_pending()
     #
