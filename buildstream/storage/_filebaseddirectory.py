@@ -95,7 +95,8 @@ class FileBasedDirectory(Directory):
             if create:
                 new_path = os.path.join(self.external_directory, subdirectory_spec[0])
                 os.makedirs(new_path, exist_ok=True)
-                return FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
+                self.index[subdirectory_spec[0]] = FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
+                return self.index[subdirectory_spec[0]]
             else:
                 error = "No entry called '{}' found in the directory rooted at {}"
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0], self.external_directory))
