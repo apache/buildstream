@@ -1,5 +1,4 @@
 #
-#  Copyright (C) 2018 Codethink Limited
 #  Copyright (C) 2018 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
@@ -15,17 +14,19 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
-#  Authors: Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-#           Tristan Maat <tristan.maat@codethink.co.uk>
-#           Sam Thursfield <sam.thursfield@codethink.co.uk>
-#           James Ennis <james.ennis@codethink.co.uk>
-#           Valentin David <valentin.david@codethink.co.uk>
-#           William Salmon <will.salmon@codethink.co.uk>
-#
+#  Authors:
+#         Will Salmon <will.salmon@codethink.co.uk>
 
-from .runcli import cli, cli_integration
-from .repo import create_repo, ALL_REPO_KINDS
-from .artifactshare import create_artifact_share
-from .element_generators import create_element_size
-from .junction import generate_junction
-from .runner_integration import wait_for_cache_granularity
+import time
+
+
+def wait_for_cache_granularity():
+    # This isn't called very often so has minimal impact on test runtime.
+    # If this changes it may be worth while adding a more sophisticated approach.
+    """
+    Mitigate the coarse granularity of the gitlab runners mtime
+
+    This function waits for the mtime to increment so that the cache can sort by mtime and
+    get the most recent results.
+    """
+    time.sleep(1.1)
