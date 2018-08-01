@@ -121,7 +121,8 @@ html devhelp: templates sessions
             $(wildcard source/advanced-features/*.rst) \
 	    $(wildcard source/examples/*.rst) \
 	    $(wildcard source/elements/*.rst) \
-	    $(wildcard source/sources/*.rst)
+	    $(wildcard source/sources/*.rst) \
+	    $(wildcard source/developing/*.rst)
 	@echo
 	@echo "Build of $@ finished, output: $(CURDIR)/$(BUILDDIR)/$@"
 # Makefile for Sphinx documentation
