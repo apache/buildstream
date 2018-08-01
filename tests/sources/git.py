@@ -359,3 +359,45 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
 
     # Assert that we are just fine without it, and emit a warning to the user.
     assert "Ignoring inconsistent submodule" in result.stderr
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project, 'repofiles'))
+
+    # Write out our test target
+    gitsource = repo.source_config(ref=None)
+    gitsource.pop('track')
+    element = {
+        'kind': 'import',
+        'sources': [
+            gitsource
+        ]
+    }
+
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    # Track will encounter an inconsistent submodule without any ref
+    result = cli.run(project=project, args=['track', 'target.bst'])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+    result.assert_task_error(ErrorDomain.SOURCE, 'track-attempt-no-track')
+
+    # Assert that we are just fine without it, and emit a warning to the user.
+    assert "FAILURE git source at" in result.stderr
+    assert "Without a tracking branch ref can not be updated. Please " + \
+        "provide a ref or a track." in result.stderr
+
+    # Track will encounter an inconsistent submodule without any ref
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_main_error(ErrorDomain.PIPELINE, 'inconsistent-pipeline')
+    result.assert_task_error(None, None)
+
+    # Assert that we are just fine without it, and emit a warning to the user.
+    assert "Exact versions are missing for the following elements" in result.stderr
+    assert "is missing ref and track." in result.stderr
+    assert "Then track these elements with `bst track`" in result.stderr

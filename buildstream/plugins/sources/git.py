@@ -363,6 +363,12 @@ class GitSource(Source):
 
         # If self.tracking is not specified it's not an error, just silently return
         if not self.tracking:
+            # Is there a better way to check if a ref is given.
+            if self.mirror.ref is None:
+                detail = 'Without a tracking branch ref can not be updated. Please ' + \
+                         'provide a ref or a track.'
+                raise SourceError("{}: No track or ref".format(self),
+                                  detail=detail, reason="track-attempt-no-track")
             return None
 
         with self.timed_activity("Tracking {} from {}"
