@@ -121,7 +121,11 @@ class FileBasedDirectory(Directory):
 
             for f in import_result.files_written:
                 os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
+        self._mark_changed()
         return import_result
+
+    def _mark_changed(self):
+        self._directory_read = False
 
     def set_deterministic_mtime(self):
         _set_deterministic_mtime(self.external_directory)

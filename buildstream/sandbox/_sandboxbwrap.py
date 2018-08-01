@@ -248,6 +248,7 @@ class SandboxBwrap(Sandbox):
                         # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
                         pass
 
+        self._vdir._mark_changed()
         return exit_code
 
     def run_bwrap(self, argv, stdin, stdout, stderr, interactive):
