@@ -72,6 +72,56 @@ def create_server(repo, *, enable_push):
     return server
 
 
+class _SSLServerCredentialsCallable:
+
+    def __init__(self, server_key, server_cert, client_certs):
+        self.server_key = server_key
+        self.server_cert = server_cert
+        self.client_certs = client_certs
+        self.client_certs_stat = None
+        self.load_server_key()
+        self.load_server_cert()
+        self.load_client_certs()
+
+    def load_server_key(self):
+        with open(self.server_key, 'rb') as f:
+            self.server_key_bytes = f.read()
+
+    def load_server_cert(self):
+        with open(self.server_cert, 'rb') as f:
+            self.server_cert_bytes = f.read()
+
+    def load_client_certs(self):
+        if self.client_certs:
+            with open(self.client_certs, 'rb') as f:
+                stat = os.fstat(f.fileno())
+                if stat != self.client_certs_stat:
+                    # The stat is different. We need to reload the client certs
+                    self.client_certs_bytes = f.read()
+                    self.client_certs_stat = stat
+                    return True
+                return False
+        else:
+            self.client_certs_stat = None
+            self.client_certs_bytes = None
+            # Nothing has been loaded
+            return False
+
+    def get_ssl_server_credentials(self):
+        return grpc.ssl_server_certificate_configuration(
+            private_key_certificate_chain_pairs=[(self.server_key_bytes, self.server_cert_bytes)],
+            root_certificates=self.client_certs_bytes,
+        )
+
+    def __call__(self):
+        if self.load_client_certs():
+            # We performed a reload
+            return self.get_ssl_server_credentials()
+        else:
+            # Nothing changed
+            return None
+
+
 @click.command(short_help="CAS Artifact Server")
 @click.option('--port', '-p', type=click.INT, required=True, help="Port number")
 @click.option('--server-key', help="Private server key for TLS (PEM-encoded)")
@@ -94,22 +144,13 @@ def server_main(repo, port, server_key, server_cert, client_certs, enable_push):
         sys.exit(-1)
 
     if use_tls:
-        # Read public/private key pair
-        with open(server_key, 'rb') as f:
-            server_key_bytes = f.read()
-        with open(server_cert, 'rb') as f:
-            server_cert_bytes = f.read()
-
-        if client_certs:
-            with open(client_certs, 'rb') as f:
-                client_certs_bytes = f.read()
-        else:
-            client_certs_bytes = None
-
-        credentials = grpc.ssl_server_credentials([(server_key_bytes, server_cert_bytes)],
-                                                  root_certificates=client_certs_bytes,
-                                                  require_client_auth=bool(client_certs))
-        server.add_secure_port('[::]:{}'.format(port), credentials)
+        credentials_gen = _SSLServerCredentialsCallable(server_key, server_cert, client_certs)
+        initial_credentials = credentials_gen.get_ssl_server_credentials()
+        dynamic_credentials = grpc.dynamic_ssl_server_credentials(
+            initial_certificate_configuration=initial_credentials,
+            certificate_configuration_fetcher=credentials_gen,
+            require_client_authentication=bool(client_certs))
+        server.add_secure_port('[::]:{}'.format(port), dynamic_credentials)
     else:
         server.add_insecure_port('[::]:{}'.format(port))
 
