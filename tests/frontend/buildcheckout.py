@@ -97,6 +97,16 @@ def test_build_checkout_deps(datafiles, cli, deps):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_unbuilt(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Check that checking out an unbuilt element fails nicely
+    result = cli.run(project=project, args=['checkout', 'target.bst', checkout])
+    result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout.tar')
