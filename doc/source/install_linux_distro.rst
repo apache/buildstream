@@ -114,6 +114,30 @@ For the default plugins::
       bzr git lzip patch ostree python3-arpy python3-gobject
 
 
+Ubuntu
+++++++
+
+Ubuntu 18.04 LTS or later
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Install the dependencies with::
+
+  sudo apt install \
+      python3 fuse bubblewrap \
+      python3-pip python3-dev git
+
+For the default plugins::
+
+  sudo apt install \
+      bzr gir1.2-ostree-1.0 git lzip ostree patch python3-arpy python3-gi
+
+Ubuntu 16.04 LTS
+^^^^^^^^^^^^^^^^
+On Ubuntu 16.04, neither `bubblewrap<https://github.com/projectatomic/bubblewrap/>`
+or `ostree<https://github.com/ostreedev/ostree>` are available in the official repositories.
+You will need to install them in whichever way you see fit. Refer the the upstream documentation
+for advice on this.
+
+
 Installing
 ~~~~~~~~~~
 Once you have the base system dependencies, you can clone the BuildStream
