@@ -31,6 +31,7 @@ See also: :ref:`sandboxing`.
 import os
 from .._exceptions import ImplError, BstError
 from ..storage._filebaseddirectory import FileBasedDirectory
+from ..storage._casbaseddirectory import CasBasedDirectory
 
 
 class SandboxFlags():
@@ -105,6 +106,7 @@ class Sandbox():
         self.__scratch = os.path.join(self.__directory, 'scratch')
         for directory_ in [self._root, self.__scratch]:
             os.makedirs(directory_, exist_ok=True)
+        self._vdir = None
 
     def get_directory(self):
         """Fetches the sandbox root directory
@@ -133,8 +135,14 @@ class Sandbox():
            (str): The sandbox root directory
 
         """
-        # For now, just create a new Directory every time we're asked
-        return FileBasedDirectory(self._root)
+        if not self._vdir:
+            # BST_CAS_DIRECTORIES is a deliberately hidden environment variable which
+            # can be used to switch on CAS-based directories for testing.
+            if 'BST_CAS_DIRECTORIES' in os.environ:
+                self._vdir = CasBasedDirectory(self.__context, ref=None)
+            else:
+                self._vdir = FileBasedDirectory(self._root)
+        return self._vdir
 
     def set_environment(self, environment):
         """Sets the environment variables for the sandbox
