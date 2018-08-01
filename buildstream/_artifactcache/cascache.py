@@ -32,6 +32,7 @@ from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
+from .._message import MessageType, Message
 from .. import _signals, utils
 from .._exceptions import ArtifactError
 
@@ -264,7 +265,7 @@ class CASCache(ArtifactCache):
 
         for remote in push_remotes:
             remote.init()
-
+            skipped_remote = True
             element.info("Pushing {} -> {}".format(element._get_brief_display_key(), remote.spec.url))
 
             try:
@@ -280,8 +281,6 @@ class CASCache(ArtifactCache):
 
                         if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
                             # ref is already on the server with the same tree
-                            element.info("Skipping {}, remote ({}) already has artifact cached".format(
-                                element._get_brief_display_key(), remote.spec.url))
                             continue
 
                     except grpc.RpcError as e:
@@ -309,6 +308,7 @@ class CASCache(ArtifactCache):
                             missing_blobs[d.hash] = d
 
                     # Upload any blobs missing on the server
+                    skipped_remote = False
                     for digest in missing_blobs.values():
                         def request_stream():
                             resource_name = os.path.join(digest.hash, str(digest.size_bytes))
@@ -344,6 +344,13 @@ class CASCache(ArtifactCache):
                 if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
                     raise ArtifactError("Failed to push artifact {}: {}".format(refs, e), temporary=True) from e
 
+            if skipped_remote:
+                self.context.message(Message(
+                    None,
+                    MessageType.SKIPPED,
+                    "Remote ({}) already has {} cached".format(
+                        remote.spec.url, element._get_brief_display_key())
+                ))
         return pushed
 
     ################################################
