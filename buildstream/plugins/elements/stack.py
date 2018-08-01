@@ -24,12 +24,14 @@ Stack elements are simply a symbolic element used for representing
 a logical group of elements.
 """
 
-import os
 from buildstream import Element
 
 
 # Element implementation for the 'stack' kind.
 class StackElement(Element):
+
+    # This plugin has been modified to avoid the use of Sandbox.get_directory
+    BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
         pass
@@ -52,7 +54,7 @@ class StackElement(Element):
 
         # Just create a dummy empty artifact, its existence is a statement
         # that all this stack's dependencies are built.
-        rootdir = sandbox.get_directory()
+        vrootdir = sandbox.get_virtual_directory()
 
         # XXX FIXME: This is currently needed because the artifact
         #            cache wont let us commit an empty artifact.
@@ -61,10 +63,7 @@ class StackElement(Element):
         # the actual artifact data in a subdirectory, then we
         # will be able to store some additional state in the
         # artifact cache, and we can also remove this hack.
-        outputdir = os.path.join(rootdir, 'output', 'bst')
-
-        # Ensure target directory parent
-        os.makedirs(os.path.dirname(outputdir), exist_ok=True)
+        vrootdir.descend(['output', 'bst'], create=True)
 
         # And we're done
         return '/output'

@@ -243,9 +243,8 @@ class ScriptElement(Element):
                     with self.timed_activity("Staging {} at {}"
                                              .format(element.name, item['destination']),
                                              silent_nested=True):
-                        real_dstdir = os.path.join(sandbox.get_directory(),
-                                                   item['destination'].lstrip(os.sep))
-                        os.makedirs(os.path.dirname(real_dstdir), exist_ok=True)
+                        virtual_dstdir = sandbox.get_virtual_directory()
+                        virtual_dstdir.descend(item['destination'].lstrip(os.sep).split(os.sep), create=True)
                         element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item['destination'])
 
             for item in self.__layout:
@@ -263,8 +262,8 @@ class ScriptElement(Element):
                         for dep in element.dependencies(Scope.RUN):
                             dep.integrate(sandbox)
 
-        os.makedirs(os.path.join(sandbox.get_directory(), self.__install_root.lstrip(os.sep)),
-                    exist_ok=True)
+        install_root_path_components = self.__install_root.lstrip(os.sep).split(os.sep)
+        sandbox.get_virtual_directory().descend(install_root_path_components, create=True)
 
     def assemble(self, sandbox):
 
