@@ -71,7 +71,6 @@ class Stream():
         #
         # Private members
         #
-        Platform.create_instance(context, project)
         self._platform = Platform.get_platform()
         self._artifacts = self._platform.artifactcache
         self._context = context
@@ -90,8 +89,8 @@ class Stream():
     # Cleans up application state
     #
     def cleanup(self):
-        if self._pipeline:
-            self._pipeline.cleanup()
+        if self._project:
+            self._project.cleanup()
 
     # load_selection()
     #
@@ -905,6 +904,10 @@ class Stream():
 
         for element in track_selected:
             element._schedule_tracking()
+
+        # ArtifactCache.setup_remotes expects all projects to be fully loaded
+        for project in self._context.get_projects():
+            project.ensure_fully_loaded()
 
         # Connect to remote caches, this needs to be done before resolving element state
         self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_remote_url)

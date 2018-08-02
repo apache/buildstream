@@ -35,9 +35,8 @@ class Platform():
     # Args:
     #     context (context): The project context
     #
-    def __init__(self, context, project):
+    def __init__(self, context):
         self.context = context
-        self.project = project
 
     @classmethod
     def create_instance(cls, *args, **kwargs):

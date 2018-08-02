@@ -1,0 +1,5 @@
+elements:
+  manual:
+    config:
+      build-commands:
+        - "first"

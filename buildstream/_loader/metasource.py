@@ -30,6 +30,7 @@ class MetaSource():
     #    element_kind: The kind of the owning element
     #    kind: The kind of the source
     #    config: The configuration data for the source
+    #    first_pass: This source will be used with first project pass configuration (used for junctions).
     #
     def __init__(self, element_name, element_index, element_kind, kind, config, directory):
         self.element_name = element_name
@@ -38,3 +39,4 @@ class MetaSource():
         self.kind = kind
         self.config = config
         self.directory = directory
+        self.first_pass = False

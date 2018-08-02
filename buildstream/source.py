@@ -227,8 +227,10 @@ class Source(Plugin):
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
-        self.__init_defaults()
+        self.__init_defaults(meta)
         self.__config = self.__extract_config(meta)
+        self.__first_pass = meta.first_pass
+
         self.configure(self.__config)
 
     COMMON_CONFIG_KEYS = ['kind', 'directory']
@@ -454,7 +456,7 @@ class Source(Plugin):
                 self.__expected_alias = url_alias
 
             project = self._get_project()
-            return project.translate_url(url)
+            return project.translate_url(url, first_pass=self.__first_pass)
 
     def get_project_directory(self):
         """Fetch the project base directory
@@ -524,7 +526,7 @@ class Source(Plugin):
             for fetcher in source_fetchers:
                 alias = fetcher._get_alias()
                 success = False
-                for uri in project.get_alias_uris(alias):
+                for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
                     try:
                         fetcher.fetch(uri)
                     # FIXME: Need to consider temporary vs. permanent failures,
@@ -538,13 +540,17 @@ class Source(Plugin):
                     raise last_error
         else:
             alias = self._get_alias()
-            if not project.mirrors or not alias:
+            if self.__first_pass:
+                mirrors = project.first_pass_config.mirrors
+            else:
+                mirrors = project.config.mirrors
+            if not mirrors or not alias:
                 self.fetch()
                 return
 
             context = self._get_context()
             source_kind = type(self)
-            for uri in project.get_alias_uris(alias):
+            for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
                 new_source = source_kind(context, project, self.__meta,
                                          alias_override=(alias, uri))
                 new_source._preflight()
@@ -739,24 +745,29 @@ class Source(Plugin):
         #
         # Step 3 - Apply the change in project data
         #
-        if project is toplevel:
-            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                do_save_refs(toplevel_refs)
-            else:
+        if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            do_save_refs(toplevel_refs)
+        else:
+            if provenance.filename.project is toplevel:
                 # Save the ref in the originating file
                 #
-                fullname = os.path.join(toplevel.element_path, provenance.filename)
                 try:
-                    _yaml.dump(provenance.toplevel, fullname)
+                    _yaml.dump(_yaml.node_sanitize(provenance.toplevel), provenance.filename.name)
                 except OSError as e:
                     raise SourceError("{}: Error saving source reference to '{}': {}"
-                                      .format(self, provenance.filename, e),
+                                      .format(self, provenance.filename.name, e),
                                       reason="save-ref-error") from e
-        else:
-            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                do_save_refs(toplevel_refs)
-            else:
+            elif provenance.filename.project is project:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))
+            elif provenance.filename.project is None:
+                assert provenance.filename.name == ''
+                assert provenance.filename.shortname == ''
+                raise SourceError("{}: Error saving source reference to synthetic node."
+                                  .format(self))
+            else:
+                raise SourceError("{}: Cannot track source in a fragment from a junction"
+                                  .format(provenance.filename.shortname),
+                                  reason="tracking-junction-fragment")
 
         return changed
 
@@ -779,7 +790,7 @@ class Source(Plugin):
     def _get_alias(self):
         alias = self.__expected_alias
         project = self._get_project()
-        if project.get_alias_uri(alias):
+        if project.get_alias_uri(alias, first_pass=self.__first_pass):
             # The alias must already be defined in the project's aliases
             # otherwise http://foo gets treated like it contains an alias
             return alias
@@ -795,7 +806,11 @@ class Source(Plugin):
         project = self._get_project()
         # If there are no mirrors, or no aliases to replace, there's nothing to do here.
         alias = self._get_alias()
-        if not project.mirrors or not alias:
+        if self.__first_pass:
+            mirrors = project.first_pass_config.mirrors
+        else:
+            mirrors = project.config.mirrors
+        if not mirrors or not alias:
             return self.track()
 
         context = self._get_context()
@@ -803,7 +818,7 @@ class Source(Plugin):
 
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
-        for uri in reversed(project.get_alias_uris(alias)):
+        for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass)):
             new_source = source_kind(context, project, self.__meta,
                                      alias_override=(alias, uri))
             new_source._preflight()
@@ -831,10 +846,13 @@ class Source(Plugin):
                               reason="ensure-stage-dir-fail") from e
         return directory
 
-    def __init_defaults(self):
+    def __init_defaults(self, meta):
         if not self.__defaults_set:
             project = self._get_project()
-            sources = project.source_overrides
+            if meta.first_pass:
+                sources = project.first_pass_config.source_overrides
+            else:
+                sources = project.source_overrides
             type(self).__defaults = sources.get(self.get_kind(), {})
             type(self).__defaults_set = True
 

@@ -28,9 +28,9 @@ from . import Platform
 
 class Unix(Platform):
 
-    def __init__(self, context, project):
+    def __init__(self, context):
 
-        super().__init__(context, project)
+        super().__init__(context)
         self._artifact_cache = CASCache(context)
 
         # Not necessarily 100% reliable, but we want to fail early.
