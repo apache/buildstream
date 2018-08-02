@@ -202,7 +202,7 @@ def test_push_after_pull(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_expires(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
 
     # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
     # Mock a file system with 12 MB free disk space
@@ -215,12 +215,12 @@ def test_artifact_expires(cli, datafiles, tmpdir):
         })
 
         # Create and build an element of 5 MB
-        create_element_size('element1.bst', element_path, [], int(5e6))  # [] => no deps
+        create_element_size('element1.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element1.bst'])
         result.assert_success()
 
         # Create and build an element of 5 MB
-        create_element_size('element2.bst', element_path, [], int(5e6))  # [] => no deps
+        create_element_size('element2.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element2.bst'])
         result.assert_success()
 
@@ -231,7 +231,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
         assert_shared(cli, share, project, 'element2.bst')
 
         # Create and build another element of 5 MB (This will exceed the free disk space available)
-        create_element_size('element3.bst', element_path, [], int(5e6))
+        create_element_size('element3.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element3.bst'])
         result.assert_success()
 
@@ -250,7 +250,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_too_large(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     # Mock a file system with 5 MB total space
@@ -263,12 +263,12 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
         })
 
         # Create and push a 3MB element
-        create_element_size('small_element.bst', element_path, [], int(3e6))
+        create_element_size('small_element.bst', project, element_path, [], int(3e6))
         result = cli.run(project=project, args=['build', 'small_element.bst'])
         result.assert_success()
 
         # Create and try to push a 6MB element.
-        create_element_size('large_element.bst', element_path, [], int(6e6))
+        create_element_size('large_element.bst', project, element_path, [], int(6e6))
         result = cli.run(project=project, args=['build', 'large_element.bst'])
         result.assert_success()
 
@@ -285,7 +285,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 @pytest.mark.datafiles(DATA_DIR)
 def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = os.path.join(project, 'elements')
+    element_path = 'elements'
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     # Mock a file system with 12 MB free disk space
@@ -298,11 +298,11 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         })
 
         # Create and build 2 elements, each of 5 MB.
-        create_element_size('element1.bst', element_path, [], int(5e6))
+        create_element_size('element1.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element1.bst'])
         result.assert_success()
 
-        create_element_size('element2.bst', element_path, [], int(5e6))
+        create_element_size('element2.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element2.bst'])
         result.assert_success()
 
@@ -327,7 +327,7 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         assert cli.get_element_state(project, 'element1.bst') == 'cached'
 
         # Create and build the element3 (of 5 MB)
-        create_element_size('element3.bst', element_path, [], int(5e6))
+        create_element_size('element3.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element3.bst'])
         result.assert_success()
 

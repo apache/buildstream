@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,6 +16,7 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 from enum import Enum
 
@@ -205,6 +206,13 @@ class LoadErrorReason(Enum):
 
     # Try to load a directory not a yaml file
     LOADING_DIRECTORY = 18
+
+    # A project path leads outside of the project directory
+    PROJ_PATH_INVALID = 19
+
+    # A project path points to a file of the not right kind (e.g. a
+    # socket)
+    PROJ_PATH_INVALID_KIND = 20
 
 
 # LoadError

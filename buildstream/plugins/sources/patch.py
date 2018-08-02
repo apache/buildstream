@@ -1,5 +1,6 @@
 #
 #  Copyright Bloomberg Finance LP
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,6 +17,7 @@
 #
 #  Authors:
 #        Chandan Singh <csingh43@bloomberg.net>
+#        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 """
 patch - apply locally stored patches
@@ -52,19 +54,12 @@ class PatchSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
-        self.path = self.node_get_member(node, str, "path")
+        self.path = self.node_get_project_path(node, 'path',
+                                               check_is_file=True)
         self.strip_level = self.node_get_member(node, int, "strip-level", 1)
         self.fullpath = os.path.join(self.get_project_directory(), self.path)
 
     def preflight(self):
-        # Check if the configured file really exists
-        if not os.path.exists(self.fullpath):
-            raise SourceError("Specified path '{}' does not exist".format(self.path),
-                              reason="patch-no-exist")
-        elif not os.path.isfile(self.fullpath):
-            raise SourceError("Specified path '{}' must be a file".format(self.path),
-                              reason="patch-not-a-file")
-
         # Check if patch is installed, get the binary at the same time
         self.host_patch = utils.get_host_tool("patch")
 
