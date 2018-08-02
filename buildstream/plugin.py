@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -334,6 +334,51 @@ class Plugin():
           level = self.node_get_member(node, int, 'level', -1)
         """
         return _yaml.node_get(node, expected_type, member_name, default_value=default)
+
+    def node_get_project_path(self, node, key, *,
+                              check_is_file=False, check_is_dir=False):
+        """Fetches a project path from a dictionary node and validates it
+
+        Paths are asserted to never lead to a directory outside of the
+        project directory. In addition, paths can not point to symbolic
+        links, fifos, sockets and block/character devices.
+
+        The `check_is_file` and `check_is_dir` parameters can be used to
+        perform additional validations on the path. Note that an
+        exception will always be raised if both parameters are set to
+        ``True``.
+
+        Args:
+           node (dict): A dictionary loaded from YAML
+           key (str): The key whose value contains a path to validate
+           check_is_file (bool): If ``True`` an error will also be raised
+                                 if path does not point to a regular file.
+                                 Defaults to ``False``
+           check_is_dir (bool): If ``True`` an error will also be raised
+                                if path does not point to a directory.
+                                Defaults to ``False``
+
+        Returns:
+           (str): The project path
+
+        Raises:
+           :class:`.LoadError`: In the case that the project path is not
+                                valid or does not exist
+
+        *Since: 1.2*
+
+        **Example:**
+
+        .. code:: python
+
+          path = self.node_get_project_path(node, 'path')
+
+        """
+
+        return _yaml.node_get_project_path(node, key,
+                                           self.__project.directory,
+                                           check_is_file=check_is_file,
+                                           check_is_dir=check_is_dir)
 
     def node_validate(self, node, valid_keys):
         """This should be used in :func:`~buildstream.plugin.Plugin.configure`

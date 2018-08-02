@@ -2,7 +2,7 @@ import os
 import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from tests.testutils.runcli import cli
+from tests.testutils import cli, filetypegenerator
 
 
 # Project directory
@@ -88,6 +88,48 @@ def test_project_unsupported(cli, datafiles):
 
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNSUPPORTED_PROJECT)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'element-path'))
+def test_missing_element_path_directory(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.MISSING_FILE)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'element-path'))
+def test_element_path_not_a_directory(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    path = os.path.join(project, 'elements')
+    for file_type in filetypegenerator.generate_file_types(path):
+        result = cli.run(project=project, args=['workspace', 'list'])
+        if not os.path.isdir(path):
+            result.assert_main_error(ErrorDomain.LOAD,
+                                     LoadErrorReason.PROJ_PATH_INVALID_KIND)
+        else:
+            result.assert_success()
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'local-plugin'))
+def test_missing_local_plugin_directory(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.MISSING_FILE)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'local-plugin'))
+def test_local_plugin_not_directory(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    path = os.path.join(project, 'plugins')
+    for file_type in filetypegenerator.generate_file_types(path):
+        result = cli.run(project=project, args=['workspace', 'list'])
+        if not os.path.isdir(path):
+            result.assert_main_error(ErrorDomain.LOAD,
+                                     LoadErrorReason.PROJ_PATH_INVALID_KIND)
+        else:
+            result.assert_success()
 
 
 @pytest.mark.datafiles(DATA_DIR)

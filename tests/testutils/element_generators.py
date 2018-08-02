@@ -18,11 +18,12 @@ from buildstream import _yaml
 # Returns:
 #  Nothing (creates a .bst file of specified size)
 #
-def create_element_size(name, path, dependencies, size):
-    os.makedirs(path, exist_ok=True)
+def create_element_size(name, project_dir, elements_path, dependencies, size):
+    full_elements_path = os.path.join(project_dir, elements_path)
+    os.makedirs(full_elements_path, exist_ok=True)
 
     # Create a file to be included in this element's artifact
-    with open(os.path.join(path, name + '_data'), 'wb+') as f:
+    with open(os.path.join(project_dir, name + '_data'), 'wb+') as f:
         f.write(os.urandom(size))
 
     # Simplest case: We want this file (of specified size) to just
@@ -32,9 +33,9 @@ def create_element_size(name, path, dependencies, size):
         'sources': [
             {
                 'kind': 'local',
-                'path': os.path.join(path, name + '_data')
+                'path': name + '_data'
             }
         ],
         'depends': dependencies
     }
-    _yaml.dump(element, os.path.join(path, name))
+    _yaml.dump(element, os.path.join(project_dir, elements_path, name))

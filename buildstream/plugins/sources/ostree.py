@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,6 +16,7 @@
 #
 #  Authors:
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
+#        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 """
 ostree - stage files from an OSTree repository
@@ -73,9 +74,10 @@ class OSTreeSource(Source):
                                    utils.url_directory_name(self.url))
 
         # (optional) Not all repos are signed. But if they are, get the gpg key
-        self.gpg_key = self.node_get_member(node, str, 'gpg-key', None)
         self.gpg_key_path = None
-        if self.gpg_key is not None:
+        if self.node_get_member(node, str, 'gpg-key', None):
+            self.gpg_key = self.node_get_project_path(node, 'gpg-key',
+                                                      check_is_file=True)
             self.gpg_key_path = os.path.join(self.get_project_directory(), self.gpg_key)
 
         # Our OSTree repo handle
