@@ -470,6 +470,11 @@ the frontend tests you can do::
 
   ./setup.py test --addopts '-k tests/frontend/'
 
+Specific tests can be chosen by using the :: delimeter after the test module.
+If you wanted to run the test_build_track test within frontend/buildtrack.py you could do::
+
+  ./setup.py test --adopts '-k tests/frontend/buildtrack.py::test_build_track'
+
 We also have a set of slow integration tests that are disabled by
 default - you will notice most of them marked with SKIP in the pytest
 output. To run them, you can use::
