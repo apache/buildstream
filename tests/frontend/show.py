@@ -1,12 +1,12 @@
 import os
 import pytest
 import itertools
-from tests.testutils import cli
+from tests.testutils import cli, generate_junction
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
-from . import configure_project, generate_junction
+from . import configure_project
 
 # Project directory
 DATA_DIR = os.path.join(

@@ -33,7 +33,8 @@ def test_custom_pip_element(plugin_fixture, entry_fixture, datafiles):
         'path': str(datafiles),
         'plugins': {'foop': 0}
     }]
-    factory = ElementFactory(plugin_fixture['base'], origin_data)
+    factory = ElementFactory(plugin_fixture['base'],
+                             plugin_origins=origin_data)
     assert(isinstance(factory, ElementFactory))
 
     entry_fixture(datafiles, 'buildstream.plugins', 'third_party_element:foop')
@@ -50,7 +51,8 @@ def test_custom_pip_source(plugin_fixture, entry_fixture, datafiles):
         'path': str(datafiles),
         'plugins': {'foop': 0}
     }]
-    factory = SourceFactory(plugin_fixture['base'], origin_data)
+    factory = SourceFactory(plugin_fixture['base'],
+                            plugin_origins=origin_data)
     assert(isinstance(factory, SourceFactory))
 
     entry_fixture(datafiles, 'buildstream.plugins', 'third_party_source:foop')

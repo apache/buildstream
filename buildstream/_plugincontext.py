@@ -20,7 +20,7 @@
 import os
 import inspect
 
-from ._exceptions import PluginError
+from ._exceptions import PluginError, LoadError, LoadErrorReason
 from . import utils
 
 
@@ -41,7 +41,9 @@ from . import utils
 #
 class PluginContext():
 
-    def __init__(self, plugin_base, base_type, site_plugin_path, plugin_origins=None, dependencies=None):
+    def __init__(self, plugin_base, base_type, site_plugin_path, *,
+                 plugin_origins=None, dependencies=None,
+                 format_versions={}):
 
         # The plugin kinds which were loaded
         self.loaded_dependencies = []
@@ -58,6 +60,7 @@ class PluginContext():
         self._plugin_base = plugin_base
         self._site_source = plugin_base.make_plugin_source(searchpath=site_plugin_path)
         self._alternate_sources = {}
+        self._format_versions = format_versions
 
     # lookup():
     #
@@ -219,3 +222,14 @@ class PluginContext():
                                   self._base_type.__name__, kind,
                                   plugin_type.BST_REQUIRED_VERSION_MAJOR,
                                   plugin_type.BST_REQUIRED_VERSION_MINOR))
+
+    # _assert_plugin_format()
+    #
+    # Helper to raise a PluginError if the loaded plugin is of a lesser version then
+    # the required version for this plugin
+    #
+    def _assert_plugin_format(self, plugin, version):
+        if plugin.BST_FORMAT_VERSION < version:
+            raise LoadError(LoadErrorReason.UNSUPPORTED_PLUGIN,
+                            "{}: Format version {} is too old for requested version {}"
+                            .format(plugin, plugin.BST_FORMAT_VERSION, version))

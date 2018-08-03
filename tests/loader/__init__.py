@@ -8,7 +8,7 @@ from buildstream._loader import Loader
 # be removed in favor of testing the functionality via
 # the CLI like in the frontend tests anyway.
 #
-def make_loader(basedir, targets):
+def make_loader(basedir):
     context = Context()
     project = Project(basedir, context)
-    return Loader(context, project, targets)
+    return project.loader

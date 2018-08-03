@@ -25,11 +25,11 @@ import shutil
 
 from .._exceptions import LoadError, LoadErrorReason
 from .. import Consistency
-from .._project import Project
 from .. import _yaml
 from ..element import Element
 from .._profile import Topics, profile_start, profile_end
 from .._platform import Platform
+from .._includes import Includes
 
 from .types import Symbol, Dependency
 from .loadelement import LoadElement
@@ -46,29 +46,18 @@ from . import MetaSource
 # Args:
 #    context (Context): The Context object
 #    project (Project): The toplevel Project object
-#    filenames (list of str): Target, element-path relative bst filenames in the project
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
 #    tempdir (str): A directory to cleanup with the Loader, given to the loader by a parent
 #                   loader in the case that this loader is a subproject loader.
-#    fetch_subprojects (bool): Whether to fetch subprojects while loading
 #
 class Loader():
 
-    def __init__(self, context, project, filenames, *, parent=None, tempdir=None, fetch_subprojects=False):
+    def __init__(self, context, project, *, parent=None, tempdir=None):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
         if not os.path.isabs(basedir):
             basedir = os.path.abspath(basedir)
-
-        for filename in filenames:
-            if os.path.isabs(filename):
-                # XXX Should this just be an assertion ?
-                # Expect that the caller gives us the right thing at least ?
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Target '{}' was not specified as a relative "
-                                "path to the base project directory: {}"
-                                .format(filename, basedir))
 
         #
         # Public members
@@ -78,17 +67,18 @@ class Loader():
         #
         # Private members
         #
-        self._fetch_subprojects = fetch_subprojects
         self._context = context
         self._options = project.options      # Project options (OptionPool)
         self._basedir = basedir              # Base project directory
-        self._targets = filenames            # Target bst elements
+        self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._tempdir = tempdir              # A directory to cleanup
         self._parent = parent                # The parent loader
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}       # Dict of elements
         self._loaders = {}        # Dict of junction loaders
+
+        self._includes = Includes(self)
 
     # load():
     #
@@ -98,20 +88,32 @@ class Loader():
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
     #    ticker (callable): An optional function for tracking load progress
+    #    targets (list of str): Target, element-path relative bst filenames in the project
+    #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, rewritable=False, ticker=None):
+    def load(self, targets, rewritable=False, ticker=None, fetch_subprojects=False):
+
+        for filename in targets:
+            if os.path.isabs(filename):
+                # XXX Should this just be an assertion ?
+                # Expect that the caller gives us the right thing at least ?
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "Target '{}' was not specified as a relative "
+                                "path to the base project directory: {}"
+                                .format(filename, self._basedir))
 
         # First pass, recursively load files and populate our table of LoadElements
         #
         deps = []
 
-        for target in self._targets:
+        for target in targets:
             profile_start(Topics.LOAD_PROJECT, target)
-            junction, name, loader = self._parse_name(target, rewritable, ticker)
-            loader._load_file(name, rewritable, ticker)
+            junction, name, loader = self._parse_name(target, rewritable, ticker,
+                                                      fetch_subprojects=fetch_subprojects)
+            loader._load_file(name, rewritable, ticker, fetch_subprojects)
             deps.append(Dependency(name, junction=junction))
             profile_end(Topics.LOAD_PROJECT, target)
 
@@ -126,7 +128,7 @@ class Loader():
         dummy = DummyTarget(name='', full_name='', deps=deps)
         self._elements[''] = dummy
 
-        profile_key = "_".join(t for t in self._targets)
+        profile_key = "_".join(t for t in targets)
         profile_start(Topics.CIRCULAR_CHECK, profile_key)
         self._check_circular_deps('')
         profile_end(Topics.CIRCULAR_CHECK, profile_key)
@@ -135,9 +137,10 @@ class Loader():
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
-        for target in self._targets:
+        for target in targets:
             profile_start(Topics.SORT_DEPENDENCIES, target)
-            junction, name, loader = self._parse_name(target, rewritable, ticker)
+            junction, name, loader = self._parse_name(target, rewritable, ticker,
+                                                      fetch_subprojects=fetch_subprojects)
             loader._sort_dependencies(name)
             profile_end(Topics.SORT_DEPENDENCIES, target)
             # Finally, wrap what we have into LoadElements and return the target
@@ -198,11 +201,12 @@ class Loader():
     #    filename (str): The element-path relative bst file
     #    rewritable (bool): Whether we should load in round trippable mode
     #    ticker (callable): A callback to report loaded filenames to the frontend
+    #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker):
+    def _load_file(self, filename, rewritable, ticker, fetch_subprojects):
 
         # Silently ignore already loaded files
         if filename in self._elements:
@@ -215,7 +219,7 @@ class Loader():
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
-            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable)
+            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable, project=self.project)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
                 # If we can't find the file, try to suggest plausible
@@ -241,7 +245,15 @@ class Loader():
                                 message, detail=detail) from e
             else:
                 raise
-        self._options.process_node(node)
+        kind = _yaml.node_get(node, str, Symbol.KIND)
+        if kind == "junction":
+            self._first_pass_options.process_node(node)
+        else:
+            self.project.ensure_fully_loaded()
+
+            self._includes.process(node)
+
+            self._options.process_node(node)
 
         element = LoadElement(node, filename, self)
 
@@ -250,12 +262,13 @@ class Loader():
         # Load all dependency files for the new LoadElement
         for dep in element.deps:
             if dep.junction:
-                self._load_file(dep.junction, rewritable, ticker)
-                loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker)
+                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects)
+                loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
+                                          fetch_subprojects=fetch_subprojects)
             else:
                 loader = self
 
-            dep_element = loader._load_file(dep.name, rewritable, ticker)
+            dep_element = loader._load_file(dep.name, rewritable, ticker, fetch_subprojects)
 
             if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
                 raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -432,7 +445,8 @@ class Loader():
                                    _yaml.node_get(node, Mapping, Symbol.ENVIRONMENT, default_value={}),
                                    _yaml.node_get(node, list, Symbol.ENV_NOCACHE, default_value=[]),
                                    _yaml.node_get(node, Mapping, Symbol.PUBLIC, default_value={}),
-                                   _yaml.node_get(node, Mapping, Symbol.SANDBOX, default_value={}))
+                                   _yaml.node_get(node, Mapping, Symbol.SANDBOX, default_value={}),
+                                   element_kind == 'junction')
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element_name] = meta_element
@@ -454,11 +468,12 @@ class Loader():
     #
     # Args:
     #    filename (str): Junction name
+    #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Raises: LoadError
     #
     # Returns: A Loader or None if specified junction does not exist
-    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0):
+    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0, fetch_subprojects=False):
         # return previously determined result
         if filename in self._loaders:
             loader = self._loaders[filename]
@@ -475,13 +490,14 @@ class Loader():
         if self._parent:
             # junctions in the parent take precedence over junctions defined
             # in subprojects
-            loader = self._parent._get_loader(filename, rewritable=rewritable, ticker=ticker, level=level + 1)
+            loader = self._parent._get_loader(filename, rewritable=rewritable, ticker=ticker,
+                                              level=level + 1, fetch_subprojects=fetch_subprojects)
             if loader:
                 self._loaders[filename] = loader
                 return loader
 
         try:
-            self._load_file(filename, rewritable, ticker)
+            self._load_file(filename, rewritable, ticker, fetch_subprojects)
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:
                 # other load error
@@ -510,7 +526,7 @@ class Loader():
             # Handle the case where a subproject needs to be fetched
             #
             if source.get_consistency() == Consistency.RESOLVED:
-                if self._fetch_subprojects:
+                if fetch_subprojects:
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
                     source._fetch()
@@ -536,7 +552,9 @@ class Loader():
         # Load the project
         project_dir = os.path.join(basedir, element.path)
         try:
-            project = Project(project_dir, self._context, junction=element)
+            from .._project import Project
+            project = Project(project_dir, self._context, junction=element,
+                              parent_loader=self, tempdir=basedir)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 raise LoadError(reason=LoadErrorReason.INVALID_JUNCTION,
@@ -546,11 +564,7 @@ class Loader():
             else:
                 raise
 
-        loader = Loader(self._context, project, [],
-                        parent=self,
-                        tempdir=basedir,
-                        fetch_subprojects=self._fetch_subprojects)
-
+        loader = project.loader
         self._loaders[filename] = loader
 
         return loader
@@ -581,13 +595,14 @@ class Loader():
     #   rewritable (bool): Whether the loaded files should be rewritable
     #                      this is a bit more expensive due to deep copies
     #   ticker (callable): An optional function for tracking load progress
+    #   fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Returns:
     #   (tuple): - (str): name of the junction element
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, rewritable, ticker):
+    def _parse_name(self, name, rewritable, ticker, fetch_subprojects=False):
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
@@ -595,6 +610,7 @@ class Loader():
         if len(junction_path) == 1:
             return None, junction_path[-1], self
         else:
-            self._load_file(junction_path[-2], rewritable, ticker)
-            loader = self._get_loader(junction_path[-2], rewritable=rewritable, ticker=ticker)
+            self._load_file(junction_path[-2], rewritable, ticker, fetch_subprojects)
+            loader = self._get_loader(junction_path[-2], rewritable=rewritable, ticker=ticker,
+                                      fetch_subprojects=fetch_subprojects)
             return junction_path[-2], junction_path[-1], loader

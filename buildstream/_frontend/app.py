@@ -34,6 +34,7 @@ from .. import Scope
 
 # Import various buildstream internals
 from .._context import Context
+from .._platform import Platform
 from .._project import Project
 from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
@@ -199,6 +200,20 @@ class App():
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
 
+        Platform.create_instance(self.context)
+
+        # Create the logger right before setting the message handler
+        self.logger = LogLine(self.context,
+                              self._content_profile,
+                              self._format_profile,
+                              self._success_profile,
+                              self._error_profile,
+                              self._detail_profile,
+                              indent=INDENT)
+
+        # Propagate pipeline feedback to the user
+        self.context.set_message_handler(self._message_handler)
+
         #
         # Load the Project
         #
@@ -218,18 +233,6 @@ class App():
 
         except BstError as e:
             self._error_exit(e, "Error loading project")
-
-        # Create the logger right before setting the message handler
-        self.logger = LogLine(self.context,
-                              self._content_profile,
-                              self._format_profile,
-                              self._success_profile,
-                              self._error_profile,
-                              self._detail_profile,
-                              indent=INDENT)
-
-        # Propagate pipeline feedback to the user
-        self.context.set_message_handler(self._message_handler)
 
         # Now that we have a logger and message handler,
         # we can override the global exception hook.

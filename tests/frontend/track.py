@@ -1,11 +1,11 @@
 import os
 import pytest
-from tests.testutils import cli, create_repo, ALL_REPO_KINDS
+from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 
-from . import configure_project, generate_junction
+from . import configure_project
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -480,3 +480,135 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
         assert cli.get_element_state(project, 'junction.bst:import-etc-repo.bst') == 'buildable'
 
         assert os.path.exists(os.path.join(project, 'project.refs'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'track-test-{}.bst'.format(kind)
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    # Create our repo object of the given source type with
+    # the dev files, and then collect the initial ref.
+    #
+    repo = create_repo(kind, str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    # Generate the element
+    element = {
+        'kind': 'import',
+        '(@)': ['elements/sources.yml']
+    }
+    sources = {
+        'sources': [
+            repo.source_config()
+        ]
+    }
+
+    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.dump(sources, os.path.join(element_path, 'sources.yml'))
+
+    # Assert that a fetch is needed
+    assert cli.get_element_state(project, element_name) == 'no reference'
+
+    # Now first try to track it
+    result = cli.run(project=project, args=['track', element_name])
+    result.assert_success()
+
+    # And now fetch it: The Source has probably already cached the
+    # latest ref locally, but it is not required to have cached
+    # the associated content of the latest ref at track time, that
+    # is the job of fetch.
+    result = cli.run(project=project, args=['fetch', element_name])
+    result.assert_success()
+
+    # Assert that we are now buildable because the source is
+    # now cached.
+    assert cli.get_element_state(project, element_name) == 'buildable'
+
+    # Assert there was a project.refs created, depending on the configuration
+    if ref_storage == 'project.refs':
+        assert os.path.exists(os.path.join(project, 'project.refs'))
+    else:
+        assert not os.path.exists(os.path.join(project, 'project.refs'))
+        new_sources = _yaml.load(os.path.join(element_path, 'sources.yml'))
+        assert 'sources' in new_sources
+        assert len(new_sources['sources']) == 1
+        assert 'ref' in new_sources['sources'][0]
+        assert ref == new_sources['sources'][0]['ref']
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'track-test-{}.bst'.format(kind)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    sub_element_path = os.path.join(subproject_path, 'elements')
+    junction_path = os.path.join(element_path, 'junction.bst')
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+
+    # Create our repo object of the given source type with
+    # the dev files, and then collect the initial ref.
+    #
+    repo = create_repo(kind, str(tmpdir.join('element_repo')))
+    ref = repo.create(dev_files_path)
+
+    # Generate the element
+    element = {
+        'kind': 'import',
+        '(@)': ['junction.bst:elements/sources.yml']
+    }
+    sources = {
+        'sources': [
+            repo.source_config()
+        ]
+    }
+
+    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.dump(sources, os.path.join(sub_element_path, 'sources.yml'))
+
+    generate_junction(str(tmpdir.join('junction_repo')),
+                      subproject_path, junction_path, store_ref=True)
+
+    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result.assert_success()
+
+    # Assert that a fetch is needed
+    assert cli.get_element_state(project, element_name) == 'no reference'
+
+    # Now first try to track it
+    result = cli.run(project=project, args=['track', element_name])
+
+    # Assert there was a project.refs created, depending on the configuration
+    if ref_storage == 'inline':
+        # FIXME: We should expect an error. But only a warning is emitted
+        # result.assert_main_error(ErrorDomain.SOURCE, 'tracking-junction-fragment')
+
+        assert 'junction.bst:elements/sources.yml: Cannot track source in a fragment from a junction' in result.stderr
+    else:
+        assert os.path.exists(os.path.join(project, 'project.refs'))
+
+        # And now fetch it: The Source has probably already cached the
+        # latest ref locally, but it is not required to have cached
+        # the associated content of the latest ref at track time, that
+        # is the job of fetch.
+        result = cli.run(project=project, args=['fetch', element_name])
+        result.assert_success()
+
+        # Assert that we are now buildable because the source is
+        # now cached.
+        assert cli.get_element_state(project, element_name) == 'buildable'

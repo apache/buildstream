@@ -1,9 +1,7 @@
 import os
 import pytest
-from tests.testutils import cli, create_repo, ALL_REPO_KINDS
+from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
 from buildstream import _yaml
-
-from . import generate_junction
 
 
 def generate_element(repo, element_path, dep_name=None):

@@ -213,6 +213,9 @@ class LoadErrorReason(Enum):
     # socket)
     PROJ_PATH_INVALID_KIND = 20
 
+    # A recursive include has been encountered.
+    RECURSIVE_INCLUDE = 21
+
 
 # LoadError
 #
