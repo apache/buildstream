@@ -21,11 +21,15 @@
 filter - Extract a subset of files from another element
 =======================================================
 This filters another element by producing an output that is a subset of
-the filtered element.
+the filtered element. 
 
 To specify the element to filter, specify it as the one and only build
 dependency to filter. See :ref:`Dependencies <format_dependencies>`
 for what dependencies are and how to specify them.
+
+The output of a filter element is defined by including/excluding 
+domains specified by the :ref:`split rules <public_split_rules>` of the
+filter's build dependency.
 
 Dependencies aside from the filtered element may be specified, but
 they must be runtime dependencies only. This can be useful to propagate
