@@ -1576,6 +1576,8 @@ class Element(Plugin):
                 finally:
                     if collect is not None:
                         try:
+                            # Sandbox will probably have replaced its virtual directory, so get it again
+                            sandbox_vroot = sandbox.get_virtual_directory()
                             collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
                         except VirtualDirectoryError:
                             # No collect directory existed
