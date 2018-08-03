@@ -481,7 +481,16 @@ def get_bst_version():
         raise UtilError("Your git repository has no tags - BuildStream can't "
                         "determine its version. Please run `git fetch --tags`.")
 
-    return (int(versions[0]), int(versions[1]))
+    try:
+        return (int(versions[0]), int(versions[1]))
+    except IndexError:
+        raise UtilError("Cannot detect Major and Minor parts of the version\n"
+                        "Version: {} not in XX.YY.whatever format"
+                        .format(__version__))
+    except ValueError:
+        raise UtilError("Cannot convert version to integer numbers\n"
+                        "Version: {} not in Integer.Integer.whatever format"
+                        .format(__version__))
 
 
 @contextmanager
