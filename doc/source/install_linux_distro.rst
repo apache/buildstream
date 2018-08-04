@@ -221,3 +221,15 @@ from `AUR <https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_
 Alternatively, use
 `buildstream-git <https://aur.archlinux.org/packages/buildstream-git>`_
 for the lastest version of the development branch.
+
+Fedora
+~~~~~~
+
+BuildStream is not yet in the official Fedora repositories, but you can
+install it from a Copr:
+
+  sudo dnf copr enable bochecha/buildstream
+  sudo dnf install buildstream
+
+Optionally, install the ``buildstream-docs`` package to have the BuildStream
+documentation in Devhelp or GNOME Builder.
