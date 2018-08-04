@@ -37,6 +37,7 @@ import click
 
 from buildstream import _yaml
 from buildstream import utils
+from buildstream._frontend import cli as bst_cli
 from buildstream._exceptions import BstError
 
 
@@ -175,6 +176,20 @@ def ansi2html(text, palette='solarized'):
     return sub
 
 
+@contextmanager
+def capture_stdout_stderr():
+    from io import StringIO
+
+    capture = StringIO()
+    oldstdout, sys.stdout = sys.stdout, capture
+    oldstderr, sys.stderr = sys.stderr, capture
+
+    yield capture
+
+    sys.stdout = oldstdout
+    sys.stderr = oldstderr
+
+
 # workdir()
 #
 # Sets up a new temp directory with a config file
@@ -219,10 +234,15 @@ def workdir(source_cache=None):
 def run_command(config_file, directory, command):
     click.echo("Running command in directory '{}': bst {}".format(directory, command), err=True)
 
-    argv = ['bst', '--colors', '--config', config_file] + shlex.split(command)
-    p = subprocess.Popen(argv, cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out, _ = p.communicate()
-    return out.decode('utf-8').strip()
+    args = ['--colors', '--config', config_file, '--directory', directory] + shlex.split(command)
+
+    with capture_stdout_stderr() as capture:
+        bst_cli.main(args=args, prog_name=bst_cli.name)
+
+        capture.flush()
+        out = capture.getvalue()
+
+    return out.strip()
 
 
 # generate_html
