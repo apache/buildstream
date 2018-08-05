@@ -105,7 +105,7 @@ sessions-prep:
 #
 sessions: sessions-prep
 	for file in $(wildcard sessions/*.run); do		\
-	    PYTHONPATH=$(PYTHONPATH) $(BST2HTML) $(BST2HTMLOPTS) --description $$file;	\
+	    PYTHONPATH=$(PYTHONPATH) $(BST2HTML) $(BST2HTMLOPTS) $$file;	\
 	done
 
 sessions-clean:
