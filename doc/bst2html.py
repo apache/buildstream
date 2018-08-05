@@ -204,7 +204,7 @@ def workdir(source_cache=None):
         yield (tempdir, bst_config_file, source_cache)
 
 
-# run_command()
+# run_bst_command()
 #
 # Runs a command
 #
@@ -216,10 +216,30 @@ def workdir(source_cache=None):
 # Returns:
 #    (str): The colorized combined stdout/stderr of BuildStream
 #
-def run_command(config_file, directory, command):
-    click.echo("Running command in directory '{}': bst {}".format(directory, command), err=True)
+def run_bst_command(config_file, directory, command):
+    click.echo("Running bst command in directory '{}': bst {}".format(directory, command), err=True)
 
-    argv = ['bst', '--colors', '--config', config_file] + shlex.split(command)
+    argv = ['python3', '-m', 'buildstream', '--colors', '--config', config_file] + shlex.split(command)
+    p = subprocess.Popen(argv, cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out, _ = p.communicate()
+    return out.decode('utf-8').strip()
+
+
+# run_shell_command()
+#
+# Runs a command
+#
+# Args:
+#    directory (str): The project directory
+#    command (str): A shell command
+#
+# Returns:
+#    (str): The combined stdout/stderr of the shell command
+#
+def run_shell_command(directory, command):
+    click.echo("Running shell command in directory '{}': {}".format(directory, command), err=True)
+
+    argv = shlex.split(command)
     p = subprocess.Popen(argv, cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = p.communicate()
     return out.decode('utf-8').strip()
@@ -373,12 +393,18 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
         # Get the command string
         command_str = _yaml.node_get(command, str, 'command')
 
+        # Check whether this is a shell command and not a bst command
+        is_shell = _yaml.node_get(command, bool, 'shell', default_value=False)
+
         # Check if there is fake output
         command_fake_output = _yaml.node_get(command, str, 'fake-output', default_value=None)
 
         # Run the command, or just use the fake output
         if command_fake_output is None:
-            command_out = run_command(config_file, directory, command_str)
+            if is_shell:
+                command_out = run_shell_command(directory, command_str)
+            else:
+                command_out = run_bst_command(config_file, directory, command_str)
         else:
             command_out = command_fake_output
 
@@ -414,14 +440,8 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
 @click.option('--palette', '-p', default='tango',
               type=click.Choice(['solarized', 'solarized-xterm', 'tango', 'xterm', 'console']),
               help="Selects a palette for the output style")
-@click.option('--output', '-o',
-              type=click.Path(file_okay=True, dir_okay=False, writable=True),
-              help="A file to store the output")
-@click.option('--description', '-d',
-              type=click.Path(file_okay=True, dir_okay=False, readable=True),
-              help="A file describing what to do")
-@click.argument('command', type=click.STRING, nargs=-1)
-def run_bst(directory, force, source_cache, description, palette, output, command):
+@click.argument('description', click.Path(file_okay=True, dir_okay=False, readable=True))
+def run_bst(directory, force, source_cache, description, palette):
     """Run a bst command and capture stdout/stderr in html
 
     This command normally takes a description yaml file, see the HACKING
@@ -430,45 +450,8 @@ def run_bst(directory, force, source_cache, description, palette, output, comman
     if not source_cache and os.environ.get('BST_SOURCE_CACHE'):
         source_cache = os.environ['BST_SOURCE_CACHE']
 
-    if output is not None and not check_needs_build(None, output, force=force):
-        click.echo("No need to rebuild {}".format(output))
-        return 0
-
     with workdir(source_cache=source_cache) as (tempdir, config_file, source_cache):
-
-        if description:
-            run_session(description, tempdir, source_cache, palette, config_file, force)
-            return 0
-
-        # Run a command specified on the CLI
-        #
-        if not directory:
-            directory = os.getcwd()
-        else:
-            directory = os.path.abspath(directory)
-            directory = os.path.realpath(directory)
-
-        if not command:
-            command = []
-        command_str = " ".join(command)
-
-        # Run the command
-        #
-        command_out = run_command(config_file, directory, command_str)
-
-        # Generate a nice html div for this output
-        #
-        converted = generate_html(command_out, directory, config_file,
-                                  source_cache, tempdir, palette,
-                                  command_str)
-
-    if output is None:
-        click.echo(converted)
-    else:
-        outdir = os.path.dirname(output)
-        os.makedirs(outdir, exist_ok=True)
-        with open(output, 'wb') as f:
-            f.write(converted.encode('utf-8'))
+        run_session(description, tempdir, source_cache, palette, config_file, force)
 
     return 0
 
