@@ -41,7 +41,7 @@ This element consists of a script which calls hello.bst's hello command.
 Building callHello.bst,
 
 .. raw:: html
-   :file: ../sessions-stored/junctions-build.html
+   :file: ../sessions/junctions-build.html
 
 You can see that the hello.bst element and it's dependencies from the autotools
 project have been build as part of the pipeline for callHello.bst.
@@ -49,9 +49,10 @@ project have been build as part of the pipeline for callHello.bst.
 We can now invoke `bst shell`
 
 .. raw:: html
-   :file: ../sessions-stored/junctions-shell.html
+   :file: ../sessions/junctions-shell.html
 
 This runs the script files/callHello.sh which will makes use of the hello command from the hello.bst element in the autotools project.
+
 
 Cross-junction workspaces
 -------------------------
@@ -59,7 +60,7 @@ You can open workspaces for elements in the project refered to by the junction
 using the syntax `bst open ${junction-name}:{element-name}`. In this example,
 
 .. raw:: html
-   :file: ../sessions-stored/junctions-workspace-open.html
+   :file: ../sessions/junctions-workspace-open.html
 
 This has opened a workspace for the hello.bst element from the autotools project.
 This workspace can now be used as normal.

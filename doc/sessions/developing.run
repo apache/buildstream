@@ -16,7 +16,8 @@ commands:
 
 # Apply a patch in the workspace
 - directory: ../examples/developing/
-  command: show hello.bst; patch workspace_hello/files/src/hello.c update.patch;
+  shell: True
+  command: patch workspace_hello/hello.c update.patch
 
 # Rebuild
 - directory: ../examples/developing/

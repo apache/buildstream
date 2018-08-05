@@ -31,6 +31,9 @@ ifneq ($(strip $(BST_FORCE_SESSION_REBUILD)),)
 BST2HTMLOPTS = --force
 endif
 
+# Help Python find buildstream and its plugins
+PYTHONPATH=$(CURDIR)/..:$(CURDIR)/../buildstream/plugins
+
 
 .PHONY: all clean templates templates-clean sessions sessions-prep sessions-clean html devhelp
 
@@ -65,7 +68,6 @@ define plugin-doc-skeleton
 endef
 
 
-# We set PYTHONPATH here because source/conf.py sys.modules hacks dont seem to help sphinx-build import the plugins
 all: html devhelp
 
 clean: templates-clean sessions-clean
@@ -103,7 +105,7 @@ sessions-prep:
 #
 sessions: sessions-prep
 	for file in $(wildcard sessions/*.run); do		\
-	    $(BST2HTML) $(BST2HTMLOPTS) --description $$file;	\
+	    PYTHONPATH=$(PYTHONPATH) $(BST2HTML) $(BST2HTMLOPTS) $$file;	\
 	done
 
 sessions-clean:
@@ -114,7 +116,7 @@ sessions-clean:
 #
 html devhelp: templates sessions
 	@echo "Building $@..."
-	PYTHONPATH=$(CURDIR)/../buildstream/plugins \
+	PYTHONPATH=$(PYTHONPATH) \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
 	    $(wildcard source/*.rst) \
 	    $(wildcard source/tutorial/*.rst) \
