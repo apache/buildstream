@@ -261,9 +261,6 @@ using pip or some other mechanism::
   # Additional optional dependencies required
   pip3 install --user arpy
 
-Furthermore, the documentation build requires that BuildStream itself
-be installed, as it will be used in the process of generating its docs.
-
 To build the documentation, just run the following::
 
   make -C doc
