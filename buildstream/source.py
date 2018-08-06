@@ -393,8 +393,8 @@ class Source(Plugin):
         """Get the objects that are used for fetching
 
         If this source doesn't download from multiple URLs,
-        returning None and falling back on the default behaviour
-        is recommended.
+        returning an empty list and falling back on the default
+        behaviour is recommended.
 
         Returns:
            list: A list of SourceFetchers. If SourceFetchers are not supported,
