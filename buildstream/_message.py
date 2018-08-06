@@ -36,6 +36,7 @@ class MessageType():
     START = "start"        # Status start message
     SUCCESS = "success"    # Successful status complete message
     FAIL = "failure"       # Failing status complete message
+    SKIPPED = "skipped"
 
 
 # Messages which should be reported regardless of whether
