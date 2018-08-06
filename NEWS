@@ -11,6 +11,9 @@ buildstream 1.1.5
 
   o Added new `remote` source plugin for downloading file blobs
 
+  o Add support for the new include '(@)' directive in project.conf and .bst files
+
+
 =================
 buildstream 1.1.4
 =================
