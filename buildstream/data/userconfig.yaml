@@ -35,13 +35,13 @@ cache:
 #
 scheduler:
 
-  # Maximum number of simultaneous source downloading tasks.
+  # Maximum number of simultaneous downloading tasks.
   fetchers: 10
 
   # Maximum number of simultaneous build tasks.
   builders: 4
 
-  # Maximum number of simultaneous artifact uploading tasks.
+  # Maximum number of simultaneous uploading tasks.
   pushers: 4
 
   # Maximum number of retries for network tasks.
