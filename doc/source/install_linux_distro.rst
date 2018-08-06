@@ -132,8 +132,8 @@ For the default plugins::
 
 Ubuntu 16.04 LTS
 ^^^^^^^^^^^^^^^^
-On Ubuntu 16.04, neither `bubblewrap<https://github.com/projectatomic/bubblewrap/>`
-or `ostree<https://github.com/ostreedev/ostree>` are available in the official repositories.
+On Ubuntu 16.04, neither `bubblewrap <https://github.com/projectatomic/bubblewrap/>`_
+or `ostree <https://github.com/ostreedev/ostree>`_ are available in the official repositories.
 You will need to install them in whichever way you see fit. Refer the the upstream documentation
 for advice on this.
 
