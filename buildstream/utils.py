@@ -1010,6 +1010,15 @@ def _call(*popenargs, terminate=False, **kwargs):
 
     process = None
 
+    old_preexec_fn = kwargs.get('preexec_fn')
+    if 'preexec_fn' in kwargs:
+        del kwargs['preexec_fn']
+
+    def preexec_fn():
+        os.umask(stat.S_IWGRP | stat.S_IWOTH)
+        if old_preexec_fn is not None:
+            old_preexec_fn()
+
     # Handle termination, suspend and resume
     def kill_proc():
         if process:
@@ -1054,7 +1063,7 @@ def _call(*popenargs, terminate=False, **kwargs):
             os.killpg(group_id, signal.SIGCONT)
 
     with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-        process = subprocess.Popen(*popenargs, **kwargs)
+        process = subprocess.Popen(*popenargs, preexec_fn=preexec_fn, **kwargs)
         output, _ = process.communicate()
         exit_code = process.poll()
 
