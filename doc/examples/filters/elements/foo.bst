@@ -1,15 +1,17 @@
-kind: local 
+kind: import 
 
-config:
-  source:
-  - kind: local
-    path: files/foo/
+sources:
+- kind: local
+  path: files/foo/
+
+config: 
+  target: /
     
 public:
   bst:
     split-rules:
       bar:
-        - "foo/bar/*"
+        - "bar*"
       baz:
-        - "foo/baz/*"
+        - "baz*"
       
