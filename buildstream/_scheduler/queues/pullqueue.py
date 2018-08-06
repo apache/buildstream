@@ -29,7 +29,7 @@ class PullQueue(Queue):
 
     action_name = "Pull"
     complete_name = "Pulled"
-    resources = [ResourceType.UPLOAD]
+    resources = [ResourceType.DOWNLOAD]
 
     def process(self, element):
         # returns whether an artifact was downloaded or not
