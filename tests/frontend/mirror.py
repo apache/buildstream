@@ -140,6 +140,63 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
+    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
+    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
+    upstream_repodir = os.path.join(str(tmpdir), 'upstream')
+    mirror_repodir = os.path.join(str(tmpdir), 'mirror')
+    project_dir = os.path.join(str(tmpdir), 'project')
+    os.makedirs(project_dir)
+    element_dir = os.path.join(project_dir, 'elements')
+
+    # Create repo objects of the upstream and mirror
+    upstream_repo = create_repo(kind, upstream_repodir)
+    ref = upstream_repo.create(dev_files_path)
+    mirror_repo = upstream_repo.copy(mirror_repodir)
+
+    element = {
+        'kind': 'import',
+        'sources': [
+            upstream_repo.source_config(ref=ref)
+        ]
+    }
+
+    element_name = 'test.bst'
+    element_path = os.path.join(element_dir, element_name)
+    full_repo = element['sources'][0]['url']
+    upstream_map, repo_name = os.path.split(full_repo)
+    alias = 'foo-' + kind
+    aliased_repo = alias + ':' + repo_name
+    element['sources'][0]['url'] = aliased_repo
+    full_mirror = mirror_repo.source_config()['url']
+    mirror_map, _ = os.path.split(full_mirror)
+    os.makedirs(element_dir)
+    _yaml.dump(element, element_path)
+
+    project = {
+        'name': 'test',
+        'element-path': 'elements',
+        'aliases': {
+            alias: 'http://www.example.com/'
+        },
+        'mirrors': [
+            {
+                'name': 'middle-earth',
+                'aliases': {
+                    alias: [mirror_map + "/"],
+                },
+            },
+        ]
+    }
+    project_file = os.path.join(project_dir, 'project.conf')
+    _yaml.dump(project, project_file)
+
+    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_mirror_fetch_multi(cli, tmpdir, datafiles):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
