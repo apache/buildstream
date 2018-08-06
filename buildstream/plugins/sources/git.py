@@ -91,15 +91,17 @@ GIT_MODULES = '.gitmodules'
 #
 class GitMirror(SourceFetcher):
 
-    def __init__(self, source, path, url, ref):
+    def __init__(self, source, path, url, ref, *, parent=None):
 
         super().__init__()
         self.source = source
-        self.path = path
+        self.parent = parent
         self.url = url
-        self.ref = ref
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
         self.mark_download_url(url)
+
+        self._path = path
+        self._ref = ref
 
     # Ensures that the mirror exists
     def ensure(self, alias_override=None):
@@ -223,8 +225,7 @@ class GitMirror(SourceFetcher):
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
 
-    # List the submodules (path/url tuples) present at the given ref of this repo
-    def submodule_list(self):
+    def _read_gitmodules(self):
         modules = "{}:{}".format(self.ref, GIT_MODULES)
         exit_code, output = self.source.check_output(
             [self.source.host_git, 'show', modules], cwd=self.mirror)
@@ -247,10 +248,15 @@ class GitMirror(SourceFetcher):
         for section in parser.sections():
             # validate section name against the 'submodule "foo"' pattern
             if re.match(r'submodule "(.*)"', section):
-                path = parser.get(section, 'path')
-                url = parser.get(section, 'url')
+                yield (parser, section)
 
-                yield (path, url)
+    # List the submodules (path/url tuples) present at the given ref of this repo
+    def submodule_list(self):
+        for parser, section in self._read_gitmodules():
+            path = parser.get(section, 'path')
+            url = parser.get(section, 'url')
+
+            yield (path, url)
 
     # Fetch the ref which this mirror requires its submodule to have,
     # at the given ref of this mirror.
@@ -287,6 +293,76 @@ class GitMirror(SourceFetcher):
 
             return None
 
+    def get_submodule_path(self, url):
+        for parser, section in self._read_gitmodules():
+            parsed_url = parser.get(section, 'url')
+            if parsed_url == url:
+                return parser.get(section, 'path')
+
+        raise SourceError("{}: No submodule found with url '{}'".format(self.source, url))
+
+    @property
+    def path(self):
+        if self._path is None:
+            self._path = self.parent.get_submodule_path(self.url)
+
+        return self._path
+
+    @property
+    def ref(self):
+        # The top-level GitMirror may have ref as None, submodules don't.
+        if self._ref is None and self.parent:
+            self._ref = self.parent.submodule_ref(self.path)
+
+        return self._ref
+
+    @ref.setter
+    def ref(self, ref):
+        self._ref = ref
+
+
+# A SourceFetcher that may also check for, and have submodules of its own.
+class TopLevelGitMirror(GitMirror):
+    def __init__(self, source, path, url, ref):
+        super().__init__(source, path, url, ref)
+        self.auto_submodules = []
+
+    def fetch(self, alias_override=None):
+        super().fetch(alias_override)
+        self.refresh_submodules()
+
+        # auto_submodules do not have aliases, so don't need an override
+        for mirror in self.auto_submodules:
+            mirror.fetch()
+
+    # Refreshes the GitMirror objects for submodules
+    #
+    # Assumes that we have our mirror and we have the ref which we point to
+    #
+    def refresh_submodules(self):
+        self.ensure()
+
+        excluded_paths = list([s.path for s in self.source.manual_submodules])
+        submodules = []
+
+        # XXX Here we should issue a warning if either:
+        #   A.) A submodule exists but is not defined in the element configuration
+        #   B.) The element configuration configures submodules which dont exist at the current ref
+        #
+        for path, url in self.submodule_list():
+            if path in excluded_paths:
+                continue
+            else:
+                self.source.warn("Unexpected submodule detected with path '{}' and url '{}'"
+                                 .format(path, url))
+
+            ref = self.submodule_ref(path)
+            if ref is not None:
+                mirror = GitMirror(self, path, url, ref)
+                submodules.append(mirror)
+
+        self.auto_submodules = submodules
+
 
 class GitSource(Source):
     # pylint: disable=attribute-defined-outside-init
@@ -298,10 +374,10 @@ class GitSource(Source):
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
-        self.mirror = GitMirror(self, '', self.original_url, ref)
+        self.mirror = TopLevelGitMirror(self, '', self.original_url, ref)
         self.tracking = self.node_get_member(node, str, 'track', None)
         self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
-        self.submodules = []
+        self.manual_submodules = []
 
         # Parse a dict of submodule overrides, stored in the submodule_overrides
         # and submodule_checkout_overrides dictionaries.
@@ -311,6 +387,9 @@ class GitSource(Source):
         for path, _ in self.node_items(modules):
             submodule = self.node_get_member(modules, Mapping, path)
             url = self.node_get_member(submodule, str, 'url', None)
+            submodule_mirror = GitMirror(self, None, url, None, parent=self.mirror)
+            self.manual_submodules.append(submodule_mirror)
+
             self.submodule_overrides[path] = url
             if 'checkout' in submodule:
                 checkout = self.node_get_member(submodule, bool, 'checkout')
@@ -384,7 +463,7 @@ class GitSource(Source):
 
     def init_workspace(self, directory):
         # XXX: may wish to refactor this as some code dupe with stage()
-        self.refresh_submodules()
+        self.mirror.refresh_submodules()
 
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
             self.mirror.init_workspace(directory)
@@ -398,7 +477,7 @@ class GitSource(Source):
         # with submodules present (source needed fetching) and
         # we may not know about the submodule yet come time to build.
         #
-        self.refresh_submodules()
+        self.mirror.refresh_submodules()
 
         # Stage the main repo in the specified directory
         #
@@ -414,17 +493,20 @@ class GitSource(Source):
                     mirror.stage(directory)
 
     def get_source_fetchers(self):
-        self.refresh_submodules()
-        return [self.mirror] + self.submodules
+        return [self.mirror] + self.manual_submodules
 
     ###########################################################
     #                     Local Functions                     #
     ###########################################################
+    @property
+    def submodules(self):
+        return self.manual_submodules + self.mirror.auto_submodules
+
     def have_all_refs(self):
         if not self.mirror.has_ref():
             return False
 
-        self.refresh_submodules()
+        self.mirror.refresh_submodules()
         for mirror in self.submodules:
             if not os.path.exists(mirror.mirror):
                 return False
@@ -432,33 +514,6 @@ class GitSource(Source):
                 return False
 
         return True
-
-    # Refreshes the GitMirror objects for submodules
-    #
-    # Assumes that we have our mirror and we have the ref which we point to
-    #
-    def refresh_submodules(self):
-        self.mirror.ensure()
-        submodules = []
-
-        # XXX Here we should issue a warning if either:
-        #   A.) A submodule exists but is not defined in the element configuration
-        #   B.) The element configuration configures submodules which dont exist at the current ref
-        #
-        for path, url in self.mirror.submodule_list():
-
-            # Allow configuration to override the upstream
-            # location of the submodules.
-            override_url = self.submodule_overrides.get(path)
-            if override_url:
-                url = override_url
-
-            ref = self.mirror.submodule_ref(path)
-            if ref is not None:
-                mirror = GitMirror(self, path, url, ref)
-                submodules.append(mirror)
-
-        self.submodules = submodules
 
 
 # Plugin entry point
