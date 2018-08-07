@@ -80,6 +80,8 @@ class ArtifactCache():
         self.context = context
         self.required_artifacts = set()
         self.extractdir = os.path.join(context.artifactdir, 'extract')
+        self.tmpdir = os.path.join(context.artifactdir, 'tmp')
+
         self.max_size = context.cache_quota
         self.estimated_size = None
 
@@ -89,7 +91,8 @@ class ArtifactCache():
         self._local = False
         self.cache_size = None
 
-        os.makedirs(context.artifactdir, exist_ok=True)
+        os.makedirs(self.extractdir, exist_ok=True)
+        os.makedirs(self.tmpdir, exist_ok=True)
 
     ################################################
     #  Methods implemented on the abstract class   #
