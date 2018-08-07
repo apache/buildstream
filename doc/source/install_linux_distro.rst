@@ -57,8 +57,19 @@ Install the dependencies with::
 For the default plugins::
 
   sudo pacman -S \
-      bzr git lzip ostree patch python-arpy python-gobject
+      bzr git lzip ostree patch python-gobject
 
+
+The package *python-arpy* is required by the deb source plugin. This is not
+obtainable via `pacman`, you must get *python-arpy* from AUR:
+https://aur.archlinux.org/packages/python-arpy/
+
+To install::
+
+  wget https://aur.archlinux.org/cgit/aur.git/snapshot/python-arpy.tar.gz
+  tar -xvf python-arpy.tar.gz
+  cd python-arpy
+  makepkg -si
 
 Debian
 ++++++
@@ -227,7 +238,7 @@ Fedora
 ~~~~~~
 
 BuildStream is not yet in the official Fedora repositories, but you can
-install it from a Copr:
+install it from a Copr::
 
   sudo dnf copr enable bochecha/buildstream
   sudo dnf install buildstream
