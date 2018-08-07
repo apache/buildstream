@@ -143,6 +143,50 @@ Instance with push and requiring client authentication:
 
     bst-artifact-server --port 11002 --server-key server.key --server-cert server.crt --client-certs authorized.crt --enable-push /home/artifacts/artifacts
 
+Managing the cache with systemd
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is better to run the cache as a systemd service, especially if it is running on a dedicated server, as this will allow systemd to manage the cache, incase the server ever encounters any issues.
+
+Below are two examples of how to run the cache server as a systemd service, one is for pull only and the other is configured for push & pull.
+
+.. code:: ini
+
+   #
+   # Pull
+   #
+   [Unit]
+   Description=Buildstream Artifact pull server
+   After=remote-fs.target network-online.target
+
+   [Service]
+   Environment="LC_ALL=C.UTF-8"
+   ExecStart=/usr/local/bin/bst-artifact-server --port 11001 --server-key {{certs_path}}/privkey.pem --
+   server-cert {{certs_path}}/fullchain.pem {{artifacts_path}}
+   User=artifacts
+
+   [Install]
+   WantedBy=multi-user.target
+
+
+   #
+   # Pull/Push
+   #
+   [Unit]
+   Description=Buildstream Artifact pull/push server
+   After=remote-fs.target network-online.target
+
+   [Service]
+   Environment="LC_ALL=C.UTF-8"
+   ExecStart=/usr/local/bin/bst-artifact-server --port 11002 --server-key {{certs_path}}/privkey.pem --
+   server-cert {{certs_path}}/fullchain.pem --client-certs /home/artifacts/authorized.crt --enable-push /
+   {{artifacts_path}}
+   User=artifacts
+
+   [Install]
+   WantedBy=multi-user.target
+
+Here we define when systemd should start the service, which is after the networking stack has been started, we then define how to run the cache with the desired configuration, under the artifacts user. The {{ }} are there to denote where you should change these files to point to your desired locations.
 
 User configuration
 ~~~~~~~~~~~~~~~~~~
