@@ -845,6 +845,9 @@ class _CASRemote():
 
 
 def _grouper(iterable, n):
-    # pylint: disable=stop-iteration-return
     while True:
-        yield itertools.chain([next(iterable)], itertools.islice(iterable, n - 1))
+        try:
+            current = next(iterable)
+        except StopIteration:
+            return
+        yield itertools.chain([current], itertools.islice(iterable, n - 1))
