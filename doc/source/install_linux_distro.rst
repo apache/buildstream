@@ -216,11 +216,10 @@ Installing from distro packages
 
 Arch Linux
 ~~~~~~~~~~
-Install `buildstream <https://aur.archlinux.org/packages/buildstream>`_
-from `AUR <https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages>`_.
-Alternatively, use
-`buildstream-git <https://aur.archlinux.org/packages/buildstream-git>`_
-for the lastest version of the development branch.
+Packages for Arch exist in `AUR <https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages>`_.
+Two different package versions are available:
+* Latest release: `buildstream <https://aur.archlinux.org/packages/buildstream>`_
+* Latest development snapshot: `buildstream-git <https://aur.archlinux.org/packages/buildstream-git>`_
 
 Fedora
 ~~~~~~
