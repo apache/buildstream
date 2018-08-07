@@ -218,8 +218,10 @@ Arch Linux
 ~~~~~~~~~~
 Packages for Arch exist in `AUR <https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages>`_.
 Two different package versions are available:
+
 * Latest release: `buildstream <https://aur.archlinux.org/packages/buildstream>`_
 * Latest development snapshot: `buildstream-git <https://aur.archlinux.org/packages/buildstream-git>`_
+
 
 Fedora
 ~~~~~~
