@@ -612,3 +612,25 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
         # Assert that we are now buildable because the source is
         # now cached.
         assert cli.get_element_state(project, element_name) == 'buildable'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+def test_track_junction_included(cli, tmpdir, datafiles, ref_storage, kind):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = os.path.join(project, 'elements')
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    sub_element_path = os.path.join(subproject_path, 'elements')
+    junction_path = os.path.join(element_path, 'junction.bst')
+
+    configure_project(project, {
+        'ref-storage': ref_storage,
+        '(@)': ['junction.bst:test.yml']
+    })
+
+    generate_junction(str(tmpdir.join('junction_repo')),
+                      subproject_path, junction_path, store_ref=False)
+
+    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result.assert_success()

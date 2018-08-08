@@ -267,8 +267,11 @@ class Stream():
               except_targets=None,
               cross_junctions=False):
 
+        # We pass no target to build. Only to track. Passing build targets
+        # would fully load project configuration which might not be
+        # possible before tracking is done.
         _, elements = \
-            self._load(targets, targets,
+            self._load([], targets,
                        selection=selection, track_selection=selection,
                        except_targets=except_targets,
                        track_except_targets=except_targets,
@@ -817,6 +820,12 @@ class Stream():
     #
     # A convenience method for loading element lists
     #
+    # If `targets` is not empty used project configuration will be
+    # fully loaded. If `targets` is empty, tracking will still be
+    # resolved for elements in `track_targets`, but no build pipeline
+    # will be resolved. This is behavior is import for track() to
+    # not trigger full loading of project configuration.
+    #
     # Args:
     #    targets (list of str): Main targets to load
     #    track_targets (list of str): Tracking targets
@@ -864,7 +873,7 @@ class Stream():
         #
         # This can happen with `bst build --track`
         #
-        if not self._pipeline.targets_include(elements, track_elements):
+        if targets and not self._pipeline.targets_include(elements, track_elements):
             raise StreamError("Specified tracking targets that are not "
                               "within the scope of primary targets")
 
@@ -899,6 +908,10 @@ class Stream():
 
         for element in track_selected:
             element._schedule_tracking()
+
+        if not targets:
+            self._pipeline.resolve_elements(track_selected)
+            return [], track_selected
 
         # ArtifactCache.setup_remotes expects all projects to be fully loaded
         for project in self._context.get_projects():
