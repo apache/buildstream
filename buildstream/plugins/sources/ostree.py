@@ -71,7 +71,7 @@ class OSTreeSource(Source):
         self.ref = self.node_get_member(node, str, 'ref', None)
         self.tracking = self.node_get_member(node, str, 'track', None)
         self.mirror = os.path.join(self.get_mirror_directory(),
-                                   utils.url_directory_name(self.url))
+                                   utils.url_directory_name(self.original_url))
 
         # (optional) Not all repos are signed. But if they are, get the gpg key
         self.gpg_key_path = None

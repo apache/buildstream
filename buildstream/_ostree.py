@@ -258,7 +258,13 @@ def configure_remote(repo, remote, url, key_url=None):
 
     try:
         repo.remote_change(None,      # Optional OSTree.Sysroot
-                           OSTree.RepoRemoteChange.ADD_IF_NOT_EXISTS,
+                           OSTree.RepoRemoteChange.DELETE_IF_EXISTS,
+                           remote,    # Remote name
+                           url,       # Remote url
+                           options,   # Remote options
+                           None)      # Optional Gio.Cancellable
+        repo.remote_change(None,      # Optional OSTree.Sysroot
+                           OSTree.RepoRemoteChange.ADD,
                            remote,    # Remote name
                            url,       # Remote url
                            options,   # Remote options
