@@ -47,6 +47,23 @@ it is mandatory to implement the following abstract methods:
   Once all configuration has been loaded and preflight checks have passed,
   this method is used to inform the core of a plugin's unique configuration.
 
+Configurable Warnings
+---------------------
+Warnings raised through calling :func:`Plugin.warn() <buildstream.plugin.Plugin.warn>` can provide an optional
+parameter ``warning_token``, this will raise a :class:`PluginError` if the warning is configured as fatal within
+the project configuration.
+
+Configurable warnings will be prefixed with :func:`Plugin.get_kind() <buildstream.plugin.Plugin.get_kind>`
+within buildstream and must be prefixed as such in project configurations. For more detail on project configuration
+see :ref:`Configurable Warnings <configurable_warnings>`.
+
+It is important to document these warnings in your plugin documentation to allow users to make full use of them
+while configuring their projects.
+
+Example
+~~~~~~~
+If the :class:`git <buildstream.plugins.sources.git.GitSource>` plugin uses the warning ``"inconsistent-submodule"``
+then it could be referenced in project configuration as ``"git:inconsistent-submodule"``.
 
 Plugin Structure
 ----------------
@@ -808,7 +825,7 @@ class CoreWarnings():
     OVERLAPS = "overlaps"
     """
     This warning will be produced when buildstream detects an overlap on an element
-        which is not whitelisted.
+        which is not whitelisted. See :ref:`Overlap Whitelist <public_overlap_whitelist>`
     """
 
     REF_NOT_IN_TRACK = "ref-not-in-track"
