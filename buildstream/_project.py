@@ -571,7 +571,10 @@ class Project():
 
         # Extend variables with automatic variables and option exports
         # Initialize it as a string as all variables are processed as strings.
-        output.base_variables['max-jobs'] = str(len(os.sched_getaffinity(0)))
+        # Based on some testing (mainly on AWS), maximum effective
+        # max-jobs value seems to be around 8-10 if we have enough cores
+        # users should set values based on workload and build infrastructure
+        output.base_variables['max-jobs'] = str(min(len(os.sched_getaffinity(0)), 8))
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
