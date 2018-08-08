@@ -140,7 +140,7 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS if kind is not "ostree"])
 def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
     bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
     dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
