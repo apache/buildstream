@@ -416,7 +416,7 @@ class Project():
                              parent=parent_loader,
                              tempdir=tempdir)
 
-        self._project_includes = Includes(self.loader)
+        self._project_includes = Includes(self.loader, copy_tree=False)
 
         project_conf_first_pass = _yaml.node_copy(self._project_conf)
         self._project_includes.process(project_conf_first_pass, only_local=True)

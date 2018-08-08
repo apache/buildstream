@@ -10,11 +10,15 @@ from ._exceptions import LoadError, LoadErrorReason
 #
 # Args:
 #    loader (Loader): The Loader object
+#    copy_tree (bool): Whether to make a copy, of tree in
+#                      provenance. Should be true if intended to be
+#                      serialized.
 class Includes:
 
-    def __init__(self, loader):
+    def __init__(self, loader, *, copy_tree=False):
         self._loader = loader
         self._loaded = {}
+        self._copy_tree = copy_tree
 
     # process()
     #
@@ -99,7 +103,8 @@ class Includes:
         if file_path not in self._loaded:
             self._loaded[key] = _yaml.load(os.path.join(directory, include),
                                            shortname=shortname,
-                                           project=project)
+                                           project=project,
+                                           copy_tree=self._copy_tree)
         return self._loaded[key], file_path, current_loader
 
     # _process_value()

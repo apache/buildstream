@@ -78,7 +78,7 @@ class Loader():
         self._elements = {}       # Dict of elements
         self._loaders = {}        # Dict of junction loaders
 
-        self._includes = Includes(self)
+        self._includes = Includes(self, copy_tree=True)
 
     # load():
     #

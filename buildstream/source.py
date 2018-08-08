@@ -752,7 +752,7 @@ class Source(Plugin):
                 # Save the ref in the originating file
                 #
                 try:
-                    _yaml.dump(_yaml.node_sanitize(provenance.toplevel), provenance.filename.name)
+                    _yaml.dump(provenance.toplevel, provenance.filename.name)
                 except OSError as e:
                     raise SourceError("{}: Error saving source reference to '{}': {}"
                                       .format(self, provenance.filename.name, e),
