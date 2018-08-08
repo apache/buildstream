@@ -102,6 +102,7 @@ class GitMirror(SourceFetcher):
 
         self._path = path
         self._ref = ref
+        self._alias_override = None
 
     # Ensures that the mirror exists
     def ensure(self, alias_override=None):
@@ -163,6 +164,7 @@ class GitMirror(SourceFetcher):
                          cwd=self.mirror)
 
     def fetch(self, alias_override=None):
+        self._alias_override = alias_override
         self.ensure(alias_override)
         if not self.has_ref():
             self._fetch(alias_override)
@@ -294,12 +296,13 @@ class GitMirror(SourceFetcher):
             return None
 
     def get_submodule_path(self, url):
+        real_url = self.source.translate_url(url)
         for parser, section in self._read_gitmodules():
             parsed_url = parser.get(section, 'url')
-            if parsed_url == url:
+            if parsed_url == real_url:
                 return parser.get(section, 'path')
 
-        raise SourceError("{}: No submodule found with url '{}'".format(self.source, url))
+        raise SourceError("{}: No submodule found with url '{}'".format(self.source, real_url))
 
     @property
     def path(self):
