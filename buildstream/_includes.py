@@ -100,7 +100,7 @@ class Includes:
         directory = project.directory
         file_path = os.path.join(directory, include)
         key = (current_loader, file_path)
-        if file_path not in self._loaded:
+        if key not in self._loaded:
             self._loaded[key] = _yaml.load(os.path.join(directory, include),
                                            shortname=shortname,
                                            project=project,
