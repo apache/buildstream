@@ -20,3 +20,4 @@
 from .sandbox import Sandbox, SandboxFlags, SandboxCommandError
 from ._sandboxremote import SandboxRemote
 from ._sandboxdummy import SandboxDummy
+from ._sandboxbuildbox import SandboxBuildBox
