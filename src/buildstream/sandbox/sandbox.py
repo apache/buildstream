@@ -613,6 +613,22 @@ class Sandbox():
         self._build_directory = directory
         self._build_directory_always = always
 
+    # _issue_warning()
+    #
+    # Issue warning with __context that is not available with subclasses
+    #
+    # Args:
+    #    message (str): A message to issue
+    #    details (str): optional, more detatils
+    def _issue_warning(self, message, detail=None):
+        self.__context.messenger.message(
+            Message(None,
+                    MessageType.WARN,
+                    message,
+                    detail=detail
+                    )
+        )
+
 
 # _SandboxBatch()
 #
