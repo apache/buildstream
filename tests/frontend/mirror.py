@@ -616,3 +616,82 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
     os.rename('{}.bak'.format(upstream_repo.repo), upstream_repo.repo)
     result = cli.run(project=project_dir, args=['fetch', element_name])
     result.assert_success()
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
+    # Test that it behaves as expected with submodules, both defined in config
+    # and discovered when fetching.
+    foo_file = os.path.join(str(datafiles), 'files', 'foo')
+    bar_file = os.path.join(str(datafiles), 'files', 'bar')
+    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
+    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
+    mirror_dir = os.path.join(str(datafiles), 'mirror')
+
+    defined_subrepo = create_repo('git', str(tmpdir), 'defined_subrepo')
+    defined_mirror_ref = defined_subrepo.create(bin_files_path)
+    defined_mirror = defined_subrepo.copy(mirror_dir)
+    defined_subref = defined_subrepo.add_file(foo_file)
+
+    found_subrepo = create_repo('git', str(tmpdir), 'found_subrepo')
+    found_subref = found_subrepo.create(dev_files_path)
+
+    main_repo = create_repo('git', str(tmpdir))
+    main_mirror_ref = main_repo.create(bin_files_path)
+    main_repo.add_submodule('defined', 'file://' + defined_subrepo.repo)
+    main_repo.add_submodule('found', 'file://' + found_subrepo.repo)
+    main_mirror = main_repo.copy(mirror_dir)
+    main_ref = main_repo.add_file(bar_file)
+    
+    project_dir = os.path.join(str(tmpdir), 'project')
+    os.makedirs(project_dir)
+    element_dir = os.path.join(project_dir, 'elements')
+    os.makedirs(element_dir)
+    element = {
+        'kind': 'import',
+        'sources': [
+            main_repo.source_config(ref=main_mirror_ref)
+        ]
+    }
+    element_name = 'test.bst'
+    element_path = os.path.join(element_dir, element_name)
+
+    # Alias the main repo
+    full_repo = element['sources'][0]['url']
+    _, repo_name = os.path.split(full_repo)
+    alias = 'foo'
+    aliased_repo = alias + ':' + repo_name
+    element['sources'][0]['url'] = aliased_repo
+
+    # Hide the found subrepo
+    del element['sources'][0]['submodules']['found']
+
+    # Alias the defined subrepo
+    subrepo = element['sources'][0]['submodules']['defined']['url']
+    _, repo_name = os.path.split(subrepo)
+    aliased_repo = alias + ':' + repo_name
+    element['sources'][0]['submodules']['defined']['url'] = aliased_repo
+
+    _yaml.dump(element, element_path)
+
+    full_mirror = main_mirror.source_config()['url']
+    mirror_map, _ = os.path.split(full_mirror)
+    project = {
+        'name': 'test',
+        'element-path': 'elements',
+        'aliases': {
+            alias: 'http://www.example.com/'
+        },
+        'mirrors': [
+            {
+                'name': 'middle-earth',
+                'aliases': {
+                    alias: [mirror_map + "/"],
+                },
+            },
+        ]
+    }
+    project_file = os.path.join(project_dir, 'project.conf')
+    _yaml.dump(project, project_file)
+
+    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result.assert_success()
