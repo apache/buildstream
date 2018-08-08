@@ -26,15 +26,6 @@ source_dist:
   - tar -ztf dist/*
   - tarball=$(cd dist && echo $(ls *))
 
-  # Create an installer script
-  - |
-    cat > dist/install.sh << EOF
-    #!/bin/sh
-    tar -zxf ${tarball}
-    cd ${tarball%.tar.gz}
-    pip3 install --no-index .
-    EOF
-
   # unpack tarball as `dist/buildstream` directory
   - |
     cat > dist/unpack.sh << EOF
@@ -44,7 +35,6 @@ source_dist:
     EOF
 
   # Make our helpers executable
-  - chmod +x dist/install.sh
   - chmod +x dist/unpack.sh
   artifacts:
     paths:
