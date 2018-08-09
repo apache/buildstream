@@ -19,7 +19,6 @@
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 import os
-import multiprocessing  # for cpu_count()
 from collections import Mapping, OrderedDict
 from pluginbase import PluginBase
 from . import utils
@@ -572,7 +571,7 @@ class Project():
 
         # Extend variables with automatic variables and option exports
         # Initialize it as a string as all variables are processed as strings.
-        output.base_variables['max-jobs'] = str(multiprocessing.cpu_count())
+        output.base_variables['max-jobs'] = str(len(os.sched_getaffinity(0)))
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
