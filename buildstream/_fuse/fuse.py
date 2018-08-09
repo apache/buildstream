@@ -757,7 +757,11 @@ class FUSE(object):
         if self.raw_fi:
             return self.operations('create', path, mode, fi)
         else:
-            fi.fh = self.operations('create', path, mode)
+            # This line is different from upstream to fix issues
+            # reading file opened with O_CREAT|O_RDWR.
+            # See issue #143.
+            fi.fh = self.operations('create', path, mode, fi.flags)
+            # END OF MODIFICATION
             return 0
 
     def ftruncate(self, path, length, fip):
