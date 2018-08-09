@@ -26,6 +26,8 @@ class Symbol():
     FILENAME = "filename"
     KIND = "kind"
     DEPENDS = "depends"
+    BUILD_DEPENDS = "build-depends"
+    RUNTIME_DEPENDS = "runtime-depends"
     SOURCES = "sources"
     CONFIG = "config"
     VARIABLES = "variables"
