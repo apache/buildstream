@@ -68,6 +68,12 @@ git - stage files from a git repository
        url: upstream:baz.git
        checkout: False
 
+**Configurable Warnings:**
+
+This plugin provides the following configurable warnings:
+
+- 'git:inconsistent-submodule' - A submodule was found to be missing from the underlying git repository.
+
 """
 
 import os
@@ -82,6 +88,9 @@ from buildstream import Source, SourceError, Consistency, SourceFetcher
 from buildstream import utils
 
 GIT_MODULES = '.gitmodules'
+
+# Warnings
+INCONSISTENT_SUBMODULE = "inconsistent-submodules"
 
 
 # Because of handling of submodules, we maintain a GitMirror
@@ -291,7 +300,7 @@ class GitMirror(SourceFetcher):
                      "underlying git repository with `git submodule add`."
 
             self.source.warn("{}: Ignoring inconsistent submodule '{}'"
-                             .format(self.source, submodule), detail=detail)
+                             .format(self.source, submodule), detail=detail, warning_token=INCONSISTENT_SUBMODULE)
 
             return None
 
