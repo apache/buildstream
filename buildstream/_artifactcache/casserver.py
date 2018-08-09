@@ -161,7 +161,7 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
         offset = 0
         finished = False
         resource_name = None
-        with tempfile.NamedTemporaryFile(dir=os.path.join(self.cas.casdir, 'tmp')) as out:
+        with tempfile.NamedTemporaryFile(dir=self.cas.tmpdir) as out:
             for request in request_iterator:
                 assert not finished
                 assert request.write_offset == offset

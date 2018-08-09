@@ -56,7 +56,8 @@ class CASCache(ArtifactCache):
         super().__init__(context)
 
         self.casdir = os.path.join(context.artifactdir, 'cas')
-        os.makedirs(os.path.join(self.casdir, 'tmp'), exist_ok=True)
+        os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
+        os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
 
         self._enable_push = enable_push
 
@@ -84,8 +85,6 @@ class CASCache(ArtifactCache):
         if os.path.isdir(dest):
             # artifact has already been extracted
             return dest
-
-        os.makedirs(self.extractdir, exist_ok=True)
 
         with tempfile.TemporaryDirectory(prefix='tmp', dir=self.extractdir) as tmpdir:
             checkoutdir = os.path.join(tmpdir, ref)
@@ -394,7 +393,7 @@ class CASCache(ArtifactCache):
         try:
             h = hashlib.sha256()
             # Always write out new file to avoid corruption if input file is modified
-            with tempfile.NamedTemporaryFile(dir=os.path.join(self.casdir, 'tmp')) as out:
+            with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
                 # Set mode bits to 0644
                 os.chmod(out.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
@@ -764,7 +763,7 @@ class CASCache(ArtifactCache):
             # already in local cache
             return
 
-        with tempfile.NamedTemporaryFile(dir=os.path.join(self.casdir, 'tmp')) as out:
+        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
             self._fetch_blob(remote, tree, out)
 
             directory = remote_execution_pb2.Directory()
@@ -778,7 +777,7 @@ class CASCache(ArtifactCache):
                     # already in local cache
                     continue
 
-                with tempfile.NamedTemporaryFile(dir=os.path.join(self.casdir, 'tmp')) as f:
+                with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
                     self._fetch_blob(remote, filenode.digest, f)
 
                     digest = self.add_object(path=f.name)
