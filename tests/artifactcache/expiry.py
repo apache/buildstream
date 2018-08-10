@@ -18,6 +18,7 @@
 #
 
 import os
+from unittest import mock
 
 import pytest
 
@@ -250,6 +251,8 @@ def test_never_delete_dependencies(cli, datafiles, tmpdir):
     ("0", True),
     ("-1", False),
     ("pony", False),
+    ("7K", False),
+    ("70%", False),
     ("200%", False)
 ])
 @pytest.mark.datafiles(DATA_DIR)
@@ -263,7 +266,18 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, success):
         }
     })
 
-    res = cli.run(project=project, args=['workspace', 'list'])
+    with mock.patch(
+            "os.statvfs",
+            autospec=True,
+            return_value=mock.create_autospec(
+                "os.statvfs_result",
+                f_blocks=1000,
+                f_bsize=10,
+                f_bavail=600,
+            )
+    ):
+        res = cli.run(project=project, args=['workspace', 'list'])
+
     if success:
         res.assert_success()
     else:
