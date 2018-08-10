@@ -71,6 +71,8 @@ source_dist:
   - chown -R buildstream:buildstream buildstream
   - cd buildstream
 
+  - pip3 install pytest-codestyle
+
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
   - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
@@ -119,6 +121,8 @@ tests-unix:
 
     # Unpack and get into dist/buildstream
     - cd dist && ./unpack.sh && cd buildstream
+
+    - pip3 install pytest-codestyle
 
     # Since the unix platform is required to run as root, no user change required
     - python3 setup.py test --index-url invalid://uri --addopts --integration
