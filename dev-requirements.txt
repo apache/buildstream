@@ -1,0 +1,13 @@
+# Pin coverage to 4.2 for now, we're experiencing
+# random crashes with 4.4.2
+coverage == 4.4.0
+pep8
+pylint >= 1.8 , < 2
+pytest >= 3.1.0
+pytest-cov
+pytest-datafiles
+pytest-env
+pytest-pep8
+pytest-pylint
+# Provide option to run tests in parallel, less reliable
+pytest-xdist

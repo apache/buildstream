@@ -21,3 +21,6 @@ recursive-include tests *.expected
 
 # Protocol Buffers
 recursive-include buildstream/_protos *.proto
+
+# Requirements files
+dev-requirements.txt
