@@ -98,6 +98,68 @@ relative filename to the elements they depend on here.
 See :ref:`format_dependencies` for more information on the dependency model.
 
 
+.. _format_build_depends:
+
+Build-Depends
+~~~~~~~~~~~~~
+
+.. code:: yaml
+
+   # Specify some build-dependencies
+   build-depends:
+   - element1.bst
+   - element2.bst
+
+Build dependencies between elements can be specified with the ``build-depends`` attribute.
+The above code snippet is equivalent to:
+
+.. code:: yaml
+
+   # Specify some build-dependencies
+   depends:
+   - filename: element1.bst
+     type: build
+   - filename: element2.bst
+     type: build
+
+See :ref:`format_dependencies` for more information on the dependency model.
+
+.. note::
+
+   The ``build-depends`` configuration is available since :ref:`format version 14 <project_format_version>`
+
+
+.. _format_runtime_depends:
+
+Runtime-Depends
+~~~~~~~~~~~~~~~
+
+.. code:: yaml
+
+   # Specify some runtime-dependencies
+   runtime-depends:
+   - element1.bst
+   - element2.bst
+
+Runtime dependencies between elements can be specified with the ``runtime-depends`` attribute.
+The above code snippet is equivalent to:
+
+.. code:: yaml
+
+   # Specify some runtime-dependencies
+   depends:
+   - filename: element1.bst
+     type: runtime
+   - filename: element2.bst
+     type: runtime
+
+See :ref:`format_dependencies` for more information on the dependency model.
+
+.. note::
+
+   The ``runtime-depends`` configuration is available since :ref:`format version 14 <project_format_version>`
+
+
 .. _format_sources:
 
 Sources
@@ -276,8 +338,8 @@ attributes are suitable.
 
 .. note::
 
-   Note the order in which element dependencies are declared in the ``depends``
-   list is not meaningful.
+   Note the order in which element dependencies are declared in the ``depends``,
+   ``build-depends`` and ``runtime-depends`` lists are not meaningful.
 
 Dependency dictionary:
 
@@ -299,6 +361,8 @@ Attributes:
 * ``type``
 
   This attribute is used to express the :ref:`dependency type <format_dependencies_types>`.
+  This field is not permitted in :ref:`Build-Depends <format_build_depends>` or
+  :ref:`Runtime-Depends <format_runtime_depends>`.
 
 * ``junction``
 
