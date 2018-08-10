@@ -848,7 +848,7 @@ class CASCache(ArtifactCache):
                 directory.ParseFromString(f.read())
 
             for filenode in directory.files:
-                fileobjpath = self.objpath(tree)
+                fileobjpath = self.objpath(filenode.digest)
                 if os.path.exists(fileobjpath):
                     # already in local cache
                     continue
