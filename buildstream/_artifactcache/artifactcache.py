@@ -874,9 +874,7 @@ class ArtifactCache():
                             "\nValid values are, for example: 800M 10G 1T 50%\n"
                             .format(str(e))) from e
 
-        stat = os.statvfs(artifactdir_volume)
-        available_space = (stat.f_bsize * stat.f_bavail)
-
+        available_space, total_size = self._get_volume_space_info_for(artifactdir_volume)
         cache_size = self.get_cache_size()
 
         # Ensure system has enough storage for the cache_quota
@@ -893,7 +891,7 @@ class ArtifactCache():
                             "BuildStream requires a minimum cache quota of 2G.")
         elif cache_quota > cache_size + available_space:  # Check maximum
             if '%' in self.context.config_cache_quota:
-                available = (available_space / (stat.f_blocks * stat.f_bsize)) * 100
+                available = (available_space / total_size) * 100
                 available = '{}% of total disk space'.format(round(available, 1))
             else:
                 available = utils._pretty_size(available_space)
@@ -918,6 +916,20 @@ class ArtifactCache():
         #
         self._cache_quota = cache_quota - headroom
         self._cache_lower_threshold = self._cache_quota / 2
+
+    # _get_volume_space_info_for
+    #
+    # Get the available space and total space for the given volume
+    #
+    # Args:
+    #     volume: volume for which to get the size
+    #
+    # Returns:
+    #     A tuple containing first the availabe number of bytes on the requested
+    #     volume, then the total number of bytes of the volume.
+    def _get_volume_space_info_for(self, volume):
+        stat = os.statvfs(volume)
+        return stat.f_bsize * stat.f_bavail, stat.f_bsize * stat.f_blocks
 
 
 # _configured_remote_artifact_cache_specs():
