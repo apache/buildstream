@@ -251,7 +251,7 @@ setup(name='BuildStream',
       install_requires=[
           'setuptools',
           'psutil',
-          'ruamel.yaml',
+          'ruamel.yaml <= 0.15',
           'pluginbase',
           'Click',
           'blessings',
