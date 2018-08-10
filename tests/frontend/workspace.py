@@ -18,12 +18,13 @@ DATA_DIR = os.path.join(
 )
 
 
-def open_workspace(cli, tmpdir, datafiles, kind, track, suffix=''):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-    bin_files_path = os.path.join(project, 'files', 'bin-files')
-    element_path = os.path.join(project, 'elements')
+def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None):
+    if not workspace_dir:
+        workspace_dir = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
+    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    bin_files_path = os.path.join(project_path, 'files', 'bin-files')
+    element_path = os.path.join(project_path, 'elements')
     element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
-    workspace = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
 
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
@@ -45,7 +46,7 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix=''):
                             element_name))
 
     # Assert that there is no reference, a track & fetch is needed
-    state = cli.get_element_state(project, element_name)
+    state = cli.get_element_state(project_path, element_name)
     if track:
         assert state == 'no reference'
     else:
@@ -56,20 +57,20 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix=''):
     args = ['workspace', 'open']
     if track:
         args.append('--track')
-    args.extend([element_name, workspace])
+    args.extend([element_name, workspace_dir])
+    result = cli.run(project=project_path, args=args)
 
-    result = cli.run(project=project, args=args)
     result.assert_success()
 
     # Assert that we are now buildable because the source is
     # now cached.
-    assert cli.get_element_state(project, element_name) == 'buildable'
+    assert cli.get_element_state(project_path, element_name) == 'buildable'
 
     # Check that the executable hello file is found in the workspace
-    filename = os.path.join(workspace, 'usr', 'bin', 'hello')
+    filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
     assert os.path.exists(filename)
 
-    return (element_name, project, workspace)
+    return (element_name, project_path, workspace_dir)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -187,6 +188,46 @@ def test_close(cli, tmpdir, datafiles, kind):
     result.assert_success()
 
     # Assert the workspace dir has been deleted
+    assert not os.path.exists(workspace)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_close_external_after_move_project(cli, tmpdir, datafiles):
+    tmp_parent = os.path.dirname(str(tmpdir))
+    workspace_dir = os.path.join(tmp_parent, "workspace")
+    element_name, project_path, _ = open_workspace(cli, tmpdir, datafiles, 'git', False, "", workspace_dir)
+    assert os.path.exists(workspace_dir)
+    tmp_dir = os.path.join(tmp_parent, 'external_project')
+    shutil.move(project_path, tmp_dir)
+    assert os.path.exists(tmp_dir)
+
+    # Close the workspace
+    result = cli.run(configure=False, project=tmp_dir, args=[
+        'workspace', 'close', '--remove-dir', element_name
+    ])
+    result.assert_success()
+
+    # Assert the workspace dir has been deleted
+    assert not os.path.exists(workspace_dir)
+    # Move directory back inside tmp directory so it can be recognised
+    shutil.move(tmp_dir, project_path)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_close_internal_after_move_project(cli, tmpdir, datafiles):
+    element_name, project, _ = open_workspace(cli, tmpdir, datafiles, 'git', False)
+    tmp_dir = os.path.join(os.path.dirname(str(tmpdir)), 'external_project')
+    shutil.move(str(tmpdir), tmp_dir)
+    assert os.path.exists(tmp_dir)
+
+    # Close the workspace
+    result = cli.run(configure=False, project=tmp_dir, args=[
+        'workspace', 'close', '--remove-dir', element_name
+    ])
+    result.assert_success()
+
+    # Assert the workspace dir has been deleted
+    workspace = os.path.join(tmp_dir, 'workspace')
     assert not os.path.exists(workspace)
 
 
