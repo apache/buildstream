@@ -29,7 +29,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 expected_password, directory = self.server.users[user]
                 if password == expected_password:
                     return directory
-            except:
+            except:                           # noqa
                 raise Unauthorized('unauthorized')
             return None
 

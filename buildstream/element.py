@@ -1568,7 +1568,7 @@ class Element(Plugin):
                 utils._force_rmtree(rootdir)
 
             with _signals.terminator(cleanup_rootdir), \
-                self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # nopep8
+                self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # noqa
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
