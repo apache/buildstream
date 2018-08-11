@@ -219,6 +219,15 @@ def get_cmdclass():
 
 
 #####################################################
+#               Gather requirements                 #
+#####################################################
+setup_requires = set(['pytest-runner'])
+with open('dev-requirements.txt') as dev_reqs:
+    dev_requires = set([line for line in dev_reqs.read().split('\n')
+                        if not line.strip().startswith('#')])
+
+
+#####################################################
 #             Main setup() Invocation               #
 #####################################################
 setup(name='BuildStream',
@@ -260,17 +269,6 @@ setup(name='BuildStream',
           'grpcio >= 1.10',
       ],
       entry_points=bst_install_entry_points,
-      setup_requires=['pytest-runner'],
-      tests_require=['pep8',
-                     # Pin coverage to 4.2 for now, we're experiencing
-                     # random crashes with 4.4.2
-                     'coverage == 4.4.0',
-                     'pytest-datafiles',
-                     'pytest-env',
-                     'pytest-pep8',
-                     'pytest-pylint',
-                     'pytest-cov >= 2.5.0',
-                     # Provide option to run tests in parallel, less reliable
-                     'pytest-xdist',
-                     'pytest >= 3.1.0'],
+      setup_requires=list(setup_requires),
+      tests_require=list(dev_requires - setup_requires),
       zip_safe=False)
