@@ -255,6 +255,7 @@ setup(name='BuildStream',
               os.path.join('buildstream', 'data', 'bst')
           ])
       ],
+      python_requires='>=3.5',
       install_requires=[
           'setuptools',
           'psutil',
