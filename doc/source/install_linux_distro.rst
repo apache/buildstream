@@ -122,7 +122,8 @@ requirements you need::
 For the default plugins::
 
   dnf install -y \
-      bzr git lzip patch ostree python3-arpy python3-gobject
+      bzr git lzip patch ostree python3-gobject
+  pip3 install --user arpy
 
 
 Ubuntu
