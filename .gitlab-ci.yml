@@ -96,6 +96,10 @@ tests-fedora-27:
   image: buildstream/testsuite-fedora:27-master-102-9067e269
   <<: *linux-tests
 
+tests-fedora-28:
+  image: buildstream/testsuite-fedora:28-master-112-a9f63c5e
+  <<: *linux-tests
+
 tests-ubuntu-18.04:
   image: buildstream/testsuite-ubuntu:18.04-master-112-a9f63c5e
   <<: *linux-tests
@@ -224,6 +228,7 @@ coverage:
   dependencies:
   - tests-debian-9
   - tests-fedora-27
+  - tests-fedora-28
   - tests-unix
   - source_dist
 
