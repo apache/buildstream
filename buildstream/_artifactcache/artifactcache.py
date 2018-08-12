@@ -460,6 +460,10 @@ class ArtifactCache():
     #     content (str): The element's content directory
     #     keys (list): The cache keys to use
     #
+    # Returns:
+    #     (int): Disk size overhead in bytes required to cache the
+    #            artifact
+    #
     def commit(self, element, content, keys):
         raise ImplError("Cache '{kind}' does not implement commit()"
                         .format(kind=type(self).__name__))
@@ -531,8 +535,9 @@ class ArtifactCache():
     #     progress (callable): The progress callback, if any
     #
     # Returns:
-    #   (bool): True if pull was successful, False if artifact was not available
-    #
+    #     (bool): True if pull was successful, False if artifact was not available
+    #     (int): Disk size overhead in bytes required to cache the
+    #            artifact
     def pull(self, element, key, *, progress=None):
         raise ImplError("Cache '{kind}' does not implement pull()"
                         .format(kind=type(self).__name__))

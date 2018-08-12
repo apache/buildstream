@@ -16,6 +16,7 @@
 #
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
+#        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 import hashlib
 import itertools
@@ -117,10 +118,12 @@ class CASCache(ArtifactCache):
     def commit(self, element, content, keys):
         refs = [self.get_artifact_fullname(element, key) for key in keys]
 
-        tree = self._commit_directory(content)
+        tree, size = self._commit_directory(content)
 
         for ref in refs:
             self.set_ref(ref, tree)
+
+        return size
 
     def diff(self, element, key_a, key_b, *, subdir=None):
         ref_a = self.get_artifact_fullname(element, key_a)
@@ -239,12 +242,12 @@ class CASCache(ArtifactCache):
                 tree.hash = response.digest.hash
                 tree.size_bytes = response.digest.size_bytes
 
-                self._fetch_directory(remote, tree)
+                size = self._fetch_directory(remote, tree)
 
                 self.set_ref(ref, tree)
 
                 # no need to pull from additional remotes
-                return True
+                return True, size
 
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
@@ -258,7 +261,7 @@ class CASCache(ArtifactCache):
                             remote.spec.url, element._get_brief_display_key())
                     ))
 
-        return False
+        return False, 0
 
     def pull_tree(self, project, digest):
         """ Pull a single Tree rather than an artifact.
@@ -437,6 +440,7 @@ class CASCache(ArtifactCache):
     #
     # Returns:
     #     (Digest): The digest of the added object
+    #     (int): The amount of bytes required to store the object
     #
     # Either `path` or `buffer` must be passed, but not both.
     #
@@ -465,22 +469,38 @@ class CASCache(ArtifactCache):
 
                 out.flush()
 
+                file_size = os.fstat(out.fileno()).st_size
+
                 digest.hash = h.hexdigest()
-                digest.size_bytes = os.fstat(out.fileno()).st_size
+                digest.size_bytes = file_size
 
                 # Place file at final location
                 objpath = self.objpath(digest)
-                os.makedirs(os.path.dirname(objpath), exist_ok=True)
+                dirpath = os.path.dirname(objpath)
+
+                # Track the increased size on the parent directory caused by
+                # adding a new entry, as these directories can contain a large
+                # number of files.
+                new_dir_size = 0
+                old_dir_size = 0
+                try:
+                    os.makedirs(dirpath)
+                except FileExistsError:
+                    old_dir_size = os.stat(dirpath).st_size
+                else:
+                    new_dir_size = os.stat(dirpath).st_size
+
                 os.link(out.name, objpath)
+                new_dir_size = os.stat(dirpath).st_size - old_dir_size
 
         except FileExistsError as e:
             # We can ignore the failed link() if the object is already in the repo.
-            pass
+            file_size = 0
 
         except OSError as e:
             raise ArtifactError("Failed to hash object: {}".format(e)) from e
 
-        return digest
+        return digest, file_size + new_dir_size
 
     # set_ref():
     #
@@ -489,6 +509,8 @@ class CASCache(ArtifactCache):
     # Args:
     #     ref (str): The name of the ref
     #
+    # Note: as setting a ref has very low disk size overhead, don't
+    # bother to track this.
     def set_ref(self, ref, tree):
         refpath = self._refpath(ref)
         os.makedirs(os.path.dirname(refpath), exist_ok=True)
@@ -678,8 +700,10 @@ class CASCache(ArtifactCache):
     #
     # Returns:
     #     (Digest): Digest object for the directory added.
+    #     (int): Bytes required to cache local directory
     #
     def _commit_directory(self, path, *, dir_digest=None):
+        size = 0
         directory = remote_execution_pb2.Directory()
 
         for name in sorted(os.listdir(path)):
@@ -688,11 +712,11 @@ class CASCache(ArtifactCache):
             if stat.S_ISDIR(mode):
                 dirnode = directory.directories.add()
                 dirnode.name = name
-                self._commit_directory(full_path, dir_digest=dirnode.digest)
+                size += self._commit_directory(full_path, dir_digest=dirnode.digest)[1]
             elif stat.S_ISREG(mode):
                 filenode = directory.files.add()
                 filenode.name = name
-                self.add_object(path=full_path, digest=filenode.digest)
+                size += self.add_object(path=full_path, digest=filenode.digest)[1]
                 filenode.is_executable = (mode & stat.S_IXUSR) == stat.S_IXUSR
             elif stat.S_ISLNK(mode):
                 symlinknode = directory.symlinks.add()
@@ -704,8 +728,10 @@ class CASCache(ArtifactCache):
             else:
                 raise ArtifactError("Unsupported file type for {}".format(full_path))
 
-        return self.add_object(digest=dir_digest,
-                               buffer=directory.SerializeToString())
+        dir_digest, dir_object_size = self.add_object(
+            digest=dir_digest, buffer=directory.SerializeToString())
+
+        return dir_digest, size + dir_object_size
 
     def _get_subdir(self, tree, subdir):
         head, name = os.path.split(subdir)
@@ -860,11 +886,15 @@ class CASCache(ArtifactCache):
     #     remote (Remote): The remote to use.
     #     dir_digest (Digest): Digest object for the directory to fetch.
     #
+    # Returns:
+    #     (int): Bytes required to cache fetched directory
+    #
     def _fetch_directory(self, remote, dir_digest):
+        size = 0
         objpath = self.objpath(dir_digest)
         if os.path.exists(objpath):
             # already in local cache
-            return
+            return 0
 
         with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
             self._fetch_blob(remote, dir_digest, out)
@@ -883,17 +913,23 @@ class CASCache(ArtifactCache):
                 with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
                     self._fetch_blob(remote, filenode.digest, f)
 
-                    digest = self.add_object(path=f.name)
+                    digest, obj_size = self.add_object(path=f.name)
+                    size += obj_size
                     assert digest.hash == filenode.digest.hash
 
             for dirnode in directory.directories:
-                self._fetch_directory(remote, dirnode.digest)
+                size += self._fetch_directory(remote, dirnode.digest)
 
             # Place directory blob only in final location when we've
             # downloaded all referenced blobs to avoid dangling
             # references in the repository.
-            digest = self.add_object(path=out.name)
+            digest, obj_size = self.add_object(path=out.name)
+
             assert digest.hash == dir_digest.hash
+
+            size += obj_size
+
+            return size
 
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object
@@ -916,13 +952,13 @@ class CASCache(ArtifactCache):
                     with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
                         self._fetch_blob(remote, filenode.digest, f)
 
-                        added_digest = self.add_object(path=f.name)
+                        added_digest = self.add_object(path=f.name)[0]
                         assert added_digest.hash == filenode.digest.hash
 
                 # place directory blob only in final location when we've downloaded
                 # all referenced blobs to avoid dangling references in the repository
                 dirbuffer = directory.SerializeToString()
-                dirdigest = self.add_object(buffer=dirbuffer)
+                dirdigest = self.add_object(buffer=dirbuffer)[0]
                 assert dirdigest.size_bytes == len(dirbuffer)
 
         return dirdigest

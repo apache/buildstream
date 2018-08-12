@@ -1659,8 +1659,8 @@ class Element(Plugin):
                     }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
                     with self.timed_activity("Caching artifact"):
-                        artifact_size = utils._get_dir_size(assembledir)
-                        self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+                        artifact_size = self.__artifacts.commit(
+                            self, assembledir, self.__get_cache_keys_for_commit())
 
                     if collect is not None and collectvdir is None:
                         raise ElementError(
@@ -1712,31 +1712,31 @@ class Element(Plugin):
         self._update_state()
 
     def _pull_strong(self, *, progress=None):
-        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-
         key = self.__strict_cache_key
-        if not self.__artifacts.pull(self, key, progress=progress):
-            return False
+        pulled, artifact_size = self.__artifacts.pull(self, key,
+                                                      progress=progress)
 
-        # update weak ref by pointing it to this newly fetched artifact
-        self.__artifacts.link_key(self, key, weak_key)
+        if pulled:
+            # update weak ref by pointing it to this newly fetched artifact
+            weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+            self.__artifacts.link_key(self, key, weak_key)
 
-        return True
+        return pulled, artifact_size
 
     def _pull_weak(self, *, progress=None):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+        pulled, artifact_size = self.__artifacts.pull(self, weak_key,
+                                                      progress=progress)
 
-        if not self.__artifacts.pull(self, weak_key, progress=progress):
-            return False
+        if pulled:
+            # extract strong cache key from this newly fetched artifact
+            self._pull_done()
 
-        # extract strong cache key from this newly fetched artifact
-        self._pull_done()
+            # create tag for strong cache key
+            key = self._get_cache_key(strength=_KeyStrength.STRONG)
+            self.__artifacts.link_key(self, weak_key, key)
 
-        # create tag for strong cache key
-        key = self._get_cache_key(strength=_KeyStrength.STRONG)
-        self.__artifacts.link_key(self, weak_key, key)
-
-        return True
+        return pulled, artifact_size
 
     # _pull():
     #
@@ -1751,18 +1751,17 @@ class Element(Plugin):
             self.status(message)
 
         # Attempt to pull artifact without knowing whether it's available
-        pulled = self._pull_strong(progress=progress)
+        pulled, artifact_size = self._pull_strong(progress=progress)
 
         if not pulled and not self._cached() and not context.get_strict():
-            pulled = self._pull_weak(progress=progress)
+            pulled, artifact_size = self._pull_weak(progress=progress)
 
-        if not pulled:
-            return False
+        if pulled:
+            # Notify successfull download
+            display_key = self._get_brief_display_key()
+            self.info("Downloaded artifact {}".format(display_key))
 
-        # Notify successfull download
-        display_key = self._get_brief_display_key()
-        self.info("Downloaded artifact {}".format(display_key))
-        return True
+        return pulled
 
     # _skip_push():
     #

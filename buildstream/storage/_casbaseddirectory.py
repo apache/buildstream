@@ -111,7 +111,7 @@ class CasBasedDirectory(Directory):
         the parent).
 
         """
-        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())[0]
         if caller:
             old_dir = self._find_pb2_entry(caller.filename)
             self.cas_cache.add_object(digest=old_dir.digest, buffer=caller.pb2_directory.SerializeToString())
@@ -130,9 +130,10 @@ class CasBasedDirectory(Directory):
             self.index[entry.name].buildstream_object._recalculate_recursing_down(entry)
 
         if parent:
-            self.ref = self.cas_cache.add_object(digest=parent.digest, buffer=self.pb2_directory.SerializeToString())
+            self.ref = self.cas_cache.add_object(digest=parent.digest,
+                                                 buffer=self.pb2_directory.SerializeToString())[0]
         else:
-            self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+            self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())[0]
         # We don't need to do anything more than that; files were already added ealier, and symlinks are
         # part of the directory structure.
 
