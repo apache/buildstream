@@ -1,4 +1,4 @@
-# Pin coverage to 4.2 for now, were experiencing
+# Pin coverage to 4.2 for now, we're experiencing
 # random crashes with 4.4.2
 coverage == 4.4.0
 pep8
