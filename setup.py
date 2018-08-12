@@ -221,7 +221,6 @@ def get_cmdclass():
 #####################################################
 #               Gather requirements                 #
 #####################################################
-setup_requires = set(['pytest-runner'])
 with open('dev-requirements.txt') as dev_reqs:
     dev_requires = dev_reqs.read().splitlines()
 
@@ -268,6 +267,6 @@ setup(name='BuildStream',
           'grpcio >= 1.10',
       ],
       entry_points=bst_install_entry_points,
-      setup_requires=list(setup_requires),
-      tests_require=list(dev_requires - setup_requires),
+      setup_requires=['pytest-runner'],
+      tests_require=dev_requires,
       zip_safe=False)
