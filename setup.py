@@ -223,8 +223,7 @@ def get_cmdclass():
 #####################################################
 setup_requires = set(['pytest-runner'])
 with open('dev-requirements.txt') as dev_reqs:
-    dev_requires = set([line for line in dev_reqs.read().split('\n')
-                        if not line.strip().startswith('#')])
+    dev_requires = dev_reqs.read().splitlines()
 
 
 #####################################################
