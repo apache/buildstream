@@ -49,10 +49,17 @@ zip - stage files from zip archives
    # To extract the root of the archive directly, this can be set
    # to an empty string.
    base-dir: '*'
+
+.. attention::
+
+   File permissions are not preserved. All extracted directories have
+   permissions 0755 and all extracted files have permissions 0644.
+
 """
 
 import os
 import zipfile
+import stat
 
 from buildstream import SourceError
 from buildstream import utils
@@ -74,6 +81,9 @@ class ZipSource(DownloadableFileSource):
         return super().get_unique_key() + [self.base_dir]
 
     def stage(self, directory):
+        exec_rights = (stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO) & ~(stat.S_IWGRP | stat.S_IWOTH)
+        noexec_rights = exec_rights & ~(stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
         try:
             with zipfile.ZipFile(self._get_mirror_file()) as archive:
                 base_dir = None
@@ -81,9 +91,27 @@ class ZipSource(DownloadableFileSource):
                     base_dir = self._find_base_dir(archive, self.base_dir)
 
                 if base_dir:
-                    archive.extractall(path=directory, members=self._extract_members(archive, base_dir))
+                    members = self._extract_members(archive, base_dir)
                 else:
-                    archive.extractall(path=directory)
+                    members = archive.namelist()
+
+                for member in members:
+                    written = archive.extract(member, path=directory)
+
+                    # zipfile.extract might create missing directories
+                    rel = os.path.relpath(written, start=directory)
+                    assert not os.path.isabs(rel)
+                    rel = os.path.dirname(rel)
+                    while rel:
+                        os.chmod(os.path.join(directory, rel), exec_rights)
+                        rel = os.path.dirname(rel)
+
+                    if os.path.islink(written):
+                        pass
+                    elif os.path.isdir(written):
+                        os.chmod(written, exec_rights)
+                    else:
+                        os.chmod(written, noexec_rights)
 
         except (zipfile.BadZipFile, zipfile.LargeZipFile, OSError) as e:
             raise SourceError("{}: Error staging source: {}".format(self, e)) from e

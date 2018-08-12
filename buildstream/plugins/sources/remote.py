@@ -49,6 +49,7 @@ remote - stage files from remote urls
 
 """
 import os
+import stat
 from buildstream import SourceError, utils
 from ._downloadablefilesource import DownloadableFileSource
 
@@ -75,6 +76,7 @@ class RemoteSource(DownloadableFileSource):
         dest = os.path.join(directory, self.filename)
         with self.timed_activity("Staging remote file to {}".format(dest)):
             utils.safe_copy(self._get_mirror_file(), dest)
+            os.chmod(dest, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
 
 def setup():
