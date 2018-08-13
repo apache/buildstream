@@ -13,6 +13,8 @@ depends:
 - sources/patch1.bst
 - sources/patch2.bst
 - sources/patch3.bst
+- sources/remote1.bst
+- sources/remote2.bst
 - sources/tar1.bst
 - sources/tar2.bst
 - sources/zip1.bst
