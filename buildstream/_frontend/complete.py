@@ -68,9 +68,10 @@ def complete_path(path_type, incomplete, base_directory='.'):
         # If there was nothing on the left of the last separator,
         # we are completing files in the filesystem root
         base_path = os.path.join(base_directory, base_path)
-
-    elif os.path.isdir(incomplete):
-        base_path = incomplete
+    else:
+        incomplete_base_path = os.path.join(base_directory, incomplete)
+        if os.path.isdir(incomplete_base_path):
+            base_path = incomplete_base_path
 
     try:
         if base_path:
