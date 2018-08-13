@@ -250,7 +250,8 @@ class Scheduler():
         artifacts = Platform.get_platform().artifactcache
 
         if artifacts.has_quota_exceeded():
-            job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
+            job = CleanupJob(self, 'Clean artifact cache',
+                             'cleanup/cleanup',
                              resources=[ResourceType.CACHE,
                                         ResourceType.PROCESS],
                              exclusive_resources=[ResourceType.CACHE])

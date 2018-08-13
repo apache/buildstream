@@ -281,6 +281,14 @@ class ArtifactCache():
                 # Remove the actual artifact, if it's not required.
                 size = self.remove(to_remove)
                 self._cache_size -= size
+                self._message(MessageType.DEBUG,
+                              "Removed artifact {} ({})".format(
+                                  to_remove[:-(len(key) - self.context.log_key_length)],
+                                  utils._pretty_size(size)))
+
+        self._message(MessageType.INFO,
+                      "New artifact cache size: {}".format(
+                          utils._pretty_size(self._cache_size)))
 
         return old_cache_size - self._cache_size
 
