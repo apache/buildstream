@@ -478,7 +478,7 @@ class Stream():
 
         # Check for workspace config
         workspace = workspaces.get_workspace(target._get_full_name())
-        if workspace:
+        if workspace and not force:
             raise StreamError("Workspace '{}' is already defined at: {}"
                               .format(target.name, workspace.path))
 
@@ -497,6 +497,10 @@ class Stream():
                               "fetch the latest version of the " +
                               "source.")
 
+        if workspace:
+            workspaces.delete_workspace(target._get_full_name())
+            workspaces.save_config()
+            shutil.rmtree(directory)
         try:
             os.makedirs(directory, exist_ok=True)
         except OSError as e:
