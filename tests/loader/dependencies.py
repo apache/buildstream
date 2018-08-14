@@ -3,6 +3,7 @@ import pytest
 
 from buildstream._exceptions import LoadError, LoadErrorReason
 from buildstream._loader import Loader, MetaElement
+from tests.testutils import cli
 from . import make_loader
 
 DATA_DIR = os.path.join(
@@ -27,7 +28,7 @@ def test_two_files(datafiles):
     assert(len(element.dependencies) == 1)
     firstdep = element.dependencies[0]
     assert(isinstance(firstdep, MetaElement))
-    assert(firstdep.kind == 'thefirstdep')
+    assert(firstdep.kind == 'manual')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -47,7 +48,7 @@ def test_shared_dependency(datafiles):
     #
     firstdep = element.dependencies[0]
     assert(isinstance(firstdep, MetaElement))
-    assert(firstdep.kind == 'thefirstdep')
+    assert(firstdep.kind == 'manual')
     assert(len(firstdep.dependencies) == 0)
 
     # The second specified dependency is 'shareddep'
@@ -86,7 +87,7 @@ def test_dependency_dict(datafiles):
     assert(len(element.dependencies) == 1)
     firstdep = element.dependencies[0]
     assert(isinstance(firstdep, MetaElement))
-    assert(firstdep.kind == 'thefirstdep')
+    assert(firstdep.kind == 'manual')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -186,3 +187,49 @@ def test_all_dependency(datafiles):
     assert(isinstance(firstdep, MetaElement))
     firstbuilddep = element.build_dependencies[0]
     assert(firstdep == firstbuilddep)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_build_dependency(cli, datafiles):
+    project = str(datafiles)
+
+    # Check that the pipeline includes the build dependency
+    deps = cli.get_pipeline(project, ['elements/builddep-list.bst'], scope="build")
+    assert "elements/firstdep.bst" in deps
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_runtime_dependency(cli, datafiles):
+    project = str(datafiles)
+
+    # Check that the pipeline includes the runtime dependency
+    deps = cli.get_pipeline(project, ['elements/runtimedep-list.bst'], scope="run")
+    assert "elements/firstdep.bst" in deps
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_dependencies_combined(cli, datafiles):
+    project = str(datafiles)
+
+    # Check that runtime deps get combined
+    rundeps = cli.get_pipeline(project, ['elements/list-combine.bst'], scope="run")
+    assert "elements/firstdep.bst" not in rundeps
+    assert "elements/seconddep.bst" in rundeps
+    assert "elements/thirddep.bst" in rundeps
+
+    # Check that build deps get combined
+    builddeps = cli.get_pipeline(project, ['elements/list-combine.bst'], scope="build")
+    assert "elements/firstdep.bst" in builddeps
+    assert "elements/seconddep.bst" not in builddeps
+    assert "elements/thirddep.bst" in builddeps
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_list_overlap(cli, datafiles):
+    project = str(datafiles)
+
+    # Check that dependencies get merged
+    rundeps = cli.get_pipeline(project, ['elements/list-overlap.bst'], scope="run")
+    assert "elements/firstdep.bst" in rundeps
+    builddeps = cli.get_pipeline(project, ['elements/list-overlap.bst'], scope="build")
+    assert "elements/firstdep.bst" in builddeps

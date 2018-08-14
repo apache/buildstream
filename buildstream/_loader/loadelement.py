@@ -71,6 +71,7 @@ class LoadElement():
             'kind', 'depends', 'sources', 'sandbox',
             'variables', 'environment', 'environment-nocache',
             'config', 'public', 'description',
+            'build-depends', 'runtime-depends',
         ])
 
         # Extract the Dependencies
@@ -127,28 +128,46 @@ class LoadElement():
 # Returns:
 #    (list): a list of Dependency objects
 #
-def _extract_depends_from_node(node):
-    depends = _yaml.node_get(node, list, Symbol.DEPENDS, default_value=[])
+def _extract_depends_from_node(node, *, key=None):
+    if key is None:
+        build_depends = _extract_depends_from_node(node, key=Symbol.BUILD_DEPENDS)
+        runtime_depends = _extract_depends_from_node(node, key=Symbol.RUNTIME_DEPENDS)
+        depends = _extract_depends_from_node(node, key=Symbol.DEPENDS)
+        return build_depends + runtime_depends + depends
+    elif key == Symbol.BUILD_DEPENDS:
+        default_dep_type = Symbol.BUILD
+    elif key == Symbol.RUNTIME_DEPENDS:
+        default_dep_type = Symbol.RUNTIME
+    elif key == Symbol.DEPENDS:
+        default_dep_type = None
+    else:
+        assert False, "Unexpected value of key '{}'".format(key)
+
+    depends = _yaml.node_get(node, list, key, default_value=[])
     output_deps = []
 
     for dep in depends:
-        dep_provenance = _yaml.node_get_provenance(node, key=Symbol.DEPENDS, indices=[depends.index(dep)])
+        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[depends.index(dep)])
 
         if isinstance(dep, str):
-            dependency = Dependency(dep, provenance=dep_provenance)
+            dependency = Dependency(dep, provenance=dep_provenance, dep_type=default_dep_type)
 
         elif isinstance(dep, Mapping):
-            _yaml.node_validate(dep, ['filename', 'type', 'junction'])
+            if default_dep_type:
+                _yaml.node_validate(dep, ['filename', 'junction'])
+                dep_type = default_dep_type
+            else:
+                _yaml.node_validate(dep, ['filename', 'type', 'junction'])
 
-            # Make type optional, for this we set it to None
-            dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
-            if dep_type is None or dep_type == Symbol.ALL:
-                dep_type = None
-            elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
-                provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
-                                .format(provenance, dep_type))
+                # Make type optional, for this we set it to None
+                dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
+                if dep_type is None or dep_type == Symbol.ALL:
+                    dep_type = None
+                elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
+                    provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
+                    raise LoadError(LoadErrorReason.INVALID_DATA,
+                                    "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
+                                    .format(provenance, dep_type))
 
             filename = _yaml.node_get(dep, str, Symbol.FILENAME)
             junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
@@ -159,13 +178,13 @@ def _extract_depends_from_node(node):
 
         else:
             index = depends.index(dep)
-            p = _yaml.node_get_provenance(node, key=Symbol.DEPENDS, indices=[index])
+            p = _yaml.node_get_provenance(node, key=key, indices=[index])
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Dependency is not specified as a string or a dictionary".format(p))
 
         output_deps.append(dependency)
 
-    # Now delete "depends", we dont want it anymore
-    del node[Symbol.DEPENDS]
+    # Now delete the field, we dont want it anymore
+    del node[key]
 
     return output_deps

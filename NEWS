@@ -13,6 +13,10 @@ buildstream 1.3.1
     Downgrading after using this feature may result in workspaces
     not functioning correctly
 
+  o Elements may now specify 'build-depends' and 'runtime-depends' fields
+    to avoid having to specify the dependency type for every entry in
+    'depends'.
+
 
 =================
 buildstream 1.1.5
