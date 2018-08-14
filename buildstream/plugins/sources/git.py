@@ -309,6 +309,13 @@ class GitSource(Source):
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref)
         self.tracking = self.node_get_member(node, str, 'track', None)
+
+        # At this point we now know if the source has a ref and/or a track.
+        # If it is missing both then we will be unable to track or build.
+        if self.mirror.ref is None and self.tracking is None:
+            raise SourceError("{}: Git sources require a ref and/or track".format(self),
+                              reason="missing-track-and-ref")
+
         self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
         self.submodules = []
 
