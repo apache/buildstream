@@ -945,7 +945,7 @@ def node_validate(node, valid_keys):
     # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
     valid_keys = set(valid_keys)
     valid_keys.add(PROVENANCE_KEY)
-    invalid = next((key for key in node if key not in valid_keys), None)
+    invalid = next((key for key in node if key not in valid_keys and not key.startswith('x-')), None)
 
     if invalid:
         provenance = node_get_provenance(node, key=invalid)
