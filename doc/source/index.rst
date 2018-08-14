@@ -18,6 +18,7 @@ Later sections provide detailed information on BuildStream internals.
    :maxdepth: 1
 
    main_about
+   main_releases
    main_install
    main_using
    main_core
