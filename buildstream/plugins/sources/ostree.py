@@ -71,7 +71,7 @@ class OSTreeSource(Source):
         self.ref = self.node_get_member(node, str, 'ref', None)
         self.tracking = self.node_get_member(node, str, 'track', None)
         self.mirror = os.path.join(self.get_mirror_directory(),
-                                   utils.url_directory_name(self.url))
+                                   utils.url_directory_name(self.original_url))
 
         # (optional) Not all repos are signed. But if they are, get the gpg key
         self.gpg_key_path = None
@@ -104,10 +104,11 @@ class OSTreeSource(Source):
             return None
 
         self.ensure()
+        remote_name = self.ensure_remote(self.url)
         with self.timed_activity("Fetching tracking ref '{}' from origin: {}"
                                  .format(self.tracking, self.url)):
             try:
-                _ostree.fetch(self.repo, ref=self.tracking, progress=self.progress)
+                _ostree.fetch(self.repo, remote=remote_name, ref=self.tracking, progress=self.progress)
             except OSTreeError as e:
                 raise SourceError("{}: Failed to fetch tracking ref '{}' from origin {}\n\n{}"
                                   .format(self, self.tracking, self.url, e)) from e
@@ -116,11 +117,12 @@ class OSTreeSource(Source):
 
     def fetch(self):
         self.ensure()
+        remote_name = self.ensure_remote(self.url)
         if not _ostree.exists(self.repo, self.ref):
             with self.timed_activity("Fetching remote ref: {} from origin: {}"
                                      .format(self.ref, self.url)):
                 try:
-                    _ostree.fetch(self.repo, ref=self.ref, progress=self.progress)
+                    _ostree.fetch(self.repo, remote=remote_name, ref=self.ref, progress=self.progress)
                 except OSTreeError as e:
                     raise SourceError("{}: Failed to fetch ref '{}' from origin: {}\n\n{}"
                                       .format(self, self.ref, self.url, e)) from e
@@ -171,14 +173,22 @@ class OSTreeSource(Source):
             self.status("Creating local mirror for {}".format(self.url))
 
             self.repo = _ostree.ensure(self.mirror, True)
-            gpg_key = None
-            if self.gpg_key_path:
-                gpg_key = 'file://' + self.gpg_key_path
 
-            try:
-                _ostree.configure_remote(self.repo, "origin", self.url, key_url=gpg_key)
-            except OSTreeError as e:
-                raise SourceError("{}: Failed to configure origin {}\n\n{}".format(self, self.url, e)) from e
+    def ensure_remote(self, url):
+        if self.original_url == self.url:
+            remote_name = 'origin'
+        else:
+            remote_name = utils.url_directory_name(url)
+
+        gpg_key = None
+        if self.gpg_key_path:
+            gpg_key = 'file://' + self.gpg_key_path
+
+        try:
+            _ostree.configure_remote(self.repo, remote_name, url, key_url=gpg_key)
+        except OSTreeError as e:
+            raise SourceError("{}: Failed to configure origin {}\n\n{}".format(self, self.url, e)) from e
+        return remote_name
 
     def progress(self, percent, message):
         self.status(message)
