@@ -23,6 +23,7 @@ import os
 import signal
 import sys
 import tempfile
+import uuid
 
 import click
 import grpc
@@ -130,7 +131,7 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
 
     def Read(self, request, context):
         resource_name = request.resource_name
-        client_digest = _digest_from_resource_name(resource_name)
+        client_digest = _digest_from_download_resource_name(resource_name)
         assert request.read_offset <= client_digest.size_bytes
 
         try:
@@ -168,7 +169,7 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                 if resource_name is None:
                     # First request
                     resource_name = request.resource_name
-                    client_digest = _digest_from_resource_name(resource_name)
+                    client_digest = _digest_from_upload_resource_name(resource_name)
                     try:
                         _clean_up_cache(self.cas, client_digest.size_bytes)
                     except ArtifactTooLargeException as e:
@@ -247,12 +248,35 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
         return response
 
 
-def _digest_from_resource_name(resource_name):
+def _digest_from_download_resource_name(resource_name):
     parts = resource_name.split('/')
-    assert len(parts) == 2
+
+    # Accept requests from non-conforming BuildStream 1.1.x clients
+    if len(parts) == 2:
+        parts.insert(0, 'blobs')
+
+    assert len(parts) == 3 and parts[0] == 'blobs'
     digest = remote_execution_pb2.Digest()
-    digest.hash = parts[0]
-    digest.size_bytes = int(parts[1])
+    digest.hash = parts[1]
+    digest.size_bytes = int(parts[2])
+    return digest
+
+
+def _digest_from_upload_resource_name(resource_name):
+    parts = resource_name.split('/')
+
+    # Accept requests from non-conforming BuildStream 1.1.x clients
+    if len(parts) == 2:
+        parts.insert(0, 'uploads')
+        parts.insert(1, str(uuid.uuid4()))
+        parts.insert(2, 'blobs')
+
+    assert len(parts) >= 5 and parts[0] == 'uploads' and parts[2] == 'blobs'
+    uuid_ = uuid.UUID(hex=parts[1])
+    assert uuid_.version == 4
+    digest = remote_execution_pb2.Digest()
+    digest.hash = parts[3]
+    digest.size_bytes = int(parts[4])
     return digest
 
 
