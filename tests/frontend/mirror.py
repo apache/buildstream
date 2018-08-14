@@ -405,10 +405,6 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
-    if kind == 'git':
-        # FIXME: Mirroring fallback does not work with git because it tries to
-        # fetch submodules on upstream.
-        pytest.skip("Bug #537 - Mirror fallback does not work for git")
     if kind == 'ostree':
         # FIXME: Mirroring fallback fails with ostree
         pytest.skip("Bug #538 - ostree mirror fallback breaks assertion")
