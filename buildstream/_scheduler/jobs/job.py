@@ -250,7 +250,7 @@ class Job():
     #
     def resume(self, silent=False):
         if self._suspended:
-            if not silent:
+            if not silent and not self._scheduler.terminated:
                 self.message(MessageType.STATUS,
                              "{} resuming".format(self.action_name))
 
@@ -549,7 +549,7 @@ class Job():
         #
         self._retry_flag = returncode not in (RC_OK, RC_PERM_FAIL)
 
-        if self._retry_flag and (self._tries <= self._max_retries):
+        if self._retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.spawn()
             return
 
