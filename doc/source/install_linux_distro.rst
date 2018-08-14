@@ -1,4 +1,3 @@
-
 .. _install:
 
 Installing BuildStream on a Linux distro
@@ -32,7 +31,15 @@ Installing from source (recommended)
 ------------------------------------
 Until BuildStream is available in your distro, you will need to install
 it yourself from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
-using python's ``pip`` package manager.
+using python's ``pip`` package manager. 
+
+BuildStream follows the semantic versioning convention `(SemVer) <https://semver.org>`_ 
+of releases and development snapshots. So where the version number is X.Y.Z 
+and the Y is an even number, you have a release, but where Y is an odd number, 
+you have a development snapshot. For example, 1.0 was the first ever release, 
+then 1.1 was the development branch that came after it, etc. Therefore, when 
+downloading from git, please look for the latest tag in the latest branch that 
+has an even number for Y.
 
 For the purpose of installing BuildStream while there are no distro packages,
 you will additionally need:
