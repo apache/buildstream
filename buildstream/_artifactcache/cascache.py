@@ -24,6 +24,7 @@ import os
 import signal
 import stat
 import tempfile
+import uuid
 from urllib.parse import urlparse
 
 import grpc
@@ -309,8 +310,11 @@ class CASCache(ArtifactCache):
                     # Upload any blobs missing on the server
                     skipped_remote = False
                     for digest in missing_blobs.values():
+                        uuid_ = uuid.uuid4()
+                        resource_name = '/'.join(['uploads', str(uuid_), 'blobs',
+                                                  digest.hash, str(digest.size_bytes)])
+
                         def request_stream():
-                            resource_name = os.path.join(digest.hash, str(digest.size_bytes))
                             with open(self.objpath(digest), 'rb') as f:
                                 assert os.fstat(f.fileno()).st_size == digest.size_bytes
                                 offset = 0
@@ -747,7 +751,7 @@ class CASCache(ArtifactCache):
             yield from self._required_blobs(dirnode.digest)
 
     def _fetch_blob(self, remote, digest, out):
-        resource_name = os.path.join(digest.hash, str(digest.size_bytes))
+        resource_name = '/'.join(['blobs', digest.hash, str(digest.size_bytes)])
         request = bytestream_pb2.ReadRequest()
         request.resource_name = resource_name
         request.read_offset = 0
