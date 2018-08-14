@@ -793,3 +793,99 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
 
     assert os.path.exists(os.path.join(checkout, 'bin', 'bin', 'hello'))
     assert os.path.exists(os.path.join(checkout, 'dev', 'include', 'pony.h'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
+    # Main repo has mirror. But does not list submodules.
+    #
+    # We expect:
+    #  - we will fetch submodules anyway
+
+    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
+    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
+
+    bin_repodir = os.path.join(str(tmpdir), 'bin-repo')
+    bin_repo = create_repo('git', bin_repodir)
+    bin_repo.create(bin_files_path)
+
+    dev_repodir = os.path.join(str(tmpdir), 'dev-repo')
+    dev_repo = create_repo('git', dev_repodir)
+    dev_repo.create(dev_files_path)
+
+    main_files = os.path.join(str(tmpdir), 'main-files')
+    os.makedirs(main_files)
+    with open(os.path.join(main_files, 'README'), 'w') as f:
+        f.write("TEST\n")
+    upstream_main_repodir = os.path.join(str(tmpdir), 'main-upstream')
+    upstream_main_repo = create_repo('git', upstream_main_repodir)
+    upstream_main_repo.create(main_files)
+
+    upstream_main_repo.add_submodule('bin', url='file://{}'.format(bin_repo.repo))
+    upstream_main_repo.add_submodule('dev', url='file://{}'.format(dev_repo.repo))
+    # Unlist submodules.
+    del upstream_main_repo.submodules['bin']
+    del upstream_main_repo.submodules['dev']
+
+    upstream_main_ref = upstream_main_repo.latest_commit()
+
+    mirror_main_repodir = os.path.join(str(tmpdir), 'main-mirror')
+    mirror_main_repo = upstream_main_repo.copy(mirror_main_repodir)
+
+    upstream_url = mirror_main_repo.source_config()['url']
+
+    upstream_map, repo_name = os.path.split(upstream_url)
+    alias = 'foo'
+    aliased_repo = '{}:{}'.format(alias, repo_name)
+
+    full_mirror = mirror_main_repo.source_config()['url']
+    mirror_map, _ = os.path.split(full_mirror)
+
+    project_dir = os.path.join(str(tmpdir), 'project')
+    os.makedirs(project_dir)
+    element_dir = os.path.join(project_dir, 'elements')
+
+    element = {
+        'kind': 'import',
+        'sources': [
+            upstream_main_repo.source_config(ref=upstream_main_ref, checkout_submodules=True)
+        ]
+    }
+    element['sources'][0]['url'] = aliased_repo
+    element_name = 'test.bst'
+    element_path = os.path.join(element_dir, element_name)
+    os.makedirs(element_dir)
+    _yaml.dump(element, element_path)
+
+    project = {
+        'name': 'test',
+        'element-path': 'elements',
+        'aliases': {
+            alias: upstream_map + "/"
+        },
+        'mirrors': [
+            {
+                'name': 'middle-earth',
+                'aliases': {
+                    alias: [mirror_map + "/"],
+                }
+            }
+        ]
+    }
+    project_file = os.path.join(project_dir, 'project.conf')
+    _yaml.dump(project, project_file)
+
+    # Now make the upstream unavailable.
+    os.rename(upstream_main_repo.repo, '{}.bak'.format(upstream_main_repo.repo))
+    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result.assert_success()
+
+    result = cli.run(project=project_dir, args=['build', element_name])
+    result.assert_success()
+
+    checkout = os.path.join(str(tmpdir), 'checkout')
+    result = cli.run(project=project_dir, args=['checkout', element_name, checkout])
+    result.assert_success()
+
+    assert os.path.exists(os.path.join(checkout, 'bin', 'bin', 'hello'))
+    assert os.path.exists(os.path.join(checkout, 'dev', 'include', 'pony.h'))
