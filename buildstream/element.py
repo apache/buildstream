@@ -194,6 +194,7 @@ class Element(Plugin):
 
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
+        self.__reverse_dependencies = []        # Direct reverse dependency Elements
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -892,9 +893,11 @@ class Element(Plugin):
         for meta_dep in meta.dependencies:
             dependency = Element._new_from_meta(meta_dep, artifacts)
             element.__runtime_dependencies.append(dependency)
+            dependency.__reverse_dependencies.append(element)
         for meta_dep in meta.build_dependencies:
             dependency = Element._new_from_meta(meta_dep, artifacts)
             element.__build_dependencies.append(dependency)
+            dependency.__reverse_dependencies.append(element)
 
         return element
 
@@ -1428,6 +1431,16 @@ class Element(Plugin):
 
         self._update_state()
 
+        if workspace:
+            # We need to invalidate reverse dependencies
+            for reverse_dep in self.__get_reverse_dependencies():
+                reverse_dep.__cache_key_dict = None
+                reverse_dep.__cache_key = None
+                reverse_dep.__weak_cache_key = None
+                reverse_dep.__strict_cache_key = None
+                reverse_dep.__strong_cached = None
+                reverse_dep._update_state()
+
     # _assemble_done():
     #
     # This is called in the main process after the element has been assembled
@@ -1465,8 +1478,14 @@ class Element(Plugin):
             # This does *not* cause a race condition, because
             # _assemble_done is called before a cleanup job may be
             # launched.
-            #
-            self.__artifacts.append_required_artifacts([self])
+            required_artifacts = [self]
+
+            # Reverse dependencies can now compute their keys
+            for reverse_dep in self.__get_reverse_dependencies():
+                reverse_dep._update_state()
+                required_artifacts.append(reverse_dep)
+
+            self.__artifacts.append_required_artifacts(required_artifacts)
 
     # _assemble():
     #
@@ -2597,6 +2616,31 @@ class Element(Plugin):
         keys.append(self._get_cache_key(strength=_KeyStrength.WEAK))
 
         return utils._deduplicate(keys)
+
+    # __get_reverse_dependencies():
+    #
+    # Iterates through the closure of reverse dependenices.
+    #
+    # Args:
+    #   visited (set): The elements to skip (only for recursion)
+    #   recursed (bool): Whether to emit the current element (only for recursion)
+    #
+    # Yields:
+    #   (:class:`.Element`): The reverse dependent elements
+    def __get_reverse_dependencies(self, *, visited=None, recursed=False):
+        if visited is None:
+            visited = set()
+
+        full_name = self._get_full_name()
+
+        if full_name in visited:
+            return
+
+        if recursed:
+            yield self
+
+        for reverse_dep in self.__reverse_dependencies:
+            yield from reverse_dep.__get_reverse_dependencies(visited=visited, recursed=True)
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):

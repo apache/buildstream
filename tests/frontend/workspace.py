@@ -767,3 +767,73 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     # Check that workspace config is converted correctly if necessary
     loaded_config = _yaml.node_sanitize(_yaml.load(workspace_config_path))
     assert loaded_config == parse_dict_as_yaml(expected)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", repo_kinds)
+@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
+def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, kind, strict):
+    checkout = os.path.join(str(tmpdir), 'checkout')
+    element_name, project, workspace = open_workspace(cli, os.path.join(str(tmpdir), 'repo-a'), datafiles, kind, False)
+
+    element_path = os.path.join(project, 'elements')
+    back_dep_element_name = 'workspace-test-{}-back-dep.bst'.format(kind)
+
+    # Write out our test target
+    element = {
+        'kind': 'compose',
+        'depends': [
+            {
+                'filename': element_name,
+                'type': 'build'
+            }
+        ]
+    }
+    _yaml.dump(element,
+               os.path.join(element_path,
+                            back_dep_element_name))
+
+    # Modify workspace
+    shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
+    os.makedirs(os.path.join(workspace, 'etc'))
+    with open(os.path.join(workspace, 'etc', 'pony.conf'), 'w') as f:
+        f.write("PONY='pink'")
+
+    # Configure strict mode
+    strict_mode = True
+    if strict != 'strict':
+        strict_mode = False
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict_mode
+            }
+        }
+    })
+
+    # Build artifact with dependency's modified workspace
+    assert cli.get_element_state(project, element_name) == 'buildable'
+    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
+    assert cli.get_element_state(project, back_dep_element_name) == 'waiting'
+    assert cli.get_element_key(project, back_dep_element_name) == "{:?<64}".format('')
+    result = cli.run(project=project, args=['build', back_dep_element_name])
+    result.assert_success()
+    assert cli.get_element_state(project, element_name) == 'cached'
+    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+    assert cli.get_element_state(project, back_dep_element_name) == 'cached'
+    assert cli.get_element_key(project, back_dep_element_name) != "{:?<64}".format('')
+    result = cli.run(project=project, args=['build', back_dep_element_name])
+    result.assert_success()
+
+    # Checkout the result
+    result = cli.run(project=project, args=[
+        'checkout', back_dep_element_name, checkout
+    ])
+    result.assert_success()
+
+    # Check that the pony.conf from the modified workspace exists
+    filename = os.path.join(checkout, 'etc', 'pony.conf')
+    assert os.path.exists(filename)
+
+    # Check that the original /usr/bin/hello is not in the checkout
+    assert not os.path.exists(os.path.join(checkout, 'usr', 'bin', 'hello'))
