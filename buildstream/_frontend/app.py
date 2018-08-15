@@ -202,6 +202,10 @@ class App():
 
         Platform.create_instance(self.context)
 
+        platform = Platform.get_platform()
+        cache_size = platform._artifact_cache.calculate_cache_size()
+        self.context.set_cache_quota(cache_size)
+
         # Create the logger right before setting the message handler
         self.logger = LogLine(self.context,
                               self._content_profile,
