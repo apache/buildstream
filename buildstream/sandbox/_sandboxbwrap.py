@@ -58,7 +58,7 @@ class SandboxBwrap(Sandbox):
         stdout, stderr = self._get_output()
 
         # Allowable access to underlying storage as we're part of the sandbox
-        root_directory = self.get_virtual_directory().external_directory
+        root_directory = self.get_virtual_directory()._get_underlying_directory()
 
         # Fallback to the sandbox default settings for
         # the cwd and env.
@@ -248,6 +248,7 @@ class SandboxBwrap(Sandbox):
                         # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
                         pass
 
+        self._vdir._mark_changed()
         return exit_code
 
     def run_bwrap(self, argv, stdin, stdout, stderr, interactive):

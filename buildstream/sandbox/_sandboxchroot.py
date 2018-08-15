@@ -106,6 +106,7 @@ class SandboxChroot(Sandbox):
             status = self.chroot(rootfs, command, stdin, stdout,
                                  stderr, cwd, env, flags)
 
+        self._vdir._mark_changed()
         return status
 
     # chroot()

@@ -78,7 +78,6 @@ import stat
 import copy
 from collections import Mapping, OrderedDict
 from contextlib import contextmanager
-from enum import Enum
 import tempfile
 import shutil
 
@@ -98,41 +97,9 @@ from .plugin import CoreWarnings
 from .sandbox._config import SandboxConfig
 
 from .storage.directory import Directory
-from .storage._filebaseddirectory import FileBasedDirectory, VirtualDirectoryError
-
-
-# _KeyStrength():
-#
-# Strength of cache key
-#
-class _KeyStrength(Enum):
-
-    # Includes strong cache keys of all build dependencies and their
-    # runtime dependencies.
-    STRONG = 1
-
-    # Includes names of direct build dependencies but does not include
-    # cache keys of dependencies.
-    WEAK = 2
-
-
-class Scope(Enum):
-    """Types of scope for a given element"""
-
-    ALL = 1
-    """All elements which the given element depends on, following
-    all elements required for building. Including the element itself.
-    """
-
-    BUILD = 2
-    """All elements required for building the element, including their
-    respective run dependencies. Not including the given element itself.
-    """
-
-    RUN = 3
-    """All elements required for running the element. Including the element
-    itself.
-    """
+from .storage._filebaseddirectory import FileBasedDirectory
+from .storage.directory import VirtualDirectoryError
+from .element_enums import _KeyStrength, Scope
 
 
 class ElementError(BstError):

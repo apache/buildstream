@@ -31,6 +31,19 @@ See also: :ref:`sandboxing`.
 
 """
 
+from .._exceptions import BstError, ErrorDomain
+
+
+class VirtualDirectoryError(BstError):
+    """Raised by Directory functions when system calls fail.
+    This will be handled internally by the BuildStream core,
+    if you need to handle this error, then it should be reraised,
+    or either of the :class:`.ElementError` or :class:`.SourceError`
+    exceptions should be raised from this error.
+    """
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
+
 
 class Directory():
     def __init__(self, external_directory=None):
@@ -150,6 +163,16 @@ class Directory():
 
         Yields:
           (List(str)) - list of all files with relative paths.
+
+        """
+        raise NotImplementedError()
+
+    def _mark_changed(self):
+        """Internal function to mark this directory as having been changed
+        outside this API. This normally can only happen by calling the
+        Sandbox's `run` method. This does *not* mark everything as modified
+        (i.e. list_modified_paths will not necessarily return the same results
+        as list_relative_paths after calling this.)
 
         """
         raise NotImplementedError()

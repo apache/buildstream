@@ -29,25 +29,12 @@ See also: :ref:`sandboxing`.
 
 import os
 import time
-from .._exceptions import BstError, ErrorDomain
-from .directory import Directory
+from .directory import Directory, VirtualDirectoryError
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, _magic_timestamp
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
 
-
-class VirtualDirectoryError(BstError):
-    """Raised by Directory functions when system calls fail.
-    This will be handled internally by the BuildStream core,
-    if you need to handle this error, then it should be reraised,
-    or either of the :class:`.ElementError` or :class:`.SourceError`
-    exceptions should be raised from this error.
-    """
-    def __init__(self, message, reason=None):
-        super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
-
-
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
-# which is mean to be unimplemented.
+# which is meant to be unimplemented.
 # pylint: disable=super-init-not-called
 
 
@@ -108,7 +95,8 @@ class FileBasedDirectory(Directory):
             if create:
                 new_path = os.path.join(self.external_directory, subdirectory_spec[0])
                 os.makedirs(new_path, exist_ok=True)
-                return FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
+                self.index[subdirectory_spec[0]] = FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
+                return self.index[subdirectory_spec[0]]
             else:
                 error = "No entry called '{}' found in the directory rooted at {}"
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0], self.external_directory))
@@ -134,7 +122,11 @@ class FileBasedDirectory(Directory):
 
             for f in import_result.files_written:
                 os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
+        self._mark_changed()
         return import_result
+
+    def _mark_changed(self):
+        self._directory_read = False
 
     def set_deterministic_mtime(self):
         _set_deterministic_mtime(self.external_directory)
@@ -213,4 +205,9 @@ class FileBasedDirectory(Directory):
         # This returns the whole path (since we don't know where the directory started)
         # which exposes the sandbox directory; we will have to assume for the time being
         # that people will not abuse __str__.
+        return self.external_directory
+
+    def _get_underlying_directory(self) -> str:
+        """ Returns the underlying (real) file system directory this
+        object refers to. """
         return self.external_directory
