@@ -97,7 +97,7 @@ class BuildQueue(Queue):
             cache = element._get_artifact_cache()
             cache._add_artifact_size(artifact_size)
 
-            if cache.get_approximate_cache_size() > self._scheduler.context.cache_quota:
+            if cache.get_approximate_cache_size() > cache.cache_quota:
                 self._scheduler._check_cache_size_real()
 
     def done(self, job, element, result, success):

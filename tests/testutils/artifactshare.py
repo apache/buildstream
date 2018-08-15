@@ -140,6 +140,7 @@ class ArtifactShare():
 
         return statvfs_result(f_blocks=self.total_space,
                               f_bfree=self.free_space - repo_size,
+                              f_bavail=self.free_space - repo_size,
                               f_bsize=1)
 
 
@@ -156,4 +157,4 @@ def create_artifact_share(directory, *, total_space=None, free_space=None):
         share.close()
 
 
-statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize')
+statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize f_bavail')

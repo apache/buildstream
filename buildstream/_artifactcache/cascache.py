@@ -61,6 +61,8 @@ class CASCache(ArtifactCache):
         os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
 
+        self._calculate_cache_quota()
+
         self._enable_push = enable_push
 
         # Per-project list of _CASRemote instances.
