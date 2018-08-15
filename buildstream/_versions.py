@@ -23,7 +23,7 @@
 # This version is bumped whenever enhancements are made
 # to the `project.conf` format or the core element format.
 #
-BST_FORMAT_VERSION = 14
+BST_FORMAT_VERSION = 15
 
 
 # The base BuildStream artifact version
@@ -33,4 +33,4 @@ BST_FORMAT_VERSION = 14
 # or if buildstream was changed in a way which can cause
 # the same cache key to produce something that is no longer
 # the same.
-BST_CORE_ARTIFACT_VERSION = 4
+BST_CORE_ARTIFACT_VERSION = 5

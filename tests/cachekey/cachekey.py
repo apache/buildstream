@@ -37,7 +37,8 @@
 #
 from tests.testutils.runcli import cli
 from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX
-
+from buildstream.plugin import CoreWarnings
+from buildstream import _yaml
 import os
 from collections import OrderedDict
 import pytest
@@ -128,7 +129,6 @@ def assert_cache_keys(project_dir, output):
                              "Use tests/cachekey/update.py to automatically " +
                              "update this test case")
 
-
 ##############################################
 #             Test Entry Point               #
 ##############################################
@@ -167,3 +167,47 @@ def test_cache_key(datafiles, cli):
     ])
     result.assert_success()
     assert_cache_keys(project, result.output)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("first_warnings, second_warnings, identical_keys", [
+    [[], [], True],
+    [[], [CoreWarnings.REF_NOT_IN_TRACK], False],
+    [[CoreWarnings.REF_NOT_IN_TRACK], [], False],
+    [[CoreWarnings.REF_NOT_IN_TRACK], [CoreWarnings.REF_NOT_IN_TRACK], True],
+    [[CoreWarnings.REF_NOT_IN_TRACK, CoreWarnings.OVERLAPS],
+        [CoreWarnings.OVERLAPS, CoreWarnings.REF_NOT_IN_TRACK], True],
+])
+def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, identical_keys):
+
+    # Builds project, Runs bst show, gathers cache keys
+    def run_get_cache_key(project_name, warnings):
+        config = {
+            'name': project_name,
+            'element-path': 'elements',
+            'fatal-warnings': warnings
+        }
+
+        project_dir = tmpdir.mkdir(project_name)
+        project_config_file = str(project_dir.join('project.conf'))
+        _yaml.dump(_yaml.node_sanitize(config), filename=project_config_file)
+
+        elem_dir = project_dir.mkdir('elements')
+        element_file = str(elem_dir.join('stack.bst'))
+        _yaml.dump({'kind': 'stack'}, filename=element_file)
+
+        result = cli.run(project=str(project_dir), args=[
+            'show',
+            '--format', '%{name}::%{full-key}',
+            'stack.bst'
+        ])
+        return result.output
+
+    # Returns true if all keys are identical
+    def compare_cache_keys(first_keys, second_keys):
+        return not any((x != y for x, y in zip(first_keys, second_keys)))
+
+    first_keys = run_get_cache_key("first", first_warnings)
+    second_keys = run_get_cache_key("second", second_warnings)
+
+    assert compare_cache_keys(first_keys, second_keys) == identical_keys
