@@ -270,6 +270,9 @@ class App():
                 else:
                     self._message(MessageType.FAIL, session_name, elapsed=elapsed)
 
+                    # Notify session failure
+                    self._notify("{} failed".format(session_name), "{}".format(e))
+
                 if self._started:
                     self._print_summary()
 
@@ -286,6 +289,9 @@ class App():
                 self._message(MessageType.SUCCESS, session_name, elapsed=self.stream.elapsed_time)
                 if self._started:
                     self._print_summary()
+
+                # Notify session success
+                self._notify("{} succeeded".format(session_name), "")
 
     # init_project()
     #
@@ -419,6 +425,12 @@ class App():
     ############################################################
     #                      Local Functions                     #
     ############################################################
+
+    # Local function for calling the notify() virtual method
+    #
+    def _notify(self, title, text):
+        if self.interactive:
+            self.notify(title, text)
 
     # Local message propagator
     #
@@ -572,8 +584,8 @@ class App():
             while choice not in ['continue', 'quit', 'terminate', 'retry']:
                 click.echo(summary, err=True)
 
-                self.notify("BuildStream failure", "{} on element {}"
-                            .format(failure.action_name, element.name))
+                self._notify("BuildStream failure", "{} on element {}"
+                             .format(failure.action_name, element.name))
 
                 try:
                     choice = click.prompt("Choice:", default='continue', err=True,
