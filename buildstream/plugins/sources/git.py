@@ -404,8 +404,10 @@ class GitSource(Source):
                     mirror.stage(directory)
 
     def get_source_fetchers(self):
+        yield self.mirror
         self.refresh_submodules()
-        return [self.mirror] + self.submodules
+        for submodule in self.submodules:
+            yield submodule
 
     ###########################################################
     #                     Local Functions                     #
