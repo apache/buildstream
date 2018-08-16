@@ -82,7 +82,6 @@ class ArtifactCache():
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.tmpdir = os.path.join(context.artifactdir, 'tmp')
 
-        self.max_size = context.cache_quota
         self.estimated_size = None
 
         self.global_remote_specs = []
@@ -90,6 +89,8 @@ class ArtifactCache():
 
         self._local = False
         self.cache_size = None
+        self.cache_quota = None
+        self.cache_lower_threshold = None
 
         os.makedirs(self.extractdir, exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
@@ -227,7 +228,7 @@ class ArtifactCache():
     def clean(self):
         artifacts = self.list_artifacts()
 
-        while self.calculate_cache_size() >= self.context.cache_quota - self.context.cache_lower_threshold:
+        while self.calculate_cache_size() >= self.cache_quota - self.cache_lower_threshold:
             try:
                 to_remove = artifacts.pop(0)
             except IndexError:
@@ -241,7 +242,7 @@ class ArtifactCache():
                           "Please increase the cache-quota in {}."
                           .format(self.context.config_origin or default_conf))
 
-                if self.calculate_cache_size() > self.context.cache_quota:
+                if self.calculate_cache_size() > self.cache_quota:
                     raise ArtifactError("Cache too full. Aborting.",
                                         detail=detail,
                                         reason="cache-too-full")
@@ -550,6 +551,66 @@ class ArtifactCache():
     #
     def _set_cache_size(self, cache_size):
         self.estimated_size = cache_size
+
+    def _calculate_cache_quota(self):
+        # Headroom intended to give BuildStream a bit of leeway.
+        # This acts as the minimum size of cache_quota and also
+        # is taken from the user requested cache_quota.
+        #
+        if 'BST_TEST_SUITE' in os.environ:
+            headroom = 0
+        else:
+            headroom = 2e9
+
+        artifactdir_volume = self.context.artifactdir
+        while not os.path.exists(artifactdir_volume):
+            artifactdir_volume = os.path.dirname(artifactdir_volume)
+
+        try:
+            cache_quota = utils._parse_size(self.context.config_cache_quota, artifactdir_volume)
+        except utils.UtilError as e:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
+                            "\nValid values are, for example: 800M 10G 1T 50%\n"
+                            .format(str(e))) from e
+
+        stat = os.statvfs(artifactdir_volume)
+        available_space = (stat.f_bsize * stat.f_bavail)
+
+        cache_size = self.calculate_cache_size()
+
+        # Ensure system has enough storage for the cache_quota
+        #
+        # If cache_quota is none, set it to the maximum it could possibly be.
+        #
+        # Also check that cache_quota is atleast as large as our headroom.
+        #
+        if cache_quota is None:  # Infinity, set to max system storage
+            cache_quota = cache_size + available_space
+        if cache_quota < headroom:  # Check minimum
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
+                            "BuildStream requires a minimum cache quota of 2G.")
+        elif cache_quota > cache_size + available_space:  # Check maximum
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            ("Your system does not have enough available " +
+                             "space to support the cache quota specified.\n" +
+                             "You currently have:\n" +
+                             "- {used} of cache in use at {local_cache_path}\n" +
+                             "- {available} of available system storage").format(
+                                 used=utils._pretty_size(cache_size),
+                                 local_cache_path=self.context.artifactdir,
+                                 available=utils._pretty_size(available_space)))
+
+        # Place a slight headroom (2e9 (2GB) on the cache_quota) into
+        # cache_quota to try and avoid exceptions.
+        #
+        # Of course, we might still end up running out during a build
+        # if we end up writing more than 2G, but hey, this stuff is
+        # already really fuzzy.
+        #
+        self.cache_quota = cache_quota - headroom
+        self.cache_lower_threshold = self.cache_quota / 2
 
 
 # _configured_remote_artifact_cache_specs():

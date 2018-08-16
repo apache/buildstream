@@ -198,12 +198,10 @@ class App():
             option_value = self._main_options.get(cli_option)
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
-
-        Platform.create_instance(self.context)
-
-        platform = Platform.get_platform()
-        cache_size = platform._artifact_cache.calculate_cache_size()
-        self.context.set_cache_quota(cache_size)
+        try:
+            Platform.create_instance(self.context)
+        except BstError as e:
+            self._error_exit(e, "Error instantiating platform")
 
         # Create the logger right before setting the message handler
         self.logger = LogLine(self.context,

@@ -61,6 +61,8 @@ class CASCache(ArtifactCache):
         os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
 
+        self._calculate_cache_quota()
+
         self._enable_push = enable_push
 
         # Per-project list of _CASRemote instances.
@@ -330,7 +332,7 @@ class CASCache(ArtifactCache):
                                     request.write_offset = offset
                                     # max. 64 kB chunks
                                     request.data = f.read(chunk_size)
-                                    request.resource_name = resource_name
+                                    request.resource_name = resource_name  # pylint: disable=cell-var-from-loop
                                     request.finish_write = remaining <= 0
                                     yield request
                                     offset += chunk_size
