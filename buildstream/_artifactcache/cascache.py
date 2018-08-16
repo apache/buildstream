@@ -25,6 +25,7 @@ import signal
 import stat
 import tempfile
 import uuid
+import errno
 from urllib.parse import urlparse
 
 import grpc
@@ -82,7 +83,8 @@ class CASCache(ArtifactCache):
 
         tree = self.resolve_ref(ref, update_mtime=True)
 
-        dest = os.path.join(self.extractdir, element._get_project().name, element.normal_name, tree.hash)
+        dest = os.path.join(self.extractdir, element._get_project().name,
+                            element.normal_name, tree.hash)
         if os.path.isdir(dest):
             # artifact has already been extracted
             return dest
@@ -100,7 +102,7 @@ class CASCache(ArtifactCache):
                 #
                 # If rename fails with these errors, another process beat
                 # us to it so just ignore.
-                if e.errno not in [os.errno.ENOTEMPTY, os.errno.EEXIST]:
+                if e.errno not in [errno.ENOTEMPTY, errno.EEXIST]:
                     raise ArtifactError("Failed to extract artifact for ref '{}': {}"
                                         .format(ref, e)) from e
 
