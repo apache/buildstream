@@ -358,10 +358,15 @@ class Pipeline():
                     inconsistent.append(element)
 
         if inconsistent:
-            detail = "Exact versions are missing for the following elements\n" + \
-                     "Try tracking these elements first with `bst track`\n\n"
+            detail = "Exact versions are missing for the following elements:\n\n"
             for element in inconsistent:
-                detail += "  " + element._get_full_name() + "\n"
+                detail += "  Element: {} is inconsistent\n".format(element._get_full_name())
+                for source in element.sources():
+                    if source._get_consistency() == Consistency.INCONSISTENT:
+                        detail += "    Source {} is missing ref\n".format(source)
+                detail += '\n'
+            detail += "Try tracking these elements first with `bst track`\n"
+
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 
     #############################################################

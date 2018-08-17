@@ -73,6 +73,12 @@ class OSTreeSource(Source):
         self.mirror = os.path.join(self.get_mirror_directory(),
                                    utils.url_directory_name(self.original_url))
 
+        # At this point we now know if the source has a ref and/or a track.
+        # If it is missing both then we will be unable to track or build.
+        if self.ref is None and self.tracking is None:
+            raise SourceError("{}: OSTree sources require a ref and/or track".format(self),
+                              reason="missing-track-and-ref")
+
         # (optional) Not all repos are signed. But if they are, get the gpg key
         self.gpg_key_path = None
         if self.node_get_member(node, str, 'gpg-key', None):

@@ -1,3 +1,25 @@
+#
+#  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2018 Bloomberg Finance LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors: Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#           Jonathan Maw <jonathan.maw@codethink.co.uk>
+#           William Salmon <will.salmon@codethink.co.uk>
+#
+
 import os
 import pytest
 
@@ -359,3 +381,30 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
 
     # Assert that we are just fine without it, and emit a warning to the user.
     assert "Ignoring inconsistent submodule" in result.stderr
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project, 'repofiles'))
+
+    # Write out our test target
+    gitsource = repo.source_config(ref=None)
+    gitsource.pop('track')
+    element = {
+        'kind': 'import',
+        'sources': [
+            gitsource
+        ]
+    }
+
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    # Track will encounter an inconsistent submodule without any ref
+    result = cli.run(project=project, args=['show', 'target.bst'])
+    result.assert_main_error(ErrorDomain.SOURCE, "missing-track-and-ref")
+    result.assert_task_error(None, None)
