@@ -250,6 +250,12 @@ class Element(Plugin):
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(meta)
 
+        # Extract remote execution URL
+        if not self.__is_junction:
+            self.__remote_execution_url = project.remote_execution_url
+        else:
+            self.__remote_execution_url = None
+
     def __lt__(self, other):
         return self.name < other.name
 
