@@ -28,6 +28,9 @@ from .. import utils
 from .. import _yaml
 
 
+CACHE_SIZE_FILE = "cache_size"
+
+
 # An ArtifactCacheSpec holds the user configuration for a single remote
 # artifact cache.
 #
@@ -283,7 +286,11 @@ class ArtifactCache():
         # If we don't currently have an estimate, figure out the real
         # cache size.
         if self.estimated_size is None:
-            self.estimated_size = self.calculate_cache_size()
+            stored_size = self._read_cache_size()
+            if stored_size is not None:
+                self.estimated_size = stored_size
+            else:
+                self.estimated_size = self.calculate_cache_size()
 
         return self.estimated_size
 
@@ -542,6 +549,7 @@ class ArtifactCache():
             self.estimated_size = self.calculate_cache_size()
 
         self.estimated_size += artifact_size
+        self._write_cache_size(self.estimated_size)
 
     # _set_cache_size()
     #
@@ -552,6 +560,49 @@ class ArtifactCache():
     def _set_cache_size(self, cache_size):
         self.estimated_size = cache_size
 
+        # set_cache_size is called in cleanup, where it may set the cache to None
+        if self.estimated_size is not None:
+            self._write_cache_size(self.estimated_size)
+
+    # _write_cache_size()
+    #
+    # Writes the given size of the artifact to the cache's size file
+    #
+    def _write_cache_size(self, size):
+        assert isinstance(size, int)
+        size_file_path = os.path.join(self.context.artifactdir, CACHE_SIZE_FILE)
+        with open(size_file_path, "w") as f:
+            f.write(str(size))
+
+    # _read_cache_size()
+    #
+    # Reads and returns the size of the artifact cache that's stored in the
+    # cache's size file
+    #
+    def _read_cache_size(self):
+        size_file_path = os.path.join(self.context.artifactdir, CACHE_SIZE_FILE)
+
+        if not os.path.exists(size_file_path):
+            return None
+
+        with open(size_file_path, "r") as f:
+            size = f.read()
+
+        try:
+            num_size = int(size)
+        except ValueError as e:
+            raise ArtifactError("Size '{}' parsed from '{}' was not an integer".format(
+                size, size_file_path)) from e
+
+        return num_size
+
+    # _calculate_cache_quota()
+    #
+    # Calculates and sets the cache quota and lower threshold based on the
+    # quota set in Context.
+    # It checks that the quota is both a valid expression, and that there is
+    # enough disk space to satisfy that quota
+    #
     def _calculate_cache_quota(self):
         # Headroom intended to give BuildStream a bit of leeway.
         # This acts as the minimum size of cache_quota and also
@@ -577,7 +628,7 @@ class ArtifactCache():
         stat = os.statvfs(artifactdir_volume)
         available_space = (stat.f_bsize * stat.f_bavail)
 
-        cache_size = self.calculate_cache_size()
+        cache_size = self.get_approximate_cache_size()
 
         # Ensure system has enough storage for the cache_quota
         #
