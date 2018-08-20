@@ -171,6 +171,29 @@ def get_args(cls, dist, header=None):
 ScriptWriter.get_args = get_args
 
 
+class ShowVersions(Command):
+    description = 'show package versions used'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import io
+        out = io.StringIO()
+        out.write("Install dependencies:\n")
+        for r in self.distribution.fetch_build_eggs(self.distribution.install_requires):
+            out.write("  {}\n".format(r))
+        out.write("\n")
+        out.write("Test dependencies:\n")
+        for r in self.distribution.fetch_build_eggs(self.distribution.tests_require):
+            out.write("  {}\n".format(r))
+        print(out.getvalue())
+
+
 #####################################################
 #         gRPC command for code generation          #
 #####################################################
@@ -220,6 +243,7 @@ class BuildGRPC(Command):
 def get_cmdclass():
     cmdclass = {
         'build_grpc': BuildGRPC,
+        'show': ShowVersions,
     }
     cmdclass.update(versioneer.get_cmdclass())
     return cmdclass
