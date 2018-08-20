@@ -235,6 +235,9 @@ class Pipeline():
     #                       exceptions removed
     #
     def except_elements(self, targets, elements, except_targets):
+        if not except_targets:
+            return elements
+
         targeted = list(self.dependencies(targets, Scope.ALL))
         visited = []
 
