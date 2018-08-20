@@ -64,12 +64,6 @@ class Context():
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = []
 
-        # The artifact cache quota
-        self.cache_quota = None
-
-        # The lower threshold to which we aim to reduce the cache size
-        self.cache_lower_threshold = None
-
         # The directory to store build logs
         self.logdir = None
 
@@ -124,6 +118,8 @@ class Context():
         self._workspaces = None
         self._log_handle = None
         self._log_filename = None
+        self.config_cache_quota = 'infinity'
+        self.artifactdir_volume = None
 
     # load()
     #
@@ -183,71 +179,7 @@ class Context():
         cache = _yaml.node_get(defaults, Mapping, 'cache')
         _yaml.node_validate(cache, ['quota'])
 
-        artifactdir_volume = self.artifactdir
-        while not os.path.exists(artifactdir_volume):
-            artifactdir_volume = os.path.dirname(artifactdir_volume)
-
-        # We read and parse the cache quota as specified by the user
-        cache_quota = _yaml.node_get(cache, str, 'quota', default_value='infinity')
-        try:
-            cache_quota = utils._parse_size(cache_quota, artifactdir_volume)
-        except utils.UtilError as e:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
-                            "\nValid values are, for example: 800M 10G 1T 50%\n"
-                            .format(str(e))) from e
-
-        # Headroom intended to give BuildStream a bit of leeway.
-        # This acts as the minimum size of cache_quota and also
-        # is taken from the user requested cache_quota.
-        #
-        if 'BST_TEST_SUITE' in os.environ:
-            headroom = 0
-        else:
-            headroom = 2e9
-
-        stat = os.statvfs(artifactdir_volume)
-        available_space = (stat.f_bsize * stat.f_bavail)
-
-        # Again, the artifact directory may not yet have been created yet
-        #
-        if not os.path.exists(self.artifactdir):
-            cache_size = 0
-        else:
-            cache_size = utils._get_dir_size(self.artifactdir)
-
-        # Ensure system has enough storage for the cache_quota
-        #
-        # If cache_quota is none, set it to the maximum it could possibly be.
-        #
-        # Also check that cache_quota is atleast as large as our headroom.
-        #
-        if cache_quota is None:  # Infinity, set to max system storage
-            cache_quota = cache_size + available_space
-        if cache_quota < headroom:  # Check minimum
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
-                            "BuildStream requires a minimum cache quota of 2G.")
-        elif cache_quota > cache_size + available_space:  # Check maximum
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            ("Your system does not have enough available " +
-                             "space to support the cache quota specified.\n" +
-                             "You currently have:\n" +
-                             "- {used} of cache in use at {local_cache_path}\n" +
-                             "- {available} of available system storage").format(
-                                 used=utils._pretty_size(cache_size),
-                                 local_cache_path=self.artifactdir,
-                                 available=utils._pretty_size(available_space)))
-
-        # Place a slight headroom (2e9 (2GB) on the cache_quota) into
-        # cache_quota to try and avoid exceptions.
-        #
-        # Of course, we might still end up running out during a build
-        # if we end up writing more than 2G, but hey, this stuff is
-        # already really fuzzy.
-        #
-        self.cache_quota = cache_quota - headroom
-        self.cache_lower_threshold = self.cache_quota / 2
+        self.config_cache_quota = _yaml.node_get(cache, str, 'quota', default_value='infinity')
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)

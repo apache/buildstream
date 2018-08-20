@@ -29,6 +29,7 @@ from contextlib import contextmanager
 # Local imports
 from .resources import Resources, ResourceType
 from .jobs import CacheSizeJob, CleanupJob
+from .._platform import Platform
 
 
 # A decent return code for Scheduler.run()
@@ -316,7 +317,8 @@ class Scheduler():
         self._sched()
 
     def _run_cleanup(self, cache_size):
-        if cache_size and cache_size < self.context.cache_quota:
+        platform = Platform.get_platform()
+        if cache_size and cache_size < platform.artifactcache.cache_quota:
             return
 
         job = CleanupJob(self, 'cleanup', 'cleanup',
