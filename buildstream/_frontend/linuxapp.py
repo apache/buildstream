@@ -22,12 +22,43 @@ import click
 from .app import App
 
 
+# This trick is currently only supported on some terminals,
+# avoid using it where it can cause garbage to be printed
+# to the terminal.
+#
+def _osc_777_supported():
+
+    term = os.environ['TERM']
+
+    if term.startswith('xterm') or term.startswith('vte'):
+
+        # Since vte version 4600, upstream silently ignores
+        # the OSC 777 without printing garbage to the terminal.
+        #
+        # For distros like Fedora who have patched vte, this
+        # will trigger a desktop notification and bring attention
+        # to the terminal.
+        #
+        vte_version = os.environ['VTE_VERSION']
+        try:
+            vte_version_int = int(vte_version)
+        except ValueError:
+            return False
+
+        if vte_version_int >= 4600:
+            return True
+
+    return False
+
+
 # A linux specific App implementation
 #
 class LinuxApp(App):
 
     def notify(self, title, text):
 
-        term = os.environ['TERM']
-        if term in ('xterm', 'vte'):
-            click.echo("\033]777;notify;{};{}\007".format(title, text))
+        # Currently we only try this notification method
+        # of sending an escape sequence to the terminal
+        #
+        if _osc_777_supported():
+            click.echo("\033]777;notify;{};{}\007".format(title, text), err=True)
