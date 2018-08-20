@@ -6,6 +6,9 @@ from buildstream import _yaml, ElementError
 from buildstream._exceptions import LoadError, LoadErrorReason
 from tests.testutils import cli, create_repo
 from tests.testutils.site import HAVE_GIT
+from tests.testutils.site import IS_LINUX, NO_FUSE
+
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 
 DATA_DIR = os.path.join(

@@ -5,12 +5,14 @@ from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 
 from tests.testutils import cli, create_repo
-from tests.testutils.site import HAVE_GIT
+from tests.testutils.site import HAVE_GIT, IS_LINUX, NO_FUSE
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'git',
 )
+
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")

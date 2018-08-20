@@ -6,6 +6,7 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 from tests.testutils import cli, create_element_size
+from tests.testutils.site import IS_LINUX, NO_FUSE
 
 
 DATA_DIR = os.path.join(
@@ -16,6 +17,7 @@ DATA_DIR = os.path.join(
 
 # Ensure that the cache successfully removes an old artifact if we do
 # not have enough space left.
+@pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_expires(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -52,6 +54,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 
 # Ensure that we don't end up deleting the whole cache (or worse) if
 # we try to store an artifact that is too large to fit in the quota.
+@pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 @pytest.mark.parametrize('size', [
     # Test an artifact that is obviously too large
     (500000),
@@ -76,6 +79,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
     res.assert_main_error(ErrorDomain.STREAM, None)
 
 
+@pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 @pytest.mark.datafiles(DATA_DIR)
 def test_expiry_order(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -130,6 +134,7 @@ def test_expiry_order(cli, datafiles, tmpdir):
 # Ensure that we don't accidentally remove an artifact from something
 # in the current build pipeline, because that would be embarassing,
 # wouldn't it?
+@pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 @pytest.mark.datafiles(DATA_DIR)
 def test_keep_dependencies(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -175,6 +180,7 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
 
 
 # Assert that we never delete a dependency required for a build tree
+@pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 @pytest.mark.datafiles(DATA_DIR)
 def test_never_delete_dependencies(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -221,6 +227,7 @@ def test_never_delete_dependencies(cli, datafiles, tmpdir):
 
 # Ensure that only valid cache quotas make it through the loading
 # process.
+@pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 @pytest.mark.parametrize("quota,success", [
     ("1", True),
     ("1K", True),

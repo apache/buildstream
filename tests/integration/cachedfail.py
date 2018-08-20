@@ -5,11 +5,10 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 
 from tests.testutils import cli_integration as cli, create_artifact_share
-from tests.testutils.site import IS_LINUX
-
+from tests.testutils.site import IS_LINUX, NO_FUSE
 
 pytestmark = pytest.mark.integration
-
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

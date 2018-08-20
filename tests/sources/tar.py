@@ -7,13 +7,14 @@ import subprocess
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from tests.testutils import cli
-from tests.testutils.site import HAVE_LZIP
+from tests.testutils.site import HAVE_LZIP, IS_LINUX, NO_FUSE
 from . import list_dir_contents
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'tar',
 )
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 
 def _assemble_tar(workingdir, srcdir, dstfile):

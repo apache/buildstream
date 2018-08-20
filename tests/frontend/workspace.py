@@ -4,11 +4,13 @@ import shutil
 import subprocess
 from ruamel.yaml.comments import CommentedSet
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS
+from tests.testutils.site import IS_LINUX, NO_FUSE
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
 
 # Project directory

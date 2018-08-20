@@ -1,6 +1,10 @@
 import os
+import pytest
 from tests.testutils import cli, create_repo
+from tests.testutils.site import IS_LINUX, NO_FUSE
 from buildstream import _yaml
+
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 
 def prepare_junction_project(cli, tmpdir):

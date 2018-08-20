@@ -3,10 +3,11 @@ import pytest
 
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import assert_contains
-from tests.testutils.site import IS_LINUX
-
+from tests.testutils.site import IS_LINUX, NO_FUSE
 
 pytestmark = pytest.mark.integration
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
+
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..', '..', 'doc', 'examples', 'integration-commands'
 )

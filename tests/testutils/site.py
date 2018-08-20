@@ -49,3 +49,4 @@ except ImportError:
     HAVE_ARPY = False
 
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
+NO_FUSE = not os.path.exists('/dev/fuse')

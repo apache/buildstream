@@ -1,11 +1,14 @@
 import os
 import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
+from tests.testutils.site import IS_LINUX, NO_FUSE
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 from . import configure_project
+
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))

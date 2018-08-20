@@ -1,8 +1,11 @@
 import os
 import pytest
 from tests.testutils.runcli import cli
+from tests.testutils.site import IS_LINUX, NO_FUSE
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
+
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 # Project directory
 DATA_DIR = os.path.join(

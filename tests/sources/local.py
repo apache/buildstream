@@ -3,11 +3,13 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils import cli, filetypegenerator
+from tests.testutils.site import IS_LINUX, NO_FUSE
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'local',
 )
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))

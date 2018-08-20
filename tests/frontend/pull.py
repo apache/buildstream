@@ -2,7 +2,9 @@ import os
 import shutil
 import pytest
 from tests.testutils import cli, create_artifact_share, generate_junction
+from tests.testutils.site import IS_LINUX, NO_FUSE
 
+pytestmark = pytest.mark.skipif(IS_LINUX and NO_FUSE, reason='FUSE not supported on this system')
 
 # Project directory
 DATA_DIR = os.path.join(
