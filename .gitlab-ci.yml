@@ -66,6 +66,9 @@ source_dist:
   - chown -R buildstream:buildstream buildstream
   - cd buildstream
 
+  # Install the pinned dev-requirements.txt
+  - pip3 install -r dev-requirements.txt
+
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
   - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
@@ -114,6 +117,9 @@ tests-unix:
 
     # Unpack and get into dist/buildstream
     - cd dist && ./unpack.sh && cd buildstream
+
+    # Install the pinned dev-requirements.txt
+    - pip3 install -r dev-requirements.txt
 
     # Since the unix platform is required to run as root, no user change required
     - python3 setup.py test --index-url invalid://uri --addopts --integration
@@ -207,6 +213,7 @@ coverage:
   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
     - cd dist && ./unpack.sh && cd buildstream
+    - pip3 install -r dev-requirements.txt
     - pip3 install --no-index .
     - mkdir report
     - cd report

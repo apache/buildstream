@@ -1,10 +1,10 @@
 coverage == 4.4.0
-pep8
+pep8 == 1.7.1
 pytest == 3.7.1
 pylint == 2.1.1
 pytest-cov >= 2.5.0
-pytest-datafiles
-pytest-env
-pytest-pep8
-pytest-pylint
-pytest-xdist
+pytest-datafiles == 1.0
+pytest-env == 0.6.2
+pytest-pep8 == 1.0.6
+pytest-pylint == 0.12.1
+pytest-xdist == 1.22.5
