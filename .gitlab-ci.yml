@@ -76,6 +76,7 @@ source_dist:
   - chown -R buildstream:buildstream buildstream
   - cd buildstream
 
+  - su buildstream -c 'python3 setup.py show'
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
   - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
