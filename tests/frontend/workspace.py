@@ -767,3 +767,16 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     # Check that workspace config is converted correctly if necessary
     loaded_config = _yaml.node_sanitize(_yaml.load(workspace_config_path))
     assert loaded_config == parse_dict_as_yaml(expected)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", repo_kinds)
+def test_inconsitent_pipeline_message(cli, tmpdir, datafiles, kind):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+
+    shutil.rmtree(workspace)
+
+    result = cli.run(project=project, args=[
+        'build', element_name
+    ])
+    result.assert_main_error(ErrorDomain.PIPELINE, "inconsistent-pipeline-workspaced")
