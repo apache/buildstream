@@ -39,7 +39,8 @@ def create_compose_element(name, path, config={}):
     # Test flat inclusion
     ([], [], ['/usr', '/usr/lib', '/usr/bin',
               '/usr/share', '/usr/lib/debug',
-              '/usr/lib/debug/hello', '/usr/bin/hello',
+              '/usr/lib/debug/usr', '/usr/lib/debug/usr/bin',
+              '/usr/lib/debug/usr/bin/hello', '/usr/bin/hello',
               '/usr/share/doc', '/usr/share/doc/amhello',
               '/usr/share/doc/amhello/README',
               '/tests', '/tests/test']),
@@ -53,13 +54,17 @@ def create_compose_element(name, path, config={}):
                               '/usr/share/doc/amhello/README']),
     # Test with only runtime excluded
     ([], ['runtime'], ['/usr', '/usr/lib', '/usr/share',
-                       '/usr/lib/debug', '/usr/lib/debug/hello',
+                       '/usr/lib/debug', '/usr/lib/debug/usr',
+                       '/usr/lib/debug/usr/bin',
+                       '/usr/lib/debug/usr/bin/hello',
                        '/usr/share/doc', '/usr/share/doc/amhello',
                        '/usr/share/doc/amhello/README',
                        '/tests', '/tests/test']),
     # Test with runtime and doc excluded
     ([], ['runtime', 'doc'], ['/usr', '/usr/lib', '/usr/share',
-                              '/usr/lib/debug', '/usr/lib/debug/hello',
+                              '/usr/lib/debug', '/usr/lib/debug/usr',
+                              '/usr/lib/debug/usr/bin',
+                              '/usr/lib/debug/usr/bin/hello',
                               '/tests', '/tests/test']),
     # Test with runtime simultaneously in- and excluded
     (['runtime'], ['runtime'], ['/usr', '/usr/lib', '/usr/share']),
@@ -72,7 +77,8 @@ def create_compose_element(name, path, config={}):
     # Test excluding a custom 'test' domain
     ([], ['test'], ['/usr', '/usr/lib', '/usr/bin',
                     '/usr/share', '/usr/lib/debug',
-                    '/usr/lib/debug/hello', '/usr/bin/hello',
+                    '/usr/lib/debug/usr', '/usr/lib/debug/usr/bin',
+                    '/usr/lib/debug/usr/bin/hello', '/usr/bin/hello',
                     '/usr/share/doc', '/usr/share/doc/amhello',
                     '/usr/share/doc/amhello/README'])
 ])

@@ -27,7 +27,9 @@ def test_cmake_build(cli, tmpdir, datafiles):
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello',
-                               '/usr/lib/debug', '/usr/lib/debug/hello'])
+                               '/usr/lib/debug', '/usr/lib/debug/usr',
+                               '/usr/lib/debug/usr/bin',
+                               '/usr/lib/debug/usr/bin/hello'])
 
 
 @pytest.mark.datafiles(DATA_DIR)
