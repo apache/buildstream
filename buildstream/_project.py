@@ -19,6 +19,7 @@
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 import os
+import hashlib
 from collections import Mapping, OrderedDict
 from pluginbase import PluginBase
 from . import utils
