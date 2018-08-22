@@ -355,6 +355,7 @@ def get_config_from_root(root):
     cfg.versionfile_source = get(parser, "versionfile_source")
     cfg.versionfile_build = get(parser, "versionfile_build")
     cfg.tag_prefix = get(parser, "tag_prefix")
+    cfg.tag_regex = get(parser, "tag_regex") or "*"
     if cfg.tag_prefix in ("''", '""'):
         cfg.tag_prefix = ""
     cfg.parentdir_prefix = get(parser, "parentdir_prefix")
@@ -463,6 +464,7 @@ def get_config():
     cfg.VCS = "git"
     cfg.style = "%(STYLE)s"
     cfg.tag_prefix = "%(TAG_PREFIX)s"
+    cfg.tag_regex = "%(TAG_REGEX)s"
     cfg.parentdir_prefix = "%(PARENTDIR_PREFIX)s"
     cfg.versionfile_source = "%(VERSIONFILE_SOURCE)s"
     cfg.verbose = False
@@ -635,7 +637,7 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose):
 
 
 @register_vcs_handler("git", "pieces_from_vcs")
-def git_pieces_from_vcs(tag_prefix, root, verbose, run_command=run_command):
+def git_pieces_from_vcs(tag_prefix, tag_regex, root, verbose, run_command=run_command):
     """Get version from 'git describe' in the root of the source tree.
 
     This only gets called if the git-archive 'subst' keywords were *not*
@@ -657,7 +659,7 @@ def git_pieces_from_vcs(tag_prefix, root, verbose, run_command=run_command):
     # if there isn't one, this yields HEX[-dirty] (no NUM)
     describe_out, rc = run_command(GITS, ["describe", "--tags", "--dirty",
                                           "--always", "--long",
-                                          "--match", "%%s*" %% tag_prefix],
+                                          "--match", "%%s%%s" %% (tag_prefix, tag_regex)],
                                    cwd=root)
     # --long was added in git-1.5.5
     if describe_out is None:
@@ -925,7 +927,7 @@ def get_versions():
                 "date": None}
 
     try:
-        pieces = git_pieces_from_vcs(cfg.tag_prefix, root, verbose)
+        pieces = git_pieces_from_vcs(cfg.tag_prefix, cfg.tag_regex, root, verbose)
         return render(pieces, cfg.style)
     except NotThisMethod:
         pass
@@ -1027,7 +1029,7 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose):
 
 
 @register_vcs_handler("git", "pieces_from_vcs")
-def git_pieces_from_vcs(tag_prefix, root, verbose, run_command=run_command):
+def git_pieces_from_vcs(tag_prefix, tag_regex, root, verbose, run_command=run_command):
     """Get version from 'git describe' in the root of the source tree.
 
     This only gets called if the git-archive 'subst' keywords were *not*
@@ -1049,7 +1051,7 @@ def git_pieces_from_vcs(tag_prefix, root, verbose, run_command=run_command):
     # if there isn't one, this yields HEX[-dirty] (no NUM)
     describe_out, rc = run_command(GITS, ["describe", "--tags", "--dirty",
                                           "--always", "--long",
-                                          "--match", "%s*" % tag_prefix],
+                                          "--match", "%s%s" % (tag_prefix, tag_regex)],
                                    cwd=root)
     # --long was added in git-1.5.5
     if describe_out is None:
@@ -1451,7 +1453,7 @@ def get_versions(verbose=False):
     from_vcs_f = handlers.get("pieces_from_vcs")
     if from_vcs_f:
         try:
-            pieces = from_vcs_f(cfg.tag_prefix, root, verbose)
+            pieces = from_vcs_f(cfg.tag_prefix, cfg.tag_regex, root, verbose)
             ver = render(pieces, cfg.style)
             if verbose:
                 print("got version from VCS %s" % ver)
@@ -1586,6 +1588,7 @@ def get_cmdclass():
                             {"DOLLAR": "$",
                              "STYLE": cfg.style,
                              "TAG_PREFIX": cfg.tag_prefix,
+                             "TAG_REGEX": cfg.tag_regex,
                              "PARENTDIR_PREFIX": cfg.parentdir_prefix,
                              "VERSIONFILE_SOURCE": cfg.versionfile_source,
                              })
@@ -1615,6 +1618,7 @@ def get_cmdclass():
                             {"DOLLAR": "$",
                              "STYLE": cfg.style,
                              "TAG_PREFIX": cfg.tag_prefix,
+                             "TAG_REGEX": cfg.tag_regex,
                              "PARENTDIR_PREFIX": cfg.parentdir_prefix,
                              "VERSIONFILE_SOURCE": cfg.versionfile_source,
                              })
@@ -1716,6 +1720,7 @@ def do_setup():
         f.write(LONG % {"DOLLAR": "$",
                         "STYLE": cfg.style,
                         "TAG_PREFIX": cfg.tag_prefix,
+                        "TAG_REGEX": cfg.tag_regex,
                         "PARENTDIR_PREFIX": cfg.parentdir_prefix,
                         "VERSIONFILE_SOURCE": cfg.versionfile_source,
                         })
