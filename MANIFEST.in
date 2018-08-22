@@ -23,4 +23,4 @@ recursive-include tests *.expected
 recursive-include buildstream/_protos *.proto
 
 # Requirements files
-dev-requirements.txt
+include dev-requirements.txt
