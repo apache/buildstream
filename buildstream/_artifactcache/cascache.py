@@ -24,6 +24,7 @@ import os
 import signal
 import stat
 import tempfile
+import uuid
 import errno
 from urllib.parse import urlparse
 
@@ -315,8 +316,11 @@ class CASCache(ArtifactCache):
                     # Upload any blobs missing on the server
                     skipped_remote = False
                     for digest in missing_blobs.values():
-                        def request_stream():
-                            resource_name = os.path.join(digest.hash, str(digest.size_bytes))
+                        uuid_ = uuid.uuid4()
+                        resource_name = '/'.join(['uploads', str(uuid_), 'blobs',
+                                                  digest.hash, str(digest.size_bytes)])
+
+                        def request_stream(resname):
                             with open(self.objpath(digest), 'rb') as f:
                                 assert os.fstat(f.fileno()).st_size == digest.size_bytes
                                 offset = 0
@@ -330,12 +334,12 @@ class CASCache(ArtifactCache):
                                     request.write_offset = offset
                                     # max. 64 kB chunks
                                     request.data = f.read(chunk_size)
-                                    request.resource_name = resource_name  # pylint: disable=cell-var-from-loop
+                                    request.resource_name = resname
                                     request.finish_write = remaining <= 0
                                     yield request
                                     offset += chunk_size
                                     finished = request.finish_write
-                        response = remote.bytestream.Write(request_stream())
+                        response = remote.bytestream.Write(request_stream(resource_name))
 
                     request = buildstream_pb2.UpdateReferenceRequest()
                     request.keys.append(ref)
@@ -772,7 +776,7 @@ class CASCache(ArtifactCache):
             yield from self._required_blobs(dirnode.digest)
 
     def _fetch_blob(self, remote, digest, out):
-        resource_name = os.path.join(digest.hash, str(digest.size_bytes))
+        resource_name = '/'.join(['blobs', digest.hash, str(digest.size_bytes)])
         request = bytestream_pb2.ReadRequest()
         request.resource_name = resource_name
         request.read_offset = 0
