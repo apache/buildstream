@@ -6,6 +6,11 @@ buildstream 1.1.7
 
     Artifact servers need to be updated.
 
+  o Improved startup performance and performance of
+    calculating artifact cache size
+
+  o Various other bug fixes
+
 
 =================
 buildstream 1.1.6
