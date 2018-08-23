@@ -78,7 +78,7 @@ source_dist:
 
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts "--integration --durations=0"'
+  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts "--integration --durations=0 -s"'
 
   # Go back to the toplevel and collect our reports
   - cd ../..
@@ -132,7 +132,7 @@ tests-unix:
     - cd dist && ./unpack.sh && cd buildstream
 
     # Since the unix platform is required to run as root, no user change required
-    - python3 setup.py test --index-url invalid://uri --addopts "--integration --durations=0"
+    - python3 setup.py test --index-url invalid://uri --addopts "--durations=0 -s"
 
     # Go back to the toplevel and collect our reports
     - cd ../..
