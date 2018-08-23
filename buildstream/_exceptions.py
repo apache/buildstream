@@ -217,6 +217,9 @@ class LoadErrorReason(Enum):
     # A recursive include has been encountered.
     RECURSIVE_INCLUDE = 21
 
+    # A recursive variable has been encountered
+    RECURSIVE_VARIABLE = 22
+
 
 # LoadError
 #
