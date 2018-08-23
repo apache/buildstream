@@ -1,10 +1,5 @@
 About
 -----
-.. image:: https://gitlab.com/BuildStream/buildstream/badges/master/pipeline.svg
-   :target: https://gitlab.com/BuildStream/buildstream/commits/master
-
-.. image:: https://gitlab.com/BuildStream/buildstream/badges/master/coverage.svg?job=coverage
-   :target: https://gitlab.com/BuildStream/buildstream/commits/master
 
 
 What is BuildStream?
