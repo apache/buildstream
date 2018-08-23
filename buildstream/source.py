@@ -481,19 +481,6 @@ class Source(Plugin):
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def get_mirror_directory(self):
-        """Fetches the directory where this source should store things
-
-        Returns:
-           (str): The directory belonging to this source
-        """
-
-        # Create the directory if it doesnt exist
-        context = self._get_context()
-        directory = os.path.join(context.sourcedir, self.get_kind())
-        os.makedirs(directory, exist_ok=True)
-        return directory
-
     def translate_url(self, url, *, alias_override=None):
         """Translates the given url which may be specified with an alias
         into a fully qualified url.

@@ -287,6 +287,19 @@ class Plugin():
         """
         return self.__kind
 
+    def get_mirror_directory(self):
+        """Fetches the directory where this plugin should store things
+
+        Returns:
+           (str): The directory belonging to this plugin
+        """
+
+        # Create the directory if it doesnt exist
+        context = self._get_context()
+        directory = os.path.join(context.sourcedir, self.get_kind())
+        os.makedirs(directory, exist_ok=True)
+        return directory
+
     def node_items(self, node):
         """Iterate over a dictionary loaded from YAML
 
