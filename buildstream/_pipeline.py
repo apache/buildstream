@@ -355,10 +355,14 @@ class Pipeline():
     #
     def assert_consistent(self, elements):
         inconsistent = []
+        inconsistent_workspaced = []
         with self._context.timed_activity("Checking sources"):
             for element in elements:
                 if element._get_consistency() == Consistency.INCONSISTENT:
-                    inconsistent.append(element)
+                    if element._get_workspace():
+                        inconsistent_workspaced.append(element)
+                    else:
+                        inconsistent.append(element)
 
         if inconsistent:
             detail = "Exact versions are missing for the following elements:\n\n"
@@ -371,6 +375,13 @@ class Pipeline():
             detail += "Try tracking these elements first with `bst track`\n"
 
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
+
+        if inconsistent_workspaced:
+            detail = "Some workspaces do not exist but are not closed\n" + \
+                     "Try closing them with `bst workspace close`\n\n"
+            for element in inconsistent_workspaced:
+                detail += "  " + element._get_full_name() + "\n"
+            raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline-workspaced")
 
     #############################################################
     #                     Private Methods                       #
