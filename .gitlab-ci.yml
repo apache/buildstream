@@ -70,6 +70,7 @@ source_dist:
   - chown -R buildstream:buildstream .
 
   - export INTEGRATION_CACHE="$(pwd)/cache/integration-cache"
+  - ls -l cache/
 
   # Unpack and get into dist/buildstream
   - cd dist && ./unpack.sh
