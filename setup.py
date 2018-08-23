@@ -25,7 +25,14 @@ import subprocess
 import sys
 import versioneer
 
-if sys.version_info[0] != 3 or sys.version_info[1] < 5:
+
+##################################################################
+# Python requirements
+##################################################################
+REQUIRED_PYTHON_MAJOR = 3
+REQUIRED_PYTHON_MINOR = 5
+
+if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRED_PYTHON_MINOR:
     print("BuildStream requires Python >= 3.5")
     sys.exit(1)
 
@@ -242,11 +249,28 @@ setup(name='BuildStream',
 
       author='BuildStream Developers',
       author_email='buildstream-list@gnome.org',
+      classifiers=[
+          'Environment :: Console',
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
+          'Operating System :: POSIX',
+          'Programming Language :: Python :: 3',
+          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Topic :: Software Development :: Build Tools'
+      ],
       description='A framework for modelling build pipelines in YAML',
       license='LGPL',
       long_description=long_description,
       long_description_content_type='text/x-rst; charset=UTF-8',
       url='https://gitlab.com/BuildStream/buildstream',
+      project_urls={
+          'Documentation': 'https://buildstream.gitlab.io/buildstream/',
+          'Tracker': 'https://gitlab.com/BuildStream/buildstream/issues',
+          'Mailing List': 'https://mail.gnome.org/mailman/listinfo/buildstream-list'
+      },
+      python_requires='~={}.{}'.format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
       packages=find_packages(exclude=('tests', 'tests.*')),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
                                     'data/*.yaml', 'data/*.sh.in']},
