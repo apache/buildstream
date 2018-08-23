@@ -87,6 +87,8 @@ source_dist:
   artifacts:
     paths:
     - coverage-linux/
+  tags:
+  - test
 
 tests-debian-9:
   image: buildstream/testsuite-debian:9-master-114-4cab18e3
@@ -142,6 +144,8 @@ tests-unix:
     paths:
     - coverage-unix/
     - logs-unix/
+  tags:
+  - test
 
 
 # Automatically build documentation for every commit, we want to know
