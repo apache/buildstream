@@ -1,4 +1,13 @@
 =================
+buildstream 1.1.7
+=================
+
+  o Fix CAS resource_name format
+
+    Artifact servers need to be updated.
+
+
+=================
 buildstream 1.1.6
 =================
 
