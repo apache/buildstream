@@ -29,6 +29,8 @@ from urllib.parse import urlparse
 
 import grpc
 
+from .. import _yaml
+
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
@@ -522,6 +524,25 @@ class CASCache(ArtifactCache):
     #
     def remove(self, ref, *, defer_prune=False):
 
+        # Remove extract if not used by other ref
+        tree = self.resolve_ref(ref)
+        ref_name, ref_hash = os.path.split(ref)
+        extract = os.path.join(self.extractdir, ref_name, tree.hash)
+        keys_file = os.path.join(extract, 'meta', 'keys.yaml')
+        if os.path.exists(keys_file):
+            keys_meta = _yaml.load(keys_file)
+            keys = [keys_meta['strong'], keys_meta['weak']]
+            remove_extract = True
+            for other_hash in keys:
+                if other_hash == ref_hash:
+                    continue
+                remove_extract = False
+                break
+
+            if remove_extract:
+                utils._force_rmtree(extract)
+
+        # Remove cache ref
         refpath = self._refpath(ref)
         if not os.path.exists(refpath):
             raise ArtifactError("Could not find artifact for ref '{}'".format(ref))
