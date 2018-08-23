@@ -28,9 +28,9 @@ from .app import App
 #
 def _osc_777_supported():
 
-    term = os.environ['TERM']
+    term = os.environ.get('TERM')
 
-    if term.startswith('xterm') or term.startswith('vte'):
+    if term and (term.startswith('xterm') or term.startswith('vte')):
 
         # Since vte version 4600, upstream silently ignores
         # the OSC 777 without printing garbage to the terminal.
@@ -39,10 +39,10 @@ def _osc_777_supported():
         # will trigger a desktop notification and bring attention
         # to the terminal.
         #
-        vte_version = os.environ['VTE_VERSION']
+        vte_version = os.environ.get('VTE_VERSION')
         try:
             vte_version_int = int(vte_version)
-        except ValueError:
+        except (ValueError, TypeError):
             return False
 
         if vte_version_int >= 4600:
