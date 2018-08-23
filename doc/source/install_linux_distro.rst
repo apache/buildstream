@@ -152,8 +152,29 @@ for advice on this.
 
 Installing
 ~~~~~~~~~~
-Once you have the base system dependencies, you can clone the BuildStream
-git repository and install it as a regular user::
+Once you have the base system dependencies, you can install the BuildStream
+python package as a regular user.
+
+Via PyPI (recommended)
+++++++++++++++++++++++
+::
+
+  pip3 install --user BuildStream
+
+This will install latest stable version of BuildStream and its pure python
+dependencies into your user's homedir in ``~/.local``.
+
+Keep following the instructions below to ensure that the ``bst``
+command is in your ``PATH`` and to enable bash completions for it.
+
+.. note::
+
+  If you want a specific version of BuildStream, you can install it using
+  ``pip install --user BuildStream==<version-number>``
+
+Via Git checkout
+++++++++++++++++
+::
 
   git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
@@ -206,9 +227,19 @@ to your ``~/.bash_completion``:
 
 Upgrading BuildStream
 ~~~~~~~~~~~~~~~~~~~~~
-Assuming you have followed the default instructions above, all
-you need to do to upgrade BuildStream is to update your local git
-checkout::
+
+Via PyPI
+++++++++
+
+If you installed BuildStream from PyPI, you can update it like so::
+
+  pip install --user --upgrade BuildStream
+
+Via Git checkout
+++++++++++++++++
+
+If you installed BuildStream from a local git checkout using ``-e`` option, all
+you need to do to upgrade BuildStream is to update your local git checkout::
 
   cd /path/to/buildstream
   git pull --rebase
