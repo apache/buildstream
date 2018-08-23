@@ -198,8 +198,10 @@ class Cli():
         for key, val in config.items():
             self.config[key] = val
 
-    def remove_artifact_from_cache(self, project, element_name):
-        cache_dir = os.path.join(project, 'cache', 'artifacts')
+    def remove_artifact_from_cache(self, project, element_name,
+                                   *, cache_dir=None):
+        if not cache_dir:
+            cache_dir = os.path.join(project, 'cache', 'artifacts')
 
         cache_dir = os.path.join(cache_dir, 'cas', 'refs', 'heads')
 
