@@ -1361,8 +1361,12 @@ class Element(Plugin):
             if not vdirectory.is_empty():
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
-            with tempfile.TemporaryDirectory() as temp_staging_directory:
+            # While mkdtemp is advertised as using the TMP environment variable, it
+            # doesn't, so this explicit extraction is necesasry.
+            tmp_prefix = os.environ.get("TMP", None)
+            temp_staging_directory = tempfile.mkdtemp(prefix=tmp_prefix)
 
+            try:
                 workspace = self._get_workspace()
                 if workspace:
                     # If mount_workspaces is set and we're doing incremental builds,
@@ -1377,6 +1381,19 @@ class Element(Plugin):
                         source._stage(temp_staging_directory)
 
                 vdirectory.import_files(temp_staging_directory)
+
+            finally:
+                # Staging may produce directories with less than 'rwx' permissions
+                # for the owner, which will break tempfile, so we need to use chmod
+                # occasionally.
+                def make_dir_writable(fn, path, excinfo):
+                    os.chmod(os.path.dirname(path), 0o777)
+                    if os.path.isdir(path):
+                        os.rmdir(path)
+                    else:
+                        os.remove(path)
+                shutil.rmtree(temp_staging_directory, onerror=make_dir_writable)
+
         # Ensure deterministic mtime of sources at build time
         vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time
