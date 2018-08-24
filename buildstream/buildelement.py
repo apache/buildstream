@@ -233,14 +233,13 @@ class BuildElement(Element):
         return commands
 
     def __run_command(self, sandbox, cmd, cmd_name):
-        with self.timed_activity("Running {}".format(cmd_name)):
-            self.status("Running {}".format(cmd_name), detail=cmd)
+        self.status("Running {}".format(cmd_name), detail=cmd)
 
-            # Note the -e switch to 'sh' means to exit with an error
-            # if any untested command fails.
-            #
-            exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                   SandboxFlags.ROOT_READ_ONLY)
-            if exitcode != 0:
-                raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode),
-                                   collect=self.get_variable('install-root'))
+        # Note the -e switch to 'sh' means to exit with an error
+        # if any untested command fails.
+        #
+        exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+                               SandboxFlags.ROOT_READ_ONLY)
+        if exitcode != 0:
+            raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode),
+                               collect=self.get_variable('install-root'))
