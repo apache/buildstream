@@ -2,7 +2,8 @@ import os
 import pytest
 
 from buildstream import _yaml, utils
-from tests.testutils import cli, create_repo, ALL_REPO_KINDS
+from tests.testutils import create_repo, ALL_REPO_KINDS
+from tests.testutils import cli_integration as cli
 
 
 DATA_DIR = os.path.join(
@@ -28,7 +29,7 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS] + ['local'])
-def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
+def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_cache):
     project = str(datafiles)
     element_name = 'list'
     element_path = os.path.join(project, 'elements', element_name)
@@ -91,14 +92,16 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
                 return f.read()
         finally:
             os.umask(old_umask)
-            cli.remove_artifact_from_cache(project, element_name)
+            cache_dir = os.path.join(integration_cache, 'artifacts')
+            cli.remove_artifact_from_cache(project, element_name,
+                                           cache_dir=cache_dir)
 
     assert get_value_for_umask(0o022) == get_value_for_umask(0o077)
 
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-def test_deterministic_source_local(cli, tmpdir, datafiles):
+def test_deterministic_source_local(cli, tmpdir, datafiles, integration_cache):
     """Only user rights should be considered for local source.
     """
     project = str(datafiles)
@@ -150,6 +153,8 @@ def test_deterministic_source_local(cli, tmpdir, datafiles):
             with open(os.path.join(checkoutdir, 'ls-l'), 'r') as f:
                 return f.read()
         finally:
-            cli.remove_artifact_from_cache(project, element_name)
+            cache_dir = os.path.join(integration_cache, 'artifacts')
+            cli.remove_artifact_from_cache(project, element_name,
+                                           cache_dir=cache_dir)
 
     assert get_value_for_mask(0o7777) == get_value_for_mask(0o0700)
