@@ -36,6 +36,11 @@ source_dist:
   - tar -ztf dist/*
   - tarball=$(cd dist && echo $(ls *))
 
+  # Verify that the source distribution tarball can be installed correctly
+  #
+  - pip3 install dist/*.tar.gz
+  - bst --version
+
   # unpack tarball as `dist/buildstream` directory
   - |
     cat > dist/unpack.sh << EOF
