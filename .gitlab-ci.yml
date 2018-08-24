@@ -14,6 +14,9 @@ variables:
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   TEST_COMMAND: 'python3 setup.py test --index-url invalid://uri --addopts --integration'
+  TEST_PYPI_UPLOAD_URL: "https://test.pypi.org/legacy/"
+  TEST_PYPI_INDEX_URL: "https://test.pypi.org/simple/"
+  PYPI_UPLOAD_URL: "https://upload.pypi.org/legacy/"
 
 #####################################################
 #                  Prepare stage                    #
@@ -323,3 +326,33 @@ pages:
   - master
   except:
   - schedules
+
+# Release to PyPI, only for tags.
+#
+# TODO: To begin with, we only upload to test.pypi. Later we should also push
+# to real PyPI after verifying that it can be installed correctly.
+#
+pypi_release:
+  stage: post
+  dependencies:
+  - source_dist
+  script:
+  - |
+    if [[ ! "$CI_COMMIT_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "Not processing non-numeric tag: $CI_COMMIT_TAG for PyPI"
+        exit
+    fi
+    minor_version="$(echo "$CI_COMMIT_TAG" | cut -d. -f2)"
+    if [[ "$(( minor_version %2 ))" -ne 0 ]]; then
+        echo "Not uploading development release: $CI_COMMIT_TAG to PyPI"
+        exit
+    fi
+
+    # Credentials for PyPI are defined in secret CI variables "TWINE_USERNAME"
+    # and "TWINE_PASSWORD".
+    pip3 install twine
+    twine upload --repository-url "$TEST_PYPI_UPLOAD_URL" dist/*.tar.gz
+    pip3 install --extra-index-url "$TEST_PYPI_INDEX_URL" "BuildStream==$CI_COMMIT_TAG"
+    bst --version
+  only:
+  - tags
