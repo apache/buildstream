@@ -3,6 +3,7 @@ import pytest
 import tarfile
 import tempfile
 import subprocess
+from shutil import copyfile, rmtree
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
@@ -257,3 +258,47 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
+
+
+# Test that a tarball that contains a read only dir works
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'read-only'))
+def test_read_only_dir(cli, tmpdir, datafiles):
+    try:
+        project = os.path.join(datafiles.dirname, datafiles.basename)
+        generate_project(project, tmpdir)
+
+        # Get the tarball in tests/sources/tar/read-only/content
+        #
+        # NOTE that we need to do this because tarfile.open and tar.add()
+        # are packing the tar up with writeable files and dirs
+        tarball = os.path.join(str(datafiles), 'content', 'a.tar.gz')
+        if not os.path.exists(tarball):
+            raise FileNotFoundError('{} does not exist'.format(tarball))
+        copyfile(tarball, os.path.join(str(tmpdir), 'a.tar.gz'))
+
+        # Because this test can potentially leave directories behind
+        # which are difficult to remove, ask buildstream to use
+        # our temp directory, so we can clean up.
+        tmpdir_str = str(tmpdir)
+        if not tmpdir_str.endswith(os.path.sep):
+            tmpdir_str += os.path.sep
+        env = {"TMP": tmpdir_str}
+
+        # Track, fetch, build, checkout
+        result = cli.run(project=project, args=['track', 'target.bst'], env=env)
+        result.assert_success()
+        result = cli.run(project=project, args=['fetch', 'target.bst'], env=env)
+        result.assert_success()
+        result = cli.run(project=project, args=['build', 'target.bst'], env=env)
+        result.assert_success()
+
+    finally:
+
+        # Make tmpdir deletable no matter what happens
+        def make_dir_writable(fn, path, excinfo):
+            os.chmod(os.path.dirname(path), 0o777)
+            if os.path.isdir(path):
+                os.rmdir(path)
+            else:
+                os.remove(path)
+        rmtree(str(tmpdir), onerror=make_dir_writable)
