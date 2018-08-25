@@ -9,7 +9,7 @@ BuildStream inside a docker image and also how to configure an artifact server.
    and macOS users should refer to :ref:`docker`.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    install_linux_distro
    install_docker
