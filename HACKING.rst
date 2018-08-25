@@ -390,6 +390,9 @@ Each *command* is a dictionary, the members of which are listed here:
 
 * ``command``: The command to run, without the leading ``bst``
 
+* ``shell``: Specifying ``True`` indicates that ``command`` should be run as
+  a shell command from the project directory, instead of a bst command (optional)
+
 When adding a new ``.run`` file, one should normally also commit the new
 resulting generated ``.html`` file(s) into the ``doc/source/sessions-stored/``
 directory at the same time, this ensures that other developers do not need to
