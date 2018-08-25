@@ -154,6 +154,11 @@ python package as a regular user.
 
 Installing from PyPI (recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Since we only ever publish :ref:`release versions <install_semantic_versioning>` on
+PyPI, it is currently recommended to use this installation path. This will
+ensure that you always have the latest recommended version of BuildStream that
+we recommend.
+
 To install from PyPI, you will additionally require:
 
 * pip for python3 (only required for setup)
@@ -183,6 +188,8 @@ to the latest recommended version like so::
   pip install --user --upgrade BuildStream
 
 
+.. _install_git_checkout:
+
 Installing from a git checkout
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To install directly from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
@@ -192,10 +199,18 @@ using python's ``pip`` package manager, you will additionally require:
 * Python 3 development libraries and headers
 * git (to checkout BuildStream)
 
+Before installing, please check the existing tags in the git repository
+and determine which version you want to install, and whether you want
+to install an official release version (recommended), or a development snapshot
+to help us out testing the bleeding edge of development. Follow the
+:ref:`semantic versioning guide <install_semantic_versioning>` to determine
+which tag you intend to install.
+
 Run the following commands::
 
   git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
+  git checkout <desired release tag>
   pip3 install --user -e .
 
 This will install buildstream's pure python dependencies into

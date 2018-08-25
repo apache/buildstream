@@ -1,5 +1,7 @@
 
 
+.. _install_semantic_versioning:
+
 Semantic Versioning
 ===================
 BuildStream follows the Semantic Versioning Convention `(SemVer) <https://semver.org/>`_,
