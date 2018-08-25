@@ -15,6 +15,7 @@ BuildStream inside a docker image and also how to configure an artifact server.
 .. toctree::
    :maxdepth: 1
 
+   install_source
    install_linux_distro
    install_docker
    install_artifacts
