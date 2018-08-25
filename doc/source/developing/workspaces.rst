@@ -4,7 +4,6 @@
 
 Workspaces
 ==========
-
 In this section we will cover the use of BuildStream's workspaces feature when devloping on a 
 BuildStream project.
 
@@ -26,7 +25,6 @@ make changes to the source code of Buildstream elements by making use of
 BuildStream's workspace command.
 
 
-
 Opening a workspace
 -------------------
 First we need to open a workspace, we can do this by running
@@ -38,11 +36,11 @@ This command has created the workspace_hello directory in which you can see
 the source for the hello.bst element, i.e. hello.c and the corresponding
 makefile.
 
-
 You can view existing workspaces using
 
 .. raw:: html
    :file: ../sessions/developing-workspace-list.html
+
 
 Making code changes
 -------------------
@@ -66,6 +64,7 @@ This gives us the new message we changed in hello.c.
 
 From this point we have several options. If the source is under version control
 we can commit our changes and push them to the remote repository.
+
 
 Closing your workspace
 ----------------------
