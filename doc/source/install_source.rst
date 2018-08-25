@@ -1,0 +1,288 @@
+
+
+Installing from source
+======================
+Until BuildStream is available in :ref:`your distro <install_linux_distro>`, you will
+need to install it yourself from source.
+
+
+Installing dependencies
+-----------------------
+Before installing BuildStream from source, it is necessary to first install
+the system dependencies. Below are some linux distribution specific instructions
+for installing these dependencies.
+
+BuildStream requires the following base system requirements:
+
+* python3 >= 3.5
+* bubblewrap >= 0.1.2
+* fuse2
+
+BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
+Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
+requirements of specific plugins.
+
+The default plugins with extra host dependencies are:
+
+* bzr
+* deb
+* git
+* ostree
+* patch
+* tar
+
+If you intend to push built artifacts to a remote artifact server,
+which requires special permissions, you will also need:
+
+* ssh
+
+
+Arch Linux
+~~~~~~~~~~
+Install the dependencies with::
+
+  sudo pacman -S \
+      python fuse2 bubblewrap \
+      python-pip
+
+For the default plugins::
+
+  sudo pacman -S \
+      bzr git lzip ostree patch python-gobject
+
+
+The package *python-arpy* is required by the deb source plugin. This is not
+obtainable via `pacman`, you must get *python-arpy* from AUR:
+https://aur.archlinux.org/packages/python-arpy/
+
+To install::
+
+  wget https://aur.archlinux.org/cgit/aur.git/snapshot/python-arpy.tar.gz
+  tar -xvf python-arpy.tar.gz
+  cd python-arpy
+  makepkg -si
+
+
+Debian
+~~~~~~
+Install the dependencies with::
+
+  sudo apt-get install \
+      python3 fuse bubblewrap \
+      python3-pip python3-dev
+
+For the default plugins:
+
+
+Stretch
++++++++
+With stretch, you first need to ensure that you have the backports repository
+setup as described `here <https://backports.debian.org/Instructions/>`_
+
+By adding the following line to your sources.list::
+
+  deb http://deb.debian.org/debian stretch-backports main
+
+And then running::
+
+  sudo apt update
+
+At this point you should be able to get the system requirements for the default plugins with::
+
+  sudo apt install \
+      bzr git lzip patch python3-arpy python3-gi
+  sudo apt install -t stretch-backports \
+      gir1.2-ostree-1.0 ostree
+
+
+Buster or Sid
++++++++++++++
+For debian unstable or testing, only the following line should be enough
+to get the system requirements for the default plugins installed::
+
+  sudo apt-get install \
+      lzip gir1.2-ostree-1.0 git bzr ostree patch python3-arpy python3-gi
+
+
+Fedora
+~~~~~~
+For recent fedora systems, the following line should get you the system
+requirements you need::
+
+  dnf install -y \
+      python3 fuse bubblewrap \
+      python3-pip python3-devel
+
+For the default plugins::
+
+  dnf install -y \
+      bzr git lzip patch ostree python3-gobject
+  pip3 install --user arpy
+
+
+Ubuntu
+~~~~~~
+
+
+Ubuntu 18.04 LTS or later
++++++++++++++++++++++++++
+Install the dependencies with::
+
+  sudo apt install \
+      python3 fuse bubblewrap \
+      python3-pip python3-dev
+
+For the default plugins::
+
+  sudo apt install \
+      bzr gir1.2-ostree-1.0 git lzip ostree patch python3-arpy python3-gi
+
+
+Ubuntu 16.04 LTS
+++++++++++++++++
+On Ubuntu 16.04, neither `bubblewrap <https://github.com/projectatomic/bubblewrap/>`_
+or `ostree <https://github.com/ostreedev/ostree>`_ are available in the official repositories.
+You will need to install them in whichever way you see fit. Refer the the upstream documentation
+for advice on this.
+
+
+Installing
+----------
+Once you have the base system dependencies, you can install the BuildStream
+python package as a regular user.
+
+
+Installing from PyPI (recommended)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Since we only ever publish :ref:`release versions <install_semantic_versioning>` on
+PyPI, it is currently recommended to use this installation path. This will
+ensure that you always have the latest recommended version of BuildStream that
+we recommend.
+
+To install from PyPI, you will additionally require:
+
+* pip for python3 (only required for setup)
+* Python 3 development libraries and headers
+
+Simply run the following command::
+
+  pip3 install --user BuildStream
+
+This will install latest stable version of BuildStream and its pure python
+dependencies into your user's homedir in ``~/.local``.
+
+Keep following the instructions below to ensure that the ``bst``
+command is in your ``PATH`` and to enable bash completions for it.
+
+.. note::
+
+  If you want a specific version of BuildStream, you can install it using
+  ``pip install --user BuildStream==<version-number>``
+
+
+Upgrading from PyPI
++++++++++++++++++++
+Once you have already installed BuildStream from PyPI, you can later update
+to the latest recommended version like so::
+
+  pip install --user --upgrade BuildStream
+
+
+.. _install_git_checkout:
+
+Installing from a git checkout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To install directly from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
+using python's ``pip`` package manager, you will additionally require:
+
+* pip for python3 (only required for setup)
+* Python 3 development libraries and headers
+* git (to checkout BuildStream)
+
+Before installing, please check the existing tags in the git repository
+and determine which version you want to install, and whether you want
+to install an official release version (recommended), or a development snapshot
+to help us out testing the bleeding edge of development. Follow the
+:ref:`semantic versioning guide <install_semantic_versioning>` to determine
+which tag you intend to install.
+
+Run the following commands::
+
+  git clone https://gitlab.com/BuildStream/buildstream.git
+  cd buildstream
+  git checkout <desired release tag>
+  pip3 install --user -e .
+
+This will install buildstream's pure python dependencies into
+your user's homedir in ``~/.local`` and will run BuildStream directly
+from the git checkout directory.
+
+Keep following the instructions below to ensure that the ``bst``
+command is in your ``PATH`` and to enable bash completions for it.
+
+.. note::
+
+   We recommend the ``-e`` option because you can upgrade your
+   installation by simply updating the checked out git repository.
+
+   If you want a full installation that is not linked to your
+   git checkout, just omit the ``-e`` option from the above commands.
+
+
+Upgrading from a git checkout
++++++++++++++++++++++++++++++
+If you installed BuildStream from a local git checkout using ``-e`` option, all
+you need to do to upgrade BuildStream is to update your local git checkout::
+
+  cd /path/to/buildstream
+  git pull --rebase
+
+If you did not specify the ``-e`` option at install time or the dependancies
+have changed, you will need to cleanly reinstall BuildStream::
+
+  pip3 uninstall buildstream
+  cd /path/to/buildstream
+  git pull --rebase
+  pip3 install --user .
+
+.. note::
+
+   If BuildStream has added any dependencies since the last upgrade,
+   you will need to uninstall and reinstall to ensure those dependencies
+   are met, regardless of whether you have used the ``-e`` option at
+   install time.
+
+
+Post install setup
+------------------
+After having installed from source using any of the above methods, some
+setup will be required to use BuildStream.
+
+
+Adjust PATH
+~~~~~~~~~~~
+Since BuildStream is now installed under your local user's install directories,
+you need to ensure that ``PATH`` is adjusted.
+
+A regular way to do this is to add the following line to the end of your ``~/.bashrc``::
+
+  export PATH="${PATH}:${HOME}/.local/bin"
+
+.. note::
+
+   You will have to restart your terminal in order for these changes to take effect.
+
+
+Bash completions
+~~~~~~~~~~~~~~~~
+Bash completions are supported by sourcing the ``buildstream/data/bst``
+script found in the BuildStream repository. On many systems this script
+can be installed into a completions directory but when installing BuildStream
+without a package manager this is not an option.
+
+To enable completions for an installation of BuildStream you
+installed yourself from git, just append the script verbatim
+to your ``~/.bash_completion``:
+
+.. literalinclude:: ../../buildstream/data/bst
+   :language: yaml
