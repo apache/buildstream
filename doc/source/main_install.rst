@@ -19,3 +19,4 @@ BuildStream inside a docker image and also how to configure an artifact server.
    install_linux_distro
    install_docker
    install_artifacts
+   install_versions
