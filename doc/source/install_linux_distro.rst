@@ -1,5 +1,4 @@
 
-.. _install:
 
 Installing BuildStream on a Linux distro
 ========================================

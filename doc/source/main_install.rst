@@ -1,3 +1,7 @@
+
+
+.. _install:
+
 Install
 =======
 This section covers how to install BuildStream onto your machine, how to run
