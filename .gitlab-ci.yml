@@ -182,11 +182,9 @@ docs:
 #                    Post stage                     #
 #####################################################
 
-# Check code quality with codeclimate
-# This needs some refactoring; we probably just want to provide the codeclimate.json directly
-# as an output of radon, with some conversion
+# Check code quality with gitlab's built-in feature.
 #
-codequality:
+code_quality:
   <<: *tests-condition
 
   image: docker:stable
@@ -204,7 +202,7 @@ codequality:
         --volume /var/run/docker.sock:/var/run/docker.sock
         "registry.gitlab.com/gitlab-org/security-products/codequality:$SP_VERSION" /code
   artifacts:
-    paths: [codeclimate.json]
+    paths: [gl-code-quality-report.json]
 
 analysis:
   <<: *tests-condition
