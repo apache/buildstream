@@ -69,10 +69,10 @@ BuildStream operates on a set of YAML files (.bst files), as follows:
 
 How can I get started?
 ======================
-To start using BuildStream, first,
-`install <https://buildstream.gitlab.io/buildstream/main_install.html>`_
-BuildStream onto your machine and then follow our
-`tutorial <https://buildstream.gitlab.io/buildstream/using_tutorial.html>`_.
+To get started, first `install BuildStream by following the installation guide
+<https://buildstream.gitlab.io/buildstream/main_install.html>`_
+and then follow our tutorial in the
+`user guide <https://buildstream.gitlab.io/buildstream/main_using.html>`_.
 
 We also recommend exploring some existing BuildStream projects:
 
@@ -81,4 +81,3 @@ We also recommend exploring some existing BuildStream projects:
 * https://gitlab.com/baserock/definitions
 
 If you have any questions please ask on our `#buildstream <irc://irc.gnome.org/buildstream>`_ channel in `irc.gnome.org <irc://irc.gnome.org>`_
-
