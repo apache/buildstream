@@ -29,7 +29,7 @@ import sys
 import re
 import shlex
 import subprocess
-from collections import Mapping
+from collections.abc import Mapping
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
