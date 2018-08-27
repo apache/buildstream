@@ -158,15 +158,11 @@ docs:
     - public/
 
 
-#####################################################
-#                    Post stage                     #
-#####################################################
-
 # Check code quality with gitlab's built-in feature.
 #
 code_quality:
   image: docker:stable
-  stage: post
+  stage: test
   variables:
     DOCKER_DRIVER: overlay2
   allow_failure: true
@@ -181,6 +177,10 @@ code_quality:
         "registry.gitlab.com/gitlab-org/security-products/codequality:$SP_VERSION" /code
   artifacts:
     paths: [gl-code-quality-report.json]
+
+#####################################################
+#                    Post stage                     #
+#####################################################
 
 analysis:
   stage: post
