@@ -10,16 +10,6 @@ stages:
   - test
   - post
 
-# Avoid running all the tests post merge on
-# master or on any release branch.
-#
-.tests-condition-template: &tests-condition
-  only:
-  - branches
-  except:
-  - master
-  - /bst-1\..*/
-
 #####################################################
 #                  Prepare stage                    #
 #####################################################
@@ -96,26 +86,20 @@ source_dist:
 tests-debian-9:
   image: buildstream/testsuite-debian:9-master-114-4cab18e3
   <<: *linux-tests
-  <<: *tests-condition
 
 tests-fedora-27:
   image: buildstream/testsuite-fedora:27-master-114-4cab18e3
   <<: *linux-tests
-  <<: *tests-condition
 
 tests-fedora-28:
   image: buildstream/testsuite-fedora:28-master-114-4cab18e3
   <<: *linux-tests
-  <<: *tests-condition
 
 tests-ubuntu-18.04:
   image: buildstream/testsuite-ubuntu:18.04-master-114-4cab18e3
   <<: *linux-tests
-  <<: *tests-condition
 
 tests-unix:
-  <<: *tests-condition
-
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
   image: buildstream/testsuite-fedora:27-master-114-4cab18e3
@@ -154,15 +138,6 @@ tests-unix:
 # Note: We still do not enforce a consistent installation of python3-sphinx,
 #       as it will significantly grow the backing image.
 docs:
-
-  # Here we build the docs for every pre-merge CI, but avoid
-  # the job on post-merge to stable branches, because we only
-  # ever publish them from master
-  only:
-  - branches
-  except:
-  - /bst-1\..*/
-
   stage: test
   script:
   - export BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources"
@@ -178,17 +153,11 @@ docs:
     - public/
 
 
-#####################################################
-#                    Post stage                     #
-#####################################################
-
 # Check code quality with gitlab's built-in feature.
 #
 code_quality:
-  <<: *tests-condition
-
   image: docker:stable
-  stage: post
+  stage: test
   variables:
     DOCKER_DRIVER: overlay2
   allow_failure: true
@@ -204,9 +173,11 @@ code_quality:
   artifacts:
     paths: [gl-code-quality-report.json]
 
-analysis:
-  <<: *tests-condition
+#####################################################
+#                    Post stage                     #
+#####################################################
 
+analysis:
   stage: post
   script:
   - |
@@ -235,8 +206,6 @@ analysis:
 # Collate coverage reports
 #
 coverage:
-  <<: *tests-condition
-
   stage: post
   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
