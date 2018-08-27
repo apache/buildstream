@@ -1669,6 +1669,10 @@ class Element(Plugin):
     #   (bool): Whether a pull operation is pending
     #
     def _pull_pending(self):
+        if self._get_workspace():
+            # Workspace builds are never pushed to artifact servers
+            return False
+
         if self.__strong_cached:
             # Artifact already in local cache
             return False
