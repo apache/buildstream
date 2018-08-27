@@ -4,13 +4,15 @@
 
 Install
 =======
-This section covers how to install BuildStream onto your machine, how to run
-BuildStream inside a docker image and also how to configure an artifact server.
+This section provides instructions for installing BuildStream and its
+companion artifact server on various platforms, along with any installation
+related materials.
 
 .. note::
 
-   BuildStream is not currently supported natively on macOS and Windows. Windows
-   and macOS users should refer to :ref:`docker`.
+   BuildStream is currently only supported natively on Linux. Users of Unix-like
+   systems where Docker is available can still use BuildStream by following the
+   :ref:`Docker install guide <docker>`
 
 .. toctree::
    :maxdepth: 1
