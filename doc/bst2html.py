@@ -455,6 +455,7 @@ def run_bst(directory, force, source_cache, description, palette):
 
     return 0
 
+
 if __name__ == '__main__':
     try:
         run_bst()

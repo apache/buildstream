@@ -645,6 +645,7 @@ def _pretty_size(size, dec_places=0):
             psize /= 1024
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
 
+
 # A sentinel to be used as a default argument for functions that need
 # to distinguish between a kwarg set to None and an unset kwarg.
 _sentinel = object()
