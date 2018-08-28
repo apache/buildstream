@@ -35,7 +35,7 @@ endif
 PYTHONPATH=$(CURDIR)/..:$(CURDIR)/../buildstream/plugins
 
 
-.PHONY: all clean templates templates-clean sessions sessions-prep sessions-clean html devhelp
+.PHONY: all clean templates templates-clean sessions sessions-prep sessions-clean badges badges-clean html devhelp
 
 # Canned recipe for generating plugin api skeletons
 #   $1 = the plugin directory
@@ -70,8 +70,12 @@ endef
 
 all: html devhelp
 
-clean: templates-clean sessions-clean
+clean: templates-clean sessions-clean badges-clean
 	rm -rf build
+
+############################################################
+#                 Plugin doc templates                     #
+############################################################
 
 # Generate rst templates for the docs using a mix of sphinx-apidoc and
 # our 'plugin-doc-skeleton' routine for plugin pages.
@@ -85,6 +89,10 @@ templates:
 templates-clean:
 	rm -rf source/elements
 	rm -rf source/sources
+
+############################################################
+#                   Session captures                       #
+############################################################
 
 # Stage the stored sessions into the place where they will
 # be used in the build.
@@ -111,10 +119,27 @@ sessions: sessions-prep
 sessions-clean:
 	rm -rf source/sessions
 
+
+############################################################
+#                  Generate release badges                 #
+############################################################
+badges-clean:
+	rm -rf source/badges
+
+badges:
+	mkdir -p source/badges
+	$(CURDIR)/badges.py > source/badges/snapshot.svg
+	$(CURDIR)/badges.py --release > source/badges/release.svg
+
+
+############################################################
+#                    Main sphinx build                     #
+############################################################
+
 # Targets which generate docs with sphinx build
 #
 #
-html devhelp: templates sessions
+html devhelp: templates sessions badges
 	@echo "Building $@..."
 	PYTHONPATH=$(PYTHONPATH) \
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
