@@ -127,7 +127,7 @@ class TarSource(DownloadableFileSource):
         if not base_dir.endswith(os.sep):
             base_dir = base_dir + os.sep
 
-        l = len(base_dir)
+        L = len(base_dir)
         for member in tar.getmembers():
 
             # First, ensure that a member never starts with `./`
@@ -145,9 +145,9 @@ class TarSource(DownloadableFileSource):
                 #       base directory.
                 #
                 if member.type == tarfile.LNKTYPE:
-                    member.linkname = member.linkname[l:]
+                    member.linkname = member.linkname[L:]
 
-                member.path = member.path[l:]
+                member.path = member.path[L:]
                 yield member
 
     # We want to iterate over all paths of a tarball, but getmembers()
