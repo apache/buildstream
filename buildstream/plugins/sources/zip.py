@@ -62,8 +62,7 @@ import stat
 
 from buildstream import SourceError
 from buildstream import utils
-
-from ._downloadablefilesource import DownloadableFileSource
+from buildstream import DownloadableFileSource
 
 
 class ZipSource(DownloadableFileSource):

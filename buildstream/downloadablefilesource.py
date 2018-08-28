@@ -1,4 +1,8 @@
-"""A base abstract class for source implementations which download a file"""
+"""
+DownloadableFileSource - Abstract class for downloading files
+=============================================================
+A base abstract class for source implementations which download a file.
+"""
 
 import os
 import urllib.request

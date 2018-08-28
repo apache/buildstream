@@ -62,8 +62,7 @@ from tempfile import TemporaryFile
 
 from buildstream import SourceError
 from buildstream import utils
-
-from ._downloadablefilesource import DownloadableFileSource
+from buildstream import DownloadableFileSource
 
 
 class TarSource(DownloadableFileSource):

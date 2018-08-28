@@ -52,8 +52,7 @@ details on common configuration options for sources.
    The ``remote`` plugin is available since :ref:`format version 10 <project_format_version>`
 """
 import os
-from buildstream import SourceError, utils
-from ._downloadablefilesource import DownloadableFileSource
+from buildstream import SourceError, utils, DownloadableFileSource
 
 
 class RemoteSource(DownloadableFileSource):

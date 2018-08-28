@@ -34,3 +34,4 @@ if "_BST_COMPLETION" not in os.environ:
     from .element import Element, ElementError
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement
+    from .downloadablefilesource import DownloadableFileSource
