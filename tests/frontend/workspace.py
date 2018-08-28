@@ -783,14 +783,14 @@ def test_inconsitent_pipeline_message(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
 @pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
-def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, kind, strict):
+def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, strict):
     checkout = os.path.join(str(tmpdir), 'checkout')
-    element_name, project, workspace = open_workspace(cli, os.path.join(str(tmpdir), 'repo-a'), datafiles, kind, False)
+    element_name, project, workspace = open_workspace(cli, os.path.join(str(tmpdir), 'repo-a'),
+                                                      datafiles, 'git', False)
 
     element_path = os.path.join(project, 'elements')
-    back_dep_element_name = 'workspace-test-{}-back-dep.bst'.format(kind)
+    back_dep_element_name = 'workspace-test-back-dep.bst'
 
     # Write out our test target
     element = {
