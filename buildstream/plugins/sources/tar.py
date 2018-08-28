@@ -71,6 +71,10 @@ class TarSource(DownloadableFileSource):
     def configure(self, node):
         super().configure(node)
 
+        # url in DownloadableFileSource is private, so we read it again
+        original_url = self.node_get_member(node, str, 'url')
+        self.url = self.translate_url(original_url)
+
         self.base_dir = self.node_get_member(node, str, 'base-dir', '*') or None
 
         self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
@@ -87,7 +91,7 @@ class TarSource(DownloadableFileSource):
     def _run_lzip(self):
         assert self.host_lzip
         with TemporaryFile() as lzip_stdout:
-            with open(self._get_mirror_file(), 'r') as lzip_file:
+            with open(self.get_mirror_file(), 'r') as lzip_file:
                 self.call([self.host_lzip, '-d'],
                           stdin=lzip_file,
                           stdout=lzip_stdout)
@@ -102,7 +106,7 @@ class TarSource(DownloadableFileSource):
                 with tarfile.open(fileobj=lzip_dec, mode='r:') as tar:
                     yield tar
         else:
-            with tarfile.open(self._get_mirror_file()) as tar:
+            with tarfile.open(self.get_mirror_file()) as tar:
                 yield tar
 
     def stage(self, directory):

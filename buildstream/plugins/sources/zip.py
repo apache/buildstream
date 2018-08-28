@@ -83,7 +83,7 @@ class ZipSource(DownloadableFileSource):
         noexec_rights = exec_rights & ~(stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
         try:
-            with zipfile.ZipFile(self._get_mirror_file()) as archive:
+            with zipfile.ZipFile(self.get_mirror_file()) as archive:
                 base_dir = None
                 if self.base_dir:
                     base_dir = self._find_base_dir(archive, self.base_dir)

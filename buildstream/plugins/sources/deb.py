@@ -68,7 +68,7 @@ class DebSource(TarSource):
 
     @contextmanager
     def _get_tar(self):
-        with open(self._get_mirror_file(), 'rb') as deb_file:
+        with open(self.get_mirror_file(), 'rb') as deb_file:
             arpy_archive = arpy.Archive(fileobj=deb_file)
             arpy_archive.read_all_headers()
             data_tar_arpy = [v for k, v in arpy_archive.archived_files.items() if b"data.tar" in k][0]

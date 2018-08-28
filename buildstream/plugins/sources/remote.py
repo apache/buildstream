@@ -61,7 +61,13 @@ class RemoteSource(DownloadableFileSource):
     def configure(self, node):
         super().configure(node)
 
-        self.filename = self.node_get_member(node, str, 'filename', os.path.basename(self.url))
+        self.filename = self.node_get_member(node, str, 'filename', None)
+        if not self.filename:
+            # url in DownloadableFileSource is private, so we read it again
+            original_url = self.node_get_member(node, str, 'url')
+            url = self.translate_url(original_url)
+            self.filename = os.path.basename(url)
+
         self.executable = self.node_get_member(node, bool, 'executable', False)
 
         if os.sep in self.filename:
@@ -78,7 +84,7 @@ class RemoteSource(DownloadableFileSource):
         dest = os.path.join(directory, self.filename)
         with self.timed_activity("Staging remote file to {}".format(dest)):
 
-            utils.safe_copy(self._get_mirror_file(), dest)
+            utils.safe_copy(self.get_mirror_file(), dest)
 
             # To prevent user's umask introducing variability here, explicitly set
             # file modes.
