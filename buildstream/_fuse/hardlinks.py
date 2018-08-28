@@ -27,7 +27,7 @@ import shutil
 import stat
 import tempfile
 
-from .fuse import FuseOSError, Operations
+from fuse import FuseOSError, Operations
 
 from .mount import Mount
 

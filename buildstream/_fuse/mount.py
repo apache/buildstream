@@ -24,7 +24,7 @@ import sys
 
 from contextlib import contextmanager
 from multiprocessing import Process
-from .fuse import FUSE
+from fuse import FUSE
 
 from .._exceptions import ImplError
 from .. import _signals

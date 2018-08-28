@@ -57,6 +57,7 @@ source_dist:
   variables:
     PYTEST_ADDOPTS: "--color=yes"
   script:
+  - pip3 install 'fusepy>=3.0.0'
   # Diagnostics
   - mount
   - df -h
@@ -118,6 +119,7 @@ tests-unix:
     # disappear unless we mark it as user-installed.
     - dnf mark install fuse-libs
     - dnf erase -y bubblewrap ostree
+    - pip3 install 'fusepy>=3.0.0'
 
     # Unpack and get into dist/buildstream
     - cd dist && ./unpack.sh && cd buildstream
@@ -145,6 +147,7 @@ docs:
   stage: test
   script:
   - export BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources"
+  - pip3 install 'fusepy>=3.0.0'
   # Currently sphinx_rtd_theme does not support Sphinx >1.8, this breaks search functionality
   - pip3 install sphinx==1.7.9
   - pip3 install sphinx-click
