@@ -1101,9 +1101,12 @@ class Element(Plugin):
             # until the full cache query below.
             if (not self.__assemble_scheduled and not self.__assemble_done and
                     not self.__cached_success(keystrength=_KeyStrength.WEAK) and
-                    not self._pull_pending() and self._is_required()):
-                self._schedule_assemble()
-                return
+                    not self._pull_pending()):
+                # For uncached workspaced elements, assemble is required
+                # even if we only need the cache key
+                if self._is_required() or self._get_workspace():
+                    self._schedule_assemble()
+                    return
 
         if self.__strict_cache_key is None:
             dependencies = [
@@ -1126,13 +1129,17 @@ class Element(Plugin):
                 self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
-                not self._cached_success() and not self._pull_pending() and self._is_required()):
+                not self._cached_success() and not self._pull_pending()):
             # Workspaced sources are considered unstable if a build is pending
             # as the build will modify the contents of the workspace.
             # Determine as early as possible if a build is pending to discard
             # unstable cache keys.
-            self._schedule_assemble()
-            return
+
+            # For uncached workspaced elements, assemble is required
+            # even if we only need the cache key
+            if self._is_required() or self._get_workspace():
+                self._schedule_assemble()
+                return
 
         if self.__cache_key is None:
             # Calculate strong cache key
@@ -1430,13 +1437,14 @@ class Element(Plugin):
     # in a subprocess.
     #
     def _schedule_assemble(self):
-        assert self._is_required()
         assert not self.__assemble_scheduled
         self.__assemble_scheduled = True
 
         # Requests artifacts of build dependencies
         for dep in self.dependencies(Scope.BUILD, recurse=False):
             dep._set_required()
+
+        self._set_required()
 
         # Invalidate workspace key as the build modifies the workspace directory
         workspace = self._get_workspace()
