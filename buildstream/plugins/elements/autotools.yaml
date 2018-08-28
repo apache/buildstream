@@ -50,6 +50,40 @@ variables:
   #
   # notparallel: True
 
+
+  # Automatically remove libtool archive files
+  #
+  # Set remove-libtool-modules to "true" to remove .la files for 
+  # modules intended to be opened with lt_dlopen()
+  #
+  # Set remove-libtool-libraries to "true" to remove .la files for
+  # libraries
+  #
+  # Value must be "true" or "false"
+  remove-libtool-modules: "false"  
+  remove-libtool-libraries: "false"
+
+  delete-libtool-archives: |
+    if %{remove-libtool-modules} || %{remove-libtool-libraries}; then
+      find "%{install-root}" -name "*.la" -print0 | while read -d '' -r file; do
+        if grep '^shouldnotlink=yes$' "${file}" &>/dev/null; then
+          if %{remove-libtool-modules}; then
+            echo "Removing ${file}."
+            rm "${file}"
+          else
+            echo "Not removing ${file}."
+          fi
+        else
+          if %{remove-libtool-libraries}; then
+            echo "Removing ${file}."
+            rm "${file}"
+          else
+            echo "Not removing ${file}."
+          fi
+        fi
+      done
+    fi
+
 config:
 
   # Commands for configuring the software
@@ -72,6 +106,8 @@ config:
   install-commands:
   - |
     %{make-install}
+  - |
+    %{delete-libtool-archives}
 
   # Commands for stripping debugging information out of
   # installed binaries
