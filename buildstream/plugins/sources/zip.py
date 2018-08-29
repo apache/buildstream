@@ -121,13 +121,13 @@ class ZipSource(DownloadableFileSource):
         if not base_dir.endswith(os.sep):
             base_dir = base_dir + os.sep
 
-        l = len(base_dir)
+        L = len(base_dir)
         for member in archive.infolist():
             if member.filename == base_dir:
                 continue
 
             if member.filename.startswith(base_dir):
-                member.filename = member.filename[l:]
+                member.filename = member.filename[L:]
                 yield member
 
     # We want to iterate over all paths of an archive, but namelist()

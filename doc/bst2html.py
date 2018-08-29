@@ -96,8 +96,8 @@ def _ansi2html_get_styles(palette):
 
         for g in range(24):
             i = g + 232
-            l = g * 10 + 8
-            indexed_style['%s' % i] = ''.join('%02X' % c if 0 <= c <= 255 else None for c in (l, l, l))
+            L = g * 10 + 8
+            indexed_style['%s' % i] = ''.join('%02X' % c if 0 <= c <= 255 else None for c in (L, L, L))
 
         _ANSI2HTML_STYLES[palette] = (regular_style, bold_style, indexed_style)
     return _ANSI2HTML_STYLES[palette]
@@ -454,6 +454,7 @@ def run_bst(directory, force, source_cache, description, palette):
         run_session(description, tempdir, source_cache, palette, config_file, force)
 
     return 0
+
 
 if __name__ == '__main__':
     try:

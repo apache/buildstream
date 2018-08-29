@@ -19,9 +19,9 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
-
 from buildstream import __version__
+
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration ------------------------------------------------
 
@@ -112,7 +112,7 @@ add_module_names = False
 pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
-modindex_common_prefix = [ 'buildstream.' ]
+modindex_common_prefix = ['buildstream.']
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False

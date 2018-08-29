@@ -288,6 +288,7 @@ def test_build_checkout_force_tarball(datafiles, cli):
     assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
     assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
 
+
 fetch_build_checkout_combos = \
     [("strict", kind) for kind in ALL_REPO_KINDS] + \
     [("non-strict", kind) for kind in ALL_REPO_KINDS]

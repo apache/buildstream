@@ -65,5 +65,6 @@ def update_keys():
 
                 write_expected_key(element_name, actual_keys[element_name])
 
+
 if __name__ == '__main__':
     update_keys()
