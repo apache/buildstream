@@ -769,7 +769,8 @@ class Source(Plugin):
         #
         # Step 2 - Set the ref in memory, and determine changed state
         #
-        changed = self._set_ref(new_ref, node)
+        if not self._set_ref(new_ref, node):
+            return False
 
         def do_save_refs(refs):
             try:
@@ -806,7 +807,7 @@ class Source(Plugin):
                                   .format(provenance.filename.shortname),
                                   reason="tracking-junction-fragment")
 
-        return changed
+        return True
 
     # Wrapper for track()
     #
