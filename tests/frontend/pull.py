@@ -338,3 +338,22 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
 
         # Assert that no artifacts were pulled
         assert len(result.get_pulled_elements()) == 0
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_missing_notifies_user(caplog, cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    caplog.set_level(1)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        cli.configure({
+            'artifacts': {'url': share.repo}
+        })
+        result = cli.run(project=project, args=['build', 'target.bst'])
+
+        result.assert_success()
+        assert not result.get_pulled_elements(), \
+            "No elements should have been pulled since the cache was empty"
+
+        assert "SKIPPED Remote ({}) does not have".format(share.repo) in result.stderr
