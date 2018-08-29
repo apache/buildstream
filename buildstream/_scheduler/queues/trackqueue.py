@@ -58,18 +58,9 @@ class TrackQueue(Queue):
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
             source = _plugin_lookup(unique_id)
-            try:
-                # We appear processed if at least one source has changed
-                if source._save_ref(new_ref):
-                    changed = True
-            except SourceError as e:
-                # FIXME: We currently dont have a clear path to
-                #        fail the scheduler from the main process, so
-                #        this will just warn and BuildStream will exit
-                #        with a success code.
-                #
-                source.warn("Failed to update project file",
-                            detail="{}".format(e))
+            # We appear processed if at least one source has changed
+            if source._save_ref(new_ref):
+                changed = True
 
         element._tracking_done()
 
