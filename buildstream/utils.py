@@ -44,6 +44,7 @@ from ._exceptions import BstError, ErrorDomain
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
+_URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 
 
 class UtilError(BstError):
