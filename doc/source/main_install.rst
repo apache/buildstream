@@ -4,6 +4,11 @@
 
 Install
 =======
+
+.. include:: release-badge.rst
+
+.. include:: snapshot-badge.rst
+
 This section provides instructions for installing BuildStream and its
 companion artifact server on various platforms, along with any installation
 related materials.
