@@ -47,6 +47,7 @@ _magic_timestamp = calendar.timegm([2011, 11, 11, 11, 11, 11])
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
+_URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 
 
 class UtilError(BstError):
