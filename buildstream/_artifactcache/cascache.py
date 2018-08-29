@@ -249,6 +249,13 @@ class CASCache(ArtifactCache):
                 if e.code() != grpc.StatusCode.NOT_FOUND:
                     raise ArtifactError("Failed to pull artifact {}: {}".format(
                         element._get_brief_display_key(), e)) from e
+                else:
+                    self.context.message(Message(
+                        None,
+                        MessageType.SKIPPED,
+                        "Remote ({}) does not have {} cached".format(
+                            remote.spec.url, element._get_brief_display_key())
+                    ))
 
         return False
 
