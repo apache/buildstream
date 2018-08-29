@@ -74,6 +74,9 @@ This plugin provides the following configurable warnings:
 
 - 'git:inconsistent-submodule' - A submodule was found to be missing from the underlying git repository.
 
+This plugin also utilises the following configurable core plugin warnings:
+
+- 'ref-not-in-track' - The provided ref was not found in the provided track in the element's git repository.
 """
 
 import os
@@ -86,6 +89,7 @@ from configparser import RawConfigParser
 
 from buildstream import Source, SourceError, Consistency, SourceFetcher
 from buildstream import utils
+from buildstream.plugin import CoreWarnings
 
 GIT_MODULES = '.gitmodules'
 
@@ -210,7 +214,7 @@ class GitMirror(SourceFetcher):
             cwd=self.mirror)
         return output.rstrip('\n')
 
-    def stage(self, directory):
+    def stage(self, directory, track=None):
         fullpath = os.path.join(directory, self.path)
 
         # We need to pass '--no-hardlinks' because there's nothing to
@@ -224,7 +228,11 @@ class GitMirror(SourceFetcher):
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
 
-    def init_workspace(self, directory):
+        # Check that the user specified ref exists in the track if provided & not already tracked
+        if track:
+            self.assert_ref_in_track(fullpath, track)
+
+    def init_workspace(self, directory, track=None):
         fullpath = os.path.join(directory, self.path)
         url = self.source.translate_url(self.url)
 
@@ -239,6 +247,10 @@ class GitMirror(SourceFetcher):
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
+
+        # Check that the user specified ref exists in the track if provided & not already tracked
+        if track:
+            self.assert_ref_in_track(fullpath, track)
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
@@ -304,6 +316,28 @@ class GitMirror(SourceFetcher):
 
             return None
 
+    # Assert that ref exists in track, if track has been specified.
+    def assert_ref_in_track(self, fullpath, track):
+        _, branch = self.source.check_output([self.source.host_git, 'branch', '--list', track,
+                                              '--contains', self.ref],
+                                             cwd=fullpath,)
+        if branch:
+            return True
+        else:
+            _, tag = self.source.check_output([self.source.host_git, 'tag', '--list', track,
+                                               '--contains', self.ref],
+                                              cwd=fullpath,)
+            if tag:
+                return True
+
+        detail = "The ref provided for the element does not exist locally in the provided track branch / tag " + \
+                 "'{}'.\nYou may wish to track the element to update the ref from '{}' ".format(track, track) + \
+                 "with `bst track`,\nor examine the upstream at '{}' for the specific ref.".format(self.url)
+
+        self.source.warn("{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n"
+                         .format(self.source, self.ref, track, self.url),
+                         detail=detail, warning_token=CoreWarnings.REF_NOT_IN_TRACK)
+
 
 class GitSource(Source):
     # pylint: disable=attribute-defined-outside-init
@@ -346,6 +380,7 @@ class GitSource(Source):
                 self.submodule_checkout_overrides[path] = checkout
 
         self.mark_download_url(self.original_url)
+        self.tracked = False
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
@@ -405,6 +440,8 @@ class GitSource(Source):
             # Update self.mirror.ref and node.ref from the self.tracking branch
             ret = self.mirror.latest_commit(self.tracking)
 
+        # Set tracked attribute, parameter for if self.mirror.assert_ref_in_track is needed
+        self.tracked = True
         return ret
 
     def init_workspace(self, directory):
@@ -412,7 +449,7 @@ class GitSource(Source):
         self.refresh_submodules()
 
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
-            self.mirror.init_workspace(directory)
+            self.mirror.init_workspace(directory, track=(self.tracking if not self.tracked else None))
             for mirror in self.submodules:
                 mirror.init_workspace(directory)
 
@@ -428,7 +465,7 @@ class GitSource(Source):
         # Stage the main repo in the specified directory
         #
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
-            self.mirror.stage(directory)
+            self.mirror.stage(directory, track=(self.tracking if not self.tracked else None))
             for mirror in self.submodules:
                 mirror.stage(directory)
 
