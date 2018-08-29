@@ -219,10 +219,7 @@ class SourceFetcher():
         Args:
            url (str): The url used to download.
         """
-        # Not guaranteed to be a valid alias yet.
-        # Ensuring it's a valid alias currently happens in Project.get_alias_uris
-        alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
-        self.__alias = alias
+        self.__alias = _extract_alias(url)
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -459,8 +456,7 @@ class Source(Plugin):
 
         *Since: 1.2*
         """
-        alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
-        self.__expected_alias = alias
+        self.__expected_alias = _extract_alias(url)
 
     def get_source_fetchers(self):
         """Get the objects that are used for fetching
@@ -525,8 +521,7 @@ class Source(Plugin):
         else:
             # Sneakily store the alias if it hasn't already been stored
             if not self.__expected_alias and url and utils._ALIAS_SEPARATOR in url:
-                url_alias, _ = url.split(utils._ALIAS_SEPARATOR, 1)
-                self.__expected_alias = url_alias
+                self.mark_download_url(url)
 
             project = self._get_project()
             return project.translate_url(url, first_pass=self.__first_pass)
@@ -914,12 +909,12 @@ class Source(Plugin):
     # Tries to call track for every mirror, stopping once it succeeds
     def __do_track(self, **kwargs):
         project = self._get_project()
-        # If there are no mirrors, or no aliases to replace, there's nothing to do here.
         alias = self._get_alias()
         if self.__first_pass:
             mirrors = project.first_pass_config.mirrors
         else:
             mirrors = project.config.mirrors
+        # If there are no mirrors, or no aliases to replace, there's nothing to do here.
         if not mirrors or not alias:
             return self.track(**kwargs)
 
@@ -988,3 +983,11 @@ class Source(Plugin):
 
             if src.get_consistency() == Consistency.RESOLVED:
                 src._fetch(previous_sources[0:index])
+
+
+def _extract_alias(url):
+    parts = url.split(utils._ALIAS_SEPARATOR, 1)
+    if len(parts) > 1 and not parts[0].lower() in utils._URI_SCHEMES:
+        return parts[0]
+    else:
+        return ""
