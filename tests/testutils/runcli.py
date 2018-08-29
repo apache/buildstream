@@ -94,14 +94,28 @@ class Result():
     #    error_reason (any): The reason field of the error which occurred
     #    fail_message (str): An optional message to override the automatic
     #                        assertion error messages
+    #    debug (bool): If true, prints information regarding the exit state of the result()
     # Raises:
     #    (AssertionError): If any of the assertions fail
     #
     def assert_main_error(self,
                           error_domain,
                           error_reason,
-                          fail_message=''):
-
+                          fail_message='',
+                          *, debug=False):
+        if debug:
+            print(
+                """
+                Exit code: {}
+                Exception: {}
+                Domain:    {}
+                Reason:    {}
+                """.format(
+                    self.exit_code,
+                    self.exception,
+                    self.exception.domain,
+                    self.exception.reason
+                ))
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
         assert self.exception is not None, fail_message
