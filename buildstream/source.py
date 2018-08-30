@@ -865,10 +865,12 @@ class Source(Plugin):
     def __do_fetch(self, **kwargs):
         project = self._get_project()
         source_fetchers = self.get_source_fetchers()
+
+        # Use the source fetchers if they are provided
+        #
         if source_fetchers:
             for fetcher in source_fetchers:
                 alias = fetcher._get_alias()
-                success = False
                 for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
                     try:
                         fetcher.fetch(uri)
@@ -877,10 +879,16 @@ class Source(Plugin):
                     except BstError as e:
                         last_error = e
                         continue
-                    success = True
+
+                    # No error, we're done with this fetcher
                     break
-                if not success:
+
+                else:
+                    # No break occurred, raise the last detected error
                     raise last_error
+
+        # Default codepath is to reinstantiate the Source
+        #
         else:
             alias = self._get_alias()
             if self.__first_pass:
@@ -904,7 +912,11 @@ class Source(Plugin):
                 except BstError as e:
                     last_error = e
                     continue
+
+                # No error, we're done here
                 return
+
+            # Re raise the last detected error
             raise last_error
 
     # Tries to call track for every mirror, stopping once it succeeds
