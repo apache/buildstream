@@ -445,19 +445,6 @@ class Source(Plugin):
         """
         self.stage(directory)
 
-    def mark_download_url(self, url):
-        """Identifies the URL that this Source uses to download
-
-        This must be called during :func:`~buildstream.plugin.Plugin.configure` if
-        :func:`~buildstream.source.Source.translate_url` is not called.
-
-        Args:
-           url (str): The url used to download
-
-        *Since: 1.2*
-        """
-        self.__expected_alias = _extract_alias(url)
-
     def get_source_fetchers(self):
         """Get the objects that are used for fetching
 
@@ -525,6 +512,19 @@ class Source(Plugin):
 
             project = self._get_project()
             return project.translate_url(url, first_pass=self.__first_pass)
+
+    def mark_download_url(self, url):
+        """Identifies the URL that this Source uses to download
+
+        This must be called during :func:`~buildstream.plugin.Plugin.configure` if
+        :func:`~buildstream.source.Source.translate_url` is not called.
+
+        Args:
+           url (str): The url used to download
+
+        *Since: 1.2*
+        """
+        self.__expected_alias = _extract_alias(url)
 
     def get_project_directory(self):
         """Fetch the project base directory
