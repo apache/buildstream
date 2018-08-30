@@ -17,6 +17,7 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import os
 import subprocess
 
 from .. import _site
@@ -35,7 +36,11 @@ class Linux(Platform):
         super().__init__(context)
 
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
-        self._user_ns_available = self._check_user_ns_available(context)
+
+        if self._local_sandbox_available():
+            self._user_ns_available = self._check_user_ns_available(context)
+        else:
+            self._user_ns_available = False
         self._artifact_cache = CASCache(context, enable_push=self._user_ns_available)
 
     @property
@@ -51,6 +56,12 @@ class Linux(Platform):
     ################################################
     #              Private Methods                 #
     ################################################
+    def _local_sandbox_available(self):
+        try:
+            return os.path.exists(utils.get_host_tool('bwrap')) and os.path.exists('/dev/fuse')
+        except utils.ProgramNotFoundError:
+            return False
+
     def _check_user_ns_available(self, context):
         # Here, lets check if bwrap is able to create user namespaces,
         # issue a warning if it's not available, and save the state
