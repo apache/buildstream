@@ -1,3 +1,4 @@
+import stat
 import os
 import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
@@ -634,3 +635,36 @@ def test_track_junction_included(cli, tmpdir, datafiles, ref_storage, kind):
 
     result = cli.run(project=project, args=['track', 'junction.bst'])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+def test_track_error_cannot_write_file(cli, tmpdir, datafiles, kind):
+    if os.geteuid() == 0:
+        pytest.skip("This is not testable with root permissions")
+
+    project = str(datafiles)
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'track-test-{}.bst'.format(kind)
+
+    configure_project(project, {
+        'ref-storage': 'inline'
+    })
+
+    repo = create_repo(kind, str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    element_full_path = os.path.join(element_path, element_name)
+    generate_element(repo, element_full_path)
+
+    st = os.stat(element_path)
+    try:
+        read_mask = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+        os.chmod(element_path, stat.S_IMODE(st.st_mode) & ~read_mask)
+
+        result = cli.run(project=project, args=['track', element_name])
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.SOURCE, 'save-ref-error')
+    finally:
+        os.chmod(element_path, stat.S_IMODE(st.st_mode))
