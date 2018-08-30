@@ -1,5 +1,6 @@
 import os
 import pytest
+import sys
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils.runcli import cli
@@ -72,3 +73,20 @@ def test_missing_variable(cli, datafiles, tmpdir):
     ])
     result.assert_main_error(ErrorDomain.LOAD,
                              LoadErrorReason.UNRESOLVED_VARIABLE)
+
+
+@pytest.mark.timeout(3, method="signal")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'cyclic_variables'))
+def test_cyclic_variables(cli, datafiles):
+    print_warning("Performing cyclic test, if this test times out it will " +
+                  "exit the test sequence")
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=[
+        "build", "cyclic.bst"
+    ])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+
+
+def print_warning(msg):
+    RED, END = "\033[91m", "\033[0m"
+    print(("\n{}{}{}").format(RED, msg, END), file=sys.stderr)

@@ -61,7 +61,7 @@ class Variables():
     #    LoadError, if the string contains unresolved variable references.
     #
     def subst(self, string):
-        substitute, unmatched = self._subst(string, self.variables)
+        substitute, unmatched, _ = self._subst(string, self.variables)
         unmatched = list(set(unmatched))
         if unmatched:
             if len(unmatched) == 1:
@@ -82,6 +82,7 @@ class Variables():
         def subst_callback(match):
             nonlocal variables
             nonlocal unmatched
+            nonlocal matched
 
             token = match.group(0)
             varname = match.group(1)
@@ -91,6 +92,7 @@ class Variables():
                 # We have to check if the inner string has variables
                 # and return unmatches for those
                 unmatched += re.findall(_VARIABLE_MATCH, value)
+                matched += [varname]
             else:
                 # Return unmodified token
                 unmatched += [varname]
@@ -98,10 +100,11 @@ class Variables():
 
             return value
 
+        matched = []
         unmatched = []
         replacement = re.sub(_VARIABLE_MATCH, subst_callback, string)
 
-        return (replacement, unmatched)
+        return (replacement, unmatched, matched)
 
     # Variable resolving code
     #
@@ -131,7 +134,15 @@ class Variables():
                 # Ensure stringness of the value before substitution
                 value = _yaml.node_get(variables, str, key)
 
-                resolved_var, item_unmatched = self._subst(value, variables)
+                resolved_var, item_unmatched, matched = self._subst(value, variables)
+
+                if _wrap_variable(key) in resolved_var:
+                    referenced_through = find_recursive_variable(key, matched, variables)
+                    raise LoadError(LoadErrorReason.RECURSIVE_VARIABLE,
+                                    "{}: ".format(_yaml.node_get_provenance(variables, key)) +
+                                    ("Variable '{}' expands to contain a reference to itself. " +
+                                     "Perhaps '{}' contains '{}").format(key, referenced_through, _wrap_variable(key)))
+
                 resolved[key] = resolved_var
                 unmatched += item_unmatched
 
@@ -168,8 +179,21 @@ class Variables():
     # Helper function to fetch information about the node referring to a variable
     #
     def _find_references(self, varname):
-        fullname = '%{' + varname + '}'
+        fullname = _wrap_variable(varname)
         for key, value in _yaml.node_items(self.original):
             if fullname in value:
                 provenance = _yaml.node_get_provenance(self.original, key)
                 yield (key, provenance)
+
+
+def find_recursive_variable(variable, matched_variables, all_vars):
+    matched_values = (_yaml.node_get(all_vars, str, key) for key in matched_variables)
+    for key, value in zip(matched_variables, matched_values):
+        if _wrap_variable(variable) in value:
+            return key
+    else:
+        return None
+
+
+def _wrap_variable(var):
+    return "%{" + var + "}"
