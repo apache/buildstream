@@ -52,7 +52,6 @@ class Linux(Platform):
     #              Private Methods                 #
     ################################################
     def _check_user_ns_available(self, context):
-
         # Here, lets check if bwrap is able to create user namespaces,
         # issue a warning if it's not available, and save the state
         # locally so that we can inform the sandbox to not try it
