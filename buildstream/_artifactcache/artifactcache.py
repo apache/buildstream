@@ -571,7 +571,7 @@ class ArtifactCache():
     def _write_cache_size(self, size):
         assert isinstance(size, int)
         size_file_path = os.path.join(self.context.artifactdir, CACHE_SIZE_FILE)
-        with open(size_file_path, "w") as f:
+        with utils.save_file_atomic(size_file_path, "w") as f:
             f.write(str(size))
 
     # _read_cache_size()
