@@ -387,8 +387,10 @@ class GitSource(Source):
                                   detail=detail, reason="track-attempt-no-track")
             return None
 
+        # Resolve the URL for the message
+        resolved_url = self.translate_url(self.mirror.url)
         with self.timed_activity("Tracking {} from {}"
-                                 .format(self.tracking, self.mirror.url),
+                                 .format(self.tracking, resolved_url),
                                  silent_nested=True):
             self.mirror.ensure()
             self.mirror._fetch()
