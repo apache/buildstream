@@ -403,7 +403,7 @@ class Job():
                 if self._retry_flag and (self._tries <= self._max_retries):
                     self.message(MessageType.FAIL,
                                  "Try #{} failed, retrying".format(self._tries),
-                                 elapsed=elapsed)
+                                 elapsed=elapsed, logfile=filename)
                 else:
                     self.message(MessageType.FAIL, str(e),
                                  elapsed=elapsed, detail=e.detail,
@@ -430,7 +430,8 @@ class Job():
                 self.message(MessageType.BUG, self.action_name,
                              elapsed=elapsed, detail=detail,
                              logfile=filename)
-                self._child_shutdown(RC_FAIL)
+                # Unhandled exceptions should permenantly fail
+                self._child_shutdown(RC_PERM_FAIL)
 
             else:
                 # No exception occurred in the action
@@ -508,11 +509,6 @@ class Job():
 
         message.action_name = self.action_name
         message.task_id = self._task_id
-
-        if (message.message_type == MessageType.FAIL and
-                self._tries <= self._max_retries and self._retry_flag):
-            # Job will be retried, display failures as warnings in the frontend
-            message.message_type = MessageType.WARN
 
         # Send to frontend if appropriate
         if context.silent_messages() and (message.message_type not in unconditional_messages):
