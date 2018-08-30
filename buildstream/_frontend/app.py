@@ -115,14 +115,6 @@ class App():
         else:
             self.colors = False
 
-        # Increase the soft limit for open file descriptors to the maximum.
-        # SafeHardlinks FUSE needs to hold file descriptors for all processes in the sandbox.
-        # Avoid hitting the limit too quickly.
-        limits = resource.getrlimit(resource.RLIMIT_NOFILE)
-        if limits[0] != limits[1]:
-            # Set soft limit to hard limit
-            resource.setrlimit(resource.RLIMIT_NOFILE, (limits[1], limits[1]))
-
     # create()
     #
     # Should be used instead of the regular constructor.

@@ -19,6 +19,7 @@
 
 import os
 import sys
+import resource
 
 from .._exceptions import PlatformError, ImplError
 
@@ -32,7 +33,7 @@ class Platform():
     # sandbox factory as well as platform helpers.
     #
     def __init__(self):
-        pass
+        self.set_resource_limits()
 
     @classmethod
     def _create_instance(cls):
@@ -84,3 +85,15 @@ class Platform():
     def check_sandbox_config(self, config):
         raise ImplError("Platform {platform} does not implement check_sandbox_config()"
                         .format(platform=type(self).__name__))
+
+    def set_resource_limits(self, soft_limit=None, hard_limit=None):
+        # Need to set resources for _frontend/app.py as this is dependent on the platform
+        # SafeHardlinks FUSE needs to hold file descriptors for all processes in the sandbox.
+        # Avoid hitting the limit too quickly.
+        limits = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if limits[0] != limits[1]:
+            if soft_limit is None:
+                soft_limit = limits[1]
+            if hard_limit is None:
+                hard_limit = limits[1]
+            resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
