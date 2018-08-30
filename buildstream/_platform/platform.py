@@ -37,19 +37,22 @@ class Platform():
 
     @classmethod
     def _create_instance(cls):
-        if sys.platform.startswith('linux'):
-            backend = 'linux'
-        else:
-            backend = 'unix'
-
         # Meant for testing purposes and therefore hidden in the
         # deepest corners of the source code. Try not to abuse this,
         # please?
         if os.getenv('BST_FORCE_BACKEND'):
             backend = os.getenv('BST_FORCE_BACKEND')
+        elif sys.platform.startswith('linux'):
+            backend = 'linux'
+        elif sys.platform.startswith('darwin'):
+            backend = 'darwin'
+        else:
+            backend = 'unix'
 
         if backend == 'linux':
             from .linux import Linux as PlatformImpl
+        elif backend == 'darwin':
+            from .darwin import Darwin as PlatformImpl
         elif backend == 'unix':
             from .unix import Unix as PlatformImpl
         else:
