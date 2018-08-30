@@ -38,7 +38,11 @@ class Linux(Platform):
         self._gid = os.getegid()
 
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
-        self._user_ns_available = self._check_user_ns_available()
+
+        if self._local_sandbox_available():
+            self._user_ns_available = self._check_user_ns_available()
+        else:
+            self._user_ns_available = False
 
     def create_sandbox(self, *args, **kwargs):
         # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
@@ -58,8 +62,13 @@ class Linux(Platform):
     ################################################
     #              Private Methods                 #
     ################################################
-    def _check_user_ns_available(self):
+    def _local_sandbox_available(self):
+        try:
+            return os.path.exists(utils.get_host_tool('bwrap')) and os.path.exists('/dev/fuse')
+        except utils.ProgramNotFoundError:
+            return False
 
+    def _check_user_ns_available(self):
         # Here, lets check if bwrap is able to create user namespaces,
         # issue a warning if it's not available, and save the state
         # locally so that we can inform the sandbox to not try it
