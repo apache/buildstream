@@ -395,7 +395,13 @@ class Project():
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
                 .format(format_version, major, minor, BST_FORMAT_VERSION))
 
-        # Check if project.conf contains name key field
+        # FIXME:
+        #
+        #   Performing this check manually in the absense
+        #   of proper support from _yaml.node_get(), this should
+        #   be removed in favor of a proper accessor function
+        #   from the _yaml module when #591 is fixed.
+        #
         if self._project_conf.get('name') is None:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: project.conf does not contain expected key '{}'".format(projectfile, 'name'))
