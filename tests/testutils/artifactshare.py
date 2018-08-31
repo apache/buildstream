@@ -12,7 +12,7 @@ import pytest_cov
 
 from buildstream import _yaml
 from buildstream._artifactcache.cascache import CASCache
-from buildstream._artifactcache.casserver import create_server
+from buildstream._artifactcache.casserver import create_server, setup_server
 from buildstream._context import Context
 from buildstream._exceptions import ArtifactError
 
@@ -77,7 +77,7 @@ class ArtifactShare():
             os.statvfs = self._mock_statvfs
 
         server = create_server(self.repodir, enable_push=True)
-        port = server.add_insecure_port('localhost:0')
+        port = setup_server(server, 'localhost', 0)
 
         server.start()
 

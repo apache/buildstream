@@ -42,6 +42,11 @@ from .cascache import CASCache
 class ArtifactTooLargeException(Exception):
     pass
 
+class RequiresServerKeyPairException(Exception):
+    pass
+
+class RequiresServerKeyForClientAuthException(Exception):
+    pass
 
 # create_server():
 #
@@ -72,27 +77,37 @@ def create_server(repo, *, enable_push):
 
     return server
 
-
-@click.command(short_help="CAS Artifact Server")
-@click.option('--port', '-p', type=click.INT, required=True, help="Port number")
-@click.option('--server-key', help="Private server key for TLS (PEM-encoded)")
-@click.option('--server-cert', help="Public server certificate for TLS (PEM-encoded)")
-@click.option('--client-certs', help="Public client certificates for TLS (PEM-encoded)")
-@click.option('--enable-push', default=False, is_flag=True,
-              help="Allow clients to upload blobs and update artifact cache")
-@click.argument('repo')
-def server_main(repo, port, server_key, server_cert, client_certs, enable_push):
-    server = create_server(repo, enable_push=enable_push)
-
+# setup_server():
+#
+# Creates a port on the given server. This port either be secured or unsecured.
+# This is dependent on the optional credential arguments.
+#
+# Either none or both of server_key and server_cert must be specified. If
+# client_certs is specified, then both server_key and server_cert must be
+# specified.
+#
+# If the caller of this function does not care what port is used, this decision
+# can be made by the gRPC runtime by specifying port 0. The port that is
+# actually used is returned.
+#
+# Args:
+#     server (grpc.server): The server to open a port on
+#     address (str): The address to bind the port on
+#     port (int): The port number to bind on. 0 if the gRPC runtime should pick
+#     server_key (str): The filename of the server private key file
+#     server_cert (str): The filename of the server public cert file
+#     client_certs (str): The filename of the client public certs file
+#
+# Returns:
+#     int: The actual port that was opened for this server
+def setup_server(server, address, port, server_key=None, server_cert=None, client_certs=None):
     use_tls = bool(server_key)
 
     if bool(server_cert) != use_tls:
-        click.echo("ERROR: --server-key and --server-cert are both required for TLS", err=True)
-        sys.exit(-1)
+        raise RequiresServerKeyPairException()
 
     if client_certs and not use_tls:
-        click.echo("ERROR: --client-certs can only be used with --server-key", err=True)
-        sys.exit(-1)
+        raise RequiresServerKeyForClientAuthException()
 
     if use_tls:
         # Read public/private key pair
@@ -110,9 +125,30 @@ def server_main(repo, port, server_key, server_cert, client_certs, enable_push):
         credentials = grpc.ssl_server_credentials([(server_key_bytes, server_cert_bytes)],
                                                   root_certificates=client_certs_bytes,
                                                   require_client_auth=bool(client_certs))
-        server.add_secure_port('[::]:{}'.format(port), credentials)
+        return server.add_secure_port('{}:{}'.format(address, port), credentials)
     else:
-        server.add_insecure_port('[::]:{}'.format(port))
+        return server.add_insecure_port('{}:{}'.format(address, port))
+
+
+@click.command(short_help="CAS Artifact Server")
+@click.option('--port', '-p', type=click.INT, required=True, help="Port number")
+@click.option('--server-key', help="Private server key for TLS (PEM-encoded)")
+@click.option('--server-cert', help="Public server certificate for TLS (PEM-encoded)")
+@click.option('--client-certs', help="Public client certificates for TLS (PEM-encoded)")
+@click.option('--enable-push', default=False, is_flag=True,
+              help="Allow clients to upload blobs and update artifact cache")
+@click.argument('repo')
+def server_main(repo, port, server_key, server_cert, client_certs, enable_push):
+    server = create_server(repo, enable_push=enable_push)
+
+    try:
+        setup_server(server, '[::]', port, server_key, server_cert, client_certs)
+    except RequiresServerKeyPairException:
+        click.echo("ERROR: --server-key and --server-cert are both required for TLS", err=True)
+        sys.exit(-1)
+    except RequiresServerKeyForClientAuthException:
+        click.echo("ERROR: --client-certs can only be used with --server-key", err=True)
+        sys.exit(-1)
 
     # Run artifact server
     server.start()
