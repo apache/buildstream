@@ -35,6 +35,22 @@ DATA_DIR = os.path.join(
     "project",
 )
 
+# Credential directory
+CRED_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "creds",
+)
+
+# Parameters for credentials
+CREDENTIAL_FILENAMES = {
+    'unsecured': {},
+
+    'server_secured': {
+        'server_key': 'server_key.pem',
+        'server_cert': 'server_cert.pem',
+    },
+}
+
 
 # Assert that a given artifact is in the share
 #
@@ -60,14 +76,41 @@ def assert_not_shared(cli, share, project, element_name):
                              .format(share.repo, element_name))
 
 
+# Taking a dictionary of filenames, this returns a dictionary of qualified
+# fielnames
+def join_credentials_path(credential_filenames, credential_files):
+    return {
+        key: os.path.join(credential_files, filename)
+        for key, filename in credential_filenames.items()
+    }
+
+
+# Adds the server certificate to the configuration if it exists and returns
+# this for ease of use
+def add_client_config_creds(configuration, credentials):
+    if 'server_cert' in credentials:
+        artifacts = configuration['artifacts']
+        if isinstance(artifacts, (list,)):
+            for subconfig in artifacts:
+                subconfig['server-cert'] = credentials['server_cert']
+        else:
+            artifacts['server-cert'] = credentials['server_cert']
+    return configuration
+
+
 # Tests that:
 #
 #  * `bst push` fails if there are no remotes configured for pushing
 #  * `bst push` successfully pushes to any remote that is configured for pushing
 #
-@pytest.mark.datafiles(DATA_DIR)
-def test_push(cli, tmpdir, datafiles):
-    project = str(datafiles)
+@pytest.mark.parametrize(
+    'credential_filenames', CREDENTIAL_FILENAMES.values(), ids=list(CREDENTIAL_FILENAMES))
+@pytest.mark.datafiles(DATA_DIR, CRED_DIR, keep_top_dir=True)
+def test_push(cli, tmpdir, datafiles, credential_filenames):
+    project = os.path.join(datafiles, 'project')
+    credfiles = os.path.join(datafiles, 'creds')
+
+    credentials = join_credentials_path(credential_filenames, credfiles)
 
     # First build the project without the artifact cache configured
     result = cli.run(project=project, args=['build', 'target.bst'])
@@ -77,9 +120,11 @@ def test_push(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Set up two artifact shares.
-    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as share1:
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1'),
+                               credentials=credentials) as share1:
 
-        with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as share2:
+        with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2'),
+                                   credentials=credentials) as share2:
 
             # Try pushing with no remotes configured. This should fail.
             result = cli.run(project=project, args=['push', 'target.bst'])
@@ -87,19 +132,19 @@ def test_push(cli, tmpdir, datafiles):
 
             # Configure bst to pull but not push from a cache and run `bst push`.
             # This should also fail.
-            cli.configure({
+            cli.configure(add_client_config_creds({
                 'artifacts': {'url': share1.repo, 'push': False},
-            })
+            }, credentials))
             result = cli.run(project=project, args=['push', 'target.bst'])
             result.assert_main_error(ErrorDomain.STREAM, None)
 
             # Configure bst to push to one of the caches and run `bst push`. This works.
-            cli.configure({
+            cli.configure(add_client_config_creds({
                 'artifacts': [
                     {'url': share1.repo, 'push': False},
                     {'url': share2.repo, 'push': True},
                 ]
-            })
+            }, credentials))
             result = cli.run(project=project, args=['push', 'target.bst'])
 
             assert_not_shared(cli, share1, project, 'target.bst')
@@ -108,12 +153,12 @@ def test_push(cli, tmpdir, datafiles):
         # Now try pushing to both
 
         with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as share2:
-            cli.configure({
+            cli.configure(add_client_config_creds({
                 'artifacts': [
                     {'url': share1.repo, 'push': True},
                     {'url': share2.repo, 'push': True},
                 ]
-            })
+            }, credentials))
             result = cli.run(project=project, args=['push', 'target.bst'])
 
             assert_shared(cli, share1, project, 'target.bst')
@@ -122,11 +167,16 @@ def test_push(cli, tmpdir, datafiles):
 
 # Tests that `bst push --deps all` pushes all dependencies of the given element.
 #
-@pytest.mark.datafiles(DATA_DIR)
-def test_push_all(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+@pytest.mark.parametrize(
+    'credential_filenames', CREDENTIAL_FILENAMES.values(), ids=list(CREDENTIAL_FILENAMES))
+@pytest.mark.datafiles(DATA_DIR, CRED_DIR, keep_top_dir=True)
+def test_push_all(cli, tmpdir, datafiles, credential_filenames):
+    project = os.path.join(datafiles, 'project')
+    credfiles = os.path.join(datafiles, 'creds')
 
-    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+    credentials = join_credentials_path(credential_filenames, credfiles)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'), credentials=credentials) as share:
 
         # First build it without the artifact cache configured
         result = cli.run(project=project, args=['build', 'target.bst'])
@@ -136,7 +186,7 @@ def test_push_all(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, 'target.bst') == 'cached'
 
         # Configure artifact share
-        cli.configure({
+        cli.configure(add_client_config_creds({
             #
             # FIXME: This test hangs "sometimes" if we allow
             #        concurrent push.
@@ -152,7 +202,7 @@ def test_push_all(cli, tmpdir, datafiles):
                 'url': share.repo,
                 'push': True,
             }
-        })
+        }, credentials))
 
         # Now try bst push all the deps
         result = cli.run(project=project, args=[

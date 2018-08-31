@@ -29,7 +29,7 @@ from buildstream._exceptions import ArtifactError
 #
 class ArtifactShare():
 
-    def __init__(self, directory, *, total_space=None, free_space=None):
+    def __init__(self, directory, *, total_space=None, free_space=None, credentials={}):
 
         # The working directory for the artifact share (in case it
         # needs to do something outside of it's backend's storage folder).
@@ -55,19 +55,24 @@ class ArtifactShare():
 
         q = Queue()
 
-        self.process = Process(target=self.run, args=(q,))
+        self.process = Process(target=self.run, args=(q, credentials))
         self.process.start()
 
         # Retrieve port from server subprocess
         port = q.get()
 
-        self.repo = 'http://localhost:{}'.format(port)
+        if credentials:
+            protocol = 'https'
+        else:
+            protocol = 'http'
+
+        self.repo = '{}://localhost:{}'.format(protocol, port)
 
     # run():
     #
     # Run the artifact server.
     #
-    def run(self, q):
+    def run(self, q, credentials):
         pytest_cov.embed.cleanup_on_sigterm()
 
         # Optionally mock statvfs
@@ -77,7 +82,7 @@ class ArtifactShare():
             os.statvfs = self._mock_statvfs
 
         server = create_server(self.repodir, enable_push=True)
-        port = setup_server(server, 'localhost', 0)
+        port = setup_server(server, 'localhost', 0, **credentials)
 
         server.start()
 
@@ -149,8 +154,8 @@ class ArtifactShare():
 # Create an ArtifactShare for use in a test case
 #
 @contextmanager
-def create_artifact_share(directory, *, total_space=None, free_space=None):
-    share = ArtifactShare(directory, total_space=total_space, free_space=free_space)
+def create_artifact_share(directory, *, total_space=None, free_space=None, credentials={}):
+    share = ArtifactShare(directory, total_space=total_space, free_space=free_space, credentials=credentials)
     try:
         yield share
     finally:
