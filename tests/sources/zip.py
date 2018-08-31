@@ -53,7 +53,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
     ])
-    assert "Try #" in result.stderr
+    assert "FAILURE Try #" in result.stderr
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
 
