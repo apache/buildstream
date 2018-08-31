@@ -327,7 +327,7 @@ class Scheduler():
         self.schedule_jobs([job])
 
     def _check_cache_size_real(self):
-        job = CacheSizeJob(self, 'cache_size', 'cache_size',
+        job = CacheSizeJob(self, 'cache_size', 'cache_size/cache_size',
                            resources=[ResourceType.CACHE,
                                       ResourceType.PROCESS],
                            exclusive_resources=[ResourceType.CACHE],
