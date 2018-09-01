@@ -351,10 +351,10 @@ class Source(Plugin):
         Args:
            ref (simple object): The internal source reference to set, or ``None``
            node (dict): The same dictionary which was previously passed
-                        to :func:`~buildstream.source.Source.configure`
+                        to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
 
-        See :func:`~buildstream.source.Source.get_ref` for a discussion on
-        the *ref* parameter.
+        See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
+        for a discussion on the *ref* parameter.
 
         .. note::
 
@@ -384,8 +384,8 @@ class Source(Plugin):
         backend store allows one to query for a new ref from a symbolic
         tracking data without downloading then that is desirable.
 
-        See :func:`~buildstream.source.Source.get_ref` for a discussion on
-        the *ref* parameter.
+        See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
+        for a discussion on the *ref* parameter.
         """
         # Allow a non implementation
         return None
@@ -435,7 +435,7 @@ class Source(Plugin):
            :class:`.SourceError`
 
         Default implementation is to call
-        :func:`~buildstream.source.Source.stage`.
+        :func:`Source.stage() <buildstream.source.Source.stage>`.
 
         Implementors overriding this method should assume that *directory*
         already exists.
@@ -523,8 +523,10 @@ class Source(Plugin):
     def mark_download_url(self, url):
         """Identifies the URL that this Source uses to download
 
-        This must be called during :func:`~buildstream.plugin.Plugin.configure` if
-        :func:`~buildstream.source.Source.translate_url` is not called.
+        This must be called during
+        :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
+        :func:`Source.translate_url() <buildstream.source.Source.translate_url>`
+        is not called.
 
         Args:
            url (str): The url used to download
