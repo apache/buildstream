@@ -119,7 +119,6 @@ class Context():
         self._log_handle = None
         self._log_filename = None
         self.config_cache_quota = 'infinity'
-        self.artifactdir_volume = None
 
     # load()
     #
