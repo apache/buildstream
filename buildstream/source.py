@@ -28,6 +28,18 @@ Abstract Methods
 For loading and configuration purposes, Sources must implement the
 :ref:`Plugin base class abstract methods <core_plugin_abstract_methods>`.
 
+.. attention::
+
+   In order to ensure that all configuration data is processed at
+   load time, it is important that all URLs have been processed during
+   :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`.
+
+   Source implementations *must* either call
+   :func:`Source.translate_url() <buildstream.source.Source.translate_url>` or
+   :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
+   for every URL that has been specified in the configuration during
+   :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+
 Sources expose the following abstract methods. Unless explicitly mentioned,
 these methods are mandatory to implement.
 
@@ -184,6 +196,13 @@ class SourceFetcher():
     fetching and substituting aliases.
 
     *Since: 1.2*
+
+    .. attention::
+
+       When implementing a SourceFetcher, remember to call
+       :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
+       for every URL found in the configuration data at
+       :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` time.
     """
     def __init__(self):
         self.__alias = None
@@ -206,7 +225,7 @@ class SourceFetcher():
         Implementors should raise :class:`.SourceError` if the there is some
         network error or if the source reference could not be matched.
         """
-        raise ImplError("Source fetcher '{}' does not implement fetch()".format(type(self)))
+        raise ImplError("SourceFetcher '{}' does not implement fetch()".format(type(self)))
 
     #############################################################
     #                       Public Methods                      #
@@ -494,6 +513,13 @@ class Source(Plugin):
 
         Returns:
            str: The fully qualified url, with aliases resolved
+
+        .. note::
+
+           This must be called for every URL in the configuration during
+           :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
+           :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
+           is not called.
         """
         # Alias overriding can happen explicitly (by command-line) or
         # implicitly (the Source being constructed with an __alias_override).
@@ -523,13 +549,15 @@ class Source(Plugin):
     def mark_download_url(self, url):
         """Identifies the URL that this Source uses to download
 
-        This must be called during
-        :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
-        :func:`Source.translate_url() <buildstream.source.Source.translate_url>`
-        is not called.
-
         Args:
            url (str): The url used to download
+
+        .. note::
+
+           This must be called for every URL in the configuration during
+           :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
+           :func:`Source.translate_url() <buildstream.source.Source.translate_url>`
+           is not called.
 
         *Since: 1.2*
         """
