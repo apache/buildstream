@@ -380,8 +380,15 @@ class Source(Plugin):
         is recommended.
 
         Returns:
-           list: A list of SourceFetchers. If SourceFetchers are not supported,
-                 this will be an empty list.
+           iterable: The Source's SourceFetchers, if any.
+
+        .. note::
+
+           Implementors can implement this as a generator.
+
+           The :func:`SourceFetcher.fetch() <buildstream.source.SourceFetcher.fetch>`
+           method will be called on the returned fetchers one by one,
+           before consuming the next fetcher in the list.
 
         *Since: 1.2*
         """
