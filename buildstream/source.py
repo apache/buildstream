@@ -235,8 +235,10 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+
+        # The alias_override is only set on a re-instantiated Source
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
-        self.__expected_alias = None                    # A hacky way to store the first alias used
+        self.__expected_alias = None                    # The primary alias
 
         # FIXME: Reconstruct a MetaSource from a Source instead of storing it.
         self.__meta = meta                              # MetaSource stored so we can copy this source later.
@@ -430,17 +432,17 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
-    def translate_url(self, url, *, alias_override=None):
+    def translate_url(self, url, *, alias_override=None, primary=True):
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
 
         Args:
-           url (str): A url, which may be using an alias
+           url (str): A URL, which may be using an alias
            alias_override (str): Optionally, an URI to override the alias with. (*Since: 1.2*)
+           primary (bool): Whether this is the primary URL for the source. (*Since: 1.2*)
 
         Returns:
-           str: The fully qualified url, with aliases resolved
-
+           str: The fully qualified URL, with aliases resolved
         .. note::
 
            This must be called for every URL in the configuration during
@@ -448,6 +450,9 @@ class Source(Plugin):
            :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
            is not called.
         """
+        # Ensure that the download URL is also marked
+        self.mark_download_url(url, primary=primary)
+
         # Alias overriding can happen explicitly (by command-line) or
         # implicitly (the Source being constructed with an __alias_override).
         if alias_override or self.__alias_override:
@@ -466,18 +471,15 @@ class Source(Plugin):
                         url = override_url + url_body
             return url
         else:
-            # Sneakily store the alias if it hasn't already been stored
-            if not self.__expected_alias and url and utils._ALIAS_SEPARATOR in url:
-                self.mark_download_url(url)
-
             project = self._get_project()
             return project.translate_url(url, first_pass=self.__first_pass)
 
-    def mark_download_url(self, url):
+    def mark_download_url(self, url, *, primary=True):
         """Identifies the URL that this Source uses to download
 
         Args:
-           url (str): The url used to download
+           url (str): The URL used to download
+           primary (bool): Whether this is the primary URL for the source
 
         .. note::
 
@@ -488,7 +490,17 @@ class Source(Plugin):
 
         *Since: 1.2*
         """
-        self.__expected_alias = _extract_alias(url)
+        # Only mark the Source level aliases on the main instance, not in
+        # a reinstantiated instance in mirroring.
+        if not self.__alias_override:
+            if primary:
+                expected_alias = _extract_alias(url)
+
+                assert (self.__expected_alias is None or
+                        self.__expected_alias == expected_alias), \
+                    "Primary URL marked twice with different URLs"
+
+                self.__expected_alias = expected_alias
 
     def get_project_directory(self):
         """Fetch the project base directory

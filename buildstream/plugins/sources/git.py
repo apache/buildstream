@@ -90,13 +90,14 @@ GIT_MODULES = '.gitmodules'
 #
 class GitMirror(SourceFetcher):
 
-    def __init__(self, source, path, url, ref):
+    def __init__(self, source, path, url, ref, *, primary=False):
 
         super().__init__()
         self.source = source
         self.path = path
         self.url = url
         self.ref = ref
+        self.primary = primary
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
         self.mark_download_url(url)
 
@@ -114,7 +115,8 @@ class GitMirror(SourceFetcher):
             # system configured tmpdir is not on the same partition.
             #
             with self.source.tempdir() as tmpdir:
-                url = self.source.translate_url(self.url, alias_override=alias_override)
+                url = self.source.translate_url(self.url, alias_override=alias_override,
+                                                primary=self.primary)
                 self.source.call([self.source.host_git, 'clone', '--mirror', '-n', url, tmpdir],
                                  fail="Failed to clone git repository {}".format(url),
                                  fail_temporarily=True)
@@ -136,7 +138,9 @@ class GitMirror(SourceFetcher):
                                           .format(self.source, url, tmpdir, self.mirror, e)) from e
 
     def _fetch(self, alias_override=None):
-        url = self.source.translate_url(self.url, alias_override=alias_override)
+        url = self.source.translate_url(self.url,
+                                        alias_override=alias_override,
+                                        primary=self.primary)
 
         if alias_override:
             remote_name = utils.url_directory_name(alias_override)
@@ -294,7 +298,7 @@ class GitSource(Source):
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
-        self.mirror = GitMirror(self, '', self.original_url, ref)
+        self.mirror = GitMirror(self, '', self.original_url, ref, primary=True)
         self.tracking = self.node_get_member(node, str, 'track', None)
 
         # At this point we now know if the source has a ref and/or a track.
@@ -314,6 +318,11 @@ class GitSource(Source):
         for path, _ in self.node_items(modules):
             submodule = self.node_get_member(modules, Mapping, path)
             url = self.node_get_member(submodule, str, 'url', None)
+
+            # Make sure to mark all URLs that are specified in the configuration
+            if url:
+                self.mark_download_url(url, primary=False)
+
             self.submodule_overrides[path] = url
             if 'checkout' in submodule:
                 checkout = self.node_get_member(submodule, bool, 'checkout')
