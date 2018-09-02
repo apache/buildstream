@@ -308,7 +308,7 @@ class Source(Plugin):
         self.__config = self.__extract_config(meta)
         self.__first_pass = meta.first_pass
 
-        self.configure(self.__config)
+        self._configure(self.__config)
 
     COMMON_CONFIG_KEYS = ['kind', 'directory']
     """Common source config keys
