@@ -239,6 +239,7 @@ class Source(Plugin):
         # The alias_override is only set on a re-instantiated Source
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
         self.__expected_alias = None                    # The primary alias
+        self.__marked_urls = set()                      # Set of marked download URLs
 
         # FIXME: Reconstruct a MetaSource from a Source instead of storing it.
         self.__meta = meta                              # MetaSource stored so we can copy this source later.
@@ -501,6 +502,25 @@ class Source(Plugin):
                     "Primary URL marked twice with different URLs"
 
                 self.__expected_alias = expected_alias
+
+        # Enforce proper behaviour of plugins by ensuring that all
+        # aliased URLs have been marked at Plugin.configure() time.
+        #
+        if self._get_configuring():
+            # Record marked urls while configuring
+            #
+            self.__marked_urls.add(url)
+        else:
+            # If an unknown aliased URL is seen after configuring,
+            # this is an error.
+            #
+            # It is still possible that a URL that was not mentioned
+            # in the element configuration can be marked, this is
+            # the case for git submodules which might be automatically
+            # discovered.
+            #
+            assert (url in self.__marked_urls or not _extract_alias(url)), \
+                "URL was not seen at configure time: {}".format(url)
 
     def get_project_directory(self):
         """Fetch the project base directory
