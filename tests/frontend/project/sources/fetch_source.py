@@ -15,14 +15,17 @@ from buildstream import Source, Consistency, SourceError, SourceFetcher
 
 
 class FetchFetcher(SourceFetcher):
-    def __init__(self, source, url):
+    def __init__(self, source, url, primary=False):
         super().__init__()
         self.source = source
         self.original_url = url
+        self.primary = primary
         self.mark_download_url(url)
 
     def fetch(self, alias_override=None):
-        url = self.source.translate_url(self.original_url, alias_override=alias_override)
+        url = self.source.translate_url(self.original_url,
+                                        alias_override=alias_override,
+                                        primary=self.primary)
         with open(self.source.output_file, "a") as f:
             success = url in self.source.fetch_succeeds and self.source.fetch_succeeds[url]
             message = "Fetch {} {} from {}\n".format(self.original_url,
@@ -37,11 +40,20 @@ class FetchSource(Source):
     # Read config to know which URLs to fetch
     def configure(self, node):
         self.original_urls = self.node_get_member(node, list, 'urls')
-        self.fetchers = [FetchFetcher(self, url) for url in self.original_urls]
         self.output_file = self.node_get_member(node, str, 'output-text')
         self.fetch_succeeds = {}
         if 'fetch-succeeds' in node:
             self.fetch_succeeds = {x[0]: x[1] for x in self.node_items(node['fetch-succeeds'])}
+
+        # First URL is the primary one for this test
+        #
+        primary = True
+        self.fetchers = []
+        for url in self.original_urls:
+            self.mark_download_url(url, primary=primary)
+            fetcher = FetchFetcher(self, url, primary=primary)
+            self.fetchers.append(fetcher)
+            primary = False
 
     def get_source_fetchers(self):
         return self.fetchers

@@ -28,6 +28,18 @@ Abstract Methods
 For loading and configuration purposes, Sources must implement the
 :ref:`Plugin base class abstract methods <core_plugin_abstract_methods>`.
 
+.. attention::
+
+   In order to ensure that all configuration data is processed at
+   load time, it is important that all URLs have been processed during
+   :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`.
+
+   Source implementations *must* either call
+   :func:`Source.translate_url() <buildstream.source.Source.translate_url>` or
+   :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
+   for every URL that has been specified in the configuration during
+   :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+
 Sources expose the following abstract methods. Unless explicitly mentioned,
 these methods are mandatory to implement.
 
@@ -184,6 +196,13 @@ class SourceFetcher():
     fetching and substituting aliases.
 
     *Since: 1.2*
+
+    .. attention::
+
+       When implementing a SourceFetcher, remember to call
+       :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
+       for every URL found in the configuration data at
+       :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` time.
     """
     def __init__(self):
         self.__alias = None
@@ -206,7 +225,7 @@ class SourceFetcher():
         Implementors should raise :class:`.SourceError` if the there is some
         network error or if the source reference could not be matched.
         """
-        raise ImplError("Source fetcher '{}' does not implement fetch()".format(type(self)))
+        raise ImplError("SourceFetcher '{}' does not implement fetch()".format(type(self)))
 
     #############################################################
     #                       Public Methods                      #
@@ -277,8 +296,11 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+
+        # The alias_override is only set on a re-instantiated Source
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
-        self.__expected_alias = None                    # A hacky way to store the first alias used
+        self.__expected_alias = None                    # The primary alias
+        self.__marked_urls = set()                      # Set of marked download URLs
 
         # FIXME: Reconstruct a MetaSource from a Source instead of storing it.
         self.__meta = meta                              # MetaSource stored so we can copy this source later.
@@ -289,7 +311,7 @@ class Source(Plugin):
         self.__config = self.__extract_config(meta)
         self.__first_pass = meta.first_pass
 
-        self.configure(self.__config)
+        self._configure(self.__config)
 
     COMMON_CONFIG_KEYS = ['kind', 'directory']
     """Common source config keys
@@ -351,10 +373,10 @@ class Source(Plugin):
         Args:
            ref (simple object): The internal source reference to set, or ``None``
            node (dict): The same dictionary which was previously passed
-                        to :func:`~buildstream.source.Source.configure`
+                        to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
 
-        See :func:`~buildstream.source.Source.get_ref` for a discussion on
-        the *ref* parameter.
+        See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
+        for a discussion on the *ref* parameter.
 
         .. note::
 
@@ -384,8 +406,8 @@ class Source(Plugin):
         backend store allows one to query for a new ref from a symbolic
         tracking data without downloading then that is desirable.
 
-        See :func:`~buildstream.source.Source.get_ref` for a discussion on
-        the *ref* parameter.
+        See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
+        for a discussion on the *ref* parameter.
         """
         # Allow a non implementation
         return None
@@ -435,7 +457,7 @@ class Source(Plugin):
            :class:`.SourceError`
 
         Default implementation is to call
-        :func:`~buildstream.source.Source.stage`.
+        :func:`Source.stage() <buildstream.source.Source.stage>`.
 
         Implementors overriding this method should assume that *directory*
         already exists.
@@ -453,8 +475,15 @@ class Source(Plugin):
         is recommended.
 
         Returns:
-           list: A list of SourceFetchers. If SourceFetchers are not supported,
-                 this will be an empty list.
+           iterable: The Source's SourceFetchers, if any.
+
+        .. note::
+
+           Implementors can implement this as a generator.
+
+           The :func:`SourceFetcher.fetch() <buildstream.source.SourceFetcher.fetch>`
+           method will be called on the returned fetchers one by one,
+           before consuming the next fetcher in the list.
 
         *Since: 1.2*
         """
@@ -477,17 +506,27 @@ class Source(Plugin):
         os.makedirs(directory, exist_ok=True)
         return directory
 
-    def translate_url(self, url, *, alias_override=None):
+    def translate_url(self, url, *, alias_override=None, primary=True):
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
 
         Args:
-           url (str): A url, which may be using an alias
+           url (str): A URL, which may be using an alias
            alias_override (str): Optionally, an URI to override the alias with. (*Since: 1.2*)
+           primary (bool): Whether this is the primary URL for the source. (*Since: 1.2*)
 
         Returns:
-           str: The fully qualified url, with aliases resolved
+           str: The fully qualified URL, with aliases resolved
+        .. note::
+
+           This must be called for every URL in the configuration during
+           :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
+           :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
+           is not called.
         """
+        # Ensure that the download URL is also marked
+        self.mark_download_url(url, primary=primary)
+
         # Alias overriding can happen explicitly (by command-line) or
         # implicitly (the Source being constructed with an __alias_override).
         if alias_override or self.__alias_override:
@@ -506,25 +545,55 @@ class Source(Plugin):
                         url = override_url + url_body
             return url
         else:
-            # Sneakily store the alias if it hasn't already been stored
-            if not self.__expected_alias and url and utils._ALIAS_SEPARATOR in url:
-                self.mark_download_url(url)
-
             project = self._get_project()
             return project.translate_url(url, first_pass=self.__first_pass)
 
-    def mark_download_url(self, url):
+    def mark_download_url(self, url, *, primary=True):
         """Identifies the URL that this Source uses to download
 
-        This must be called during :func:`~buildstream.plugin.Plugin.configure` if
-        :func:`~buildstream.source.Source.translate_url` is not called.
-
         Args:
-           url (str): The url used to download
+           url (str): The URL used to download
+           primary (bool): Whether this is the primary URL for the source
+
+        .. note::
+
+           This must be called for every URL in the configuration during
+           :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
+           :func:`Source.translate_url() <buildstream.source.Source.translate_url>`
+           is not called.
 
         *Since: 1.2*
         """
-        self.__expected_alias = _extract_alias(url)
+        # Only mark the Source level aliases on the main instance, not in
+        # a reinstantiated instance in mirroring.
+        if not self.__alias_override:
+            if primary:
+                expected_alias = _extract_alias(url)
+
+                assert (self.__expected_alias is None or
+                        self.__expected_alias == expected_alias), \
+                    "Primary URL marked twice with different URLs"
+
+                self.__expected_alias = expected_alias
+
+        # Enforce proper behaviour of plugins by ensuring that all
+        # aliased URLs have been marked at Plugin.configure() time.
+        #
+        if self._get_configuring():
+            # Record marked urls while configuring
+            #
+            self.__marked_urls.add(url)
+        else:
+            # If an unknown aliased URL is seen after configuring,
+            # this is an error.
+            #
+            # It is still possible that a URL that was not mentioned
+            # in the element configuration can be marked, this is
+            # the case for git submodules which might be automatically
+            # discovered.
+            #
+            assert (url in self.__marked_urls or not _extract_alias(url)), \
+                "URL was not seen at configure time: {}".format(url)
 
     def get_project_directory(self):
         """Fetch the project base directory

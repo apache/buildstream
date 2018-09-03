@@ -245,7 +245,7 @@ class Element(Plugin):
         # Collect the composited element configuration and
         # ask the element to configure itself.
         self.__config = self.__extract_config(meta)
-        self.configure(self.__config)
+        self._configure(self.__config)
 
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(meta)
