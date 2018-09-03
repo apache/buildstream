@@ -162,6 +162,7 @@ class Plugin():
         self.__provenance = provenance  # The Provenance information
         self.__type_tag = type_tag      # The type of plugin (element or source)
         self.__unique_id = _plugin_register(self)  # Unique ID
+        self.__configuring = False      # Whether we are currently configuring
 
         # Infer the kind identifier
         modulename = type(self).__module__
@@ -651,7 +652,32 @@ class Plugin():
         else:
             yield log
 
+    # _configure():
+    #
+    # Calls configure() for the plugin, this must be called by
+    # the core instead of configure() directly, so that the
+    # _get_configuring() state is up to date.
+    #
+    # Args:
+    #    node (dict): The loaded configuration dictionary
+    #
+    def _configure(self, node):
+        self.__configuring = True
+        self.configure(node)
+        self.__configuring = False
+
+    # _get_configuring():
+    #
+    # Checks whether the plugin is in the middle of having
+    # its Plugin.configure() method called
+    #
+    # Returns:
+    #    (bool): Whether we are currently configuring
+    def _get_configuring(self):
+        return self.__configuring
+
     # _preflight():
+    #
     # Calls preflight() for the plugin, and allows generic preflight
     # checks to be added
     #
@@ -659,6 +685,7 @@ class Plugin():
     #    SourceError: If it's a Source implementation
     #    ElementError: If it's an Element implementation
     #    ProgramNotFoundError: If a required host tool is not found
+    #
     def _preflight(self):
         self.preflight()
 
