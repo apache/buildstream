@@ -1,4 +1,12 @@
 =================
+buildstream 1.2.0
+=================
+
+  o Various last minute bug fixes
+
+  o Final update to the SourceFetcher related mirroring APIs
+
+=================
 buildstream 1.1.7
 =================
 
