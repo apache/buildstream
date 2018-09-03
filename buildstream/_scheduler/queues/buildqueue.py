@@ -32,7 +32,7 @@ class BuildQueue(Queue):
 
     action_name = "Build"
     complete_name = "Built"
-    resources = [ResourceType.PROCESS]
+    resources = [ResourceType.PROCESS, ResourceType.CACHE]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
