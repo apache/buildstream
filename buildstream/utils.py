@@ -35,6 +35,7 @@ import tempfile
 import itertools
 import functools
 from contextlib import contextmanager
+from stat import S_ISDIR
 
 import psutil
 
@@ -328,27 +329,25 @@ def safe_remove(path):
     Raises:
        UtilError: In the case of unexpected system call failures
     """
-    if os.path.lexists(path):
-
-        # Try to remove anything that is in the way, but issue
-        # a warning instead if it removes a non empty directory
-        try:
+    try:
+        if S_ISDIR(os.lstat(path).st_mode):
+            os.rmdir(path)
+        else:
             os.unlink(path)
-        except OSError as e:
-            if e.errno != errno.EISDIR:
-                raise UtilError("Failed to remove '{}': {}"
-                                .format(path, e))
 
-            try:
-                os.rmdir(path)
-            except OSError as e:
-                if e.errno == errno.ENOTEMPTY:
-                    return False
-                else:
-                    raise UtilError("Failed to remove '{}': {}"
-                                    .format(path, e))
+        # File removed/unlinked successfully
+        return True
 
-    return True
+    except OSError as e:
+        if e.errno == errno.ENOTEMPTY:
+            # Path is non-empty directory
+            return False
+        elif e.errno == errno.ENOENT:
+            # Path does not exist
+            return True
+
+        raise UtilError("Failed to remove '{}': {}"
+                        .format(path, e))
 
 
 def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=False):
