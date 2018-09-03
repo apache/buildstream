@@ -28,7 +28,7 @@ class BuildQueue(Queue):
 
     action_name = "Build"
     complete_name = "Built"
-    resources = [ResourceType.PROCESS]
+    resources = [ResourceType.PROCESS, ResourceType.CACHE]
 
     def process(self, element):
         element._assemble()
