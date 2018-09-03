@@ -8,7 +8,7 @@ class ResourceType():
 class Resources():
     def __init__(self, num_builders, num_fetchers, num_pushers):
         self._max_resources = {
-            ResourceType.CACHE: 1,
+            ResourceType.CACHE: 0,
             ResourceType.DOWNLOAD: num_fetchers,
             ResourceType.PROCESS: num_builders,
             ResourceType.UPLOAD: num_pushers
