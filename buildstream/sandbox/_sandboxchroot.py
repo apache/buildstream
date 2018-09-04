@@ -58,6 +58,12 @@ class SandboxChroot(Sandbox):
         if env is None:
             env = self._get_environment()
 
+        # Naive getcwd implementations can break when bind-mounts to different
+        # paths on the same filesystem are present. Letting the command know
+        # what directory it is in makes it unnecessary to call the faulty
+        # getcwd.
+        env['PWD'] = cwd
+
         if not self._has_command(command[0], env):
             raise SandboxError("Staged artifacts do not provide command "
                                "'{}'".format(command[0]),

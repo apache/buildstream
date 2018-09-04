@@ -69,6 +69,15 @@ class SandboxBwrap(Sandbox):
         if env is None:
             env = self._get_environment()
 
+        if cwd is None:
+            cwd = '/'
+
+        # Naive getcwd implementations can break when bind-mounts to different
+        # paths on the same filesystem are present. Letting the command know
+        # what directory it is in makes it unnecessary to call the faulty
+        # getcwd.
+        env['PWD'] = cwd
+
         if not self._has_command(command[0], env):
             raise SandboxError("Staged artifacts do not provide command "
                                "'{}'".format(command[0]),
@@ -82,9 +91,6 @@ class SandboxBwrap(Sandbox):
         # each mount point needs to be mounted from and to
         mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY)
         root_mount_source = mount_map.get_mount_source('/')
-
-        if cwd is None:
-            cwd = '/'
 
         # Grab the full path of the bwrap binary
         bwrap_command = [utils.get_host_tool('bwrap')]

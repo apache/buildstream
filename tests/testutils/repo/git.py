@@ -26,24 +26,30 @@ class Git(Repo):
 
         super(Git, self).__init__(directory, subdir)
 
+    def _run_git(self, *args, **kwargs):
+        argv = ['git']
+        argv.extend(args)
+        if 'env' not in kwargs:
+            kwargs['env'] = dict(GIT_ENV, PWD=self.repo)
+        kwargs.setdefault('cwd', self.repo)
+        kwargs.setdefault('check', True)
+        return subprocess.run(argv, **kwargs)
+
     def create(self, directory):
         self.copy_directory(directory, self.repo)
-        subprocess.call(['git', 'init', '.'], env=GIT_ENV, cwd=self.repo)
-        subprocess.call(['git', 'add', '.'], env=GIT_ENV, cwd=self.repo)
-        subprocess.call(['git', 'commit', '-m', 'Initial commit'], env=GIT_ENV, cwd=self.repo)
+        self._run_git('init', '.')
+        self._run_git('add', '.')
+        self._run_git('commit', '-m', 'Initial commit')
         return self.latest_commit()
 
     def add_commit(self):
-        subprocess.call(['git', 'commit', '--allow-empty', '-m', 'Additional commit'],
-                        env=GIT_ENV, cwd=self.repo)
+        self._run_git('commit', '--allow-empty', '-m', 'Additional commit')
         return self.latest_commit()
 
     def add_file(self, filename):
         shutil.copy(filename, self.repo)
-        subprocess.call(['git', 'add', os.path.basename(filename)], env=GIT_ENV, cwd=self.repo)
-        subprocess.call([
-            'git', 'commit', '-m', 'Added {}'.format(os.path.basename(filename))
-        ], env=GIT_ENV, cwd=self.repo)
+        self._run_git('add', os.path.basename(filename))
+        self._run_git('commit', '-m', 'Added {}'.format(os.path.basename(filename)))
         return self.latest_commit()
 
     def add_submodule(self, subdir, url=None, checkout=None):
@@ -53,8 +59,8 @@ class Git(Repo):
         if url is not None:
             submodule['url'] = url
         self.submodules[subdir] = submodule
-        subprocess.call(['git', 'submodule', 'add', url, subdir], env=GIT_ENV, cwd=self.repo)
-        subprocess.call(['git', 'commit', '-m', 'Added the submodule'], env=GIT_ENV, cwd=self.repo)
+        self._run_git('submodule', 'add', url, subdir)
+        self._run_git('commit', '-m', 'Added the submodule')
         return self.latest_commit()
 
     def source_config(self, ref=None, checkout_submodules=None):
@@ -74,10 +80,8 @@ class Git(Repo):
         return config
 
     def latest_commit(self):
-        output = subprocess.check_output([
-            'git', 'rev-parse', 'master'
-        ], env=GIT_ENV, cwd=self.repo)
+        output = self._run_git('rev-parse', 'master', stdout=subprocess.PIPE).stdout
         return output.decode('UTF-8').strip()
 
     def branch(self, branch_name):
-        subprocess.call(['git', 'checkout', '-b', branch_name], env=GIT_ENV, cwd=self.repo)
+        self._run_git('checkout', '-b', branch_name)
