@@ -109,7 +109,7 @@ class Job():
         # Private members
         #
         self._scheduler = scheduler            # The scheduler
-        self._queue = multiprocessing.Queue()  # A message passing queue
+        self._queue = None                     # A message passing queue
         self._process = None                   # The Process object
         self._watcher = None                   # Child process watcher
         self._listening = False                # Whether the parent is currently listening
@@ -129,6 +129,8 @@ class Job():
     # Spawns the job.
     #
     def spawn(self):
+
+        self._queue = multiprocessing.Queue()
 
         self._tries += 1
         self._parent_start_listening()
@@ -551,6 +553,9 @@ class Job():
 
         self.parent_complete(returncode == RC_OK, self._result)
         self._scheduler.job_completed(self, returncode == RC_OK)
+
+        # Force the deletion of the queue and process objects to try and clean up FDs
+        self._queue = self._process = None
 
     # _parent_process_envelope()
     #
