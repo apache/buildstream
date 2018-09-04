@@ -543,6 +543,15 @@ class CasBasedDirectory(Directory):
                 filelist.append(k)
         return filelist
 
+    def recalculate_hash(self):
+        """ Recalcuates the hash for this directory and store the results in
+        the cache. If this directory has a parent, tell it to
+        recalculate (since changing this directory changes an entry in
+        the parent). Hashes for subdirectories also get recalculated.
+        """
+        self._recalculate_recursing_up()
+        self._recalculate_recursing_down()
+
     def _get_identifier(self):
         path = ""
         if self.parent:
