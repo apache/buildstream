@@ -15,6 +15,7 @@ from buildstream._artifactcache.cascache import CASCache
 from buildstream._artifactcache.casserver import create_server
 from buildstream._context import Context
 from buildstream._exceptions import ArtifactError
+from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
 
 # ArtifactShare()
@@ -86,6 +87,23 @@ class ArtifactShare():
 
         # Sleep until termination by signal
         signal.pause()
+
+    # has_object():
+    #
+    # Checks whether the object is present in the share
+    #
+    # Args:
+    #    digest (str): The object's digest
+    #
+    # Returns:
+    #    (bool): True if the object exists in the share, otherwise false.
+    def has_object(self, digest):
+
+        assert isinstance(digest, remote_execution_pb2.Digest)
+
+        object_path = self.cas.objpath(digest)
+
+        return os.path.exists(object_path)
 
     # has_artifact():
     #
