@@ -121,7 +121,7 @@ class SafeHardlinkOps(Operations):
         st = os.lstat(full_path)
         return dict((key, getattr(st, key)) for key in (
             'st_atime', 'st_ctime', 'st_gid', 'st_mode',
-            'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+            'st_mtime', 'st_nlink', 'st_size', 'st_uid', 'st_rdev'))
 
     def readdir(self, path, fh):
         full_path = self._full_path(path)
