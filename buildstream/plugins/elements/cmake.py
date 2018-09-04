@@ -56,7 +56,8 @@ from buildstream import BuildElement
 
 # Element implementation for the 'cmake' kind.
 class CMakeElement(BuildElement):
-    pass
+    # Supports virtual directories (required for remote execution)
+    BST_VIRTUAL_DIRECTORY = True
 
 
 # Plugin entry point
