@@ -372,6 +372,8 @@ def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
        Directories in `dest` are replaced with files from `src`,
        unless the existing directory in `dest` is not empty in which
        case the path will be reported in the return value.
+
+       UNIX domain socket files from `src` are ignored.
     """
     presorted = False
     if files is None:
@@ -414,6 +416,8 @@ def link_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
 
        If a hardlink cannot be created due to crossing filesystems,
        then the file will be copied instead.
+
+       UNIX domain socket files from `src` are ignored.
     """
     presorted = False
     if files is None:
@@ -840,6 +844,13 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
                 os.remove(destpath)
             os.mknod(destpath, file_stat.st_mode, file_stat.st_rdev)
             os.chmod(destpath, file_stat.st_mode)
+
+        elif stat.S_ISFIFO(mode):
+            os.mkfifo(destpath, mode)
+
+        elif stat.S_ISSOCK(mode):
+            # We can't duplicate the process serving the socket anyway
+            pass
 
         else:
             # Unsupported type.
