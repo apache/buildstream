@@ -19,6 +19,7 @@
 
 import hashlib
 import itertools
+import io
 import multiprocessing
 import os
 import signal
@@ -330,6 +331,64 @@ class CASCache(ArtifactCache):
                     "Remote ({}) already has {} cached".format(
                         remote.spec.url, element._get_brief_display_key())
                 ))
+
+        return pushed
+
+    def push_directory(self, project, directory):
+
+        push_remotes = [r for r in self._remotes[project] if r.spec.push]
+
+        if directory.ref is None:
+            return None
+
+        for remote in push_remotes:
+            remote.init()
+
+            self._send_directory(remote, directory.ref)
+
+        return directory.ref
+
+    def push_message(self, project, message):
+
+        push_remotes = [r for r in self._remotes[project] if r.spec.push]
+
+        message_buffer = message.SerializeToString()
+        message_sha = hashlib.sha256(message_buffer)
+        message_digest = remote_execution_pb2.Digest()
+        message_digest.hash = message_sha.hexdigest()
+        message_digest.size_bytes = len(message_buffer)
+
+        for remote in push_remotes:
+            remote.init()
+
+            with io.BytesIO(message_buffer) as b:
+                self._send_blob(remote, message_digest, b)
+
+        return message_digest
+
+    def _verify_digest_on_remote(self, remote, digest):
+        # Check whether ref is already on the server in which case
+        # there is no need to push the artifact
+        request = remote_execution_pb2.FindMissingBlobsRequest()
+        request.blob_digests.extend([digest])
+
+        response = remote.cas.FindMissingBlobs(request)
+        if digest in response.missing_blob_digests:
+            return False
+
+        return True
+
+    def verify_digest_pushed(self, project, digest):
+
+        push_remotes = [r for r in self._remotes[project] if r.spec.push]
+
+        pushed = False
+
+        for remote in push_remotes:
+            remote.init()
+
+            if self._verify_digest_on_remote(remote, digest):
+                pushed = True
 
         return pushed
 
