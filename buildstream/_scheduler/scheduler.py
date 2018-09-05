@@ -330,7 +330,6 @@ class Scheduler():
         job = CacheSizeJob(self, 'cache_size', 'cache_size/cache_size',
                            resources=[ResourceType.CACHE,
                                       ResourceType.PROCESS],
-                           exclusive_resources=[ResourceType.CACHE],
                            complete_cb=self._run_cleanup)
         self.schedule_jobs([job])
 
