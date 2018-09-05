@@ -262,6 +262,25 @@ class CASCache(ArtifactCache):
 
         return False
 
+    def pull_tree(self, project, digest):
+        """ Pull a single Tree rather than an artifact.
+        Does not update local refs. """
+
+        for remote in self._remotes[project]:
+            try:
+                remote.init()
+
+                digest = self._fetch_tree(remote, digest)
+
+                # no need to pull from additional remotes
+                return digest
+
+            except grpc.RpcError as e:
+                if e.code() != grpc.StatusCode.NOT_FOUND:
+                    raise
+
+        return None
+
     def link_key(self, element, oldkey, newkey):
         oldref = self.get_artifact_fullname(element, oldkey)
         newref = self.get_artifact_fullname(element, newkey)
@@ -850,6 +869,38 @@ class CASCache(ArtifactCache):
             # all referenced blobs to avoid dangling references in the repository
             digest = self.add_object(path=out.name)
             assert digest.hash == tree.hash
+
+    def _fetch_tree(self, remote, digest):
+        # download but do not store the Tree object
+        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
+            self._fetch_blob(remote, digest, out)
+
+            tree = remote_execution_pb2.Tree()
+
+            with open(out.name, 'rb') as f:
+                tree.ParseFromString(f.read())
+
+            tree.children.extend([tree.root])
+            for directory in tree.children:
+                for filenode in directory.files:
+                    fileobjpath = self.objpath(filenode.digest)
+                    if os.path.exists(fileobjpath):
+                        # already in local cache
+                        continue
+
+                    with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
+                        self._fetch_blob(remote, filenode.digest, f)
+
+                        added_digest = self.add_object(path=f.name)
+                        assert added_digest.hash == filenode.digest.hash
+
+                # place directory blob only in final location when we've downloaded
+                # all referenced blobs to avoid dangling references in the repository
+                dirbuffer = directory.SerializeToString()
+                dirdigest = self.add_object(buffer=dirbuffer)
+                assert dirdigest.size_bytes == len(dirbuffer)
+
+        return dirdigest
 
     def _send_blob(self, remote, digest, stream, u_uid=uuid.uuid4()):
         resource_name = '/'.join(['uploads', str(u_uid), 'blobs',
