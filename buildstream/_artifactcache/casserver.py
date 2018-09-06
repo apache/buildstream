@@ -236,6 +236,31 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
                 d.size_bytes = digest.size_bytes
         return response
 
+    def BatchReadBlobs(self, request, context):
+        response = remote_execution_pb2.BatchReadBlobsResponse()
+        batch_size = 0
+
+        for digest in request.digests:
+            batch_size += digest.size_bytes
+            if batch_size > _MAX_BATCH_TOTAL_SIZE_BYTES:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                return response
+
+            blob_response = response.responses.add()
+            blob_response.digest.hash = digest.hash
+            blob_response.digest.size_bytes = digest.size_bytes
+            try:
+                with open(self.cas.objpath(digest), 'rb') as f:
+                    if os.fstat(f.fileno()).st_size != digest.size_bytes:
+                        blob_response.status.code = grpc.StatusCode.NOT_FOUND
+                        continue
+
+                    blob_response.data = f.read(digest.size_bytes)
+            except FileNotFoundError:
+                blob_response.status.code = grpc.StatusCode.NOT_FOUND
+
+        return response
+
 
 class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
     def GetCapabilities(self, request, context):
