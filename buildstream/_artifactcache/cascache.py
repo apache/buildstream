@@ -253,7 +253,7 @@ class CASCache(ArtifactCache):
                 else:
                     self.context.message(Message(
                         None,
-                        MessageType.SKIPPED,
+                        MessageType.INFO,
                         "Remote ({}) does not have {} cached".format(
                             remote.spec.url, element._get_brief_display_key())
                     ))
@@ -344,7 +344,7 @@ class CASCache(ArtifactCache):
             else:
                 self.context.message(Message(
                     None,
-                    MessageType.SKIPPED,
+                    MessageType.INFO,
                     "Remote ({}) already has {} cached".format(
                         remote.spec.url, element._get_brief_display_key())
                 ))

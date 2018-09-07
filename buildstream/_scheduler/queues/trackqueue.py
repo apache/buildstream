@@ -51,18 +51,11 @@ class TrackQueue(Queue):
     def done(self, _, element, result, success):
 
         if not success:
-            return False
-
-        changed = False
+            return
 
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
             source = _plugin_lookup(unique_id)
-            # We appear processed if at least one source has changed
-            if source._save_ref(new_ref):
-                changed = True
+            source._save_ref(new_ref)
 
         element._tracking_done()
-
-        # We'll appear as a skipped element if tracking resulted in no change
-        return changed
