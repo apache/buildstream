@@ -19,7 +19,6 @@
 
 import os
 
-from .._artifactcache.cascache import CASCache
 from .._exceptions import PlatformError
 from ..sandbox import SandboxChroot
 
@@ -31,7 +30,6 @@ class Unix(Platform):
     def __init__(self, context):
 
         super().__init__(context)
-        self._artifact_cache = CASCache(context)
 
         # Not necessarily 100% reliable, but we want to fail early.
         if os.geteuid() != 0:

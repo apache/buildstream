@@ -17,7 +17,6 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import os
 import subprocess
 
 from .. import _site
@@ -33,15 +32,16 @@ class Linux(Platform):
 
     def __init__(self, context):
 
-        super().__init__(context)
-
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
 
         if self._local_sandbox_available():
             self._user_ns_available = self._check_user_ns_available(context)
         else:
             self._user_ns_available = False
-        self._artifact_cache = CASCache(context, enable_push=self._user_ns_available)
+
+        # _user_ns_available needs to be set before chaining up to the super class
+        # This is because it will call create_artifact_cache()
+        super().__init__(context)
 
     @property
     def artifactcache(self):
@@ -52,6 +52,9 @@ class Linux(Platform):
         kwargs['user_ns_available'] = self._user_ns_available
         kwargs['die_with_parent_available'] = self._die_with_parent_available
         return SandboxBwrap(*args, **kwargs)
+
+    def create_artifact_cache(self, context, *, enable_push):
+        return super().create_artifact_cache(context=context, enable_push=self._user_ns_available)
 
     ################################################
     #              Private Methods                 #

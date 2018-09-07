@@ -22,6 +22,7 @@ import sys
 import resource
 
 from .._exceptions import PlatformError, ImplError
+from .._artifactcache.cascache import CASCache
 
 
 class Platform():
@@ -39,6 +40,7 @@ class Platform():
     def __init__(self, context):
         self.context = context
         self.set_resource_limits()
+        self._artifact_cache = self.create_artifact_cache(context, enable_push=True)
 
     @classmethod
     def create_instance(cls, *args, **kwargs):
@@ -109,3 +111,6 @@ class Platform():
             if hard_limit is None:
                 hard_limit = limits[1]
             resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
+
+    def create_artifact_cache(self, context, *, enable_push=True):
+        return CASCache(context=context, enable_push=enable_push)
