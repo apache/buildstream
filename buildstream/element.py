@@ -1712,16 +1712,15 @@ class Element(Plugin):
             self.warn("Not pushing tainted artifact.")
             return False
 
-        display_key = self._get_brief_display_key()
-        with self.timed_activity("Pushing artifact {}".format(display_key)):
-            # Push all keys used for local commit
-            pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit())
-            if not pushed:
-                return False
+        # Push all keys used for local commit
+        pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit())
+        if not pushed:
+            return False
 
-            # Notify successful upload
-            self.info("Pushed artifact {}".format(display_key))
-            return True
+        # Notify successful upload
+        display_key = self._get_brief_display_key()
+        self.info("Pushed artifact {}".format(display_key))
+        return True
 
     # _shell():
     #
