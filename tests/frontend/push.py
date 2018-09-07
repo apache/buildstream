@@ -362,3 +362,26 @@ def test_push_cross_junction(cli, tmpdir, datafiles):
 
         cache_key = cli.get_element_key(project, 'junction.bst:import-etc.bst')
         assert share.has_artifact('subtest', 'import-etc.bst', cache_key)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_already_cached(caplog, cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    caplog.set_level(1)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+        result = cli.run(project=project, args=['build', 'target.bst'])
+
+        result.assert_success()
+        assert "SKIPPED Push" not in result.stderr
+
+        result = cli.run(project=project, args=['push', 'target.bst'])
+
+        result.assert_success()
+        assert not result.get_pushed_elements(), "No elements should have been pushed since the cache was populated"
+        assert "INFO    Remote ({}) already has ".format(share.repo) in result.stderr
+        assert "SKIPPED Push" in result.stderr
