@@ -95,6 +95,7 @@ from . import _site
 from ._platform import Platform
 from .plugin import CoreWarnings
 from .sandbox._config import SandboxConfig
+from .sandbox._sandboxremote import SandboxRemote
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
@@ -249,6 +250,12 @@ class Element(Plugin):
 
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(meta)
+
+        # Extract remote execution URL
+        if not self.__is_junction:
+            self.__remote_execution_url = project.remote_execution_url
+        else:
+            self.__remote_execution_url = None
 
     def __lt__(self, other):
         return self.name < other.name
@@ -1570,6 +1577,8 @@ class Element(Plugin):
                 finally:
                     if collect is not None:
                         try:
+                            # Sandbox will probably have replaced its virtual directory, so get it again
+                            sandbox_vroot = sandbox.get_virtual_directory()
                             collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
                         except VirtualDirectoryError:
                             # No collect directory existed
@@ -2146,7 +2155,32 @@ class Element(Plugin):
         project = self._get_project()
         platform = Platform.get_platform()
 
-        if directory is not None and os.path.exists(directory):
+        if self.__remote_execution_url and self.BST_VIRTUAL_DIRECTORY:
+            if not self.__artifacts.has_push_remotes(element=self):
+                # Give an early warning if remote execution will not work
+                raise ElementError("Artifact {} is configured to use remote execution but has no push remotes. "
+                                   .format(self.name) +
+                                   "The remote artifact server(s) may not be correctly configured or contactable.")
+
+            self.info("Using a remote sandbox for artifact {}".format(self.name))
+
+            sandbox = SandboxRemote(context, project,
+                                    directory,
+                                    stdout=stdout,
+                                    stderr=stderr,
+                                    config=config,
+                                    server_url=self.__remote_execution_url,
+                                    allow_real_directory=False)
+            yield sandbox
+
+        elif directory is not None and os.path.exists(directory):
+            if self.__remote_execution_url:
+                self.warn("Artifact {} is configured to use remote execution but element plugin does not support it."
+                          .format(self.name), detail="Element plugin '{kind}' does not support virtual directories."
+                          .format(kind=self.get_kind()), warning_token="remote-failure")
+
+                self.info("Falling back to local sandbox for artifact {}".format(self.name))
+
             sandbox = platform.create_sandbox(context, project,
                                               directory,
                                               stdout=stdout,

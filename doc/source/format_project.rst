@@ -204,6 +204,24 @@ with an artifact share.
 You can also specify a list of caches here; earlier entries in the list
 will have higher priority than later ones.
 
+Remote execution
+~~~~~~~~~~~~~~~~
+BuildStream supports remote execution using the Google Remote Execution API
+(REAPI). A description of how remote execution works is beyond the scope
+of this document, but you can specify a remote server complying with the REAPI
+using the `remote-execution` option:
+
+.. code:: yaml
+
+  remote-execution:
+
+    # A url defining a remote execution server
+    url: http://buildserver.example.com:50051
+
+The url should contain a hostname and port separated by ':'. Only plain HTTP is
+currently suported (no HTTPS).
+
+The Remote Execution API can be found via https://github.com/bazelbuild/remote-apis.
 
 .. _project_essentials_mirrors:
 

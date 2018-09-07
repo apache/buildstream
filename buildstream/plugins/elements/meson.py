@@ -53,7 +53,8 @@ from buildstream import BuildElement
 
 # Element implementation for the 'meson' kind.
 class MesonElement(BuildElement):
-    pass
+    # Supports virtual directories (required for remote execution)
+    BST_VIRTUAL_DIRECTORY = True
 
 
 # Plugin entry point

@@ -128,6 +128,7 @@ class Project():
         self._shell_host_files = []   # A list of HostMount objects
 
         self.artifact_cache_specs = None
+        self.remote_execution_url = None
         self._sandbox = None
         self._splits = None
 
@@ -471,7 +472,7 @@ class Project():
             'aliases', 'name',
             'artifacts', 'options',
             'fail-on-overlap', 'shell', 'fatal-warnings',
-            'ref-storage', 'sandbox', 'mirrors'
+            'ref-storage', 'sandbox', 'mirrors', 'remote-execution'
         ])
 
         #
@@ -481,6 +482,11 @@ class Project():
 
         # Load artifacts pull/push configuration for this project
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
+
+        # Load remote-execution configuration for this project
+        remote_execution = _yaml.node_get(config, Mapping, 'remote-execution')
+        _yaml.node_validate(remote_execution, ['url'])
+        self.remote_execution_url = _yaml.node_get(remote_execution, str, 'url')
 
         # Load sandbox environment variables
         self.base_environment = _yaml.node_get(config, Mapping, 'environment')
