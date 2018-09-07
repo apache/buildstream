@@ -356,4 +356,5 @@ def test_pull_missing_notifies_user(caplog, cli, tmpdir, datafiles):
         assert not result.get_pulled_elements(), \
             "No elements should have been pulled since the cache was empty"
 
-        assert "SKIPPED Remote ({}) does not have".format(share.repo) in result.stderr
+        assert "INFO    Remote ({}) does not have".format(share.repo) in result.stderr
+        assert "SKIPPED Pull" in result.stderr

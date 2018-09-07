@@ -31,7 +31,7 @@ import multiprocessing
 import psutil
 
 # BuildStream toplevel imports
-from ..._exceptions import ImplError, BstError, set_last_task_error
+from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
 
@@ -40,6 +40,7 @@ from ... import _signals, utils
 RC_OK = 0
 RC_FAIL = 1
 RC_PERM_FAIL = 2
+RC_SKIPPED = 3
 
 
 # Used to distinguish between status messages and return values
@@ -117,7 +118,7 @@ class Job():
         self._max_retries = max_retries        # Maximum number of automatic retries
         self._result = None                    # Return value of child action in the parent
         self._tries = 0                        # Try count, for retryable jobs
-
+        self._skipped_flag = False             # Indicate whether the job was skipped.
         # If False, a retry will not be attempted regardless of whether _tries is less than _max_retries.
         #
         self._retry_flag = True
@@ -275,6 +276,14 @@ class Job():
     def set_task_id(self, task_id):
         self._task_id = task_id
 
+    # skipped
+    #
+    # Returns:
+    #    bool: True if the job was skipped while processing.
+    @property
+    def skipped(self):
+        return self._skipped_flag
+
     #######################################################
     #                  Abstract Methods                   #
     #######################################################
@@ -396,6 +405,13 @@ class Job():
             try:
                 # Try the task action
                 result = self.child_process()
+            except SkipJob as e:
+                elapsed = datetime.datetime.now() - starttime
+                self.message(MessageType.SKIPPED, str(e),
+                             elapsed=elapsed, logfile=filename)
+
+                # Alert parent of skip by return code
+                self._child_shutdown(RC_SKIPPED)
             except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
                 self._retry_flag = e.temporary
@@ -543,14 +559,18 @@ class Job():
         # We don't want to retry if we got OK or a permanent fail.
         # This is set in _child_action but must also be set for the parent.
         #
-        self._retry_flag = returncode not in (RC_OK, RC_PERM_FAIL)
+        self._retry_flag = returncode == RC_FAIL
+
+        # Set the flag to alert Queue that this job skipped.
+        self._skipped_flag = returncode == RC_SKIPPED
 
         if self._retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.spawn()
             return
 
-        self.parent_complete(returncode == RC_OK, self._result)
-        self._scheduler.job_completed(self, returncode == RC_OK)
+        success = returncode in (RC_OK, RC_SKIPPED)
+        self.parent_complete(success, self._result)
+        self._scheduler.job_completed(self, success)
 
     # _parent_process_envelope()
     #
