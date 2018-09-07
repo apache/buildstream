@@ -68,6 +68,9 @@ class Platform():
             raise PlatformError("Platform needs to be initialized first")
         return cls._instance
 
+    def get_cpu_count(self, cap=None):
+        return min(len(os.sched_getaffinity(0)), cap)
+
     ##################################################################
     #                       Platform properties                      #
     ##################################################################
