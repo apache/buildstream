@@ -63,6 +63,9 @@ class Platform():
             cls._create_instance()
         return cls._instance
 
+    def get_cpu_count(self, cap=None):
+        return min(len(os.sched_getaffinity(0)), cap)
+
     ##################################################################
     #                        Sandbox functions                       #
     ##################################################################
