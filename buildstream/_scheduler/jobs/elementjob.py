@@ -110,7 +110,8 @@ class ElementJob(Job):
 
         workspace = self._element._get_workspace()
         artifact_size = self._element._get_artifact_size()
-        cache_size = self._element._get_artifact_cache().calculate_cache_size()
+        artifacts = self._element._get_artifact_cache()
+        cache_size = artifacts.compute_cache_size()
 
         if workspace is not None:
             data['workspace'] = workspace.to_dict()

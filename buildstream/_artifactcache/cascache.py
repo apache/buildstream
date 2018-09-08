@@ -490,7 +490,6 @@ class CASCache(ArtifactCache):
     def calculate_cache_size(self):
         if self.cache_size is None:
             self.cache_size = utils._get_dir_size(self.casdir)
-            self.estimated_size = self.cache_size
 
         return self.cache_size
 

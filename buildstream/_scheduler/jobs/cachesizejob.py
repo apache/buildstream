@@ -27,7 +27,7 @@ class CacheSizeJob(Job):
         self._cache = Platform._instance.artifactcache
 
     def child_process(self):
-        return self._cache.calculate_cache_size()
+        return self._cache.compute_cache_size()
 
     def parent_complete(self, success, result):
         self._cache.set_cache_size(result)
