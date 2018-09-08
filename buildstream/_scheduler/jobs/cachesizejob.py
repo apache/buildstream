@@ -30,7 +30,7 @@ class CacheSizeJob(Job):
         return self._cache.calculate_cache_size()
 
     def parent_complete(self, success, result):
-        self._cache._set_cache_size(result)
+        self._cache.set_cache_size(result)
         if self._complete_cb:
             self._complete_cb(result)
 
