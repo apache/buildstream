@@ -81,11 +81,8 @@ ArtifactCacheSpec.__new__.__defaults__ = (None, None, None)
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
-        self.required_artifacts = set()
         self.extractdir = os.path.join(context.artifactdir, 'extract')
         self.tmpdir = os.path.join(context.artifactdir, 'tmp')
-
-        self.estimated_size = None
 
         self.global_remote_specs = []
         self.project_remote_specs = {}
@@ -93,6 +90,9 @@ class ArtifactCache():
         self.cache_size = None
         self.cache_quota = None
         self.cache_lower_threshold = None
+
+        self._required_artifacts = set()
+        self._estimated_size = None
 
         os.makedirs(self.extractdir, exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
@@ -211,8 +211,8 @@ class ArtifactCache():
             weak_key = element._get_cache_key(strength=_KeyStrength.WEAK)
 
             for key in (strong_key, weak_key):
-                if key and key not in self.required_artifacts:
-                    self.required_artifacts.add(key)
+                if key and key not in self._required_artifacts:
+                    self._required_artifacts.add(key)
 
                     # We also update the usage times of any artifacts
                     # we will be using, which helps preventing a
@@ -230,7 +230,7 @@ class ArtifactCache():
     def clean(self):
         artifacts = self.list_artifacts()
 
-        while self.calculate_cache_size() >= self.cache_quota - self.cache_lower_threshold:
+        while self.compute_cache_size() >= self.cache_quota - self.cache_lower_threshold:
             try:
                 to_remove = artifacts.pop(0)
             except IndexError:
@@ -244,7 +244,7 @@ class ArtifactCache():
                           "Please increase the cache-quota in {}."
                           .format(self.context.config_origin or default_conf))
 
-                if self.calculate_cache_size() > self.cache_quota:
+                if self.compute_cache_size() > self.cache_quota:
                     raise ArtifactError("Cache too full. Aborting.",
                                         detail=detail,
                                         reason="cache-too-full")
@@ -252,13 +252,29 @@ class ArtifactCache():
                     break
 
             key = to_remove.rpartition('/')[2]
-            if key not in self.required_artifacts:
+            if key not in self._required_artifacts:
                 size = self.remove(to_remove)
                 if size:
                     self.cache_size -= size
 
         # This should be O(1) if implemented correctly
-        return self.calculate_cache_size()
+        return self.compute_cache_size()
+
+    # compute_cache_size()
+    #
+    # Computes the real artifact cache size by calling
+    # the abstract calculate_cache_size() method.
+    #
+    # Returns:
+    #    (int): The size of the artifact cache.
+    #
+    def compute_cache_size(self):
+        cache_size = self.calculate_cache_size()
+
+        # Keep the estimated size updated here
+        self._estimated_size = cache_size
+
+        return cache_size
 
     # get_approximate_cache_size()
     #
@@ -284,29 +300,29 @@ class ArtifactCache():
     def get_approximate_cache_size(self):
         # If we don't currently have an estimate, figure out the real
         # cache size.
-        if self.estimated_size is None:
+        if self._estimated_size is None:
             stored_size = self._read_cache_size()
             if stored_size is not None:
-                self.estimated_size = stored_size
+                self._estimated_size = stored_size
             else:
-                self.estimated_size = self.calculate_cache_size()
+                self.compute_cache_size()
 
-        return self.estimated_size
+        return self._estimated_size
 
     # add_artifact_size()
     #
     # Adds the reported size of a newly cached artifact to the
-    # overall ArtifactCache.estimated_size.
+    # overall estimated size.
     #
     # Args:
     #     artifact_size (int): The size to add.
     #
     def add_artifact_size(self, artifact_size):
-        if not self.estimated_size:
-            self.estimated_size = self.calculate_cache_size()
+        if not self._estimated_size:
+            self.compute_cache_size()
 
-        self.estimated_size += artifact_size
-        self._write_cache_size(self.estimated_size)
+        self._estimated_size += artifact_size
+        self._write_cache_size(self._estimated_size)
 
     # set_cache_size()
     #
@@ -319,11 +335,11 @@ class ArtifactCache():
     #     cache_size (int): The size to set.
     #
     def set_cache_size(self, cache_size):
-        self.estimated_size = cache_size
+        self._estimated_size = cache_size
 
         # set_cache_size is called in cleanup, where it may set the cache to None
-        if self.estimated_size is not None:
-            self._write_cache_size(self.estimated_size)
+        if self._estimated_size is not None:
+            self._write_cache_size(self._estimated_size)
 
     ################################################
     # Abstract methods for subclasses to implement #
@@ -515,11 +531,8 @@ class ArtifactCache():
     #
     # Return the real artifact cache size.
     #
-    # Implementations should also use this to update estimated_size.
-    #
     # Returns:
-    #
-    # (int) The size of the artifact cache.
+    #    (int): The size of the artifact cache.
     #
     def calculate_cache_size(self):
         raise ImplError("Cache '{kind}' does not implement calculate_cache_size()"
