@@ -241,6 +241,25 @@ class Scheduler():
         self._schedule_queue_jobs()
         self._sched()
 
+    # check_cache_size():
+    #
+    # Queues a cache size calculation job, after the cache
+    # size is calculated, a cleanup job will be run automatically
+    # if needed.
+    #
+    # FIXME: This should ensure that only one cache size job
+    #        is ever pending at a given time. If a cache size
+    #        job is already running, it is correct to queue
+    #        a new one, it is incorrect to have more than one
+    #        of these jobs pending at a given time, though.
+    #
+    def check_cache_size(self):
+        job = CacheSizeJob(self, 'cache_size', 'cache_size/cache_size',
+                           resources=[ResourceType.CACHE,
+                                      ResourceType.PROCESS],
+                           complete_cb=self._run_cleanup)
+        self.schedule_jobs([job])
+
     #######################################################
     #                  Local Private Methods              #
     #######################################################
@@ -316,23 +335,28 @@ class Scheduler():
         self.schedule_jobs(ready)
         self._sched()
 
+    # _run_cleanup()
+    #
+    # Schedules the cache cleanup job if the passed size
+    # exceeds the cache quota.
+    #
+    # Args:
+    #    cache_size (int): The calculated cache size
+    #
+    # NOTE: This runs in response to completion of the cache size
+    #       calculation job lauched by Scheduler.check_cache_size(),
+    #       which will report the calculated cache size.
+    #
     def _run_cleanup(self, cache_size):
         platform = Platform.get_platform()
         if cache_size and cache_size < platform.artifactcache.cache_quota:
             return
 
-        job = CleanupJob(self, 'cleanup', 'cleanup',
+        job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
                          resources=[ResourceType.CACHE,
                                     ResourceType.PROCESS],
                          exclusive_resources=[ResourceType.CACHE],
                          complete_cb=None)
-        self.schedule_jobs([job])
-
-    def _check_cache_size_real(self):
-        job = CacheSizeJob(self, 'cache_size', 'cache_size/cache_size',
-                           resources=[ResourceType.CACHE,
-                                      ResourceType.PROCESS],
-                           complete_cb=self._run_cleanup)
         self.schedule_jobs([job])
 
     # _suspend_jobs()
