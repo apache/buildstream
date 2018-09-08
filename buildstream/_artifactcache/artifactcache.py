@@ -90,7 +90,6 @@ class ArtifactCache():
         self.global_remote_specs = []
         self.project_remote_specs = {}
 
-        self._local = False
         self.cache_size = None
         self.cache_quota = None
         self.cache_lower_threshold = None
