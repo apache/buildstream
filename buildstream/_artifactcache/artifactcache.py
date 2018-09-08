@@ -294,6 +294,38 @@ class ArtifactCache():
 
         return self.estimated_size
 
+    # add_artifact_size()
+    #
+    # Adds the reported size of a newly cached artifact to the
+    # overall ArtifactCache.estimated_size.
+    #
+    # Args:
+    #     artifact_size (int): The size to add.
+    #
+    def add_artifact_size(self, artifact_size):
+        if not self.estimated_size:
+            self.estimated_size = self.calculate_cache_size()
+
+        self.estimated_size += artifact_size
+        self._write_cache_size(self.estimated_size)
+
+    # set_cache_size()
+    #
+    # Forcefully set the overall cache size.
+    #
+    # This is used to update the size in the main process after
+    # having calculated in a cleanup or a cache size calculation job.
+    #
+    # Args:
+    #     cache_size (int): The size to set.
+    #
+    def set_cache_size(self, cache_size):
+        self.estimated_size = cache_size
+
+        # set_cache_size is called in cleanup, where it may set the cache to None
+        if self.estimated_size is not None:
+            self._write_cache_size(self.estimated_size)
+
     ################################################
     # Abstract methods for subclasses to implement #
     ################################################
@@ -534,35 +566,6 @@ class ArtifactCache():
 
         with self.context.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)
-
-    # _add_artifact_size()
-    #
-    # Since we cannot keep track of the cache size between threads,
-    # this method will be called by the main process every time a
-    # process that added something to the cache finishes.
-    #
-    # This will then add the reported size to
-    # ArtifactCache.estimated_size.
-    #
-    def _add_artifact_size(self, artifact_size):
-        if not self.estimated_size:
-            self.estimated_size = self.calculate_cache_size()
-
-        self.estimated_size += artifact_size
-        self._write_cache_size(self.estimated_size)
-
-    # _set_cache_size()
-    #
-    # Similarly to the above method, when we calculate the actual size
-    # in a child thread, we can't update it. We instead pass the value
-    # back to the main thread and update it there.
-    #
-    def _set_cache_size(self, cache_size):
-        self.estimated_size = cache_size
-
-        # set_cache_size is called in cleanup, where it may set the cache to None
-        if self.estimated_size is not None:
-            self._write_cache_size(self.estimated_size)
 
     # _write_cache_size()
     #
