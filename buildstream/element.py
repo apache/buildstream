@@ -1924,6 +1924,13 @@ class Element(Plugin):
     def _get_artifact_size(self):
         return self.__artifact_size
 
+    # _get_artifact_cache()
+    #
+    # Accessor for the artifact cache
+    #
+    # Returns:
+    #    (ArtifactCache): The artifact cache
+    #
     def _get_artifact_cache(self):
         return self.__artifacts
 
