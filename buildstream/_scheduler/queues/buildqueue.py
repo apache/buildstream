@@ -24,6 +24,7 @@ from . import Queue, QueueStatus
 from ..jobs import ElementJob
 from ..resources import ResourceType
 from ..._message import MessageType
+from ..._platform import Platform
 
 
 # A queue which assembles elements
@@ -92,13 +93,15 @@ class BuildQueue(Queue):
         # as returned from Element._assemble() to the estimated
         # artifact cache size
         #
-        cache = element._get_artifact_cache()
-        cache.add_artifact_size(artifact_size)
+        platform = Platform.get_platform()
+        artifacts = platform.artifactcache
+
+        artifacts.add_artifact_size(artifact_size)
 
         # If the estimated size outgrows the quota, ask the scheduler
         # to queue a job to actually check the real cache size.
         #
-        if cache.get_approximate_cache_size() > cache.cache_quota:
+        if artifacts.get_approximate_cache_size() > artifacts.cache_quota:
             self._scheduler.check_cache_size()
 
     def done(self, job, element, result, success):

@@ -1912,16 +1912,6 @@ class Element(Plugin):
         workspaces = self._get_context().get_workspaces()
         return workspaces.get_workspace(self._get_full_name())
 
-    # _get_artifact_cache()
-    #
-    # Accessor for the artifact cache
-    #
-    # Returns:
-    #    (ArtifactCache): The artifact cache
-    #
-    def _get_artifact_cache(self):
-        return self.__artifacts
-
     # _write_script():
     #
     # Writes a script to the given directory.
