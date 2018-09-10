@@ -31,7 +31,6 @@ from ..resources import ResourceType
 # BuildStream toplevel imports
 from ..._exceptions import BstError, set_last_task_error
 from ..._message import Message, MessageType
-from ..._platform import Platform
 
 
 # Queue status for a given element
@@ -301,10 +300,6 @@ class Queue():
         # Update values that need to be synchronized in the main task
         # before calling any queue implementation
         self._update_workspaces(element, job)
-        if job.child_data:
-            platform = Platform.get_platform()
-            artifacts = platform.artifactcache
-            artifacts.cache_size = job.child_data.get('cache_size')
 
         # Give the result of the job to the Queue implementor,
         # and determine if it should be considered as processed

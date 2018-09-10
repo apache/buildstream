@@ -339,7 +339,7 @@ class Scheduler():
     # exceeds the cache quota.
     #
     # Args:
-    #    cache_size (int): The calculated cache size
+    #    cache_size (int): The calculated cache size (ignored)
     #
     # NOTE: This runs in response to completion of the cache size
     #       calculation job lauched by Scheduler.check_cache_size(),
@@ -347,7 +347,9 @@ class Scheduler():
     #
     def _run_cleanup(self, cache_size):
         platform = Platform.get_platform()
-        if cache_size and cache_size < platform.artifactcache.cache_quota:
+        artifacts = platform.artifactcache
+
+        if not artifacts.get_quota_exceeded():
             return
 
         job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',

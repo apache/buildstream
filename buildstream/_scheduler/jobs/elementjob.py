@@ -18,7 +18,6 @@
 #
 from ruamel import yaml
 
-from ..._platform import Platform
 from ..._message import Message, MessageType
 
 from .job import Job
@@ -73,10 +72,6 @@ class ElementJob(Job):
         self._action_cb = action_cb            # The action callable function
         self._complete_cb = complete_cb        # The complete callable function
 
-        # Hold on to the artifact cache
-        platform = Platform.get_platform()
-        self._artifacts = platform.artifactcache
-
         # Set the task wide ID for logging purposes
         self.set_task_id(element._get_unique_id())
 
@@ -114,10 +109,7 @@ class ElementJob(Job):
         data = {}
 
         workspace = self._element._get_workspace()
-        cache_size = self._artifacts.compute_cache_size()
-
         if workspace is not None:
             data['workspace'] = workspace.to_dict()
-        data['cache_size'] = cache_size
 
         return data

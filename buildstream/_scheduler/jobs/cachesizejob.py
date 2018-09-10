@@ -32,9 +32,11 @@ class CacheSizeJob(Job):
         return self._artifacts.compute_cache_size()
 
     def parent_complete(self, success, result):
-        self._artifacts.set_cache_size(result)
-        if self._complete_cb:
-            self._complete_cb(result)
+        if success:
+            self._artifacts.set_cache_size(result)
+
+            if self._complete_cb:
+                self._complete_cb(result)
 
     def child_process_data(self):
         return {}

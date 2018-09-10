@@ -120,8 +120,6 @@ class CASCache(ArtifactCache):
         for ref in refs:
             self.set_ref(ref, tree)
 
-        self.cache_size = None
-
     def diff(self, element, key_a, key_b, *, subdir=None):
         ref_a = self.get_artifact_fullname(element, key_a)
         ref_b = self.get_artifact_fullname(element, key_b)
@@ -488,10 +486,7 @@ class CASCache(ArtifactCache):
             raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
 
     def calculate_cache_size(self):
-        if self.cache_size is None:
-            self.cache_size = utils._get_dir_size(self.casdir)
-
-        return self.cache_size
+        return utils._get_dir_size(self.casdir)
 
     # list_artifacts():
     #
