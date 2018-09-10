@@ -101,7 +101,7 @@ class BuildQueue(Queue):
         # If the estimated size outgrows the quota, ask the scheduler
         # to queue a job to actually check the real cache size.
         #
-        if artifacts.get_approximate_cache_size() > artifacts.cache_quota:
+        if artifacts.get_quota_exceeded():
             self._scheduler.check_cache_size()
 
     def done(self, job, element, result, success):

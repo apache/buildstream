@@ -32,9 +32,11 @@ class CleanupJob(Job):
         return self._artifacts.clean()
 
     def parent_complete(self, success, result):
-        self._artifacts.set_cache_size(result)
-        if self._complete_cb:
-            self._complete_cb()
+        if success:
+            self._artifacts.set_cache_size(result)
+
+            if self._complete_cb:
+                self._complete_cb()
 
     def child_process_data(self):
         return {}
