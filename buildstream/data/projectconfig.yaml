@@ -16,21 +16,7 @@ ref-storage: inline
 # Variable Configuration
 #
 variables:
-
-  # Maximum number of parallel build processes within a given
-  # build, support for this is conditional on the element type
-  # and the build system used (any element using 'make' can
-  # implement this).
-  #
-  # Note: this value defaults to the number of cores available
-  max-jobs: 4
-
-  # Note: These variables are defined later on in element.py and _project.py
-  element-name: ""
-  project-name: ""
-
   # Path configuration, to be used in build instructions.
-  #
   prefix: "/usr"
   exec_prefix: "%{prefix}"
   bindir: "%{exec_prefix}/bin"
@@ -88,7 +74,6 @@ variables:
 
     find "%{install-root}" -name '*.pyc' -exec \
       dd if=/dev/zero of={} bs=1 count=4 seek=4 conv=notrunc ';'
-
 
 # Base sandbox environment, can be overridden by plugins
 environment:

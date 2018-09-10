@@ -64,6 +64,35 @@ strip
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_manual_element_environment(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'import/import.bst'
+
+    create_manual_element(element_name, element_path, {
+        'install-commands': [
+            "echo $V >> test",
+            "cp test %{install-root}"
+        ]
+    }, {
+    }, {
+        'V': 2
+    })
+
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+    cli.run(project=project, args=['checkout', element_name, checkout])
+    assert res.exit_code == 0
+
+    with open(os.path.join(checkout, 'test')) as f:
+        text = f.read()
+
+    assert text == "2\n"
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_manual_element_noparallel(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -77,7 +106,6 @@ def test_manual_element_noparallel(cli, tmpdir, datafiles):
             "cp test %{install-root}"
         ]
     }, {
-        'max-jobs': 2,
         'notparallel': True
     }, {
         'MAKEFLAGS': '-j%{max-jobs} -Wall',
@@ -94,39 +122,5 @@ def test_manual_element_noparallel(cli, tmpdir, datafiles):
         text = f.read()
 
     assert text == """-j1 -Wall
-2
-"""
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_manual_element_environment(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
-    element_path = os.path.join(project, 'elements')
-    element_name = 'import/import.bst'
-
-    create_manual_element(element_name, element_path, {
-        'install-commands': [
-            "echo $MAKEFLAGS >> test",
-            "echo $V >> test",
-            "cp test %{install-root}"
-        ]
-    }, {
-        'max-jobs': 2
-    }, {
-        'MAKEFLAGS': '-j%{max-jobs} -Wall',
-        'V': 2
-    })
-
-    res = cli.run(project=project, args=['build', element_name])
-    assert res.exit_code == 0
-
-    cli.run(project=project, args=['checkout', element_name, checkout])
-    assert res.exit_code == 0
-
-    with open(os.path.join(checkout, 'test')) as f:
-        text = f.read()
-
-    assert text == """-j2 -Wall
 2
 """

@@ -2283,7 +2283,8 @@ class Element(Plugin):
     # substituting command strings to be run in the sandbox
     #
     def __extract_variables(self, meta):
-        default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables', default_value={})
+        default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables',
+                                      default_value={})
 
         project = self._get_project()
         if self.__is_junction:
@@ -2295,6 +2296,13 @@ class Element(Plugin):
         _yaml.composite(variables, default_vars)
         _yaml.composite(variables, meta.variables)
         _yaml.node_final_assertions(variables)
+
+        for var in ('project-name', 'element-name', 'max-jobs'):
+            provenance = _yaml.node_get_provenance(variables, var)
+            if provenance and provenance.filename != '':
+                raise LoadError(LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
+                                "{}: invalid redefinition of protected variable '{}'"
+                                .format(provenance, var))
 
         return variables
 
