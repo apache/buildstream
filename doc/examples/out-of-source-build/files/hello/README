@@ -1,0 +1,5 @@
+This is a simple example project for using buildstream to build software that is
+located in different parts of it sources
+
+The source code will produce different code depending on which directory you
+specify to cmake
