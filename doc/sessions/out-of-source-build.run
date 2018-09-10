@@ -1,0 +1,41 @@
+
+commands:
+# This section is for the hello.bst element
+# Make it fetch first
+- directory: ../examples/out-of-source-build
+  command: fetch sourceroot.bst
+
+# Capture a `bst show` of the variables
+- directory: ../examples/out-of-source-build
+  output: ../source/sessions/out-of-source-build-show-variables.html
+  command: show --deps none --format "%{vars}" sourceroot.bst
+
+# Capture a `bst build`
+- directory: ../examples/out-of-source-build
+  output: ../source/sessions/out-of-source-build-build.html
+  command: build sourceroot.bst
+
+# Capture a shell output
+- directory: ../examples/out-of-source-build
+  output: ../source/sessions/out-of-source-build-shell-ls.html
+  command: shell sourceroot.bst --build --  ls .. 
+
+# Capture a shell output
+- directory: ../examples/out-of-source-build
+  output: ../source/sessions/out-of-source-build-shell.html
+  command: shell sourceroot.bst --  hello_buildstream 
+
+# This section if for the hello_main.bst element
+# Make it fetch first
+- directory: ../examples/out-of-source-build
+  command: fetch subfolder.bst
+
+# Capture a `bst build`
+- directory: ../examples/out-of-source-build
+  output: ../source/sessions/out-of-source-build-build-subfolder.html
+  command: build subfolder.bst
+
+# Capture a shell output
+- directory: ../examples/out-of-source-build
+  output: ../source/sessions/out-of-source-build-shell-subfolder.html
+  command: shell subfolder.bst --  hello_buildstream 
