@@ -24,6 +24,7 @@ from . import Queue, QueueStatus
 from ..jobs import ElementJob
 from ..resources import ResourceType
 from ..._message import MessageType
+from ..._platform import Platform
 
 
 # A queue which assembles elements
@@ -32,7 +33,7 @@ class BuildQueue(Queue):
 
     action_name = "Build"
     complete_name = "Built"
-    resources = [ResourceType.PROCESS]
+    resources = [ResourceType.PROCESS, ResourceType.CACHE]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -67,8 +68,7 @@ class BuildQueue(Queue):
         return super().enqueue(to_queue)
 
     def process(self, element):
-        element._assemble()
-        return element._get_unique_id()
+        return element._assemble()
 
     def status(self, element):
         # state of dependencies may have changed, recalculate element state
@@ -87,18 +87,22 @@ class BuildQueue(Queue):
 
         return QueueStatus.READY
 
-    def _check_cache_size(self, job, element):
-        if not job.child_data:
-            return
+    def _check_cache_size(self, job, element, artifact_size):
 
-        artifact_size = job.child_data.get('artifact_size', False)
+        # After completing a build job, add the artifact size
+        # as returned from Element._assemble() to the estimated
+        # artifact cache size
+        #
+        platform = Platform.get_platform()
+        artifacts = platform.artifactcache
 
-        if artifact_size:
-            cache = element._get_artifact_cache()
-            cache._add_artifact_size(artifact_size)
+        artifacts.add_artifact_size(artifact_size)
 
-            if cache.get_approximate_cache_size() > cache.cache_quota:
-                self._scheduler._check_cache_size_real()
+        # If the estimated size outgrows the quota, ask the scheduler
+        # to queue a job to actually check the real cache size.
+        #
+        if artifacts.get_quota_exceeded():
+            self._scheduler.check_cache_size()
 
     def done(self, job, element, result, success):
 
@@ -106,8 +110,8 @@ class BuildQueue(Queue):
             # Inform element in main process that assembly is done
             element._assemble_done()
 
-        # This has to be done after _assemble_done, such that the
-        # element may register its cache key as required
-        self._check_cache_size(job, element)
+            # This has to be done after _assemble_done, such that the
+            # element may register its cache key as required
+            self._check_cache_size(job, element, result)
 
         return True

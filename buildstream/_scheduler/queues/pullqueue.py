@@ -29,7 +29,7 @@ class PullQueue(Queue):
 
     action_name = "Pull"
     complete_name = "Pulled"
-    resources = [ResourceType.DOWNLOAD]
+    resources = [ResourceType.DOWNLOAD, ResourceType.CACHE]
 
     def process(self, element):
         # returns whether an artifact was downloaded or not
@@ -62,7 +62,7 @@ class PullQueue(Queue):
         # Build jobs will check the "approximate" size first. Since we
         # do not get an artifact size from pull jobs, we have to
         # actually check the cache size.
-        self._scheduler._check_cache_size_real()
+        self._scheduler.check_cache_size()
 
         # Element._pull() returns True if it downloaded an artifact,
         # here we want to appear skipped if we did not download.

@@ -196,6 +196,22 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
 
 
 # Assert that we never delete a dependency required for a build tree
+#
+# NOTE: This test expects that a build will fail if it attempts to
+#       put more artifacts in the cache than the quota can hold,
+#       and expects that the last two elements which don't fit into
+#       the quota wont even be built.
+#
+#       In real life, this will not be the case, since once we reach
+#       the estimated quota we launch a cache size calculation job and
+#       only launch a cleanup job when the size is calculated; and
+#       other build tasks will be scheduled while the cache size job
+#       is running.
+#
+#       This test only passes because we configure `builders` to 1,
+#       ensuring that the cache size job runs exclusively since it
+#       also requires a compute resource (a "builder").
+#
 @pytest.mark.datafiles(DATA_DIR)
 def test_never_delete_dependencies(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -204,6 +220,9 @@ def test_never_delete_dependencies(cli, datafiles, tmpdir):
     cli.configure({
         'cache': {
             'quota': 10000000
+        },
+        'scheduler': {
+            'builders': 1
         }
     })
 

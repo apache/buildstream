@@ -24,15 +24,19 @@ class CleanupJob(Job):
     def __init__(self, *args, complete_cb, **kwargs):
         super().__init__(*args, **kwargs)
         self._complete_cb = complete_cb
-        self._cache = Platform._instance.artifactcache
+
+        platform = Platform.get_platform()
+        self._artifacts = platform.artifactcache
 
     def child_process(self):
-        return self._cache.clean()
+        return self._artifacts.clean()
 
     def parent_complete(self, success, result):
-        self._cache._set_cache_size(result)
-        if self._complete_cb:
-            self._complete_cb()
+        if success:
+            self._artifacts.set_cache_size(result)
+
+            if self._complete_cb:
+                self._complete_cb()
 
     def child_process_data(self):
         return {}
