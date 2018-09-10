@@ -219,6 +219,9 @@ class LoadErrorReason(Enum):
     # A recursive variable has been encountered
     RECURSIVE_VARIABLE = 22
 
+    # An attempt so set the value of a protected variable
+    PROTECTED_VARIABLE_REDEFINED = 23
+
 
 # LoadError
 #
