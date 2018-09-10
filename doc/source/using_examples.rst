@@ -15,3 +15,4 @@ maintained and work as expected.
    examples/flatpak-autotools
    examples/tar-mirror
    examples/git-mirror
+   examples/out-of-source-build
