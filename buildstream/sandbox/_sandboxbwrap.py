@@ -63,20 +63,8 @@ class SandboxBwrap(Sandbox):
         # Fallback to the sandbox default settings for
         # the cwd and env.
         #
-        if cwd is None:
-            cwd = self._get_work_directory()
-
-        if env is None:
-            env = self._get_environment()
-
-        if cwd is None:
-            cwd = '/'
-
-        # Naive getcwd implementations can break when bind-mounts to different
-        # paths on the same filesystem are present. Letting the command know
-        # what directory it is in makes it unnecessary to call the faulty
-        # getcwd.
-        env['PWD'] = cwd
+        cwd = self._get_work_directory(cwd=cwd)
+        env = self._get_environment(cwd=cwd, env=env)
 
         if not self._has_command(command[0], env):
             raise SandboxError("Staged artifacts do not provide command "
