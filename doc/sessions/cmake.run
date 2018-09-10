@@ -1,0 +1,20 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/cmake
+  command: fetch hello.bst
+
+# Capture a `bst show` of the variables
+- directory: ../examples/cmake
+  output: ../source/sessions/cmake-show-variables.html
+  command: show --deps none --format "%{vars}" hello.bst
+
+# Capture a `bst build`
+- directory: ../examples/cmake
+  output: ../source/sessions/cmake-build.html
+  command: build hello.bst
+
+# Capture a shell output
+- directory: ../examples/cmake
+  output: ../source/sessions/cmake-shell.html
+  command: shell hello.bst --  hello_buildstream 

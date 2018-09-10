@@ -1,0 +1,20 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/out-of-source-build-helloworld
+  command: fetch hello.bst
+
+# Capture a `bst show` of the variables
+- directory: ../examples/out-of-source-build-helloworld
+  output: ../source/sessions/outofsource-helloworld-show-variables.html
+  command: show --deps none --format "%{vars}" hello.bst
+
+# Capture a `bst build`
+- directory: ../examples/out-of-source-build-helloworld
+  output: ../source/sessions/outofsource-helloworld-build.html
+  command: build hello.bst
+
+# Capture a shell output
+- directory: ../examples/out-of-source-build-helloworld
+  output: ../source/sessions/outofsource-helloworld-shell.html
+  command: shell hello.bst --  hello
