@@ -300,8 +300,6 @@ class Queue():
         # Update values that need to be synchronized in the main task
         # before calling any queue implementation
         self._update_workspaces(element, job)
-        if job.child_data:
-            element._get_artifact_cache().cache_size = job.child_data.get('cache_size')
 
         # Give the result of the job to the Queue implementor,
         # and determine if it should be considered as processed
