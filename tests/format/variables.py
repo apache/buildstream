@@ -19,10 +19,10 @@ DATA_DIR = os.path.join(
 @pytest.mark.parametrize("target,varname,expected", [
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/buildstream-install\" install"),
     ('cmake.bst', 'cmake',
-     "cmake -B_builddir -H. -G\"Unix Makefiles\" -DCMAKE_INSTALL_PREFIX:PATH=\"/usr\" \\\n" +
+     "cmake -B_builddir -H\".\" -G\"Unix Makefiles\" " + "-DCMAKE_INSTALL_PREFIX:PATH=\"/usr\" \\\n" +
      "-DCMAKE_INSTALL_LIBDIR=lib   "),
     ('distutils.bst', 'python-install',
-     "python3 setup.py install --prefix \"/usr\" \\\n" +
+     "python3 ./setup.py install --prefix \"/usr\" \\\n" +
      "--root \"/buildstream-install\""),
     ('makemaker.bst', 'configure', "perl Makefile.PL PREFIX=/buildstream-install/usr"),
     ('modulebuild.bst', 'configure', "perl Build.PL --prefix \"/buildstream-install/usr\""),
@@ -45,10 +45,10 @@ def test_defaults(cli, datafiles, tmpdir, target, varname, expected):
 @pytest.mark.parametrize("target,varname,expected", [
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/custom/install/root\" install"),
     ('cmake.bst', 'cmake',
-     "cmake -B_builddir -H. -G\"Ninja\" -DCMAKE_INSTALL_PREFIX:PATH=\"/opt\" \\\n" +
+     "cmake -B_builddir -H\".\" -G\"Ninja\" " + "-DCMAKE_INSTALL_PREFIX:PATH=\"/opt\" \\\n" +
      "-DCMAKE_INSTALL_LIBDIR=lib   "),
     ('distutils.bst', 'python-install',
-     "python3 setup.py install --prefix \"/opt\" \\\n" +
+     "python3 ./setup.py install --prefix \"/opt\" \\\n" +
      "--root \"/custom/install/root\""),
     ('makemaker.bst', 'configure', "perl Makefile.PL PREFIX=/custom/install/root/opt"),
     ('modulebuild.bst', 'configure', "perl Build.PL --prefix \"/custom/install/root/opt\""),
