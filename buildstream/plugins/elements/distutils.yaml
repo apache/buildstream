@@ -8,7 +8,7 @@ variables:
 
   python-build: |
 
-    %{python} setup.py build
+    %{python} %{conf-root}/setup.py build
 
   install-args: |
 
@@ -17,7 +17,7 @@ variables:
 
   python-install: |
 
-    %{python} setup.py install %{install-args}
+    %{python} %{conf-root}/setup.py install %{install-args}
 
 
 config:

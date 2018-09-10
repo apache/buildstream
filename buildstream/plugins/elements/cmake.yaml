@@ -23,7 +23,7 @@ variables:
 
   cmake: |
 
-    cmake -B%{build-dir} -H. -G"%{generator}" %{cmake-args}
+    cmake -B%{build-dir} -H"%{conf-root}" -G"%{generator}" %{cmake-args}
 
   make: cmake --build %{build-dir} -- ${JOBS}
   make-install: env DESTDIR="%{install-root}" cmake --build %{build-dir} --target install

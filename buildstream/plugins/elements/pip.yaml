@@ -14,7 +14,7 @@ config:
   #
   install-commands:
   - |
-    %{pip} install --no-deps --root=%{install-root} --prefix=%{prefix} .
+    %{pip} install --no-deps --root=%{install-root} --prefix=%{prefix} %{conf-root} 
 
   # Commands for stripping debugging information out of
   # installed binaries
