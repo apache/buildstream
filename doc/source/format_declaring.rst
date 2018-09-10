@@ -484,3 +484,25 @@ dependency and that all referenced variables are declared, the following is fine
      install-commands:
      - |
        %{make-install} RELEASE_TEXT="%{release-text}"
+
+
+Variables declared by BuildStream
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+BuildStream declares a set of :ref:`builtin <project_builtin_defaults>`
+variables that may be overridden. In addition, the following
+read-only variables are also dynamically declared by BuildStream:
+
+* ``element-name``
+
+  The name of the element being processed (e.g base/alpine.bst).
+
+* ``project-name``
+
+  The name of project where BuildStream is being used.
+
+* ``max-jobs``
+
+  Maximum number of parallel build processes within a given
+  build, support for this is conditional on the element type
+  and the build system used (any element using 'make' can
+  implement this).
