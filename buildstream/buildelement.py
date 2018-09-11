@@ -23,6 +23,47 @@ BuildElement - Abstract class for build elements
 The BuildElement class is a convenience element one can derive from for
 implementing the most common case of element.
 
+Built-in functionality
+----------------------
+
+The BuildElement base class provides built in functionality that could be
+overridden by the individual plugins.
+
+This section will give a brief summary of how some of the common features work,
+some of them or the variables they use will be further detailed in the following
+sections.
+
+* Location for running commands
+
+ The ``command-subdir`` variable sets where the build commands will be executed,
+ if the directory does not exist it will be created, it is defined relative to
+ the buildroot.
+
+* Location for configuring the project
+
+ The ``conf-root`` is defined by default as ``.`` and is the location that
+ specific build element can use to look for build configuration files, currently
+ autotools, cmake, distutils, meson, pip and qmake use this.
+
+ The configuration commands are run in ``command-subdir`` and by default
+ ``conf-root`` is ``.`` so if ``conf-root`` is not set the configuration files
+ in ``command-subdir`` will be used.
+
+ By setting ``conf-root`` to ``"%{build-root}/Source/conf_location"`` and your
+ source elements ``directory`` variable to ``Source`` then the configuration
+ files in the directory ``conf_location`` with in your Source will be used.
+ However the location where your configuration command will be run will still
+ be wherever you set your ``command-subdir`` to be.
+
+ The ``conf-root`` variable is available since
+ :ref:`format version 17 <project_format_version>`
+
+* Install Location
+
+  You should not change the ``install-root`` variable as it is a special
+  writeable location in the sandbox but it is useful when writing custom
+  install instructions as it may need to be supplied as the ``DESTDIR``, please
+  see the cmake build element for example.
 
 Abstract method implementations
 -------------------------------
