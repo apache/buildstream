@@ -292,6 +292,8 @@ class ArtifactCache():
     #     artifact_size (int): The artifact size to add.
     #
     def add_artifact_size(self, artifact_size):
+        assert utils._is_main_process()
+
         self._cache_size = self.get_cache_size() + artifact_size
         self._write_cache_size(self._cache_size)
 
