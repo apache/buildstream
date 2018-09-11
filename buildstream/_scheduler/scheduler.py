@@ -355,8 +355,7 @@ class Scheduler():
         job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
                          resources=[ResourceType.CACHE,
                                     ResourceType.PROCESS],
-                         exclusive_resources=[ResourceType.CACHE],
-                         complete_cb=None)
+                         exclusive_resources=[ResourceType.CACHE])
         self.schedule_jobs([job])
 
     # _suspend_jobs()

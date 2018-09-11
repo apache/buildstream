@@ -21,9 +21,8 @@ from ..._platform import Platform
 
 
 class CleanupJob(Job):
-    def __init__(self, *args, complete_cb, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._complete_cb = complete_cb
 
         platform = Platform.get_platform()
         self._artifacts = platform.artifactcache
@@ -34,9 +33,3 @@ class CleanupJob(Job):
     def parent_complete(self, success, result):
         if success:
             self._artifacts.set_cache_size(result)
-
-            if self._complete_cb:
-                self._complete_cb()
-
-    def child_process_data(self):
-        return {}
