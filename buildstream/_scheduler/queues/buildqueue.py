@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -87,31 +87,17 @@ class BuildQueue(Queue):
 
         return QueueStatus.READY
 
-    def _check_cache_size(self, job, element, artifact_size):
-
-        # After completing a build job, add the artifact size
-        # as returned from Element._assemble() to the estimated
-        # artifact cache size
-        #
-        platform = Platform.get_platform()
-        artifacts = platform.artifactcache
-
-        artifacts.add_artifact_size(artifact_size)
-
-        # If the estimated size outgrows the quota, ask the scheduler
-        # to queue a job to actually check the real cache size.
-        #
-        if artifacts.has_quota_exceeded():
-            self._scheduler.check_cache_size()
-
     def done(self, job, element, result, success):
+        if not success:
+            return False
 
-        if success:
-            # Inform element in main process that assembly is done
-            element._assemble_done()
+        element._assemble_done()
 
-            # This has to be done after _assemble_done, such that the
-            # element may register its cache key as required
-            self._check_cache_size(job, element, result)
+        artifacts = Platform.get_platform().artifactcache
+        artifacts.add_artifact_size(result)
 
-        return True
+        # This has to be done after _assemble_done, such that the
+        # element may register its cache key as required
+        self._scheduler.check_cache_size()
+
+        return success

@@ -1761,7 +1761,7 @@ class Element(Plugin):
             display_key = self._get_brief_display_key()
             self.info("Downloaded artifact {}".format(display_key))
 
-        return pulled
+        return pulled, artifact_size
 
     # _skip_push():
     #

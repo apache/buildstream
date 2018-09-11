@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ from contextlib import contextmanager
 
 # Local imports
 from .resources import Resources, ResourceType
-from .jobs import CacheSizeJob, CleanupJob
+from .jobs import CleanupJob
 from .._platform import Platform
 
 
@@ -243,22 +243,18 @@ class Scheduler():
 
     # check_cache_size():
     #
-    # Queues a cache size calculation job, after the cache
-    # size is calculated, a cleanup job will be run automatically
-    # if needed.
-    #
-    # FIXME: This should ensure that only one cache size job
-    #        is ever pending at a given time. If a cache size
-    #        job is already running, it is correct to queue
-    #        a new one, it is incorrect to have more than one
-    #        of these jobs pending at a given time, though.
+    # Queues a cleanup job if the size of the artifact cache exceeded
+    # the quota
     #
     def check_cache_size(self):
-        job = CacheSizeJob(self, 'cache_size', 'cache_size/cache_size',
-                           resources=[ResourceType.CACHE,
-                                      ResourceType.PROCESS],
-                           complete_cb=self._run_cleanup)
-        self.schedule_jobs([job])
+        artifacts = Platform.get_platform().artifactcache
+
+        if artifacts.has_quota_exceeded():
+            job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
+                             resources=[ResourceType.CACHE,
+                                        ResourceType.PROCESS],
+                             exclusive_resources=[ResourceType.CACHE])
+            self.schedule_jobs([job])
 
     #######################################################
     #                  Local Private Methods              #
@@ -334,31 +330,6 @@ class Scheduler():
 
         self.schedule_jobs(ready)
         self._sched()
-
-    # _run_cleanup()
-    #
-    # Schedules the cache cleanup job if the passed size
-    # exceeds the cache quota.
-    #
-    # Args:
-    #    cache_size (int): The calculated cache size (ignored)
-    #
-    # NOTE: This runs in response to completion of the cache size
-    #       calculation job lauched by Scheduler.check_cache_size(),
-    #       which will report the calculated cache size.
-    #
-    def _run_cleanup(self, cache_size):
-        platform = Platform.get_platform()
-        artifacts = platform.artifactcache
-
-        if not artifacts.has_quota_exceeded():
-            return
-
-        job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
-                         resources=[ResourceType.CACHE,
-                                    ResourceType.PROCESS],
-                         exclusive_resources=[ResourceType.CACHE])
-        self.schedule_jobs([job])
 
     # _suspend_jobs()
     #

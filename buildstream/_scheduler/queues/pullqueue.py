@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
+from ..._platform import Platform
 
 
 # A queue which pulls element artifacts
@@ -52,18 +53,21 @@ class PullQueue(Queue):
         else:
             return QueueStatus.SKIP
 
-    def done(self, _, element, result, success):
-
+    def done(self, job, element, result, success):
         if not success:
             return False
 
         element._pull_done()
 
-        # Build jobs will check the "approximate" size first. Since we
-        # do not get an artifact size from pull jobs, we have to
-        # actually check the cache size.
+        pulled, artifact_size = result
+
+        artifacts = Platform.get_platform().artifactcache
+        artifacts.add_artifact_size(artifact_size)
+
+        # This has to be done after _pull_done, such that the
+        # element may register its cache key as required
         self._scheduler.check_cache_size()
 
         # Element._pull() returns True if it downloaded an artifact,
         # here we want to appear skipped if we did not download.
-        return result
+        return pulled

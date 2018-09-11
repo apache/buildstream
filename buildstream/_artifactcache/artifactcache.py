@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2018 Codethink Limited
+#  Copyright (C) 2018 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,6 +16,7 @@
 #
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
+#        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 import os
 import string
@@ -88,7 +89,7 @@ class ArtifactCache():
         self.project_remote_specs = {}
 
         self._required_elements = set()       # The elements required for this session
-        self._cache_size = None               # The current cache size, sometimes it's an estimate
+        self._cache_size = None               # The current cache size
         self._cache_quota = None              # The cache quota
         self._cache_lower_threshold = None    # The target cache size for a cleanup
 
@@ -302,7 +303,7 @@ class ArtifactCache():
     # add_artifact_size()
     #
     # Adds the reported size of a newly cached artifact to the
-    # overall estimated size.
+    # current cache size.
     #
     # Args:
     #     artifact_size (int): The size to add.
@@ -315,25 +316,17 @@ class ArtifactCache():
 
     # get_cache_size()
     #
-    # Fetches the cached size of the cache, this is sometimes
-    # an estimate and periodically adjusted to the real size
-    # when a cache size calculation job runs.
-    #
-    # When it is an estimate, the value is either correct, or
-    # it is greater than the actual cache size.
+    # Returns the size of the artifact cache.
     #
     # Returns:
-    #     (int) An approximation of the artifact cache size.
+    #     (int): The size of the artifact cache.
     #
     def get_cache_size(self):
-
-        # If we don't currently have an estimate, figure out the real cache size.
         if self._cache_size is None:
-            stored_size = self._read_cache_size()
-            if stored_size is not None:
-                self._cache_size = stored_size
-            else:
-                self.compute_cache_size()
+            self._cache_size = self._read_cache_size()
+
+        if self._cache_size is None:
+            self._cache_size = self.calculate_cache_size()
 
         return self._cache_size
 
