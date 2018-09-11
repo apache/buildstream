@@ -234,7 +234,7 @@ class ArtifactCache():
     # Clean the artifact cache as much as possible.
     #
     # Returns:
-    #    (int): The size of the cache after having cleaned up
+    #     (int): Amount of bytes cleaned from the cache.
     #
     def clean(self):
         artifacts = self.list_artifacts()
@@ -252,7 +252,7 @@ class ArtifactCache():
             ])
 
         # Do a real computation of the cache size once, just in case
-        self.compute_cache_size()
+        old_cache_size = self.compute_cache_size()
 
         while self.get_cache_size() >= self._cache_lower_threshold:
             try:
@@ -280,12 +280,9 @@ class ArtifactCache():
 
                 # Remove the actual artifact, if it's not required.
                 size = self.remove(to_remove)
+                self._cache_size -= size
 
-                # Remove the size from the removed size
-                self.set_cache_size(self._cache_size - size)
-
-        # This should be O(1) if implemented correctly
-        return self.get_cache_size()
+        return old_cache_size - self._cache_size
 
     # compute_cache_size()
     #
@@ -302,17 +299,24 @@ class ArtifactCache():
 
     # add_artifact_size()
     #
-    # Adds the reported size of a newly cached artifact to the
-    # current cache size.
+    # Adds given artifact size to the cache size
     #
     # Args:
-    #     artifact_size (int): The size to add.
+    #     artifact_size (int): The artifact size to add.
     #
     def add_artifact_size(self, artifact_size):
-        cache_size = self.get_cache_size()
-        cache_size += artifact_size
+        self._cache_size = self.get_cache_size() + artifact_size
+        self._write_cache_size(self._cache_size)
 
-        self.set_cache_size(cache_size)
+    # subtract_artifact_size()
+    #
+    # Subtracts given artifact size from the cache size
+    #
+    # Args:
+    #     artifact_size (int): The artifact size to subtract.
+    #
+    def subtract_artifact_size(self, artifact_size):
+        self.add_artifact_size(artifact_size * -1)
 
     # get_cache_size()
     #
@@ -329,23 +333,6 @@ class ArtifactCache():
             self._cache_size = self.calculate_cache_size()
 
         return self._cache_size
-
-    # set_cache_size()
-    #
-    # Forcefully set the overall cache size.
-    #
-    # This is used to update the size in the main process after
-    # having calculated in a cleanup or a cache size calculation job.
-    #
-    # Args:
-    #     cache_size (int): The size to set.
-    #
-    def set_cache_size(self, cache_size):
-
-        assert cache_size is not None
-
-        self._cache_size = cache_size
-        self._write_cache_size(self._cache_size)
 
     # has_quota_exceeded()
     #
