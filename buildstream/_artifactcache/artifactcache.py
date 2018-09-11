@@ -252,7 +252,7 @@ class ArtifactCache():
             ])
 
         # Do a real computation of the cache size once, just in case
-        old_cache_size = self.compute_cache_size()
+        old_cache_size = self._cache_size = self.calculate_cache_size()
 
         while self.get_cache_size() >= self._cache_lower_threshold:
             try:
@@ -283,19 +283,6 @@ class ArtifactCache():
                 self._cache_size -= size
 
         return old_cache_size - self._cache_size
-
-    # compute_cache_size()
-    #
-    # Computes the real artifact cache size by calling
-    # the abstract calculate_cache_size() method.
-    #
-    # Returns:
-    #    (int): The size of the artifact cache.
-    #
-    def compute_cache_size(self):
-        self._cache_size = self.calculate_cache_size()
-
-        return self._cache_size
 
     # add_artifact_size()
     #
