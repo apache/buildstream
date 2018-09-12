@@ -351,7 +351,7 @@ class Scheduler():
         platform = Platform.get_platform()
         artifacts = platform.artifactcache
 
-        if not artifacts.get_quota_exceeded():
+        if not artifacts.has_quota_exceeded():
             return
 
         job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
