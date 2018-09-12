@@ -252,11 +252,8 @@ class CASCache(ArtifactCache):
                     raise ArtifactError("Failed to pull artifact {}: {}".format(
                         element._get_brief_display_key(), e)) from e
                 else:
-                    self.context.message(Message(
-                        None,
-                        MessageType.INFO,
-                        "Remote ({}) does not have {} cached".format(
-                            remote.spec.url, element._get_brief_display_key())
+                    element.info("Remote ({}) does not have {} cached".format(
+                        remote.spec.url, element._get_brief_display_key()
                     ))
 
         return False
@@ -344,11 +341,8 @@ class CASCache(ArtifactCache):
                 element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
                 pushed = True
             else:
-                self.context.message(Message(
-                    None,
-                    MessageType.INFO,
-                    "Remote ({}) already has {} cached".format(
-                        remote.spec.url, element._get_brief_display_key())
+                element.info("Remote ({}) already has {} cached".format(
+                    remote.spec.url, element._get_brief_display_key()
                 ))
 
         return pushed
