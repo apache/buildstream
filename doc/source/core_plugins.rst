@@ -59,6 +59,7 @@ Sources
    sources/patch
    sources/deb
    sources/pip
+   sources/cargo
 
 
 External plugins
