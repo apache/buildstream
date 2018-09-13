@@ -108,9 +108,6 @@ class SandboxBwrap(Sandbox):
             bwrap_command += ['--unshare-uts', '--hostname', 'buildstream']
             bwrap_command += ['--unshare-ipc']
 
-        if cwd is not None:
-            bwrap_command += ['--chdir', cwd]
-
         # Give it a proc and tmpfs
         bwrap_command += [
             '--proc', '/proc',
@@ -151,6 +148,10 @@ class SandboxBwrap(Sandbox):
         if flags & SandboxFlags.ROOT_READ_ONLY:
             bwrap_command += ["--remount-ro", "/"]
 
+        if cwd is not None:
+            bwrap_command += ['--dir', cwd]
+            bwrap_command += ['--chdir', cwd]
+
         # Set UID and GUI
         if self.user_ns_available:
             bwrap_command += ['--unshare-user']
@@ -178,11 +179,6 @@ class SandboxBwrap(Sandbox):
         #
         with ExitStack() as stack:
             stack.enter_context(mount_map.mounted(self))
-
-            # Ensure the cwd exists
-            if cwd is not None:
-                workdir = os.path.join(root_mount_source, cwd.lstrip(os.sep))
-                os.makedirs(workdir, exist_ok=True)
 
             # If we're interactive, we want to inherit our stdin,
             # otherwise redirect to /dev/null, ensuring process
