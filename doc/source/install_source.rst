@@ -29,6 +29,7 @@ The default plugins with extra host dependencies are:
 * git
 * ostree
 * patch
+* pip
 * tar
 
 If you intend to push built artifacts to a remote artifact server,
