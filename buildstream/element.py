@@ -200,7 +200,6 @@ class Element(Plugin):
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = artifacts            # Artifact cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
-        self.__cached = None                    # Whether we have a cached artifact
         self.__strong_cached = None             # Whether we have a cached artifact
         self.__weak_cached = None               # Whether we have a cached artifact
         self.__assemble_scheduled = False       # Element is scheduled to be assembled
@@ -1126,8 +1125,6 @@ class Element(Plugin):
 
         # Query caches now that the weak and strict cache keys are available
         key_for_cache_lookup = self.__strict_cache_key if context.get_strict() else self.__weak_cache_key
-        if not self.__cached:
-            self.__cached = self.__artifacts.contains(self, key_for_cache_lookup)
         if not self.__strong_cached:
             self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
         if key_for_cache_lookup == self.__weak_cache_key:
@@ -2079,7 +2076,7 @@ class Element(Plugin):
 
     def __is_cached(self, keystrength):
         if keystrength is None:
-            return self.__cached
+            keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
 
         return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
 
