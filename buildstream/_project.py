@@ -381,7 +381,10 @@ class Project():
             self._project_conf = _yaml.load(projectfile)
         except LoadError as e:
             # Raise a more specific error here
-            raise LoadError(LoadErrorReason.MISSING_PROJECT_CONF, str(e))
+            if e.reason == LoadErrorReason.MISSING_FILE:
+                raise LoadError(LoadErrorReason.MISSING_PROJECT_CONF, str(e)) from e
+            else:
+                raise
 
         pre_config_node = _yaml.node_copy(self._default_config_node)
         _yaml.composite(pre_config_node, self._project_conf)
