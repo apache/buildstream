@@ -100,9 +100,8 @@ class SandboxChroot(Sandbox):
 
             # Ensure the cwd exists
             if cwd is not None:
-                workdir = os.path.join(root_mount_source, cwd.lstrip(os.sep))
+                workdir = os.path.join(rootfs, cwd.lstrip(os.sep))
                 os.makedirs(workdir, exist_ok=True)
-
             status = self.chroot(rootfs, command, stdin, stdout,
                                  stderr, cwd, env, flags)
 
