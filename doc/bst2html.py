@@ -444,7 +444,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
 def run_bst(directory, force, source_cache, description, palette):
     """Run a bst command and capture stdout/stderr in html
 
-    This command normally takes a description yaml file, see the HACKING
+    This command normally takes a description yaml file, see the CONTRIBUTING
     file for information on it's format.
     """
     if not source_cache and os.environ.get('BST_SOURCE_CACHE'):
