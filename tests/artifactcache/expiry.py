@@ -196,24 +196,8 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
 
 
 # Assert that we never delete a dependency required for a build tree
-#
-# NOTE: This test expects that a build will fail if it attempts to
-#       put more artifacts in the cache than the quota can hold,
-#       and expects that the last two elements which don't fit into
-#       the quota wont even be built.
-#
-#       In real life, this will not be the case, since once we reach
-#       the estimated quota we launch a cache size calculation job and
-#       only launch a cleanup job when the size is calculated; and
-#       other build tasks will be scheduled while the cache size job
-#       is running.
-#
-#       This test only passes because we configure `builders` to 1,
-#       ensuring that the cache size job runs exclusively since it
-#       also requires a compute resource (a "builder").
-#
 @pytest.mark.datafiles(DATA_DIR)
-def test_never_delete_dependencies(cli, datafiles, tmpdir):
+def test_never_delete_required(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
 
@@ -226,37 +210,37 @@ def test_never_delete_dependencies(cli, datafiles, tmpdir):
         }
     })
 
-    # Create a build tree
-    create_element_size('dependency.bst', project,
-                        element_path, [], 8000000)
-    create_element_size('related.bst', project,
-                        element_path, ['dependency.bst'], 8000000)
-    create_element_size('target.bst', project,
-                        element_path, ['related.bst'], 8000000)
-    create_element_size('target2.bst', project,
-                        element_path, ['target.bst'], 8000000)
+    # Create a linear build tree
+    create_element_size('dep1.bst', project, element_path, [], 8000000)
+    create_element_size('dep2.bst', project, element_path, ['dep1.bst'], 8000000)
+    create_element_size('dep3.bst', project, element_path, ['dep2.bst'], 8000000)
+    create_element_size('target.bst', project, element_path, ['dep3.bst'], 8000000)
 
     # We try to build this pipeline, but it's too big for the
     # cache. Since all elements are required, the build should fail.
-    res = cli.run(project=project, args=['build', 'target2.bst'])
+    res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_main_error(ErrorDomain.STREAM, None)
 
-    assert cli.get_element_state(project, 'dependency.bst') == 'cached'
-
-    # This is *technically* above the cache limit. BuildStream accepts
-    # some fuzziness, since it's hard to assert that we don't create
-    # an artifact larger than the cache quota. We would have to remove
-    # the artifact after-the-fact, but since it is required for the
-    # current build and nothing broke yet, it's nicer to keep it
-    # around.
+    # Only the first artifact fits in the cache, but we expect
+    # that the first *two* artifacts will be cached.
     #
-    # This scenario is quite unlikely, and the cache overflow will be
-    # resolved if the user does something about it anyway.
+    # This is because after caching the first artifact we must
+    # proceed to build the next artifact, and we cannot really
+    # know how large an artifact will be until we try to cache it.
     #
-    assert cli.get_element_state(project, 'related.bst') == 'cached'
+    # In this case, we deem it more acceptable to not delete an
+    # artifact which caused the cache to outgrow the quota.
+    #
+    # Note that this test only works because we have forced
+    # the configuration to build one element at a time, in real
+    # life there may potentially be N-builders cached artifacts
+    # which exceed the quota
+    #
+    assert cli.get_element_state(project, 'dep1.bst') == 'cached'
+    assert cli.get_element_state(project, 'dep2.bst') == 'cached'
 
+    assert cli.get_element_state(project, 'dep3.bst') != 'cached'
     assert cli.get_element_state(project, 'target.bst') != 'cached'
-    assert cli.get_element_state(project, 'target2.bst') != 'cached'
 
 
 # Ensure that only valid cache quotas make it through the loading
