@@ -185,6 +185,6 @@ def _extract_depends_from_node(node, *, key=None):
         output_deps.append(dependency)
 
     # Now delete the field, we dont want it anymore
-    del node[key]
+    node.pop(key, None)
 
     return output_deps
