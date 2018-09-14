@@ -401,6 +401,7 @@ class CasBasedDirectory(Directory):
         result = FileListResult()
         processed_directories = set()
         for f in files:
+            print("_partial_import_cas_into_cas: Importing {}".format(f))
             if f == ".": continue
             fullname = os.path.join(path_prefix, f)
             components = f.split(os.path.sep)
@@ -523,6 +524,7 @@ class CasBasedDirectory(Directory):
         if files is None:
             files = source_directory.list_relative_paths()
             #return self._full_import_cas_into_cas(source_directory, can_hardlink=True)
+        print("Performing import of CAS into CAS. Files to import: {}".format(files))
         return self._partial_import_cas_into_cas(source_directory, files)
 
     def import_files(self, external_pathspec, *, files=None,
@@ -571,6 +573,7 @@ class CasBasedDirectory(Directory):
             source_directory = external_pathspec
             if files is None:
                 files = list_relative_paths(source_directory)
+            print("Performing import from plain directory {}, containing {} files.".format(source_directory, len(list(files))))
             result = self._import_files_from_directory(source_directory, files=files)
 
         # TODO: No notice is taken of report_written, update_utimes or can_link.
@@ -715,11 +718,16 @@ class CasBasedDirectory(Directory):
         """
 
         filelist = []
+        print("list_relative_paths indexing CAS directory")
         for (k, v) in self.index.items():
             if isinstance(v.buildstream_object, CasBasedDirectory):
                 filelist.extend([k + os.path.sep + x for x in v.buildstream_object.list_relative_paths()])
+                print("Add directory {}".format(k))
             elif isinstance(v.pb_object, remote_execution_pb2.FileNode):
                 filelist.append(k)
+                print("Add file {}".format(k))
+            else:
+                print("Unrecognised entry! {}".format(k))
         return filelist
 
     def recalculate_hash(self):
