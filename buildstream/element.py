@@ -1434,15 +1434,20 @@ class Element(Plugin):
             workspace.clear_running_files()
             self._get_context().get_workspaces().save_config()
 
-            # We also need to update the required artifacts, since
-            # workspaced dependencies do not have a fixed cache key
-            # when the build starts.
+            # This element will have already been marked as
+            # required, but we bump the atime again, in case
+            # we did not know the cache key until now.
             #
-            # This does *not* cause a race condition, because
-            # _assemble_done is called before a cleanup job may be
-            # launched.
+            # FIXME: This is not exactly correct, we should be
+            #        doing this at the time which we have discovered
+            #        a new cache key, this just happens to be the
+            #        last place where that can happen.
             #
-            self.__artifacts.append_required_artifacts([self])
+            #        Ultimately, we should be refactoring
+            #        Element._update_state() such that we know
+            #        when a cache key is actually discovered.
+            #
+            self.__artifacts.mark_required_elements([self])
 
     # _assemble():
     #
