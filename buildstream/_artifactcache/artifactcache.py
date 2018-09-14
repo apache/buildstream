@@ -87,7 +87,7 @@ class ArtifactCache():
         self.global_remote_specs = []
         self.project_remote_specs = {}
 
-        self._required_artifacts = set()      # The artifacts required for this session
+        self._required_elements = set()       # The elements required for this session
         self._cache_size = None               # The current cache size, sometimes it's an estimate
         self._cache_quota = None              # The cache quota
         self._cache_lower_threshold = None    # The target cache size for a cleanup
@@ -189,33 +189,40 @@ class ArtifactCache():
                                   (str(provenance)))
         return cache_specs
 
-    # append_required_artifacts():
+    # mark_required_elements():
     #
-    # Append to the list of elements whose artifacts are required for
-    # the current run. Artifacts whose elements are in this list will
-    # be locked by the artifact cache and not touched for the duration
-    # of the current pipeline.
+    # Mark elements whose artifacts are required for the current run.
+    #
+    # Artifacts whose elements are in this list will be locked by the artifact
+    # cache and not touched for the duration of the current pipeline.
     #
     # Args:
     #     elements (iterable): A set of elements to mark as required
     #
-    def append_required_artifacts(self, elements):
-        # We lock both strong and weak keys - deleting one but not the
-        # other won't save space in most cases anyway, but would be a
-        # user inconvenience.
+    def mark_required_elements(self, elements):
 
+        # We risk calling this function with a generator, so we
+        # better consume it first.
+        #
+        elements = list(elements)
+
+        # Mark the elements as required. We cannot know that we know the
+        # cache keys yet, so we only check that later when deleting.
+        #
+        self._required_elements.update(elements)
+
+        # For the cache keys which were resolved so far, we bump
+        # the atime of them.
+        #
+        # This is just in case we have concurrent instances of
+        # BuildStream running with the same artifact cache, it will
+        # reduce the likelyhood of one instance deleting artifacts
+        # which are required by the other.
         for element in elements:
             strong_key = element._get_cache_key(strength=_KeyStrength.STRONG)
             weak_key = element._get_cache_key(strength=_KeyStrength.WEAK)
-
             for key in (strong_key, weak_key):
-                if key and key not in self._required_artifacts:
-                    self._required_artifacts.add(key)
-
-                    # We also update the usage times of any artifacts
-                    # we will be using, which helps preventing a
-                    # buildstream process that runs in parallel with
-                    # this one from removing artifacts in-use.
+                if key:
                     try:
                         self.update_atime(key)
                     except ArtifactError:
@@ -230,6 +237,18 @@ class ArtifactCache():
     #
     def clean(self):
         artifacts = self.list_artifacts()
+
+        # Build a set of the cache keys which are required
+        # based on the required elements at cleanup time
+        #
+        # We lock both strong and weak keys - deleting one but not the
+        # other won't save space, but would be a user inconvenience.
+        required_artifacts = set()
+        for element in self._required_elements:
+            required_artifacts.update([
+                element._get_cache_key(strength=_KeyStrength.STRONG),
+                element._get_cache_key(strength=_KeyStrength.WEAK)
+            ])
 
         # Do a real computation of the cache size once, just in case
         self.compute_cache_size()
@@ -256,7 +275,7 @@ class ArtifactCache():
                     break
 
             key = to_remove.rpartition('/')[2]
-            if key not in self._required_artifacts:
+            if key not in required_artifacts:
 
                 # Remove the actual artifact, if it's not required.
                 size = self.remove(to_remove)

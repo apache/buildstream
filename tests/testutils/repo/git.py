@@ -46,6 +46,13 @@ class Git(Repo):
         ], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
+    def modify_file(self, new_file, path):
+        shutil.copy(new_file, os.path.join(self.repo, path))
+        subprocess.call([
+            'git', 'commit', path, '-m', 'Modified {}'.format(os.path.basename(path))
+        ], env=GIT_ENV, cwd=self.repo)
+        return self.latest_commit()
+
     def add_submodule(self, subdir, url=None, checkout=None):
         submodule = {}
         if checkout is not None:
