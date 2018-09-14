@@ -140,7 +140,7 @@ class Sandbox():
         if not self._vdir:
             # BST_CAS_DIRECTORIES is a deliberately hidden environment variable which
             # can be used to switch on CAS-based directories for testing.
-            if 'BST_CAS_DIRECTORIES' in os.environ:
+            if 'BST_CAS_DIRECTORIES' in os.environ and not self.__allow_real_directory:
                 self._vdir = CasBasedDirectory(self.__context, ref=None)
             else:
                 self._vdir = FileBasedDirectory(self._root)
