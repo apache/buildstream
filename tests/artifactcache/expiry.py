@@ -74,6 +74,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
     create_element_size('target.bst', project, element_path, [], size)
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_main_error(ErrorDomain.STREAM, None)
+    res.assert_task_error(ErrorDomain.ARTIFACT, 'cache-too-full')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -199,6 +200,7 @@ def test_never_delete_required(cli, datafiles, tmpdir):
     # cache. Since all elements are required, the build should fail.
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_main_error(ErrorDomain.STREAM, None)
+    res.assert_task_error(ErrorDomain.ARTIFACT, 'cache-too-full')
 
     # Only the first artifact fits in the cache, but we expect
     # that the first *two* artifacts will be cached.
