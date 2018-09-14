@@ -267,7 +267,7 @@ class ArtifactCache():
                           "Please increase the cache-quota in {}."
                           .format(self.context.config_origin or default_conf))
 
-                if self.get_quota_exceeded():
+                if self.has_quota_exceeded():
                     raise ArtifactError("Cache too full. Aborting.",
                                         detail=detail,
                                         reason="cache-too-full")
@@ -354,14 +354,14 @@ class ArtifactCache():
         self._cache_size = cache_size
         self._write_cache_size(self._cache_size)
 
-    # get_quota_exceeded()
+    # has_quota_exceeded()
     #
     # Checks if the current artifact cache size exceeds the quota.
     #
     # Returns:
     #    (bool): True of the quota is exceeded
     #
-    def get_quota_exceeded(self):
+    def has_quota_exceeded(self):
         return self.get_cache_size() > self._cache_quota
 
     ################################################

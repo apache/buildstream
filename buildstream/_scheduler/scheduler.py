@@ -351,14 +351,13 @@ class Scheduler():
         platform = Platform.get_platform()
         artifacts = platform.artifactcache
 
-        if not artifacts.get_quota_exceeded():
+        if not artifacts.has_quota_exceeded():
             return
 
         job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
                          resources=[ResourceType.CACHE,
                                     ResourceType.PROCESS],
-                         exclusive_resources=[ResourceType.CACHE],
-                         complete_cb=None)
+                         exclusive_resources=[ResourceType.CACHE])
         self.schedule_jobs([job])
 
     # _suspend_jobs()

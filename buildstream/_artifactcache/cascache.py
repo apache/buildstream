@@ -117,7 +117,7 @@ class CASCache(ArtifactCache):
     def commit(self, element, content, keys):
         refs = [self.get_artifact_fullname(element, key) for key in keys]
 
-        tree = self._create_tree(content)
+        tree = self._commit_directory(content)
 
         for ref in refs:
             self.set_ref(ref, tree)
@@ -665,7 +665,21 @@ class CASCache(ArtifactCache):
     def _refpath(self, ref):
         return os.path.join(self.casdir, 'refs', 'heads', ref)
 
-    def _create_tree(self, path, *, digest=None):
+    # _commit_directory():
+    #
+    # Adds local directory to content addressable store.
+    #
+    # Adds files, symbolic links and recursively other directories in
+    # a local directory to the content addressable store.
+    #
+    # Args:
+    #     path (str): Path to the directory to add.
+    #     dir_digest (Digest): An optional Digest object to use.
+    #
+    # Returns:
+    #     (Digest): Digest object for the directory added.
+    #
+    def _commit_directory(self, path, *, dir_digest=None):
         directory = remote_execution_pb2.Directory()
 
         for name in sorted(os.listdir(path)):
@@ -674,7 +688,7 @@ class CASCache(ArtifactCache):
             if stat.S_ISDIR(mode):
                 dirnode = directory.directories.add()
                 dirnode.name = name
-                self._create_tree(full_path, digest=dirnode.digest)
+                self._commit_directory(full_path, dir_digest=dirnode.digest)
             elif stat.S_ISREG(mode):
                 filenode = directory.files.add()
                 filenode.name = name
@@ -690,7 +704,8 @@ class CASCache(ArtifactCache):
             else:
                 raise ArtifactError("Unsupported file type for {}".format(full_path))
 
-        return self.add_object(digest=digest, buffer=directory.SerializeToString())
+        return self.add_object(digest=dir_digest,
+                               buffer=directory.SerializeToString())
 
     def _get_subdir(self, tree, subdir):
         head, name = os.path.split(subdir)
@@ -833,14 +848,26 @@ class CASCache(ArtifactCache):
 
         assert digest.size_bytes == os.fstat(stream.fileno()).st_size
 
-    def _fetch_directory(self, remote, tree):
-        objpath = self.objpath(tree)
+    # _fetch_directory():
+    #
+    # Fetches remote directory and adds it to content addressable store.
+    #
+    # Fetches files, symbolic links and recursively other directories in
+    # the remote directory and adds them to the content addressable
+    # store.
+    #
+    # Args:
+    #     remote (Remote): The remote to use.
+    #     dir_digest (Digest): Digest object for the directory to fetch.
+    #
+    def _fetch_directory(self, remote, dir_digest):
+        objpath = self.objpath(dir_digest)
         if os.path.exists(objpath):
             # already in local cache
             return
 
         with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
-            self._fetch_blob(remote, tree, out)
+            self._fetch_blob(remote, dir_digest, out)
 
             directory = remote_execution_pb2.Directory()
 
@@ -848,7 +875,7 @@ class CASCache(ArtifactCache):
                 directory.ParseFromString(f.read())
 
             for filenode in directory.files:
-                fileobjpath = self.objpath(tree)
+                fileobjpath = self.objpath(filenode.digest)
                 if os.path.exists(fileobjpath):
                     # already in local cache
                     continue
@@ -862,10 +889,11 @@ class CASCache(ArtifactCache):
             for dirnode in directory.directories:
                 self._fetch_directory(remote, dirnode.digest)
 
-            # place directory blob only in final location when we've downloaded
-            # all referenced blobs to avoid dangling references in the repository
+            # Place directory blob only in final location when we've
+            # downloaded all referenced blobs to avoid dangling
+            # references in the repository.
             digest = self.add_object(path=out.name)
-            assert digest.hash == tree.hash
+            assert digest.hash == dir_digest.hash
 
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object
