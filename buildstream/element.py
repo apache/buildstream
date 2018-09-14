@@ -2137,14 +2137,11 @@ class Element(Plugin):
         project = self._get_project()
         platform = Platform.get_platform()
 
-        if self.__remote_execution_url and self.BST_VIRTUAL_DIRECTORY:
-            if not self.__artifacts.has_push_remotes(element=self):
-                # Give an early warning if remote execution will not work
-                raise ElementError("Artifact {} is configured to use remote execution but has no push remotes. "
-                                   .format(self.name) +
-                                   "The remote artifact server(s) may not be correctly configured or contactable.")
+        if (directory is not None and
+            self.__remote_execution_url and
+            self.BST_VIRTUAL_DIRECTORY):
 
-            self.info("Using a remote sandbox for artifact {}".format(self.name))
+            self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
             sandbox = SandboxRemote(context, project,
                                     directory,
