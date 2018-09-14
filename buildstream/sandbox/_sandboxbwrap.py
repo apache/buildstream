@@ -32,7 +32,7 @@ from .._exceptions import SandboxError
 from .. import utils, _signals
 from ._mount import MountMap
 from . import Sandbox, SandboxFlags
-
+from ..storage import CasBasedDirectory
 
 # SandboxBwrap()
 #
@@ -56,6 +56,9 @@ class SandboxBwrap(Sandbox):
 
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
+
+        # We cannot run directly from CAS-based directories at the moment.
+        assert not isinstance(self.get_virtual_directory(), CasBasedDirectory)
 
         # Allowable access to underlying storage as we're part of the sandbox
         root_directory = self.get_virtual_directory()._get_underlying_directory()

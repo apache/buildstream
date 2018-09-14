@@ -23,7 +23,7 @@ from contextlib import contextmanager, ExitStack
 
 from .. import utils
 from .._fuse import SafeHardlinks
-
+from ..storage import CasBasedDirectory
 
 # Mount()
 #
@@ -35,6 +35,7 @@ class Mount():
         # Getting _get_underlying_directory() here is acceptable as
         # we're part of the sandbox code. This will fail if our
         # directory is CAS-based.
+        assert not isinstance(sandbox.get_virtual_directory(), CasBasedDirectory)
         root_directory = sandbox.get_virtual_directory()._get_underlying_directory()
 
         self.mount_point = mount_point

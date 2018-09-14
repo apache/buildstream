@@ -172,6 +172,7 @@ class SandboxRemote(Sandbox):
         if isinstance(upload_vdir, FileBasedDirectory):
             # Make a new temporary directory to put source in
             upload_vdir = CasBasedDirectory(self._get_context(), ref=None)
+            assert not isinstance(self.get_virtual_directory(), CasBasedDirectory)
             upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
         upload_vdir.recalculate_hash()
