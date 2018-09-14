@@ -264,8 +264,9 @@ setup(name='BuildStream',
       license='LGPL',
       long_description=long_description,
       long_description_content_type='text/x-rst; charset=UTF-8',
-      url='https://gitlab.com/BuildStream/buildstream',
+      url='https://buildstream.build',
       project_urls={
+          'Source': 'https://gitlab.com/BuildStream/buildstream',
           'Documentation': 'https://buildstream.gitlab.io/buildstream/',
           'Tracker': 'https://gitlab.com/BuildStream/buildstream/issues',
           'Mailing List': 'https://mail.gnome.org/mailman/listinfo/buildstream-list'
