@@ -10,6 +10,12 @@ Major feature additions should be proposed on the
 before being considered for inclusion, we strongly recommend proposing
 in advance of commencing work.
 
+If you are experiencing an issue with BuildStream or would like to submit a small patch/feature, then
+you can open issue [here](https://gitlab.com/BuildStream/buildstream/issues/new?issue%5Bassignee_id%5D=&issue%5Bmilestone_id%5D=)
+
+For policies on how to submit and issue and how to use our project labels, we recommend that you read the policies guide
+[here](https://gitlab.com/BuildStream/nosoftware/alignment/blob/master/BuildStream_policies.md)
+
 New features must be well documented and tested either in our main
 test suite if possible, or otherwise in the integration tests.
 
