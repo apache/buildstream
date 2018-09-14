@@ -27,7 +27,7 @@ from . import Sandbox
 from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._artifactcache.cascache import CASCache
+from .._platform import Platform
 
 
 class SandboxError(Exception):
@@ -43,7 +43,6 @@ class SandboxRemote(Sandbox):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.cascache = None
 
         url = urlparse(kwargs['server_url'])
         if not url.scheme or not url.hostname or not url.port:
@@ -55,12 +54,6 @@ class SandboxRemote(Sandbox):
                                "Only plain HTTP is currenlty supported (no HTTPS).")
 
         self.server_url = '{}:{}'.format(url.hostname, url.port)
-
-    def _get_cascache(self):
-        if self.cascache is None:
-            self.cascache = CASCache(self._get_context())
-            self.cascache.setup_remotes(use_config=True)
-        return self.cascache
 
     def run_remote_command(self, command, input_root_digest, working_directory, environment):
         # Sends an execution request to the remote execution server.
@@ -78,8 +71,8 @@ class SandboxRemote(Sandbox):
                                                       output_files=[],
                                                       output_directories=[self._output_directory],
                                                       platform=None)
-
-        cascache = self._get_cascache()
+        platform = Platform.get_platform()
+        cascache = platform.artifactcache
         # Upload the Command message to the remote CAS server
         command_digest = cascache.push_message(self._get_project(), remote_command)
         if not command_digest or not cascache.verify_digest_pushed(self._get_project(), command_digest):
@@ -141,7 +134,8 @@ class SandboxRemote(Sandbox):
         if tree_digest is None or not tree_digest.hash:
             raise SandboxError("Output directory structure had no digest attached.")
 
-        cascache = self._get_cascache()
+        platform = Platform.get_platform()
+        cascache = platform.artifactcache
         # Now do a pull to ensure we have the necessary parts.
         dir_digest = cascache.pull_tree(self._get_project(), tree_digest)
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
@@ -176,7 +170,8 @@ class SandboxRemote(Sandbox):
 
         upload_vdir.recalculate_hash()
 
-        cascache = self._get_cascache()
+        platform = Platform.get_platform()
+        cascache = platform.artifactcache
         # Now, push that key (without necessarily needing a ref) to the remote.
         vdir_digest = cascache.push_directory(self._get_project(), upload_vdir)
         if not vdir_digest or not cascache.verify_digest_pushed(self._get_project(), vdir_digest):
