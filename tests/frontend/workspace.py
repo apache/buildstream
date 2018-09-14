@@ -43,10 +43,13 @@ DATA_DIR = os.path.join(
 )
 
 
-def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None):
+def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None, project_path=None):
     if not workspace_dir:
         workspace_dir = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
-    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    if not project_path:
+        project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    else:
+        shutil.copytree(os.path.join(datafiles.dirname, datafiles.basename), project_path)
     bin_files_path = os.path.join(project_path, 'files', 'bin-files')
     element_path = os.path.join(project_path, 'elements')
     element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
@@ -218,41 +221,42 @@ def test_close(cli, tmpdir, datafiles, kind):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_close_external_after_move_project(cli, tmpdir, datafiles):
-    tmp_parent = os.path.dirname(str(tmpdir))
-    workspace_dir = os.path.join(tmp_parent, "workspace")
-    element_name, project_path, _ = open_workspace(cli, tmpdir, datafiles, 'git', False, "", workspace_dir)
+    workspace_dir = os.path.join(str(tmpdir), "workspace")
+    project_path = os.path.join(str(tmpdir), 'initial_project')
+    element_name, _, _ = open_workspace(cli, tmpdir, datafiles, 'git', False, "", workspace_dir, project_path)
     assert os.path.exists(workspace_dir)
-    tmp_dir = os.path.join(tmp_parent, 'external_project')
-    shutil.move(project_path, tmp_dir)
-    assert os.path.exists(tmp_dir)
+    moved_dir = os.path.join(str(tmpdir), 'external_project')
+    shutil.move(project_path, moved_dir)
+    assert os.path.exists(moved_dir)
 
     # Close the workspace
-    result = cli.run(configure=False, project=tmp_dir, args=[
+    result = cli.run(project=moved_dir, args=[
         'workspace', 'close', '--remove-dir', element_name
     ])
     result.assert_success()
 
     # Assert the workspace dir has been deleted
     assert not os.path.exists(workspace_dir)
-    # Move directory back inside tmp directory so it can be recognised
-    shutil.move(tmp_dir, project_path)
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_close_internal_after_move_project(cli, tmpdir, datafiles):
-    element_name, project, _ = open_workspace(cli, tmpdir, datafiles, 'git', False)
-    tmp_dir = os.path.join(os.path.dirname(str(tmpdir)), 'external_project')
-    shutil.move(str(tmpdir), tmp_dir)
-    assert os.path.exists(tmp_dir)
+    initial_dir = os.path.join(str(tmpdir), 'initial_project')
+    initial_workspace = os.path.join(initial_dir, 'workspace')
+    element_name, _, _ = open_workspace(cli, tmpdir, datafiles, 'git', False,
+                                        workspace_dir=initial_workspace, project_path=initial_dir)
+    moved_dir = os.path.join(str(tmpdir), 'internal_project')
+    shutil.move(initial_dir, moved_dir)
+    assert os.path.exists(moved_dir)
 
     # Close the workspace
-    result = cli.run(configure=False, project=tmp_dir, args=[
+    result = cli.run(project=moved_dir, args=[
         'workspace', 'close', '--remove-dir', element_name
     ])
     result.assert_success()
 
     # Assert the workspace dir has been deleted
-    workspace = os.path.join(tmp_dir, 'workspace')
+    workspace = os.path.join(moved_dir, 'workspace')
     assert not os.path.exists(workspace)
 
 
