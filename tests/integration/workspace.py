@@ -34,6 +34,23 @@ def test_workspace_mount(cli, tmpdir, datafiles):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+def test_workspace_commanddir(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_name = 'workspace/workspace-commanddir.bst'
+
+    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    assert res.exit_code == 0
+
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+    assert os.path.exists(os.path.join(cli.directory, 'workspace'))
+    assert os.path.exists(os.path.join(cli.directory, 'workspace', 'build'))
+
+
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
 def test_workspace_updated_dependency(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
