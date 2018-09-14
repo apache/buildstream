@@ -21,7 +21,7 @@ Later sections provide detailed information on BuildStream internals.
    main_install
    main_using
    main_core
-   HACKING
+   CONTRIBUTING
 
 
 Resources
