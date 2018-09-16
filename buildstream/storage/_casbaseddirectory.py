@@ -572,8 +572,8 @@ class CasBasedDirectory(Directory):
         else:
             source_directory = external_pathspec
             if files is None:
-                files = list_relative_paths(source_directory)
-            print("Performing import from plain directory {}, containing {} files.".format(source_directory, len(list(files))))
+                files = list(list_relative_paths(source_directory))
+            print("Performing import from plain directory {}, containing {} files: {}".format(source_directory, len(files), files))
             result = self._import_files_from_directory(source_directory, files=files)
 
         # TODO: No notice is taken of report_written, update_utimes or can_link.
@@ -591,7 +591,7 @@ class CasBasedDirectory(Directory):
         if duplicate_cas:
             if duplicate_cas.ref.hash != self.ref.hash:
                 raise VirtualDirectoryError("Mismatch between file-imported result {} and cas-to-cas imported result {}.".format(duplicate_cas.ref.hash,self.ref.hash))
-
+        print("Import complete; new hash is {}".format(self.ref.hash))
         return result
 
     def set_deterministic_mtime(self):
