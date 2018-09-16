@@ -5,7 +5,7 @@
 #
 # Simply run without any arguments, from anywhere, e.g.:
 #
-#   ./tests/cachekey/update.py
+#   PYTHONPATH=. ./tests/cachekey/update.py
 #
 # After this, add any files which were newly created and commit
 # the result in order to adjust the cache key test to changed

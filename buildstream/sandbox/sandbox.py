@@ -279,20 +279,38 @@ class Sandbox():
     # Fetches the environment variables for running commands
     # in the sandbox.
     #
+    # Args:
+    #    cwd (str): The working directory the command has been requested to run in, if any.
+    #    env (str): The environment the command has been requested to run in, if any.
+    #
     # Returns:
     #    (str): The sandbox work directory
-    def _get_environment(self):
-        return self.__env
+    def _get_environment(self, *, cwd=None, env=None):
+        cwd = self._get_work_directory(cwd=cwd)
+        if env is None:
+            env = self.__env
+
+        # Naive getcwd implementations can break when bind-mounts to different
+        # paths on the same filesystem are present. Letting the command know
+        # what directory it is in makes it unnecessary to call the faulty
+        # getcwd.
+        env = dict(env)
+        env['PWD'] = cwd
+
+        return env
 
     # _get_work_directory()
     #
     # Fetches the working directory for running commands
     # in the sandbox.
     #
+    # Args:
+    #    cwd (str): The working directory the command has been requested to run in, if any.
+    #
     # Returns:
     #    (str): The sandbox work directory
-    def _get_work_directory(self):
-        return self.__cwd
+    def _get_work_directory(self, *, cwd=None):
+        return cwd or self.__cwd or '/'
 
     # _get_scratch_directory()
     #
