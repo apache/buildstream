@@ -17,8 +17,10 @@ class FakeContext():
         return []
 
 root_filesets = [
-    [('a/b/c/textfile1', 'This is textfile 1\n')],
-    [('a/b/c/textfile1', 'This is the replacement textfile 1\n')],
+    [('a/b/c/textfile1', 'F', 'This is textfile 1\n')],
+    [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
+    [('a/b/d', 'D', '')],
+    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')]
 ]
 
 empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -27,18 +29,32 @@ empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8
 def generate_import_roots(directory):
     for fileset in [1, 2]:
         rootname = "root{}".format(fileset)
+        rootdir = os.path.join(directory, "content", rootname)
 
-        for (path, content) in root_filesets[fileset - 1]:
-            (dirnames, filename) = os.path.split(path)
-            os.makedirs(os.path.join(directory, "content", rootname, dirnames))
+        for (path, typesymbol, content) in root_filesets[fileset - 1]:
+            if typesymbol == 'F':
+                (dirnames, filename) = os.path.split(path)
+                os.makedirs(os.path.join(rootdir, dirnames))
 
-            with open(os.path.join(directory, "content", rootname, dirnames, filename), "wt") as f:
-                f.write(content)
+                with open(os.path.join(rootdir, dirnames, filename), "wt") as f:
+                    f.write(content)
+            elif typesymbol == 'D':
+                os.makedirs(os.path.join(rootdir, path))
+            elif typesymbol == 'S':
+                (dirnames, filename) = os.path.split(path)
+                os.makedirs(os.path.join(rootdir, dirnames))
+                os.symlink(content, path)
+
+
+def file_contents(path):
+    with open(path, "r") as f:
+        result = f.read()
+    return result
+
 
 def file_contents_are(path, contents):
-    with open(path, "r") as f:
-        result = f.read() == contents
-    return result
+    return file_contents(path) == contents
+
 
 def test_cas_import(cli, tmpdir):
     fake_context = FakeContext()
@@ -58,4 +74,4 @@ def test_cas_import(cli, tmpdir):
 
     d.export_files(os.path.join(tmpdir, "output"))
     assert os.path.exists(os.path.join(tmpdir, "output", "a", "b", "c", "textfile1"))
-    assert file_contents_are(os.path.join(tmpdir, "output", "a", "b", "c", "textfile1"), root_filesets[1][0][1])
+    assert file_contents_are(os.path.join(tmpdir, "output", "a", "b", "c", "textfile1"), root_filesets[1][0][2])
