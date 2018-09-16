@@ -27,23 +27,25 @@ empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8
 
 
 def generate_import_roots(directory):
-    for fileset in [1, 2]:
+    for fileset in range(1, len(root_filesets) + 1):
         rootname = "root{}".format(fileset)
         rootdir = os.path.join(directory, "content", rootname)
 
         for (path, typesymbol, content) in root_filesets[fileset - 1]:
             if typesymbol == 'F':
                 (dirnames, filename) = os.path.split(path)
-                os.makedirs(os.path.join(rootdir, dirnames))
+                os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
 
                 with open(os.path.join(rootdir, dirnames, filename), "wt") as f:
                     f.write(content)
             elif typesymbol == 'D':
-                os.makedirs(os.path.join(rootdir, path))
+                os.makedirs(os.path.join(rootdir, path), exist_ok=True)
             elif typesymbol == 'S':
                 (dirnames, filename) = os.path.split(path)
-                os.makedirs(os.path.join(rootdir, dirnames))
-                os.symlink(content, path)
+                print("Ensuring the existence of {}".format(os.path.join(rootdir, dirnames)))
+                os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
+                print("attempting to make a symlink called {} pointing to {}".format(path, content))
+                os.symlink(content, os.path.join(rootdir, path))
 
 
 def file_contents(path):
