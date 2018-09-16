@@ -35,6 +35,10 @@ def generate_import_roots(directory):
             with open(os.path.join(directory, "content", rootname, dirnames, filename), "wt") as f:
                 f.write(content)
 
+def file_contents_are(path, contents):
+    with open(path, "r") as f:
+        result = f.read() == contents
+    return result
 
 def test_cas_import(cli, tmpdir):
     fake_context = FakeContext()
