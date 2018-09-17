@@ -58,22 +58,29 @@ def file_contents_are(path, contents):
     return file_contents(path) == contents
 
 
+def create_new_vdir(root_number, fake_context, tmpdir):
+    d = CasBasedDirectory(fake_context)
+    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
+    assert d.ref.hash != empty_hash_ref
+    return d
+
+
 def test_cas_import(cli, tmpdir):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
     generate_import_roots(tmpdir)
 
-    d = CasBasedDirectory(fake_context)
-    d.import_files(os.path.join(tmpdir, "content", "root1"))
-    assert d.ref.hash != empty_hash_ref
+    overlay = 2
 
-    d2 = CasBasedDirectory(fake_context)
-    d2.import_files(os.path.join(tmpdir, "content", "root2"))
-    assert d2.ref.hash != empty_hash_ref
-    print("D2 hash is {}".format(d2.ref.hash))
+    d = create_new_vdir(1, fake_context, tmpdir)
+    d2 = create_new_vdir(overlay, fake_context, tmpdir)
     d.import_files(d2)
-
     d.export_files(os.path.join(tmpdir, "output"))
-    assert os.path.exists(os.path.join(tmpdir, "output", "a", "b", "c", "textfile1"))
-    assert file_contents_are(os.path.join(tmpdir, "output", "a", "b", "c", "textfile1"), root_filesets[1][0][2])
+
+    for item in root_filesets[overlay - 1]:
+        (path, typename, content) = item
+        if typename in ['F', 'S']:
+            assert os.path.exists(os.path.join(tmpdir, "output", path))
+        if typename in ['F']:
+            assert file_contents_are(os.path.join(tmpdir, "output", path), content)
