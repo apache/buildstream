@@ -722,6 +722,7 @@ class CasBasedDirectory(Directory):
         for (k, v) in self.index.items():
             if isinstance(v.buildstream_object, CasBasedDirectory):
                 filelist.extend([k + os.path.sep + x for x in v.buildstream_object.list_relative_paths()])
+                filelist.append(k)
                 print("Add directory {}".format(k))
             elif isinstance(v.pb_object, remote_execution_pb2.FileNode):
                 filelist.append(k)
