@@ -342,3 +342,13 @@ def test_sysroot_workspace_visible(cli, tmpdir, datafiles):
     ])
     assert result.exit_code == 0
     assert result.output == workspace_hello
+
+
+# Test system integration commands can access devices in /dev
+@pytest.mark.datafiles(DATA_DIR)
+def test_integration_devices(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'integration.bst'
+
+    result = execute_shell(cli, project, ["true"], element=element_name)
+    assert result.exit_code == 0
