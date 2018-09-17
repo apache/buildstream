@@ -65,15 +65,16 @@ def create_new_vdir(root_number, fake_context, tmpdir):
     return d
 
 
-def test_cas_import(cli, tmpdir):
+@pytest.mark.parametrize("roots", [(1, 2), (2, 1)])
+def test_cas_import(cli, tmpdir, roots):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
     generate_import_roots(tmpdir)
 
-    overlay = 2
+    (original, overlay) = roots
 
-    d = create_new_vdir(1, fake_context, tmpdir)
+    d = create_new_vdir(original, fake_context, tmpdir)
     d2 = create_new_vdir(overlay, fake_context, tmpdir)
     d.import_files(d2)
     d.export_files(os.path.join(tmpdir, "output"))
