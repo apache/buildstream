@@ -85,3 +85,6 @@ def test_cas_import(cli, tmpdir, roots):
             assert os.path.exists(os.path.join(tmpdir, "output", path))
         if typename in ['F']:
             assert file_contents_are(os.path.join(tmpdir, "output", path), content)
+        if typename in ['D']:
+            # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
+            assert os.path.isdir(os.path.join(tmpdir, "output", path))
