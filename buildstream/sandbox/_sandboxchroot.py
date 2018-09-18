@@ -35,6 +35,9 @@ from . import Sandbox, SandboxFlags
 
 
 class SandboxChroot(Sandbox):
+
+    _FUSE_MOUNT_OPTIONS = {'dev': True}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -67,7 +70,8 @@ class SandboxChroot(Sandbox):
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
-        self.mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY)
+        self.mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY,
+                                  self._FUSE_MOUNT_OPTIONS)
         root_mount_source = self.mount_map.get_mount_source('/')
 
         # Create a sysroot and run the command inside it

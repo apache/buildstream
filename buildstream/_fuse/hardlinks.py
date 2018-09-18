@@ -42,9 +42,10 @@ from .mount import Mount
 #
 class SafeHardlinks(Mount):
 
-    def __init__(self, directory, tempdir):
+    def __init__(self, directory, tempdir, fuse_mount_options={}):
         self.directory = directory
         self.tempdir = tempdir
+        super().__init__(fuse_mount_options=fuse_mount_options)
 
     def create_operations(self):
         return SafeHardlinkOps(self.directory, self.tempdir)
@@ -121,7 +122,7 @@ class SafeHardlinkOps(Operations):
         st = os.lstat(full_path)
         return dict((key, getattr(st, key)) for key in (
             'st_atime', 'st_ctime', 'st_gid', 'st_mode',
-            'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+            'st_mtime', 'st_nlink', 'st_size', 'st_uid', 'st_rdev'))
 
     def readdir(self, path, fh):
         full_path = self._full_path(path)

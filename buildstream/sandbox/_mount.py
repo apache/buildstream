@@ -30,7 +30,7 @@ from .._fuse import SafeHardlinks
 # Helper data object representing a single mount point in the mount map
 #
 class Mount():
-    def __init__(self, sandbox, mount_point, safe_hardlinks):
+    def __init__(self, sandbox, mount_point, safe_hardlinks, fuse_mount_options={}):
         scratch_directory = sandbox._get_scratch_directory()
         # Getting _get_underlying_directory() here is acceptable as
         # we're part of the sandbox code. This will fail if our
@@ -39,6 +39,7 @@ class Mount():
 
         self.mount_point = mount_point
         self.safe_hardlinks = safe_hardlinks
+        self._fuse_mount_options = fuse_mount_options
 
         # FIXME: When the criteria for mounting something and it's parent
         #        mount is identical, then there is no need to mount an additional
@@ -82,7 +83,7 @@ class Mount():
     @contextmanager
     def mounted(self, sandbox):
         if self.safe_hardlinks:
-            mount = SafeHardlinks(self.mount_origin, self.mount_tempdir)
+            mount = SafeHardlinks(self.mount_origin, self.mount_tempdir, self._fuse_mount_options)
             with mount.mounted(self.mount_source):
                 yield
         else:
@@ -100,12 +101,12 @@ class Mount():
 #
 class MountMap():
 
-    def __init__(self, sandbox, root_readonly):
+    def __init__(self, sandbox, root_readonly, fuse_mount_options={}):
         # We will be doing the mounts in the order in which they were declared.
         self.mounts = OrderedDict()
 
         # We want safe hardlinks on rootfs whenever root is not readonly
-        self.mounts['/'] = Mount(sandbox, '/', not root_readonly)
+        self.mounts['/'] = Mount(sandbox, '/', not root_readonly, fuse_mount_options)
 
         for mark in sandbox._get_marked_directories():
             directory = mark['directory']
@@ -113,7 +114,7 @@ class MountMap():
 
             # We want safe hardlinks for any non-root directory where
             # artifacts will be staged to
-            self.mounts[directory] = Mount(sandbox, directory, artifact)
+            self.mounts[directory] = Mount(sandbox, directory, artifact, fuse_mount_options)
 
     # get_mount_source()
     #

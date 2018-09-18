@@ -87,6 +87,9 @@ class Mount():
     #               User Facing API                #
     ################################################
 
+    def __init__(self, fuse_mount_options={}):
+        self._fuse_mount_options = fuse_mount_options
+
     # mount():
     #
     # User facing API for mounting a fuse subclass implementation
@@ -184,7 +187,8 @@ class Mount():
         # Run fuse in foreground in this child process, internally libfuse
         # will handle SIGTERM and gracefully exit it's own little main loop.
         #
-        FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True, nonempty=True)
+        FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True, nonempty=True,
+             **self._fuse_mount_options)
 
         # Explicit 0 exit code, if the operations crashed for some reason, the exit
         # code will not be 0, and we want to know about it.
