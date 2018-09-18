@@ -703,6 +703,7 @@ class Stream():
 
         # Create a temporary directory to build the source tree in
         builddir = self._context.builddir
+        os.makedirs(builddir, exist_ok=True)
         prefix = "{}-".format(target.normal_name)
 
         with TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:
@@ -1085,6 +1086,7 @@ class Stream():
         for element in elements:
             source_dir = os.path.join(directory, "source")
             element_source_dir = os.path.join(source_dir, element.normal_name)
+            os.makedirs(element_source_dir)
 
             element._stage_sources_at(element_source_dir)
 
