@@ -91,6 +91,7 @@ class ArtifactCache():
         self._cache_size = None               # The current cache size, sometimes it's an estimate
         self._cache_quota = None              # The cache quota
         self._cache_lower_threshold = None    # The target cache size for a cleanup
+        self._remotes_setup = False           # Check to prevent double-setup of remotes
 
         os.makedirs(self.extractdir, exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
@@ -142,6 +143,10 @@ class ArtifactCache():
     # have already been loaded and are observable in the Context.
     #
     def setup_remotes(self, *, use_config=False, remote_url=None):
+
+        # Ensure we do not double-initialise since this can be expensive
+        assert(not self._remotes_setup)
+        self._remotes_setup = True
 
         # Initialize remote artifact caches. We allow the commandline to override
         # the user config in some cases (for example `bst push --remote=...`).
