@@ -23,7 +23,7 @@ import subprocess
 from .. import _site
 from .. import utils
 from .._message import Message, MessageType
-from ..sandbox import SandboxBwrap
+from ..sandbox import SandboxBwrap, SandboxDummy
 
 from . import Platform
 
@@ -45,10 +45,13 @@ class Linux(Platform):
             self._user_ns_available = False
 
     def create_sandbox(self, *args, **kwargs):
-        # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
-        kwargs['user_ns_available'] = self._user_ns_available
-        kwargs['die_with_parent_available'] = self._die_with_parent_available
-        return SandboxBwrap(*args, **kwargs)
+        if not self._local_sandbox_available():
+            return SandboxDummy(*args, **kwargs)
+        else:
+            # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
+            kwargs['user_ns_available'] = self._user_ns_available
+            kwargs['die_with_parent_available'] = self._die_with_parent_available
+            return SandboxBwrap(*args, **kwargs)
 
     def check_sandbox_config(self, config):
         if self._user_ns_available:
