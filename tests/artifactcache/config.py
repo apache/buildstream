@@ -9,8 +9,12 @@ from buildstream._context import Context
 from buildstream._project import Project
 from buildstream.utils import _deduplicate
 from buildstream import _yaml
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
+
+from tests.testutils.runcli import cli
 
 
+DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 cache1 = ArtifactCacheSpec(url='https://example.com/cache1', push=True)
 cache2 = ArtifactCacheSpec(url='https://example.com/cache2', push=False)
 cache3 = ArtifactCacheSpec(url='https://example.com/cache3', push=False)
@@ -106,3 +110,33 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     # Verify that it was correctly read.
     expected_cache_specs = list(_deduplicate(itertools.chain(override_caches, project_caches, user_caches)))
     assert parsed_cache_specs == expected_cache_specs
+
+
+# Assert that if either the client key or client cert is specified
+# without specifying it's counterpart, we get a comprehensive LoadError
+# instead of an unhandled exception.
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize('config_key, config_value', [
+    ('client-cert', 'client.crt'),
+    ('client-key', 'client.key')
+])
+def test_missing_certs(cli, datafiles, config_key, config_value):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'missing-certs')
+
+    project_conf = {
+        'name': 'test',
+
+        'artifacts': {
+            'url': 'https://cache.example.com:12345',
+            'push': 'true',
+            config_key: config_value
+        }
+    }
+    project_conf_file = os.path.join(project, 'project.conf')
+    _yaml.dump(project_conf, project_conf_file)
+
+    # Use `pull` here to ensure we try to initialize the remotes, triggering the error
+    #
+    # This does not happen for a simple `bst show`.
+    result = cli.run(project=project, args=['pull', 'element.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
