@@ -598,7 +598,10 @@ class Project():
         # any conditionals specified for project option declarations,
         # or conditionally specifying the project name; will be ignored.
         #
+        # Don't forget to also resolve options in the element and source overrides.
         output.options.process_node(config)
+        output.options.process_node(output.element_overrides)
+        output.options.process_node(output.source_overrides)
 
         # Load base variables
         output.base_variables = _yaml.node_get(config, Mapping, 'variables')
