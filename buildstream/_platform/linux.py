@@ -23,7 +23,7 @@ from .. import _site
 from .. import utils
 from .._artifactcache.cascache import CASCache
 from .._message import Message, MessageType
-from ..sandbox import SandboxBwrap
+from ..sandbox import SandboxBwrap, SandboxDummy
 
 from . import Platform
 
@@ -48,10 +48,13 @@ class Linux(Platform):
         return self._artifact_cache
 
     def create_sandbox(self, *args, **kwargs):
-        # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
-        kwargs['user_ns_available'] = self._user_ns_available
-        kwargs['die_with_parent_available'] = self._die_with_parent_available
-        return SandboxBwrap(*args, **kwargs)
+        if not self._local_sandbox_available():
+            return SandboxDummy(*args, **kwargs)
+        else:
+            # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
+            kwargs['user_ns_available'] = self._user_ns_available
+            kwargs['die_with_parent_available'] = self._die_with_parent_available
+            return SandboxBwrap(*args, **kwargs)
 
     def create_artifact_cache(self, context, *, enable_push):
         return super().create_artifact_cache(context=context, enable_push=self._user_ns_available)
