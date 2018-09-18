@@ -61,6 +61,13 @@ def test_invalid_project_name(cli, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_invalid_yaml(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "invalid-yaml")
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_YAML)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_load_default_project(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "default")
     result = cli.run(project=project, args=[
