@@ -76,8 +76,7 @@ class SandboxRemote(Sandbox):
         # Upload the Command message to the remote CAS server
         command_digest = cascache.push_message(self._get_project(), remote_command)
         if not command_digest or not cascache.verify_digest_pushed(self._get_project(), command_digest):
-            # Command push failed
-            return None
+            raise SandboxError("Failed pushing build command to remote CAS.")
 
         # Create and send the action.
         action = remote_execution_pb2.Action(command_digest=command_digest,
@@ -88,27 +87,57 @@ class SandboxRemote(Sandbox):
         # Upload the Action message to the remote CAS server
         action_digest = cascache.push_message(self._get_project(), action)
         if not action_digest or not cascache.verify_digest_pushed(self._get_project(), action_digest):
-            # Action push failed
-            return None
+            raise SandboxError("Failed pushing build action to remote CAS.")
 
         # Next, try to create a communication channel to the BuildGrid server.
         channel = grpc.insecure_channel(self.server_url)
         stub = remote_execution_pb2_grpc.ExecutionStub(channel)
         request = remote_execution_pb2.ExecuteRequest(action_digest=action_digest,
                                                       skip_cache_lookup=False)
-        try:
-            operation_iterator = stub.Execute(request)
-        except grpc.RpcError:
-            return None
+
+        def __run_remote_command(stub, execute_request=None, running_operation=None):
+            try:
+                last_operation = None
+                if execute_request is not None:
+                    operation_iterator = stub.Execute(execute_request)
+                else:
+                    request = remote_execution_pb2.WaitExecutionRequest(name=running_operation.name)
+                    operation_iterator = stub.WaitExecution(request)
+
+                for operation in operation_iterator:
+                    if operation.done:
+                        return operation
+                    else:
+                        last_operation = operation
+            except grpc.RpcError as e:
+                status_code = e.code()
+                if status_code == grpc.StatusCode.UNAVAILABLE:
+                    raise SandboxError("Failed contacting remote execution server at {}."
+                                       .format(self.server_url))
+
+                elif status_code in (grpc.StatusCode.INVALID_ARGUMENT,
+                                     grpc.StatusCode.FAILED_PRECONDITION,
+                                     grpc.StatusCode.RESOURCE_EXHAUSTED,
+                                     grpc.StatusCode.INTERNAL,
+                                     grpc.StatusCode.DEADLINE_EXCEEDED):
+                    raise SandboxError("{} ({}).".format(e.details(), status_code.name))
+
+                elif running_operation and status_code == grpc.StatusCode.UNIMPLEMENTED:
+                    raise SandboxError("Failed trying to recover from connection loss: "
+                                       "server does not support operation status polling recovery.")
+
+            return last_operation
 
         operation = None
         with self._get_context().timed_activity("Waiting for the remote build to complete"):
-            # It is advantageous to check operation_iterator.code() is grpc.StatusCode.OK here,
-            # which will check the server is actually contactable. However, calling it when the
-            # server is available seems to cause .code() to hang forever.
-            for operation in operation_iterator:
-                if operation.done:
-                    break
+            operation = __run_remote_command(stub, execute_request=request)
+            if operation is None:
+                return None
+            elif operation.done:
+                return operation
+
+            while operation is not None and not operation.done:
+                operation = __run_remote_command(stub, running_operation=operation)
 
         return operation
 
@@ -192,7 +221,6 @@ class SandboxRemote(Sandbox):
 
         if operation is None:
             # Failure of remote execution, usually due to an error in BuildStream
-            # NB This error could be raised in __run_remote_command
             raise SandboxError("No response returned from server")
 
         assert not operation.HasField('error') and operation.HasField('response')
