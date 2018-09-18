@@ -51,7 +51,7 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push server_cert cl
         url = _yaml.node_get(spec_node, str, 'url')
         push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
         if not url:
-            provenance = _yaml.node_get_provenance(spec_node)
+            provenance = _yaml.node_get_provenance(spec_node, 'url')
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: empty artifact cache URL".format(provenance))
 
@@ -66,6 +66,16 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push server_cert cl
         client_cert = _yaml.node_get(spec_node, str, 'client-cert', default_value=None)
         if client_cert and basedir:
             client_cert = os.path.join(basedir, client_cert)
+
+        if client_key and not client_cert:
+            provenance = _yaml.node_get_provenance(spec_node, 'client-key')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: 'client-key' was specified without 'client-cert'".format(provenance))
+
+        if client_cert and not client_key:
+            provenance = _yaml.node_get_provenance(spec_node, 'client-cert')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: 'client-cert' was specified without 'client-key'".format(provenance))
 
         return ArtifactCacheSpec(url, push, server_cert, client_key, client_cert)
 
