@@ -26,7 +26,6 @@ import datetime
 from textwrap import TextWrapper
 import click
 from click import UsageError
-from blessings import Terminal
 
 # Import buildstream public symbols
 from .. import Scope
@@ -92,7 +91,7 @@ class App():
         #
         # Earily initialization
         #
-        is_a_tty = Terminal().is_a_tty
+        is_a_tty = sys.stdout.isatty() and sys.stderr.isatty()
 
         # Enable interactive mode if we're attached to a tty
         if main_options['no_interactive']:
