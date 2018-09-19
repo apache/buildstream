@@ -71,15 +71,13 @@ def combinations(integer_range):
         for y in integer_range:
             yield (x,y)
 
-@pytest.mark.parametrize("roots", combinations([1,2,3,4,5]))
-def test_cas_import(cli, tmpdir, roots):
-    print("Testing import of root {} into root {}".format(roots[0], roots[1]))
+@pytest.mark.parametrize("original,overlay", combinations([1,2,3,4,5]))
+def test_cas_import(cli, tmpdir, original, overlay):
+    print("Testing import of root {} into root {}".format(original, overlay))
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
     generate_import_roots(tmpdir)
-
-    (original, overlay) = roots
 
     d = create_new_vdir(original, fake_context, tmpdir)
     d2 = create_new_vdir(overlay, fake_context, tmpdir)
