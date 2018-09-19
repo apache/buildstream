@@ -16,8 +16,10 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+import os
+import sys
 import click
-from blessings import Terminal
+import curses
 
 # Import a widget internal for formatting time codes
 from .widget import TimeCode
@@ -43,6 +45,13 @@ from .._scheduler import ElementJob
 #
 class Status():
 
+    # Table of the terminal capabilities we require and use
+    _TERM_CAPABILITIES = {
+        'move_up': 'cuu1',
+        'move_x': 'hpa',
+        'clear_eol': 'el'
+    }
+
     def __init__(self, context,
                  content_profile, format_profile,
                  success_profile, error_profile,
@@ -56,7 +65,6 @@ class Status():
         self._stream = stream
         self._jobs = []
         self._last_lines = 0  # Number of status lines we last printed to console
-        self._term = Terminal()
         self._spacing = 1
         self._colors = colors
         self._header = _StatusHeader(context,
@@ -69,6 +77,7 @@ class Status():
         self._alloc_columns = None
         self._line_length = 0
         self._need_alloc = True
+        self._term_caps = self._init_terminal()
 
     # add_job()
     #
@@ -121,7 +130,7 @@ class Status():
     #
     def clear(self):
 
-        if not self._term.does_styling:
+        if not self._term_caps:
             return
 
         for _ in range(self._last_lines):
@@ -138,7 +147,7 @@ class Status():
     # not necessary to call clear().
     def render(self):
 
-        if not self._term.does_styling:
+        if not self._term_caps:
             return
 
         elapsed = self._stream.elapsed_time
@@ -185,6 +194,55 @@ class Status():
     ###################################################
     #                 Private Methods                 #
     ###################################################
+
+    # _init_terminal()
+    #
+    # Initialize the terminal and return the resolved terminal
+    # capabilities dictionary.
+    #
+    # Returns:
+    #    (dict|None): The resolved terminal capabilities dictionary,
+    #                 or None if the terminal does not support all
+    #                 of the required capabilities.
+    #
+    def _init_terminal(self):
+
+        # We need both output streams to be connected to a terminal
+        if not (sys.stdout.isatty() and sys.stderr.isatty()):
+            return None
+
+        # Initialized terminal, curses might decide it doesnt
+        # support this terminal
+        try:
+            curses.setupterm(os.environ.get('TERM', 'dumb'))
+        except curses.error:
+            return None
+
+        term_caps = {}
+
+        # Resolve the string capabilities we need for the capability
+        # names we need.
+        #
+        for capname, capval in self._TERM_CAPABILITIES.items():
+            code = curses.tigetstr(capval)
+
+            # If any of the required capabilities resolve empty strings or None,
+            # then we don't have the capabilities we need for a status bar on
+            # this terminal.
+            if not code:
+                return None
+
+            # Decode sequences as latin1, as they are always 8-bit bytes,
+            # so when b'\xff' is returned, this must be decoded to u'\xff'.
+            #
+            # This technique is employed by the python blessings library
+            # as well, and should provide better compatibility with most
+            # terminals.
+            #
+            term_caps[capname] = code.decode('latin1')
+
+        return term_caps
+
     def _check_term_width(self):
         term_width, _ = click.get_terminal_size()
         if self._term_width != term_width:
@@ -192,12 +250,24 @@ class Status():
             self._need_alloc = True
 
     def _move_up(self):
+        assert self._term_caps is not None
+
         # Explicitly move to beginning of line, fixes things up
         # when there was a ^C or ^Z printed to the terminal.
-        click.echo(self._term.move_x(0) + self._term.move_up, nl=False, err=True)
+        move_x = curses.tparm(self._term_caps['move_x'].encode('latin1'), 0)
+        move_x = move_x.decode('latin1')
+
+        move_up = curses.tparm(self._term_caps['move_up'].encode('latin1'))
+        move_up = move_up.decode('latin1')
+
+        click.echo(move_x + move_up, nl=False, err=True)
 
     def _clear_line(self):
-        click.echo(self._term.clear_eol, nl=False, err=True)
+        assert self._term_caps is not None
+
+        clear_eol = curses.tparm(self._term_caps['clear_eol'].encode('latin1'))
+        clear_eol = clear_eol.decode('latin1')
+        click.echo(clear_eol, nl=False, err=True)
 
     def _allocate(self):
         if not self._need_alloc:
