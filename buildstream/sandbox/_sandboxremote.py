@@ -173,8 +173,8 @@ class SandboxRemote(Sandbox):
         platform = Platform.get_platform()
         cascache = platform.artifactcache
         # Now, push that key (without necessarily needing a ref) to the remote.
-        vdir_digest = cascache.push_directory(self._get_project(), upload_vdir)
-        if not vdir_digest or not cascache.verify_digest_pushed(self._get_project(), vdir_digest):
+        cascache.push_directory(self._get_project(), upload_vdir)
+        if not cascache.verify_digest_pushed(self._get_project(), upload_vdir.ref):
             raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
 
         # Set up environment and working directory
