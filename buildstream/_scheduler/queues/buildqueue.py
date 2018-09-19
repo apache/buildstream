@@ -47,6 +47,7 @@ class BuildQueue(Queue):
                 to_queue.append(element)
                 continue
 
+            # XXX: Fix this, See https://mail.gnome.org/archives/buildstream-list/2018-September/msg00029.html
             # Bypass queue processing entirely the first time it's tried.
             self._tried.add(element)
             _, description, detail = element._get_build_result()
@@ -113,5 +114,3 @@ class BuildQueue(Queue):
             # This has to be done after _assemble_done, such that the
             # element may register its cache key as required
             self._check_cache_size(job, element, result)
-
-        return True

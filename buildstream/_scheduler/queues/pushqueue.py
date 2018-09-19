@@ -21,6 +21,7 @@
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
+from ..._exceptions import SkipJob
 
 
 # A queue which pushes element artifacts
@@ -33,20 +34,11 @@ class PushQueue(Queue):
 
     def process(self, element):
         # returns whether an artifact was uploaded or not
-        return element._push()
+        if not element._push():
+            raise SkipJob(self.action_name)
 
     def status(self, element):
         if element._skip_push():
             return QueueStatus.SKIP
 
         return QueueStatus.READY
-
-    def done(self, _, element, result, success):
-
-        if not success:
-            return False
-
-        # Element._push() returns True if it uploaded an artifact,
-        # here we want to appear skipped if the remote already had
-        # the artifact.
-        return result

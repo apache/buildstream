@@ -228,8 +228,8 @@ class CASCache(ArtifactCache):
         for remote in self._remotes[project]:
             try:
                 remote.init()
-
-                element.info("Pulling {} <- {}".format(element._get_brief_display_key(), remote.spec.url))
+                display_key = element._get_brief_display_key()
+                element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
                 request = buildstream_pb2.GetReferenceRequest()
                 request.key = ref
@@ -243,6 +243,7 @@ class CASCache(ArtifactCache):
 
                 self.set_ref(ref, tree)
 
+                element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
                 # no need to pull from additional remotes
                 return True
 
@@ -251,11 +252,8 @@ class CASCache(ArtifactCache):
                     raise ArtifactError("Failed to pull artifact {}: {}".format(
                         element._get_brief_display_key(), e)) from e
                 else:
-                    self.context.message(Message(
-                        None,
-                        MessageType.SKIPPED,
-                        "Remote ({}) does not have {} cached".format(
-                            remote.spec.url, element._get_brief_display_key())
+                    element.info("Remote ({}) does not have {} cached".format(
+                        remote.spec.url, element._get_brief_display_key()
                     ))
 
         return False
@@ -336,17 +334,15 @@ class CASCache(ArtifactCache):
 
         for remote in push_remotes:
             remote.init()
-
-            element.info("Pushing {} -> {}".format(element._get_brief_display_key(), remote.spec.url))
+            display_key = element._get_brief_display_key()
+            element.status("Pushing artifact {} -> {}".format(display_key, remote.spec.url))
 
             if self._push_refs_to_remote(refs, remote):
+                element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
                 pushed = True
             else:
-                self.context.message(Message(
-                    None,
-                    MessageType.SKIPPED,
-                    "Remote ({}) already has {} cached".format(
-                        remote.spec.url, element._get_brief_display_key())
+                element.info("Remote ({}) already has {} cached".format(
+                    remote.spec.url, element._get_brief_display_key()
                 ))
 
         return pushed

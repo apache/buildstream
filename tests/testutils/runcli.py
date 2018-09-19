@@ -178,7 +178,7 @@ class Result():
         return list(pushed)
 
     def get_pulled_elements(self):
-        pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*INFO\s*Downloaded artifact', self.stderr)
+        pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*INFO\s*Pulled artifact', self.stderr)
         if pulled is None:
             return []
 

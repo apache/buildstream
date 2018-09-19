@@ -72,11 +72,9 @@ class FetchQueue(Queue):
     def done(self, _, element, result, success):
 
         if not success:
-            return False
+            return
 
         element._update_state()
 
         # Successful fetch, we must be CACHED now
         assert element._get_consistency() == Consistency.CACHED
-
-        return True
