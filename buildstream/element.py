@@ -212,7 +212,7 @@ class Element(Plugin):
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
         self.__required = False                 # Whether the artifact is required in the current session
-        self.__build_result = None              # The result of assembling this Element
+        self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None            # The path of the build log for this Element
 
         # hash tables of loaded artifact metadata, hashed by key
@@ -1479,11 +1479,13 @@ class Element(Plugin):
 
         self._update_state()
 
-        if self._get_workspace() and self._cached():
+        if self._get_workspace() and self._cached_success():
+            assert utils._is_main_process(), \
+                "Attempted to save workspace configuration from child process"
             #
             # Note that this block can only happen in the
-            # main process, since `self._cached()` cannot
-            # be true when assembly is completed in the task.
+            # main process, since `self._cached_success()` cannot
+            # be true when assembly is successful in the task.
             #
             # For this reason, it is safe to update and
             # save the workspaces configuration
