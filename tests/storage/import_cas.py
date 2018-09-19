@@ -20,7 +20,8 @@ root_filesets = [
     [('a/b/c/textfile1', 'F', 'This is textfile 1\n')],
     [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
     [('a/b/d', 'D', '')],
-    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')]
+    [('a/b/c', 'S', '/a/b/d')],
+    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')],
 ]
 
 empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -65,8 +66,14 @@ def create_new_vdir(root_number, fake_context, tmpdir):
     return d
 
 
-@pytest.mark.parametrize("roots", [(1, 2), (2, 1)])
+def combinations(integer_range):
+    for x in integer_range:
+        for y in integer_range:
+            yield (x,y)
+
+@pytest.mark.parametrize("roots", combinations([1,2,3,4,5]))
 def test_cas_import(cli, tmpdir, roots):
+    print("Testing import of root {} into root {}".format(roots[0], roots[1]))
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
@@ -82,9 +89,11 @@ def test_cas_import(cli, tmpdir, roots):
     for item in root_filesets[overlay - 1]:
         (path, typename, content) = item
         if typename in ['F', 'S']:
-            assert os.path.exists(os.path.join(tmpdir, "output", path))
-        if typename in ['F']:
+            assert os.path.lexists(os.path.join(tmpdir, "output", path)), "{} did not exist in the combined virtual directory".format(path)
+        if typename == 'F':
             assert file_contents_are(os.path.join(tmpdir, "output", path), content)
-        if typename in ['D']:
+        elif typename == 'S':
+            assert os.readlink(os.path.join(tmpdir, "output", path)) == content
+        elif typename == 'D':
             # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
             assert os.path.isdir(os.path.join(tmpdir, "output", path))
