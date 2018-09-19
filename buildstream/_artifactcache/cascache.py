@@ -854,6 +854,31 @@ class CASCache(ArtifactCache):
 
         assert digest.size_bytes == os.fstat(stream.fileno()).st_size
 
+    # _ensure_blob():
+    #
+    # Fetch and add blob if it's not already local.
+    #
+    # Args:
+    #     remote (Remote): The remote to use.
+    #     digest (Digest): Digest object for the blob to fetch.
+    #
+    # Returns:
+    #     (str): The path of the object
+    #
+    def _ensure_blob(self, remote, digest):
+        objpath = self.objpath(digest)
+        if os.path.exists(objpath):
+            # already in local repository
+            return objpath
+
+        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
+            self._fetch_blob(remote, digest, f)
+
+            added_digest = self.add_object(path=f.name)
+            assert added_digest.hash == digest.hash
+
+        return objpath
+
     # _fetch_directory():
     #
     # Fetches remote directory and adds it to content addressable store.
@@ -872,34 +897,18 @@ class CASCache(ArtifactCache):
             # already in local cache
             return
 
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
-            self._fetch_blob(remote, dir_digest, out)
+        objpath = self._ensure_blob(remote, dir_digest)
 
-            directory = remote_execution_pb2.Directory()
+        directory = remote_execution_pb2.Directory()
 
-            with open(out.name, 'rb') as f:
-                directory.ParseFromString(f.read())
+        with open(objpath, 'rb') as f:
+            directory.ParseFromString(f.read())
 
-            for filenode in directory.files:
-                fileobjpath = self.objpath(filenode.digest)
-                if os.path.exists(fileobjpath):
-                    # already in local cache
-                    continue
+        for filenode in directory.files:
+            self._ensure_blob(remote, filenode.digest)
 
-                with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
-                    self._fetch_blob(remote, filenode.digest, f)
-
-                    digest = self.add_object(path=f.name)
-                    assert digest.hash == filenode.digest.hash
-
-            for dirnode in directory.directories:
-                self._fetch_directory(remote, dirnode.digest)
-
-            # Place directory blob only in final location when we've
-            # downloaded all referenced blobs to avoid dangling
-            # references in the repository.
-            digest = self.add_object(path=out.name)
-            assert digest.hash == dir_digest.hash
+        for dirnode in directory.directories:
+            self._fetch_directory(remote, dirnode.digest)
 
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object
@@ -914,16 +923,7 @@ class CASCache(ArtifactCache):
             tree.children.extend([tree.root])
             for directory in tree.children:
                 for filenode in directory.files:
-                    fileobjpath = self.objpath(filenode.digest)
-                    if os.path.exists(fileobjpath):
-                        # already in local cache
-                        continue
-
-                    with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
-                        self._fetch_blob(remote, filenode.digest, f)
-
-                        added_digest = self.add_object(path=f.name)
-                        assert added_digest.hash == filenode.digest.hash
+                    self._ensure_blob(remote, filenode.digest)
 
                 # place directory blob only in final location when we've downloaded
                 # all referenced blobs to avoid dangling references in the repository
