@@ -551,12 +551,22 @@ class CasBasedDirectory(Directory):
 
         verify = True
         duplicate_cas = None
+        roundtrip_import = False
         if isinstance(external_pathspec, FileBasedDirectory):
             source_directory = external_pathspec._get_underlying_directory()
             if files is None:
                 files = list_relative_paths(source_directory)
             result = self._import_files_from_directory(source_directory, files=files)
         elif isinstance(external_pathspec, CasBasedDirectory):
+            if roundtrip_import:
+                with tempfile.TemporaryDirectory(prefix="roundtrip") as tmpdir:
+                    external_pathspec.export_files(tmpdir)
+                    if files is None:
+                        files = list_relative_paths(tmpdir)
+                    result = self._import_files_from_directory(tmpdir, files=files)
+                return result
+
+
             result = self._import_cas_into_cas(external_pathspec, files=files)
             # Duplicate the current directory and do an import that way.
             if verify:
