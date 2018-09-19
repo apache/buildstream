@@ -1760,8 +1760,6 @@ class Element(Plugin):
             return False
 
         # Notify successfull download
-        display_key = self._get_brief_display_key()
-        self.info("Downloaded artifact {}".format(display_key))
         return True
 
     # _skip_push():
@@ -1806,8 +1804,6 @@ class Element(Plugin):
             return False
 
         # Notify successful upload
-        display_key = self._get_brief_display_key()
-        self.info("Pushed artifact {}".format(display_key))
         return True
 
     # _shell():
