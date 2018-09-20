@@ -228,9 +228,9 @@ def _test_push_directory(user_config_file, project_dir, artifact_dir, artifact_d
         directory = CasBasedDirectory(context, ref=artifact_digest)
 
         # Push the CasBasedDirectory object
-        directory_digest = cas.push_directory(project, directory)
+        cas.push_directory(project, directory)
 
-        queue.put(directory_digest.hash)
+        queue.put(directory.ref.hash)
     else:
         queue.put("No remote configured")
 
