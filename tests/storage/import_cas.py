@@ -72,16 +72,16 @@ def combinations(integer_range):
 
 
 def resolve_symlinks(path, root):
-    """ A function to resolve symlinks which are rooted at 'root'. For example, the symlink
-
-        /a/b/c/d -> /c/e
-
-        should resolve with the call resolve_symlinks('/a/b/c/d', '/a/b') to '/a/b/c/e'.
+    """ A function to resolve symlinks inside 'path' components apart from the last one.
+        For example, resolve_symlinks('/a/b/c/d', '/a/b')
+        will return '/a/b/f/d' if /a/b/c is a symlink to /a/b/f. The final component of
+        'path' is not resolved, because we typically want to inspect the symlink found
+        at that path, not its target.
 
     """
     components = path.split(os.path.sep)
     location = root
-    for i in range(0, len(components)):
+    for i in range(0, len(components) - 1):
         location = os.path.join(location, components[i])
         if os.path.islink(location):
             # Resolve the link, add on all the remaining components
@@ -95,7 +95,13 @@ def resolve_symlinks(path, root):
                 # Relative link - relative to symlink location
                 location = os.path.join(location, target)
             return resolve_symlinks(location, root)
+    # If we got here, no symlinks were found. Add on the final component and return.
+    location = os.path.join(location, components[-1])
     return location
+
+
+def directory_not_empty(path):
+    return os.listdir(path)
 
 
 @pytest.mark.parametrize("original,overlay", combinations([1, 2, 3, 4, 5]))
@@ -116,15 +122,19 @@ def test_cas_import(cli, tmpdir, original, overlay):
         realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
         print("resolved {} to {}".format(path, realpath))
         if typename == 'F':
-            assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(path)
-            # Problem here - symlinks won't resolve because the root is incorrect.
-            assert file_contents_are(realpath, content)
+            if os.path.isdir(realpath) and directory_not_empty(realpath):
+                # The file should not have overwritten the directory in this case.
+                pass
+            else:
+                assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(path)
+                assert file_contents_are(realpath, content)
         elif typename == 'S':
-            # Not currently verified.
-            # assert os.path.islink(os.path.join(tmpdir, "output", path)),
-            #                       "{} did not exist in the combined virtual directory".format(path)
-            # assert os.readlink(os.path.join(tmpdir, "output", path)) == content
-            pass
+            if os.path.isdir(realpath) and directory_not_empty(realpath):
+                # The symlink should not have overwritten the directory in this case.
+                pass
+            else:
+                assert os.path.islink(realpath)
+                assert os.readlink(realpath) == content
         elif typename == 'D':
             # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
             assert os.path.isdir(realpath)
