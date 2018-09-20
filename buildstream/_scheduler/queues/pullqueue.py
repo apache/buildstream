@@ -21,6 +21,7 @@
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
+from ..._exceptions import SkipJob
 
 
 # A queue which pulls element artifacts
@@ -33,7 +34,8 @@ class PullQueue(Queue):
 
     def process(self, element):
         # returns whether an artifact was downloaded or not
-        return element._pull()
+        if not element._pull():
+            raise SkipJob(self.action_name)
 
     def status(self, element):
         # state of dependencies may have changed, recalculate element state
@@ -63,7 +65,3 @@ class PullQueue(Queue):
         # do not get an artifact size from pull jobs, we have to
         # actually check the cache size.
         self._scheduler.check_cache_size()
-
-        # Element._pull() returns True if it downloaded an artifact,
-        # here we want to appear skipped if we did not download.
-        return result

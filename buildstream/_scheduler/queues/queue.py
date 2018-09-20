@@ -136,10 +136,6 @@ class Queue():
     #    success (bool): True if the process() implementation did not
     #                    raise any exception
     #
-    # Returns:
-    #    (bool): True if the element should appear to be processsed,
-    #            Otherwise False will count the element as "skipped"
-    #
     def done(self, job, element, result, success):
         pass
 
@@ -305,8 +301,7 @@ class Queue():
         # and determine if it should be considered as processed
         # or skipped.
         try:
-            processed = self.done(job, element, result, success)
-
+            self.done(job, element, result, success)
         except BstError as e:
 
             # Report error and mark as failed
@@ -335,7 +330,7 @@ class Queue():
             #
             if success:
                 self._done_queue.append(job)
-                if processed:
+                if not job.skipped:
                     self.processed_elements.append(element)
                 else:
                     self.skipped_elements.append(element)

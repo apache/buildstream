@@ -225,8 +225,8 @@ class CASCache(ArtifactCache):
         for remote in self._remotes[project]:
             try:
                 remote.init()
-
-                element.info("Pulling {} <- {}".format(element._get_brief_display_key(), remote.spec.url))
+                display_key = element._get_brief_display_key()
+                element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
                 request = buildstream_pb2.GetReferenceRequest()
                 request.key = ref
@@ -240,6 +240,7 @@ class CASCache(ArtifactCache):
 
                 self.set_ref(ref, tree)
 
+                element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
                 # no need to pull from additional remotes
                 return True
 
@@ -248,11 +249,8 @@ class CASCache(ArtifactCache):
                     raise ArtifactError("Failed to pull artifact {}: {}".format(
                         element._get_brief_display_key(), e)) from e
                 else:
-                    self.context.message(Message(
-                        None,
-                        MessageType.SKIPPED,
-                        "Remote ({}) does not have {} cached".format(
-                            remote.spec.url, element._get_brief_display_key())
+                    element.info("Remote ({}) does not have {} cached".format(
+                        remote.spec.url, element._get_brief_display_key()
                     ))
 
         return False
@@ -273,11 +271,11 @@ class CASCache(ArtifactCache):
         push_remotes = [r for r in self._remotes[project] if r.spec.push]
 
         pushed = False
-
+        display_key = element._get_brief_display_key()
         for remote in push_remotes:
             remote.init()
             skipped_remote = True
-            element.info("Pushing {} -> {}".format(element._get_brief_display_key(), remote.spec.url))
+            element.status("Pushing artifact {} -> {}".format(display_key, remote.spec.url))
 
             try:
                 for ref in refs:
@@ -354,6 +352,9 @@ class CASCache(ArtifactCache):
 
                     pushed = True
 
+                if not skipped_remote:
+                    element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
+
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
                     raise ArtifactError("Failed to push artifact {}: {}".format(refs, e), temporary=True) from e
@@ -361,7 +362,7 @@ class CASCache(ArtifactCache):
             if skipped_remote:
                 self.context.message(Message(
                     None,
-                    MessageType.SKIPPED,
+                    MessageType.INFO,
                     "Remote ({}) already has {} cached".format(
                         remote.spec.url, element._get_brief_display_key())
                 ))

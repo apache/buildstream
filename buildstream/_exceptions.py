@@ -311,3 +311,12 @@ class StreamError(BstError):
 class AppError(BstError):
     def __init__(self, message, detail=None, reason=None):
         super().__init__(message, detail=detail, domain=ErrorDomain.APP, reason=reason)
+
+
+# SkipJob
+#
+# Raised from a child process within a job when the job should be
+# considered skipped by the parent process.
+#
+class SkipJob(Exception):
+    pass

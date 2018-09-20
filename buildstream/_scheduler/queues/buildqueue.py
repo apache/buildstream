@@ -77,5 +77,3 @@ class BuildQueue(Queue):
             # This has to be done after _assemble_done, such that the
             # element may register its cache key as required
             self._check_cache_size(job, element, result)
-
-        return True
