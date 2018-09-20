@@ -173,6 +173,28 @@ class Element(Plugin):
     *Since: 1.4*
     """
 
+    BST_VALID_CONFIGURATION_ITEMS = None
+    """A dictionary of valid configuration items. None if validation is undesirable.
+
+    e.g.
+
+    {
+        "Item1": True,
+        "ListItem1": True,
+        "ListItem2": [
+            "ValidOption1",
+            "ValidOption2",
+        ],
+        "DictItem1": True,
+        "DictItem2": {
+            "Item2": True
+            "Item3": True
+        }
+    }
+
+    *Since: 1.4*
+    """
+
     def __init__(self, context, project, artifacts, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
@@ -244,6 +266,7 @@ class Element(Plugin):
         # Collect the composited element configuration and
         # ask the element to configure itself.
         self.__config = self.__extract_config(meta)
+        self.__validate_config(self.__config)
         self._configure(self.__config)
 
         # Extract Sandbox config
@@ -2316,6 +2339,66 @@ class Element(Plugin):
         _yaml.node_final_assertions(config)
 
         return config
+
+    # This checks the provided config against BST_VALID_CONFIGURATION_ITEMS
+    # for invalid configuration items.
+    #
+    def __validate_config(self, config):
+        if not self.BST_VALID_CONFIGURATION_ITEMS:
+            return True
+
+        def validate_list(node, valid_list):
+            invalid_items = []
+            for i, item in enumerate(node):
+                if item not in valid_list:
+                    invalid_items.append((item, i))
+            return invalid_items
+
+        def validate_node(node, valid_dict):
+            # For True, we accept all values of node; False is invalid
+            if isinstance(valid_dict, bool):
+                assert valid_dict, \
+                    "BST_VALID_CONFIGURATION_ITEMS does not support being configured with items as 'False'"
+                return []
+
+            invalid_nodes = []
+            for key, sub_node in node.items():
+                sub_node_type = type(sub_node).__name__
+                # Key not valid
+                if key not in valid_dict and not key == _yaml.PROVENANCE_KEY:
+                    provenance = _yaml.node_get_provenance(node, key)
+                    invalid_nodes.append((key, provenance))
+
+                # Valid, has dictionary
+                elif sub_node_type == "dict" and valid_dict[key]:
+                    validate_node(sub_node, valid_dict[key])
+
+                # Valid, has List
+                elif sub_node_type == "list" and valid_dict[key]:
+                    # Catch all, this sub_node is valid from here on
+                    if isinstance(valid_dict[key], bool):
+                        continue
+
+                    invalid_list_items = validate_list(sub_node, valid_dict[key])
+                    for item, index in invalid_list_items:
+                        provenance = _yaml.node_get_provenance(node, key, index)
+                        invalid_nodes.append("{}({})".format(key, item), provenance)
+
+            return invalid_nodes
+
+        invalid_nodes = validate_node(config, self.BST_VALID_CONFIGURATION_ITEMS)
+        if invalid_nodes:
+            formatted_invalid_nodes = [
+                "{}: '{}' is an invalid configuration for {} elements.".format(
+                    provenance,
+                    key, self.get_kind()
+                )
+                for key, provenance in invalid_nodes
+            ]
+            detail = "\n".join(formatted_invalid_nodes)
+            self.warn("Invalid configuration of {}".format(self.name), detail=detail)
+
+        return not invalid_nodes
 
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #

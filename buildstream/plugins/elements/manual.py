@@ -33,6 +33,16 @@ from buildstream import BuildElement
 
 # Element implementation for the 'manual' kind.
 class ManualElement(BuildElement):
+    BST_VALID_CONFIGURATION_ITEMS = {
+        "config": {
+            "configure-commands": True,
+            "build-commands": True,
+            "install-commands": True,
+            "strip-commands": True,
+        },
+        "environment": True,
+        "environment-nocache": True
+    }
     pass
 
 
