@@ -1353,7 +1353,10 @@ class Element(Plugin):
                 if scope == Scope.BUILD:
                     self.stage(sandbox)
                 elif scope == Scope.RUN:
-                    if deps == 'run':
+
+                    if deps == 'build':
+                        dependency_scope = Scope.BUILD
+                    elif deps == 'run':
                         dependency_scope = Scope.RUN
                     else:
                         dependency_scope = Scope.NONE

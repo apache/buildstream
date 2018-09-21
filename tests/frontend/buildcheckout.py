@@ -86,7 +86,7 @@ def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("deps", [("run"), ("none")])
+@pytest.mark.parametrize("deps", [("run"), ("none"), ("build")])
 def test_build_checkout_deps(datafiles, cli, deps):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -107,7 +107,17 @@ def test_build_checkout_deps(datafiles, cli, deps):
 
     # Verify output of this element
     filename = os.path.join(checkout, 'etc', 'buildstream', 'config')
-    assert os.path.exists(filename)
+    if deps == "build":
+        assert not os.path.exists(filename)
+    else:
+        assert os.path.exists(filename)
+
+    # Verify output of this element's build dependencies
+    filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
+    if deps == "build":
+        assert os.path.exists(filename)
+    else:
+        assert not os.path.exists(filename)
 
     # Verify output of this element's runtime dependencies
     filename = os.path.join(checkout, 'usr', 'bin', 'hello')

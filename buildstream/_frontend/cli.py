@@ -640,7 +640,7 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--deps', '-d', default='run',
-              type=click.Choice(['run', 'none']),
+              type=click.Choice(['run', 'build', 'none']),
               help='The dependencies to checkout (default: run)')
 @click.option('--integrate/--no-integrate', default=True, is_flag=True,
               help="Whether to run integration commands")
