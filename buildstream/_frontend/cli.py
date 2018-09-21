@@ -665,6 +665,33 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 
 
 ##################################################################
+#                  Source Checkout Command                      #
+##################################################################
+@cli.command(name='source-checkout', short_help='Checkout sources for an element')
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(readable=False),
+              help="Except certain dependencies")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['build', 'none', 'run', 'all']),
+              help='The dependencies whose sources to checkout (default: none)')
+@click.option('--fetch', 'fetch_', default=False, is_flag=True,
+              help='Fetch elements if they are not fetched')
+@click.argument('element',
+                type=click.Path(readable=False))
+@click.argument('location', type=click.Path())
+@click.pass_obj
+def source_checkout(app, element, location, deps, fetch_, except_):
+    """Checkout sources of an element to the specified location
+    """
+    with app.initialized():
+        app.stream.source_checkout(element,
+                                   location=location,
+                                   deps=deps,
+                                   fetch=fetch_,
+                                   except_targets=except_)
+
+
+##################################################################
 #                      Workspace Command                         #
 ##################################################################
 @cli.group(short_help="Manipulate developer workspaces")

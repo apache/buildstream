@@ -379,27 +379,7 @@ class Stream():
         elements, _ = self._load((target,), (), fetch_subprojects=True)
         target = elements[0]
 
-        if not tar:
-            try:
-                os.makedirs(location, exist_ok=True)
-            except OSError as e:
-                raise StreamError("Failed to create checkout directory: '{}'"
-                                  .format(e)) from e
-
-        if not tar:
-            if not os.access(location, os.W_OK):
-                raise StreamError("Checkout directory '{}' not writable"
-                                  .format(location))
-            if not force and os.listdir(location):
-                raise StreamError("Checkout directory '{}' not empty"
-                                  .format(location))
-        elif os.path.exists(location) and location != '-':
-            if not os.access(location, os.W_OK):
-                raise StreamError("Output file '{}' not writable"
-                                  .format(location))
-            if not force and os.path.exists(location):
-                raise StreamError("Output file '{}' already exists"
-                                  .format(location))
+        self._check_location_writable(location, force=force, tar=tar)
 
         # Stage deps into a temporary sandbox first
         try:
@@ -441,6 +421,42 @@ class Stream():
 
         except BstError as e:
             raise StreamError("Error while staging dependencies into a sandbox"
+                              ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
+
+    # source_checkout()
+    #
+    # Checkout sources of the target element to the specified location
+    #
+    # Args:
+    #    target (str): The target element whose sources to checkout
+    #    location (str): Location to checkout the sources to
+    #    deps (str): The dependencies to checkout
+    #    fetch (bool): Whether to fetch missing sources
+    #    except_targets (list): List of targets to except from staging
+    #
+    def source_checkout(self, target, *,
+                        location=None,
+                        deps='none',
+                        fetch=False,
+                        except_targets=()):
+
+        self._check_location_writable(location)
+
+        elements, _ = self._load((target,), (),
+                                 selection=deps,
+                                 except_targets=except_targets,
+                                 fetch_subprojects=True)
+
+        # Assert all sources are cached
+        if fetch:
+            self._fetch(elements)
+        self._pipeline.assert_sources_cached(elements)
+
+        # Stage all sources determined by scope
+        try:
+            self._write_element_sources(location, elements)
+        except BstError as e:
+            raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
     # workspace_open
@@ -726,7 +742,7 @@ class Stream():
                 if self._write_element_script(source_directory, element)
             ]
 
-            self._write_element_sources(tempdir, elements)
+            self._write_element_sources(os.path.join(tempdir, "source"), elements)
             self._write_build_script(tempdir, elements)
             self._collect_sources(tempdir, tar_location,
                                   target.normal_name, compression)
@@ -1068,6 +1084,39 @@ class Stream():
         self._enqueue_plan(fetch_plan)
         self._run()
 
+    # _check_location_writable()
+    #
+    # Check if given location is writable.
+    #
+    # Args:
+    #    location (str): Destination path
+    #    force (bool): Allow files to be overwritten
+    #    tar (bool): Whether destination is a tarball
+    #
+    # Raises:
+    #    (StreamError): If the destination is not writable
+    #
+    def _check_location_writable(self, location, force=False, tar=False):
+        if not tar:
+            try:
+                os.makedirs(location, exist_ok=True)
+            except OSError as e:
+                raise StreamError("Failed to create destination directory: '{}'"
+                                  .format(e)) from e
+            if not os.access(location, os.W_OK):
+                raise StreamError("Destination directory '{}' not writable"
+                                  .format(location))
+            if not force and os.listdir(location):
+                raise StreamError("Destination directory '{}' not empty"
+                                  .format(location))
+        elif os.path.exists(location) and location != '-':
+            if not os.access(location, os.W_OK):
+                raise StreamError("Output file '{}' not writable"
+                                  .format(location))
+            if not force and os.path.exists(location):
+                raise StreamError("Output file '{}' already exists"
+                                  .format(location))
+
     # Helper function for checkout()
     #
     def _checkout_hardlinks(self, sandbox_vroot, directory):
@@ -1089,11 +1138,10 @@ class Stream():
     # Write all source elements to the given directory
     def _write_element_sources(self, directory, elements):
         for element in elements:
-            source_dir = os.path.join(directory, "source")
-            element_source_dir = os.path.join(source_dir, element.normal_name)
-            os.makedirs(element_source_dir)
-
-            element._stage_sources_at(element_source_dir)
+            element_source_dir = self._get_element_dirname(directory, element)
+            if list(element.sources()):
+                os.makedirs(element_source_dir)
+                element._stage_sources_at(element_source_dir)
 
     # Write a master build script to the sandbox
     def _write_build_script(self, directory, elements):
@@ -1122,3 +1170,25 @@ class Stream():
 
             with tarfile.open(tar_name, permissions) as tar:
                 tar.add(directory, arcname=element_name)
+
+    # _get_element_dirname()
+    #
+    # Get path to directory for an element based on its normal name.
+    #
+    # For cross-junction elements, the path will be prefixed with the name
+    # of the junction element.
+    #
+    # Args:
+    #    directory (str): path to base directory
+    #    element (Element): the element
+    #
+    # Returns:
+    #    (str): Path to directory for this element
+    #
+    def _get_element_dirname(self, directory, element):
+        parts = [element.normal_name]
+        while element._get_project() != self._project:
+            element = element._get_project().junction
+            parts.append(element.normal_name)
+
+        return os.path.join(directory, *reversed(parts))

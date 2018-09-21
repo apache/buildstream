@@ -383,6 +383,33 @@ class Pipeline():
                 detail += "  " + element._get_full_name() + "\n"
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline-workspaced")
 
+    # assert_sources_cached()
+    #
+    # Asserts that sources for the given list of elements are cached.
+    #
+    # Args:
+    #    elements (list): The list of elements
+    #
+    def assert_sources_cached(self, elements):
+        uncached = []
+        with self._context.timed_activity("Checking sources"):
+            for element in elements:
+                if element._get_consistency() != Consistency.CACHED:
+                    uncached.append(element)
+
+        if uncached:
+            detail = "Sources are not cached for the following elements:\n\n"
+            for element in uncached:
+                detail += "  Following sources for element: {} are not cached:\n".format(element._get_full_name())
+                for source in element.sources():
+                    if source._get_consistency() != Consistency.CACHED:
+                        detail += "    {}\n".format(source)
+                detail += '\n'
+            detail += "Try fetching these elements first with `bst fetch`,\n" + \
+                      "or run this command with `--fetch` option\n"
+
+            raise PipelineError("Uncached sources", detail=detail, reason="uncached-sources")
+
     #############################################################
     #                     Private Methods                       #
     #############################################################
