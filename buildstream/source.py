@@ -930,6 +930,38 @@ class Source(Plugin):
     #                   Local Private Methods                   #
     #############################################################
 
+    # __clone_for_uri()
+    #
+    # Clone the source with an alternative URI setup for the alias
+    # which this source uses.
+    #
+    # This is used for iteration over source mirrors.
+    #
+    # Args:
+    #    uri (str): The alternative URI for this source's alias
+    #
+    # Returns:
+    #    (Source): A new clone of this Source, with the specified URI
+    #              as the value of the alias this Source has marked as
+    #              primary with either mark_download_url() or
+    #              translate_url().
+    #
+    def __clone_for_uri(self, uri):
+        project = self._get_project()
+        context = self._get_context()
+        alias = self._get_alias()
+        source_kind = type(self)
+
+        clone = source_kind(context, project, self.__meta, alias_override=(alias, uri))
+
+        # Do the necessary post instantiation routines here
+        #
+        clone._preflight()
+        clone._load_ref()
+        clone._update_state()
+
+        return clone
+
     # Tries to call fetch for every mirror, stopping once it succeeds
     def __do_fetch(self, **kwargs):
         project = self._get_project()
@@ -968,12 +1000,8 @@ class Source(Plugin):
                 self.fetch(**kwargs)
                 return
 
-            context = self._get_context()
-            source_kind = type(self)
             for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
-                new_source = source_kind(context, project, self.__meta,
-                                         alias_override=(alias, uri))
-                new_source._preflight()
+                new_source = self.__clone_for_uri(uri)
                 try:
                     new_source.fetch(**kwargs)
                 # FIXME: Need to consider temporary vs. permanent failures,
@@ -1006,9 +1034,7 @@ class Source(Plugin):
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
         for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass)):
-            new_source = source_kind(context, project, self.__meta,
-                                     alias_override=(alias, uri))
-            new_source._preflight()
+            new_source = self.__clone_for_uri(uri)
             try:
                 ref = new_source.track(**kwargs)
             # FIXME: Need to consider temporary vs. permanent failures,
