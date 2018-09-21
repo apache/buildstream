@@ -110,6 +110,10 @@ class Sandbox():
             os.makedirs(directory_, exist_ok=True)
         self._vdir = None
 
+        # This is set if anyone requests access to the underlying
+        # directory via get_directory.
+        self._never_cache_vdirs = False
+
     def get_directory(self):
         """Fetches the sandbox root directory
 
@@ -122,24 +126,28 @@ class Sandbox():
 
         """
         if self.__allow_real_directory:
+            self._never_cache_vdirs = True
             return self._root
         else:
             raise BstError("You can't use get_directory")
 
     def get_virtual_directory(self):
-        """Fetches the sandbox root directory
+        """Fetches the sandbox root directory as a virtual Directory.
 
         The root directory is where artifacts for the base
-        runtime environment should be staged. Only works if
-        BST_VIRTUAL_DIRECTORY is not set.
+        runtime environment should be staged.
+
+        Use caution if you use get_directory and
+        get_virtual_directory.  If you alter the contents of the
+        directory returned by get_directory, all objects returned by
+        get_virtual_directory or derived from them are invalid and you
+        must call get_virtual_directory again to get a new copy.
 
         Returns:
-           (str): The sandbox root directory
+           (Directory): The sandbox root directory
 
         """
-        if not self._vdir:
-            # BST_CAS_DIRECTORIES is a deliberately hidden environment variable which
-            # can be used to switch on CAS-based directories for testing.
+        if self._vdir is None or self._never_cache_vdirs:
             if 'BST_CAS_DIRECTORIES' in os.environ:
                 self._vdir = CasBasedDirectory(self.__context, ref=None)
             else:
