@@ -19,7 +19,7 @@ import os
 import resource
 
 from .._exceptions import PlatformError
-from ..sandbox import SandboxChroot, SandboxDummy
+from ..sandbox import SandboxDummy
 
 from . import Platform
 
