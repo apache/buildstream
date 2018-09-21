@@ -348,18 +348,28 @@ class CASCache(ArtifactCache):
         return pushed
 
     def push_directory(self, project, directory):
+        """ Push the given virtual directory to all remotes.
+
+        Args:
+            project (Project): The current project
+            directory (Directory): A virtual directory object to push.
+
+        Raises: ArtifactError if no push remotes are configured.
+        """
 
         push_remotes = [r for r in self._remotes[project] if r.spec.push]
 
+        if not push_remotes:
+            raise ArtifactError("CASCache: push_directory was called, but no remote artifact " +
+                                "servers are configured as push remotes.")
+
         if directory.ref is None:
-            return None
+            return
 
         for remote in push_remotes:
             remote.init()
 
             self._send_directory(remote, directory.ref)
-
-        return directory.ref
 
     def push_message(self, project, message):
 
