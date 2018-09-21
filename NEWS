@@ -1,4 +1,26 @@
 =================
+buildstream 1.2.1
+=================
+
+  o Fixed corruption of artifact cache at cache cleanup time (#623)
+
+  o Fixed accidental deletion of artifacts when tracking is enabled
+
+  o Error out when protected variables are set by project authors (#287)
+
+  o Fixed option resolution in project wide element & source configurations (#658)
+
+  o Error out gracefully when push remote is mal-specified (#625)
+
+  o Improved logging regarding skipped push / pull jobs (#515)
+
+  o Fixed crash in `bst fetch` when project.refs and source mirroring are in use (#666)
+
+  o Removed blessings dependency
+
+  o Support for batch file downloads on the artifact cache server
+
+=================
 buildstream 1.2.0
 =================
 
