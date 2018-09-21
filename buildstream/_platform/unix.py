@@ -20,7 +20,6 @@
 import os
 
 from .._exceptions import PlatformError
-from ..sandbox import SandboxChroot
 
 from . import Platform
 
@@ -39,6 +38,7 @@ class Unix(Platform):
             raise PlatformError("Root privileges are required to run without bubblewrap.")
 
     def create_sandbox(self, *args, **kwargs):
+        from ..sandbox._sandboxchroot import SandboxChroot
         return SandboxChroot(*args, **kwargs)
 
     def check_sandbox_config(self, config):
