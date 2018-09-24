@@ -24,7 +24,6 @@ import traceback
 import datetime
 from textwrap import TextWrapper
 from contextlib import contextmanager
-from blessings import Terminal
 
 import click
 from click import UsageError
