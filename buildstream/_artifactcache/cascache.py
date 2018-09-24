@@ -43,6 +43,11 @@ from .._exceptions import ArtifactError
 from . import ArtifactCache
 
 
+# The default limit for gRPC messages is 4 MiB.
+# Limit payload to 1 MiB to leave sufficient headroom for metadata.
+_MAX_PAYLOAD_BYTES = 1024 * 1024
+
+
 # A CASCache manages artifacts in a CAS repository as specified in the
 # Remote Execution API.
 #
@@ -330,12 +335,12 @@ class CASCache(ArtifactCache):
                                 finished = False
                                 remaining = digest.size_bytes
                                 while not finished:
-                                    chunk_size = min(remaining, 64 * 1024)
+                                    chunk_size = min(remaining, _MAX_PAYLOAD_BYTES)
                                     remaining -= chunk_size
 
                                     request = bytestream_pb2.WriteRequest()
                                     request.write_offset = offset
-                                    # max. 64 kB chunks
+                                    # max. _MAX_PAYLOAD_BYTES chunks
                                     request.data = f.read(chunk_size)
                                     request.resource_name = resname
                                     request.finish_write = remaining <= 0
