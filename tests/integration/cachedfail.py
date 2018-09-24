@@ -121,7 +121,7 @@ def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
 
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("on_error", ("continue",))
+@pytest.mark.parametrize("on_error", ("continue", "quit"))
 def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements', 'element.bst')
