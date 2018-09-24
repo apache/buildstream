@@ -2084,7 +2084,7 @@ class Element(Plugin):
     #
     # Raises an error if the artifact is not cached.
     #
-    def __assert_cached(self, keystrength=_KeyStrength.STRONG):
+    def __assert_cached(self, keystrength=None):
         assert self.__is_cached(keystrength=keystrength), "{}: Missing artifact {}".format(
             self, self._get_brief_display_key())
 
