@@ -96,7 +96,7 @@ _PYTHON_VERSIONS = [
 # Names of source distribution archives must be of the form
 # '%{package-name}-%{version}.%{extension}'.
 _SDIST_RE = re.compile(
-    r'^([a-zA-Z0-9]+?)-(.+).(?:tar|tar.bz2|tar.gz|tar.xz|tar.Z|zip)$',
+    r'^([\w.-]+?)-((?:[\d.]+){2,})\.(?:tar|tar.bz2|tar.gz|tar.xz|tar.Z|zip)$',
     re.IGNORECASE)
 
 
@@ -225,11 +225,26 @@ class PipSource(Source):
     def _parse_sdist_names(self, basedir):
         reqs = []
         for f in os.listdir(basedir):
-            pkg_match = _SDIST_RE.match(f)
-            if pkg_match:
-                reqs.append(pkg_match.groups())
+            pkg = _match_package_name(f)
+            if pkg is not None:
+                reqs.append(pkg)
 
         return sorted(reqs)
+
+
+# Extract the package name and version of a source distribution
+#
+# Args:
+#    filename (str): Filename of the source distribution
+#
+# Returns:
+#    (tuple): A tuple of (package_name, version)
+#
+def _match_package_name(filename):
+    pkg_match = _SDIST_RE.match(filename)
+    if pkg_match is None:
+        return None
+    return pkg_match.groups()
 
 
 def setup():
