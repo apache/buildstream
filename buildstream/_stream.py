@@ -641,6 +641,9 @@ class Stream():
             }
             workspaces.append(workspace_detail)
 
+        if not workspaces:
+            workspaces = "No workspaces found"
+
         _yaml.dump({
             'workspaces': workspaces
         })
