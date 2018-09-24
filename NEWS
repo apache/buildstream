@@ -1,4 +1,10 @@
 =================
+buildstream 1.2.2
+=================
+
+ * Fixed incomplete removal of blessings dependency
+
+=================
 buildstream 1.2.1
 =================
 
