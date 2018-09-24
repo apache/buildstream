@@ -1532,8 +1532,6 @@ class Element(Plugin):
             with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # nopep8
 
-                sandbox_vroot = sandbox.get_virtual_directory()
-
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
                 self.__dynamic_public = _yaml.node_copy(self.__public)
@@ -1581,7 +1579,6 @@ class Element(Plugin):
                 finally:
                     if collect is not None:
                         try:
-                            # Sandbox will probably have replaced its virtual directory, so get it again
                             sandbox_vroot = sandbox.get_virtual_directory()
                             collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
                         except VirtualDirectoryError:
@@ -1606,6 +1603,7 @@ class Element(Plugin):
                         collectvdir.export_files(filesdir, can_link=True)
 
                     try:
+                        sandbox_vroot = sandbox.get_virtual_directory()
                         sandbox_build_dir = sandbox_vroot.descend(
                             self.get_variable('build-root').lstrip(os.sep).split(os.sep))
                         # Hard link files from build-root dir to buildtreedir directory
