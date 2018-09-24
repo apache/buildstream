@@ -38,8 +38,9 @@ from .._context import Context
 from .cascache import CASCache
 
 
-# The default limit for gRPC messages is 4 MiB
-_MAX_BATCH_TOTAL_SIZE_BYTES = 4 * 1024 * 1024
+# The default limit for gRPC messages is 4 MiB.
+# Limit payload to 1 MiB to leave sufficient headroom for metadata.
+_MAX_PAYLOAD_BYTES = 1024 * 1024
 
 
 # Trying to push an artifact that is too large
@@ -158,7 +159,7 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
 
                 remaining = client_digest.size_bytes - request.read_offset
                 while remaining > 0:
-                    chunk_size = min(remaining, 64 * 1024)
+                    chunk_size = min(remaining, _MAX_PAYLOAD_BYTES)
                     remaining -= chunk_size
 
                     response = bytestream_pb2.ReadResponse()
@@ -242,7 +243,7 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
 
         for digest in request.digests:
             batch_size += digest.size_bytes
-            if batch_size > _MAX_BATCH_TOTAL_SIZE_BYTES:
+            if batch_size > _MAX_PAYLOAD_BYTES:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 return response
 
@@ -269,7 +270,7 @@ class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
         cache_capabilities = response.cache_capabilities
         cache_capabilities.digest_function.append(remote_execution_pb2.SHA256)
         cache_capabilities.action_cache_update_capabilities.update_enabled = False
-        cache_capabilities.max_batch_total_size_bytes = _MAX_BATCH_TOTAL_SIZE_BYTES
+        cache_capabilities.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
         cache_capabilities.symlink_absolute_path_strategy = remote_execution_pb2.CacheCapabilities.ALLOWED
 
         response.deprecated_api_version.major = 2
