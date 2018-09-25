@@ -79,6 +79,8 @@ source_dist:
   - cd ../..
   - mkdir -p coverage-linux/
   - cp dist/buildstream/.coverage.* coverage-linux/coverage."${CI_JOB_NAME}"
+  except:
+  - schedules
   artifacts:
     paths:
     - coverage-linux/
@@ -127,6 +129,8 @@ tests-unix:
     - cd ../..
     - mkdir -p coverage-unix/
     - cp dist/buildstream/.coverage.* coverage-unix/coverage.unix
+  except:
+  - schedules
   artifacts:
     paths:
     - coverage-unix/
@@ -148,10 +152,41 @@ docs:
   - make BST_FORCE_SESSION_REBUILD=1 -C doc
   - cd ../..
   - mv dist/buildstream/doc/build/html public
+  except:
+  - schedules
   artifacts:
     paths:
     - public/
 
+.overnight-tests: &overnight-tests-template
+  stage: test
+  variables:
+    bst_ext_url: git+https://gitlab.com/BuildStream/bst-external.git
+    bst_ext_ref: 1d6ab71151b93c8cbc0a91a36ffe9270f3b835f1 # 0.5.1
+    fd_sdk_ref: 718ea88089644a1ea5b488de0b90c2c565cb75f8 # 18.08.12
+  before_script:
+  - (cd dist && ./unpack.sh && cd buildstream && pip3 install .)
+  - pip3 install --user -e ${bst_ext_url}@${bst_ext_ref}#egg=bst_ext
+  - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
+  - git -C freedesktop-sdk checkout ${fd_sdk_ref}
+  only:
+  - schedules
+
+overnight-tests:
+  <<: *overnight-tests-template
+  script:
+  - make -C freedesktop-sdk
+  tags:
+  - overnight-tests
+
+overnight-tests-no-cache:
+  <<: *overnight-tests-template
+  script:
+  - sed -i '/artifacts:/,+1 d' freedesktop-sdk/bootstrap/project.conf
+  - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
+  - make -C freedesktop-sdk
+  tags:
+  - overnight-tests
 
 # Check code quality with gitlab's built-in feature.
 #
@@ -170,6 +205,8 @@ code_quality:
         --volume "$PWD":/code
         --volume /var/run/docker.sock:/var/run/docker.sock
         "registry.gitlab.com/gitlab-org/security-products/codequality:$SP_VERSION" /code
+  except:
+  - schedules
   artifacts:
     paths: [gl-code-quality-report.json]
 
@@ -199,6 +236,8 @@ analysis:
     radon raw -s -j buildstream > analysis/raw.json
     radon raw -s buildstream
 
+  except:
+  - schedules
   artifacts:
     paths:
     - analysis/
@@ -224,6 +263,8 @@ coverage:
   - tests-fedora-28
   - tests-unix
   - source_dist
+  except:
+  - schedules
 
 # Deploy, only for merges which land on master branch.
 #
@@ -248,3 +289,5 @@ pages:
   # See https://gitlab.com/gitlab-org/gitlab-ce/issues/35141
   #
   - master
+  except:
+  - schedules
