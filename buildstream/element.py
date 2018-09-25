@@ -438,7 +438,7 @@ class Element(Plugin):
                                                 visited=visited, recursed=True)
 
         # Yeild self only at the end, after anything needed has been traversed
-        if should_yield and (recurse or recursed) and (scope in (Scope.ALL, Scope.RUN)):
+        if should_yield and (recurse or recursed) and scope != Scope.BUILD:
             yield self
 
     def search(self, scope, name):
@@ -1353,17 +1353,21 @@ class Element(Plugin):
                 if scope == Scope.BUILD:
                     self.stage(sandbox)
                 elif scope == Scope.RUN:
-                    # Stage deps in the sandbox root
                     if deps == 'run':
-                        with self.timed_activity("Staging dependencies", silent_nested=True):
-                            self.stage_dependency_artifacts(sandbox, scope)
+                        dependency_scope = Scope.RUN
+                    else:
+                        dependency_scope = Scope.NONE
 
-                        # Run any integration commands provided by the dependencies
-                        # once they are all staged and ready
-                        if integrate:
-                            with self.timed_activity("Integrating sandbox"):
-                                for dep in self.dependencies(scope):
-                                    dep.integrate(sandbox)
+                    # Stage deps in the sandbox root
+                    with self.timed_activity("Staging dependencies", silent_nested=True):
+                        self.stage_dependency_artifacts(sandbox, dependency_scope)
+
+                    # Run any integration commands provided by the dependencies
+                    # once they are all staged and ready
+                    if integrate:
+                        with self.timed_activity("Integrating sandbox"):
+                            for dep in self.dependencies(dependency_scope):
+                                dep.integrate(sandbox)
 
             yield sandbox
 

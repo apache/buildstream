@@ -48,6 +48,12 @@ class Scope(Enum):
     itself.
     """
 
+    NONE = 4
+    """Just the element itself, no dependencies.
+
+    *Since: 1.4*
+    """
+
 
 class Consistency():
     """Defines the various consistency states of a :class:`.Source`.
