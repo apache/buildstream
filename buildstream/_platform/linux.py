@@ -30,9 +30,9 @@ from . import Platform
 
 class Linux(Platform):
 
-    def __init__(self, context):
+    def __init__(self):
 
-        super().__init__(context)
+        super().__init__()
 
         self._uid = os.geteuid()
         self._gid = os.getegid()

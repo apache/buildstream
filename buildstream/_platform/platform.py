@@ -31,11 +31,8 @@ class Platform():
     # A class to manage platform-specific details. Currently holds the
     # sandbox factory as well as platform helpers.
     #
-    # Args:
-    #     context (context): The project context
-    #
-    def __init__(self, context):
-        self.context = context
+    def __init__(self):
+        pass
 
     @classmethod
     def create_instance(cls, *args, **kwargs):
