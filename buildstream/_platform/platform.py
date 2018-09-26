@@ -92,3 +92,7 @@ class Platform():
     def create_sandbox(self, *args, **kwargs):
         raise ImplError("Platform {platform} does not implement create_sandbox()"
                         .format(platform=type(self).__name__))
+
+    def check_sandbox_config(self, config):
+        raise ImplError("Platform {platform} does not implement check_sandbox_config()"
+                        .format(platform=type(self).__name__))
