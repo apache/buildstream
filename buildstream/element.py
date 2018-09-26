@@ -2114,6 +2114,14 @@ class Element(Plugin):
 
         return self.__tainted
 
+    # __use_remote_execution():
+    #
+    # Returns True if remote execution is configured and the element plugin
+    # supports it.
+    #
+    def __use_remote_execution(self):
+        return self.__remote_execution_url and self.BST_VIRTUAL_DIRECTORY
+
     # __sandbox():
     #
     # A context manager to prepare a Sandbox object at the specified directory,
@@ -2135,9 +2143,7 @@ class Element(Plugin):
         project = self._get_project()
         platform = Platform.get_platform()
 
-        if (directory is not None and
-            self.__remote_execution_url and
-            self.BST_VIRTUAL_DIRECTORY):
+        if directory is not None and self.__use_remote_execution():
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
