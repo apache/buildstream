@@ -276,7 +276,7 @@ pages:
   variables:
     ACME_DIR: public/.well-known/acme-challenge
   script:
-  - mkdir ${ACME_DIR}
+  - mkdir -p ${ACME_DIR}
     # Required to finish the creation of the Let's Encrypt certificate,
     # which allows using https://docs.buildstream.build/ for accessing
     # the documentation.
