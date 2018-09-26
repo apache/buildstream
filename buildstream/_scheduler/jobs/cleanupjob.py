@@ -17,7 +17,6 @@
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
 from .job import Job, JobStatus
-from ..._platform import Platform
 
 
 class CleanupJob(Job):
@@ -25,8 +24,8 @@ class CleanupJob(Job):
         super().__init__(*args, **kwargs)
         self._complete_cb = complete_cb
 
-        platform = Platform.get_platform()
-        self._artifacts = platform.artifactcache
+        context = self._scheduler.context
+        self._artifacts = context.artifactcache
 
     def child_process(self):
         return self._artifacts.clean()

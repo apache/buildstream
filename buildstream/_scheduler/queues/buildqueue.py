@@ -21,7 +21,6 @@
 from . import Queue, QueueStatus
 from ..jobs import JobStatus
 from ..resources import ResourceType
-from ..._platform import Platform
 
 
 # A queue which assembles elements
@@ -55,8 +54,8 @@ class BuildQueue(Queue):
         # as returned from Element._assemble() to the estimated
         # artifact cache size
         #
-        platform = Platform.get_platform()
-        artifacts = platform.artifactcache
+        context = self._scheduler.context
+        artifacts = context.artifactcache
 
         artifacts.add_artifact_size(artifact_size)
 
