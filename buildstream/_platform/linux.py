@@ -17,6 +17,7 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import os
 import subprocess
 
 from .. import _site
@@ -34,6 +35,9 @@ class Linux(Platform):
 
         super().__init__(context)
 
+        self._uid = os.geteuid()
+        self._gid = os.getegid()
+
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
         self._user_ns_available = self._check_user_ns_available(context)
         self._artifact_cache = CASCache(context, enable_push=self._user_ns_available)
@@ -47,6 +51,15 @@ class Linux(Platform):
         kwargs['user_ns_available'] = self._user_ns_available
         kwargs['die_with_parent_available'] = self._die_with_parent_available
         return SandboxBwrap(*args, **kwargs)
+
+    def check_sandbox_config(self, config):
+        if self._user_ns_available:
+            # User namespace support allows arbitrary build UID/GID settings.
+            return True
+        else:
+            # Without user namespace support, the UID/GID in the sandbox
+            # will match the host UID/GID.
+            return config.build_uid == self._uid and config.build_gid == self._gid
 
     ################################################
     #              Private Methods                 #
