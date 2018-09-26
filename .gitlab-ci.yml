@@ -168,7 +168,7 @@ docs:
   variables:
     bst_ext_url: git+https://gitlab.com/BuildStream/bst-external.git
     bst_ext_ref: 1d6ab71151b93c8cbc0a91a36ffe9270f3b835f1 # 0.5.1
-    fd_sdk_ref: 718ea88089644a1ea5b488de0b90c2c565cb75f8 # 18.08.12
+    fd_sdk_ref: 88d7c22c2281b987faa02edd57df80d430eecf1f # 18.08.12
   before_script:
   - (cd dist && ./unpack.sh && cd buildstream && pip3 install .)
   - pip3 install --user -e ${bst_ext_url}@${bst_ext_ref}#egg=bst_ext
