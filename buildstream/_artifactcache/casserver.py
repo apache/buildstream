@@ -37,8 +37,6 @@ from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 from .._exceptions import ArtifactError
 from .._context import Context
 
-from .cascache import CASCache
-
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
@@ -64,7 +62,7 @@ def create_server(repo, *, enable_push,
     context = Context()
     context.artifactdir = os.path.abspath(repo)
 
-    artifactcache = CASCache(context)
+    artifactcache = context.artifactcache
 
     # Use max_workers default from Python 3.5+
     max_workers = (os.cpu_count() or 1) * 5
