@@ -40,7 +40,7 @@ class Linux(Platform):
 
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
         self._user_ns_available = self._check_user_ns_available()
-        self._artifact_cache = CASCache(context, enable_push=self._user_ns_available)
+        self._artifact_cache = CASCache(context)
 
     @property
     def artifactcache(self):
