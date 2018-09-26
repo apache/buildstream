@@ -273,8 +273,14 @@ pages:
   dependencies:
   - source_dist
   - docs
+  variables:
+    ACME_DIR: public/.well-known/acme-challenge
   script:
-  - find public/
+  - mkdir ${ACME_DIR}
+    # Required to finish the creation of the Let's Encrypt certificate,
+    # which allows using https://docs.buildstream.build/ for accessing
+    # the documentation.
+  - echo ${ACME_CHALLENGE} > ${ACME_DIR}/$(echo ${ACME_CHALLENGE} | cut -c1-43)
   artifacts:
     paths:
     - public/
