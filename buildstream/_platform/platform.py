@@ -29,8 +29,7 @@ class Platform():
     # Platform()
     #
     # A class to manage platform-specific details. Currently holds the
-    # sandbox factory, the artifact cache and staging operations, as
-    # well as platform helpers.
+    # sandbox factory as well as platform helpers.
     #
     # Args:
     #     context (context): The project context
@@ -71,8 +70,7 @@ class Platform():
     ##################################################################
     @property
     def artifactcache(self):
-        raise ImplError("Platform {platform} does not implement an artifactcache"
-                        .format(platform=type(self).__name__))
+        return self.context.artifactcache
 
     ##################################################################
     #                        Sandbox functions                       #

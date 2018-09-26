@@ -203,6 +203,11 @@ class App():
         except BstError as e:
             self._error_exit(e, "Error instantiating platform")
 
+        try:
+            self.context.artifactcache.preflight()
+        except BstError as e:
+            self._error_exit(e, "Error instantiating artifact cache")
+
         # Create the logger right before setting the message handler
         self.logger = LogLine(self.context,
                               self._content_profile,

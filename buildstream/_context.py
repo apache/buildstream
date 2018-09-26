@@ -30,6 +30,7 @@ from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
+from ._artifactcache.cascache import CASCache
 from ._workspaces import Workspaces
 from .plugin import Plugin
 
@@ -113,6 +114,7 @@ class Context():
         self._cache_key = None
         self._message_handler = None
         self._message_depth = deque()
+        self._artifactcache = None
         self._projects = []
         self._project_overrides = {}
         self._workspaces = None
@@ -227,6 +229,13 @@ class Context():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: on-error should be one of: {}".format(
                                 provenance, ", ".join(valid_actions)))
+
+    @property
+    def artifactcache(self):
+        if not self._artifactcache:
+            self._artifactcache = CASCache(self)
+
+        return self._artifactcache
 
     # add_project():
     #
