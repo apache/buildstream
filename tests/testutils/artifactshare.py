@@ -10,7 +10,6 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 
 from buildstream import _yaml
-from buildstream._artifactcache.cascache import CASCache
 from buildstream._artifactcache.casserver import create_server
 from buildstream._context import Context
 from buildstream._exceptions import ArtifactError
@@ -51,7 +50,7 @@ class ArtifactShare():
         context = Context()
         context.artifactdir = self.repodir
 
-        self.cas = CASCache(context)
+        self.cas = context.artifactcache
 
         self.total_space = total_space
         self.free_space = free_space
