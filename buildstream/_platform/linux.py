@@ -39,7 +39,7 @@ class Linux(Platform):
         self._gid = os.getegid()
 
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
-        self._user_ns_available = self._check_user_ns_available(context)
+        self._user_ns_available = self._check_user_ns_available()
         self._artifact_cache = CASCache(context, enable_push=self._user_ns_available)
 
     @property
@@ -64,7 +64,7 @@ class Linux(Platform):
     ################################################
     #              Private Methods                 #
     ################################################
-    def _check_user_ns_available(self, context):
+    def _check_user_ns_available(self):
 
         # Here, lets check if bwrap is able to create user namespaces,
         # issue a warning if it's not available, and save the state
@@ -88,9 +88,4 @@ class Linux(Platform):
             return True
 
         else:
-            context.message(
-                Message(None, MessageType.WARN,
-                        "Unable to create user namespaces with bubblewrap, resorting to fallback",
-                        detail="Some builds may not function due to lack of uid / gid 0, " +
-                        "artifacts created will not be trusted for push purposes."))
             return False
