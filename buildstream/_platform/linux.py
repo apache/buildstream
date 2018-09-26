@@ -22,7 +22,6 @@ import subprocess
 
 from .. import _site
 from .. import utils
-from .._artifactcache.cascache import CASCache
 from .._message import Message, MessageType
 from ..sandbox import SandboxBwrap
 
@@ -40,11 +39,6 @@ class Linux(Platform):
 
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
         self._user_ns_available = self._check_user_ns_available()
-        self._artifact_cache = CASCache(context)
-
-    @property
-    def artifactcache(self):
-        return self._artifact_cache
 
     def create_sandbox(self, *args, **kwargs):
         # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
