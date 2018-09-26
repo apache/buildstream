@@ -28,7 +28,6 @@ from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.google.rpc import code_pb2
-from .._platform import Platform
 
 
 class SandboxError(Exception):
@@ -72,8 +71,8 @@ class SandboxRemote(Sandbox):
                                                       output_files=[],
                                                       output_directories=[self._output_directory],
                                                       platform=None)
-        platform = Platform.get_platform()
-        cascache = platform.artifactcache
+        context = self._get_context()
+        cascache = context.artifactcache
         # Upload the Command message to the remote CAS server
         command_digest = cascache.push_message(self._get_project(), remote_command)
         if not command_digest or not cascache.verify_digest_pushed(self._get_project(), command_digest):
@@ -135,8 +134,8 @@ class SandboxRemote(Sandbox):
         if tree_digest is None or not tree_digest.hash:
             raise SandboxError("Output directory structure had no digest attached.")
 
-        platform = Platform.get_platform()
-        cascache = platform.artifactcache
+        context = self._get_context()
+        cascache = context.artifactcache
         # Now do a pull to ensure we have the necessary parts.
         dir_digest = cascache.pull_tree(self._get_project(), tree_digest)
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
@@ -171,8 +170,8 @@ class SandboxRemote(Sandbox):
 
         upload_vdir.recalculate_hash()
 
-        platform = Platform.get_platform()
-        cascache = platform.artifactcache
+        context = self._get_context()
+        cascache = context.artifactcache
         # Now, push that key (without necessarily needing a ref) to the remote.
         cascache.push_directory(self._get_project(), upload_vdir)
         if not cascache.verify_digest_pushed(self._get_project(), upload_vdir.ref):
