@@ -35,7 +35,7 @@ class Platform():
         pass
 
     @classmethod
-    def create_instance(cls, *args, **kwargs):
+    def _create_instance(cls):
         if sys.platform.startswith('linux'):
             backend = 'linux'
         else:
@@ -54,12 +54,12 @@ class Platform():
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
 
-        cls._instance = PlatformImpl(*args, **kwargs)
+        cls._instance = PlatformImpl()
 
     @classmethod
     def get_platform(cls):
         if not cls._instance:
-            raise PlatformError("Platform needs to be initialized first")
+            cls._create_instance()
         return cls._instance
 
     ##################################################################

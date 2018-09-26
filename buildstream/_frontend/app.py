@@ -199,7 +199,7 @@ class App():
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
         try:
-            Platform.create_instance()
+            Platform.get_platform()
         except BstError as e:
             self._error_exit(e, "Error instantiating platform")
 
