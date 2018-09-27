@@ -181,3 +181,15 @@ def test_project_refs_options(cli, datafiles):
 
     # Assert that the cache keys are different
     assert result1.output != result2.output
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'element-path'))
+def test_element_path_project_path_contains_symlinks(cli, datafiles, tmpdir):
+    real_project = str(datafiles)
+    linked_project = os.path.join(str(tmpdir), 'linked')
+    os.symlink(real_project, linked_project)
+    os.makedirs(os.path.join(real_project, 'elements'), exist_ok=True)
+    with open(os.path.join(real_project, 'elements', 'element.bst'), 'w') as f:
+        f.write("kind: manual\n")
+    result = cli.run(project=linked_project, args=['show', 'element.bst'])
+    result.assert_success()
