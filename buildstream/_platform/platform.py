@@ -19,6 +19,7 @@
 
 import os
 import sys
+import resource
 
 from .._exceptions import PlatformError, ImplError
 
@@ -32,23 +33,26 @@ class Platform():
     # sandbox factory as well as platform helpers.
     #
     def __init__(self):
-        pass
+        self.set_resource_limits()
 
     @classmethod
     def _create_instance(cls):
-        if sys.platform.startswith('linux'):
-            backend = 'linux'
-        else:
-            backend = 'unix'
-
         # Meant for testing purposes and therefore hidden in the
         # deepest corners of the source code. Try not to abuse this,
         # please?
         if os.getenv('BST_FORCE_BACKEND'):
             backend = os.getenv('BST_FORCE_BACKEND')
+        elif sys.platform.startswith('linux'):
+            backend = 'linux'
+        elif sys.platform.startswith('darwin'):
+            backend = 'darwin'
+        else:
+            backend = 'unix'
 
         if backend == 'linux':
             from .linux import Linux as PlatformImpl
+        elif backend == 'darwin':
+            from .darwin import Darwin as PlatformImpl
         elif backend == 'unix':
             from .unix import Unix as PlatformImpl
         else:
@@ -61,6 +65,9 @@ class Platform():
         if not cls._instance:
             cls._create_instance()
         return cls._instance
+
+    def get_cpu_count(self, cap=None):
+        return min(len(os.sched_getaffinity(0)), cap)
 
     ##################################################################
     #                        Sandbox functions                       #
@@ -84,3 +91,15 @@ class Platform():
     def check_sandbox_config(self, config):
         raise ImplError("Platform {platform} does not implement check_sandbox_config()"
                         .format(platform=type(self).__name__))
+
+    def set_resource_limits(self, soft_limit=None, hard_limit=None):
+        # Need to set resources for _frontend/app.py as this is dependent on the platform
+        # SafeHardlinks FUSE needs to hold file descriptors for all processes in the sandbox.
+        # Avoid hitting the limit too quickly.
+        limits = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if limits[0] != limits[1]:
+            if soft_limit is None:
+                soft_limit = limits[1]
+            if hard_limit is None:
+                hard_limit = limits[1]
+            resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
