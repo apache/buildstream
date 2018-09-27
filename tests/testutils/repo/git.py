@@ -42,6 +42,9 @@ class Git(Repo):
         self._run_git('commit', '-m', 'Initial commit')
         return self.latest_commit()
 
+    def add_tag(self, tag):
+        self._run_git('tag', tag)
+
     def add_commit(self):
         self._run_git('commit', '--allow-empty', '-m', 'Additional commit')
         return self.latest_commit()
