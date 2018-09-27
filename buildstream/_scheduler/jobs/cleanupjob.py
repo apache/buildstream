@@ -17,15 +17,14 @@
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
 from .job import Job
-from ..._platform import Platform
 
 
 class CleanupJob(Job):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        platform = Platform.get_platform()
-        self._artifacts = platform.artifactcache
+        context = self._scheduler.context
+        self._artifacts = context.artifactcache
 
     def child_process(self):
         return self._artifacts.clean()

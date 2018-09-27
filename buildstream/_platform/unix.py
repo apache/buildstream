@@ -19,7 +19,6 @@
 
 import os
 
-from .._artifactcache.cascache import CASCache
 from .._exceptions import PlatformError
 from ..sandbox import SandboxChroot
 
@@ -28,18 +27,21 @@ from . import Platform
 
 class Unix(Platform):
 
-    def __init__(self, context):
+    def __init__(self):
 
-        super().__init__(context)
-        self._artifact_cache = CASCache(context)
+        super().__init__()
+
+        self._uid = os.geteuid()
+        self._gid = os.getegid()
 
         # Not necessarily 100% reliable, but we want to fail early.
-        if os.geteuid() != 0:
+        if self._uid != 0:
             raise PlatformError("Root privileges are required to run without bubblewrap.")
-
-    @property
-    def artifactcache(self):
-        return self._artifact_cache
 
     def create_sandbox(self, *args, **kwargs):
         return SandboxChroot(*args, **kwargs)
+
+    def check_sandbox_config(self, config):
+        # With the chroot sandbox, the UID/GID in the sandbox
+        # will match the host UID/GID (typically 0/0).
+        return config.build_uid == self._uid and config.build_gid == self._gid

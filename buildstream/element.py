@@ -246,14 +246,22 @@ class Element(Plugin):
         self.__config = self.__extract_config(meta)
         self._configure(self.__config)
 
-        # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(meta)
-
         # Extract remote execution URL
         if not self.__is_junction:
             self.__remote_execution_url = project.remote_execution_url
         else:
             self.__remote_execution_url = None
+
+        # Extract Sandbox config
+        self.__sandbox_config = self.__extract_sandbox_config(meta)
+
+        self.__sandbox_config_supported = True
+        if not self.__use_remote_execution():
+            platform = Platform.get_platform()
+            if not platform.check_sandbox_config(self.__sandbox_config):
+                # Local sandbox does not fully support specified sandbox config.
+                # This will taint the artifact, disable pushing.
+                self.__sandbox_config_supported = False
 
     def __lt__(self, other):
         return self.name < other.name
@@ -1521,6 +1529,11 @@ class Element(Plugin):
         context = self._get_context()
         with self._output_file() as output_file:
 
+            if not self.__sandbox_config_supported:
+                self.warn("Sandbox configuration is not supported by the platform.",
+                          detail="Falling back to UID {} GID {}. Artifact will not be pushed."
+                          .format(self.__sandbox_config.build_uid, self.__sandbox_config.build_gid))
+
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
@@ -2110,9 +2123,18 @@ class Element(Plugin):
             workspaced_dependencies = self.__get_artifact_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
-            self.__tainted = workspaced or workspaced_dependencies
+            self.__tainted = (workspaced or workspaced_dependencies or
+                              not self.__sandbox_config_supported)
 
         return self.__tainted
+
+    # __use_remote_execution():
+    #
+    # Returns True if remote execution is configured and the element plugin
+    # supports it.
+    #
+    def __use_remote_execution(self):
+        return self.__remote_execution_url and self.BST_VIRTUAL_DIRECTORY
 
     # __sandbox():
     #
@@ -2135,9 +2157,7 @@ class Element(Plugin):
         project = self._get_project()
         platform = Platform.get_platform()
 
-        if (directory is not None and
-            self.__remote_execution_url and
-            self.BST_VIRTUAL_DIRECTORY):
+        if directory is not None and self.__use_remote_execution():
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 

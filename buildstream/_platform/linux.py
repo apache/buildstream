@@ -17,11 +17,11 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import os
 import subprocess
 
 from .. import _site
 from .. import utils
-from .._artifactcache.cascache import CASCache
 from .._message import Message, MessageType
 from ..sandbox import SandboxBwrap
 
@@ -30,17 +30,15 @@ from . import Platform
 
 class Linux(Platform):
 
-    def __init__(self, context):
+    def __init__(self):
 
-        super().__init__(context)
+        super().__init__()
+
+        self._uid = os.geteuid()
+        self._gid = os.getegid()
 
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
-        self._user_ns_available = self._check_user_ns_available(context)
-        self._artifact_cache = CASCache(context, enable_push=self._user_ns_available)
-
-    @property
-    def artifactcache(self):
-        return self._artifact_cache
+        self._user_ns_available = self._check_user_ns_available()
 
     def create_sandbox(self, *args, **kwargs):
         # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
@@ -48,10 +46,19 @@ class Linux(Platform):
         kwargs['die_with_parent_available'] = self._die_with_parent_available
         return SandboxBwrap(*args, **kwargs)
 
+    def check_sandbox_config(self, config):
+        if self._user_ns_available:
+            # User namespace support allows arbitrary build UID/GID settings.
+            return True
+        else:
+            # Without user namespace support, the UID/GID in the sandbox
+            # will match the host UID/GID.
+            return config.build_uid == self._uid and config.build_gid == self._gid
+
     ################################################
     #              Private Methods                 #
     ################################################
-    def _check_user_ns_available(self, context):
+    def _check_user_ns_available(self):
 
         # Here, lets check if bwrap is able to create user namespaces,
         # issue a warning if it's not available, and save the state
@@ -75,9 +82,4 @@ class Linux(Platform):
             return True
 
         else:
-            context.message(
-                Message(None, MessageType.WARN,
-                        "Unable to create user namespaces with bubblewrap, resorting to fallback",
-                        detail="Some builds may not function due to lack of uid / gid 0, " +
-                        "artifacts created will not be trusted for push purposes."))
             return False

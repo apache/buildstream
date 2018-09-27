@@ -38,7 +38,6 @@ from .._exceptions import BstError
 from .directory import Directory, VirtualDirectoryError
 from ._filebaseddirectory import FileBasedDirectory
 from ..utils import FileListResult, safe_copy, list_relative_paths
-from .._artifactcache.cascache import CASCache
 
 
 class IndexEntry():
@@ -80,7 +79,7 @@ class CasBasedDirectory(Directory):
         self.filename = filename
         self.common_name = common_name
         self.pb2_directory = remote_execution_pb2.Directory()
-        self.cas_cache = CASCache(context)
+        self.cas_cache = context.artifactcache
         if ref:
             with open(self.cas_cache.objpath(ref), 'rb') as f:
                 self.pb2_directory.ParseFromString(f.read())

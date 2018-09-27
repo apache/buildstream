@@ -29,7 +29,6 @@ from contextlib import contextmanager
 # Local imports
 from .resources import Resources, ResourceType
 from .jobs import CacheSizeJob, CleanupJob
-from .._platform import Platform
 
 
 # A decent return code for Scheduler.run()
@@ -348,8 +347,8 @@ class Scheduler():
     #       which will report the calculated cache size.
     #
     def _run_cleanup(self, cache_size):
-        platform = Platform.get_platform()
-        artifacts = platform.artifactcache
+        context = self.context
+        artifacts = context.artifactcache
 
         if not artifacts.has_quota_exceeded():
             return

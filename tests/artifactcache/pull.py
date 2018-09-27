@@ -6,7 +6,6 @@ import signal
 import pytest
 
 from buildstream import _yaml, _signals, utils
-from buildstream._artifactcache.cascache import CASCache
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -88,7 +87,7 @@ def test_pull(cli, tmpdir, datafiles):
         # Load the project and CAS cache
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
-        cas = CASCache(context)
+        cas = context.artifactcache
 
         # Assert that the element's artifact is **not** cached
         element = project.load_elements(['target.bst'], cas)[0]
@@ -130,7 +129,7 @@ def _test_pull(user_config_file, project_dir, artifact_dir,
     project.ensure_fully_loaded()
 
     # Create a local CAS cache handle
-    cas = CASCache(context)
+    cas = context.artifactcache
 
     # Load the target element
     element = project.load_elements([element_name], cas)[0]
@@ -191,7 +190,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Load the project and CAS cache
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
-        cas = CASCache(context)
+        cas = context.artifactcache
 
         # Assert that the element's artifact is cached
         element = project.load_elements(['target.bst'], cas)[0]
@@ -269,7 +268,7 @@ def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest
     project.ensure_fully_loaded()
 
     # Create a local CAS cache handle
-    cas = CASCache(context)
+    cas = context.artifactcache
 
     # Manually setup the CAS remote
     cas.setup_remotes(use_config=True)
@@ -304,7 +303,7 @@ def _test_pull_tree(user_config_file, project_dir, artifact_dir, artifact_digest
     project.ensure_fully_loaded()
 
     # Create a local CAS cache handle
-    cas = CASCache(context)
+    cas = context.artifactcache
 
     # Manually setup the CAS remote
     cas.setup_remotes(use_config=True)

@@ -29,17 +29,13 @@ class Platform():
     # Platform()
     #
     # A class to manage platform-specific details. Currently holds the
-    # sandbox factory, the artifact cache and staging operations, as
-    # well as platform helpers.
+    # sandbox factory as well as platform helpers.
     #
-    # Args:
-    #     context (context): The project context
-    #
-    def __init__(self, context):
-        self.context = context
+    def __init__(self):
+        pass
 
     @classmethod
-    def create_instance(cls, *args, **kwargs):
+    def _create_instance(cls):
         if sys.platform.startswith('linux'):
             backend = 'linux'
         else:
@@ -58,21 +54,13 @@ class Platform():
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
 
-        cls._instance = PlatformImpl(*args, **kwargs)
+        cls._instance = PlatformImpl()
 
     @classmethod
     def get_platform(cls):
         if not cls._instance:
-            raise PlatformError("Platform needs to be initialized first")
+            cls._create_instance()
         return cls._instance
-
-    ##################################################################
-    #                       Platform properties                      #
-    ##################################################################
-    @property
-    def artifactcache(self):
-        raise ImplError("Platform {platform} does not implement an artifactcache"
-                        .format(platform=type(self).__name__))
 
     ##################################################################
     #                        Sandbox functions                       #
@@ -91,4 +79,8 @@ class Platform():
     #
     def create_sandbox(self, *args, **kwargs):
         raise ImplError("Platform {platform} does not implement create_sandbox()"
+                        .format(platform=type(self).__name__))
+
+    def check_sandbox_config(self, config):
+        raise ImplError("Platform {platform} does not implement check_sandbox_config()"
                         .format(platform=type(self).__name__))
