@@ -27,6 +27,7 @@ from . import Sandbox
 from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.google.rpc import code_pb2
 from .._platform import Platform
 
 
@@ -207,14 +208,22 @@ class SandboxRemote(Sandbox):
 
         operation.response.Unpack(execution_response)
 
-        if execution_response.status.code != 0:
-            # A normal error during the build: the remote execution system
-            # has worked correctly but the command failed.
-            # execution_response.error also contains 'message' (str) and
-            # 'details' (iterator of Any) which we ignore at the moment.
-            return execution_response.status.code
+        if execution_response.status.code != code_pb2.OK:
+            # An unexpected error during execution: the remote execution
+            # system failed at processing the execution request.
+            if execution_response.status.message:
+                raise SandboxError(execution_response.status.message)
+            else:
+                raise SandboxError("Remote server failed at executing the build request.")
 
         action_result = execution_response.result
+
+        if action_result.exit_code != 0:
+            # A normal error during the build: the remote execution system
+            # has worked correctly but the command failed.
+            # action_result.stdout and action_result.stderr also contains
+            # build command outputs which we ignore at the moment.
+            return action_result.exit_code
 
         self.process_job_output(action_result.output_directories, action_result.output_files)
 
