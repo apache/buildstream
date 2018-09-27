@@ -87,6 +87,12 @@ class CASCache(ArtifactCache):
     #     Implementation of abstract methods       #
     ################################################
 
+    def preflight(self):
+        if (not os.path.isdir(os.path.join(self.casdir, 'refs', 'heads')) or
+            not os.path.isdir(os.path.join(self.casdir, 'objects'))):
+            raise ArtifactError("CAS repository check failed for '{}'"
+                                .format(self.casdir))
+
     def contains(self, element, key):
         refpath = self._refpath(self.get_artifact_fullname(element, key))
 

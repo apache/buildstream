@@ -378,6 +378,13 @@ class ArtifactCache():
     # Abstract methods for subclasses to implement #
     ################################################
 
+    # preflight():
+    #
+    # Preflight check.
+    #
+    def preflight(self):
+        pass
+
     # update_atime()
     #
     # Update the atime of an artifact.
