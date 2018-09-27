@@ -73,12 +73,12 @@ class YamlCache():
     # Returns:
     #    (decorated dict): The parsed yaml from the cache, or None if the file isn't in the cache.
     def get(self, project, filepath, key):
-        assert filepath.startswith(project.directory)
-        relative_filepath = os.path.relpath(filepath, project.directory)
+        cache_path = self._get_filepath(project, filepath)
+        project_name = project.name if project else ""
         try:
-            project_cache = self._project_caches[project.name]
+            project_cache = self._project_caches[project_name]
             try:
-                cachedyaml = project_cache.elements[relative_filepath]
+                cachedyaml = project_cache.elements[cache_path]
                 if cachedyaml._key == key:
                     # We've unpickled the YamlCache, but not the specific file
                     if cachedyaml._contents is None:
@@ -100,14 +100,14 @@ class YamlCache():
     #               and any relevant metadata passed in.
     #    value (decorated dict): The data to put into the cache.
     def put(self, project, filepath, key, value):
-        assert filepath.startswith(project.directory)
-        relative_filepath = os.path.relpath(filepath, project.directory)
+        cache_path = self._get_filepath(project, filepath)
+        project_name = project.name if project else ""
         try:
-            project_cache = self._project_caches[project.name]
+            project_cache = self._project_caches[project_name]
         except KeyError:
-            project_cache = self._project_caches[project.name] = CachedProject({})
+            project_cache = self._project_caches[project_name] = CachedProject({})
 
-        project_cache.elements[relative_filepath] = CachedYaml(key, value)
+        project_cache.elements[cache_path] = CachedYaml(key, value)
 
     # Checks whether a file is cached
     # Args:
@@ -117,15 +117,23 @@ class YamlCache():
     # Returns:
     #    (bool): Whether the file is cached
     def is_cached(self, project, filepath):
-        assert filepath.startswith(project.directory)
-        relative_filepath = os.path.relpath(filepath, project.directory)
+        cache_path = self._get_filepath(project, filepath)
+        project_name = project.name if project else ""
         try:
-            project_cache = self._project_caches[project.name]
-            if relative_filepath in project_cache.elements:
+            project_cache = self._project_caches[project_name]
+            if cache_path in project_cache.elements:
                 return True
         except KeyError:
             pass
         return False
+
+    def _get_filepath(self, project, full_path):
+        if project:
+            assert full_path.startswith(project.directory)
+            filepath = os.path.relpath(full_path, project.directory)
+        else:
+            filepath = full_path
+        return full_path
 
     # Return an instance of the YamlCache which writes to disk when it leaves scope.
     #
