@@ -171,8 +171,13 @@ class YamlCache():
     # Retrieves a path to the yaml cache file.
     @staticmethod
     def _get_cache_file(context):
-        toplevel_project = context.get_toplevel_project()
-        return os.path.join(toplevel_project.directory, ".bst", YAML_CACHE_FILENAME)
+        try:
+            toplevel_project = context.get_toplevel_project()
+            top_dir = toplevel_project.directory
+        except IndexError:
+            # Context has no projects, fall back to current directory
+            top_dir = os.getcwd()
+        return os.path.join(top_dir, ".bst", YAML_CACHE_FILENAME)
 
 
 CachedProject = namedtuple('CachedProject', ['elements'])
