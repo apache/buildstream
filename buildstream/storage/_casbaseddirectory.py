@@ -526,7 +526,13 @@ class CasBasedDirectory(Directory):
                 filelist.append(k)
         return filelist
 
-    def list_relative_paths(self):
+    def _contains_only_directories(self):
+        for (k, v) in self.index.items():
+            if not isinstance(v.buildstream_object, CasBasedDirectory):
+                return False
+        return True
+
+    def list_relative_paths(self, relpath=""):
         """Provide a list of all relative paths.
 
         NOTE: This list is not in the same order as utils.list_relative_paths.
@@ -534,13 +540,25 @@ class CasBasedDirectory(Directory):
         Return value: List(str) - list of all paths
         """
 
-        filelist = []
-        for (k, v) in self.index.items():
-            if isinstance(v.buildstream_object, CasBasedDirectory):
-                filelist.extend([k + os.path.sep + x for x in v.buildstream_object.list_relative_paths()])
-            elif isinstance(v.pb_object, remote_execution_pb2.FileNode):
-                filelist.append(k)
-        return filelist
+        print("Running list_relative_paths on relpath {}".format(relpath))
+        symlink_list = filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.SymlinkNode), self.index.items())
+        file_list = filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.FileNode), self.index.items())
+        print("Running list_relative_paths on relpath {}. files={}, symlinks={}".format(relpath, [f[0] for f in file_list], [s[0] for s in symlink_list]))
+
+        for (k, v) in sorted(symlink_list):
+            print("Yielding symlink {}".format(k))
+            yield os.path.join(relpath, k)
+        for (k, v) in sorted(file_list):
+            print("Yielding file {}".format(k))
+            yield os.path.join(relpath, k)
+        else:
+            print("Yielding empty directory name {}".format(relpath))
+            yield relpath
+
+        directory_list = filter(lambda i: isinstance(i[1].buildstream_object, CasBasedDirectory), self.index.items())
+        for (k, v) in sorted(directory_list):
+            print("Yielding from subdirectory name {}".format(k))
+            yield from v.buildstream_object.list_relative_paths(relpath=os.path.join(relpath, k))
 
     def recalculate_hash(self):
         """ Recalcuates the hash for this directory and store the results in
