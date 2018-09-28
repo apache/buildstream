@@ -1683,8 +1683,8 @@ class Element(Plugin):
                             "unable to collect artifact contents"
                             .format(collect))
 
-            # Finally cleanup the build dir
-            cleanup_rootdir()
+                    # Finally cleanup the build dir
+                    cleanup_rootdir()
 
         return artifact_size
 
