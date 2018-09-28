@@ -831,7 +831,17 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
                 result.ignored.append(path)
                 continue
 
+            if not file_stat.st_mode & stat.S_IRUSR:
+                os.chmod(srcpath, file_stat.st_mode | stat.S_IRUSR)
+
             actionfunc(srcpath, destpath, result=result)
+
+            if not file_stat.st_mode & stat.S_IRUSR:
+                # actionfunc would normally preserve permissions, but
+                # if we changed them before copying, we need to reset
+                # the permissions on both.
+                os.chmod(destpath, file_stat.st_mode)
+                os.chmod(srcpath, file_stat.st_mode)
 
         elif stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
             # Block or character device. Put contents of st_dev in a mknod.
