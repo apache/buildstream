@@ -200,7 +200,6 @@ def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=
         with open(filename) as f:
             contents = f.read()
         if yaml_cache:
-            assert project
             key = yaml_cache.calculate_key(contents, copy_tree)
             data = yaml_cache.get(project, filename, key)
 
@@ -208,7 +207,6 @@ def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=
             data = load_data(contents, file, copy_tree=copy_tree)
 
         if yaml_cache:
-            assert project
             yaml_cache.put(project, filename, key, data)
 
         return data
