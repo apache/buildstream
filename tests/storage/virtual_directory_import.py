@@ -3,6 +3,7 @@ import pytest
 from tests.testutils import cli
 
 from buildstream.storage import CasBasedDirectory
+from buildstream.storage import FileBasedDirectory
 
 
 class FakeContext():
@@ -57,10 +58,17 @@ def file_contents_are(path, contents):
     return file_contents(path) == contents
 
 
-def create_new_vdir(root_number, fake_context, tmpdir):
+def create_new_casdir(root_number, fake_context, tmpdir):
     d = CasBasedDirectory(fake_context)
     d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
     assert d.ref.hash != empty_hash_ref
+    return d
+
+def create_new_filedir(root_number, tmpdir):
+    root = os.path.join(tmpdir, "vdir")
+    os.makedirs(root)
+    d = FileBasedDirectory(root)
+    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
     return d
 
 
@@ -110,8 +118,8 @@ def test_cas_import(cli, tmpdir, original, overlay):
     # Create some fake content
     generate_import_roots(tmpdir)
 
-    d = create_new_vdir(original, fake_context, tmpdir)
-    d2 = create_new_vdir(overlay, fake_context, tmpdir)
+    d = create_new_casdir(original, fake_context, tmpdir)
+    d2 = create_new_casdir(overlay, fake_context, tmpdir)
     d.import_files(d2)
     d.export_files(os.path.join(tmpdir, "output"))
 
@@ -135,3 +143,23 @@ def test_cas_import(cli, tmpdir, original, overlay):
         elif typename == 'D':
             # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
             assert os.path.isdir(realpath)
+
+
+@pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
+def test_directory_listing(cli, tmpdir, root):
+    fake_context = FakeContext()
+    fake_context.artifactdir = tmpdir
+    # Create some fake content
+    generate_import_roots(tmpdir)
+
+    d = create_new_filedir(root, tmpdir)
+    filelist = list(d.list_relative_paths())
+
+    d2 = create_new_casdir(root, fake_context, tmpdir)
+    filelist2 = list(d2.list_relative_paths())
+
+    print("filelist for root {} via FileBasedDirectory:".format(root))
+    print("{}".format(filelist))
+    print("filelist for root {} via CasBasedDirectory:".format(root))
+    print("{}".format(filelist2))
+    assert(filelist==filelist2)
