@@ -13,20 +13,14 @@ They begin with a basic introduction to BuildStream, background
 information on basic concepts, and a guide to the BuildStream command line interface.
 Later sections provide detailed information on BuildStream internals.
 
+If you are looking for information about how to install BuildStream,
+please refer to the `BuildStream website <https://buildstream.build>`_.
 
 .. toctree::
    :maxdepth: 2
 
    main_about
-   main_install
    main_using
    main_core
    CONTRIBUTING
 
-
-Resources
----------
-* GitLab repository: https://gitlab.com/BuildStream/buildstream
-* Bug Tracking: https://gitlab.com/BuildStream/buildstream/issues
-* Mailing list: https://mail.gnome.org/mailman/listinfo/buildstream-list
-* IRC Channel: irc://irc.gnome.org/#buildstream
