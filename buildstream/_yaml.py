@@ -467,7 +467,7 @@ def node_get_project_path(node, key, project_dir, *,
                         "{}: Specified path '{}' does not exist"
                         .format(provenance, path_str))
 
-    is_inside = project_dir_path in full_resolved_path.parents or (
+    is_inside = project_dir_path.resolve() in full_resolved_path.parents or (
         full_resolved_path == project_dir_path)
 
     if path.is_absolute() or not is_inside:
