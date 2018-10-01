@@ -41,10 +41,11 @@ class Darwin(Platform):
         return True
 
     def get_cpu_count(self, cap=None):
-        if cap < os.cpu_count():
-            return cap
+        cpu_count = os.cpu_count()
+        if cap is None:
+            return cpu_count
         else:
-            return os.cpu_count()
+            return min(cpu_count, cap)
 
     def set_resource_limits(self, soft_limit=OPEN_MAX, hard_limit=None):
         super().set_resource_limits(soft_limit)
