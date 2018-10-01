@@ -55,6 +55,10 @@ class Linux(Platform):
             return SandboxBwrap(*args, **kwargs)
 
     def check_sandbox_config(self, config):
+        if not self._local_sandbox_available():
+            # Accept all sandbox configs as it's irrelevant with the dummy sandbox (no Sandbox.run).
+            return True
+
         if self._user_ns_available:
             # User namespace support allows arbitrary build UID/GID settings.
             return True
