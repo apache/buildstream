@@ -541,13 +541,20 @@ class Stream():
     #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
     #    custom_dir (str): Custom location to create a workspace or false to use default location.
+    #    no_cache (bool): Whether to not include the cached buildtree
     #
     def workspace_open(self, targets, *,
                        no_checkout,
                        track_first,
                        force,
-                       custom_dir):
+                       custom_dir,
+                       no_cache):
+
         # This function is a little funny but it is trying to be as atomic as possible.
+
+        # Set no_cache if the global user conf workspacebuildtrees is false
+        if not self._context.workspace_buildtrees:
+            no_cache = True
 
         if track_first:
             track_targets = targets
@@ -606,7 +613,7 @@ class Stream():
             directory = os.path.abspath(custom_dir)
             expanded_directories = [directory, ]
         else:
-            # If this fails it is a bug in what ever calls this, usually cli.py and so can not be tested for via the
+            # If this fails it is a bug in whatever calls this, usually cli.py and so can not be tested for via the
             # run bst test mechanism.
             assert len(elements) == len(expanded_directories)
 
@@ -621,11 +628,25 @@ class Stream():
                                       .format(target.name, directory), reason='bad-directory')
 
         # So far this function has tried to catch as many issues as possible with out making any changes
-        # Now it dose the bits that can not be made atomic.
+        # Now it does the bits that can not be made atomic.
         targetGenerator = zip(elements, expanded_directories)
         for target, directory in targetGenerator:
             self._message(MessageType.INFO, "Creating workspace for element {}"
                           .format(target.name))
+
+            # Check if given target has a buildtree artifact cached locally
+            buildtree = None
+            if target._cached():
+                buildtree = target._cached_buildtree()
+
+            # If we're running in the default state, make the user aware of buildtree usage
+            if not no_cache and not no_checkout:
+                if buildtree:
+                    self._message(MessageType.INFO, "{} buildtree artifact is available,"
+                                  " workspace will be opened with it".format(target.name))
+                else:
+                    self._message(MessageType.WARN, "{} buildtree artifact not available,"
+                                  " workspace will be opened with source checkout".format(target.name))
 
             workspace = workspaces.get_workspace(target._get_full_name())
             if workspace:
@@ -641,7 +662,20 @@ class Stream():
                     todo_elements = "\nDid not try to create workspaces for " + todo_elements
                 raise StreamError("Failed to create workspace directory: {}".format(e) + todo_elements) from e
 
-            workspaces.create_workspace(target, directory, checkout=not no_checkout)
+            # Handle opening workspace with buildtree included
+            if (buildtree and not no_cache) and not no_checkout:
+                workspaces.create_workspace(target, directory, checkout=not no_checkout, cached_build=buildtree)
+                with target.timed_activity("Staging buildtree to {}".format(directory)):
+                    target._open_workspace(buildtree=buildtree)
+            else:
+                workspaces.create_workspace(target, directory, checkout=not no_checkout)
+                if (not buildtree or no_cache) and not no_checkout:
+                    with target.timed_activity("Staging sources to {}".format(directory)):
+                        target._open_workspace()
+
+            # Saving the workspace once it is set up means that if the next workspace fails to be created before
+            # the configuration gets saved. The successfully created workspace still gets saved.
+            workspaces.save_config()
             self._message(MessageType.INFO, "Created a workspace for element: {}"
                           .format(target._get_full_name()))
 
@@ -724,7 +758,25 @@ class Stream():
                                       .format(workspace_path, e)) from e
 
             workspaces.delete_workspace(element._get_full_name())
-            workspaces.create_workspace(element, workspace_path, checkout=True)
+
+            # Create the workspace, ensuring the original optional cached build state is preserved if
+            # possible.
+            buildtree = False
+            if workspace.cached_build and element._cached():
+                if self._artifacts.contains_subdir_artifact(element, element._get_cache_key(), 'buildtree'):
+                    buildtree = True
+
+            # Warn the user if the workspace cannot be opened with the original cached build state
+            if workspace.cached_build and not buildtree:
+                self._message(MessageType.WARN, "{} original buildtree artifact not available,"
+                              " workspace will be opened with source checkout".format(element.name))
+
+            # If opening the cached build, set checkout to false
+            workspaces.create_workspace(element, workspace_path,
+                                        checkout=not buildtree, cached_build=buildtree)
+
+            with element.timed_activity("Staging to {}".format(workspace_path)):
+                element._open_workspace(buildtree=buildtree)
 
             self._message(MessageType.INFO,
                           "Reset workspace for {} at: {}".format(element.name,

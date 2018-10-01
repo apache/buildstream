@@ -24,7 +24,7 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
 
 
-BST_WORKSPACE_FORMAT_VERSION = 3
+BST_WORKSPACE_FORMAT_VERSION = 4
 BST_WORKSPACE_PROJECT_FORMAT_VERSION = 1
 WORKSPACE_PROJECT_FILE = ".bstproject.yaml"
 
@@ -239,9 +239,11 @@ class WorkspaceProjectCache():
 #    running_files (dict): A dict mapping dependency elements to files
 #                          changed between failed builds. Should be
 #                          made obsolete with failed build artifacts.
+#    cached_build (bool): If the workspace is staging the cached build artifact
 #
 class Workspace():
-    def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False, running_files=None):
+    def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False,
+                 running_files=None, cached_build=False):
         self.prepared = prepared
         self.last_successful = last_successful
         self._path = path
@@ -249,6 +251,7 @@ class Workspace():
 
         self._toplevel_project = toplevel_project
         self._key = None
+        self.cached_build = cached_build
 
     # to_dict()
     #
@@ -261,7 +264,8 @@ class Workspace():
         ret = {
             'prepared': self.prepared,
             'path': self._path,
-            'running_files': self.running_files
+            'running_files': self.running_files,
+            'cached_build': self.cached_build
         }
         if self.last_successful is not None:
             ret["last_successful"] = self.last_successful
@@ -429,8 +433,9 @@ class Workspaces():
     #    target (Element) - The element to create a workspace for
     #    path (str) - The path in which the workspace should be kept
     #    checkout (bool): Whether to check-out the element's sources into the directory
+    #    cached_build (bool) - If the workspace is staging the cached build artifact
     #
-    def create_workspace(self, target, path, *, checkout):
+    def create_workspace(self, target, path, *, checkout, cached_build=False):
         element_name = target._get_full_name()
         project_dir = self._toplevel_project.directory
         if path.startswith(project_dir):
@@ -438,7 +443,8 @@ class Workspaces():
         else:
             workspace_path = path
 
-        self._workspaces[element_name] = Workspace(self._toplevel_project, path=workspace_path)
+        self._workspaces[element_name] = Workspace(self._toplevel_project, path=workspace_path,
+                                                   cached_build=cached_build)
 
         if checkout:
             with target.timed_activity("Staging sources to {}".format(path)):
@@ -627,6 +633,7 @@ class Workspaces():
             'path': _yaml.node_get(node, str, 'path'),
             'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
             'running_files': _yaml.node_get(node, dict, 'running_files', default_value=None),
+            'cached_build': _yaml.node_get(node, bool, 'cached_build', default_value=False)
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
 

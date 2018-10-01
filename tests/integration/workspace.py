@@ -278,3 +278,39 @@ def test_incremental_configure_commands_run_only_once(cli, tmpdir, datafiles):
     res = cli.run(project=project, args=['build', element_name])
     res.assert_success()
     assert not os.path.exists(os.path.join(workspace, 'prepared-again'))
+
+
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+def test_workspace_contains_buildtree(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_name = 'autotools/amhello.bst'
+
+    # Ensure we're not using the shared artifact cache
+    cli.configure({
+        'artifactdir': os.path.join(str(tmpdir), 'artifacts')
+    })
+
+    # First open the workspace
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
+    res.assert_success()
+
+    # Check that by default the buildtree wasn't staged as not yet available in the cache
+    assert not os.path.exists(os.path.join(workspace, 'src', 'hello'))
+
+    # Close the workspace, removing the dir
+    res = cli.run(project=project, args=['workspace', 'close', '--remove-dir', element_name])
+    res.assert_success()
+
+    # Build the element, so we have it cached along with the buildtreee
+    res = cli.run(project=project, args=['build', element_name])
+    res.assert_success()
+
+    # Open up the workspace, as the buildtree is cached by default it should open with the buildtree
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
+    res.assert_success()
+
+    # Check that the buildtree was staged, by asserting output of the build exists in the dir
+    assert os.path.exists(os.path.join(workspace, 'src', 'hello'))

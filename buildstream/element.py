@@ -1909,7 +1909,10 @@ class Element(Plugin):
     # This requires that a workspace already be created in
     # the workspaces metadata first.
     #
-    def _open_workspace(self):
+    # Args:
+    #    buildtree (bool): Whether to open workspace with artifact buildtree
+    #
+    def _open_workspace(self, buildtree=False):
         context = self._get_context()
         workspace = self._get_workspace()
         assert workspace is not None
@@ -1922,11 +1925,19 @@ class Element(Plugin):
         # files in the target directory actually works without any
         # additional support from Source implementations.
         #
+
         os.makedirs(context.builddir, exist_ok=True)
         with utils._tempdir(dir=context.builddir, prefix='workspace-{}'
                             .format(self.normal_name)) as temp:
-            for source in self.sources():
-                source._init_workspace(temp)
+
+            # Checkout cached buildtree, augment with source plugin if applicable
+            if buildtree:
+                self.__artifacts.checkout_artifact_subdir(self, self._get_cache_key(), 'buildtree', temp)
+                for source in self.sources():
+                    source._init_cached_build_workspace(temp)
+            else:
+                for source in self.sources():
+                    source._init_workspace(temp)
 
             # Now hardlink the files into the workspace target.
             utils.link_files(temp, workspace.get_absolute_path())

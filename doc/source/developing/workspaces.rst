@@ -24,9 +24,32 @@ Suppose we now want to alter the functionality of the *hello* command. We can
 make changes to the source code of Buildstream elements by making use of
 BuildStream's workspace command.
 
+Utilising cached buildtrees
+---------------------------
+ When a BuildStream build element artifact is created and cached, a snapshot of
+ the build directory after the build commands have completed is included in the
+ artifact. This `build tree` can be considered an intermediary state of element,
+ where the source is present along with any output created during the build
+ execution.
+
+ By default when opening a workspace, bst will attempt to stage the build tree
+ into the workspace if it's available in the local cache. If the respective
+ build tree is not present in the cache (element not cached, partially cached or
+ is a non build element) then the source will be staged as is. The default
+ behaviour to attempt to use the build tree can be overriden with specific bst
+ workspace open option of `--no-cache`, or via setting user configuration option
+ `workspacebuildtrees: False`
+
 
 Opening a workspace
 -------------------
+.. note::
+
+    This example presumes you built the hello.bst during
+    :ref:`running commands <tutorial_running_commands>`
+    if not, please start by building it.
+
+
 First we need to open a workspace, we can do this by running
 
 .. raw:: html
@@ -92,6 +115,15 @@ Alternatively, if we wish to discard the changes we can use
    :file: ../sessions/developing-reset-workspace.html
 
 This resets the workspace to its original state.
+
+.. note::
+
+    bst reset will attempt to open the workspace in
+    the condition in which it was originally staged,
+    i.e with or without consuming the element build tree.
+    If it was originally staged with a cached build tree
+    and there's no longer one available, the source will
+    be staged as is.
 
 To discard the workspace completely we can do:
 

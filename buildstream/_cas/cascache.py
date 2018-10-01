@@ -589,6 +589,21 @@ class CASCache():
         reachable = set()
         self._reachable_refs_dir(reachable, tree, update_mtime=True)
 
+    # checkout_artifact_subdir():
+    #
+    # Checkout given artifact subdir into provided directory
+    #
+    # Args:
+    #     ref (str): The ref to check
+    #     subdir (str): The subdir to checkout
+    #     tmpdir (str): The dir to place the subdir content
+    #
+    def checkout_artifact_subdir(self, ref, subdir, tmpdir):
+        tree = self.resolve_ref(ref)
+        # This assumes that the subdir digest is present in the element tree
+        subdirdigest = self._get_subdir(tree, subdir)
+        self._checkout(tmpdir, subdirdigest)
+
     ################################################
     #             Local Private Methods            #
     ################################################

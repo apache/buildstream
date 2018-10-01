@@ -465,6 +465,24 @@ class Source(Plugin):
         """
         self.stage(directory)
 
+    def init_cached_build_workspace(self, directory):
+        """Initialises a new cached build workspace
+
+        Args:
+           directory (str): Path of the workspace to init
+
+        Raises:
+           :class:`.SourceError`
+
+        Implementors overriding this method should assume that *directory*
+        already exists.
+
+        Implementors should raise :class:`.SourceError` when encountering
+        some system error.
+        """
+        # Allow a non implementation
+        return None
+
     def get_source_fetchers(self):
         """Get the objects that are used for fetching
 
@@ -716,6 +734,12 @@ class Source(Plugin):
         directory = self.__ensure_directory(directory)
 
         self.init_workspace(directory)
+
+    # Wrapper for init_cached_build_workspace()
+    def _init_cached_build_workspace(self, directory):
+        directory = self.__ensure_directory(directory)
+
+        self.init_cached_build_workspace(directory)
 
     # _get_unique_key():
     #

@@ -93,18 +93,18 @@ class WorkspaceCreater():
                                 element_name))
         return element_name, element_path, workspace_dir
 
-    def create_workspace_elements(self, kinds, track, suffixs=None, workspace_dir_usr=None,
+    def create_workspace_elements(self, kinds, track, suffixes=None, workspace_dir_usr=None,
                                   element_attrs=None):
 
         element_tuples = []
 
-        if suffixs is None:
-            suffixs = ['', ] * len(kinds)
+        if suffixes is None:
+            suffixes = ['', ] * len(kinds)
         else:
-            if len(suffixs) != len(kinds):
+            if len(suffixes) != len(kinds):
                 raise "terable error"
 
-        for suffix, kind in zip(suffixs, kinds):
+        for suffix, kind in zip(suffixes, kinds):
             element_name, element_path, workspace_dir = \
                 self.create_workspace_element(kind, track, suffix, workspace_dir_usr,
                                               element_attrs)
@@ -121,10 +121,10 @@ class WorkspaceCreater():
 
         return element_tuples
 
-    def open_workspaces(self, kinds, track, suffixs=None, workspace_dir=None,
-                        element_attrs=None, no_checkout=False):
+    def open_workspaces(self, kinds, track, suffixes=None, workspace_dir=None,
+                        element_attrs=None, no_checkout=False, no_cache=False):
 
-        element_tuples = self.create_workspace_elements(kinds, track, suffixs, workspace_dir,
+        element_tuples = self.create_workspace_elements(kinds, track, suffixes, workspace_dir,
                                                         element_attrs)
         os.makedirs(self.workspace_cmd, exist_ok=True)
 
@@ -135,12 +135,15 @@ class WorkspaceCreater():
             args.append('--track')
         if no_checkout:
             args.append('--no-checkout')
+        if no_cache:
+            args.append('--no-cache')
         if workspace_dir is not None:
             assert len(element_tuples) == 1, "test logic error"
             _, workspace_dir = element_tuples[0]
             args.extend(['--directory', workspace_dir])
-
+        print("element_tuples", element_tuples)
         args.extend([element_name for element_name, workspace_dir_suffix in element_tuples])
+        print("args", args)
         result = self.cli.run(cwd=self.workspace_cmd, project=self.project_path, args=args)
 
         result.assert_success()
@@ -157,14 +160,14 @@ class WorkspaceCreater():
                 filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
                 assert os.path.exists(filename)
 
-        return element_tuples
+        return element_tuples, result
 
 
 def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None,
-                   project_path=None, element_attrs=None, no_checkout=False):
+                   project_path=None, element_attrs=None, no_checkout=False, no_cache=False):
     workspace_object = WorkspaceCreater(cli, tmpdir, datafiles, project_path)
-    workspaces = workspace_object.open_workspaces((kind, ), track, (suffix, ), workspace_dir,
-                                                  element_attrs, no_checkout)
+    workspaces, _ = workspace_object.open_workspaces((kind, ), track, (suffix, ), workspace_dir,
+                                                     element_attrs, no_checkout, no_cache)
     assert len(workspaces) == 1
     element_name, workspace = workspaces[0]
     return element_name, workspace_object.project_path, workspace
@@ -198,7 +201,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
 def test_open_multi(cli, tmpdir, datafiles):
 
     workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
-    workspaces = workspace_object.open_workspaces(repo_kinds, False)
+    workspaces, _ = workspace_object.open_workspaces(repo_kinds, False)
 
     for (elname, workspace), kind in zip(workspaces, repo_kinds):
         assert kind in elname
@@ -832,7 +835,9 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             "alpha.bst": {
                 "prepared": False,
                 "path": "/workspaces/bravo",
-                "running_files": {}
+                "running_files": {},
+                "cached_build": False
+
             }
         }
     }),
@@ -847,7 +852,8 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             "alpha.bst": {
                 "prepared": False,
                 "path": "/workspaces/bravo",
-                "running_files": {}
+                "running_files": {},
+                "cached_build": False
             }
         }
     }),
@@ -865,7 +871,8 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             "alpha.bst": {
                 "prepared": False,
                 "path": "/workspaces/bravo",
-                "running_files": {}
+                "running_files": {},
+                "cached_build": False
             }
         }
     }),
@@ -890,7 +897,8 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
                 "last_successful": "some_key",
                 "running_files": {
                     "beta.bst": ["some_file"]
-                }
+                },
+                "cached_build": False
             }
         }
     }),
@@ -910,7 +918,30 @@ def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
             "alpha.bst": {
                 "prepared": True,
                 "path": "/workspaces/bravo",
-                "running_files": {}
+                "running_files": {},
+                "cached_build": False
+            }
+        }
+    }),
+    # Test loading version 4
+    ({
+        "format-version": 4,
+        "workspaces": {
+            "alpha.bst": {
+                "prepared": False,
+                "path": "/workspaces/bravo",
+                "running_files": {},
+                "cached_build": True
+            }
+        }
+    }, {
+        "format-version": BST_WORKSPACE_FORMAT_VERSION,
+        "workspaces": {
+            "alpha.bst": {
+                "prepared": False,
+                "path": "/workspaces/bravo",
+                "running_files": {},
+                "cached_build": True
             }
         }
     })
@@ -1236,3 +1267,80 @@ def test_external_list(cli, datafiles, tmpdir_factory):
 
     result = cli.run(project=project, args=['-C', workspace, 'workspace', 'list'])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_nocache_open_messages(cli, tmpdir, datafiles):
+
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    _, result = workspace_object.open_workspaces(('git', ), False)
+
+    # cli default WARN for source dropback possibility when no-cache flag is not passed
+    assert "WARNING: Workspace will be opened without the cached buildtree if not cached locally" in result.output
+
+    # cli WARN for source dropback happening when no-cache flag not given, but buildtree not available
+    assert "workspace will be opened with source checkout" in result.stderr
+
+    # cli default WARN for source dropback possibilty not given when no-cache flag is passed
+    tmpdir = os.path.join(str(tmpdir), "2")
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    _, result = workspace_object.open_workspaces(('git', ), False, suffixes='1', no_cache=True)
+
+    assert "WARNING: Workspace will be opened without the cached buildtree if not cached locally" not in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_nocache_reset_messages(cli, tmpdir, datafiles):
+
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    workspaces, result = workspace_object.open_workspaces(('git', ), False)
+    element_name, workspace = workspaces[0]
+    project = workspace_object.project_path
+
+    # Modify workspace, without building so the artifact is not cached
+    shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
+    os.makedirs(os.path.join(workspace, 'etc'))
+    with open(os.path.join(workspace, 'etc', 'pony.conf'), 'w') as f:
+        f.write("PONY='pink'")
+
+    # Now reset the open workspace, this should have the
+    # effect of reverting our changes to the original source, as it
+    # was not originally opened with a cached buildtree and as such
+    # should not notify the user
+    result = cli.run(cwd=workspace_object.workspace_cmd, project=project, args=[
+        'workspace', 'reset', element_name
+    ])
+    result.assert_success()
+    assert "original buildtree artifact not available" not in result.output
+    assert os.path.exists(os.path.join(workspace, 'usr', 'bin', 'hello'))
+    assert not os.path.exists(os.path.join(workspace, 'etc', 'pony.conf'))
+
+    # Close the workspace
+    result = cli.run(cwd=workspace_object.workspace_cmd, project=project, args=[
+        'workspace', 'close', '--remove-dir', element_name
+    ])
+    result.assert_success()
+
+    # Build the workspace so we have a cached buildtree artifact for the element
+    assert cli.get_element_state(project, element_name) == 'buildable'
+    result = cli.run(project=project, args=['build', element_name])
+    result.assert_success()
+
+    # Opening the workspace after a build should lead to the cached buildtree being
+    # staged by default
+    result = cli.run(cwd=workspace_object.workspace_cmd, project=project, args=[
+        'workspace', 'open', element_name
+    ])
+    result.assert_success()
+
+    result = cli.run(cwd=workspace_object.workspace_cmd, project=project, args=[
+        'workspace', 'list'
+    ])
+    result.assert_success()
+    # Now reset the workspace and ensure that a warning is not given about the artifact
+    # buildtree not being available
+    result = cli.run(cwd=workspace_object.workspace_cmd, project=project, args=[
+        'workspace', 'reset', element_name
+    ])
+    result.assert_success()
+    assert "original buildtree artifact not available" not in result.output

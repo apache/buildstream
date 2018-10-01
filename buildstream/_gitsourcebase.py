@@ -223,6 +223,31 @@ class GitMirror(SourceFetcher):
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
 
+    def init_cached_build_workspace(self, directory):
+        fullpath = os.path.join(directory, self.path)
+        url = self.source.translate_url(self.url)
+
+        self.source.call([self.source.host_git, 'init', fullpath],
+                         fail="Failed to init git in directory: {}".format(fullpath),
+                         fail_temporarily=True,
+                         cwd=fullpath)
+
+        self.source.call([self.source.host_git, 'fetch', self.mirror],
+                         fail='Failed to fetch from local mirror "{}"'.format(self.mirror),
+                         cwd=fullpath)
+
+        self.source.call([self.source.host_git, 'remote', 'add', 'origin', url],
+                         fail='Failed to add remote origin "{}"'.format(url),
+                         cwd=fullpath)
+
+        self.source.call([self.source.host_git, 'update-ref', '--no-deref', 'HEAD', self.ref],
+                         fail='Failed update HEAD to ref "{}"'.format(self.ref),
+                         cwd=fullpath)
+
+        self.source.call([self.source.host_git, 'read-tree', 'HEAD'],
+                         fail='Failed to read HEAD into index',
+                         cwd=fullpath)
+
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
         modules = "{}:{}".format(self.ref, GIT_MODULES)
@@ -521,6 +546,14 @@ class _GitSourceBase(Source):
             self.mirror.init_workspace(directory)
             for mirror in self.submodules:
                 mirror.init_workspace(directory)
+
+    def init_cached_build_workspace(self, directory):
+        self._refresh_submodules()
+
+        with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
+            self.mirror.init_cached_build_workspace(directory)
+            for mirror in self.submodules:
+                mirror.init_cached_build_workspace(directory)
 
     def stage(self, directory):
 

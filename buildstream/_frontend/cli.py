@@ -773,7 +773,7 @@ def workspace():
 ##################################################################
 @workspace.command(name='open', short_help="Open a new workspace")
 @click.option('--no-checkout', default=False, is_flag=True,
-              help="Do not checkout the source, only link to the given directory")
+              help="Do not checkout the source or cached buildtree, only link to the given directory")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="The workspace will be created even if the directory in which it will be created is not empty " +
               "or if a workspace for that element already exists")
@@ -782,16 +782,25 @@ def workspace():
 @click.option('--directory', type=click.Path(file_okay=False), default=None,
               help="Only for use when a single Element is given: Set the directory to use to create the workspace")
 @click.argument('elements', nargs=-1, type=click.Path(readable=False), required=True)
+@click.option('--no-cache', default=False, is_flag=True,
+              help="Do not checkout the cached buildtree")
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track_, directory, elements):
-    """Open a workspace for manual source modification"""
+def workspace_open(app, no_checkout, force, track_, directory, elements, no_cache):
+
+    """Open a workspace for manual source modification, the elements buildtree
+    will be provided if available in the local artifact cache.
+    """
+
+    if not no_cache and not no_checkout:
+        click.echo("WARNING: Workspace will be opened without the cached buildtree if not cached locally")
 
     with app.initialized():
         app.stream.workspace_open(elements,
                                   no_checkout=no_checkout,
                                   track_first=track_,
                                   force=force,
-                                  custom_dir=directory)
+                                  custom_dir=directory,
+                                  no_cache=no_cache)
 
 
 ##################################################################

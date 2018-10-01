@@ -855,6 +855,20 @@ class ArtifactCache():
 
         self.cas.link_ref(oldref, newref)
 
+    # checkout_artifact_subdir()
+    #
+    # Checkout given artifact subdir into provided directory
+    #
+    # Args:
+    #     element (Element): The Element
+    #     key (str): The cache key to use
+    #     subdir (str): The subdir to checkout
+    #     tmpdir (str): The dir to place the subdir content
+    #
+    def checkout_artifact_subdir(self, element, key, subdir, tmpdir):
+        ref = self.get_artifact_fullname(element, key)
+        return self.cas.checkout_artifact_subdir(ref, subdir, tmpdir)
+
     ################################################
     #               Local Private Methods          #
     ################################################

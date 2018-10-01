@@ -125,6 +125,9 @@ class Context():
         # close the workspace when they're using it to access the project.
         self.prompt_workspace_close_project_inaccessible = None
 
+        # Whether to include artifact buildtrees in workspaces if available
+        self.workspace_buildtrees = True
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -183,7 +186,8 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt', 'workspacedir', 'remote-execution'
+            'cache', 'prompt', 'workspacedir', 'remote-execution',
+            'workspace-buildtrees'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
@@ -212,6 +216,9 @@ class Context():
 
         # Load pull build trees configuration
         self.pull_buildtrees = _yaml.node_get(cache, bool, 'pull-buildtrees')
+
+        # Load workspace buildtrees configuration
+        self.workspace_buildtrees = _yaml.node_get(defaults, bool, 'workspace-buildtrees', default_value='True')
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')
