@@ -78,7 +78,11 @@ def check_bwrap_version(major, minor, patch):
         if not bwrap_path:
             return False
         cmd = [bwrap_path, "--version"]
-        version = str(subprocess.check_output(cmd).split()[1], "utf-8")
+        try:
+            version = str(subprocess.check_output(cmd).split()[1], "utf-8")
+        except subprocess.CalledProcessError:
+            # Failure trying to run bubblewrap
+            return False
         _bwrap_major, _bwrap_minor, _bwrap_patch = map(int, version.split("."))
 
     # Check whether the installed version meets the requirements
