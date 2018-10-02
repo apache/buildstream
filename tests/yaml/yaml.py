@@ -275,6 +275,7 @@ def test_list_deletion(datafiles):
 #    prov_col: The expected provenance column of "mood"
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize('caching', [('raw'), ('cached')])
 @pytest.mark.parametrize("filename1,filename2,index,length,mood,prov_file,prov_line,prov_col", [
 
     # Test results of compositing literal list with (>) and then (<)
@@ -331,9 +332,9 @@ def test_list_deletion(datafiles):
     ('listoverwrite.yaml', 'listprepend.yaml', 2, 4, 'overwrite1', 'listoverwrite.yaml', 5, 10),
     ('listoverwrite.yaml', 'listprepend.yaml', 3, 4, 'overwrite2', 'listoverwrite.yaml', 7, 10),
 ])
-def test_list_composition_twice(datafiles, filename1, filename2,
+def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
                                 index, length, mood,
-                                prov_file, prov_line, prov_col):
+                                prov_file, prov_line, prov_col, caching):
     file_base = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
     file1 = os.path.join(datafiles.dirname, datafiles.basename, filename1)
     file2 = os.path.join(datafiles.dirname, datafiles.basename, filename2)
@@ -341,9 +342,9 @@ def test_list_composition_twice(datafiles, filename1, filename2,
     #####################
     # Round 1 - Fight !
     #####################
-    base = _yaml.load(file_base, shortname='basics.yaml')
-    overlay1 = _yaml.load(file1, shortname=filename1)
-    overlay2 = _yaml.load(file2, shortname=filename2)
+    base = load_yaml_file(file_base, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
+    overlay1 = load_yaml_file(file1, cache_path=tmpdir, shortname=filename1, from_cache=caching)
+    overlay2 = load_yaml_file(file2, cache_path=tmpdir, shortname=filename2, from_cache=caching)
 
     _yaml.composite_dict(base, overlay1)
     _yaml.composite_dict(base, overlay2)
@@ -358,9 +359,9 @@ def test_list_composition_twice(datafiles, filename1, filename2,
     #####################
     # Round 2 - Fight !
     #####################
-    base = _yaml.load(file_base, shortname='basics.yaml')
-    overlay1 = _yaml.load(file1, shortname=filename1)
-    overlay2 = _yaml.load(file2, shortname=filename2)
+    base = load_yaml_file(file_base, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
+    overlay1 = load_yaml_file(file1, cache_path=tmpdir, shortname=filename1, from_cache=caching)
+    overlay2 = load_yaml_file(file2, cache_path=tmpdir, shortname=filename2, from_cache=caching)
 
     _yaml.composite_dict(overlay1, overlay2)
     _yaml.composite_dict(base, overlay1)
