@@ -679,7 +679,7 @@ def _force_rmtree(rootpath, **kwargs):
 
     try:
         shutil.rmtree(rootpath, **kwargs)
-    except shutil.Error as e:
+    except OSError as e:
         raise UtilError("Failed to remove cache directory '{}': {}"
                         .format(rootpath, e))
 
