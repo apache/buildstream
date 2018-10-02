@@ -164,10 +164,18 @@ class GitMirror(SourceFetcher):
                          cwd=self.mirror)
 
     def fetch(self, alias_override=None):
-        self.ensure(alias_override)
-        if not self.has_ref():
-            self._fetch(alias_override)
-        self.assert_ref()
+        # Resolve the URL for the message
+        resolved_url = self.source.translate_url(self.url,
+                                                 alias_override=alias_override,
+                                                 primary=self.primary)
+
+        with self.source.timed_activity("Fetching from {}"
+                                        .format(resolved_url),
+                                        silent_nested=True):
+            self.ensure(alias_override)
+            if not self.has_ref():
+                self._fetch(alias_override)
+            self.assert_ref()
 
     def has_ref(self):
         if not self.ref:
