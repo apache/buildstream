@@ -286,6 +286,67 @@ class CasBasedDirectory(Directory):
                 directory = directory.descend(c, create=True)
         return directory
 
+    def _resolve(self, name):
+        """ Resolves any name to an object. If the name points to a symlink in this 
+        directory, it returns the thing it points to, recursively. Returns a CasBasedDirectory, FileNode or None. Never creates a directory or otherwise alters the directory. """
+        # First check if it's a normal object and return that
+
+        if name not in self.index:
+            return None
+        index_entry = self.index[name]
+        if isinstance(index_entry.buildstream_object, Directory):
+            return index_entry.buildstream_object
+        elif isinstance(index_entry.pb_object, remote_execution_pb2.FileNode):
+            return index_entry.pb_object
+        
+        assert isinstance(index_entry.pb_object, remote_execution_pb2.SymlinkNode)
+        symlink = index_entry.pb_object
+        components = symlink.target.split(CasBasedDirectory._pb2_path_sep)
+
+        absolute = symlink.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
+        if absolute:
+            start_directory = self.find_root()
+            # Discard the first empty element
+            components.pop(0)
+        else:
+            start_directory = self
+        directory = start_directory
+        print("Resolve {}: starting from {}".format(symlink.target, start_directory))
+        while True:
+            if not components:
+                # We ran out of path elements and ended up in a directory
+                return directory
+            c = components.pop(0)
+            if c == "..":
+                print("  resolving {}: up-dir".format(c))
+                # If directory.parent *is* None, this is an attempt to access
+                # '..' from the root, which is valid under POSIX; it just
+                # returns the root.                
+                if directory.parent is not None:
+                    directory = directory.parent
+            else:
+                if c in directory.index:
+                    f = directory._resolve(c)
+                    # Ultimately f must now be a file or directory
+                    if isinstance(f, CasBasedDirectory):
+                        directory = f
+                        print("  resolving {}: dir".format(c))
+
+                    else:
+                        # This is a file or None (i.e. broken symlink)
+                        print("  resolving {}: file/broken link".format(c))
+                        if components:
+                            # Oh dear. We have components left to resolve, but the one we're trying to resolve points to a file.
+                            raise VirtualDirectoryError("Reached a file called {} while trying to resolve a symlink; cannot proceed".format(c))
+                        else:
+                            return f
+                else:
+                    print("  resolving {}: nonexistent!".format(c))
+                    return None
+
+        # Shouldn't get here.
+        
+
     def _check_replacement(self, name, path_prefix, fileListResult):
         """ Checks whether 'name' exists, and if so, whether we can overwrite it.
         If we can, add the name to 'overwritten_files' and delete the existing entry.
@@ -542,21 +603,27 @@ class CasBasedDirectory(Directory):
         """
 
         print("Running list_relative_paths on relpath {}".format(relpath))
-        symlink_list = filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.SymlinkNode), self.index.items())
-        file_list = filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.FileNode), self.index.items())
+        symlink_list = list(filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.SymlinkNode), self.index.items()))
+        file_list = list(filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.FileNode), self.index.items()))
+        directory_list = list(filter(lambda i: isinstance(i[1].buildstream_object, CasBasedDirectory), self.index.items()))
         print("Running list_relative_paths on relpath {}. files={}, symlinks={}".format(relpath, [f[0] for f in file_list], [s[0] for s in symlink_list]))
 
         for (k, v) in sorted(symlink_list):
-            print("Yielding symlink {}".format(k))
-            yield os.path.join(relpath, k)
-        for (k, v) in sorted(file_list):
-            print("Yielding file {}".format(k))
-            yield os.path.join(relpath, k)
-        else:
+            target = self._resolve(k)
+            if isinstance(target, CasBasedDirectory):
+                print("Adding the resolved symlink {} which resolves to {} to our directory list".format(k, target))
+                directory_list.append((k,IndexEntry(k, buildstream_object=target)))
+            else:
+                # Broken symlinks are also considered files!
+                file_list.append((k,v))
+        if file_list == [] and relpath != "":
             print("Yielding empty directory name {}".format(relpath))
             yield relpath
+        else:
+            for (k, v) in sorted(file_list):
+                print("Yielding file {}".format(k))
+                yield os.path.join(relpath, k)
 
-        directory_list = filter(lambda i: isinstance(i[1].buildstream_object, CasBasedDirectory), self.index.items())
         for (k, v) in sorted(directory_list):
             print("Yielding from subdirectory name {}".format(k))
             yield from v.buildstream_object.list_relative_paths(relpath=os.path.join(relpath, k))
