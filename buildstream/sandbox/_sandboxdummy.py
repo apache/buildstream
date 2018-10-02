@@ -23,6 +23,7 @@ from . import Sandbox
 class SandboxDummy(Sandbox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._reason = kwargs.get("dummy_reason", "no reason given")
 
     def run(self, command, flags, *, cwd=None, env=None):
 
@@ -37,4 +38,4 @@ class SandboxDummy(Sandbox):
                                "'{}'".format(command[0]),
                                reason='missing-command')
 
-        raise SandboxError("This platform does not support local builds")
+        raise SandboxError("This platform does not support local builds: {}".format(self._reason))
