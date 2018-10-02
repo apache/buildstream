@@ -177,15 +177,11 @@ class SandboxRemote(Sandbox):
         if not cascache.verify_digest_pushed(self._get_project(), upload_vdir.ref):
             raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
 
-        # Set up environment and working directory
-        if cwd is None:
-            cwd = self._get_work_directory()
-
-        if cwd is None:
-            cwd = '/'
-
-        if env is None:
-            env = self._get_environment()
+        # Fallback to the sandbox default settings for
+        # the cwd and env.
+        #
+        cwd = self._get_work_directory(cwd=cwd)
+        env = self._get_environment(cwd=cwd, env=env)
 
         # We want command args as a list of strings
         if isinstance(command, str):
