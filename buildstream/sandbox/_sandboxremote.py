@@ -291,6 +291,8 @@ class SandboxRemote(Sandbox):
         self._set_virtual_directory(new_dir)
 
     def _run(self, command, flags, *, cwd, env):
+        stdout, stderr = self._get_output()
+
         # set up virtual dircetory
         upload_vdir = self.get_virtual_directory()
         cascache = self._get_context().get_cascache()
@@ -357,11 +359,16 @@ class SandboxRemote(Sandbox):
         # Get output of build
         self.process_job_output(action_result.output_directories, action_result.output_files)
 
+        if stdout:
+            if action_result.stdout_raw:
+                stdout.write(str(action_result.stdout_raw, 'utf-8', errors='ignore'))
+        if stderr:
+            if action_result.stderr_raw:
+                stderr.write(str(action_result.stderr_raw, 'utf-8', errors='ignore'))
+
         if action_result.exit_code != 0:
             # A normal error during the build: the remote execution system
             # has worked correctly but the command failed.
-            # action_result.stdout and action_result.stderr also contains
-            # build command outputs which we ignore at the moment.
             return action_result.exit_code
 
         return 0
