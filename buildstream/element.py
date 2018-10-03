@@ -195,6 +195,7 @@ class Element(Plugin):
 
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
+        self.__sysroots = {}
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -374,7 +375,9 @@ class Element(Plugin):
         for source in self.__sources:
             yield source
 
-    def dependencies(self, scope, *, recurse=True, visited=None, recursed=False):
+
+    def dependencies(self, scope, *, recurse=True, visited=None, recursed=False,
+                     with_sysroot=False, sysroot='/'):
         """dependencies(scope, *, recurse=True)
 
         A generator function which yields the dependencies of the given element.
@@ -399,40 +402,75 @@ class Element(Plugin):
 
         scope_set = set((Scope.BUILD, Scope.RUN)) if scope == Scope.ALL else set((scope,))
 
-        if full_name in visited and scope_set.issubset(visited[full_name]):
+        if (sysroot, full_name) in visited and scope_set.issubset(visited[(sysroot, full_name)]):
             return
 
         should_yield = False
         if full_name not in visited:
-            visited[full_name] = scope_set
+            visited[(sysroot, full_name)] = scope_set
             should_yield = True
         else:
-            visited[full_name] |= scope_set
+            visited[(sysroot, full_name)] |= scope_set
 
         if recurse or not recursed:
             if scope == Scope.ALL:
                 for dep in self.__build_dependencies:
                     yield from dep.dependencies(Scope.ALL, recurse=recurse,
-                                                visited=visited, recursed=True)
+                                                visited=visited, recursed=True,
+                                                sysroot=sysroot, with_sysroot=with_sysroot)
 
                 for dep in self.__runtime_dependencies:
                     if dep not in self.__build_dependencies:
                         yield from dep.dependencies(Scope.ALL, recurse=recurse,
-                                                    visited=visited, recursed=True)
+                                                    visited=visited, recursed=True,
+                                                    sysroot=sysroot, with_sysroot=with_sysroot)
+
+                for path, value in self.__sysroots.items():
+                    new_sysroot = path if not recursed else sysroot
+                    run_deps, build_deps = value
+                    for dep in build_deps:
+                        yield from dep.dependencies(Scope.ALL, recurse=recurse,
+                                                    visited=visited, recursed=True,
+                                                    sysroot=new_sysroot, with_sysroot=with_sysroot)
+                    for dep in run_deps:
+                        if dep not in build_deps:
+                            yield from dep.dependencies(Scope.ALL, recurse=recurse,
+                                                        visited=visited, recursed=True,
+                                                        sysroot=new_sysroot, with_sysroot=with_sysroot)
 
             elif scope == Scope.BUILD:
                 for dep in self.__build_dependencies:
                     yield from dep.dependencies(Scope.RUN, recurse=recurse,
-                                                visited=visited, recursed=True)
+                                                visited=visited, recursed=True,
+                                                sysroot=sysroot, with_sysroot=with_sysroot)
+                for path, value in self.__sysroots.items():
+                    new_sysroot = path if not recursed else sysroot
+                    run_deps, build_deps = value
+                    for dep in build_deps:
+                        yield from dep.dependencies(Scope.RUN, recurse=recurse,
+                                                    visited=visited, recursed=True,
+                                                    sysroot=new_sysroot, with_sysroot=with_sysroot)
 
             elif scope == Scope.RUN:
                 for dep in self.__runtime_dependencies:
                     yield from dep.dependencies(Scope.RUN, recurse=recurse,
-                                                visited=visited, recursed=True)
+                                                visited=visited, recursed=True,
+                                                sysroot=sysroot, with_sysroot=with_sysroot)
+                for path, value in self.__sysroots.items():
+                    new_sysroot = path if not recursed else sysroot
+                    run_deps, build_deps = value
+                    for dep in run_deps:
+                        yield from dep.dependencies(Scope.RUN, recurse=recurse,
+                                                    visited=visited, recursed=True,
+                                                    sysroot=new_sysroot, with_sysroot=with_sysroot)
 
         # Yeild self only at the end, after anything needed has been traversed
         if should_yield and (recurse or recursed) and (scope == Scope.ALL or scope == Scope.RUN):
-            yield self
+            if with_sysroot:
+                yield sysroot, self
+            else:
+                yield self
+
 
     def search(self, scope, name):
         """Search for a dependency by name
@@ -631,7 +669,7 @@ class Element(Plugin):
             vbasedir = sandbox.get_virtual_directory()
             vstagedir = vbasedir \
                 if path is None \
-                else vbasedir.descend(path.lstrip(os.sep).split(os.sep))
+                else vbasedir.descend(path.lstrip(os.sep).split(os.sep), create=True)
 
             files = list(self.__compute_splits(include, exclude, orphans))
 
@@ -649,7 +687,8 @@ class Element(Plugin):
         return link_result.combine(copy_result)
 
     def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
-                                   include=None, exclude=None, orphans=True):
+                                   include=None, exclude=None, orphans=True,
+                                   build=True):
         """Stage element dependencies in scope
 
         This is primarily a convenience wrapper around
@@ -679,7 +718,7 @@ class Element(Plugin):
         if self.__can_build_incrementally() and workspace.last_successful:
             old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
 
-        for dep in self.dependencies(scope):
+        for sysroot, dep in self.dependencies(scope, with_sysroot=True):
             # If we are workspaced, and we therefore perform an
             # incremental build, we must ensure that we update the mtimes
             # of any files created by our dependencies since the last
@@ -704,8 +743,13 @@ class Element(Plugin):
                     if utils._is_main_process():
                         self._get_context().get_workspaces().save_config()
 
+            if build:
+                sub_path = os.path.join(path, os.path.relpath(sysroot, '/')) if path else sysroot
+            else:
+                sub_path = path
+
             result = dep.stage_artifact(sandbox,
-                                        path=path,
+                                        path=sub_path,
                                         include=include,
                                         exclude=exclude,
                                         orphans=orphans,
@@ -909,6 +953,17 @@ class Element(Plugin):
             dependency = Element._new_from_meta(meta_dep, artifacts)
             element.__build_dependencies.append(dependency)
 
+        for path, meta_dep in meta.sysroot_dependencies:
+            if path not in element.__sysroots:
+                element.__sysroots[path] = ([], [])
+            dependency = Element._new_from_meta(meta_dep, artifacts)
+            element.__sysroots[path][0].append(dependency)
+        for path, meta_dep in meta.sysroot_build_dependencies:
+            if path not in element.__sysroots:
+                element.__sysroots[path] = ([], [])
+            dependency = Element._new_from_meta(meta_dep, artifacts)
+            element.__sysroots[path][1].append(dependency)
+
         return element
 
     # _get_redundant_source_refs()
@@ -1086,17 +1141,17 @@ class Element(Plugin):
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
             # but does not include keys of dependencies.
+            dependencies = []
             if self.BST_STRICT_REBUILD:
-                dependencies = [
-                    e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD)
-                ]
+                for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True):
+                    dependencies = [(sysroot, e._get_cache_key(strength=_KeyStrength.WEAK))
+                                    for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
             else:
-                dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
-                ]
+                for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True):
+                    dependencies = [(sysroot, e.name)
+                                    for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
 
-            self.__weak_cache_key = self.__calculate_cache_key(dependencies)
+            self.__weak_cache_key = self.__calculate_cache_key(sorted(dependencies))
 
             if self.__weak_cache_key is None:
                 # Weak cache key could not be calculated yet
@@ -1122,10 +1177,9 @@ class Element(Plugin):
                     return
 
         if self.__strict_cache_key is None:
-            dependencies = [
-                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
-            ]
-            self.__strict_cache_key = self.__calculate_cache_key(dependencies)
+            dependencies = [(sysroot, e.__strict_cache_key)
+                            for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
+            self.__strict_cache_key = self.__calculate_cache_key(sorted(dependencies))
 
             if self.__strict_cache_key is None:
                 # Strict cache key could not be calculated yet
@@ -1164,11 +1218,9 @@ class Element(Plugin):
                 strong_key, _ = self.__get_artifact_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
-                # Artifact will or has been built, not downloaded
-                dependencies = [
-                    e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                ]
-                self.__cache_key = self.__calculate_cache_key(dependencies)
+                dependencies = [(sysroot, e._get_cache_key())
+                                for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
+                self.__cache_key = self.__calculate_cache_key(sorted(dependencies))
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
@@ -1329,7 +1381,7 @@ class Element(Plugin):
                     # Stage deps in the sandbox root
                     if deps == 'run':
                         with self.timed_activity("Staging dependencies", silent_nested=True):
-                            self.stage_dependency_artifacts(sandbox, scope)
+                            self.stage_dependency_artifacts(sandbox, scope, build=False)
 
                         # Run any integration commands provided by the dependencies
                         # once they are all staged and ready

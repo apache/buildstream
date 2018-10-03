@@ -72,7 +72,15 @@ class LoadElement():
             'variables', 'environment', 'environment-nocache',
             'config', 'public', 'description',
             'build-depends', 'runtime-depends',
+            'sysroots',
         ])
+
+        self.sysroots = []
+        sysroots = _yaml.node_get(node, list, 'sysroots', default_value=[])
+        for sysroot in sysroots:
+            _yaml.node_validate(sysroot, ['path', 'depends', 'build-depends', 'runtime-depends'])
+            path = _yaml.node_get(sysroot, str, 'path')
+            self.sysroots.append((path, _extract_depends_from_node(sysroot)))
 
         # Extract the Dependencies
         self.deps = _extract_depends_from_node(self.node)

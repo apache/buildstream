@@ -36,6 +36,14 @@ from . import MetaElement
 from . import MetaSource
 
 
+def _dependencies(element):
+    for dep in element.deps:
+        yield dep
+    for path, deps in element.sysroots:
+        for dep in deps:
+            yield dep
+
+
 # Loader():
 #
 # The Loader class does the heavy lifting of parsing target
@@ -122,9 +130,9 @@ class Loader():
 
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
-        DummyTarget = namedtuple('DummyTarget', ['name', 'full_name', 'deps'])
+        DummyTarget = namedtuple('DummyTarget', ['name', 'full_name', 'deps', 'sysroots'])
 
-        dummy = DummyTarget(name='', full_name='', deps=deps)
+        dummy = DummyTarget(name='', full_name='', deps=deps, sysroots=[])
         self._elements[''] = dummy
 
         profile_key = "_".join(t for t in targets)
@@ -259,7 +267,7 @@ class Loader():
         self._elements[filename] = element
 
         # Load all dependency files for the new LoadElement
-        for dep in element.deps:
+        for dep in _dependencies(element):
             if dep.junction:
                 self._load_file(dep.junction, rewritable, ticker, fetch_subprojects)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
@@ -275,6 +283,7 @@ class Loader():
                                 .format(dep.provenance))
 
         return element
+
 
     # _check_circular_deps():
     #
@@ -311,7 +320,7 @@ class Loader():
 
         # Push / Check each dependency / Pop
         check_elements[element_name] = True
-        for dep in element.deps:
+        for dep in _dependencies(element):
             loader = self._get_loader_for_dep(dep)
             loader._check_circular_deps(dep.name, check_elements, validated)
         del check_elements[element_name]
@@ -392,6 +401,8 @@ class Loader():
         # directly or indirectly depends on another direct dependency,
         # it is found later in the list.
         element.deps.sort(key=cmp_to_key(dependency_cmp))
+        for path, deps in element.sysroots:
+            deps.sort(key=cmp_to_key(dependency_cmp))
 
         visited[element_name] = True
 
@@ -458,6 +469,15 @@ class Loader():
                 meta_element.build_dependencies.append(meta_dep)
             if dep.dep_type != 'build':
                 meta_element.dependencies.append(meta_dep)
+
+        for path, deps in element.sysroots:
+            for dep in deps:
+                loader = self._get_loader_for_dep(dep)
+                meta_dep = loader._collect_element(dep.name)
+                if dep.dep_type != 'runtime':
+                    meta_element.sysroot_build_dependencies.append((path, meta_dep))
+                if dep.dep_type != 'build':
+                    meta_element.sysroot_dependencies.append((path, meta_dep))
 
         return meta_element
 
