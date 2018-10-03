@@ -119,6 +119,8 @@ class Job():
         self._result = None                    # Return value of child action in the parent
         self._tries = 0                        # Try count, for retryable jobs
         self._skipped_flag = False             # Indicate whether the job was skipped.
+        self._terminated = False               # Whether this job has been explicitly terminated
+
         # If False, a retry will not be attempted regardless of whether _tries is less than _max_retries.
         #
         self._retry_flag = True
@@ -189,6 +191,8 @@ class Job():
 
         # Terminate the process using multiprocessing API pathway
         self._process.terminate()
+
+        self._terminated = True
 
     # terminate_wait()
     #
@@ -273,18 +277,22 @@ class Job():
     # running the integration commands).
     #
     # Args:
-    #     (int): The plugin identifier for this task
+    #     task_id (int): The plugin identifier for this task
     #
     def set_task_id(self, task_id):
         self._task_id = task_id
 
     # skipped
     #
+    # This will evaluate to True if the job was skipped
+    # during processing, or if it was forcefully terminated.
+    #
     # Returns:
-    #    bool: True if the job was skipped while processing.
+    #    (bool): Whether the job should appear as skipped
+    #
     @property
     def skipped(self):
-        return self._skipped_flag
+        return self._skipped_flag or self._terminated
 
     #######################################################
     #                  Abstract Methods                   #
