@@ -37,7 +37,7 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .._exceptions import BstError
 from .directory import Directory, VirtualDirectoryError
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, safe_copy, list_relative_paths
+from ..utils import FileListResult, safe_copy, list_relative_paths, _relative_symlink_target
 from .._artifactcache.cascache import CASCache
 
 
@@ -286,7 +286,7 @@ class CasBasedDirectory(Directory):
                 directory = directory.descend(c, create=True)
         return directory
 
-    def _resolve(self, name):
+    def _resolve(self, name, absolute_symlinks_resolve=True):
         """ Resolves any name to an object. If the name points to a symlink in this 
         directory, it returns the thing it points to, recursively. Returns a CasBasedDirectory, FileNode or None. Never creates a directory or otherwise alters the directory. """
         # First check if it's a normal object and return that
@@ -305,9 +305,13 @@ class CasBasedDirectory(Directory):
 
         absolute = symlink.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
         if absolute:
-            start_directory = self.find_root()
-            # Discard the first empty element
-            components.pop(0)
+            if absolute_symlinks_resolve:
+                start_directory = self.find_root()
+                # Discard the first empty element
+                components.pop(0)
+            else:
+                print("  _resolve: Absolute symlink, which we won't resolve.")
+                return None
         else:
             start_directory = self
         directory = start_directory
@@ -326,7 +330,7 @@ class CasBasedDirectory(Directory):
                     directory = directory.parent
             else:
                 if c in directory.index:
-                    f = directory._resolve(c)
+                    f = directory._resolve(c, absolute_symlinks_resolve)
                     # Ultimately f must now be a file or directory
                     if isinstance(f, CasBasedDirectory):
                         directory = f
@@ -609,7 +613,7 @@ class CasBasedDirectory(Directory):
         print("Running list_relative_paths on relpath {}. files={}, symlinks={}".format(relpath, [f[0] for f in file_list], [s[0] for s in symlink_list]))
 
         for (k, v) in sorted(symlink_list):
-            target = self._resolve(k)
+            target = self._resolve(k, absolute_symlinks_resolve=True)
             if isinstance(target, CasBasedDirectory):
                 print("Adding the resolved symlink {} which resolves to {} to our directory list".format(k, target))
                 directory_list.append((k,IndexEntry(k, buildstream_object=target)))
