@@ -821,12 +821,17 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
             permissions.append((destpath, os.stat(srcpath).st_mode))
 
         elif stat.S_ISLNK(mode):
-            if not safe_remove(destpath):
-                result.ignored.append(path)
-                continue
-
             target = os.readlink(srcpath)
             target = _relative_symlink_target(destdir, destpath, target)
+
+            if os.path.isdir(destpath):
+                shutil.move(destpath,
+                            os.path.join(os.path.dirname(destpath), target))
+            else:
+                if not safe_remove(destpath):
+                    result.ignored.append(path)
+                    continue
+
             os.symlink(target, destpath)
 
         elif stat.S_ISREG(mode):

@@ -22,7 +22,9 @@ DATA_DIR = os.path.join(
 #
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/270
 @pytest.mark.datafiles(DATA_DIR)
-def test_compose_symlinks(cli, tmpdir, datafiles):
+@pytest.mark.parametrize("element", ["compose-symlinks/compose.bst",
+                                     "compose-symlinks/compose-reverse.bst"])
+def test_compose_symlinks(cli, tmpdir, datafiles, element):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
@@ -33,10 +35,10 @@ def test_compose_symlinks(cli, tmpdir, datafiles):
     symlink_file = os.path.join(project_files, 'sbin')
     os.symlink(os.path.join('usr', 'sbin'), symlink_file, target_is_directory=True)
 
-    result = cli.run(project=project, args=['build', 'compose-symlinks/compose.bst'])
+    result = cli.run(project=project, args=['build', element])
     result.assert_success()
 
-    result = cli.run(project=project, args=['checkout', 'compose-symlinks/compose.bst', checkout])
+    result = cli.run(project=project, args=['checkout', element, checkout])
     result.assert_success()
 
     assert set(walk_dir(checkout)) == set(['/sbin', '/usr', '/usr/sbin',
