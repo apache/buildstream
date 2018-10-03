@@ -563,6 +563,9 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
 #
 # Get the disk usage of a given directory in bytes.
 #
+# This function assumes that files do not inadvertantly
+# disappear while this function is running.
+#
 # Arguments:
 #     (str) The path whose size to check.
 #
