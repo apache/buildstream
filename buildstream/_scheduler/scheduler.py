@@ -387,6 +387,15 @@ class Scheduler():
     # A loop registered event callback for keyboard interrupts
     #
     def _interrupt_event(self):
+
+        # FIXME: This should not be needed, but for some reason we receive an
+        #        additional SIGINT event when the user hits ^C a second time
+        #        to inform us that they really intend to terminate; even though
+        #        we have disconnected our handlers at this time.
+        #
+        if self.terminated:
+            return
+
         # Leave this to the frontend to decide, if no
         # interrrupt callback was specified, then just terminate.
         if self._interrupt_callback:
