@@ -496,7 +496,7 @@ def get_bst_version():
 
 @contextmanager
 def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
-                     errors=None, newline=None, closefd=True, opener=None):
+                     errors=None, newline=None, closefd=True, opener=None, tempdir=None):
     """Save a file with a temporary name and rename it into place when ready.
 
     This is a context manager which is meant for saving data to files.
@@ -523,8 +523,9 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
     # https://bugs.python.org/issue8604
 
     assert os.path.isabs(filename), "The utils.save_file_atomic() parameter ``filename`` must be an absolute path"
-    dirname = os.path.dirname(filename)
-    fd, tempname = tempfile.mkstemp(dir=dirname)
+    if tempdir is None:
+        tempdir = os.path.dirname(filename)
+    fd, tempname = tempfile.mkstemp(dir=tempdir)
     os.close(fd)
 
     f = open(tempname, mode=mode, buffering=buffering, encoding=encoding,
