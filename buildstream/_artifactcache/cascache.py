@@ -506,7 +506,7 @@ class CASCache(ArtifactCache):
     def set_ref(self, ref, tree):
         refpath = self._refpath(ref)
         os.makedirs(os.path.dirname(refpath), exist_ok=True)
-        with utils.save_file_atomic(refpath, 'wb') as f:
+        with utils.save_file_atomic(refpath, 'wb', tempdir=self.tmpdir) as f:
             f.write(tree.SerializeToString())
 
     # resolve_ref():
