@@ -965,28 +965,48 @@ class Source(Plugin):
     # Tries to call fetch for every mirror, stopping once it succeeds
     def __do_fetch(self, **kwargs):
         project = self._get_project()
-        source_fetchers = self.get_source_fetchers()
+        context = self._get_context()
+
+        # Silence the STATUS messages which might happen as a result
+        # of checking the source fetchers.
+        with context.silence():
+            source_fetchers = self.get_source_fetchers()
 
         # Use the source fetchers if they are provided
         #
         if source_fetchers:
-            for fetcher in source_fetchers:
-                alias = fetcher._get_alias()
-                for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
-                    try:
-                        fetcher.fetch(uri)
-                    # FIXME: Need to consider temporary vs. permanent failures,
-                    #        and how this works with retries.
-                    except BstError as e:
-                        last_error = e
-                        continue
 
-                    # No error, we're done with this fetcher
-                    break
+            # Use a contorted loop here, this is to allow us to
+            # silence the messages which can result from consuming
+            # the items of source_fetchers, if it happens to be a generator.
+            #
+            source_fetchers = iter(source_fetchers)
+            try:
 
-                else:
-                    # No break occurred, raise the last detected error
-                    raise last_error
+                while True:
+
+                    with context.silence():
+                        fetcher = next(source_fetchers)
+
+                    alias = fetcher._get_alias()
+                    for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
+                        try:
+                            fetcher.fetch(uri)
+                        # FIXME: Need to consider temporary vs. permanent failures,
+                        #        and how this works with retries.
+                        except BstError as e:
+                            last_error = e
+                            continue
+
+                        # No error, we're done with this fetcher
+                        break
+
+                    else:
+                        # No break occurred, raise the last detected error
+                        raise last_error
+
+            except StopIteration:
+                pass
 
         # Default codepath is to reinstantiate the Source
         #
