@@ -1379,10 +1379,10 @@ class Element(Plugin):
             if not vdirectory.is_empty():
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
-            # While mkdtemp is advertised as using the TMP environment variable, it
-            # doesn't, so this explicit extraction is necesasry.
-            tmp_prefix = os.environ.get("TMP", None)
-            temp_staging_directory = tempfile.mkdtemp(prefix=tmp_prefix)
+            # It's advantageous to have this temporary directory on
+            # the same filing system as the rest of our cache.
+            temp_staging_location = os.path.join(self._get_context().artifactdir, "staging_temp")
+            temp_staging_directory = tempfile.mkdtemp(prefix=temp_staging_location)
 
             try:
                 workspace = self._get_workspace()
