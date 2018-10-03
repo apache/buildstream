@@ -325,15 +325,22 @@ class Queue():
                           detail=traceback.format_exc())
             self.failed_elements.append(element)
         else:
-
-            # No exception occured, handle the success/failure state in the normal way
             #
+            # No exception occured in post processing
+            #
+
+            # Only place in the output done queue if the job
+            # was considered successful
             if success:
                 self._done_queue.append(job)
-                if not job.skipped:
-                    self.processed_elements.append(element)
-                else:
-                    self.skipped_elements.append(element)
+
+            # A Job can be skipped whether or not it has failed,
+            # we want to only bookkeep them as processed or failed
+            # if they are not skipped.
+            if job.skipped:
+                self.skipped_elements.append(element)
+            elif success:
+                self.processed_elements.append(element)
             else:
                 self.failed_elements.append(element)
 
