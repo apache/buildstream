@@ -2075,7 +2075,12 @@ class Element(Plugin):
             self.prepare(sandbox)
 
             if workspace:
-                workspace.prepared = True
+                def mark_workspace_prepared():
+                    workspace.prepared = True
+
+                # Defer workspace.prepared setting until pending batch commands
+                # have been executed.
+                sandbox._callback(mark_workspace_prepared)
 
     def __is_cached(self, keystrength):
         if keystrength is None:
