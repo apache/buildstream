@@ -37,25 +37,27 @@ class Linux(Platform):
         self._uid = os.geteuid()
         self._gid = os.getegid()
 
+        self._have_fuse = os.path.exists("/dev/fuse")
+        self._bwrap_exists = _site.check_bwrap_version(0, 0, 0)
+        self._have_good_bwrap = _site.check_bwrap_version(0, 1, 2)
+
+        self._local_sandbox_available = self._have_fuse and self._have_good_bwrap
+
         self._die_with_parent_available = _site.check_bwrap_version(0, 1, 8)
 
-        if self._local_sandbox_available():
+        if self._local_sandbox_available:
             self._user_ns_available = self._check_user_ns_available()
         else:
             self._user_ns_available = False
 
     def create_sandbox(self, *args, **kwargs):
-        if not self._local_sandbox_available():
-            return SandboxDummy(*args, **kwargs)
+        if not self._local_sandbox_available:
+            return self._create_dummy_sandbox(*args, **kwargs)
         else:
-            from ..sandbox._sandboxbwrap import SandboxBwrap
-            # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
-            kwargs['user_ns_available'] = self._user_ns_available
-            kwargs['die_with_parent_available'] = self._die_with_parent_available
-            return SandboxBwrap(*args, **kwargs)
+            return self._create_bwrap_sandbox(*args, **kwargs)
 
     def check_sandbox_config(self, config):
-        if not self._local_sandbox_available():
+        if not self._local_sandbox_available:
             # Accept all sandbox configs as it's irrelevant with the dummy sandbox (no Sandbox.run).
             return True
 
@@ -70,11 +72,26 @@ class Linux(Platform):
     ################################################
     #              Private Methods                 #
     ################################################
-    def _local_sandbox_available(self):
-        try:
-            return os.path.exists(utils.get_host_tool('bwrap')) and os.path.exists('/dev/fuse')
-        except utils.ProgramNotFoundError:
-            return False
+
+    def _create_dummy_sandbox(self, *args, **kwargs):
+        reasons = []
+        if not self._have_fuse:
+            reasons.append("FUSE is unavailable")
+        if not self._have_good_bwrap:
+            if self._bwrap_exists:
+                reasons.append("`bwrap` is too old (bst needs at least 0.1.2)")
+            else:
+                reasons.append("`bwrap` executable not found")
+
+        kwargs['dummy_reason'] = " and ".join(reasons)
+        return SandboxDummy(*args, **kwargs)
+
+    def _create_bwrap_sandbox(self, *args, **kwargs):
+        from ..sandbox._sandboxbwrap import SandboxBwrap
+        # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
+        kwargs['user_ns_available'] = self._user_ns_available
+        kwargs['die_with_parent_available'] = self._die_with_parent_available
+        return SandboxBwrap(*args, **kwargs)
 
     def _check_user_ns_available(self):
         # Here, lets check if bwrap is able to create user namespaces,

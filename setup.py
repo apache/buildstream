@@ -54,12 +54,13 @@ REQUIRED_BWRAP_MINOR = 1
 REQUIRED_BWRAP_PATCH = 2
 
 
-def exit_bwrap(reason):
+def warn_bwrap(reason):
     print(reason +
-          "\nBuildStream requires Bubblewrap (bwrap) for"
-          " sandboxing the build environment. Install it using your package manager"
-          " (usually bwrap or bubblewrap)")
-    sys.exit(1)
+          "\nBuildStream requires Bubblewrap (bwrap {}.{}.{} or better),"
+          " during local builds, for"
+          " sandboxing the build environment.\nInstall it using your package manager"
+          " (usually bwrap or bubblewrap) otherwise you will be limited to"
+          " remote builds only.".format(REQUIRED_BWRAP_MAJOR, REQUIRED_BWRAP_MINOR, REQUIRED_BWRAP_PATCH))
 
 
 def bwrap_too_old(major, minor, patch):
@@ -76,18 +77,19 @@ def bwrap_too_old(major, minor, patch):
         return False
 
 
-def assert_bwrap():
+def check_for_bwrap():
     platform = os.environ.get('BST_FORCE_BACKEND', '') or sys.platform
     if platform.startswith('linux'):
         bwrap_path = shutil.which('bwrap')
         if not bwrap_path:
-            exit_bwrap("Bubblewrap not found")
+            warn_bwrap("Bubblewrap not found")
+            return
 
         version_bytes = subprocess.check_output([bwrap_path, "--version"]).split()[1]
         version_string = str(version_bytes, "utf-8")
         major, minor, patch = map(int, version_string.split("."))
         if bwrap_too_old(major, minor, patch):
-            exit_bwrap("Bubblewrap too old")
+            warn_bwrap("Bubblewrap too old")
 
 
 ###########################################
@@ -126,7 +128,7 @@ bst_install_entry_points = {
 }
 
 if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
-    assert_bwrap()
+    check_for_bwrap()
     bst_install_entry_points['console_scripts'] += [
         'bst = buildstream._frontend:cli'
     ]
