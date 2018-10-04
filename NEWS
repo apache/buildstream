@@ -27,6 +27,9 @@ buildstream 1.3.1
   o Generate Docker images from built artifacts using
     `contrib/bst-docker-import` script.
 
+  o Added Documentation on how to create out of source builds. This includes the
+    new the `conf-root` variable to make the process easier. And there has been
+    a bug fix to workspaces so they can be build in workspaces too.
 
 =================
 buildstream 1.1.5
