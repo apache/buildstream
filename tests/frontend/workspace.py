@@ -43,7 +43,8 @@ DATA_DIR = os.path.join(
 )
 
 
-def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None, project_path=None):
+def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None,
+                   project_path=None, element_attrs=None):
     if not workspace_dir:
         workspace_dir = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
     if not project_path:
@@ -69,6 +70,8 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir
             repo.source_config(ref=ref)
         ]
     }
+    if element_attrs:
+        element = {**element, **element_attrs}
     _yaml.dump(element,
                os.path.join(element_path,
                             element_name))
@@ -854,3 +857,22 @@ def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, strict):
 
     # Check that the original /usr/bin/hello is not in the checkout
     assert not os.path.exists(os.path.join(checkout, 'usr', 'bin', 'hello'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_multiple_failed_builds(cli, tmpdir, datafiles):
+    element_config = {
+        "kind": "manual",
+        "config": {
+            "configure-commands": [
+                "unknown_command_that_will_fail"
+            ]
+        }
+    }
+    element_name, project, _ = open_workspace(cli, tmpdir, datafiles,
+                                              "git", False, element_attrs=element_config)
+
+    for _ in range(2):
+        result = cli.run(project=project, args=["build", element_name])
+        assert "BUG" not in result.stderr
+        assert cli.get_element_state(project, element_name) != "cached"
