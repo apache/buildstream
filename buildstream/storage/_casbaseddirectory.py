@@ -611,16 +611,18 @@ class CasBasedDirectory(Directory):
         symlink_list = list(filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.SymlinkNode), self.index.items()))
         file_list = list(filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.FileNode), self.index.items()))
         directory_list = list(filter(lambda i: isinstance(i[1].buildstream_object, CasBasedDirectory), self.index.items()))
+        symlinks_to_directories_list = []
         print("Running list_relative_paths on relpath {}. files={}, symlinks={}".format(relpath, [f[0] for f in file_list], [s[0] for s in symlink_list]))
 
         for (k, v) in sorted(symlink_list):
             target = self._resolve(k, absolute_symlinks_resolve=True)
             if isinstance(target, CasBasedDirectory):
-                print("Adding the resolved symlink {} which resolves to {} to our directory list".format(k, target))
-                directory_list.append((k,IndexEntry(k, buildstream_object=target)))
+                symlinks_to_directories_list.append(k)
             else:
                 # Broken symlinks are also considered files!
                 file_list.append((k,v))
+        for d in sorted(symlinks_to_directories_list):
+            yield os.path.join(relpath, d)
         if file_list == [] and relpath != "":
             print("Yielding empty directory name {}".format(relpath))
             yield relpath
