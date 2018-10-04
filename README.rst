@@ -19,7 +19,7 @@ About
 
 What is BuildStream?
 ====================
-`BuildStream <https://https://buildstream.build/>`_ is a Free Software tool for 
+`BuildStream <https://buildstream.build>`_ is a Free Software tool for 
 building/integrating software stacks.
 It takes inspiration, lessons and use-cases from various projects including
 OBS, Reproducible Builds, Yocto, Baserock, Buildroot, Aboriginal, GNOME Continuous,
