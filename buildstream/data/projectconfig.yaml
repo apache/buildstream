@@ -51,23 +51,40 @@ variables:
 
     --remove-section=.comment --remove-section=.note --strip-unneeded
 
+  # Causes strip-binaries to fail on error if set to true
+  fatal-strip: "false"
+
   # Generic implementation for stripping debugging symbols
   strip-binaries: |
-
-    cd "%{install-root}" && find -type f \
-      '(' -perm -111 -o -name '*.so*' \
-          -o -name '*.cmxs' -o -name '*.node' ')' \
-      -exec sh -ec \
-      'read -n4 hdr <"$1" # check for elf header
-       if [ "$hdr" != "$(printf \\x7fELF)" ]; then
-           exit 0
-       fi
-       debugfile="%{install-root}%{debugdir}/$1"
-       mkdir -p "$(dirname "$debugfile")"
-       objcopy %{objcopy-extract-args} "$1" "$debugfile"
-       chmod 644 "$debugfile"
-       strip %{strip-args} "$1"
-       objcopy %{objcopy-link-args} "$debugfile" "$1"' - {} ';'
+    find "%{install-root}" -type f \
+    '(' -perm -111 -o -name '*.so*' \
+        -o -name '*.cmxs' -o -name '*.node' ')' \
+        -print0 | while read -r -d $'\0' file; do
+        read -n4 hdr <"${file}" || continue # check for elf header
+        if [ "$hdr" != "$(printf \\x7fELF)" ]; then
+          continue
+        fi
+        if objdump -j .gnu_debuglink -s "${file}" &>/dev/null; then
+          continue
+        fi
+        case "${file}" in
+          "%{install-root}%{debugdir}/"*)
+          continue
+          ;;
+        *)
+          ;;
+        esac
+        realpath="$(realpath -s --relative-to="%{install-root}" "${file}")"
+        debugfile="%{install-root}%{debugdir}/${realpath}.debug"
+        mkdir -p "$(dirname "$debugfile")" 
+        objcopy %{objcopy-extract-args} "${file}" "$debugfile"
+        chmod 644 "$debugfile"
+        mode="$(stat -c 0%a "${file}")"
+        [ -w "${file}" ] || chmod +w "${file}"
+        strip %{strip-args} "${file}" || %{fatal-strip}
+        objcopy %{objcopy-link-args} "$debugfile" "${file}"
+        chmod "${mode}" "${file}"
+    done
 
   # Generic implementation for reproducible python builds
   fix-pyc-timestamps: |
