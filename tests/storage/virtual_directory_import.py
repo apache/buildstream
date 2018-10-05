@@ -1,5 +1,6 @@
 import os
 import pytest
+import random
 from tests.testutils import cli
 
 from buildstream.storage import CasBasedDirectory
@@ -27,6 +28,7 @@ root_filesets = [
 ]
 
 empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+RANDOM_SEED = 69105
 
 
 def generate_import_roots(directory):
@@ -48,6 +50,33 @@ def generate_import_roots(directory):
                 os.symlink(content, os.path.join(rootdir, path))
 
 
+def generate_random_root(directory):
+    random.seed(RANDOM_SEED)
+    rootname = "root6"
+    rootdir = os.path.join(directory, "content", rootname)
+    things = []
+    locations = ['.']
+    for i in range(0, 100):
+        location = random.choice(locations)
+        thingname = "node{}".format(i)
+        thing = random.choice(['dir', 'link', 'file'])
+        target = os.path.join(rootdir, location, thingname)
+        if thing == 'dir':
+            os.makedirs(target)
+            locations.append(os.path.join(location, thingname))
+        elif thing == 'file':
+            with open(target, "wt") as f:
+                f.write("This is node {}\n".format(i))
+        elif thing == 'link':
+            # TODO: Make some relative symlinks
+            if random.randint(1, 3) == 1 or len(things) == 0:
+                os.symlink("/broken", target)
+            else:
+                os.symlink(random.choice(things), target)
+        things.append(os.path.join(location, thingname))
+        print("Generated {}/{} ".format(rootdir, things[-1]))
+
+
 def file_contents(path):
     with open(path, "r") as f:
         result = f.read()
@@ -63,6 +92,7 @@ def create_new_casdir(root_number, fake_context, tmpdir):
     d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
     assert d.ref.hash != empty_hash_ref
     return d
+
 
 def create_new_filedir(root_number, tmpdir):
     root = os.path.join(tmpdir, "vdir")
@@ -117,7 +147,7 @@ def test_cas_import(cli, tmpdir, original, overlay):
     fake_context.artifactdir = tmpdir
     # Create some fake content
     generate_import_roots(tmpdir)
-
+    generate_random_root(tmpdir)
     d = create_new_casdir(original, fake_context, tmpdir)
     d2 = create_new_casdir(overlay, fake_context, tmpdir)
     d.import_files(d2)
@@ -145,12 +175,13 @@ def test_cas_import(cli, tmpdir, original, overlay):
             assert os.path.isdir(realpath)
 
 
-@pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
+@pytest.mark.parametrize("root", [1, 2, 3, 4, 5, 6])
 def test_directory_listing(cli, tmpdir, root):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
     generate_import_roots(tmpdir)
+    generate_random_root(tmpdir)
 
     d = create_new_filedir(root, tmpdir)
     filelist = list(d.list_relative_paths())
@@ -162,4 +193,4 @@ def test_directory_listing(cli, tmpdir, root):
     print("{}".format(filelist))
     print("filelist for root {} via CasBasedDirectory:".format(root))
     print("{}".format(filelist2))
-    assert(filelist==filelist2)
+    assert filelist == filelist2
