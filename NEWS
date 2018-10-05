@@ -1,4 +1,24 @@
 =================
+buildstream 1.2.3
+=================
+
+ o Fixed an unhandled exception when cleaning up a build sandbox (#153)
+
+ o Fixed race condition when calculating cache size and commiting artifacts
+
+ o Fixed regression where terminating with `^C` results in a double user interrogation (#693)
+
+ o Fixed regression in summary when builds are terminated (#479)
+
+ o Fixed regression where irrelevant status messages appear from git sources
+
+ o Improve performance of artifact uploads by batching file transfers (#676/#677)
+
+ o Fixed performance of artifact downloads by batching file transfers (#554)
+
+ o Fixed checks for paths which escape the project directory (#673)
+
+=================
 buildstream 1.2.2
 =================
 
