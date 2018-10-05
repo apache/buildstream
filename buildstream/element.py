@@ -770,14 +770,13 @@ class Element(Plugin):
         environment = self.get_environment()
 
         if bstdata is not None:
-            commands = self.node_get_member(bstdata, list, 'integration-commands', [])
-            for i in range(len(commands)):
-                cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
-                self.status("Running integration command", detail=cmd)
-                exitcode = sandbox.run(['sh', '-e', '-c', cmd], SandboxFlags.NONE,
-                                       env=environment, cwd='/')
-                if exitcode != 0:
-                    raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
+            with sandbox.batch(SandboxFlags.NONE):
+                commands = self.node_get_member(bstdata, list, 'integration-commands', [])
+                for i in range(len(commands)):
+                    cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
+
+                    sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/',
+                                label=cmd)
 
     def stage_sources(self, sandbox, directory):
         """Stage this element's sources to a directory in the sandbox
