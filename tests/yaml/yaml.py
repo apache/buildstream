@@ -1,5 +1,6 @@
 import os
 import pytest
+import tempfile
 from collections import Mapping
 
 from buildstream import _yaml
@@ -148,6 +149,21 @@ def test_composite_preserve_originals(datafiles):
 
     # But the original node is not effected by the override.
     assert(_yaml.node_get(orig_extra, str, 'old') == 'new')
+
+
+def load_yaml_file(filename, *, cache_path, shortname=None, from_cache='raw'):
+
+    _, temppath = tempfile.mkstemp(dir=os.path.join(cache_path.dirname, cache_path.basename), text=True)
+    context = Context()
+
+    with YamlCache.open(context, temppath) as yc:
+        if from_cache == 'raw':
+            return _yaml.load(filename, shortname)
+        elif from_cache == 'cached':
+            _yaml.load(filename, shortname, yaml_cache=yc)
+            return _yaml.load(filename, shortname, yaml_cache=yc)
+        else:
+            assert False
 
 
 # Tests for list composition
