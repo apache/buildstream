@@ -174,6 +174,12 @@ def test_cas_import(cli, tmpdir, original, overlay):
             # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
             assert os.path.isdir(realpath)
 
+    # Now do the same thing with filebaseddirectories and check the contents match
+    d3 = create_new_casdir(original, fake_context, tmpdir)
+    d4 = create_new_filedir(overlay, tmpdir)
+    d3.import_files(d2)
+    assert d.ref.hash == d3.ref.hash
+
 
 @pytest.mark.parametrize("root", [1, 2, 3, 4, 5, 6])
 def test_directory_listing(cli, tmpdir, root):
