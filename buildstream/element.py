@@ -1316,7 +1316,8 @@ class Element(Plugin):
     #
     @contextmanager
     def _prepare_sandbox(self, scope, directory, deps='run', integrate=True):
-        with self.__sandbox(directory, config=self.__sandbox_config) as sandbox:
+        # bst shell and bst checkout require a local sandbox.
+        with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False) as sandbox:
 
             # Configure always comes first, and we need it.
             self.configure_sandbox(sandbox)
@@ -2149,17 +2150,18 @@ class Element(Plugin):
     #    stdout (fileobject): The stream for stdout for the sandbox
     #    stderr (fileobject): The stream for stderr for the sandbox
     #    config (SandboxConfig): The SandboxConfig object
+    #    allow_remote (bool): Whether the sandbox is allowed to be remote
     #
     # Yields:
     #    (Sandbox): A usable sandbox
     #
     @contextmanager
-    def __sandbox(self, directory, stdout=None, stderr=None, config=None):
+    def __sandbox(self, directory, stdout=None, stderr=None, config=None, allow_remote=True):
         context = self._get_context()
         project = self._get_project()
         platform = Platform.get_platform()
 
-        if directory is not None and self.__use_remote_execution():
+        if directory is not None and allow_remote and self.__use_remote_execution():
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
@@ -2173,7 +2175,7 @@ class Element(Plugin):
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
-            if self.__remote_execution_url:
+            if allow_remote and self.__remote_execution_url:
                 self.warn("Artifact {} is configured to use remote execution but element plugin does not support it."
                           .format(self.name), detail="Element plugin '{kind}' does not support virtual directories."
                           .format(kind=self.get_kind()), warning_token="remote-failure")
@@ -2193,7 +2195,8 @@ class Element(Plugin):
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
             # Recursive contextmanager...
-            with self.__sandbox(rootdir, stdout=stdout, stderr=stderr, config=config) as sandbox:
+            with self.__sandbox(rootdir, stdout=stdout, stderr=stderr, config=config,
+                                allow_remote=allow_remote) as sandbox:
                 yield sandbox
 
             # Cleanup the build dir
