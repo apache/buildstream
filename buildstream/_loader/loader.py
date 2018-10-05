@@ -113,7 +113,13 @@ class Loader():
             profile_start(Topics.LOAD_PROJECT, target)
             junction, name, loader = self._parse_name(target, rewritable, ticker,
                                                       fetch_subprojects=fetch_subprojects)
-            with YamlCache.open(self._context) as yaml_cache:
+
+            # XXX This will need to be changed to the context's top-level project if this method
+            # is ever used for subprojects
+            top_dir = self.project.directory
+
+            cache_file = YamlCache.get_cache_file(top_dir)
+            with YamlCache.open(self._context, cache_file) as yaml_cache:
                 loader._load_file(name, rewritable, ticker, fetch_subprojects, yaml_cache)
             deps.append(Dependency(name, junction=junction))
             profile_end(Topics.LOAD_PROJECT, target)

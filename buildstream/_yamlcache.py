@@ -54,8 +54,10 @@ class YamlCache():
         self._context = context
 
     # Writes the yaml cache to the specified path.
-    def write(self):
-        path = self._get_cache_file(self._context)
+    #
+    # Args:
+    #    path (str): The path to the cache file.
+    def write(self, path):
         parent_dir = os.path.dirname(path)
         os.makedirs(parent_dir, exist_ok=True)
         with open(path, "wb") as f:
@@ -139,14 +141,14 @@ class YamlCache():
     #
     # Args:
     #    context (Context): The context.
+    #    cachefile (str): The path to the cache file.
     #
     # Returns:
     #    (YamlCache): A YamlCache.
     @staticmethod
     @contextmanager
-    def open(context):
+    def open(context, cachefile):
         # Try to load from disk first
-        cachefile = YamlCache._get_cache_file(context)
         cache = None
         if os.path.exists(cachefile):
             try:
@@ -155,12 +157,13 @@ class YamlCache():
             except pickle.UnpicklingError as e:
                 sys.stderr.write("Failed to load YamlCache, {}\n".format(e))
 
+        # Failed to load from disk, create a new one
         if not cache:
             cache = YamlCache(context)
 
         yield cache
 
-        cache.write()
+        cache.write(cachefile)
 
     # Calculates a key for putting into the cache.
     @staticmethod
@@ -170,13 +173,7 @@ class YamlCache():
 
     # Retrieves a path to the yaml cache file.
     @staticmethod
-    def _get_cache_file(context):
-        try:
-            toplevel_project = context.get_toplevel_project()
-            top_dir = toplevel_project.directory
-        except IndexError:
-            # Context has no projects, fall back to current directory
-            top_dir = os.getcwd()
+    def get_cache_file(top_dir):
         return os.path.join(top_dir, ".bst", YAML_CACHE_FILENAME)
 
 

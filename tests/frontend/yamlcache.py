@@ -52,7 +52,8 @@ def generate_project(tmpdir, ref_storage, with_junction, name="test"):
 def with_yamlcache(project_dir):
     context = Context()
     project = Project(project_dir, context)
-    with YamlCache.open(context) as yamlcache:
+    cache_file = YamlCache.get_cache_file(project_dir)
+    with YamlCache.open(context, cache_file) as yamlcache:
         yield yamlcache, project
 
 
@@ -62,12 +63,12 @@ def yamlcache_key(yamlcache, in_file, copy_tree=False):
     return key
 
 
-def modified_file(input_file):
+def modified_file(input_file, tmpdir):
     with open(input_file) as f:
         data = f.read()
     assert 'variables' not in data
     data += '\nvariables: {modified: True}\n'
-    _, temppath = tempfile.mkstemp(text=True)
+    _, temppath = tempfile.mkstemp(dir=tmpdir, text=True)
     with open(temppath, 'w') as f:
         f.write(data)
 
@@ -96,7 +97,7 @@ def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction, move_project):
         # *Absolutely* horrible cache corruption to check it's being used
         # Modifying the data from the cache is fraught with danger,
         # so instead I'll load a modified version of the original file
-        temppath = modified_file(element_path)
+        temppath = modified_file(element_path, str(tmpdir))
         contents = _yaml.load(temppath, copy_tree=False, project=prj)
         key = yamlcache_key(yc, element_path)
         yc.put(prj, element_path, key, contents)
