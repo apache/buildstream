@@ -281,7 +281,9 @@ class CasBasedDirectory(Directory):
         directory = root
         components = symlink.target.split(CasBasedDirectory._pb2_path_sep)
         for c in components:
-            if c == "..":
+            if c == ".":
+                pass
+            elif c == "..":
                 directory = directory.parent
             else:
                 directory = directory.descend(c, create=True)
@@ -322,7 +324,9 @@ class CasBasedDirectory(Directory):
                 # We ran out of path elements and ended up in a directory
                 return directory
             c = components.pop(0)
-            if c == "..":
+            if c == ".":
+                pass
+            elif c == "..":
                 print("  resolving {}: up-dir".format(c))
                 # If directory.parent *is* None, this is an attempt to access
                 # '..' from the root, which is valid under POSIX; it just
