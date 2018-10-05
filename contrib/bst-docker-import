@@ -1,0 +1,102 @@
+#!/bin/bash
+#
+#  Copyright 2018 Bloomberg Finance LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Chadnan Singh <csingh43@bloomberg.net>
+
+# This is a helper script to generate Docker images using checkouts of
+# BuildStream elements.
+
+usage() {
+    cat <<EOF
+
+USAGE: $(basename "$0") [-c BST_CMD] [-m MESSAGE] [-t TAG] [-h] ELEMENT
+
+Create a Docker image from bst checkout of an element.
+
+OPTIONS:
+    -c BST_CMD    Path to BuildStream command (default: bst).
+    -m MESSAGE    Commit message for the imported image.
+    -t TAG        Tag of the imported image.
+    -h            Print this help text and exit.
+
+EXAMPLES:
+
+    # Import hello.bst as a Docker image with tag "bst-hello" and message "hello"
+    $(basename "$0") -m hello -t bst-hello hello.bst
+
+    # Import hello.bst as a Docker image with tag "bst-hello" using bst-here
+    $(basename "$0") -c bst-here -t bst-hello hello.bst
+
+EOF
+    exit "$1"
+}
+
+die() {
+    echo "FATAL: $1" >&2
+    exit 1
+}
+
+bst_cmd=bst
+docker_import_cmd=(docker import)
+docker_image_tag=
+
+while getopts c:m:t:h arg
+do
+    case $arg in
+    c)
+        bst_cmd="$OPTARG"
+        ;;
+    m)
+        docker_import_cmd+=('-m' "$OPTARG")
+        ;;
+    t)
+        docker_image_tag="$OPTARG"
+        ;;
+    h)
+        usage 0
+        ;;
+    \?)
+        usage 1
+    esac
+done
+
+shift $((OPTIND-1))
+if [[ "$#" != 1 ]]; then
+    echo "$0: No element specified" >&2
+    usage 1
+fi
+element="$1"
+
+# Dump to a temporary file in the current directory.
+# NOTE: We use current directory to try to ensure compatibility with scripts
+# like bst-here, assuming that the current working directory is mounted
+# inside the container.
+
+checkout_tar="bst-checkout-$(basename "$element")-$RANDOM.tar"
+
+echo "INFO: Checking out $element ..." >&2
+$bst_cmd checkout --tar "$element" "$checkout_tar" || die "Failed to checkout $element"
+echo "INFO: Successfully checked out $element" >&2
+
+echo "INFO: Importing Docker image ..."
+"${docker_import_cmd[@]}" "$checkout_tar" "$docker_image_tag" || die "Failed to import Docker image from tarball"
+echo "INFO: Successfully import Docker image $docker_image_tag"
+
+echo "INFO: Cleaning up ..."
+rm "$checkout_tar" || die "Failed to remove $checkout_tar"
+echo "INFO: Clean up finished"
