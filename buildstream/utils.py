@@ -816,7 +816,16 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
     # symbolic links which lead to directories before processing files inside
     # those directories.
     if not presorted:
-        filelist = sorted(filelist)
+        resolved = []
+        for f in filelist:
+            dirname = os.path.dirname(f)
+            dirname = os.path.realpath(os.path.join(srcdir, dirname))
+            dirname = os.path.relpath(dirname, srcdir)
+            if dirname == '.':
+                resolved.append(os.path.basename(f))
+            else:
+                resolved.append(os.path.join(dirname, os.path.basename(f)))
+        filelist = sorted(resolved)
 
     # Now walk the list
     for path in filelist:
