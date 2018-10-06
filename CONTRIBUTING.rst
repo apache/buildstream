@@ -3,71 +3,135 @@ Contributing
 Some tips and guidelines for developers hacking on BuildStream
 
 
-Feature additions
------------------
-Major feature additions should be proposed on the
-`mailing list <https://mail.gnome.org/mailman/listinfo/buildstream-list>`_
-before being considered for inclusion, we strongly recommend proposing
-in advance of commencing work.
+.. _contributing_filing_issues:
 
-If you are experiencing an issue with BuildStream or would like to submit a small patch/feature, then
-you can `oepn an issue <https://gitlab.com/BuildStream/buildstream/issues/new?issue%5Bassignee_id%5D=&issue%5Bmilestone_id%5D=>`_
+Filing issues
+-------------
+If you are experiencing an issue with BuildStream, or would like to submit a patch
+to fix an issue, then you should first search the list of `open issues <https://gitlab.com/BuildStream/buildstream/issues>`_
+to see if the issue is already filed, and `open an issue <https://gitlab.com/BuildStream/buildstream/issues/new>`_
+if no issue already exists.
 
-For policies on how to submit and issue and how to use our project labels, we recommend that you read the `policies guide <https://gitlab.com/BuildStream/nosoftware/alignment/blob/master/BuildStream_policies.md>`_
+For policies on how to submit and issue and how to use our project labels,
+we recommend that you read the `policies guide
+<https://gitlab.com/BuildStream/nosoftware/alignment/blob/master/BuildStream_policies.md>`_
 
-New features must be well documented and tested either in our main
-test suite if possible, or otherwise in the integration tests.
+
+.. _contributing_fixing_bugs:
+
+Fixing bugs
+-----------
+Before fixing a bug, it is preferred that an :ref:`issue be filed <contributing_filing_issues>`
+first in order to better document the defect, however this need not be followed to the
+letter for minor fixes.
+
+Patches which fix bugs should always come with a regression test.
+
+
+.. _contributing_adding_features:
+
+Adding new features
+-------------------
+Feature additions should be proposed on the `mailing list
+<https://mail.gnome.org/mailman/listinfo/buildstream-list>`_
+before being considered for inclusion. To save time and avoid any frustration,
+we strongly recommend proposing your new feature in advance of commencing work.
+
+Once consensus has been reached on the mailing list, then the proposing
+party should :ref:`file an issue <contributing_filing_issues>` to track the
+work. Please use the *bst_task* template for issues which represent
+feature additions.
+
+New features must be well documented and tested in our test suite.
 
 It is expected that the individual submitting the work take ownership
 of their feature within BuildStream for a reasonable timeframe of at least
 one release cycle after their work has landed on the master branch. This is
-to say that the submitter is expected to address and fix any side effects and
-bugs which may have fell through the cracks in the review process, giving us
-a reasonable timeframe for identifying these.
+to say that the submitter is expected to address and fix any side effects,
+bugs or regressions which may have fell through the cracks in the review
+process, giving us a reasonable timeframe for identifying these.
 
 
-Patch submissions
------------------
-If you want to submit a patch, do ask for developer permissions on our
-IRC channel first (GitLab's button also works, but you may need to
-shout about it - we often overlook this) - for CI reasons, it's much
-easier if patches are in branches of the main repository.
+.. _contributing_submitting_patches:
 
-Branches must be submitted as merge requests in gitlab. If the branch
-fixes an issue or is related to any issues, these issues must be mentioned
-in the merge request or preferably the commit messages themselves.
+Submitting patches
+------------------
 
+
+Ask for developer access
+~~~~~~~~~~~~~~~~~~~~~~~~
+If you want to submit a patch, do ask for developer permissions, either
+by asking us directly on our public IRC channel (irc://irc.gnome.org/#buildstream)
+or by visiting our `project page on GitLab <https://gitlab.com/BuildStream/buildstream>`_
+and using the GitLab UI to ask for permission.
+
+This will make your contribution experience smoother, as you will not
+need to setup any complicated CI settings, and rebasing your branch
+against the upstream master branch will be more painless.
+
+
+Branch names
+~~~~~~~~~~~~
 Branch names for merge requests should be prefixed with the submitter's
-name or nickname, e.g. ``username/implement-flying-ponies``.
+name or nickname, followed by a forward slash, and then a descriptive
+name. e.g.::
+
+  username/fix-that-bug
+
+This allows us to more easily identify which branch does what and
+belongs to whom, especially so that we can effectively cleanup stale
+branches in the upstream repository over time.
+
+
+Merge requests
+~~~~~~~~~~~~~~
+Once you have created a local branch, you can push it to the upstream
+BuildStream repository using the command line::
+
+  git push origin username/fix-that-bug:username/fix-that-bug
+
+GitLab will respond to this with a message and a link to allow
+you to create a new merge request.
 
 You may open merge requests for the branches you create before you
-are ready to have them reviewed upstream, as long as your merge request
-is not yet ready for review then it must be prefixed with the ``WIP:``
-identifier.
+are ready to have them reviewed and considered for inclusion. As long as
+your merge request is not yet ready for review then the merge request
+title must be prefixed with the ``WIP:`` identifier.
 
+
+Organized commits
+~~~~~~~~~~~~~~~~~
 Submitted branches must not contain a history of the work done in the
-feature branch. Please use git's interactive rebase feature in order to
-compose a clean patch series suitable for submission.
+feature branch. For example, if you had to change your approach, or
+have a later commit which fixes something in a previous commit on your
+branch, we do not want to include the history of how you came up with
+your patch in the upstream master branch.
+
+Please use git's interactive rebase feature in order to compose a clean
+patch series suitable for submission upstream.
+
+Every commit in series should pass the test suite, this is very important
+for tracking down regressions and performing git bisections in the future.
 
 We prefer that documentation changes be submitted in separate commits from
-the code changes which they document, and new test cases are also preferred
-in separate commits.
+the code changes which they document, and newly added test cases are also
+preferred in separate commits.
 
 If a commit in your branch modifies behavior such that a test must also
 be changed to match the new behavior, then the tests should be updated
-with the same commit. Ideally every commit in the history of master passes
-its test cases, this makes bisections more easy to perform, but is not
-always practical with more complex branches.
+with the same commit, so that every commit in series passes it's own tests.
 
 
 Commit messages
 ~~~~~~~~~~~~~~~
-Commit messages must be formatted with a brief summary line, optionally
-followed by an empty line and then a free form detailed description of
-the change.
+Commit messages must be formatted with a brief summary line, followed by
+an empty line and then a free form detailed description of the change.
 
 The summary line must start with what changed, followed by a colon and
 a very brief description of the change.
+
+If the commit fixes an issue, or is related to an issue; then the issue
+number should always be referenced in the commit message.
 
 **Example**::
 
@@ -77,14 +141,48 @@ a very brief description of the change.
   the element. Elements that are not properly frobnicated raise
   an error to inform the user of invalid frobnication rules.
 
+  Fixes #123
 
-Coding style
-------------
-Coding style details for BuildStream
+In the case that you have a commit which necessarily modifies multiple
+components, then the summary line should still mention generally what
+changed (if possible), followed by a colon and a brief summary.
+
+In this case the free form detailed description of the change should
+contain a bullet list describing what was changed in each component
+separately.
+
+**Example**::
+
+  artifact cache: Fixed automatic expiry in the local cache
+
+    o _artifactcache/artifactcache.py: Updated the API contract
+      of ArtifactCache.remove() so that something detailed is
+      explained here.
+
+    o _artifactcache/cascache.py: Adhere to the new API contract
+      dictated by the abstract ArtifactCache class.
+
+    o tests/artifactcache/expiry.py: Modified test expectations to
+      match the new behavior.
+
+  Fixes #123
 
 
-Style guide
-~~~~~~~~~~~
+Coding guidelines
+-----------------
+This section discusses coding style and other guidelines for hacking
+on BuildStream. This is important to read through for writing any non-trivial
+patches and especially outlines what people should watch out for when
+reviewing patches.
+
+Much of the rationale behind what is layed out in this section considers
+good traceability of lines of code with *git blame*, overall sensible
+modular structure, consistency in how we write code, and long term maintenance
+in mind.
+
+
+Approximate PEP-8 Style
+~~~~~~~~~~~~~~~~~~~~~~~
 Python coding style for BuildStream is pep8, which is documented here: https://www.python.org/dev/peps/pep-0008/
 
 We have a couple of minor exceptions to this standard, we dont want to compromise
@@ -93,15 +191,377 @@ code readability by being overly restrictive on line length for instance.
 The pep8 linter will run automatically when running the test suite.
 
 
+.. _contributing_documenting_symbols:
+
+Documenting symbols
+~~~~~~~~~~~~~~~~~~~
+In BuildStream, we maintain what we call a *"Public API Surface"* that
+is guaranteed to be stable and unchanging across stable releases. The
+symbols which fall into this special class are documented using Python's
+standard *docstrings*, while all other internals of BuildStream are documented
+with comments above the related symbol.
+
+When documenting the public API surface which is rendered in the reference
+manual, we always mention the major version in which the API was introduced,
+as shown in the examples below. If a public API exists without the *Since*
+annotation, this is taken to mean that it was available since the first stable
+release 1.0.
+
+Here are some examples to get the hang of the format of API documenting
+comments and docstrings.
+
+**Public API Surface method**::
+
+  def frobnicate(self, source, *, frobilicious=False):
+      """Frobnicates this element with the specified source
+
+      Args:
+         source (Source): The Source to frobnicate with
+         frobilicious (bool): Optionally specify that frobnication should be
+                              performed fribiliciously
+
+      Returns:
+         (Element): The frobnicated version of this Element.
+
+      *Since: 1.2*
+      """
+      ...
+
+**Internal method**::
+
+  # frobnicate():
+  #
+  # Frobnicates this element with the specified source
+  #
+  # Args:
+  #       source (Source): The Source to frobnicate with
+  #       frobilicious (bool): Optionally specify that frobnication should be
+  #                            performed fribiliciously
+  #
+  # Returns:
+  #    (Element): The frobnicated version of this Element.
+  #
+  def frobnicate(self, source, *, frobilicious=False):
+      ...
+
+**Public API Surface instance variable**::
+
+  def __init__(self, context, element):
+
+    self.name = self._compute_name(context, element)
+    """The name of this foo
+
+    *Since: 1.2*
+    """
+
+**Internal instance variable**::
+
+  def __init__(self, context, element):
+
+    self.name = self._compute_name(context, element) # The name of this foo
+
+**Internal instance variable (long)**::
+
+  def __init__(self, context, element):
+
+    # This instance variable required a longer explanation, so
+    # it is on a line above the instance variable declaration.
+    self.name = self._compute_name(context, element)
+
+
+**Public API Surface class**::
+
+  class Foo(Bar):
+      """The main Foo object in the data model
+
+      Explanation about Foo. Note that we always document
+      the constructor arguments here, and not beside the __init__
+      method.
+
+      Args:
+         context (Context): The invocation Context
+         count (int): The number to count
+
+      *Since: 1.2*
+      """
+      ...
+
+**Internal class**::
+
+  # Foo()
+  #
+  # The main Foo object in the data model
+  #
+  # Args:
+  #    context (Context): The invocation Context
+  #    count (int): The number to count
+  #
+  # Returns:
+  #    (Foo): A newly created Foo object
+  #
+  class Foo(Bar):
+      ...
+
+
+.. _contributing_class_order:
+
+Class structure and ordering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When creating or modifying an object class in BuildStream, it is
+important to keep in mind the order in which symbols should appear
+and keep this consistent.
+
+Here is an example to illustrate the expected ordering of symbols
+on a python class in BuildStream::
+
+  class Foo(Bar):
+
+      # Public class-wide variables come first, if any.
+
+      # Private class-wide variables, if any
+
+      # Now we have the dunder/magic methods, always starting
+      # with the __init__() method.
+
+      def __init__(self, name):
+
+         super().__init__()
+      
+         # NOTE: In the instance initializer we declare any instance variables,
+         #       always declare the public instance variables (if any) before
+	 #       the private ones.
+	 #
+	 #       It is preferred to avoid any public instance variables, and
+	 #       always expose an accessor method for it instead.
+
+	 #
+	 # Public instance variables
+	 #
+	 self.name = name  # The name of this foo
+
+	 #
+	 # Private instance variables
+	 #
+	 self._count = 0   # The count of this foo
+
+      ################################################
+      #               Abstract Methods               #
+      ################################################
+
+      # NOTE: Abstract methods in BuildStream are allowed to have
+      #       default methods.
+      #
+      #       Subclasses must NEVER override any method which was
+      #       not advertized as an abstract method by the parent class.
+
+      # frob()
+      #
+      # Implementors should implement this to frob this foo
+      # count times if possible.
+      #
+      # Args:
+      #    count (int): The number of times to frob this foo
+      #
+      # Returns:
+      #    (int): The number of times this foo was frobbed.
+      #
+      # Raises:
+      #    (FooError): Implementors are expected to raise this error
+      #
+      def frob(self, count):
+
+          #
+	  # An abstract method in BuildStream is allowed to have
+	  # a default implementation.
+	  #
+          self._count = self._do_frobbing(count)
+
+	  return self._count
+
+      ################################################
+      #     Implementation of abstract methods       #
+      ################################################
+
+      # NOTE: Implementations of abstract methods defined by
+      #       the parent class should NEVER document the API
+      #       here redundantly.
+
+      def frobbish(self):
+         #
+	 # Implementation of the "frobbish" abstract method
+	 # defined by the parent Bar class.
+	 #
+	 return True
+
+      ################################################
+      #                 Public Methods               #
+      ################################################
+
+      # NOTE: Public methods here are the ones which are expected
+      #       to be called from outside of this class.
+      #
+      #       These, along with any abstract methods, usually
+      #       constitute the API surface of this class.
+
+      # frobnicate()
+      #
+      # Perform the frobnication process on this Foo
+      #
+      # Raises:
+      #    (FrobError): In the case that a frobnication error was
+      #                 encountered
+      #
+      def frobnicate(self):
+          frobnicator.frobnicate(self)
+
+      # set_count()
+      #
+      # Sets the count of this foo
+      #
+      # Args:
+      #    count (int): The new count to set
+      #
+      def set_count(self, count):
+
+          self._count = count
+
+      # get_count()
+      #
+      # Accessor for the count value of this foo.
+      #
+      # Returns:
+      #    (int): The count of this foo
+      #
+      def set_count(self, count):
+
+          return self._count
+
+      ################################################
+      #                 Private Methods              #
+      ################################################
+
+      # NOTE: Private methods are the ones which are internal
+      #       implementation details of this class.
+      #
+      #       We can be absolutely sure that nobody is ever
+      #       going to call these functions from outside of
+      #       this class definition.
+      #
+      #       Even though these are private implementation
+      #       details, they still MUST have API documenting
+      #       comments on them.
+      
+      # _do_frobbing()
+      #
+      # Does the actual frobbing
+      #
+      # Args:
+      #    count (int): The number of times to frob this foo
+      #
+      # Returns:
+      #    (int): The number of times this foo was frobbed.
+      #
+      def self._do_frobbing(self, count):
+          return count
+
+
+.. _contributing_public_and_private:
+
+Public and private symbols
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+BuildStream mostly follows the PEP-8 for defining public and private symbols
+for any given class, with some deviations. Please read the `section on inheritance
+<https://www.python.org/dev/peps/pep-0008/#designing-for-inheritance>`_ for
+reference on how the PEP-8 defines public and non-public.
+
+* A public symbol is any symbol which you expect to be used by clients
+  of your class or module within BuildStream.
+
+  Public symbols are written without any leading underscores.
+
+* A private symbol is any symbol which is entirely internal to your class
+  or module within BuildStream. These symbols cannot ever be accessed by
+  external clients or modules.
+
+  A private symbol must be denoted by a leading underscore.
+
+* When a class can have subclasses (for example, the ``Sandbox`` or ``Platform``
+  classes which have various implementations, or the ``Element`` and ``Source``
+  classes which plugins derive from), then private sumbols should be denoted
+  by two leading underscores.
+
+  The double leading underscore naming convention invokes Python's name
+  mangling algorithm which helps prevent namespace collisions in the case
+  that subclasses might have a private symbol with the same name.
+
+In BuildStream, we have what we call a *"Public API Surface"*, as previously
+mentioned in :ref:`contributing_documenting_symbols`. In the :ref:`next section
+<contributing_public_api_surface>` we will discuss the *"Public API Surface"* and
+outline the exceptions to the rules discussed here.
+
+
+.. _contributing_public_api_surface:
+
+Public API Surface
+~~~~~~~~~~~~~~~~~~
+BuildStream exposes what we call a *"Public API Surface"* which is stable
+and unchanging. This is for the sake of stability of the interfaces which
+plugins use, so it can also be referred to as the *"Plugin facing API"*.
+
+Any symbols which are a part of the *"Public API Surface*" are never allowed
+to change once they have landed in a stable release version of BuildStream. As
+such, we aim to keep the *"Public API Surface"* as small as possible at all
+times, and never expose any internal details to plugins inadvertently.
+
+One problem which arises from this is that we end up having symbols
+which are public according to the :ref:`rules discussed in the previous section
+<contributing_public_and_private>`, but must be hidden away from the
+*"Public API Surface"*. For example, BuildStream internal classes need
+to invoke methods on the ``Element`` and ``Source`` classes, wheras these
+methods need to be hidden from the *"Public API Surface"*.
+
+This is where BuildStream deviates from the PEP-8 standard for public
+and private symbol naming.
+
+In order to disambiguate between:
+
+* Symbols which are publicly accessible details of the ``Element`` class, can
+  be accessed by BuildStream internals, but must remain hidden from the
+  *"Public API Surface"*
+
+* Symbols which are private to the ``Element`` class, and cannot be accessed
+  from outside of the ``Element`` class at all.
+
+We denote the former category of symbols with only a single underscore, and the latter
+category of symbols with a double underscore. We often refer to this distinction
+as *"API Private"* (the former category) and *"Local Private"* (the latter category).
+
+Classes which are a part of the *"Public API Surface"* and require this disambiguation
+were not discussed in :ref:`the class ordering section <contributing_class_order>`, for
+these classes, the *"API Private"* symbols always come **before** the *"Local Private"*
+symbols in the class declaration.
+
+Modules which are not a part of the *"Public API Surface"* have their python files
+prefixed with a single underscore, and are not imported in BuildStream's the master
+``__init__.py`` which is used by plugins.
+
+.. note::
+
+   The ``utils.py`` module is public and exposes a handful of utility functions,
+   however many of the functions it provides are *"API Private"*.
+
+   In this case, the *"API Private"* functions are prefixed with a single underscore.
+
+
 Imports
 ~~~~~~~
 Module imports inside BuildStream are done with relative ``.`` notation
 
-Good::
+**Good**::
 
   from .context import Context
 
-Bad::
+**Bad**::
 
   from buildstream.context import Context
 
@@ -122,128 +582,540 @@ This makes things clear when reading code that said functions
 are not defined in the same file but come from utils.py for example.
 
 
-Policy for private symbols
+Instance Variables
+~~~~~~~~~~~~~~~~~~
+It is preferred that all instance state variables be declared as :ref:`private symbols
+<contributing_public_and_private>`, however in some cases, especially when the state
+is immutable for the object's life time (like an ``Element`` name for example), it
+is acceptable to save some typing by using a publicly accessible instance variable.
+
+It is never acceptable to modify the value of an instance variable from outside
+of the declaring class. In other words, the class which exposes an instance variable
+is the only one in control of the value of this variable.
+
+* If an instance variable is public and must be modified; then it must be
+  modified using a :ref:`mutator <contributing_accessor_mutator>`
+
+* Ideally for better encapsulation, all object state is declared as
+  :ref:`private instance variables <contributing_public_and_private>` and can
+  only be accessed by external classes via public :ref:`accessors and mutators
+  <contributing_accessor_mutator>`
+
+.. note::
+
+   In some cases, we may use small data structures declared as objects for the sake
+   of better readability, where the object class itself has no real supporting code.
+
+   In these exceptions, it can be acceptable to modify the instance variables
+   of these objects directly, unless they are otherwise documented to be immutable.
+
+
+.. _contributing_accessor_mutator:
+
+Accessors and Mutators
+~~~~~~~~~~~~~~~~~~~~~~
+An accessor and mutator, are methods defined on the object class to access (get)
+or mutate (set) a value owned by the declaring class, respectively.
+
+An accessor might derive the returned value from one or more of its components,
+and a mutator might have side effects, or delegate the mutation to a component.
+
+Accessors and mutators are always :ref:`public <contributing_public_and_private>`
+(even if they might have a single leading underscore and are considered
+:ref:`API Private <contributing_public_api_surface>`), as their purpose is to
+enforce encapsulation with regards to any accesses to the state which is owned
+by the declaring class.
+
+Accessors and mutators are functions prefixed with ``get_`` and ``set_``
+respectively, e.g.::
+
+  class Foo():
+
+      def __init__(self):
+
+          # Declare some internal state
+          self._count = 0
+
+      # get_count()
+      #
+      # Gets the count of this Foo.
+      #
+      # Returns:
+      #    (int): The current count of this Foo
+      #
+      def get_foo(self):
+          return self._count
+
+      # set_count()
+      #
+      # Sets the count of this Foo.
+      #
+      # Args:
+      #    count (int): The new count for this Foo
+      #
+      def set_foo(self, count):
+          self._count = count
+
+.. attention::
+
+   We are aware that Python offers a facility for accessors and
+   mutators using the ``@property`` decorator instead. Do not use
+   the ``@property`` decorator.
+
+   The decision to use explicitly defined functions instead of the
+   ``@property`` feature is rather arbitrary, and there is not much
+   technical merit to preferring one technique over the other.
+   However as :ref:`discussed below <contributing_always_consistent>`,
+   it is of the utmost importance that we do not mix both techniques
+   in the same code base.
+
+
+.. _contributing_abstract_methods:
+
+Abstract Methods
+~~~~~~~~~~~~~~~~
+In BuildStream, an *"Abstract Method"* is a bit of a misnomer and does
+not match up to how Python defines abstract methods, we need to seek out
+a new nomanclature to refer to these methods.
+
+In Python, an *"Abstract Method"* is a method which **must** be
+implemented by a subclass, whereas all methods in Python can be
+overridden.
+
+In BuildStream, we use the term *"Abstract Method"*, to refer to
+a method which **can** be overridden by a subclass, whereas it
+is **illegal** to override any other method.
+
+* Abstract methods are allowed to have default implementations
+
+* Subclasses are not allowed to redefine the calling signature
+  of an abstract method, or redefine the API contract in any way
+
+* Subclasses are not allowed to override any other methods.
+
+The key here is that in BuildStream, we consider it unacceptable
+that a subclass overrides a method of it's parent class unless
+the said parent class has explicitly given permission to subclasses
+to do so, and outlined the API contract for this. No surprises
+are allowed.
+
+
+Error Handling
+~~~~~~~~~~~~~~
+In BuildStream, all non recoverable errors are expressed via
+subclasses of the ``BstError`` exception.
+
+This exception is handled deep in the core in a few places, and
+it is rarely necessary to handle a ``BstError``.
+
+
+Raising Exceptions
+''''''''''''''''''
+When writing code in the BuildStream core, ensure that all system
+calls are wrapped in a ``try:`` block, and raise a descriptive ``BstError``
+of the appropriate class explaining what exactly failed.
+
+Always include the original system call error is formatted into
+your new exception, and that you use the python ``from`` semantic
+to retain the original call trace, example::
+
+  try:
+      os.utime(self._refpath(ref))
+  except FileNotFoundError as e:
+      raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
+
+
+Enhancing Exceptions
+''''''''''''''''''''
+Sometimes the ``BstError`` originates from a lower level component,
+and the source of the error did not have enough context to create
+a good and informative summary of the error for the user.
+
+In these cases it is necessary to handle the error and raise a new
+one, e.g.::
+
+  try:
+      extracted_artifact = self._artifacts.extract(self, cache_key)
+  except ArtifactError as e:
+      raise ElementError("Failed to extract {} while checking out {}: {}"
+                         .format(cache_key, self.name, e)) from e
+
+
+Programming errors
+''''''''''''''''''
+Sometimes you are writing code and have detected an unexpected condition,
+or a broken invariant for which the code cannot be prepared to handle
+gracefully.
+
+In these cases, do **not** raise any of the ``BstError`` class exceptions.
+
+Instead, use the python ``assert`` statement, e.g.::
+
+  assert utils._is_main_process(), \
+      "Attempted to save workspace configuration from child process"
+
+This will result in a ``BUG`` message with the stack trace included being
+logged and reported in the frontend.
+
+
+BstError parameters
+'''''''''''''''''''
+When raising ``BstError`` class exceptions, there are some common properties
+which can be useful to know about:
+
+* **message:** The brief human readable error, will be formatted on one line in the frontend
+
+* **detail:** An optional detailed human readable message to accompany the **message** summary
+  of the error. This is often used to recommend the user some course of action, or to provide
+  additional context about the error.
+
+* **temporary:** Some errors are allowed to be *temporary*, this attribute is only
+  observed from child processes which fail in a temporary way. This distinction
+  is used to determine whether the task should be *retried* or not. An error is usually
+  only a *temporary* error if the cause of the error was a network timeout.
+
+* **reason:** A machine readable identifier for the error. This is used for the purpose
+  of regression testing, such that we check that BuildStream has errored out for the
+  expected reason in a given failure mode.
+
+
+Documenting Exceptions
+''''''''''''''''''''''
+We have already seen :ref:`some examples <contributing_class_order>` of how
+exceptions are documented in API documenting comments, but this is worth some
+additional disambiguation.
+
+* Only document the exceptions which are raised directly by the function in question.
+  It is otherwise nearly impossible to keep track of what exceptions *might* be raised
+  indirectly by calling the given function.
+
+* For a regular public or private method, your audience is a caller of the function;
+  document the exception in terms of what exception might be raised as a result of
+  calling this method.
+
+* For an :ref:`abstract method <contributing_abstract_methods>`, your audience is the
+  implementor of the method in a subclass; document the exception in terms of what
+  exception is prescribed for the implementing class to raise.
+
+
+.. _contributing_always_consistent:
+
+Always be consistent
+~~~~~~~~~~~~~~~~~~~~
+There are various ways to define functions and classes in Python,
+which has evolved with various features over time.
+
+In BuildStream, we may not have leveraged all of the nice features
+we could have, that is okay, and where it does not break API, we
+can consider changing it.
+
+Even if you know there is a *better* way to do a given thing in
+Python when compared to the way we do it in BuildStream, *do not do it*.
+
+Consistency of how we do things in the codebase is more important
+than the actual way in which things are done, always.
+
+Instead, if you like a certain python feature and think the BuildStream
+codebase, then propose your change on the `mailing list
+<https://mail.gnome.org/mailman/listinfo/buildstream-list>`_. Chances
+are that we will reach agreement to use your preferred approach, and
+in that case, it will be important to apply the change unilaterally
+across the entire codebase, such that we continue to have a consistent
+code base.
+
+
+Avoid tail calling
+~~~~~~~~~~~~~~~~~~
+With the exception of tail calling with simple functions from
+the standard python library, such as splitting and joining lines
+of text and encoding/decoding text; always avoid tail calling.
+
+**Good**::
+
+  # Variables that we will need declared up top
+  context = self._get_context()
+  workspaces = context.get_workspaces()
+
+  ...
+
+  # Saving the workspace configuration
+  workspaces.save_config()
+
+**Bad**::
+
+  # Saving the workspace configuration
+  self._get_context().get_workspaces().save_config()
+
+**Acceptable**::
+
+  # Decode the raw text loaded from a log file for display,
+  # join them into a single utf-8 string and strip away any
+  # trailing whitespace.
+  return '\n'.join([line.decode('utf-8') for line in lines]).rstrip()
+
+When you need to obtain a delegate object via an accessor function,
+either do it at the beginning of the function, or at the beginning
+of a code block within the function that will use that object.
+
+There are several reasons for this convention:
+
+* When observing a stack trace, it is always faster and easier to
+  determine what went wrong when all statements are on separate lines.
+
+* We always want individual lines to trace back to their origin as
+  much as possible for the purpose of tracing the history of code
+  with *git blame*.
+
+  One day, you might need the ``Context`` or ``Workspaces`` object
+  in the same function for another reason, at which point it will
+  be unacceptable to leave the existing line as written, because it
+  will introduce a redundant accessor to the same object, so the
+  line written as::
+
+    self._get_context().get_workspaces().save_config()
+
+  Will have to change at that point, meaning we lose the valuable
+  information of which commit originally introduced this call
+  when running *git blame*.
+
+* For similar reasons, we prefer delegate objects be accessed near
+  the beginning of a function or code block so that there is less
+  chance that this statement will have to move in the future, if
+  the same function or code block needs the delegate object for any
+  other reason.
+
+  Asides from this, code is generally more legible and uniform when
+  variables are declared at the beginning of function blocks.
+
+
+Vertical stacking of modules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For the sake of overall comprehensiveness of the BuildStream
+architecture, it is important that we retain vertical stacking
+order of the dependencies and knowledge of modules as much as
+possible.
+
+For instance, the ``Source`` objects are owned by ``Element``
+objects in the BuildStream data model, and as such the ``Element``
+will delegate some activities to the ``Source`` objects in it's
+possesion. The ``Source`` objects should however never call functions
+on the ``Element`` object, nor should the ``Source`` object itself
+have any understanding of what an ``Element`` is.
+
+If you are implementing a low level utility layer, for example
+as a part of the ``YAML`` loading code layers, it can be tempting
+to derive context from the higher levels of the codebase which use
+these low level utilities, instead of defining properly stand alone
+APIs for these utilities to work: Never do this.
+
+Unfortunately, unlike other languages where include files play
+a big part in ensuring that it is difficult to make a mess; Python,
+allows you to just call methods on arbitrary objects passed through
+a function call without having to import the module which defines
+those methods - this leads to cyclic dependencies of modules quickly
+if the developer does not take special care of ensuring this does not
+happen.
+
+
+Use less arguments in methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When creating an object, or adding a new API method to an existing
+object, always strive to keep as much context as possible on the
+object itself rather than expecting callers of the methods to provide
+everything the method needs every time.
+
+If the value or object that is needed in a function call is a constant
+for the lifetime of the object which exposes the given method, then
+that value or object should be passed in the constructor instead of
+via a method call.
+
+
+Avoid transient state on instances
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+At times, it can be tempting to store transient state that is
+the result of one operation on an instance, only to be retrieved
+later via an accessor function elsewhere.
+
+As a basic rule of thumb, if the value is transient and just the
+result of one operation, which needs to be observed directly after
+by another code segment, then never store it on the instance.
+
+BuildStream is complicated in the sense that it is multi processed
+and it is not always obvious how to pass the transient state around
+as a return value or a function parameter. Do not fall prey to this
+obstacle and pollute object instances with transient state.
+
+Instead, always refactor the surrounding code so that the value
+is propagated to the desired end point via a well defined API, either
+by adding new code paths or changing the design such that the
+architecture continues to make sense.
+
+
+Refactor the code base as needed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Especially when implementing features, always move the BuildStream
+codebase forward as a whole.
+
+Taking a short cut is alright when prototyping, but circumventing
+existing architecture and design to get a feature implemented without
+re-designing the surrounding architecture to accommodate the new
+feature instead, is never acceptable upstream.
+
+For example, let's say that you have to implement a feature and you've
+successfully prototyped it, but it launches a ``Job`` directly from a
+``Queue`` implementation to get the feature to work, while the ``Scheduler``
+is normally responsible for dispatching ``Jobs`` for the elements on
+a ``Queue``. This means that you've proven that your feature can work,
+and now it is time to start working on a patch for upstream.
+
+Consider what the scenario is and why you are circumventing the design,
+and redesign the ``Scheduler`` and ``Queue`` objects to accommodate for
+the new feature and condition under which you need to dispatch a ``Job``,
+or how you can give the ``Queue`` implementation the additional context it
+needs.
+
+
+Adding core plugins
+-------------------
+This is a checklist of things which need to be done when adding a new
+core plugin to BuildStream proper.
+
+
+Update documentation index
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-Private symbols are expressed via a leading ``_`` single underscore, or
-in some special circumstances with a leading ``__`` double underscore.
+The documentation generating scripts will automatically pick up your
+newly added plugin and generate HTML, but will not add a link to the
+documentation of your plugin automatically.
 
-Before understanding the naming policy, it is first important to understand
-that in BuildStream, there are two levels of privateness which need to be
-considered.
-
-These are treated subtly differently and thus need to be understood:
-
-* API Private
-
-  A symbol is considered to be *API private* if it is not exposed in the *public API*.
-
-  Even if a symbol does not have any leading underscore, it may still be *API private*
-  if the containing *class* or *module* is named with a leading underscore.
-
-* Local private
-
-  A symbol is considered to be *local private* if it is not intended for access
-  outside of the defining *scope*.
-
-  If a symbol has a leading underscore, it might not be *local private* if it is
-  declared on a publicly visible class, but needs to be accessed internally by
-  other modules in the BuildStream core.
+Whenever adding a new plugin, you must add an entry for it in ``doc/source/core_plugins.rst``.
 
 
-Ordering
-''''''''
-For better readability and consistency, we try to keep private symbols below
-public symbols. In the case of public modules where we may have a mix of
-*API private* and *local private* symbols, *API private* symbols should come
-before *local private* symbols.
+Bump format version
+~~~~~~~~~~~~~~~~~~~
+In order for projects to assert that they have a new enough version
+of BuildStream to use the new plugin, the ``BST_FORMAT_VERSION`` must
+be incremented in the ``_versions.py`` file.
+
+Remember to include in your plugin's main documentation, the format
+version in which the plugin was introduced, using the standard annotation
+which we use throughout the documentation, e.g.::
+
+  .. note::
+
+     The ``foo`` plugin is available since :ref:`format version 16 <project_format_version>`
 
 
-Symbol naming
-'''''''''''''
-Any private symbol must start with a single leading underscore for two reasons:
+Add tests
+~~~~~~~~~
+Needless to say, all new feature additions need to be tested. For ``Element``
+plugins, these usually need to be added to the integration tests. For ``Source``
+plugins, the tests are added in two ways:
 
-* So that it does not bleed into documentation and *public API*.
+* For most normal ``Source`` plugins, it is important to add a new ``Repo``
+  implementation for your plugin in the ``tests/testutils/repo/`` directory
+  and update ``ALL_REPO_KINDS`` in ``tests/testutils/repo/__init__.py``. This
+  will include your new ``Source`` implementation in a series of already existing
+  tests, ensuring it works well under normal operating conditions.
 
-* So that it is clear to developers which symbols are not used outside of the declaring *scope*
-
-Remember that with python, the modules (python files) are also symbols
-within their containing *package*, as such; modules which are entirely
-private to BuildStream are named as such, e.g. ``_thismodule.py``.
-
-
-Cases for double underscores
-''''''''''''''''''''''''''''
-The double underscore in python has a special function. When declaring
-a symbol in class scope which has a leading underscore, it can only be
-accessed within the class scope using the same name. Outside of class
-scope, it can only be accessed with a *cheat*.
-
-We use the double underscore in cases where the type of privateness can be
-ambiguous.
-
-* For private modules and classes
-
-  We never need to disambiguate with a double underscore
-
-* For private symbols declared in a public *scope*
-
-  In the case that we declare a private method on a public object, it
-  becomes ambiguous whether:
-
-  * The symbol is *local private*, and only used within the given scope
-
-  * The symbol is *API private*, and will be used internally by BuildStream
-    from other parts of the codebase.
-
-  In this case, we use a single underscore for *API private* methods which
-  are not *local private*, and we use a double underscore for *local private*
-  methods declared in public scope.
+* For other source plugins, or in order to test edge cases, such as failure modes,
+  which are not tested under the normal test battery, add new tests in ``tests/sources``.
 
 
-Documenting private symbols
-'''''''''''''''''''''''''''
-Any symbol which is *API Private* (regardless of whether it is also
-*local private*), should have some documentation for developers to
-better understand the codebase.
+Extend the cachekey test
+~~~~~~~~~~~~~~~~~~~~~~~~
+For any newly added plugins, it is important to add some new simple elements
+in ``tests/cachekey/project/elements`` or ``tests/cachekey/project/sources``,
+and ensure that the newly added elements are depended on by ``tests/cachekey/project/target.bst``.
 
-Contrary to many other python projects, we do not use docstrings to
-document private symbols, but prefer to keep *API Private* symbols
-documented in code comments placed *above* the symbol (or *beside* the
-symbol in some cases, such as variable declarations in a class where
-a shorter comment is more desirable), rather than docstrings placed *below*
-the symbols being documented.
+One new element should be added to the cache key test for every configuration
+value which your plugin understands which can possibly affect the result of
+your plugin's ``Plugin.get_unique_key()`` implementation.
 
-Other than this detail, follow the same guidelines for documenting
-symbols as described below.
+This test ensures that cache keys do not unexpectedly change or become incompatible
+due to code changes. As such, the cache key test should have full coverage of every
+YAML configuration which can possibly affect cache key outcome at all times.
+
+See the ``tests/cachekey/update.py`` file for instructions on running the updater,
+you need to run the updater to generate the ``.expected`` files and add the new
+``.expected`` files in the same commit which extends the cache key test.
 
 
-Documenting BuildStream
------------------------
+Protocol buffers
+----------------
+BuildStream uses protobuf and gRPC for serialization and communication with
+artifact cache servers.  This requires ``.proto`` files and Python code
+generated from the ``.proto`` files using protoc.  All these files live in the
+``buildstream/_protos`` directory.  The generated files are included in the
+git repository to avoid depending on grpcio-tools for user installations.
+
+
+Regenerating code
+~~~~~~~~~~~~~~~~~
+When ``.proto`` files are modified, the corresponding Python code needs to
+be regenerated.  As a prerequisite for code generation you need to install
+``grpcio-tools`` using pip or some other mechanism::
+
+  pip3 install --user grpcio-tools
+
+To actually regenerate the code::
+
+  ./setup.py build_grpc
+
+
+Documenting
+-----------
 BuildStream starts out as a documented project from day one and uses
 sphinx to document itself.
+
+This section discusses formatting policies for editing files in the
+``doc/source`` directory, and describes the details of how the docs are
+generated so that you can easily generate and view the docs yourself before
+submitting patches to the documentation.
+
+For details on how API documenting comments and docstrings are formatted,
+refer to the :ref:`documenting section of the coding guidelines
+<contributing_documenting_symbols>`.
 
 
 Documentation formatting policy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The BuildStream documentation style is as follows:
 
-* Titles and headings require two leading empty lines above them. Only the first word should be capitalized.
+* Titles and headings require two leading empty lines above them.
+  Only the first word in a title should be capitalized.
 
-  * If there is an ``.. _internal_link`` anchor, there should be two empty lines above the anchor, followed by one leading empty line.
+  * If there is an ``.. _internal_link:`` anchor, there should be two empty lines
+    above the anchor, followed by one leading empty line.
 
 * Within a section, paragraphs should be separated by one empty line.
 
-* Notes are defined using: ``.. note::`` blocks, followed by an empty line and then indented (3 spaces) text.
+* Notes are defined using: ``.. note::`` blocks, followed by an empty line
+  and then indented (3 spaces) text.
 
-* Code blocks are defined using: ``.. code:: LANGUAGE`` blocks, followed by an empty line and then indented (3 spaces) text. Note that the default language is `python`.
+  * Other kinds of notes can be used throughout the documentation and will
+    be decorated in different ways, these work in the same way as ``.. note::`` does.
+
+    Feel free to also use ``.. attention::`` or ``.. important::`` to call special
+    attention to a paragraph, ``.. tip::`` to give the reader a special tip on how
+    to use an advanced feature or ``.. warning::`` to warn the user about a potential
+    misuse of the API and explain it's consequences.
+
+* Code blocks are defined using: ``.. code:: LANGUAGE`` blocks, followed by an empty
+  line and then indented (3 spaces) text. Note that the default language is `python`.
 
 * Cross references should be of the form ``:role:`target```.
 
-  * To cross reference arbitrary locations with, for example, the anchor ``_anchor_name``, you must give the link an explicit title: ``:ref:`Link text <anchor_name>```. Note that the "_" prefix is not required.
+  * Explicit anchors can be declared as ``.. _anchor_name:`` on a line by itself.
+  
+  * To cross reference arbitrary locations with, for example, the anchor ``anchor_name``,
+    always provide some explicit text in the link instead of deriving the text from
+    the target, e.g.: ``:ref:`Link text <anchor_name>```.
+    Note that the "_" prefix is not used when referring to the target.
 
 Useful links:
 
-For further information, please see the `Sphinx Documentation <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_.
+For further information, please see the `Sphinx Documentation
+<http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_.
 
 
 Building Docs
@@ -310,32 +1182,6 @@ Then, in the toplevel directory of buildstream, run the following::
 And commit the result, ensuring that you have added anything in
 the ``man/`` subdirectory, which will be automatically included
 in the buildstream distribution.
-
-
-Documenting conventions
-~~~~~~~~~~~~~~~~~~~~~~~
-We use the sphinx.ext.napoleon extension for the purpose of having
-a bit nicer docstrings than the default sphinx docstrings.
-
-A docstring for a method, class or function should have the following
-format::
-
-  """Brief description of entity
-
-  Args:
-     argument1 (type): Description of arg
-     argument2 (type): Description of arg
-
-  Returns:
-     (type): Description of returned thing of the specified type
-
-  Raises:
-     (SomeError): When some error occurs
-     (SomeOtherError): When some other error occurs
-
-  A detailed description can go here if one is needed, only
-  after the above part documents the calling conventions.
-  """
 
 
 Documentation Examples
@@ -419,30 +1265,8 @@ regenerate them locally in order to build the docs.
      command: build hello.bst
 
 
-Protocol Buffers
-----------------
-BuildStream uses protobuf and gRPC for serialization and communication with
-artifact cache servers.  This requires ``.proto`` files and Python code
-generated from the ``.proto`` files using protoc.  All these files live in the
-``buildstream/_protos`` directory.  The generated files are included in the
-git repository to avoid depending on grpcio-tools for user installations.
-
-
-Regenerating code
-~~~~~~~~~~~~~~~~~
-When ``.proto`` files are modified, the corresponding Python code needs to
-be regenerated.  As a prerequisite for code generation you need to install
-``grpcio-tools`` using pip or some other mechanism::
-
-  pip3 install --user grpcio-tools
-
-To actually regenerate the code::
-
-  ./setup.py build_grpc
-
-
-Testing BuildStream
--------------------
+Testing
+-------
 BuildStream uses pytest for regression tests and testing out
 the behavior of newly added components.
 
@@ -495,6 +1319,7 @@ with::
 Alternatively, any IDE plugin that uses pytest should automatically
 detect the ``.pylintrc`` in the project's root directory.
 
+
 Adding tests
 ~~~~~~~~~~~~
 Tests are found in the tests subdirectory, inside of which
@@ -521,8 +1346,9 @@ Tests that run a sandbox should be decorated with::
 
 and use the integration cli helper.
 
-Measuring BuildStream performance
----------------------------------
+
+Measuring performance
+---------------------
 
 
 Benchmarking framework
