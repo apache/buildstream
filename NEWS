@@ -24,6 +24,9 @@ buildstream 1.3.1
   o Add new `pip` source plugin for downloading python packages using pip,
     based on requirements files from previous sources.
 
+  o Generate Docker images from built artifacts using
+    `contrib/bst-docker-import` script.
+
 
 =================
 buildstream 1.1.5
