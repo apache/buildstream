@@ -93,10 +93,10 @@ echo "INFO: Checking out $element ..." >&2
 $bst_cmd checkout --tar "$element" "$checkout_tar" || die "Failed to checkout $element"
 echo "INFO: Successfully checked out $element" >&2
 
-echo "INFO: Importing Docker image ..."
+echo "INFO: Importing Docker image ..." >&2
 "${docker_import_cmd[@]}" "$checkout_tar" "$docker_image_tag" || die "Failed to import Docker image from tarball"
-echo "INFO: Successfully import Docker image $docker_image_tag"
+echo "INFO: Successfully import Docker image $docker_image_tag" >&2
 
-echo "INFO: Cleaning up ..."
+echo "INFO: Cleaning up ..." >&2
 rm "$checkout_tar" || die "Failed to remove $checkout_tar"
-echo "INFO: Clean up finished"
+echo "INFO: Clean up finished" >&2
