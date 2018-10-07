@@ -90,13 +90,14 @@ BuildStream repository using the command line::
 
   git push origin username/fix-that-bug:username/fix-that-bug
 
-GitLab will respond to this with a message and a link to allow
-you to create a new merge request.
+GitLab will respond to this with a message and a link to allow you to create
+a new merge request. You can also `create a merge request for an existing branch
+<https://gitlab.com/BuildStream/buildstream/merge_requests/new>`_.
 
-You may open merge requests for the branches you create before you
-are ready to have them reviewed and considered for inclusion. As long as
-your merge request is not yet ready for review then the merge request
-title must be prefixed with the ``WIP:`` identifier.
+You may open merge requests for the branches you create before you are ready
+to have them reviewed and considered for inclusion if you like. Until your merge
+request is ready for review, the merge request title must be prefixed with the
+``WIP:`` identifier.
 
 
 Organized commits
@@ -119,7 +120,7 @@ preferred in separate commits.
 
 If a commit in your branch modifies behavior such that a test must also
 be changed to match the new behavior, then the tests should be updated
-with the same commit, so that every commit in series passes it's own tests.
+with the same commit, so that every commit passes it's own tests.
 
 
 Commit messages
@@ -131,7 +132,7 @@ The summary line must start with what changed, followed by a colon and
 a very brief description of the change.
 
 If the commit fixes an issue, or is related to an issue; then the issue
-number should always be referenced in the commit message.
+number must be referenced in the commit message.
 
 **Example**::
 
@@ -165,7 +166,7 @@ separately.
     o tests/artifactcache/expiry.py: Modified test expectations to
       match the new behavior.
 
-  Fixes #123
+  This is a part of #123
 
 
 Coding guidelines
@@ -183,12 +184,12 @@ in mind.
 
 Approximate PEP-8 Style
 ~~~~~~~~~~~~~~~~~~~~~~~
-Python coding style for BuildStream is pep8, which is documented here: https://www.python.org/dev/peps/pep-0008/
+Python coding style for BuildStream is approximately `pep8 <https://www.python.org/dev/peps/pep-0008/>`_.
 
 We have a couple of minor exceptions to this standard, we dont want to compromise
 code readability by being overly restrictive on line length for instance.
 
-The pep8 linter will run automatically when running the test suite.
+The pep8 linter will run automatically when :ref:`running the test suite <contributing_testing>`.
 
 
 .. _contributing_documenting_symbols:
@@ -234,9 +235,9 @@ comments and docstrings.
   # Frobnicates this element with the specified source
   #
   # Args:
-  #       source (Source): The Source to frobnicate with
-  #       frobilicious (bool): Optionally specify that frobnication should be
-  #                            performed fribiliciously
+  #    source (Source): The Source to frobnicate with
+  #    frobilicious (bool): Optionally specify that frobnication should be
+  #                         performed fribiliciously
   #
   # Returns:
   #    (Element): The frobnicated version of this Element.
@@ -296,9 +297,6 @@ comments and docstrings.
   #    context (Context): The invocation Context
   #    count (int): The number to count
   #
-  # Returns:
-  #    (Foo): A newly created Foo object
-  #
   class Foo(Bar):
       ...
 
@@ -312,7 +310,7 @@ important to keep in mind the order in which symbols should appear
 and keep this consistent.
 
 Here is an example to illustrate the expected ordering of symbols
-on a python class in BuildStream::
+on a Python class in BuildStream::
 
   class Foo(Bar):
 
@@ -325,24 +323,24 @@ on a python class in BuildStream::
 
       def __init__(self, name):
 
-         super().__init__()
-      
-         # NOTE: In the instance initializer we declare any instance variables,
-         #       always declare the public instance variables (if any) before
-	 #       the private ones.
-	 #
-	 #       It is preferred to avoid any public instance variables, and
-	 #       always expose an accessor method for it instead.
+          super().__init__()
 
-	 #
-	 # Public instance variables
-	 #
-	 self.name = name  # The name of this foo
+          # NOTE: In the instance initializer we declare any instance variables,
+          #       always declare the public instance variables (if any) before
+          #       the private ones.
+          #
+          #       It is preferred to avoid any public instance variables, and
+          #       always expose an accessor method for it instead.
 
-	 #
-	 # Private instance variables
-	 #
-	 self._count = 0   # The count of this foo
+          #
+          # Public instance variables
+          #
+          self.name = name  # The name of this foo
+
+          #
+          # Private instance variables
+          #
+          self._count = 0   # The count of this foo
 
       ################################################
       #               Abstract Methods               #
@@ -371,12 +369,12 @@ on a python class in BuildStream::
       def frob(self, count):
 
           #
-	  # An abstract method in BuildStream is allowed to have
-	  # a default implementation.
-	  #
+          # An abstract method in BuildStream is allowed to have
+          # a default implementation.
+          #
           self._count = self._do_frobbing(count)
 
-	  return self._count
+          return self._count
 
       ################################################
       #     Implementation of abstract methods       #
@@ -388,9 +386,9 @@ on a python class in BuildStream::
 
       def frobbish(self):
          #
-	 # Implementation of the "frobbish" abstract method
-	 # defined by the parent Bar class.
-	 #
+         # Implementation of the "frobbish" abstract method
+         # defined by the parent Bar class.
+         #
 	 return True
 
       ################################################
@@ -443,10 +441,6 @@ on a python class in BuildStream::
       # NOTE: Private methods are the ones which are internal
       #       implementation details of this class.
       #
-      #       We can be absolutely sure that nobody is ever
-      #       going to call these functions from outside of
-      #       this class definition.
-      #
       #       Even though these are private implementation
       #       details, they still MUST have API documenting
       #       comments on them.
@@ -469,17 +463,17 @@ on a python class in BuildStream::
 
 Public and private symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-BuildStream mostly follows the PEP-8 for defining public and private symbols
+BuildStream mostly follows the PEP-8 for defining *public* and *private* symbols
 for any given class, with some deviations. Please read the `section on inheritance
 <https://www.python.org/dev/peps/pep-0008/#designing-for-inheritance>`_ for
 reference on how the PEP-8 defines public and non-public.
 
-* A public symbol is any symbol which you expect to be used by clients
+* A *public* symbol is any symbol which you expect to be used by clients
   of your class or module within BuildStream.
 
   Public symbols are written without any leading underscores.
 
-* A private symbol is any symbol which is entirely internal to your class
+* A *private* symbol is any symbol which is entirely internal to your class
   or module within BuildStream. These symbols cannot ever be accessed by
   external clients or modules.
 
@@ -487,7 +481,7 @@ reference on how the PEP-8 defines public and non-public.
 
 * When a class can have subclasses (for example, the ``Sandbox`` or ``Platform``
   classes which have various implementations, or the ``Element`` and ``Source``
-  classes which plugins derive from), then private sumbols should be denoted
+  classes which plugins derive from), then private symbols should be denoted
   by two leading underscores.
 
   The double leading underscore naming convention invokes Python's name
@@ -514,7 +508,7 @@ such, we aim to keep the *"Public API Surface"* as small as possible at all
 times, and never expose any internal details to plugins inadvertently.
 
 One problem which arises from this is that we end up having symbols
-which are public according to the :ref:`rules discussed in the previous section
+which are *public* according to the :ref:`rules discussed in the previous section
 <contributing_public_and_private>`, but must be hidden away from the
 *"Public API Surface"*. For example, BuildStream internal classes need
 to invoke methods on the ``Element`` and ``Source`` classes, wheras these
@@ -541,7 +535,7 @@ were not discussed in :ref:`the class ordering section <contributing_class_order
 these classes, the *"API Private"* symbols always come **before** the *"Local Private"*
 symbols in the class declaration.
 
-Modules which are not a part of the *"Public API Surface"* have their python files
+Modules which are not a part of the *"Public API Surface"* have their Python files
 prefixed with a single underscore, and are not imported in BuildStream's the master
 ``__init__.py`` which is used by plugins.
 
@@ -590,8 +584,9 @@ is immutable for the object's life time (like an ``Element`` name for example), 
 is acceptable to save some typing by using a publicly accessible instance variable.
 
 It is never acceptable to modify the value of an instance variable from outside
-of the declaring class. In other words, the class which exposes an instance variable
-is the only one in control of the value of this variable.
+of the declaring class, even if the variable is *public*. In other words, the class
+which exposes an instance variable is the only one in control of the value of this
+variable.
 
 * If an instance variable is public and must be modified; then it must be
   modified using a :ref:`mutator <contributing_accessor_mutator>`
@@ -663,11 +658,11 @@ respectively, e.g.::
    the ``@property`` decorator.
 
    The decision to use explicitly defined functions instead of the
-   ``@property`` feature is rather arbitrary, and there is not much
+   ``@property`` decorator is rather arbitrary, there is not much
    technical merit to preferring one technique over the other.
    However as :ref:`discussed below <contributing_always_consistent>`,
    it is of the utmost importance that we do not mix both techniques
-   in the same code base.
+   in the same codebase.
 
 
 .. _contributing_abstract_methods:
@@ -696,7 +691,7 @@ is **illegal** to override any other method.
 The key here is that in BuildStream, we consider it unacceptable
 that a subclass overrides a method of it's parent class unless
 the said parent class has explicitly given permission to subclasses
-to do so, and outlined the API contract for this. No surprises
+to do so, and outlined the API contract for this purpose. No surprises
 are allowed.
 
 
@@ -712,12 +707,13 @@ it is rarely necessary to handle a ``BstError``.
 Raising Exceptions
 ''''''''''''''''''
 When writing code in the BuildStream core, ensure that all system
-calls are wrapped in a ``try:`` block, and raise a descriptive ``BstError``
-of the appropriate class explaining what exactly failed.
+calls and third party library calls are wrapped in a ``try:`` block,
+and raise a descriptive ``BstError`` of the appropriate class explaining
+what exactly failed.
 
-Always include the original system call error is formatted into
-your new exception, and that you use the python ``from`` semantic
-to retain the original call trace, example::
+Ensure that the original system call error is formatted into your new
+exception, and that you use the Python ``from`` semantic to retain the
+original call trace, example::
 
   try:
       os.utime(self._refpath(ref))
@@ -728,8 +724,8 @@ to retain the original call trace, example::
 Enhancing Exceptions
 ''''''''''''''''''''
 Sometimes the ``BstError`` originates from a lower level component,
-and the source of the error did not have enough context to create
-a good and informative summary of the error for the user.
+and the code segment which raised the exception did not have enough context
+to create a complete, informative summary of the error for the user.
 
 In these cases it is necessary to handle the error and raise a new
 one, e.g.::
@@ -749,7 +745,7 @@ gracefully.
 
 In these cases, do **not** raise any of the ``BstError`` class exceptions.
 
-Instead, use the python ``assert`` statement, e.g.::
+Instead, use the ``assert`` statement, e.g.::
 
   assert utils._is_main_process(), \
       "Attempted to save workspace configuration from child process"
@@ -815,19 +811,19 @@ Python when compared to the way we do it in BuildStream, *do not do it*.
 Consistency of how we do things in the codebase is more important
 than the actual way in which things are done, always.
 
-Instead, if you like a certain python feature and think the BuildStream
-codebase, then propose your change on the `mailing list
+Instead, if you like a certain Python feature and think the BuildStream
+codebase should use it, then propose your change on the `mailing list
 <https://mail.gnome.org/mailman/listinfo/buildstream-list>`_. Chances
 are that we will reach agreement to use your preferred approach, and
 in that case, it will be important to apply the change unilaterally
 across the entire codebase, such that we continue to have a consistent
-code base.
+codebase.
 
 
 Avoid tail calling
 ~~~~~~~~~~~~~~~~~~
 With the exception of tail calling with simple functions from
-the standard python library, such as splitting and joining lines
+the standard Python library, such as splitting and joining lines
 of text and encoding/decoding text; always avoid tail calling.
 
 **Good**::
@@ -893,7 +889,7 @@ Vertical stacking of modules
 For the sake of overall comprehensiveness of the BuildStream
 architecture, it is important that we retain vertical stacking
 order of the dependencies and knowledge of modules as much as
-possible.
+possible, and avoid any cyclic relationships in modules.
 
 For instance, the ``Source`` objects are owned by ``Element``
 objects in the BuildStream data model, and as such the ``Element``
@@ -951,8 +947,8 @@ by adding new code paths or changing the design such that the
 architecture continues to make sense.
 
 
-Refactor the code base as needed
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Refactor the codebase as needed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Especially when implementing features, always move the BuildStream
 codebase forward as a whole.
 
@@ -969,7 +965,7 @@ a ``Queue``. This means that you've proven that your feature can work,
 and now it is time to start working on a patch for upstream.
 
 Consider what the scenario is and why you are circumventing the design,
-and redesign the ``Scheduler`` and ``Queue`` objects to accommodate for
+and then redesign the ``Scheduler`` and ``Queue`` objects to accommodate for
 the new feature and condition under which you need to dispatch a ``Job``,
 or how you can give the ``Queue`` implementation the additional context it
 needs.
@@ -1101,7 +1097,7 @@ The BuildStream documentation style is as follows:
     misuse of the API and explain it's consequences.
 
 * Code blocks are defined using: ``.. code:: LANGUAGE`` blocks, followed by an empty
-  line and then indented (3 spaces) text. Note that the default language is `python`.
+  line and then indented (3 spaces) text. Note that the default language is ``python``.
 
 * Cross references should be of the form ``:role:`target```.
 
@@ -1264,6 +1260,8 @@ regenerate them locally in order to build the docs.
      output: ../source/sessions/foo-build.html
      command: build hello.bst
 
+
+.. _contributing_testing:
 
 Testing
 -------
