@@ -546,6 +546,9 @@ prefixed with a single underscore, and are not imported in BuildStream's the mas
 
    In this case, the *"API Private"* functions are prefixed with a single underscore.
 
+Any objects which are a part of the *"Public API Surface"* should be exposed via the
+toplevel ``__init__.py`` of the ``buildstream`` package.
+
 
 File naming convention
 ~~~~~~~~~~~~~~~~~~~~~~
