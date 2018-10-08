@@ -445,7 +445,7 @@ on a Python class in BuildStream::
       # Returns:
       #    (int): The count of this foo
       #
-      def set_count(self, count):
+      def get_count(self, count):
 
           return self._count
 
