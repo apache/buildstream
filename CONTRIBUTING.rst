@@ -1001,9 +1001,9 @@ well documented and minimal.
 
 When adding new API to a given object for a new purpose, consider whether
 the new API is in any way redundant with other API (should this value now
-go into the constructor, since we use it more than once ? could this
+go into the constructor, since we use it more than once? could this
 value be passed along with another function, and the other function renamed,
-to better suit the new purposes of this module/object ?) and repurpose
+to better suit the new purposes of this module/object?) and repurpose
 the outward facing API of an object as a whole every time.
 
 
