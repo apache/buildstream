@@ -404,7 +404,7 @@ on a Python class in BuildStream::
          # Implementation of the "frobbish" abstract method
          # defined by the parent Bar class.
          #
-	 return True
+         return True
 
       ################################################
       #                 Public Methods               #
@@ -459,7 +459,7 @@ on a Python class in BuildStream::
       #       Even though these are private implementation
       #       details, they still MUST have API documenting
       #       comments on them.
-      
+
       # _do_frobbing()
       #
       # Does the actual frobbing
@@ -1183,7 +1183,7 @@ The BuildStream documentation style is as follows:
 * Cross references should be of the form ``:role:`target```.
 
   * Explicit anchors can be declared as ``.. _anchor_name:`` on a line by itself.
-  
+
   * To cross reference arbitrary locations with, for example, the anchor ``anchor_name``,
     always provide some explicit text in the link instead of deriving the text from
     the target, e.g.: ``:ref:`Link text <anchor_name>```.
