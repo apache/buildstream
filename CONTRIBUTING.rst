@@ -496,7 +496,7 @@ outline the exceptions to the rules discussed here.
 
 .. _contributing_public_api_surface:
 
-Public API Surface
+Public API surface
 ~~~~~~~~~~~~~~~~~~
 BuildStream exposes what we call a *"Public API Surface"* which is stable
 and unchanging. This is for the sake of stability of the interfaces which
@@ -576,7 +576,9 @@ This makes things clear when reading code that said functions
 are not defined in the same file but come from utils.py for example.
 
 
-Instance Variables
+.. _contributing_instance_variables:
+
+Instance variables
 ~~~~~~~~~~~~~~~~~~
 It is preferred that all instance state variables be declared as :ref:`private symbols
 <contributing_public_and_private>`, however in some cases, especially when the state
@@ -607,7 +609,7 @@ variable.
 
 .. _contributing_accessor_mutator:
 
-Accessors and Mutators
+Accessors and mutators
 ~~~~~~~~~~~~~~~~~~~~~~
 An accessor and mutator, are methods defined on the object class to access (get)
 or mutate (set) a value owned by the declaring class, respectively.
@@ -667,7 +669,7 @@ respectively, e.g.::
 
 .. _contributing_abstract_methods:
 
-Abstract Methods
+Abstract methods
 ~~~~~~~~~~~~~~~~
 In BuildStream, an *"Abstract Method"* is a bit of a misnomer and does
 not match up to how Python defines abstract methods, we need to seek out
@@ -695,7 +697,7 @@ to do so, and outlined the API contract for this purpose. No surprises
 are allowed.
 
 
-Error Handling
+Error handling
 ~~~~~~~~~~~~~~
 In BuildStream, all non recoverable errors are expressed via
 subclasses of the ``BstError`` exception.
@@ -704,7 +706,7 @@ This exception is handled deep in the core in a few places, and
 it is rarely necessary to handle a ``BstError``.
 
 
-Raising Exceptions
+Raising exceptions
 ''''''''''''''''''
 When writing code in the BuildStream core, ensure that all system
 calls and third party library calls are wrapped in a ``try:`` block,
@@ -721,7 +723,7 @@ original call trace, example::
       raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
 
 
-Enhancing Exceptions
+Enhancing exceptions
 ''''''''''''''''''''
 Sometimes the ``BstError`` originates from a lower level component,
 and the code segment which raised the exception did not have enough context
@@ -913,7 +915,7 @@ if the developer does not take special care of ensuring this does not
 happen.
 
 
-Use less arguments in methods
+Minimize arguments in methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 When creating an object, or adding a new API method to an existing
 object, always strive to keep as much context as possible on the
@@ -924,6 +926,48 @@ If the value or object that is needed in a function call is a constant
 for the lifetime of the object which exposes the given method, then
 that value or object should be passed in the constructor instead of
 via a method call.
+
+
+Minimize API surfaces
+~~~~~~~~~~~~~~~~~~~~~
+When creating an object, or adding new functionality in any way,
+try to keep the number of :ref:`public, outward facing <contributing_public_and_private>`
+symbols to a minimum, this is important for both
+:ref:`internal and public, plugin facing API surfaces <contributing_public_api_surface>`.
+
+When anyone visits a file, there are two levels of comprehension:
+
+* What do I need to know in order to *use* this object
+
+* What do I need to know in order to *modify* this object
+
+For the former, we want the reader to understand with as little effort
+as possible, what the public API contract is for a given object and consequently,
+how it is expected to be used. This is also why we
+:ref:`order the symbols of a class <contributing_class_order>` in such a way
+as to keep all outward facing public API surfaces at the top of the file, so that the
+reader never needs to dig deep into the bottom of the file to find something they
+might need to use.
+
+For the latter, when it comes to having to modify the file or add functionality,
+you want to retain as much freedom as possible to modify internals, while
+being sure that nothing external will be affected by internal modifications.
+Less client facing API means that you have less surrounding code to modify
+when your API changes. Further, ensuring that there is minimal outward facing
+API for any module minimizes the complexity for the developer working on
+that module, by limiting the considerations needed regarding external side
+effects of their modifications to the module.
+
+When modifying a file, one should not have to understand or think too
+much about external side effects, when the API surface of the file is
+well documented and minimal.
+
+When adding new API to a given object for a new purpose, consider whether
+the new API is in any way redundant with other API (should this value now
+go into the constructor, since we use it more than once ? could this
+value be passed along with another function, and the other function renamed,
+to better suit the new purposes of this module/object ?) and repurpose
+the outward facing API of an object as a whole every time.
 
 
 Avoid transient state on instances
