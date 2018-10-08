@@ -67,6 +67,9 @@ buildstream 1.3.1
     allows the user to set a default location for their creation. This has meant
     that the new CLI is no longer backwards compatible with buildstream 1.2.
 
+  o Add sandbox API for command batching and use it for build, script, and
+    compose elements.
+
 
 =================
 buildstream 1.1.5
