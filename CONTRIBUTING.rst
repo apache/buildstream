@@ -572,11 +572,11 @@ Module imports inside BuildStream are done with relative ``.`` notation
 
 **Good**::
 
-  from .context import Context
+  from ._context import Context
 
 **Bad**::
 
-  from buildstream.context import Context
+  from buildstream._context import Context
 
 The exception to the above rule is when authoring plugins,
 plugins do not reside in the same namespace so they must
