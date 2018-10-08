@@ -494,10 +494,10 @@ reference on how the PEP-8 defines public and non-public.
 
   A private symbol must be denoted by a leading underscore.
 
-* When a class can have subclasses (for example, the ``Sandbox`` or ``Platform``
+* When a class can have subclasses, then private symbols should be denoted
+  by two leading underscores. For example, the ``Sandbox`` or ``Platform``
   classes which have various implementations, or the ``Element`` and ``Source``
-  classes which plugins derive from), then private symbols should be denoted
-  by two leading underscores.
+  classes which plugins derive from.
 
   The double leading underscore naming convention invokes Python's name
   mangling algorithm which helps prevent namespace collisions in the case
