@@ -547,6 +547,25 @@ prefixed with a single underscore, and are not imported in BuildStream's the mas
    In this case, the *"API Private"* functions are prefixed with a single underscore.
 
 
+File naming convention
+~~~~~~~~~~~~~~~~~~~~~~
+With the exception of a few helper objects and data structures, we structure
+the code in BuildStream such that every filename is named after the object it
+implements. E.g. The ``Project`` object is implemented in ``_project.py``, the
+``Context`` object in ``_context.py``, the base ``Element`` class in ``element.py``,
+etc.
+
+As mentioned in the previous section, objects which are not a part of the
+:ref:`public, plugin facing API surface <contributing_public_api_surface>` have their
+filenames prefixed with a leading underscore (like ``_context.py`` and ``_project.py``
+in the examples above).
+
+When an object name has multiple words in it, e.g. ``ArtifactCache``, then the
+resulting file is named all in lower case without any underscore to separate
+words. In the case of ``ArtifactCache``, the filename implementing this object
+is found at ``_artifactcache/artifactcache.py``.
+
+
 Imports
 ~~~~~~~
 Module imports inside BuildStream are done with relative ``.`` notation
