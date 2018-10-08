@@ -44,10 +44,12 @@ class Linux(Platform):
             self._bwrap_exists = False
             self._have_good_bwrap = False
             self._die_with_parent_available = False
+            self._json_status_available = False
         else:
             self._bwrap_exists = True
             self._have_good_bwrap = (0, 1, 2) <= bwrap_version
             self._die_with_parent_available = (0, 1, 8) <= bwrap_version
+            self._json_status_available = (0, 3, 2) <= bwrap_version
 
         self._local_sandbox_available = self._have_fuse and self._have_good_bwrap
 
@@ -97,6 +99,7 @@ class Linux(Platform):
         # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
         kwargs['user_ns_available'] = self._user_ns_available
         kwargs['die_with_parent_available'] = self._die_with_parent_available
+        kwargs['json_status_available'] = self._json_status_available
         return SandboxBwrap(*args, **kwargs)
 
     def _check_user_ns_available(self):
