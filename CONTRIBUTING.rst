@@ -270,6 +270,11 @@ comments and docstrings.
     *Since: 1.2*
     """
 
+.. note::
+
+   Python does not really support docstrings on instance variables, but
+   sphinx does pick them up includes them in the generated documentation.
+
 **Internal instance variable**::
 
   def __init__(self, context, element):
