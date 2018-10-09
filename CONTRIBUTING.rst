@@ -14,7 +14,7 @@ if no issue already exists.
 
 For policies on how to submit an issue and how to use our project labels,
 we recommend that you read the `policies guide
-<https://gitlab.com/BuildStream/nosoftware/alignment/blob/master/BuildStream_policies.md>`_
+<https://gitlab.com/BuildStream/nosoftware/alignment/blob/master/BuildStream_policies.md>`_.
 
 
 .. _contributing_fixing_bugs:
@@ -404,7 +404,7 @@ on a Python class in BuildStream::
          # Implementation of the "frobbish" abstract method
          # defined by the parent Bar class.
          #
-	 return True
+         return True
 
       ################################################
       #                 Public Methods               #
@@ -445,7 +445,7 @@ on a Python class in BuildStream::
       # Returns:
       #    (int): The count of this foo
       #
-      def set_count(self, count):
+      def get_count(self, count):
 
           return self._count
 
@@ -459,7 +459,7 @@ on a Python class in BuildStream::
       #       Even though these are private implementation
       #       details, they still MUST have API documenting
       #       comments on them.
-      
+
       # _do_frobbing()
       #
       # Does the actual frobbing
@@ -494,10 +494,10 @@ reference on how the PEP-8 defines public and non-public.
 
   A private symbol must be denoted by a leading underscore.
 
-* When a class can have subclasses (for example, the ``Sandbox`` or ``Platform``
+* When a class can have subclasses, then private symbols should be denoted
+  by two leading underscores. For example, the ``Sandbox`` or ``Platform``
   classes which have various implementations, or the ``Element`` and ``Source``
-  classes which plugins derive from), then private symbols should be denoted
-  by two leading underscores.
+  classes which plugins derive from.
 
   The double leading underscore naming convention invokes Python's name
   mangling algorithm which helps prevent namespace collisions in the case
@@ -536,7 +536,7 @@ In order to disambiguate between:
 
 * Symbols which are publicly accessible details of the ``Element`` class, can
   be accessed by BuildStream internals, but must remain hidden from the
-  *"Public API Surface"*
+  *"Public API Surface"*.
 
 * Symbols which are private to the ``Element`` class, and cannot be accessed
   from outside of the ``Element`` class at all.
@@ -586,7 +586,7 @@ is found at ``_artifactcache/artifactcache.py``.
 
 Imports
 ~~~~~~~
-Module imports inside BuildStream are done with relative ``.`` notation
+Module imports inside BuildStream are done with relative ``.`` notation:
 
 **Good**::
 
@@ -628,12 +628,12 @@ which exposes an instance variable is the only one in control of the value of th
 variable.
 
 * If an instance variable is public and must be modified; then it must be
-  modified using a :ref:`mutator <contributing_accessor_mutator>`
+  modified using a :ref:`mutator <contributing_accessor_mutator>`.
 
 * Ideally for better encapsulation, all object state is declared as
   :ref:`private instance variables <contributing_public_and_private>` and can
   only be accessed by external classes via public :ref:`accessors and mutators
-  <contributing_accessor_mutator>`
+  <contributing_accessor_mutator>`.
 
 .. note::
 
@@ -720,10 +720,10 @@ In BuildStream, we use the term *"Abstract Method"*, to refer to
 a method which **can** be overridden by a subclass, whereas it
 is **illegal** to override any other method.
 
-* Abstract methods are allowed to have default implementations
+* Abstract methods are allowed to have default implementations.
 
 * Subclasses are not allowed to redefine the calling signature
-  of an abstract method, or redefine the API contract in any way
+  of an abstract method, or redefine the API contract in any way.
 
 * Subclasses are not allowed to override any other methods.
 
@@ -798,7 +798,7 @@ BstError parameters
 When raising ``BstError`` class exceptions, there are some common properties
 which can be useful to know about:
 
-* **message:** The brief human readable error, will be formatted on one line in the frontend
+* **message:** The brief human readable error, will be formatted on one line in the frontend.
 
 * **detail:** An optional detailed human readable message to accompany the **message** summary
   of the error. This is often used to recommend the user some course of action, or to provide
@@ -974,9 +974,9 @@ symbols to a minimum, this is important for both
 
 When anyone visits a file, there are two levels of comprehension:
 
-* What do I need to know in order to *use* this object
+* What do I need to know in order to *use* this object.
 
-* What do I need to know in order to *modify* this object
+* What do I need to know in order to *modify* this object.
 
 For the former, we want the reader to understand with as little effort
 as possible, what the public API contract is for a given object and consequently,
@@ -1001,9 +1001,9 @@ well documented and minimal.
 
 When adding new API to a given object for a new purpose, consider whether
 the new API is in any way redundant with other API (should this value now
-go into the constructor, since we use it more than once ? could this
+go into the constructor, since we use it more than once? could this
 value be passed along with another function, and the other function renamed,
-to better suit the new purposes of this module/object ?) and repurpose
+to better suit the new purposes of this module/object?) and repurpose
 the outward facing API of an object as a whole every time.
 
 
@@ -1183,7 +1183,7 @@ The BuildStream documentation style is as follows:
 * Cross references should be of the form ``:role:`target```.
 
   * Explicit anchors can be declared as ``.. _anchor_name:`` on a line by itself.
-  
+
   * To cross reference arbitrary locations with, for example, the anchor ``anchor_name``,
     always provide some explicit text in the link instead of deriving the text from
     the target, e.g.: ``:ref:`Link text <anchor_name>```.
@@ -1266,23 +1266,23 @@ Documentation Examples
 The examples section of the documentation contains a series of standalone
 examples, here are the criteria for an example addition.
 
-* The example has a ``${name}``
+* The example has a ``${name}``.
 
-* The example has a project users can copy and use
+* The example has a project users can copy and use.
 
-  * This project is added in the directory ``doc/examples/${name}``
+  * This project is added in the directory ``doc/examples/${name}``.
 
-* The example has a documentation component
+* The example has a documentation component.
 
   * This is added at ``doc/source/examples/${name}.rst``
   * A reference to ``examples/${name}`` is added to the toctree in ``doc/source/examples.rst``
   * This documentation discusses the project elements declared in the project and may
-    provide some BuildStream command examples
-  * This documentation links out to the reference manual at every opportunity
+    provide some BuildStream command examples.
+  * This documentation links out to the reference manual at every opportunity.
 
-* The example has a CI test component
+* The example has a CI test component.
 
-  * This is an integration test added at ``tests/examples/${name}``
+  * This is an integration test added at ``tests/examples/${name}``.
   * This test runs BuildStream in the ways described in the example
     and assert that we get the results which we advertize to users in
     the said examples.
@@ -1309,17 +1309,17 @@ The ``.run`` file format is just another YAML dictionary which consists of a
 
 Each *command* is a dictionary, the members of which are listed here:
 
-* ``directory``: The input file relative project directory
+* ``directory``: The input file relative project directory.
 
-* ``output``: The input file relative output html file to generate (optional)
+* ``output``: The input file relative output html file to generate (optional).
 
 * ``fake-output``: Don't really run the command, just pretend to and pretend
   this was the output, an empty string will enable this too.
 
-* ``command``: The command to run, without the leading ``bst``
+* ``command``: The command to run, without the leading ``bst``.
 
 * ``shell``: Specifying ``True`` indicates that ``command`` should be run as
-  a shell command from the project directory, instead of a bst command (optional)
+  a shell command from the project directory, instead of a bst command (optional).
 
 When adding a new ``.run`` file, one should normally also commit the new
 resulting generated ``.html`` file(s) into the ``doc/source/sessions-stored/``
@@ -1417,7 +1417,7 @@ a subdirectory beside your test in which to store data.
 When creating a test that needs data, use the datafiles extension
 to decorate your test case (again, examples exist in the existing
 tests for this), documentation on the datafiles extension can
-be found here: https://pypi.python.org/pypi/pytest-datafiles
+be found here: https://pypi.python.org/pypi/pytest-datafiles.
 
 Tests that run a sandbox should be decorated with::
 
