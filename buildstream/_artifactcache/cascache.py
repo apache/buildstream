@@ -1124,16 +1124,28 @@ class _CASRemote():
             self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
 
             self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
-            try:
-                request = remote_execution_pb2.GetCapabilitiesRequest()
-                response = self.capabilities.GetCapabilities(request)
-                server_max_batch_total_size_bytes = response.cache_capabilities.max_batch_total_size_bytes
-                if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
-                    self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
-            except grpc.RpcError as e:
-                # Simply use the defaults for servers that don't implement GetCapabilities()
-                if e.code() != grpc.StatusCode.UNIMPLEMENTED:
-                    raise
+            # TODO: Replace this variable with a global max_tries value
+            self.max_tries = 5
+            self.attempts = 0
+            while self.attempts < self.max_tries:
+                try:
+                    request = remote_execution_pb2.GetCapabilitiesRequest()
+                    response = self.capabilities.GetCapabilities(request, timeout=5)
+                    server_max_batch_total_size_bytes = response.cache_capabilities.max_batch_total_size_bytes
+                    if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
+                        self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
+                    self.attempts = self.max_tries
+                except grpc.RpcError as e:
+                    # Simply use the defaults for servers that don't implement GetCapabilities()
+                    if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+                        if self.attempts < self.max_tries-1:
+                            self.attempts = self.attempts+1
+                            continue
+                        else:
+                            raise ArtifactError("Tried {} times: Server timed out!".format(self.attempts))
+                    if e.code() != grpc.StatusCode.UNIMPLEMENTED:
+                        self.attempts = self.max_tries
+                        raise
 
             # Check whether the server supports BatchReadBlobs()
             self.batch_read_supported = False
