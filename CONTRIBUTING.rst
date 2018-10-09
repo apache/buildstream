@@ -272,8 +272,8 @@ comments and docstrings.
 
 .. note::
 
-   Python does not really support docstrings on instance variables, but
-   sphinx does pick them up includes them in the generated documentation.
+   Python does not support docstrings on instance variables, but sphinx does
+   pick them up and includes them in the generated documentation.
 
 **Internal instance variable**::
 
