@@ -38,6 +38,30 @@ def test_autotools_build(cli, tmpdir, datafiles):
                                '/usr/share/doc/amhello/README'])
 
 
+# Test that an autotools build 'works' - we use the autotools sample
+# amhello project for this.
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+def test_autotools_confroot_build(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+    element_name = 'autotools/amhelloconfroot.bst'
+
+    result = cli.run(project=project, args=['build', element_name])
+    assert result.exit_code == 0
+
+    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    assert result.exit_code == 0
+
+    assert_contains(checkout, ['/usr', '/usr/lib', '/usr/bin',
+                               '/usr/share', '/usr/lib/debug',
+                               '/usr/lib/debug/usr', '/usr/lib/debug/usr/bin',
+                               '/usr/lib/debug/usr/bin/hello',
+                               '/usr/bin/hello', '/usr/share/doc',
+                               '/usr/share/doc/amhello',
+                               '/usr/share/doc/amhello/README'])
+
+
 # Test running an executable built with autotools
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, tmpdir, datafiles):
