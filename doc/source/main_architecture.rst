@@ -1,0 +1,11 @@
+
+
+Architecture
+============
+This section provides details on the overall BuildStream architecture.
+
+
+.. toctree::
+   :maxdepth: 2
+
+   arch_overview
