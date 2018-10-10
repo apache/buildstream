@@ -104,8 +104,7 @@ class Sandbox():
         # others are private to this class.
         self._root = os.path.join(directory, 'root')
         self._output_directory = None
-        self.__directory = directory
-        self.__scratch = os.path.join(self.__directory, 'scratch')
+        self.__scratch = os.path.join(directory, 'scratch')
         for directory_ in [self._root, self.__scratch]:
             os.makedirs(directory_, exist_ok=True)
         self._vdir = None
