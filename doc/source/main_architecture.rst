@@ -10,3 +10,4 @@ This section provides details on the overall BuildStream architecture.
 
    arch_overview
    arch_data_model
+   arch_dependency_model
