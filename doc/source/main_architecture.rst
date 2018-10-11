@@ -9,3 +9,4 @@ This section provides details on the overall BuildStream architecture.
    :maxdepth: 2
 
    arch_overview
+   arch_data_model
