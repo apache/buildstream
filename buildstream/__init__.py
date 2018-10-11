@@ -28,9 +28,9 @@ if "_BST_COMPLETION" not in os.environ:
 
     from .utils import UtilError, ProgramNotFoundError
     from .sandbox import Sandbox, SandboxFlags
+    from .types import Scope, Consistency
     from .plugin import Plugin
-    from .source import Source, SourceError, Consistency, SourceFetcher
+    from .source import Source, SourceError, SourceFetcher
     from .element import Element, ElementError
-    from .element_enums import Scope
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement

@@ -12,6 +12,7 @@ useful for working on BuildStream itself.
 .. toctree::
    :maxdepth: 1
 
+   buildstream.types
    buildstream.plugin
    buildstream.source
    buildstream.element

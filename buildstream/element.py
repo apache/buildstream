@@ -86,7 +86,7 @@ from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
 from .utils import UtilError
-from . import Plugin, Consistency
+from . import Plugin, Consistency, Scope
 from . import SandboxFlags
 from . import utils
 from . import _cachekey
@@ -96,11 +96,11 @@ from ._platform import Platform
 from .plugin import CoreWarnings
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
+from .types import _KeyStrength
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
 from .storage.directory import VirtualDirectoryError
-from .element_enums import _KeyStrength, Scope
 
 
 class ElementError(BstError):
