@@ -145,33 +145,10 @@ import os
 from collections import Mapping
 from contextlib import contextmanager
 
-from . import Plugin
+from . import Plugin, Consistency
 from . import _yaml, utils
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._projectrefs import ProjectRefStorage
-
-
-class Consistency():
-    INCONSISTENT = 0
-    """Inconsistent
-
-    Inconsistent sources have no explicit reference set. They cannot
-    produce a cache key, be fetched or staged. They can only be tracked.
-    """
-
-    RESOLVED = 1
-    """Resolved
-
-    Resolved sources have a reference and can produce a cache key and
-    be fetched, however they cannot be staged.
-    """
-
-    CACHED = 2
-    """Cached
-
-    Cached sources have a reference which is present in the local
-    source cache. Only cached sources can be staged.
-    """
 
 
 class SourceError(BstError):
