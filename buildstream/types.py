@@ -19,27 +19,12 @@
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
 
 """
-Element - Globally visible enumerations
-=======================================
+Foundation types
+================
 
 """
 
 from enum import Enum
-
-
-# _KeyStrength():
-#
-# Strength of cache key
-#
-class _KeyStrength(Enum):
-
-    # Includes strong cache keys of all build dependencies and their
-    # runtime dependencies.
-    STRONG = 1
-
-    # Includes names of direct build dependencies but does not include
-    # cache keys of dependencies.
-    WEAK = 2
 
 
 class Scope(Enum):
@@ -59,3 +44,18 @@ class Scope(Enum):
     """All elements required for running the element. Including the element
     itself.
     """
+
+
+# _KeyStrength():
+#
+# Strength of cache key
+#
+class _KeyStrength(Enum):
+
+    # Includes strong cache keys of all build dependencies and their
+    # runtime dependencies.
+    STRONG = 1
+
+    # Includes names of direct build dependencies but does not include
+    # cache keys of dependencies.
+    WEAK = 2
