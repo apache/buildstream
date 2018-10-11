@@ -302,6 +302,35 @@ def test_workspace_visible(cli, tmpdir, datafiles):
     assert result.output == workspace_hello
 
 
+# Test that '--sysroot' works
+@pytest.mark.datafiles(DATA_DIR)
+def test_sysroot(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    base_element = "base/base-alpine.bst"
+    # test element only needs to be something lightweight for this test
+    test_element = "script/script.bst"
+    checkout_dir = os.path.join(str(tmpdir), 'alpine-sysroot')
+    test_file = 'hello'
+
+    # Build and check out a sysroot
+    res = cli.run(project=project, args=['build', base_element])
+    res.assert_success()
+    res = cli.run(project=project, args=['checkout', base_element, checkout_dir])
+    res.assert_success()
+
+    # Mutate the sysroot
+    test_path = os.path.join(checkout_dir, test_file)
+    with open(test_path, 'w') as f:
+        f.write('hello\n')
+
+    # Shell into the sysroot and check the test file exists
+    res = cli.run(project=project, args=[
+        'shell', '--build', '--sysroot', checkout_dir, test_element, '--',
+        'grep', '-q', 'hello', '/' + test_file
+    ])
+    res.assert_success()
+
+
 # Test system integration commands can access devices in /dev
 @pytest.mark.datafiles(DATA_DIR)
 def test_integration_devices(cli, tmpdir, datafiles):
