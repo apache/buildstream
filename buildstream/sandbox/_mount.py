@@ -31,7 +31,6 @@ from .._fuse import SafeHardlinks
 #
 class Mount():
     def __init__(self, sandbox, mount_point, safe_hardlinks, fuse_mount_options=None):
-        scratch_directory = sandbox._get_scratch_directory()
         # Getting _get_underlying_directory() here is acceptable as
         # we're part of the sandbox code. This will fail if our
         # directory is CAS-based.
@@ -51,6 +50,7 @@ class Mount():
         #        a regular mount point within the parent's redirected mount.
         #
         if self.safe_hardlinks:
+            scratch_directory = sandbox._get_scratch_directory()
             # Redirected mount
             self.mount_origin = os.path.join(root_directory, mount_point.lstrip(os.sep))
             self.mount_base = os.path.join(scratch_directory, utils.url_directory_name(mount_point))

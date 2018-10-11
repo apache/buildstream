@@ -1318,7 +1318,9 @@ class Element(Plugin):
     @contextmanager
     def _prepare_sandbox(self, scope, directory, deps='run', integrate=True):
         # bst shell and bst checkout require a local sandbox.
-        with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False) as sandbox:
+        bare_directory = True if directory else False
+        with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False,
+                            bare_directory=bare_directory) as sandbox:
 
             # Configure always comes first, and we need it.
             self.configure_sandbox(sandbox)
@@ -2156,12 +2158,14 @@ class Element(Plugin):
     #    stderr (fileobject): The stream for stderr for the sandbox
     #    config (SandboxConfig): The SandboxConfig object
     #    allow_remote (bool): Whether the sandbox is allowed to be remote
+    #    bare_directory (bool): Whether the directory is bare i.e. doesn't have
+    #                           a separate 'root' subdir
     #
     # Yields:
     #    (Sandbox): A usable sandbox
     #
     @contextmanager
-    def __sandbox(self, directory, stdout=None, stderr=None, config=None, allow_remote=True):
+    def __sandbox(self, directory, stdout=None, stderr=None, config=None, allow_remote=True, bare_directory=False):
         context = self._get_context()
         project = self._get_project()
         platform = Platform.get_platform()
@@ -2192,6 +2196,7 @@ class Element(Plugin):
                                               stdout=stdout,
                                               stderr=stderr,
                                               config=config,
+                                              bare_directory=bare_directory,
                                               allow_real_directory=not self.BST_VIRTUAL_DIRECTORY)
             yield sandbox
 
@@ -2201,7 +2206,7 @@ class Element(Plugin):
 
             # Recursive contextmanager...
             with self.__sandbox(rootdir, stdout=stdout, stderr=stderr, config=config,
-                                allow_remote=allow_remote) as sandbox:
+                                allow_remote=allow_remote, bare_directory=False) as sandbox:
                 yield sandbox
 
             # Cleanup the build dir
