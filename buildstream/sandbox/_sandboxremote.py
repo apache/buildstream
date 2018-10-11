@@ -29,6 +29,10 @@ from ..storage._casbaseddirectory import CasBasedDirectory
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.google.rpc import code_pb2
 
+from google.oauth2 import service_account
+import google
+from google.auth.transport import grpc as google_auth_transport_grpc
+from google.auth.transport import requests as google_auth_transport_requests
 
 class SandboxError(Exception):
     pass
@@ -49,6 +53,8 @@ class SandboxRemote(Sandbox):
             raise SandboxError("Configured remote URL '{}' does not match the expected layout. "
                                .format(kwargs['server_url']) +
                                "It should be of the form <protocol>://<domain name>:<port>.")
+        elif url.scheme == 'https':
+            print("Using secure mode to '{}'.".format(url))
         elif url.scheme != 'http':
             raise SandboxError("Configured remote '{}' uses an unsupported protocol. "
                                "Only plain HTTP is currenlty supported (no HTTPS).")
@@ -92,10 +98,18 @@ class SandboxRemote(Sandbox):
             return None
 
         # Next, try to create a communication channel to the BuildGrid server.
-        channel = grpc.insecure_channel(self.server_url)
+        SCOPES = ['https://www.googleapis.com/auth/cloud-platform']
+        SERVICE_ACCOUNT_FILE = '/tmp/key.json'
+        
+        credentials = service_account.Credentials.from_service_account_file(
+	    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+        http_request = google_auth_transport_requests.Request()
+        channel = google_auth_transport_grpc.secure_authorized_channel(credentials, http_request, 'remotebuildexecution.googleapis.com:443')
+        #channel = grpc.secure_channel(self.server_url, credentials)
         stub = remote_execution_pb2_grpc.ExecutionStub(channel)
         request = remote_execution_pb2.ExecuteRequest(action_digest=action_digest,
-                                                      skip_cache_lookup=False)
+                                                      skip_cache_lookup=False,
+                                                      instance_name="projects/bazelcon18-rbe-shared/instances/default_instance")
         try:
             operation_iterator = stub.Execute(request)
         except grpc.RpcError:
@@ -133,7 +147,7 @@ class SandboxRemote(Sandbox):
         tree_digest = output_directories[0].tree_digest
         if tree_digest is None or not tree_digest.hash:
             raise SandboxError("Output directory structure had no digest attached.")
-
+        print("Output of job: Tree digest is {}/{}".format(tree_digest.hash, tree_digest.size_bytes))
         context = self._get_context()
         cascache = context.artifactcache
         # Now do a pull to ensure we have the necessary parts.
@@ -212,6 +226,8 @@ class SandboxRemote(Sandbox):
                 raise SandboxError("Remote server failed at executing the build request.")
 
         action_result = execution_response.result
+        print("Exit code: {}".format(action_result.exit_code))
+        print("Stdout digest: {}/{}".format(action_result.stdout_digest.hash, action_result.stdout_digest.size_bytes))
 
         if action_result.exit_code != 0:
             # A normal error during the build: the remote execution system
@@ -219,7 +235,7 @@ class SandboxRemote(Sandbox):
             # action_result.stdout and action_result.stderr also contains
             # build command outputs which we ignore at the moment.
             return action_result.exit_code
-
+        
         self.process_job_output(action_result.output_directories, action_result.output_files)
 
         return 0
