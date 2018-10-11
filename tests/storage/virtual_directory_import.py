@@ -141,7 +141,7 @@ def directory_not_empty(path):
     return os.listdir(path)
 
 
-@pytest.mark.parametrize("original,overlay", combinations([1, 2, 3, 4, 5]))
+@pytest.mark.parametrize("original,overlay", combinations([1, 2, 3, 4, 5, 6]))
 def test_cas_import(cli, tmpdir, original, overlay):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
@@ -153,26 +153,28 @@ def test_cas_import(cli, tmpdir, original, overlay):
     d.import_files(d2)
     d.export_files(os.path.join(tmpdir, "output"))
 
-    for item in root_filesets[overlay - 1]:
-        (path, typename, content) = item
-        realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
-        if typename == 'F':
-            if os.path.isdir(realpath) and directory_not_empty(realpath):
-                # The file should not have overwritten the directory in this case.
-                pass
-            else:
-                assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(path)
-                assert file_contents_are(realpath, content)
-        elif typename == 'S':
-            if os.path.isdir(realpath) and directory_not_empty(realpath):
-                # The symlink should not have overwritten the directory in this case.
-                pass
-            else:
-                assert os.path.islink(realpath)
-                assert os.readlink(realpath) == content
-        elif typename == 'D':
-            # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
-            assert os.path.isdir(realpath)
+    if overlay < 6:
+        # TODO: We don't do a detailed content check for root 6, the random one
+        for item in root_filesets[overlay - 1]:
+            (path, typename, content) = item
+            realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
+            if typename == 'F':
+                if os.path.isdir(realpath) and directory_not_empty(realpath):
+                    # The file should not have overwritten the directory in this case.
+                    pass
+                else:
+                    assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(path)
+                    assert file_contents_are(realpath, content)
+            elif typename == 'S':
+                if os.path.isdir(realpath) and directory_not_empty(realpath):
+                    # The symlink should not have overwritten the directory in this case.
+                    pass
+                else:
+                    assert os.path.islink(realpath)
+                    assert os.readlink(realpath) == content
+            elif typename == 'D':
+                # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
+                assert os.path.isdir(realpath)
 
     # Now do the same thing with filebaseddirectories and check the contents match
     d3 = create_new_casdir(original, fake_context, tmpdir)
