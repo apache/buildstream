@@ -13,9 +13,6 @@ They begin with a basic introduction to BuildStream, background
 information on basic concepts, and a guide to the BuildStream command line interface.
 Later sections provide detailed information on BuildStream internals.
 
-If you are looking for information about how to install BuildStream,
-please refer to the `BuildStream website <https://buildstream.build>`_.
-
 .. toctree::
    :maxdepth: 1
 
@@ -24,3 +21,5 @@ please refer to the `BuildStream website <https://buildstream.build>`_.
    main_core
    CONTRIBUTING
 
+For any other information, including `how to install BuildStream <https://buildstream.build/install.html>`_,
+refer to `the BuildStream website <https://buildstream.build>`_.
