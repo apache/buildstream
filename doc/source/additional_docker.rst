@@ -4,19 +4,18 @@
 
 BuildStream and Docker
 ======================
-
 BuildStream integrates with Docker in multiple ways. Here are some ways in
 which these integrations work.
 
+
 Run BuildStream inside Docker
 -----------------------------
+Refer to the `BuildStream inside Docker <https://buildstream.build/docker_install.html>`_
+documentation for instructions on how to run BuildStream as a Docker container.
 
-Refer to the :ref:`BuildStream inside Docker <docker>` documentation for
-instructions on how to run BuildStream as a Docker container.
 
 Generate Docker images
 ----------------------
-
 The
 `bst-docker-import script <https://gitlab.com/BuildStream/buildstream/blob/master/contrib/bst-docker-import>`_
 can be used to generate a Docker image from built artifacts.
