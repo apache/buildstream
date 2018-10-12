@@ -112,8 +112,31 @@ def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction, move_project):
 
 @pytest.mark.parametrize('ref_storage', ['inline', 'project.refs'])
 @pytest.mark.parametrize('with_junction', ['junction', 'no-junction'])
-@pytest.mark.parametrize('move_project', ['move', 'no-move'])
-def test_yamlcache_changed_file(cli, ref_storage, with_junction, move_project):
+def test_yamlcache_changed_file(cli, tmpdir, ref_storage, with_junction):
     # i.e. a file is cached, the file is changed, loading the file (with cache) returns new data
     # inline and junction can only be changed by opening a workspace
-    pass
+    # Generate the project
+    project = generate_project(str(tmpdir), ref_storage, with_junction)
+    if with_junction == 'junction':
+        result = cli.run(project=project, args=['fetch', '--track', 'junction.bst'])
+        result.assert_success()
+
+    # bst show to put it in the cache
+    result = cli.run(project=project, args=['show', 'test.bst'])
+    result.assert_success()
+
+    element_path = os.path.join(project, 'elements', 'test.bst')
+    with with_yamlcache(project) as (yc, prj):
+        # Check that it's in the cache then modify
+        assert yc.is_cached(prj, element_path)
+        with open(element_path, "a") as f:
+            f.write('\nvariables: {modified: True}\n')
+        # Load modified yaml cache file into cache
+        _yaml.load(element_path, copy_tree=False, project=prj, yaml_cache=yc)
+
+    # Show that a variable has been added
+    result = cli.run(project=project, args=['show', '--format', '%{vars}', 'test.bst'])
+    result.assert_success()
+    data = yaml.safe_load(result.output)
+    assert 'modified' in data
+    assert data['modified'] == 'True'
