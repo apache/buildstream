@@ -290,6 +290,9 @@ free form and not validated.
        (=):
        - cp src/program %{bindir}
 
+
+.. _format_directives_include:
+
 (@) Include
 ~~~~~~~~~~~
 Indicates that content should be loaded from files.
