@@ -1147,7 +1147,7 @@ To actually regenerate the code::
 Documenting
 -----------
 BuildStream starts out as a documented project from day one and uses
-sphinx to document itself.
+`sphinx <www.sphinx-doc.org>`_ to document itself.
 
 This section discusses formatting policies for editing files in the
 ``doc/source`` directory, and describes the details of how the docs are
@@ -1194,10 +1194,8 @@ The BuildStream documentation style is as follows:
     the target, e.g.: ``:ref:`Link text <anchor_name>```.
     Note that the "_" prefix is not used when referring to the target.
 
-Useful links:
-
-For further information, please see the `Sphinx Documentation
-<http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_.
+For further information about using the reStructuredText with sphinx, please see the
+`Sphinx Documentation <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_.
 
 
 Building Docs
@@ -1266,10 +1264,101 @@ the ``man/`` subdirectory, which will be automatically included
 in the buildstream distribution.
 
 
-Documentation Examples
-~~~~~~~~~~~~~~~~~~~~~~
-The examples section of the documentation contains a series of standalone
-examples, here are the criteria for an example addition.
+User guide
+~~~~~~~~~~
+The :ref:`user guide <using>` is comprised of free form documentation
+in manually written ``.rst`` files and is split up into a few sections,
+of main interest are the :ref:`tutorial <tutorial>` and the
+:ref:`examples <examples>`.
+
+The distinction of the two categories of user guides is important to
+understand too.
+
+* **Tutorial**
+
+  The tutorial is structured as a series of exercises which start with
+  the most basic concepts and build upon the previous chapters in order
+  to arrive at a basic understanding of how to create BuildStream projects.
+
+  This series of examples should be easy enough to complete in a matter
+  of a few hours for a new user, and should provide just enough insight to
+  get the user started in creating their own projects.
+
+  Going through the tutorial step by step should also result in the user
+  becoming proficient enough with the reference manual to get by on their own.
+
+* **Examples**
+
+  These exist to demonstrate how to accomplish more advanced tasks which
+  are not always obvious and discoverable.
+
+  Alternatively, these also demonstrate elegant and recommended ways of
+  accomplishing some tasks which could be done in various ways.
+
+
+Guidelines
+''''''''''
+Here are some general guidelines for adding new free form documentation
+to the user guide.
+
+* **Focus on a single subject**
+
+  It is important to stay focused on a single subject and avoid getting
+  into tangential material when creating a new entry, so that the articles
+  remain concise and the user is not distracted by unrelated subject material.
+
+  A single tutorial chapter or example should not introduce any additional
+  subject material than the material being added for the given example.
+
+* **Reuse existing sample project elements**
+
+  To help avoid distracting from the topic at hand, it is always preferable to
+  reuse the same project sample material from other examples and only deviate
+  slightly to demonstrate the new material, than to create completely new projects.
+
+  This helps us remain focused on a single topic at a time, and reduces the amount
+  of unrelated material the reader needs to learn in order to digest the new
+  example.
+
+* **Don't be redundant**
+
+  When something has already been explained in the tutorial or in another example,
+  it is best to simply refer to the other user guide entry in a new example.
+
+  Always prefer to link to the tutorial if an explanation exists in the tutorial,
+  rather than linking to another example, where possible.
+
+* **Link into the reference manual at every opportunity**
+
+  The format and plugin API is 100% documented at all times. Whenever discussing
+  anything about the format or plugin API, always do so while providing a link
+  into the more terse reference material.
+
+  We don't want users to have to search for the material themselves, and we also
+  want the user to become proficient at navigating the reference material over
+  time.
+
+* **Use concise terminology**
+
+  As developers, we tend to come up with code names for features we develop, and
+  then end up documenting a new feature in an example.
+
+  Never use a code name or shorthand to refer to a feature in the user guide, instead
+  always use fully qualified sentences outlining very explicitly what we are doing
+  in the example, or what the example is for in the case of a title.
+
+  We need to be considerate that the audience of our user guide is probably a
+  proficient developer or integrator, but has no idea what we might have decided
+  to name a given activity.
+
+
+Structure of an example
+'''''''''''''''''''''''
+The :ref:`tutorial <tutorial>` and the :ref:`examples <examples>` sections
+of the documentation contain a series of sample projects, each chapter in
+the tutoral, or standalone example uses a sample project.
+
+Here is the the structure for adding new examples and tutorial chapters.
 
 * The example has a ``${name}``.
 
@@ -1280,10 +1369,16 @@ examples, here are the criteria for an example addition.
 * The example has a documentation component.
 
   * This is added at ``doc/source/examples/${name}.rst``
-  * A reference to ``examples/${name}`` is added to the toctree in ``doc/source/examples.rst``
+  * An entry for ``examples/${name}`` is added to the toctree in ``doc/source/using_examples.rst``
   * This documentation discusses the project elements declared in the project and may
     provide some BuildStream command examples.
   * This documentation links out to the reference manual at every opportunity.
+
+  .. note::
+
+     In the case of a tutorial chapter, the ``.rst`` file is added in at
+     ``doc/source/tutorial/${name}.rst`` and an entry for ``tutorial/${name}``
+     is added to ``doc/source/using_tutorial.rst``.
 
 * The example has a CI test component.
 

@@ -1,4 +1,7 @@
 
+
+.. _examples:
+
 Examples
 ========
 This page contains documentation for real examples of BuildStream projects,

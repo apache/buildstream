@@ -1,5 +1,7 @@
 
 
+.. _using:
+
 Using
 =====
 This section includes user facing documentation including tutorials,

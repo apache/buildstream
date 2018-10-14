@@ -1,4 +1,7 @@
 
+
+.. _tutorial:
+
 Tutorial
 ========
 This is a step by step walkthrough meant help the user quickly get
