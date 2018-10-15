@@ -183,20 +183,32 @@ class CompositeTypeError(CompositeError):
 #    shortname (str): The filename in shorthand for error reporting (or None)
 #    copy_tree (bool): Whether to make a copy, preserving the original toplevels
 #                      for later serialization
+#    yaml_cache (YamlCache): A yaml cache to consult rather than parsing
 #
 # Returns (dict): A loaded copy of the YAML file with provenance information
 #
 # Raises: LoadError
 #
-def load(filename, shortname=None, copy_tree=False, *, project=None):
+def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=None):
     if not shortname:
         shortname = filename
 
     file = ProvenanceFile(filename, shortname, project)
 
     try:
+        data = None
         with open(filename) as f:
-            return load_data(f, file, copy_tree=copy_tree)
+            contents = f.read()
+        if yaml_cache:
+            data, key = yaml_cache.get(project, filename, contents, copy_tree)
+
+        if not data:
+            data = load_data(contents, file, copy_tree=copy_tree)
+
+        if yaml_cache:
+            yaml_cache.put_from_key(project, filename, key, data)
+
+        return data
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "Could not find file at {}".format(filename)) from e
