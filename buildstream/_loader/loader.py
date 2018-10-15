@@ -29,6 +29,7 @@ from .. import _yaml
 from ..element import Element
 from .._profile import Topics, profile_start, profile_end
 from .._includes import Includes
+from .._yamlcache import YamlCache
 
 from .types import Symbol, Dependency
 from .loadelement import LoadElement
@@ -108,13 +109,19 @@ class Loader():
         #
         deps = []
 
-        for target in targets:
-            profile_start(Topics.LOAD_PROJECT, target)
-            junction, name, loader = self._parse_name(target, rewritable, ticker,
-                                                      fetch_subprojects=fetch_subprojects)
-            loader._load_file(name, rewritable, ticker, fetch_subprojects)
-            deps.append(Dependency(name, junction=junction))
-            profile_end(Topics.LOAD_PROJECT, target)
+        # XXX This will need to be changed to the context's top-level project if this method
+        # is ever used for subprojects
+        top_dir = self.project.directory
+
+        cache_file = YamlCache.get_cache_file(top_dir)
+        with YamlCache.open(self._context, cache_file) as yaml_cache:
+            for target in targets:
+                profile_start(Topics.LOAD_PROJECT, target)
+                junction, name, loader = self._parse_name(target, rewritable, ticker,
+                                                          fetch_subprojects=fetch_subprojects)
+                loader._load_file(name, rewritable, ticker, fetch_subprojects, yaml_cache)
+                deps.append(Dependency(name, junction=junction))
+                profile_end(Topics.LOAD_PROJECT, target)
 
         #
         # Now that we've resolve the dependencies, scan them for circular dependencies
@@ -201,11 +208,12 @@ class Loader():
     #    rewritable (bool): Whether we should load in round trippable mode
     #    ticker (callable): A callback to report loaded filenames to the frontend
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
+    #    yaml_cache (YamlCache): A yaml cache
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker, fetch_subprojects):
+    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, yaml_cache=None):
 
         # Silently ignore already loaded files
         if filename in self._elements:
@@ -218,7 +226,8 @@ class Loader():
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
-            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable, project=self.project)
+            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable,
+                              project=self.project, yaml_cache=yaml_cache)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
                 # If we can't find the file, try to suggest plausible
@@ -261,13 +270,13 @@ class Loader():
         # Load all dependency files for the new LoadElement
         for dep in element.deps:
             if dep.junction:
-                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects)
+                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
                                           fetch_subprojects=fetch_subprojects)
             else:
                 loader = self
 
-            dep_element = loader._load_file(dep.name, rewritable, ticker, fetch_subprojects)
+            dep_element = loader._load_file(dep.name, rewritable, ticker, fetch_subprojects, yaml_cache)
 
             if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
                 raise LoadError(LoadErrorReason.INVALID_DATA,

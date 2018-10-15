@@ -1,9 +1,12 @@
 import os
 import pytest
+import tempfile
 from collections import Mapping
 
 from buildstream import _yaml
 from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._context import Context
+from buildstream._yamlcache import YamlCache
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -150,6 +153,21 @@ def test_composite_preserve_originals(datafiles):
     assert(_yaml.node_get(orig_extra, str, 'old') == 'new')
 
 
+def load_yaml_file(filename, *, cache_path, shortname=None, from_cache='raw'):
+
+    _, temppath = tempfile.mkstemp(dir=os.path.join(cache_path.dirname, cache_path.basename), text=True)
+    context = Context()
+
+    with YamlCache.open(context, temppath) as yc:
+        if from_cache == 'raw':
+            return _yaml.load(filename, shortname)
+        elif from_cache == 'cached':
+            _yaml.load(filename, shortname, yaml_cache=yc)
+            return _yaml.load(filename, shortname, yaml_cache=yc)
+        else:
+            assert False
+
+
 # Tests for list composition
 #
 # Each test composits a filename on top of basics.yaml, and tests
@@ -165,6 +183,7 @@ def test_composite_preserve_originals(datafiles):
 #    prov_col: The expected provenance column of "mood"
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize('caching', [('raw'), ('cached')])
 @pytest.mark.parametrize("filename,index,length,mood,prov_file,prov_line,prov_col", [
 
     # Test results of compositing with the (<) prepend directive
@@ -195,14 +214,15 @@ def test_composite_preserve_originals(datafiles):
     ('implicitoverwrite.yaml', 0, 2, 'overwrite1', 'implicitoverwrite.yaml', 4, 8),
     ('implicitoverwrite.yaml', 1, 2, 'overwrite2', 'implicitoverwrite.yaml', 6, 8),
 ])
-def test_list_composition(datafiles, filename,
+def test_list_composition(datafiles, filename, tmpdir,
                           index, length, mood,
-                          prov_file, prov_line, prov_col):
-    base = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
-    overlay = os.path.join(datafiles.dirname, datafiles.basename, filename)
+                          prov_file, prov_line, prov_col, caching):
+    base_file = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
+    overlay_file = os.path.join(datafiles.dirname, datafiles.basename, filename)
 
-    base = _yaml.load(base, shortname='basics.yaml')
-    overlay = _yaml.load(overlay, shortname=filename)
+    base = load_yaml_file(base_file, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
+    overlay = load_yaml_file(overlay_file, cache_path=tmpdir, shortname=filename, from_cache=caching)
+
     _yaml.composite_dict(base, overlay)
 
     children = _yaml.node_get(base, list, 'children')
@@ -254,6 +274,7 @@ def test_list_deletion(datafiles):
 #    prov_col: The expected provenance column of "mood"
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize('caching', [('raw'), ('cached')])
 @pytest.mark.parametrize("filename1,filename2,index,length,mood,prov_file,prov_line,prov_col", [
 
     # Test results of compositing literal list with (>) and then (<)
@@ -310,9 +331,9 @@ def test_list_deletion(datafiles):
     ('listoverwrite.yaml', 'listprepend.yaml', 2, 4, 'overwrite1', 'listoverwrite.yaml', 5, 10),
     ('listoverwrite.yaml', 'listprepend.yaml', 3, 4, 'overwrite2', 'listoverwrite.yaml', 7, 10),
 ])
-def test_list_composition_twice(datafiles, filename1, filename2,
+def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
                                 index, length, mood,
-                                prov_file, prov_line, prov_col):
+                                prov_file, prov_line, prov_col, caching):
     file_base = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
     file1 = os.path.join(datafiles.dirname, datafiles.basename, filename1)
     file2 = os.path.join(datafiles.dirname, datafiles.basename, filename2)
@@ -320,9 +341,9 @@ def test_list_composition_twice(datafiles, filename1, filename2,
     #####################
     # Round 1 - Fight !
     #####################
-    base = _yaml.load(file_base, shortname='basics.yaml')
-    overlay1 = _yaml.load(file1, shortname=filename1)
-    overlay2 = _yaml.load(file2, shortname=filename2)
+    base = load_yaml_file(file_base, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
+    overlay1 = load_yaml_file(file1, cache_path=tmpdir, shortname=filename1, from_cache=caching)
+    overlay2 = load_yaml_file(file2, cache_path=tmpdir, shortname=filename2, from_cache=caching)
 
     _yaml.composite_dict(base, overlay1)
     _yaml.composite_dict(base, overlay2)
@@ -337,9 +358,9 @@ def test_list_composition_twice(datafiles, filename1, filename2,
     #####################
     # Round 2 - Fight !
     #####################
-    base = _yaml.load(file_base, shortname='basics.yaml')
-    overlay1 = _yaml.load(file1, shortname=filename1)
-    overlay2 = _yaml.load(file2, shortname=filename2)
+    base = load_yaml_file(file_base, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
+    overlay1 = load_yaml_file(file1, cache_path=tmpdir, shortname=filename1, from_cache=caching)
+    overlay2 = load_yaml_file(file2, cache_path=tmpdir, shortname=filename2, from_cache=caching)
 
     _yaml.composite_dict(overlay1, overlay2)
     _yaml.composite_dict(base, overlay1)
