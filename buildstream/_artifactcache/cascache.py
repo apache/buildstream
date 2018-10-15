@@ -365,7 +365,10 @@ class CASCache(ArtifactCache):
         Raises: ArtifactError if no push remotes are configured.
         """
 
-        push_remotes = [r for r in self._remotes[project] if r.spec.push]
+        if self._has_push_remotes:
+            push_remotes = [r for r in self._remotes[project] if r.spec.push]
+        else:
+            push_remotes = []
 
         if not push_remotes:
             raise ArtifactError("CASCache: push_directory was called, but no remote artifact " +
