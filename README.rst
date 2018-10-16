@@ -1,10 +1,10 @@
 About
 -----
 
-.. image:: https://buildstream.gitlab.io/buildstream/_static/release.svg
+.. image:: https://docs.buildstream.build/_static/release.svg
    :target: https://gitlab.com/BuildStream/buildstream/commits/bst-1.2
 
-.. image:: https://buildstream.gitlab.io/buildstream/_static/snapshot.svg
+.. image:: https://docs.buildstream.build/_static/snapshot.svg
    :target: https://gitlab.com/BuildStream/buildstream/commits/master
 
 .. image:: https://gitlab.com/BuildStream/buildstream/badges/master/pipeline.svg
@@ -63,7 +63,7 @@ BuildStream offers the following advantages:
 
 How do I use BuildStream?
 =========================
-Please refer to the `documentation <https://buildstream.gitlab.io/buildstream/>`_
+Please refer to the `documentation <https://docs.buildstream.build>`_
 for  information about installing BuildStream, and about the BuildStream YAML format
 and plugin options.
 
@@ -86,9 +86,9 @@ BuildStream operates on a set of YAML files (.bst files), as follows:
 How can I get started?
 ======================
 To get started, first `install BuildStream by following the installation guide
-<https://buildstream.gitlab.io/buildstream/main_install.html>`_
+<https://buildstream.build/install.html>`_
 and then follow our tutorial in the
-`user guide <https://buildstream.gitlab.io/buildstream/main_using.html>`_.
+`user guide <https://docs.buildstream.build/main_using.html>`_.
 
 We also recommend exploring some existing BuildStream projects:
 
