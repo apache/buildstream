@@ -38,6 +38,9 @@ variables:
   # normally staged
   build-root: /buildstream/%{project-name}/%{element-name}
 
+  # Indicates where the build system should look for configuration files  
+  conf-root: .
+  
   # Indicates the build installation directory in the sandbox
   install-root: /buildstream-install
 

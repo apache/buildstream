@@ -6,11 +6,11 @@ variables:
     export NOCONFIGURE=1;
 
     if [ -x %{conf-cmd} ]; then true;
-    elif [ -x autogen ]; then ./autogen;
-    elif [ -x autogen.sh ]; then ./autogen.sh;
-    elif [ -x bootstrap ]; then ./bootstrap;
-    elif [ -x bootstrap.sh ]; then ./bootstrap.sh;
-    else autoreconf -ivf;
+    elif [ -x %{conf-root}/autogen ]; then %{conf-root}/autogen;
+    elif [ -x %{conf-root}/autogen.sh ]; then %{conf-root}/autogen.sh;
+    elif [ -x %{conf-root}/bootstrap ]; then %{conf-root}/bootstrap;
+    elif [ -x %{conf-root}/bootstrap.sh ]; then %{conf-root}/bootstrap.sh;
+    else autoreconf -ivf %{conf-root};
     fi
 
   # Project-wide extra arguments to be passed to `configure`
@@ -22,7 +22,8 @@ variables:
   # For backwards compatibility only, do not use.
   conf-extra: ''
 
-  conf-cmd: ./configure
+  conf-cmd: "%{conf-root}/configure"
+  
   conf-args: |
 
     --prefix=%{prefix} \

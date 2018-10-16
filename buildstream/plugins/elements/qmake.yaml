@@ -2,7 +2,7 @@
 
 variables:
 
-  qmake: qmake -makefile
+  qmake: qmake -makefile %{conf-root}
   make: make
   make-install: make -j1 INSTALL_ROOT="%{install-root}" install
 

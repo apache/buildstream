@@ -223,7 +223,9 @@ class Sandbox():
         .. note::
 
            The optional *cwd* argument will default to the value set with
-           :func:`~buildstream.sandbox.Sandbox.set_work_directory`
+           :func:`~buildstream.sandbox.Sandbox.set_work_directory` and this
+           function must make sure the directory will be created if it does
+           not exist yet, even if a workspace is being used.
         """
         raise ImplError("Sandbox of type '{}' does not implement run()"
                         .format(type(self).__name__))

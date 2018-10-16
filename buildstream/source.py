@@ -20,6 +20,19 @@
 Source - Base source class
 ==========================
 
+Built-in functionality
+----------------------
+
+The Source base class provides built in functionality that may be overridden
+by individual plugins.
+
+* Directory
+
+  The ``directory`` variable can be set for all sources of a type in project.conf
+  or per source within a element.
+
+  This sets the location within the build root that the content of the source
+  will be loaded in to. If the location does not exist, it will be created.
 
 .. _core_source_abstract_methods:
 
