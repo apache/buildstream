@@ -105,7 +105,7 @@ class OSTreeSource(Source):
         node['ref'] = self.ref = ref
 
     def track(self):
-        # If self.tracking is not specified its' not an error, just silently return
+        # If self.tracking is not specified it's not an error, just silently return
         if not self.tracking:
             return None
 
@@ -151,7 +151,7 @@ class OSTreeSource(Source):
             # The target directory is guaranteed to exist, here we must move the
             # content of out checkout into the existing target directory.
             #
-            # We may not be able to create the target directory as it's parent
+            # We may not be able to create the target directory as its parent
             # may be readonly, and the directory itself is often a mount point.
             #
             try:

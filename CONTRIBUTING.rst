@@ -120,7 +120,7 @@ preferred in separate commits.
 
 If a commit in your branch modifies behavior such that a test must also
 be changed to match the new behavior, then the tests should be updated
-with the same commit, so that every commit passes it's own tests.
+with the same commit, so that every commit passes its own tests.
 
 
 Commit messages
@@ -733,7 +733,7 @@ is **illegal** to override any other method.
 * Subclasses are not allowed to override any other methods.
 
 The key here is that in BuildStream, we consider it unacceptable
-that a subclass overrides a method of it's parent class unless
+that a subclass overrides a method of its parent class unless
 the said parent class has explicitly given permission to subclasses
 to do so, and outlined the API contract for this purpose. No surprises
 are allowed.
@@ -937,7 +937,7 @@ possible, and avoid any cyclic relationships in modules.
 
 For instance, the ``Source`` objects are owned by ``Element``
 objects in the BuildStream data model, and as such the ``Element``
-will delegate some activities to the ``Source`` objects in it's
+will delegate some activities to the ``Source`` objects in its
 possesion. The ``Source`` objects should however never call functions
 on the ``Element`` object, nor should the ``Source`` object itself
 have any understanding of what an ``Element`` is.
@@ -1180,7 +1180,7 @@ The BuildStream documentation style is as follows:
     Feel free to also use ``.. attention::`` or ``.. important::`` to call special
     attention to a paragraph, ``.. tip::`` to give the reader a special tip on how
     to use an advanced feature or ``.. warning::`` to warn the user about a potential
-    misuse of the API and explain it's consequences.
+    misuse of the API and explain its consequences.
 
 * Code blocks are defined using: ``.. code:: LANGUAGE`` blocks, followed by an empty
   line and then indented (3 spaces) text. Note that the default language is ``python``.

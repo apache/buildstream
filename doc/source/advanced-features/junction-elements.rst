@@ -43,7 +43,7 @@ Building callHello.bst,
 .. raw:: html
    :file: ../sessions/junctions-build.html
 
-You can see that the hello.bst element and it's dependencies from the autotools
+You can see that the hello.bst element and its dependencies from the autotools
 project have been build as part of the pipeline for callHello.bst.
 
 We can now invoke `bst shell`

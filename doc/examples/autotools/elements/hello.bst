@@ -8,7 +8,7 @@ variables:
   # The hello world example lives in the doc/amhello folder.
   #
   # Set the %{command-subdir} variable to that location
-  # and just have the autotools element run it's commands there.
+  # and just have the autotools element run its commands there.
   #
   command-subdir: doc/amhello
 

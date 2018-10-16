@@ -113,7 +113,7 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
 
 
 # Assert that if either the client key or client cert is specified
-# without specifying it's counterpart, we get a comprehensive LoadError
+# without specifying its counterpart, we get a comprehensive LoadError
 # instead of an unhandled exception.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize('config_key, config_value', [

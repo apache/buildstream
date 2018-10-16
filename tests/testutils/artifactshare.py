@@ -32,7 +32,7 @@ class ArtifactShare():
     def __init__(self, directory, *, total_space=None, free_space=None):
 
         # The working directory for the artifact share (in case it
-        # needs to do something outside of it's backend's storage folder).
+        # needs to do something outside of its backend's storage folder).
         #
         self.directory = os.path.abspath(directory)
 
