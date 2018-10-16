@@ -31,7 +31,7 @@ architecture. For this example we only support the ``i386`` and ``x86_64``
 architectures.
 
 Note that we've added a :ref:`source alias <project_source_aliases>` for
-the ``https://sdk.gnome.org/`` repository to download the SDK from.
+the ``https://dl.flathub.org/`` repository to download the SDK from.
 
 
 ``elements/base/sdk.bst``
@@ -47,7 +47,7 @@ download the Flatpak since these are hosted in OSTree repositories.
 While declaring the :mod:`ostree <sources.ostree>` source, we specify a GPG
 public key to verify the OSTree download. This configuration is optional
 but recommended for OSTree repositories. The key is stored in the project directory
-at ``keys/gnome-sdk.gpg``, and can be downloaded from https://sdk.gnome.org/keys/.
+at ``keys/flathub.gpg``, and it's included in the file at https://flathub.org/repo/flathub.flatpakrepo.
 
 We also use :ref:`conditional statements <format_directives_conditional>` to decide
 which branch to download.

@@ -2,15 +2,15 @@ kind: import
 description: Import the base freedesktop SDK
 sources:
 - kind: ostree
-  url: gnomesdk:repo/
-  gpg-key: keys/gnome-sdk.gpg
+  url: flathub:repo/
+  gpg-key: keys/flathub.gpg
   (?):
-  - arch == "x86-64":
-      track: runtime/org.freedesktop.BaseSdk/x86_64/1.4
-      ref: 0d9d255d56b08aeaaffb1c820eef85266eb730cb5667e50681185ccf5cd7c882
-  - arch == "x86-32":
-      track: runtime/org.freedesktop.BaseSdk/i386/1.4
-      ref: 16036b747c1ec8e7fe291f5b1f667cb942f0267d08fcad962e9b7627d6cf1981
+  - arch == "x86_64":
+      track: runtime/org.freedesktop.Sdk/x86_64/18.08
+      ref: 03ebd5e0d55333b3926fba9ad7163a665a5f22f3eb94f6fc0d7cb55af8888c75
+  - arch == "i386":
+      track: runtime/org.freedesktop.Sdk/i386/18.08
+      ref: f7d80db9d0eb219eba0a8d9ed1ae4d09fbda708fb49fd218839cbd4d745b01cd
 config:
   source: files
   target: usr

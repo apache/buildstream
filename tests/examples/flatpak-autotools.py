@@ -47,11 +47,13 @@ def test_autotools_build(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', 'hello.bst', '--directory', checkout])
     assert result.exit_code == 0
 
-    assert_contains(checkout, ['/usr', '/usr/lib', '/usr/bin',
-                               '/usr/share',
-                               '/usr/bin/hello', '/usr/share/doc',
-                               '/usr/share/doc/amhello',
-                               '/usr/share/doc/amhello/README'])
+    assert_contains(checkout, ['/app', '/app/lib', '/app/bin',
+                               '/app/share', '/app/lib/debug',
+                               '/app/lib/debug/app', '/app/lib/debug/app/bin',
+                               '/app/lib/debug/app/bin/hello',
+                               '/app/bin/hello', '/app/share/doc',
+                               '/app/share/doc/amhello',
+                               '/app/share/doc/amhello/README'])
 
 
 # Test running an executable built with autotools
@@ -66,6 +68,6 @@ def test_autotools_run(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['shell', 'hello.bst', '/usr/bin/hello'])
+    result = cli.run(project=project, args=['shell', 'hello.bst', '/app/bin/hello'])
     assert result.exit_code == 0
     assert result.output == 'Hello World!\nThis is amhello 1.0.\n'
