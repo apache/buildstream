@@ -269,7 +269,7 @@ setup(name='BuildStream',
       url='https://buildstream.build',
       project_urls={
           'Source': 'https://gitlab.com/BuildStream/buildstream',
-          'Documentation': 'https://buildstream.gitlab.io/buildstream/',
+          'Documentation': 'https://docs.buildstream.build',
           'Tracker': 'https://gitlab.com/BuildStream/buildstream/issues',
           'Mailing List': 'https://mail.gnome.org/mailman/listinfo/buildstream-list'
       },
