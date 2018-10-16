@@ -41,7 +41,7 @@ class Mount():
         self.safe_hardlinks = safe_hardlinks
         self._fuse_mount_options = fuse_mount_options
 
-        # FIXME: When the criteria for mounting something and it's parent
+        # FIXME: When the criteria for mounting something and its parent
         #        mount is identical, then there is no need to mount an additional
         #        fuse layer (i.e. if the root is read-write and there is a directory
         #        marked for staged artifacts directly within the rootfs, they can

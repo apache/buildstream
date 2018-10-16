@@ -1,4 +1,4 @@
-# Composited on top of basics.yaml, overwriting it's children list
+# Composited on top of basics.yaml, overwriting its children list
 children:
   (=):
   - name: overwrite1

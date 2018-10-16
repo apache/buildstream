@@ -76,7 +76,7 @@ def assert_completion(cli, cmd, word_idx, expected, cwd=None):
         words = result.output.splitlines()
 
     # The order is meaningless, bash will
-    # take the results and order it by it's
+    # take the results and order it by its
     # own little heuristics
     words = sorted(words)
     expected = sorted(expected)

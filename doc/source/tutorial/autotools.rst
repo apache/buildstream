@@ -88,7 +88,7 @@ As :ref:`the documentation <format_composition>` mentions:
 The variable we needed to override was ``command-subdir``, which is an
 automatic variable provided by the :mod:`BuildElement <buildstream.buildelement>`
 abstract class. This variable simply instructs the :mod:`BuildElement <buildstream.buildelement>`
-in which subdirectory of the ``%{build-root}`` to run it's commands in.
+in which subdirectory of the ``%{build-root}`` to run its commands in.
 
 One can always display the resolved set of variables for a given
 element's configuration using :ref:`bst show <invoking_show>`:

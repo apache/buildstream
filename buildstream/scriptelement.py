@@ -45,7 +45,7 @@ class ScriptElement(Element):
     __commands = None
     __layout = []
 
-    # The compose element's output is it's dependencies, so
+    # The compose element's output is its dependencies, so
     # we must rebuild if the dependencies change even when
     # not in strict build plans.
     #
@@ -135,7 +135,7 @@ class ScriptElement(Element):
            be made available at the specified location.
         """
         #
-        # Even if this is an empty list by default, make sure that it's
+        # Even if this is an empty list by default, make sure that its
         # instance data instead of appending stuff directly onto class data.
         #
         if not self.__layout:

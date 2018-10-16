@@ -867,8 +867,8 @@ class Element(Plugin):
 
     # _new_from_meta():
     #
-    # Recursively instantiate a new Element instance, it's sources
-    # and it's dependencies from a meta element.
+    # Recursively instantiate a new Element instance, its sources
+    # and its dependencies from a meta element.
     #
     # Args:
     #    artifacts (ArtifactCache): The artifact cache
@@ -1217,7 +1217,7 @@ class Element(Plugin):
     # _preflight():
     #
     # A wrapper for calling the abstract preflight() method on
-    # the element and it's sources.
+    # the element and its sources.
     #
     def _preflight(self):
 
@@ -1999,7 +1999,7 @@ class Element(Plugin):
         if workspace:
 
             # A workspace is considered inconsistent in the case
-            # that it's directory went missing
+            # that its directory went missing
             #
             fullpath = workspace.get_absolute_path()
             if not os.path.exists(fullpath):

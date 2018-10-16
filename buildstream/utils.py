@@ -993,7 +993,7 @@ def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-bu
 
 # _kill_process_tree()
 #
-# Brutally murder a process and all of it's children
+# Brutally murder a process and all of its children
 #
 # Args:
 #    pid (int): Process ID

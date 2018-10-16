@@ -73,7 +73,7 @@ The element
 ~~~~~~~~~~~
 The :mod:`import <elements.import>` element can be used to simply add content
 directly to the output artifacts. In this case, it simply takes the ``hello.world`` file
-provided by it's source and stages it directly to the artifact output root.
+provided by its source and stages it directly to the artifact output root.
 
 .. tip::
 

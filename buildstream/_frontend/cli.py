@@ -104,7 +104,7 @@ def complete_target(args, incomplete):
     # The project is not required to have an element-path
     element_directory = project.get('element-path')
 
-    # If a project was loaded, use it's element-path to
+    # If a project was loaded, use its element-path to
     # adjust our completion's base directory
     if element_directory:
         base_directory = os.path.join(base_directory, element_directory)

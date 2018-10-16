@@ -60,7 +60,7 @@ class FuseMountError(Exception):
 #
 #   With the daemon approach, we know that the fuse is mounted right
 #   away when fuse_main() returns, then the daemon will go and handle
-#   requests on it's own, but then we have no way to shut down the
+#   requests on its own, but then we have no way to shut down the
 #   daemon.
 #
 #   With the blocking approach, we still have it as a child process
@@ -105,7 +105,7 @@ class Mount():
         self.__process = Process(target=self.__run_fuse)
 
         # Ensure the child fork() does not inherit our signal handlers, if the
-        # child wants to handle a signal then it will first set it's own
+        # child wants to handle a signal then it will first set its own
         # handler, and then unblock it.
         with _signals.blocked([signal.SIGTERM, signal.SIGTSTP, signal.SIGINT], ignore=False):
             self.__process.start()
@@ -185,7 +185,7 @@ class Mount():
         self.__operations = self.create_operations()
 
         # Run fuse in foreground in this child process, internally libfuse
-        # will handle SIGTERM and gracefully exit it's own little main loop.
+        # will handle SIGTERM and gracefully exit its own little main loop.
         #
         FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True, nonempty=True,
              **self._fuse_mount_options)

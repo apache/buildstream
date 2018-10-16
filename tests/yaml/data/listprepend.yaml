@@ -1,4 +1,4 @@
-# Composited on top of basics.yaml, prepending to it's children list
+# Composited on top of basics.yaml, prepending to its children list
 children:
   (<):
   - name: prepended1

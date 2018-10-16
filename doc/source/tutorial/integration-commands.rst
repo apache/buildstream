@@ -7,11 +7,11 @@ performed at installation time, otherwise it will not run properly.
 
 This is especially true in cases where a daemon or library interoperates
 with third party extensions and needs to maintain a system wide cache whenever
-it's extensions are installed or removed; system wide font caches are an example
+its extensions are installed or removed; system wide font caches are an example
 of this.
 
 In these cases we use :ref:`integration commands <public_integration>` to
-ensure that a runtime is ready to run after all of it's components have been *staged*.
+ensure that a runtime is ready to run after all of its components have been *staged*.
 
 .. note::
 
@@ -60,10 +60,10 @@ we've used any :ref:`builtin public data <public_builtin>`.
 
 Public data is a free form portion of an element's configuration and
 is not necessarily understood by the element on which it is declared, public
-data is intended to be read by it's reverse dependency elements.
+data is intended to be read by its reverse dependency elements.
 
 This allows annotations on some elements to inform elements later in
-the dependency chain about details of it's artifact, or to suggest how
+the dependency chain about details of its artifact, or to suggest how
 it should be processed.
 
 

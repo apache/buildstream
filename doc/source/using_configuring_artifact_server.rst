@@ -79,7 +79,7 @@ in a system wide location, with ``pip3 install .`` in the BuildStream
 checkout directory.
 
 Otherwise, some tinkering is required to ensure BuildStream is available
-in ``PATH`` when it's companion ``bst-artifact-server`` program is run
+in ``PATH`` when its companion ``bst-artifact-server`` program is run
 remotely.
 
 You can install only the artifact server companion program without

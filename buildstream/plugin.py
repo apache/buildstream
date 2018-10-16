@@ -169,7 +169,7 @@ class Plugin():
 
         For elements, this is the project relative bst filename,
         for sources this is the owning element's name with a suffix
-        indicating it's index on the owning element.
+        indicating its index on the owning element.
 
         For sources this is for display purposes only.
         """
@@ -208,8 +208,8 @@ class Plugin():
            node (dict): The loaded configuration dictionary
 
         Raises:
-           :class:`.SourceError`: If its a :class:`.Source` implementation
-           :class:`.ElementError`: If its an :class:`.Element` implementation
+           :class:`.SourceError`: If it's a :class:`.Source` implementation
+           :class:`.ElementError`: If it's an :class:`.Element` implementation
 
         Plugin implementors should implement this method to read configuration
         data and store it.
@@ -238,8 +238,8 @@ class Plugin():
         """Preflight Check
 
         Raises:
-           :class:`.SourceError`: If its a :class:`.Source` implementation
-           :class:`.ElementError`: If its an :class:`.Element` implementation
+           :class:`.SourceError`: If it's a :class:`.Source` implementation
+           :class:`.ElementError`: If it's an :class:`.Element` implementation
 
         This method is run after :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
         and after the pipeline is fully constructed.
