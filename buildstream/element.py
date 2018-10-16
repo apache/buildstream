@@ -80,6 +80,7 @@ from collections import Mapping, OrderedDict
 from contextlib import contextmanager
 import tempfile
 import shutil
+import functools
 
 from . import _yaml
 from ._variables import Variables
@@ -1137,21 +1138,33 @@ class Element(Plugin):
             self.__build_result = None
             return
 
+        def cmp_dep(a, b):
+            sysroot_a, key_a = a
+            sysroot_b, key_b = b
+            if key_a is None:
+                key_a = ''
+            if key_b is None:
+                key_b = ''
+            if (sysroot_a, key_a) < (sysroot_b, key_b):
+                return -1
+            elif (sysroot_a, key_a) > (sysroot_b, key_b):
+                return 1
+            else:
+                return 0
+
         if self.__weak_cache_key is None:
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
             # but does not include keys of dependencies.
             dependencies = []
             if self.BST_STRICT_REBUILD:
-                for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True):
-                    dependencies = [(sysroot, e._get_cache_key(strength=_KeyStrength.WEAK))
-                                    for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
+                dependencies = [(sysroot, e._get_cache_key(strength=_KeyStrength.WEAK))
+                                for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
             else:
-                for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True):
-                    dependencies = [(sysroot, e.name)
-                                    for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
+                dependencies = [(sysroot, e.name)
+                                for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
 
-            self.__weak_cache_key = self.__calculate_cache_key(sorted(dependencies))
+            self.__weak_cache_key = self.__calculate_cache_key(sorted(dependencies, key=functools.cmp_to_key(cmp_dep)))
 
             if self.__weak_cache_key is None:
                 # Weak cache key could not be calculated yet
@@ -1179,7 +1192,7 @@ class Element(Plugin):
         if self.__strict_cache_key is None:
             dependencies = [(sysroot, e.__strict_cache_key)
                             for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
-            self.__strict_cache_key = self.__calculate_cache_key(sorted(dependencies))
+            self.__strict_cache_key = self.__calculate_cache_key(sorted(dependencies, key=functools.cmp_to_key(cmp_dep)))
 
             if self.__strict_cache_key is None:
                 # Strict cache key could not be calculated yet
@@ -1220,7 +1233,7 @@ class Element(Plugin):
             elif self.__assemble_scheduled or self.__assemble_done:
                 dependencies = [(sysroot, e._get_cache_key())
                                 for sysroot, e in self.dependencies(Scope.BUILD, with_sysroot=True)]
-                self.__cache_key = self.__calculate_cache_key(sorted(dependencies))
+                self.__cache_key = self.__calculate_cache_key(sorted(dependencies, key=functools.cmp_to_key(cmp_dep)))
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
