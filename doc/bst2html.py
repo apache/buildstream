@@ -440,7 +440,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
 @click.option('--palette', '-p', default='tango',
               type=click.Choice(['solarized', 'solarized-xterm', 'tango', 'xterm', 'console']),
               help="Selects a palette for the output style")
-@click.argument('description', click.Path(file_okay=True, dir_okay=False, readable=True))
+@click.argument('description', type=click.Path(file_okay=True, dir_okay=False, readable=True))
 def run_bst(directory, force, source_cache, description, palette):
     """Run a bst command and capture stdout/stderr in html
 
