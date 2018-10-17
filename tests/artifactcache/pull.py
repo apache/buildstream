@@ -190,15 +190,16 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Load the project and CAS cache
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
-        cas = context.artifactcache
+        artifactcache = context.artifactcache
+        cas = artifactcache.cas
 
         # Assert that the element's artifact is cached
         element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert cas.contains(element, element_key)
+        assert artifactcache.contains(element, element_key)
 
         # Retrieve the Directory object from the cached artifact
-        artifact_ref = cas.get_artifact_fullname(element, element_key)
+        artifact_ref = artifactcache.get_artifact_fullname(element, element_key)
         artifact_digest = cas.resolve_ref(artifact_ref)
 
         queue = multiprocessing.Queue()
@@ -268,12 +269,13 @@ def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest
     project.ensure_fully_loaded()
 
     # Create a local CAS cache handle
-    cas = context.artifactcache
+    artifactcache = context.artifactcache
+    cas = artifactcache.cas
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
+    artifactcache.setup_remotes(use_config=True)
 
-    if cas.has_push_remotes():
+    if artifactcache.has_push_remotes():
         directory = remote_execution_pb2.Directory()
 
         with open(cas.objpath(artifact_digest), 'rb') as f:
@@ -284,7 +286,7 @@ def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest
         tree_maker(cas, tree, directory)
 
         # Push the Tree as a regular message
-        tree_digest = cas.push_message(project, tree)
+        tree_digest = artifactcache.push_message(project, tree)
 
         queue.put((tree_digest.hash, tree_digest.size_bytes))
     else:
