@@ -296,12 +296,14 @@ class Loader():
     # Raises:
     #    (LoadError): In case there was a circular dependency error
     #
-    def _check_circular_deps(self, element_name, check_elements=None, validated=None):
+    def _check_circular_deps(self, element_name, check_elements=None, validated=None, sequence=None):
 
         if check_elements is None:
             check_elements = {}
         if validated is None:
             validated = {}
+        if sequence is None:
+            sequence = []
 
         element = self._elements[element_name]
 
@@ -314,16 +316,24 @@ class Loader():
             return
 
         if check_elements.get(element_name) is not None:
+            # Create `chain`, the loop of element dependencies from this
+            # element back to itself, by trimming everything before this
+            # element from the sequence under consideration.
+            chain = sequence[sequence.index(element_name):]
+            chain.append(element_name)
             raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                            "Circular dependency detected for element: {}"
-                            .format(element.name))
+                            ("Circular dependency detected at element: {}\n" +
+                             "Dependency chain: {}")
+                            .format(element.name, " -> ".join(chain)))
 
         # Push / Check each dependency / Pop
         check_elements[element_name] = True
+        sequence.append(element_name)
         for dep in element.deps:
             loader = self._get_loader_for_dep(dep)
-            loader._check_circular_deps(dep.name, check_elements, validated)
+            loader._check_circular_deps(dep.name, check_elements, validated, sequence)
         del check_elements[element_name]
+        sequence.pop()
 
         # Eliminate duplicate paths
         validated[element_name] = True
