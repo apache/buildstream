@@ -64,7 +64,7 @@ BuildStream offers the following advantages:
 How do I use BuildStream?
 =========================
 Please refer to the `documentation <https://buildstream.gitlab.io/buildstream/>`_
-for  information about installing BuildStream, and about the BuildStream YAML format
+for  information about BuildStream, and about the BuildStream YAML format
 and plugin options.
 
 
@@ -86,7 +86,7 @@ BuildStream operates on a set of YAML files (.bst files), as follows:
 How can I get started?
 ======================
 To get started, first `install BuildStream by following the installation guide
-<https://buildstream.gitlab.io/buildstream/main_install.html>`_
+<https://buildstream.build/install.html>`_
 and then follow our tutorial in the
 `user guide <https://buildstream.gitlab.io/buildstream/main_using.html>`_.
 
