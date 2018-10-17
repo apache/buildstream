@@ -256,7 +256,7 @@ class ArtifactCache():
         self._required_elements.update(elements)
 
         # For the cache keys which were resolved so far, we bump
-        # the atime of them.
+        # the mtime of them.
         #
         # This is just in case we have concurrent instances of
         # BuildStream running with the same artifact cache, it will
@@ -268,7 +268,7 @@ class ArtifactCache():
             for key in (strong_key, weak_key):
                 if key:
                     try:
-                        self.update_atime(key)
+                        self.update_mtime(key)
                     except ArtifactError:
                         pass
 
@@ -478,15 +478,15 @@ class ArtifactCache():
     def preflight(self):
         pass
 
-    # update_atime()
+    # update_mtime()
     #
-    # Update the atime of an artifact.
+    # Update the mtime of an artifact.
     #
     # Args:
     #     key (str): The key of the artifact.
     #
-    def update_atime(self, key):
-        raise ImplError("Cache '{kind}' does not implement contains()"
+    def update_mtime(self, key):
+        raise ImplError("Cache '{kind}' does not implement update_mtime()"
                         .format(kind=type(self).__name__))
 
     # initialize_remotes():

@@ -513,7 +513,7 @@ class CASCache(ArtifactCache):
         except FileNotFoundError as e:
             raise ArtifactError("Attempt to access unavailable artifact: {}".format(e)) from e
 
-    def update_atime(self, ref):
+    def update_mtime(self, ref):
         try:
             os.utime(self._refpath(ref))
         except FileNotFoundError as e:
