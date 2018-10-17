@@ -268,7 +268,7 @@ class ArtifactCache():
             for key in (strong_key, weak_key):
                 if key:
                     try:
-                        self.update_mtime(key)
+                        self.update_mtime(element, key)
                     except ArtifactError:
                         pass
 
@@ -483,9 +483,10 @@ class ArtifactCache():
     # Update the mtime of an artifact.
     #
     # Args:
+    #     element (Element): The Element to update
     #     key (str): The key of the artifact.
     #
-    def update_mtime(self, key):
+    def update_mtime(self, element, key):
         raise ImplError("Cache '{kind}' does not implement update_mtime()"
                         .format(kind=type(self).__name__))
 
