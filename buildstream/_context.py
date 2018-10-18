@@ -19,7 +19,8 @@
 
 import os
 import datetime
-from collections import deque, Mapping
+from collections import deque
+from collections.abc import Mapping
 from contextlib import contextmanager
 from . import utils
 from . import _cachekey

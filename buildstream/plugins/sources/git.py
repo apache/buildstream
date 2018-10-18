@@ -89,7 +89,7 @@ import os
 import errno
 import re
 import shutil
-from collections import Mapping
+from collections.abc import Mapping
 from io import StringIO
 
 from configparser import RawConfigParser

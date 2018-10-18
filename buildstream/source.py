@@ -155,7 +155,7 @@ Class Reference
 """
 
 import os
-from collections import Mapping
+from collections.abc import Mapping
 from contextlib import contextmanager
 
 from . import Plugin, Consistency
