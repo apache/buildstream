@@ -19,7 +19,8 @@
 
 import os
 import string
-from collections import Mapping, namedtuple
+from collections import namedtuple
+from collections.abc import Mapping
 
 from ..types import _KeyStrength
 from .._exceptions import ArtifactError, ImplError, LoadError, LoadErrorReason

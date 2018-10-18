@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 # System imports
-from collections import Mapping
+from collections.abc import Mapping
 
 # BuildStream toplevel imports
 from .._exceptions import LoadError, LoadErrorReason

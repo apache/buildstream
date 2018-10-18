@@ -19,7 +19,8 @@
 
 import os
 from functools import cmp_to_key
-from collections import Mapping, namedtuple
+from collections import namedtuple
+from collections.abc import Mapping
 import tempfile
 import shutil
 

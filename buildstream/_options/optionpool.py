@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #
 
-from collections import Mapping
+from collections.abc import Mapping
 import jinja2
 
 from .. import _yaml
