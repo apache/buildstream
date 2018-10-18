@@ -110,6 +110,7 @@ def test_circular_dependency(datafiles):
         element = loader.load(['elements/circulartarget.bst'])[0]
 
     assert (exc.value.reason == LoadErrorReason.CIRCULAR_DEPENDENCY)
+    assert ("seconddep" in exc.value.args[0])
 
 
 @pytest.mark.datafiles(DATA_DIR)
