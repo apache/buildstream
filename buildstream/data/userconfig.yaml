@@ -100,3 +100,19 @@ logging:
 
     [%{elapsed}][%{key}][%{element}] %{action} %{message}
 
+#
+#    Prompt overrides
+#
+# Here you can suppress 'are you sure?' and other kinds of prompts by supplying
+# override values. Note that e.g. 'yes' and 'no' have the same meaning here as
+# they do in the actual cli prompt.
+#
+prompt:
+
+  # Whether to create a project with 'bst init' if we are invoked outside of a
+  # directory where we can resolve the project.
+  #
+  #  ask - Prompt the user to choose.
+  #  no  - Never create the project.
+  #
+  auto-init: ask

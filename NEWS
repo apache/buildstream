@@ -45,6 +45,10 @@ buildstream 1.3.1
     instead of just a specially-formatted build-root with a `root` and `scratch`
     subdirectory.
 
+  o The buildstream.conf file learned a new 'prompt.auto-init' option. This
+    allows users to suppress prompts for automatically running 'bst init' if we
+    were unable to resolve the project.
+
   o Due to the element `build tree` being cached in the respective artifact their
     size in some cases has significantly increased. In *most* cases the build trees
     are not utilised when building targets, as such by default bst 'pull' & 'build'

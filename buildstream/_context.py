@@ -110,6 +110,10 @@ class Context():
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
+        # Boolean, whether to offer to create a project for the user, if we are
+        # invoked outside of a directory where we can resolve the project.
+        self.prompt_auto_init = None
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -165,7 +169,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache'
+            'cache', 'prompt'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -220,6 +224,20 @@ class Context():
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
+
+        # Load prompt preferences
+        #
+        # We convert string options to booleans here, so we can be both user
+        # and coder-friendly. The string options are worded to match the
+        # responses the user would give at the cli, for least surprise. The
+        # booleans are converted here because it's easiest to eyeball that the
+        # strings are right.
+        #
+        prompt = _yaml.node_get(
+            defaults, Mapping, 'prompt')
+        _yaml.node_validate(prompt, ['auto-init'])
+        self.prompt_auto_init = _node_get_option_str(
+            prompt, 'auto-init', ['ask', 'no']) == 'ask'
 
         # Load per-projects overrides
         self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
