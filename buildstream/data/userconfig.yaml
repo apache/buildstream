@@ -116,3 +116,19 @@ prompt:
   #  no  - Never create the project.
   #
   auto-init: ask
+
+  # Whether to really proceed with 'bst workspace close --remove-dir' removing
+  # a workspace directory, potentially losing changes.
+  #
+  #  ask - Ask the user if they are sure.
+  #  yes - Always remove, without asking.
+  #
+  really-workspace-close-remove-dir: ask
+
+  # Whether to really proceed with 'bst workspace reset' doing a hard reset of
+  # a workspace, potentially losing changes.
+  #
+  #  ask - Ask the user if they are sure.
+  #  yes - Always hard reset, without asking.
+  #
+  really-workspace-reset-hard: ask

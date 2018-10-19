@@ -114,6 +114,14 @@ class Context():
         # invoked outside of a directory where we can resolve the project.
         self.prompt_auto_init = None
 
+        # Boolean, whether we double-check with the user that they meant to
+        # remove a workspace directory.
+        self.prompt_workspace_close_remove_dir = None
+
+        # Boolean, whether we double-check with the user that they meant to do
+        # a hard reset of a workspace, potentially losing changes.
+        self.prompt_workspace_reset_hard = None
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -235,9 +243,16 @@ class Context():
         #
         prompt = _yaml.node_get(
             defaults, Mapping, 'prompt')
-        _yaml.node_validate(prompt, ['auto-init'])
+        _yaml.node_validate(prompt, [
+            'auto-init', 'really-workspace-close-remove-dir',
+            'really-workspace-reset-hard',
+        ])
         self.prompt_auto_init = _node_get_option_str(
             prompt, 'auto-init', ['ask', 'no']) == 'ask'
+        self.prompt_workspace_close_remove_dir = _node_get_option_str(
+            prompt, 'really-workspace-close-remove-dir', ['ask', 'yes']) == 'ask'
+        self.prompt_workspace_reset_hard = _node_get_option_str(
+            prompt, 'really-workspace-reset-hard', ['ask', 'yes']) == 'ask'
 
         # Load per-projects overrides
         self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
