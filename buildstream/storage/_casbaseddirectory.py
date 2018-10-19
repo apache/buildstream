@@ -348,8 +348,13 @@ class CasBasedDirectory(Directory):
 
     
     def _resolve(self, name, absolute_symlinks_resolve=True):
-        """ Resolves any name to an object. If the name points to a symlink in this 
-        directory, it returns the thing it points to, recursively. Returns a CasBasedDirectory, FileNode or None. Never creates a directory or otherwise alters the directory. """
+        """ Resolves any name to an object. If the name points to a symlink in
+        this directory, it returns the thing it points to,
+        recursively. Returns a CasBasedDirectory, FileNode or
+        None. Never creates a directory or otherwise alters the
+        directory.
+
+        """
         # First check if it's a normal object and return that
 
         if name not in self.index:
@@ -408,7 +413,7 @@ class CasBasedDirectory(Directory):
                         else:
                             return f
                 else:
-                    print("  resolving {}: nonexistent!".format(c))
+                    print("  resolving {}: Broken symlink".format(c))
                     return None
 
         # Shouldn't get here.
@@ -636,7 +641,43 @@ class CasBasedDirectory(Directory):
             print("Extracted all files from source directory '{}': {}".format(source_directory, files))
         return self._partial_import_cas_into_cas(source_directory, files)
 
-
+    def showdiff(self, other):
+        print("Diffing {} and {}:".format(self, other))
+        l1 = list(self.index.items())
+        l2 = list(other.index.items())
+        for (key, value) in l1:
+            if len(l2) == 0:
+                print("'Other' is short: no item to correspond to '{}' in first.".format(key))
+                return
+            (key2, value2) = l2.pop(0)
+            if key != key2:
+                print("Mismatch: item named {} in first, named {} in second".format(key, key2))
+                return
+            if type(value.pb_object) != type(value2.pb_object):
+                print("Mismatch: item named {}'s pb_object is a {} in first and a {} in second".format(key, type(value.pb_object), type(value2.pb_object)))
+                return
+            if type(value.buildstream_object) != type(value2.buildstream_object):
+                print("Mismatch: item named {}'s buildstream_object is a {} in first and a {} in second".format(key, type(value.buildstream_object), type(value2.buildstream_object)))
+                return
+            print("Inspecting {} of type {}".format(key, type(value.pb_object)))
+            if type(value.pb_object) == remote_execution_pb2.DirectoryNode:
+                # It's a directory, follow it
+                self.descend(key).showdiff(other.descend(key))
+            elif type(value.pb_object) == remote_execution_pb2.SymlinkNode:
+                target1 = value.pb_object.target
+                target2 = value2.pb_object.target
+                if target1 != target2:
+                    print("Symlink named {}: targets do not match. {} in the first, {} in the second".format(key, target1, target2))
+            elif type(value.pb_object) == remote_execution_pb2.FileNode:
+                if value.pb_object.digest != value2.pb_object.digest:
+                    print("File named {}: digests do not match. {} in the first, {} in the second".format(key, value.pb_object.digest, value2.pb_object.digest))
+        if len(l2) != 0:
+            print("'Other' is long: it contains extra items called: {}".format(", ".join([i[0] for i in l2])))
+            return
+        print("No differences found in {}".format(self))
+              
+        
+    
     def import_files(self, external_pathspec, *, files=None,
                      report_written=True, update_utimes=False,
                      can_link=False):
@@ -697,6 +738,7 @@ class CasBasedDirectory(Directory):
             self.parent._recalculate_recursing_up(self)
         if duplicate_cas:
             if duplicate_cas.ref.hash != self.ref.hash:
+                self.showdiff(duplicate_cas)
                 raise VirtualDirectoryError("Mismatch between file-imported result {} and cas-to-cas imported result {}.".format(duplicate_cas.ref.hash,self.ref.hash))
 
         return result
