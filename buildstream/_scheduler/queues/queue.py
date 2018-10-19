@@ -208,7 +208,7 @@ class Queue():
     # This will have different results for elements depending
     # on the Queue.status() implementation.
     #
-    #   o Elements which are QueueStatus.WAIT will not be effected
+    #   o Elements which are QueueStatus.WAIT will not be affected
     #
     #   o Elements which are QueueStatus.SKIP will move directly
     #     to the dequeue pool

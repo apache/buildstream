@@ -176,7 +176,7 @@ class BuildElement(Element):
 
         # Specifying notparallel for a given element effects the
         # cache key, while having the side effect of setting max-jobs to 1,
-        # which is normally automatically resolved and does not effect
+        # which is normally automatically resolved and does not affect
         # the cache key.
         if self.get_variable('notparallel'):
             dictionary['notparallel'] = True

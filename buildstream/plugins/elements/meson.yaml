@@ -74,6 +74,6 @@ environment:
     %{max-jobs}
 
 # And dont consider NINJAJOBS as something which may
-# effect build output.
+# affect build output.
 environment-nocache:
 - NINJAJOBS

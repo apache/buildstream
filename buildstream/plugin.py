@@ -266,7 +266,7 @@ class Plugin():
         such as an sha256 sum of a tarball content.
 
         Elements and Sources should implement this by collecting any configurations
-        which could possibly effect the output and return a dictionary of these settings.
+        which could possibly affect the output and return a dictionary of these settings.
 
         For Sources, this is guaranteed to only be called if
         :func:`Source.get_consistency() <buildstream.source.Source.get_consistency>`

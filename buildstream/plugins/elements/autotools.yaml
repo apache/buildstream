@@ -123,7 +123,7 @@ environment:
   V: 1
 
 # And dont consider MAKEFLAGS or V as something which may
-# effect build output.
+# affect build output.
 environment-nocache:
 - MAKEFLAGS
 - V
