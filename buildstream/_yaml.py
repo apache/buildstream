@@ -972,7 +972,7 @@ def node_validate(node, valid_keys):
 #
 # The purpose of this is to create a virtual copy-on-write
 # copy of a dictionary, so that mutating it in any way does
-# not effect the underlying dictionaries.
+# not affect the underlying dictionaries.
 #
 # collections.ChainMap covers this already mostly, but fails
 # to record internal state so as to hide keys which have been

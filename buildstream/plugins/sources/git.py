@@ -415,7 +415,7 @@ class GitSource(Source):
     def get_unique_key(self):
         # Here we want to encode the local name of the repository and
         # the ref, if the user changes the alias to fetch the same sources
-        # from another location, it should not effect the cache key.
+        # from another location, it should not affect the cache key.
         key = [self.original_url, self.mirror.ref]
 
         # Only modify the cache key with checkout_submodules if it's something

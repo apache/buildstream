@@ -66,7 +66,7 @@ environment:
   V: 1
 
 # And dont consider JOBS or V as something which may
-# effect build output.
+# affect build output.
 environment-nocache:
 - JOBS
 - V
