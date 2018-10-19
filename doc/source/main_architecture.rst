@@ -15,3 +15,5 @@ This section provides details on the overall BuildStream architecture.
    arch_scheduler
    arch_cachekeys
    arch_sandboxing
+   arch_remote_execution
+
