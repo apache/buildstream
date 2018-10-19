@@ -150,9 +150,10 @@ def test_cas_import(cli, tmpdir, original, overlay):
     generate_random_root(tmpdir)
     d = create_new_casdir(original, fake_context, tmpdir)
     d2 = create_new_casdir(overlay, fake_context, tmpdir)
+    print("Importing dir {} into {}".format(overlay, original))
     d.import_files(d2)
     d.export_files(os.path.join(tmpdir, "output"))
-
+    
     for item in root_filesets[overlay - 1]:
         (path, typename, content) = item
         realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
