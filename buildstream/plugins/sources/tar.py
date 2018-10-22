@@ -57,7 +57,7 @@ tar - stage files from tar archives
 
 import os
 import tarfile
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager
 from tempfile import TemporaryFile
 
 from buildstream import SourceError
@@ -88,8 +88,7 @@ class TarSource(DownloadableFileSource):
     def _run_lzip(self):
         assert self.host_lzip
         with TemporaryFile() as lzip_stdout:
-            with ExitStack() as context:
-                lzip_file = context.enter_context(open(self._get_mirror_file(), 'r'))
+            with open(self._get_mirror_file(), 'r') as lzip_file:
                 self.call([self.host_lzip, '-d'],
                           stdin=lzip_file,
                           stdout=lzip_stdout)
