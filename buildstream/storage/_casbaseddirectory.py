@@ -289,9 +289,12 @@ class CasBasedDirectory(Directory):
                 return entry.descend(subdirectory_spec[1:], create)
             else:
                 # May be a symlink
+                target = self._resolve(subdirectory_spec[0])
+                if isinstance(target, CasBasedDirectory):
+                    return target
                 error = "Cannot descend into {}, which is a '{}' in the directory {}"
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0],
-                                                         type(entry).__name__,
+                                                         type(self.index[subdirectory_spec[0]].pb_object).__name__,
                                                          self))
         else:
             if create:
@@ -329,6 +332,7 @@ class CasBasedDirectory(Directory):
             return self.index[name].buildstream_object
         # OK then, it's a symlink
         symlink = self._find_pb2_entry(name)
+        assert isinstance(symlink, remote_execution_pb2.SymlinkNode)
         absolute = symlink.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
         if absolute:
             root = self.find_root()
@@ -344,6 +348,16 @@ class CasBasedDirectory(Directory):
             else:
                 directory = directory.descend(c, create=True)
         return directory
+
+    def _is_followable(self, name):
+        """ Returns true if this is a directory or symlink to a valid directory. """
+        if name not in self.index:
+            return False
+        if isinstance(self.index[name].buildstream_object, Directory):
+            return True
+        target = self._resolve(name)
+        print("Is {} followable? Resolved to {}".format(name, target))
+        return isinstance(target, CasBasedDirectory) or target is None
 
     def _resolve_symlink(self, node):
         """Same as _resolve_symlink_or_directory but takes a SymlinkNode.
@@ -477,7 +491,13 @@ class CasBasedDirectory(Directory):
         """ _import_directory_recursively and _import_files_from_directory will be called alternately
         as a directory tree is descended. """
         if directory_name in self.index:
-            subdir = self._resolve_symlink_or_directory(directory_name)
+            if self._is_followable(directory_name): 
+                subdir = self._resolve_symlink_or_directory(directory_name)
+            else:
+                print("Overwriting unfollowable thing {}".format(directory_name))
+                self.delete_entry(directory_name)
+                subdir = self._add_directory(directory_name)
+                # TODO: Add this to the list of overwritten things.
         else:
             subdir = self._add_directory(directory_name)
         new_path_prefix = os.path.join(path_prefix, directory_name)
@@ -608,6 +628,12 @@ class CasBasedDirectory(Directory):
                 if dirname not in processed_directories:
                     # Now strip off the first directory name and import files recursively.
                     subcomponents = CasBasedDirectory.files_in_subdir(files, dirname)
+                    # We will fail at this point if there is a file or symlink to file called 'dirname'.
+                    if dirname in self.index:
+                        x = self._resolve(dirname)
+                        if isinstance(x, remote_execution_pb2.FileNode):
+                            self.delete_entry(dirname)
+                            result.overwritten.append(f)
                     self.create_directory(dirname)
                     print("Creating destination in {}: {}".format(self, dirname))
                     dest_subdir = self._resolve_symlink_or_directory(dirname)
@@ -689,6 +715,18 @@ class CasBasedDirectory(Directory):
             print("Extracted all files from source directory '{}': {}".format(source_directory, files))
         return self._partial_import_cas_into_cas(source_directory, list(files))
 
+    def _describe(self, thing):
+        # Describes protocol buffer objects
+        if isinstance(thing, remote_execution_pb2.DirectoryNode):
+            return "directory called {}".format(thing.name)
+        elif isinstance(thing, remote_execution_pb2.SymlinkNode):
+            return "symlink called {} pointing to {}".format(thing.name, thing.target)
+        elif isinstance(thing, remote_execution_pb2.FileNode):
+            return "file called {}".format(thing.name)
+        else:
+            return "strange thing"
+        
+    
     def showdiff(self, other):
         print("Diffing {} and {}:".format(self, other))
 
@@ -702,7 +740,7 @@ class CasBasedDirectory(Directory):
                     return False
                 item2 = l2[index]
                 if item1.name != item2.name:
-                    print("Items do not match: {} in l1, {} in l2".format(item1.name, item2.name))
+                    print("Items do not match: {}, a {} in l1, vs {}, a {} in l2".format(item1.name, self._describe(item1), item2.name, self._describe(item2)))
                     return False
                 index += 1
             if index != len(l2):
