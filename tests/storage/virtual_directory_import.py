@@ -50,31 +50,33 @@ def generate_import_roots(directory):
                 os.symlink(content, os.path.join(rootdir, path))
 
 
-def generate_random_root(directory):
+def generate_random_roots(directory):
     random.seed(RANDOM_SEED)
-    rootname = "root6"
-    rootdir = os.path.join(directory, "content", rootname)
-    things = []
-    locations = ['.']
-    for i in range(0, 100):
-        location = random.choice(locations)
-        thingname = "node{}".format(i)
-        thing = random.choice(['dir', 'link', 'file'])
-        target = os.path.join(rootdir, location, thingname)
-        if thing == 'dir':
-            os.makedirs(target)
-            locations.append(os.path.join(location, thingname))
-        elif thing == 'file':
-            with open(target, "wt") as f:
-                f.write("This is node {}\n".format(i))
-        elif thing == 'link':
-            # TODO: Make some relative symlinks
-            if random.randint(1, 3) == 1 or len(things) == 0:
-                os.symlink("/broken", target)
-            else:
-                os.symlink(random.choice(things), target)
-        things.append(os.path.join(location, thingname))
-        print("Generated {}/{} ".format(rootdir, things[-1]))
+    for rootno in range(6,13):
+        rootname = "root{}".format(rootno)
+        rootdir = os.path.join(directory, "content", rootname)
+        things = []
+        locations = ['.']
+        os.makedirs(rootdir)
+        for i in range(0, 100):
+            location = random.choice(locations)
+            thingname = "node{}".format(i)
+            thing = random.choice(['dir', 'link', 'file'])
+            target = os.path.join(rootdir, location, thingname)
+            if thing == 'dir':
+                os.makedirs(target)
+                locations.append(os.path.join(location, thingname))
+            elif thing == 'file':
+                with open(target, "wt") as f:
+                    f.write("This is node {}\n".format(i))
+            elif thing == 'link':
+                # TODO: Make some relative symlinks
+                if random.randint(1, 3) == 1 or len(things) == 0:
+                    os.symlink("/broken", target)
+                else:
+                    os.symlink(random.choice(things), target)
+            things.append(os.path.join(location, thingname))
+            print("Generated {}/{} ".format(rootdir, things[-1]))
 
 
 def file_contents(path):
@@ -141,39 +143,40 @@ def directory_not_empty(path):
     return os.listdir(path)
 
 
-@pytest.mark.parametrize("original,overlay", combinations([1, 2, 3, 4, 5]))
+@pytest.mark.parametrize("original,overlay", combinations([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]))
 def test_cas_import(cli, tmpdir, original, overlay):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
     generate_import_roots(tmpdir)
-    generate_random_root(tmpdir)
+    generate_random_roots(tmpdir)
     d = create_new_casdir(original, fake_context, tmpdir)
     d2 = create_new_casdir(overlay, fake_context, tmpdir)
     print("Importing dir {} into {}".format(overlay, original))
     d.import_files(d2)
     d.export_files(os.path.join(tmpdir, "output"))
     
-    for item in root_filesets[overlay - 1]:
-        (path, typename, content) = item
-        realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
-        if typename == 'F':
-            if os.path.isdir(realpath) and directory_not_empty(realpath):
-                # The file should not have overwritten the directory in this case.
-                pass
-            else:
-                assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(path)
-                assert file_contents_are(realpath, content)
-        elif typename == 'S':
-            if os.path.isdir(realpath) and directory_not_empty(realpath):
-                # The symlink should not have overwritten the directory in this case.
-                pass
-            else:
-                assert os.path.islink(realpath)
-                assert os.readlink(realpath) == content
-        elif typename == 'D':
-            # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
-            assert os.path.isdir(realpath)
+    if overlay < 6:
+        for item in root_filesets[overlay - 1]:
+            (path, typename, content) = item
+            realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
+            if typename == 'F':
+                if os.path.isdir(realpath) and directory_not_empty(realpath):
+                    # The file should not have overwritten the directory in this case.
+                    pass
+                else:
+                    assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(path)
+                    assert file_contents_are(realpath, content)
+            elif typename == 'S':
+                if os.path.isdir(realpath) and directory_not_empty(realpath):
+                    # The symlink should not have overwritten the directory in this case.
+                    pass
+                else:
+                    assert os.path.islink(realpath)
+                    assert os.readlink(realpath) == content
+            elif typename == 'D':
+                # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
+                assert os.path.isdir(realpath)
 
     # Now do the same thing with filebaseddirectories and check the contents match
     d3 = create_new_casdir(original, fake_context, tmpdir)
@@ -188,7 +191,7 @@ def test_directory_listing(cli, tmpdir, root):
     fake_context.artifactdir = tmpdir
     # Create some fake content
     generate_import_roots(tmpdir)
-    generate_random_root(tmpdir)
+    generate_random_roots(tmpdir)
 
     d = create_new_filedir(root, tmpdir)
     filelist = list(d.list_relative_paths())
