@@ -1039,7 +1039,6 @@ class Source(Plugin):
             return self.track(**kwargs)
 
         context = self._get_context()
-        source_kind = type(self)
 
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
