@@ -509,7 +509,7 @@ class CasBasedDirectory(Directory):
     def _import_files_from_directory(self, source_directory, files, path_prefix=""):
         """ Imports files from a traditional directory """
         result = FileListResult()
-        for entry in sorted(files):
+        for entry in files:
             print("Importing {} from file system".format(entry))
             print("...Order of elements was {}".format(", ".join(self.index.keys())))
 
