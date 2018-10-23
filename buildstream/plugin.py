@@ -751,9 +751,7 @@ class Plugin():
         self.__context.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
-        workdir = os.getcwd()
-        if 'cwd' in kwargs:
-            workdir = kwargs['cwd']
+        workdir = kwargs.get('cwd', os.getcwd())
         command = " ".join(popenargs[0])
         output.write('Running host command {}: {}\n'.format(workdir, command))
         output.flush()
