@@ -222,7 +222,7 @@ def test_inner(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_recusive_include(cli, tmpdir, datafiles):
+def test_recursive_include(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), 'recursive')
 
     result = cli.run(project=project, args=[
@@ -231,6 +231,7 @@ def test_recusive_include(cli, tmpdir, datafiles):
         '--format', '%{vars}',
         'element.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_INCLUDE)
+    assert 'line 2 column 2' in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)

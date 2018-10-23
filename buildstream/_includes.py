@@ -40,7 +40,10 @@ class Includes:
             includes = [_yaml.node_get(node, str, '(@)')]
         else:
             includes = _yaml.node_get(node, list, '(@)', default_value=None)
+
+        include_provenance = None
         if '(@)' in node:
+            include_provenance = _yaml.node_get_provenance(node, key='(@)')
             del node['(@)']
 
         if includes:
@@ -50,9 +53,8 @@ class Includes:
                 include_node, file_path, sub_loader = self._include_file(include,
                                                                          current_loader)
                 if file_path in included:
-                    provenance = _yaml.node_get_provenance(node)
                     raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
-                                    "{}: trying to recursively include {}". format(provenance,
+                                    "{}: trying to recursively include {}". format(include_provenance,
                                                                                    file_path))
                 # Because the included node will be modified, we need
                 # to copy it so that we do not modify the toplevel
