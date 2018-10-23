@@ -50,8 +50,17 @@ class Includes:
             for include in reversed(includes):
                 if only_local and ':' in include:
                     continue
-                include_node, file_path, sub_loader = self._include_file(include,
-                                                                         current_loader)
+                try:
+                    include_node, file_path, sub_loader = self._include_file(include,
+                                                                             current_loader)
+                except LoadError as e:
+                    if e.reason == LoadErrorReason.MISSING_FILE:
+                        message = "{}: Include block references a file that could not be found: '{}'.".format(
+                            include_provenance, include)
+                        raise LoadError(LoadErrorReason.MISSING_FILE, message) from e
+                    else:
+                        raise
+
                 if file_path in included:
                     raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
                                     "{}: trying to recursively include {}". format(include_provenance,

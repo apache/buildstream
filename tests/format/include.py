@@ -1,4 +1,5 @@
 import os
+import textwrap
 import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -25,6 +26,25 @@ def test_include_project_file(cli, datafiles):
     result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['included'] == 'True'
+
+
+def test_include_missing_file(cli, tmpdir):
+    tmpdir.join('project.conf').write('{"name": "test"}')
+    element = tmpdir.join('include_missing_file.bst')
+
+    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # we want to be sure of a stable line and column number.
+    element.write(textwrap.dedent("""
+        kind: manual
+
+        "(@)":
+          - nosuch.yaml
+    """).strip())
+
+    result = cli.run(project=str(tmpdir), args=['show', str(element.basename)])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+    # Make sure the root cause provenance is in the output.
+    assert 'line 4 column 2' in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
