@@ -1563,7 +1563,7 @@ class Element(Plugin):
                     # Step 3 - Prepare
                     self.__prepare(sandbox)
                     # Step 4 - Assemble
-                    collect = self.assemble(sandbox)
+                    collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
                     self.__set_build_result(success=True, description="succeeded")
                 except BstError as e:
                     # If an error occurred assembling an element in a sandbox,
