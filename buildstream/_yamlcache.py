@@ -27,9 +27,8 @@ import sys
 from contextlib import contextmanager
 from collections import namedtuple
 
-from ._cachekey import generate_key
 from ._context import Context
-from . import utils, _yaml
+from . import _yaml
 
 
 YAML_CACHE_FILENAME = "yaml_cache.pickle"
