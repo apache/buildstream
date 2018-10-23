@@ -367,7 +367,7 @@ class Workspaces():
                 for element, config in _yaml.node_items(workspaces)
             }
 
-        elif version >= 1 and version <= BST_WORKSPACE_FORMAT_VERSION:
+        elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
             workspaces = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
             res = {element: self._load_workspace(node)
                    for element, node in _yaml.node_items(workspaces)}
