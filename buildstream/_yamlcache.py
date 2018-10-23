@@ -207,7 +207,7 @@ class YamlCache():
             filepath = os.path.relpath(full_path, project.directory)
         else:
             filepath = full_path
-        return full_path
+        return filepath
 
     # _calculate_key():
     #
