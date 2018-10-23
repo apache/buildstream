@@ -156,7 +156,7 @@ class ArtifactCache():
     def setup_remotes(self, *, use_config=False, remote_url=None):
 
         # Ensure we do not double-initialise since this can be expensive
-        assert(not self._remotes_setup)
+        assert not self._remotes_setup
         self._remotes_setup = True
 
         # Initialize remote artifact caches. We allow the commandline to override
