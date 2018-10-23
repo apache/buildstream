@@ -432,7 +432,7 @@ class Element(Plugin):
                                                 visited=visited, recursed=True)
 
         # Yeild self only at the end, after anything needed has been traversed
-        if should_yield and (recurse or recursed) and (scope == Scope.ALL or scope == Scope.RUN):
+        if should_yield and (recurse or recursed) and (scope in (Scope.ALL, Scope.RUN)):
             yield self
 
     def search(self, scope, name):
@@ -2521,7 +2521,7 @@ class Element(Plugin):
         strong_key = meta['strong']
         weak_key = meta['weak']
 
-        assert key == strong_key or key == weak_key
+        assert key in (strong_key, weak_key)
 
         self.__metadata_keys[strong_key] = meta
         self.__metadata_keys[weak_key] = meta
