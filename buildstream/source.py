@@ -1038,8 +1038,6 @@ class Source(Plugin):
         if not mirrors or not alias:
             return self.track(**kwargs)
 
-        context = self._get_context()
-
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
         for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass)):
