@@ -165,13 +165,13 @@ class CasBasedDirectory(Directory):
         existing_item = self._find_pb2_entry(name)
         if isinstance(existing_item, remote_execution_pb2.FileNode):
             # Directory imported over file with same name
-            self.remove_item(name)
+            self.delete_entry(name)
         elif isinstance(existing_item, remote_execution_pb2.SymlinkNode):
             # Directory imported over symlink with same source name
             if self.symlink_target_is_directory(existing_item):
                 return self._resolve_symlink_or_directory(name) # That's fine; any files in the source directory should end up at the target of the symlink.
             else:
-                self.remove_item(name) # Symlinks to files get replaced
+                self.delete_entry(name) # Symlinks to files get replaced
         return self.descend(name, create=True) # Creates the directory if it doesn't already exist.
 
 
