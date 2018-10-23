@@ -29,13 +29,13 @@ import re
 import shutil
 import signal
 import stat
+from stat import S_ISDIR
 import string
 import subprocess
 import tempfile
 import itertools
 import functools
 from contextlib import contextmanager
-from stat import S_ISDIR
 
 import psutil
 
