@@ -329,7 +329,7 @@ class BstUnpickler(pickle.Unpickler):
                 if not project:
                     projects = [p.name for p in self._context.get_projects()]
                     raise pickle.UnpicklingError("No project with name {} found in {}"
-                                                 .format(key_id, projects))
+                                                 .format(project_tag, projects))
             else:
                 project = None
                 name = tagged_name
