@@ -395,9 +395,9 @@ def node_get(node, expected_type, key, indices=None, default_value=_get_sentinel
         try:
             if (expected_type == bool and isinstance(value, str)):
                 # Dont coerce booleans to string, this makes "False" strings evaluate to True
-                if value == 'true' or value == 'True':
+                if value in ('True', 'true'):
                     value = True
-                elif value == 'false' or value == 'False':
+                elif value in ('False', 'false'):
                     value = False
                 else:
                     raise ValueError()
