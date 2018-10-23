@@ -47,6 +47,27 @@ def test_include_missing_file(cli, tmpdir):
     assert 'line 4 column 2' in result.stderr
 
 
+def test_include_dir(cli, tmpdir):
+    tmpdir.join('project.conf').write('{"name": "test"}')
+    tmpdir.mkdir('subdir')
+    element = tmpdir.join('include_dir.bst')
+
+    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # we want to be sure of a stable line and column number.
+    element.write(textwrap.dedent("""
+        kind: manual
+
+        "(@)":
+          - subdir/
+    """).strip())
+
+    result = cli.run(project=str(tmpdir), args=['show', str(element.basename)])
+    result.assert_main_error(
+        ErrorDomain.LOAD, LoadErrorReason.LOADING_DIRECTORY)
+    # Make sure the root cause provenance is in the output.
+    assert 'line 4 column 2' in result.stderr
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_include_junction_file(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), 'junction')
