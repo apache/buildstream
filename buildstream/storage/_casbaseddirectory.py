@@ -618,7 +618,7 @@ class CasBasedDirectory(Directory):
         result = FileListResult()
         processed_directories = set()
         for f in files:
-            if f == ".": continue
+            #if f == ".": continue
             fullname = os.path.join(path_prefix, f)
             components = f.split(os.path.sep)
             if len(components)>1:
