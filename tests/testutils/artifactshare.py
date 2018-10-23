@@ -122,9 +122,8 @@ class ArtifactShare():
         #       same algo for creating an artifact reference
         #
 
-        # Chop off the .bst suffix first
-        assert element_name.endswith('.bst')
-        element_name = element_name[:-4]
+        # Replace path separator and chop off the .bst suffix
+        element_name = os.path.splitext(element_name.replace(os.sep, '-'))[0]
 
         valid_chars = string.digits + string.ascii_letters + '-._'
         element_name = ''.join([
