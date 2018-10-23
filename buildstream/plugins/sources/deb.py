@@ -50,7 +50,7 @@ deb - stage files from .deb packages
 """
 
 import tarfile
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager
 import arpy                                       # pylint: disable=import-error
 
 from .tar import TarSource
@@ -69,8 +69,7 @@ class DebSource(TarSource):
 
     @contextmanager
     def _get_tar(self):
-        with ExitStack() as context:
-            deb_file = context.enter_context(open(self._get_mirror_file(), 'rb'))
+        with open(self._get_mirror_file(), 'rb') as deb_file:
             arpy_archive = arpy.Archive(fileobj=deb_file)
             arpy_archive.read_all_headers()
             data_tar_arpy = [v for k, v in arpy_archive.archived_files.items() if b"data.tar" in k][0]
