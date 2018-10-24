@@ -31,9 +31,6 @@ bzr - stage files from a bazaar repository
    # Specify the bzr source kind
    kind: bzr
 
-   # Optionally specify a relative staging directory
-   # directory: path/to/stage
-
    # Specify the bzr url. Bazaar URLs come in many forms, see
    # `bzr help urlspec` for more information. Using an alias defined
    # in your project configuration is encouraged.
@@ -53,6 +50,8 @@ bzr - stage files from a bazaar repository
    # revision number to the one on the tip of the branch specified in 'track'.
    ref: 6622
 
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 """
 
 import os

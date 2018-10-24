@@ -20,6 +20,8 @@
 Source - Base source class
 ==========================
 
+.. _core_source_builtins:
+
 Built-in functionality
 ----------------------
 

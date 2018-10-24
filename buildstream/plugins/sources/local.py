@@ -29,11 +29,11 @@ local - stage local files and directories
    # Specify the local source kind
    kind: local
 
-   # Optionally specify a relative staging directory
-   # directory: path/to/stage
-
    # Specify the project relative path to a file or directory
    path: files/somefile.txt
+
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 """
 
 import os

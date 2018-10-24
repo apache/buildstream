@@ -37,12 +37,11 @@ patch - apply locally stored patches
    # Specify the project relative path to a patch file
    path: files/somefile.diff
 
-   # Optionally specify the root directory for the patch
-   # directory: path/to/stage
-
    # Optionally specify the strip level, defaults to 1
    strip-level: 1
 
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 """
 
 import os

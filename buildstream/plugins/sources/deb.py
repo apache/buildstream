@@ -33,9 +33,6 @@ deb - stage files from .deb packages
    # Specify the deb source kind
    kind: deb
 
-   # Optionally specify a relative staging directory
-   # directory: path/to/stage
-
    # Specify the deb url. Using an alias defined in your project
    # configuration is encouraged. 'bst track' will update the
    # sha256sum in 'ref' to the downloaded file's sha256sum.
@@ -47,6 +44,8 @@ deb - stage files from .deb packages
    # Specify the basedir to return only the specified dir and its children
    base-dir: ''
 
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 """
 
 import tarfile
