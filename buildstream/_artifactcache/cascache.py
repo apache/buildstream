@@ -1088,6 +1088,10 @@ class _CASRemote():
         self.bytestream = None
         self.cas = None
         self.ref_storage = None
+        self.batch_update_supported = None
+        self.batch_read_supported = None
+        self.capabilities = None
+        self.max_batch_total_size_bytes = None
 
     def init(self):
         if not self._initialized:
