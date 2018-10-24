@@ -146,7 +146,7 @@ class SandboxChroot(Sandbox):
 
         try:
             with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
                     command,
                     close_fds=True,
                     cwd=os.path.join(rootfs, cwd.lstrip(os.sep)),
