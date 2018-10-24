@@ -31,56 +31,54 @@ empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8
 RANDOM_SEED = 69105
 
 
-def generate_import_roots(directory):
-    for fileset in range(1, len(root_filesets) + 1):
-        rootname = "root{}".format(fileset)
-        rootdir = os.path.join(directory, "content", rootname)
+def generate_import_roots(rootno, directory):
+    rootname = "root{}".format(rootno)
+    rootdir = os.path.join(directory, "content", rootname)
 
-        for (path, typesymbol, content) in root_filesets[fileset - 1]:
-            if typesymbol == 'F':
-                (dirnames, filename) = os.path.split(path)
-                os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
-                with open(os.path.join(rootdir, dirnames, filename), "wt") as f:
-                    f.write(content)
-            elif typesymbol == 'D':
-                os.makedirs(os.path.join(rootdir, path), exist_ok=True)
-            elif typesymbol == 'S':
-                (dirnames, filename) = os.path.split(path)
-                os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
-                os.symlink(content, os.path.join(rootdir, path))
+    for (path, typesymbol, content) in root_filesets[rootno - 1]:
+        if typesymbol == 'F':
+            (dirnames, filename) = os.path.split(path)
+            os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
+            with open(os.path.join(rootdir, dirnames, filename), "wt") as f:
+                f.write(content)
+        elif typesymbol == 'D':
+            os.makedirs(os.path.join(rootdir, path), exist_ok=True)
+        elif typesymbol == 'S':
+            (dirnames, filename) = os.path.split(path)
+            os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
+            os.symlink(content, os.path.join(rootdir, path))
 
 
-def generate_random_roots(directory):
-    random.seed(RANDOM_SEED)
-    for rootno in range(6,21):
-        rootname = "root{}".format(rootno)
-        rootdir = os.path.join(directory, "content", rootname)
-        things = []
-        locations = ['.']
-        os.makedirs(rootdir)
-        for i in range(0, 100):
-            location = random.choice(locations)
-            thingname = "node{}".format(i)
-            thing = random.choice(['dir', 'link', 'file'])
-            target = os.path.join(rootdir, location, thingname)
-            description = thing
-            if thing == 'dir':
-                os.makedirs(target)
-                locations.append(os.path.join(location, thingname))
-            elif thing == 'file':
-                with open(target, "wt") as f:
-                    f.write("This is node {}\n".format(i))
-            elif thing == 'link':
-                # TODO: Make some relative symlinks
-                if random.randint(1, 3) == 1 or len(things) == 0:
-                    os.symlink("/broken", target)
-                    description = "symlink pointing to /broken"
-                else:
-                    symlink_destination = random.choice(things)
-                    os.symlink(symlink_destination, target)
-                    description = "symlink pointing to {}".format(symlink_destination)
-            things.append(os.path.join(location, thingname))
-            print("Generated {}/{}, a {}".format(rootdir, things[-1], description))
+def generate_random_root(rootno, directory):
+    random.seed(RANDOM_SEED+rootno)
+    rootname = "root{}".format(rootno)
+    rootdir = os.path.join(directory, "content", rootname)
+    things = []
+    locations = ['.']
+    os.makedirs(rootdir)
+    for i in range(0, 100):
+        location = random.choice(locations)
+        thingname = "node{}".format(i)
+        thing = random.choice(['dir', 'link', 'file'])
+        target = os.path.join(rootdir, location, thingname)
+        description = thing
+        if thing == 'dir':
+            os.makedirs(target)
+            locations.append(os.path.join(location, thingname))
+        elif thing == 'file':
+            with open(target, "wt") as f:
+                f.write("This is node {}\n".format(i))
+        elif thing == 'link':
+            # TODO: Make some relative symlinks
+            if random.randint(1, 3) == 1 or len(things) == 0:
+                os.symlink("/broken", target)
+                description = "symlink pointing to /broken"
+            else:
+                symlink_destination = random.choice(things)
+                os.symlink(symlink_destination, target)
+                description = "symlink pointing to {}".format(symlink_destination)
+        things.append(os.path.join(location, thingname))
+        print("Generated {}/{}, a {}".format(rootdir, things[-1], description))
 
 
 def file_contents(path):
@@ -147,20 +145,21 @@ def directory_not_empty(path):
     return os.listdir(path)
 
 
-@pytest.mark.parametrize("original,overlay", combinations(range(1,21)))
-def test_cas_import(cli, tmpdir, original, overlay):
+def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
-    generate_import_roots(tmpdir)
-    generate_random_roots(tmpdir)
+    generator_function(original, tmpdir)
+    if original != overlay:
+        generator_function(overlay, tmpdir)
+        
     d = create_new_casdir(original, fake_context, tmpdir)
     d2 = create_new_casdir(overlay, fake_context, tmpdir)
     print("Importing dir {} into {}".format(overlay, original))
     d.import_files(d2)
     d.export_files(os.path.join(tmpdir, "output"))
     
-    if overlay < 6:
+    if verify_contents:
         for item in root_filesets[overlay - 1]:
             (path, typename, content) = item
             realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
@@ -188,14 +187,19 @@ def test_cas_import(cli, tmpdir, original, overlay):
     d3.import_files(d2)
     assert d.ref.hash == d3.ref.hash
 
+@pytest.mark.parametrize("original,overlay", combinations(range(1,6)))
+def test_fixed_cas_import(cli, tmpdir, original, overlay):
+    _import_test(tmpdir, original, overlay, generate_import_roots, verify_contents=True)
 
-@pytest.mark.parametrize("root", [1, 2, 3, 4, 5, 6])
-def test_directory_listing(cli, tmpdir, root):
+@pytest.mark.parametrize("original,overlay", combinations(range(1,11)))
+def test_random_cas_import(cli, tmpdir, original, overlay):
+    _import_test(tmpdir, original, overlay, generate_random_root, verify_contents=False)
+
+def _listing_test(tmpdir, root, generator_function):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
     # Create some fake content
-    generate_import_roots(tmpdir)
-    generate_random_roots(tmpdir)
+    generator_function(root, tmpdir)
 
     d = create_new_filedir(root, tmpdir)
     filelist = list(d.list_relative_paths())
@@ -208,3 +212,12 @@ def test_directory_listing(cli, tmpdir, root):
     print("filelist for root {} via CasBasedDirectory:".format(root))
     print("{}".format(filelist2))
     assert filelist == filelist2
+    
+
+@pytest.mark.parametrize("root", range(1,11))
+def test_random_directory_listing(cli, tmpdir, root):
+    _listing_test(tmpdir, root, generate_random_root)
+    
+@pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
+def test_fixed_directory_listing(cli, tmpdir, root):
+    _listing_test(tmpdir, root, generate_import_roots)
