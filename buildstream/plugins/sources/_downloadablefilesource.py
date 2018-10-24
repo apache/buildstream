@@ -153,6 +153,8 @@ class DownloadableFileSource(Source):
                               .format(self, self.url, e), temporary=True) from e
 
         except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError, ValueError) as e:
+            # Note that urllib.request.Request in the try block may throw a
+            # ValueError for unknown url types, so we handle it here.
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e), temporary=True) from e
 
