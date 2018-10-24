@@ -959,7 +959,7 @@ class CASCache(ArtifactCache):
         batch = _CASBatchRead(remote)
 
         while len(fetch_queue) + len(fetch_next_queue) > 0:
-            if len(fetch_queue) == 0:
+            if not fetch_queue:
                 batch = self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
 
             dir_digest = fetch_queue.pop(0)
@@ -1192,7 +1192,7 @@ class _CASBatchRead():
         assert not self._sent
         self._sent = True
 
-        if len(self._request.digests) == 0:
+        if not self._request.digests:
             return
 
         batch_response = self._remote.cas.BatchReadBlobs(self._request)
@@ -1237,7 +1237,7 @@ class _CASBatchUpdate():
         assert not self._sent
         self._sent = True
 
-        if len(self._request.requests) == 0:
+        if not self._request.requests:
             return
 
         batch_response = self._remote.cas.BatchUpdateBlobs(self._request)
