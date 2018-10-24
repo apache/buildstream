@@ -289,7 +289,7 @@ class CasBasedDirectory(Directory):
                 return entry.descend(subdirectory_spec[1:], create)
             else:
                 # May be a symlink
-                target = self._resolve(subdirectory_spec[0])
+                target = self._resolve(subdirectory_spec[0], force_create=create)
                 if isinstance(target, CasBasedDirectory):
                     return target
                 error = "Cannot descend into {}, which is a '{}' in the directory {}"
@@ -382,7 +382,7 @@ class CasBasedDirectory(Directory):
         return directory
 
     
-    def _resolve(self, name, absolute_symlinks_resolve=True):
+    def _resolve(self, name, absolute_symlinks_resolve=True, force_create=False):
         """ Resolves any name to an object. If the name points to a symlink in
         this directory, it returns the thing it points to,
         recursively. Returns a CasBasedDirectory, FileNode or
@@ -442,14 +442,21 @@ class CasBasedDirectory(Directory):
                     else:
                         # This is a file or None (i.e. broken symlink)
                         print("  resolving {}: file/broken link".format(c))
-                        if components:
+                        if f is None and force_create:
+                            print("Creating target of broken link {}".format(c))
+                            return directory.descend(c, create=True)
+                        elif components:
                             # Oh dear. We have components left to resolve, but the one we're trying to resolve points to a file.
                             raise VirtualDirectoryError("Reached a file called {} while trying to resolve a symlink; cannot proceed".format(c))
                         else:
                             return f
                 else:
-                    print("  resolving {}: Broken symlink".format(c))
-                    return None
+                    print("  resolving {}: Non-existent file; must be from a broken symlink.".format(c))
+                    if force_create:
+                        print("Creating target of broken link {} (2)".format(c))
+                        return directory.descend(c, create=True)
+                    else:
+                        return None
 
         # Shouldn't get here.
         
