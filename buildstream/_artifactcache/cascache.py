@@ -81,8 +81,9 @@ class CASCache(ArtifactCache):
     ################################################
 
     def preflight(self):
-        if (not os.path.isdir(os.path.join(self.casdir, 'refs', 'heads')) or
-            not os.path.isdir(os.path.join(self.casdir, 'objects'))):
+        headdir = os.path.join(self.casdir, 'refs', 'heads')
+        objdir = os.path.join(self.casdir, 'objects')
+        if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise ArtifactError("CAS repository check failed for '{}'"
                                 .format(self.casdir))
 
@@ -918,7 +919,7 @@ class CASCache(ArtifactCache):
             # Skip download, already in local cache.
             pass
         elif (digest.size_bytes >= remote.max_batch_total_size_bytes or
-                not remote.batch_read_supported):
+              not remote.batch_read_supported):
             # Too large for batch request, download in independent request.
             self._ensure_blob(remote, digest)
             in_local_cache = True
