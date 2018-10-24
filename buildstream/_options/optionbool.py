@@ -43,9 +43,9 @@ class OptionBool(Option):
             self.value = _yaml.node_get(node, bool, self.name)
 
     def set_value(self, value):
-        if value == 'True' or value == 'true':
+        if value in ('True', 'true'):
             self.value = True
-        elif value == 'False' or value == 'false':
+        elif value in ('False', 'false'):
             self.value = False
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
