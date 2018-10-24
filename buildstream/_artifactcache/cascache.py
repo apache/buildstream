@@ -37,7 +37,6 @@ from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
-from .._message import MessageType, Message
 from .. import _signals, utils
 from .._exceptions import ArtifactError
 
