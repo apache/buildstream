@@ -152,7 +152,7 @@ class DownloadableFileSource(Source):
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e), temporary=True) from e
 
-        except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError) as e:
+        except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError, ValueError) as e:
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e), temporary=True) from e
 
