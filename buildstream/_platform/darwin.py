@@ -16,9 +16,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import resource
 
-from .._exceptions import PlatformError
 from ..sandbox import SandboxDummy
 
 from . import Platform
