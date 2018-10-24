@@ -56,6 +56,10 @@ def integration_cache(request):
         pass
 
 
-@pytest.fixture(autouse=True)
 def clean_platform_cache():
     Platform._instance = None
+
+
+@pytest.fixture(autouse=True)
+def ensure_platform_cache_is_clean():
+    clean_platform_cache()

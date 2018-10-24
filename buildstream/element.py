@@ -85,7 +85,8 @@ import shutil
 from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
-from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain
+from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
+    ErrorDomain, SandboxError
 from .utils import UtilError
 from . import Plugin, Consistency, Scope
 from . import SandboxFlags
@@ -1554,6 +1555,8 @@ class Element(Plugin):
 
                 # Call the abstract plugin methods
                 collect = None
+                save_artifacts = True
+
                 try:
                     # Step 1 - Configure
                     self.configure_sandbox(sandbox)
@@ -1565,6 +1568,9 @@ class Element(Plugin):
                     collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
                     self.__set_build_result(success=True, description="succeeded")
                 except BstError as e:
+                    if isinstance(e, SandboxError):
+                        save_artifacts = False
+
                     # Shelling into a sandbox is useful to debug this error
                     e.sandbox = True
 
@@ -1592,97 +1598,105 @@ class Element(Plugin):
                     self.__set_build_result(success=False, description=str(e), detail=e.detail)
                     raise
                 finally:
-                    if collect is not None:
-                        try:
-                            sandbox_vroot = sandbox.get_virtual_directory()
-                            collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
-                        except VirtualDirectoryError:
-                            # No collect directory existed
-                            collectvdir = None
-
-                    # Create artifact directory structure
-                    assembledir = os.path.join(rootdir, 'artifact')
-                    filesdir = os.path.join(assembledir, 'files')
-                    logsdir = os.path.join(assembledir, 'logs')
-                    metadir = os.path.join(assembledir, 'meta')
-                    buildtreedir = os.path.join(assembledir, 'buildtree')
-                    os.mkdir(assembledir)
-                    if collect is not None and collectvdir is not None:
-                        os.mkdir(filesdir)
-                    os.mkdir(logsdir)
-                    os.mkdir(metadir)
-                    os.mkdir(buildtreedir)
-
-                    # Hard link files from collect dir to files directory
-                    if collect is not None and collectvdir is not None:
-                        collectvdir.export_files(filesdir, can_link=True)
-
-                    try:
-                        sandbox_vroot = sandbox.get_virtual_directory()
-                        sandbox_build_dir = sandbox_vroot.descend(
-                            self.get_variable('build-root').lstrip(os.sep).split(os.sep))
-                        # Hard link files from build-root dir to buildtreedir directory
-                        sandbox_build_dir.export_files(buildtreedir)
-                    except VirtualDirectoryError:
-                        # Directory could not be found. Pre-virtual
-                        # directory behaviour was to continue silently
-                        # if the directory could not be found.
-                        pass
-
-                    # Copy build log
-                    log_filename = context.get_log_filename()
-                    self._build_log_path = os.path.join(logsdir, 'build.log')
-                    if log_filename:
-                        shutil.copyfile(log_filename, self._build_log_path)
-
-                    # Store public data
-                    _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
-
-                    # Store result
-                    build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
-                    if self.__build_result[2] is not None:
-                        build_result_dict["detail"] = self.__build_result[2]
-                    _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
-
-                    # ensure we have cache keys
-                    self._assemble_done()
-
-                    # Store keys.yaml
-                    _yaml.dump(_yaml.node_sanitize({
-                        'strong': self._get_cache_key(),
-                        'weak': self._get_cache_key(_KeyStrength.WEAK),
-                    }), os.path.join(metadir, 'keys.yaml'))
-
-                    # Store dependencies.yaml
-                    _yaml.dump(_yaml.node_sanitize({
-                        e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                    }), os.path.join(metadir, 'dependencies.yaml'))
-
-                    # Store workspaced.yaml
-                    _yaml.dump(_yaml.node_sanitize({
-                        'workspaced': True if self._get_workspace() else False
-                    }), os.path.join(metadir, 'workspaced.yaml'))
-
-                    # Store workspaced-dependencies.yaml
-                    _yaml.dump(_yaml.node_sanitize({
-                        'workspaced-dependencies': [
-                            e.name for e in self.dependencies(Scope.BUILD)
-                            if e._get_workspace()
-                        ]
-                    }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
-
-                    with self.timed_activity("Caching artifact"):
-                        artifact_size = utils._get_dir_size(assembledir)
-                        self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
-
-                    if collect is not None and collectvdir is None:
-                        raise ElementError(
-                            "Directory '{}' was not found inside the sandbox, "
-                            "unable to collect artifact contents"
-                            .format(collect))
+                    if save_artifacts:
+                        artifact_size = self._cache_artifact(rootdir, sandbox, context, collect)
+                    else:
+                        artifact_size = None
 
                     # Finally cleanup the build dir
                     cleanup_rootdir()
+
+        return artifact_size
+
+    def _cache_artifact(self, rootdir, sandbox, collect):
+        if collect is not None:
+            try:
+                sandbox_vroot = sandbox.get_virtual_directory()
+                collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
+            except VirtualDirectoryError:
+                # No collect directory existed
+                collectvdir = None
+
+        # Create artifact directory structure
+        assembledir = os.path.join(rootdir, 'artifact')
+        filesdir = os.path.join(assembledir, 'files')
+        logsdir = os.path.join(assembledir, 'logs')
+        metadir = os.path.join(assembledir, 'meta')
+        buildtreedir = os.path.join(assembledir, 'buildtree')
+        os.mkdir(assembledir)
+        if collect is not None and collectvdir is not None:
+            os.mkdir(filesdir)
+        os.mkdir(logsdir)
+        os.mkdir(metadir)
+        os.mkdir(buildtreedir)
+
+        # Hard link files from collect dir to files directory
+        if collect is not None and collectvdir is not None:
+            collectvdir.export_files(filesdir, can_link=True)
+
+        try:
+            sandbox_vroot = sandbox.get_virtual_directory()
+            sandbox_build_dir = sandbox_vroot.descend(
+                self.get_variable('build-root').lstrip(os.sep).split(os.sep))
+            # Hard link files from build-root dir to buildtreedir directory
+            sandbox_build_dir.export_files(buildtreedir)
+        except VirtualDirectoryError:
+            # Directory could not be found. Pre-virtual
+            # directory behaviour was to continue silently
+            # if the directory could not be found.
+            pass
+
+        # Copy build log
+        log_filename = self._get_context().get_log_filename()
+        self._build_log_path = os.path.join(logsdir, 'build.log')
+        if log_filename:
+            shutil.copyfile(log_filename, self._build_log_path)
+
+        # Store public data
+        _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+
+        # Store result
+        build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
+        if self.__build_result[2] is not None:
+            build_result_dict["detail"] = self.__build_result[2]
+        _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
+
+        # ensure we have cache keys
+        self._assemble_done()
+
+        # Store keys.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            'strong': self._get_cache_key(),
+            'weak': self._get_cache_key(_KeyStrength.WEAK),
+        }), os.path.join(metadir, 'keys.yaml'))
+
+        # Store dependencies.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+        }), os.path.join(metadir, 'dependencies.yaml'))
+
+        # Store workspaced.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            'workspaced': True if self._get_workspace() else False
+        }), os.path.join(metadir, 'workspaced.yaml'))
+
+        # Store workspaced-dependencies.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            'workspaced-dependencies': [
+                e.name for e in self.dependencies(Scope.BUILD)
+                if e._get_workspace()
+            ]
+        }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
+
+        with self.timed_activity("Caching artifact"):
+            artifact_size = utils._get_dir_size(assembledir)
+            self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+
+        if collect is not None and collectvdir is None:
+            raise ElementError(
+                "Directory '{}' was not found inside the sandbox, "
+                "unable to collect artifact contents"
+                .format(collect))
 
         return artifact_size
 
