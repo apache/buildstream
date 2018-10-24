@@ -111,8 +111,4 @@ class Linux(Platform):
         except subprocess.CalledProcessError:
             output = ''
 
-        if output == 'root':
-            return True
-
-        else:
-            return False
+        return output == 'root'
