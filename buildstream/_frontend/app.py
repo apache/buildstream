@@ -20,7 +20,6 @@
 from contextlib import contextmanager
 import os
 import sys
-import resource
 import traceback
 import datetime
 from textwrap import TextWrapper
