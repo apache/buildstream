@@ -414,7 +414,7 @@ class Job():
 
             try:
                 # Try the task action
-                result = self.child_process()
+                result = self.child_process()  # pylint: disable=assignment-from-no-return
             except SkipJob as e:
                 elapsed = datetime.datetime.now() - starttime
                 self.message(MessageType.SKIPPED, str(e),
