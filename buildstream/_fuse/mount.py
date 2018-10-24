@@ -87,8 +87,8 @@ class Mount():
     #               User Facing API                #
     ################################################
 
-    def __init__(self, fuse_mount_options={}):
-        self._fuse_mount_options = fuse_mount_options
+    def __init__(self, fuse_mount_options=None):
+        self._fuse_mount_options = {} if fuse_mount_options is None else fuse_mount_options
 
     # mount():
     #
