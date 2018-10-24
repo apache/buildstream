@@ -182,7 +182,7 @@ class Mount():
 
         # Ask the subclass to give us an Operations object
         #
-        self.__operations = self.create_operations()
+        self.__operations = self.create_operations()  # pylint: disable=assignment-from-no-return
 
         # Run fuse in foreground in this child process, internally libfuse
         # will handle SIGTERM and gracefully exit its own little main loop.
