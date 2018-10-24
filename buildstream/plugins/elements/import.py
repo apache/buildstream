@@ -28,6 +28,9 @@ some configuration data.
 The empty configuration is as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/import.yaml
      :language: yaml
+
+See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
+details on common configuration options for build elements.
 """
 
 import os

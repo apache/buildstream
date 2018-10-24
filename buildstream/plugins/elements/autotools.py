@@ -50,6 +50,9 @@ Here is the default configuration for the ``autotools`` element in full:
 
   .. literalinclude:: ../../../buildstream/plugins/elements/autotools.yaml
      :language: yaml
+
+See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
+details on common configuration options for build elements.
 """
 
 from buildstream import BuildElement
