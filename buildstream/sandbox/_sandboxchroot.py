@@ -263,7 +263,7 @@ class SandboxChroot(Sandbox):
         @contextmanager
         def mount_point(point, **kwargs):
             mount_source_overrides = self._get_mount_sources()
-            if point in mount_source_overrides:
+            if point in mount_source_overrides:  # pylint: disable=consider-using-get
                 mount_source = mount_source_overrides[point]
             else:
                 mount_source = self.mount_map.get_mount_source(point)
