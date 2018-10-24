@@ -29,10 +29,6 @@ class Darwin(Platform):
     # This value comes from OPEN_MAX in syslimits.h
     OPEN_MAX = 10240
 
-    def __init__(self):
-
-        super().__init__()
-
     def create_sandbox(self, *args, **kwargs):
         kwargs['dummy_reason'] = \
             "OSXFUSE is not supported and there are no supported sandbox" + \
