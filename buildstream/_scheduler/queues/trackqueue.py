@@ -20,7 +20,6 @@
 
 # BuildStream toplevel imports
 from ...plugin import _plugin_lookup
-from ... import SourceError
 
 # Local imports
 from . import Queue, QueueStatus
