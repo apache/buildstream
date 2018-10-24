@@ -1,4 +1,4 @@
-image: buildstream/testsuite-debian:9-master-114-4cab18e3
+image: buildstream/testsuite-debian:9-master-119-552f5fc6
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -86,25 +86,25 @@ source_dist:
     - coverage-linux/
 
 tests-debian-9:
-  image: buildstream/testsuite-debian:9-master-117-aa3a33b3
+  image: buildstream/testsuite-debian:9-master-119-552f5fc6
   <<: *linux-tests
 
 tests-fedora-27:
-  image: buildstream/testsuite-fedora:27-master-117-aa3a33b3
+  image: buildstream/testsuite-fedora:27-master-119-552f5fc6
   <<: *linux-tests
 
 tests-fedora-28:
-  image: buildstream/testsuite-fedora:28-master-117-aa3a33b3
+  image: buildstream/testsuite-fedora:28-master-119-552f5fc6
   <<: *linux-tests
 
 tests-ubuntu-18.04:
-  image: buildstream/testsuite-ubuntu:18.04-master-117-aa3a33b3
+  image: buildstream/testsuite-ubuntu:18.04-master-119-552f5fc6
   <<: *linux-tests
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: buildstream/testsuite-fedora:27-master-117-aa3a33b3
+  image: buildstream/testsuite-fedora:27-master-119-552f5fc6
   stage: test
   variables:
     BST_FORCE_BACKEND: "unix"
