@@ -33,6 +33,7 @@ import grpc
 
 from .. import _yaml
 
+from .._protos.google.rpc import code_pb2
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
@@ -1201,7 +1202,7 @@ class _CASBatchRead():
         batch_response = self._remote.cas.BatchReadBlobs(self._request)
 
         for response in batch_response.responses:
-            if response.status.code != grpc.StatusCode.OK.value[0]:
+            if response.status.code != code_pb2.OK:
                 raise ArtifactError("Failed to download blob {}: {}".format(
                     response.digest.hash, response.status.code))
             if response.digest.size_bytes != len(response.data):
@@ -1246,7 +1247,7 @@ class _CASBatchUpdate():
         batch_response = self._remote.cas.BatchUpdateBlobs(self._request)
 
         for response in batch_response.responses:
-            if response.status.code != grpc.StatusCode.OK.value[0]:
+            if response.status.code != code_pb2.OK:
                 raise ArtifactError("Failed to upload blob {}: {}".format(
                     response.digest.hash, response.status.code))
 
