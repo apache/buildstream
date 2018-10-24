@@ -130,7 +130,7 @@ class SandboxBwrap(Sandbox):
         mount_source_overrides = self._get_mount_sources()
         for mark in marked_directories:
             mount_point = mark['directory']
-            if mount_point in mount_source_overrides:
+            if mount_point in mount_source_overrides:  # pylint: disable=consider-using-get
                 mount_source = mount_source_overrides[mount_point]
             else:
                 mount_source = mount_map.get_mount_source(mount_point)
