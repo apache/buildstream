@@ -298,6 +298,9 @@ class CasBasedDirectory(Directory):
         else:
             if create:
                 newdir = self._add_directory(subdirectory_spec[0])
+                print("Created new directory called {} and descending into it".format(subdirectory_spec[0]))
+                #if subdirectory_spec[0] == "broken":
+                #    assert False
                 return newdir.descend(subdirectory_spec[1:], create)
             else:
                 error = "No entry called '{}' found in {}. There are directories called {}."
@@ -358,7 +361,7 @@ class CasBasedDirectory(Directory):
         print("Is {} followable? Resolved to {}".format(name, target))
         return isinstance(target, CasBasedDirectory) or target is None
 
-    def _resolve_symlink(self, node):
+    def _resolve_symlink(self, node, force_create=True):
         """Same as _resolve_symlink_or_directory but takes a SymlinkNode.
         """
 
@@ -377,7 +380,10 @@ class CasBasedDirectory(Directory):
             elif c == "..":
                 directory = directory.parent
             else:
-                directory = directory.descend(c, create=True)
+                if c in directory.index or force_create:
+                    directory = directory.descend(c, create=True)
+                else:
+                    return None
         return directory
 
     
@@ -400,6 +406,7 @@ class CasBasedDirectory(Directory):
             return index_entry.pb_object
         
         assert isinstance(index_entry.pb_object, remote_execution_pb2.SymlinkNode)
+        print("Resolving '{}': This is a symlink node in the current directory.".format(name))
         symlink = index_entry.pb_object
         components = symlink.target.split(CasBasedDirectory._pb2_path_sep)
 
@@ -443,7 +450,7 @@ class CasBasedDirectory(Directory):
                         print("  resolving {}: file/broken link".format(c))
                         if f is None and force_create:
                             print("Creating target of broken link {}".format(c))
-                            return directory.descend(c, create=True)
+                            directory = directory.descend(c, create=True)
                         elif components:
                             # Oh dear. We have components left to resolve, but the one we're trying to resolve points to a file.
                             raise VirtualDirectoryError("Reached a file called {} while trying to resolve a symlink; cannot proceed".format(c))
@@ -453,7 +460,7 @@ class CasBasedDirectory(Directory):
                     print("  resolving {}: Non-existent file; must be from a broken symlink.".format(c))
                     if force_create:
                         print("Creating target of broken link {} (2)".format(c))
-                        return directory.descend(c, create=True)
+                        directory = directory.descend(c, create=True)
                     else:
                         return None
 
@@ -528,6 +535,8 @@ class CasBasedDirectory(Directory):
                 directory_name = split_path[0]
                 # Hand this off to the importer for that subdir. This will only do one file -
                 # a better way would be to hand off all the files in this subdir at once.
+                # failed here because directory_name didn't point to a directory...
+                print("Attempting to import into {} from {}".format(directory_name, source_directory))
                 subdir_result = self._import_directory_recursively(directory_name, source_directory,
                                                                    split_path[1:], path_prefix)
                 result.combine(subdir_result)
@@ -598,7 +607,7 @@ class CasBasedDirectory(Directory):
         return [f[len(dirname):] for f in sorted_files if f.startswith(dirname)]
 
     def symlink_target_is_directory(self, symlink_node):
-        x = self._resolve_symlink(symlink_node)
+        x = self._resolve_symlink(symlink_node, force_create=False)
         return isinstance(x, CasBasedDirectory)
 
     def _verify_unique(self):
@@ -636,14 +645,20 @@ class CasBasedDirectory(Directory):
                     subcomponents = CasBasedDirectory.files_in_subdir(files, dirname)
                     # We will fail at this point if there is a file or symlink to file called 'dirname'.
                     if dirname in self.index:
-                        x = self._resolve(dirname)
+                        x = self._resolve(dirname, force_create=True)
                         if isinstance(x, remote_execution_pb2.FileNode):
                             self.delete_entry(dirname)
                             result.overwritten.append(f)
-                    self.create_directory(dirname)
-                    print("Creating destination in {}: {}".format(self, dirname))
-                    dest_subdir = self._resolve_symlink_or_directory(dirname)
+                            dest_subdir = self.descend(dirname, create=True)
+                        else:
+                            dest_subdir = x
+                    else:
+                        print("Importing {}: {} does not exist in {}, so it is created as a directory".format(f, dirname, self))
+                        
+                        self.create_directory(dirname)
+                        dest_subdir = self._resolve_symlink_or_directory(dirname)
                     src_subdir = source_directory.descend(dirname)
+                    print("Now recursing into {} to continue adding {}".format(src_subdir, f))
                     import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
                                                                              path_prefix=fullname, file_list_required=file_list_required)
                     result.combine(import_result)
@@ -651,7 +666,19 @@ class CasBasedDirectory(Directory):
             elif isinstance(source_directory.index[f].buildstream_object, CasBasedDirectory):
                 # The thing in the input file list is a directory on its own. In which case, replace any existing file, or symlink to file
                 # with the new, blank directory - if it's neither of those things, or doesn't exist, then just create the dir.
-                self.create_directory(f)
+                if f in self.index:
+                    x = self._resolve(f)
+                    if x is None:
+                        # If we're importing a blank directory, and the target has a broken symlink, then do nothing.
+                        pass
+                    elif isinstance(x, remote_execution_pb2.FileNode):
+                        # Files with the same name, or symlinks to files, get removed.
+                        pass
+                    else:
+                        # There's either a symlink (valid or not) or existing directory with this name, so do nothing.
+                        pass
+                else:
+                    self.create_directory(f)                    
             else:
                 # We're importing a file or symlink - replace anything with the same name.
                 print("Import of file/symlink {} into this directory. Removing anything existing...".format(f))
@@ -736,18 +763,22 @@ class CasBasedDirectory(Directory):
     def showdiff(self, other):
         print("Diffing {} and {}:".format(self, other))
 
-        def compare_list(l1, l2):
+        def compare_list(l1, l2, name):
             item2 = None
             index = 0
-            print("Comparing lists: {} vs {}".format([d.name for d in l1], [d.name for d in l2]))
+            print("Comparing {} lists: {} vs {}".format(name, [d.name for d in l1], [d.name for d in l2]))
             for item1 in l1:
                 if index>=len(l2):
                     print("l2 is short: no item to correspond to '{}' in l1.".format(item1.name))
                     return False
                 item2 = l2[index]
                 if item1.name != item2.name:
-                    print("Items do not match: {}, a {} in l1, vs {}, a {} in l2".format(item1.name, self._describe(item1), item2.name, self._describe(item2)))
+                    print("Items do not match in {} list: {}, a {} in l1, vs {}, a {} in l2".format(name, item1.name, self._describe(item1), item2.name, self._describe(item2)))
                     return False
+                if isinstance(item1, remote_execution_pb2.FileNode):
+                    if item1.is_executable != item2.is_executable:
+                        print("Executable flags do not match on file {}.".format(item1.name))
+                        return False
                 index += 1
             if index != len(l2):
                 print("l2 is long: Has extra items {}".format(l2[index:]))
@@ -755,17 +786,19 @@ class CasBasedDirectory(Directory):
             return True
 
         def compare_pb2_directories(d1, d2):
-            result = (compare_list(d1.directories, d2.directories)
-                    and compare_list(d1.symlinks, d2.symlinks)
-                    and compare_list(d1.files, d2.files))
+            result = (compare_list(d1.directories, d2.directories, "directory")
+                    and compare_list(d1.symlinks, d2.symlinks, "symlink")
+                    and compare_list(d1.files, d2.files, "file"))
             return result
                         
         if not compare_pb2_directories(self.pb2_directory, other.pb2_directory):
             return False
 
         for d in self.pb2_directory.directories:
-            self.index[d.name].buildstream_object.showdiff(other.index[d.name].buildstream_object)
+            if not self.index[d.name].buildstream_object.showdiff(other.index[d.name].buildstream_object):
+                return False
         print("No differences found in {}".format(self))
+        return True
               
     def show_files_recursive(self):
         elems = []
@@ -829,7 +862,8 @@ class CasBasedDirectory(Directory):
             with tempfile.TemporaryDirectory(prefix="roundtrip") as tmpdir:
                 external_pathspec.export_files(tmpdir)
                 if files is None:
-                    files = list_relative_paths(tmpdir)
+                    files = list(list_relative_paths(tmpdir))
+                print("Importing from filesystem: filelist is: {}".format(files))
                 duplicate_cas._import_files_from_directory(tmpdir, files=files)
                 duplicate_cas._recalculate_recursing_down()
                 if duplicate_cas.parent:

@@ -24,7 +24,7 @@ root_filesets = [
     [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
     [('a/b/d', 'D', '')],
     [('a/b/c', 'S', '/a/b/d')],
-    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')],
+    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')]
 ]
 
 empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -52,7 +52,7 @@ def generate_import_roots(directory):
 
 def generate_random_roots(directory):
     random.seed(RANDOM_SEED)
-    for rootno in range(6,13):
+    for rootno in range(6,21):
         rootname = "root{}".format(rootno)
         rootdir = os.path.join(directory, "content", rootname)
         things = []
@@ -63,6 +63,7 @@ def generate_random_roots(directory):
             thingname = "node{}".format(i)
             thing = random.choice(['dir', 'link', 'file'])
             target = os.path.join(rootdir, location, thingname)
+            description = thing
             if thing == 'dir':
                 os.makedirs(target)
                 locations.append(os.path.join(location, thingname))
@@ -73,10 +74,13 @@ def generate_random_roots(directory):
                 # TODO: Make some relative symlinks
                 if random.randint(1, 3) == 1 or len(things) == 0:
                     os.symlink("/broken", target)
+                    description = "symlink pointing to /broken"
                 else:
-                    os.symlink(random.choice(things), target)
+                    symlink_destination = random.choice(things)
+                    os.symlink(symlink_destination, target)
+                    description = "symlink pointing to {}".format(symlink_destination)
             things.append(os.path.join(location, thingname))
-            print("Generated {}/{} ".format(rootdir, things[-1]))
+            print("Generated {}/{}, a {}".format(rootdir, things[-1], description))
 
 
 def file_contents(path):
@@ -143,7 +147,7 @@ def directory_not_empty(path):
     return os.listdir(path)
 
 
-@pytest.mark.parametrize("original,overlay", combinations([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]))
+@pytest.mark.parametrize("original,overlay", combinations(range(1,21)))
 def test_cas_import(cli, tmpdir, original, overlay):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
