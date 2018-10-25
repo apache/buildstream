@@ -8,19 +8,27 @@ include README.rst
 
 # Documentation package includes
 include doc/Makefile
+include doc/badges.py
+include doc/bst2html.py
 include doc/source/conf.py
-include doc/source/index.rst
+include doc/source/plugin.rsttemplate
+recursive-include doc/source *.rst
+recursive-include doc/source *.py
+recursive-include doc/source *.in
+recursive-include doc/source *.html
+recursive-include doc/examples *
 
 # Tests
-recursive-include tests *.py
-recursive-include tests *.yaml
-recursive-include tests *.bst
-recursive-include tests *.conf
-recursive-include tests *.sh
-recursive-include tests *.expected
+recursive-include tests *
+include conftest.py
+include .coveragerc
+include .pylintrc
 
 # Protocol Buffers
 recursive-include buildstream/_protos *.proto
 
 # Requirements files
 include dev-requirements.txt
+
+# Versioneer
+include versioneer.py
