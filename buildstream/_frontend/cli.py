@@ -433,8 +433,10 @@ def track(app, elements, deps, except_, cross_junctions):
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Disable auto-fetching of junction(s)")
 @click.pass_obj
-def pull(app, elements, deps, remote):
+def pull(app, elements, deps, remote, no_fetch):
     """Pull a built artifact from the configured remote artifact cache.
 
     By default the artifact will be pulled one of the configured caches
@@ -448,7 +450,7 @@ def pull(app, elements, deps, remote):
         all:   All dependencies
     """
     with app.initialized(session_name="Pull"):
-        app.stream.pull(elements, selection=deps, remote=remote)
+        app.stream.pull(elements, selection=deps, remote=remote, no_fetch=no_fetch)
 
 
 ##################################################################
