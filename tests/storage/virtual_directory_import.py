@@ -1,11 +1,14 @@
 import os
 import pytest
 import random
+import copy
+import tempfile
 from tests.testutils import cli
+
 
 from buildstream.storage import CasBasedDirectory
 from buildstream.storage import FileBasedDirectory
-
+from buildstream import utils
 
 class FakeContext():
     def __init__(self):
@@ -84,7 +87,6 @@ def generate_random_root(rootno, directory):
                 os.symlink(symlink_destination, target)
                 description = "symlink pointing to {}".format(symlink_destination)
         things.append(os.path.join(location, thingname))
-        print("Generated {}/{}, a {}".format(rootdir, things[-1], description))
 
 
 def file_contents(path):
@@ -160,15 +162,24 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
         generator_function(overlay, tmpdir)
         
     d = create_new_casdir(original, fake_context, tmpdir)
+
+    #duplicate_cas = CasBasedDirectory(fake_context, ref=copy.copy(d.ref))
+    duplicate_cas = create_new_casdir(original, fake_context, tmpdir)
+
+    assert duplicate_cas.ref.hash == d.ref.hash
+
     d2 = create_new_casdir(overlay, fake_context, tmpdir)
     print("Importing dir {} into {}".format(overlay, original))
     d.import_files(d2)
-    d.export_files(os.path.join(tmpdir, "output"))
+    export_dir = os.path.join(tmpdir, "output")
+    roundtrip_dir = os.path.join(tmpdir, "roundtrip")
+    d2.export_files(roundtrip_dir)
+    d.export_files(export_dir)
     
     if verify_contents:
         for item in root_filesets[overlay - 1]:
             (path, typename, content) = item
-            realpath = resolve_symlinks(path, os.path.join(tmpdir, "output"))
+            realpath = resolve_symlinks(path, export_dir)
             if typename == 'F':
                 if os.path.isdir(realpath) and directory_not_empty(realpath):
                     # The file should not have overwritten the directory in this case.
@@ -189,10 +200,21 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
                 assert os.path.lexists(realpath)
 
     # Now do the same thing with filebaseddirectories and check the contents match
-    d3 = create_new_casdir(original, fake_context, tmpdir)
-    d4 = create_new_filedir(overlay, tmpdir)
-    d3.import_files(d2)
-    assert d.ref.hash == d3.ref.hash
+
+    files = list(utils.list_relative_paths(roundtrip_dir))
+    print("Importing from filesystem: filelist is: {}".format(files))
+    duplicate_cas._import_files_from_directory(roundtrip_dir, files=files)
+    duplicate_cas._recalculate_recursing_down()
+    if duplicate_cas.parent:
+        duplicate_cas.parent._recalculate_recursing_up(duplicate_cas)
+        print("Result of direct import: {}".format(duplicate_cas.show_files_recursive()))
+
+    assert duplicate_cas.ref.hash == d.ref.hash
+
+    #d3 = create_new_casdir(original, fake_context, tmpdir)
+    #d4 = create_new_filedir(overlay, tmpdir)
+    #d3.import_files(d2)
+    #assert d.ref.hash == d3.ref.hash
 
 @pytest.mark.parametrize("original,overlay", combinations(range(1,len(root_filesets)+1)))
 def test_fixed_cas_import(cli, tmpdir, original, overlay):
