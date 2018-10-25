@@ -454,7 +454,10 @@ class CasBasedDirectory(Directory):
                             directory = directory.descend(c, create=True)
                         elif components:
                             # Oh dear. We have components left to resolve, but the one we're trying to resolve points to a file.
-                            raise VirtualDirectoryError("Reached a file called {} while trying to resolve a symlink; cannot proceed".format(c))
+                            print("Trying to resolve {}, but found {} was a file.".format(symlink.target, c))
+                            self.delete_entry(c)
+                            directory = directory.descend(c, create=True)
+                            #raise VirtualDirectoryError("Reached a file called {} while trying to resolve a symlink; cannot proceed".format(c))
                         else:
                             return f
                 else:
