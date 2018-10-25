@@ -328,26 +328,7 @@ class CasBasedDirectory(Directory):
         as a directory as long as it's within this directory tree.
         """
 
-        if isinstance(self.index[name].buildstream_object, Directory):
-            return self.index[name].buildstream_object
-        # OK then, it's a symlink
-        symlink = self._find_pb2_entry(name)
-        assert isinstance(symlink, remote_execution_pb2.SymlinkNode)
-        absolute = symlink.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
-        if absolute:
-            root = self.find_root()
-        else:
-            root = self
-        directory = root
-        components = symlink.target.split(CasBasedDirectory._pb2_path_sep)
-        for c in components:
-            if c == ".":
-                pass
-            elif c == "..":
-                directory = directory.parent
-            else:
-                directory = directory.descend(c, create=True)
-        return directory
+        return self._resolve(name, force_create=True)
 
     def _is_followable(self, name):
         """ Returns true if this is a directory or symlink to a valid directory. """
@@ -362,35 +343,16 @@ class CasBasedDirectory(Directory):
     def _resolve_symlink(self, node, force_create=True):
         """Same as _resolve_symlink_or_directory but takes a SymlinkNode.
         """
-
-        # OK then, it's a symlink
-        symlink = node
-        absolute = symlink.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
-        if absolute:
-            root = self.find_root()
-        else:
-            root = self
-        directory = root
-        components = symlink.target.split(CasBasedDirectory._pb2_path_sep)
-        for c in components:
-            if c == ".":
-                pass
-            elif c == "..":
-                directory = directory.parent
-            else:
-                if c in directory.index or force_create:
-                    directory = directory.descend(c, create=True)
-                else:
-                    return None
-        return directory
-
+        return self._resolve(node.name, force_create=True)
     
     def _resolve(self, name, absolute_symlinks_resolve=True, force_create=False, first_seen_object = None):
         """ Resolves any name to an object. If the name points to a symlink in
         this directory, it returns the thing it points to,
         recursively. Returns a CasBasedDirectory, FileNode or
-        None. Never creates a directory or otherwise alters the
-        directory.
+        None.
+
+        If force_create is on, will attempt to create directories to make symlinks and directories resolve.
+        If force_create is off, this will never alter this directory.
 
         """
         # First check if it's a normal object and return that
@@ -437,7 +399,6 @@ class CasBasedDirectory(Directory):
             if c == ".":
                 pass
             elif c == "..":
-                print("  resolving {}: up-dir".format(c))
                 # If directory.parent *is* None, this is an attempt to access
                 # '..' from the root, which is valid under POSIX; it just
                 # returns the root.                
@@ -449,15 +410,12 @@ class CasBasedDirectory(Directory):
                     # Ultimately f must now be a file or directory
                     if isinstance(f, CasBasedDirectory):
                         directory = f
-                        print("  resolving {}: dir".format(c))
 
                     else:
                         # This is a file or None (i.e. broken symlink)
-                        print("  resolving {}: file/broken link".format(c))
                         if f is None and force_create:
-                            print("Creating target of broken link {}".format(c))
                             directory = directory.descend(c, create=True)
-                        elif components:
+                        elif components and force_create:
                             # Oh dear. We have components left to resolve, but the one we're trying to resolve points to a file.
                             print("Trying to resolve {}, but found {} was a file.".format(symlink.target, c))
                             self.delete_entry(c)
@@ -466,9 +424,7 @@ class CasBasedDirectory(Directory):
                         else:
                             return f
                 else:
-                    print("  resolving {}: Non-existent file; must be from a broken symlink.".format(c))
                     if force_create:
-                        print("Creating target of broken link {} (2)".format(c))
                         directory = directory.descend(c, create=True)
                     else:
                         return None
