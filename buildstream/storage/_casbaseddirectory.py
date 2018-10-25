@@ -853,35 +853,34 @@ class CasBasedDirectory(Directory):
         if self.parent:
             self.parent._recalculate_recursing_up(self)
         
-        # Duplicate the current directory
-
+        duplicate_test = False
         
         print("Original CAS before CAS-based import: {}".format(self.show_files_recursive()))
         print("Original CAS hash: {}".format(self.ref.hash))
         duplicate_cas = None
         self._verify_unique()
         if isinstance(external_pathspec, CasBasedDirectory):
-            duplicate_cas = CasBasedDirectory(self.context, ref=copy.copy(self.ref))
-            duplicate_cas._verify_unique()
+            if duplicate_test:
+                duplicate_cas = CasBasedDirectory(self.context, ref=copy.copy(self.ref))
+                duplicate_cas._verify_unique()
+                print("Duplicated CAS before file-based import: {}".format(duplicate_cas.show_files_recursive()))
+                print("Duplicate CAS hash: {}".format(duplicate_cas.ref.hash))
             print("-"*80 + "Performing direct CAS-to-CAS import")
-            print("Duplicated CAS before file-based import: {}".format(duplicate_cas.show_files_recursive()))
-            print("Duplicate CAS hash: {}".format(duplicate_cas.ref.hash))
             result = self._import_cas_into_cas(external_pathspec, files=files)
             self._verify_unique()
             print("Result of cas-to-cas import: {}".format(self.show_files_recursive()))
             print("-"*80 + "Performing round-trip import via file system")
-            with tempfile.TemporaryDirectory(prefix="roundtrip") as tmpdir:
-                external_pathspec.export_files(tmpdir)
-                if files is None:
-                    files = list(list_relative_paths(tmpdir))
-                print("Importing from filesystem: filelist is: {}".format(files))
-                duplicate_cas._import_files_from_directory(tmpdir, files=files)
-                duplicate_cas._recalculate_recursing_down()
-                if duplicate_cas.parent:
-                    duplicate_cas.parent._recalculate_recursing_up(duplicate_cas)
-                print("Result of direct import: {}".format(duplicate_cas.show_files_recursive()))
-               
-
+            if duplicate_test:
+                with tempfile.TemporaryDirectory(prefix="roundtrip") as tmpdir:
+                    external_pathspec.export_files(tmpdir)
+                    if files is None:
+                        files = list(list_relative_paths(tmpdir))
+                    print("Importing from filesystem: filelist is: {}".format(files))
+                    duplicate_cas._import_files_from_directory(tmpdir, files=files)
+                    duplicate_cas._recalculate_recursing_down()
+                    if duplicate_cas.parent:
+                        duplicate_cas.parent._recalculate_recursing_up(duplicate_cas)
+                    print("Result of direct import: {}".format(duplicate_cas.show_files_recursive()))
         else:
             print("-"*80 + "Performing initial import")
             if isinstance(external_pathspec, FileBasedDirectory):
