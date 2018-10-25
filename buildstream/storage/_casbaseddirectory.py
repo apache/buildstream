@@ -387,7 +387,7 @@ class CasBasedDirectory(Directory):
         return directory
 
     
-    def _resolve(self, name, absolute_symlinks_resolve=True, force_create=False):
+    def _resolve(self, name, absolute_symlinks_resolve=True, force_create=False, first_seen_object = None):
         """ Resolves any name to an object. If the name points to a symlink in
         this directory, it returns the thing it points to,
         recursively. Returns a CasBasedDirectory, FileNode or
@@ -406,6 +406,14 @@ class CasBasedDirectory(Directory):
             return index_entry.pb_object
         
         assert isinstance(index_entry.pb_object, remote_execution_pb2.SymlinkNode)
+
+        if first_seen_object is None:
+            first_seen_object = index_entry.pb_object
+        else:
+            if index_entry.pb_object == first_seen_object:
+                ### Infinite symlink loop detected ###
+                return None
+        
         print("Resolving '{}': This is a symlink node in the current directory.".format(name))
         symlink = index_entry.pb_object
         components = symlink.target.split(CasBasedDirectory._pb2_path_sep)
@@ -439,7 +447,7 @@ class CasBasedDirectory(Directory):
                     directory = directory.parent
             else:
                 if c in directory.index:
-                    f = directory._resolve(c, absolute_symlinks_resolve)
+                    f = directory._resolve(c, absolute_symlinks_resolve, first_seen_object=first_seen_object)
                     # Ultimately f must now be a file or directory
                     if isinstance(f, CasBasedDirectory):
                         directory = f
