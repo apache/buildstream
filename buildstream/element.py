@@ -75,7 +75,6 @@ Class Reference
 import os
 import re
 import stat
-import copy
 from collections import OrderedDict
 from collections.abc import Mapping
 import contextlib
@@ -1382,7 +1381,7 @@ class Element(Plugin):
     # is used to stage things by the `bst checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, directory, shell=False, integrate=True):
+    def _prepare_sandbox(self, scope, directory, integrate=True):
         # bst shell and bst checkout require a local sandbox.
         bare_directory = True if directory else False
         with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False,
@@ -1393,20 +1392,15 @@ class Element(Plugin):
 
             # Stage something if we need it
             if not directory:
-                if shell and scope == Scope.BUILD:
-                    self.stage(sandbox)
-                    if not self.BST_STAGE_INTEGRATES:
-                        self.integrate_dependency_artifacts(sandbox, scope)
-                else:
-                    # Stage deps in the sandbox root
-                    with self.timed_activity("Staging dependencies", silent_nested=True):
-                        self.stage_dependency_artifacts(sandbox, scope)
+                # Stage deps in the sandbox root
+                with self.timed_activity("Staging dependencies", silent_nested=True):
+                    self.stage_dependency_artifacts(sandbox, scope)
 
-                    # Run any integration commands provided by the dependencies
-                    # once they are all staged and ready
-                    if integrate:
-                        with self.timed_activity("Integrating sandbox"):
-                            self.integrate_dependency_artifacts(sandbox, scope)
+                # Run any integration commands provided by the dependencies
+                # once they are all staged and ready
+                if integrate:
+                    with self.timed_activity("Integrating sandbox"):
+                        self.integrate_dependency_artifacts(sandbox, scope)
 
             yield sandbox
 
@@ -1884,71 +1878,6 @@ class Element(Plugin):
 
         # Notify successful upload
         return True
-
-    # _shell():
-    #
-    # Connects the terminal with a shell running in a staged
-    # environment
-    #
-    # Args:
-    #    scope (Scope): Either BUILD or RUN scopes are valid, or None
-    #    directory (str): A directory to an existing sandbox, or None
-    #    mounts (list): A list of (str, str) tuples, representing host/target paths to mount
-    #    isolate (bool): Whether to isolate the environment like we do in builds
-    #    prompt (str): A suitable prompt string for PS1
-    #    command (list): An argv to launch in the sandbox
-    #
-    # Returns: Exit code
-    #
-    # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None):
-
-        with self._prepare_sandbox(scope, directory, shell=True) as sandbox:
-            environment = self.get_environment()
-            environment = copy.copy(environment)
-            flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
-
-            # Fetch the main toplevel project, in case this is a junctioned
-            # subproject, we want to use the rules defined by the main one.
-            context = self._get_context()
-            project = context.get_toplevel_project()
-            shell_command, shell_environment, shell_host_files = project.get_shell_config()
-
-            if prompt is not None:
-                environment['PS1'] = prompt
-
-            # Special configurations for non-isolated sandboxes
-            if not isolate:
-
-                # Open the network, and reuse calling uid/gid
-                #
-                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
-
-                # Apply project defined environment vars to set for a shell
-                for key, value in _yaml.node_items(shell_environment):
-                    environment[key] = value
-
-                # Setup any requested bind mounts
-                if mounts is None:
-                    mounts = []
-
-                for mount in shell_host_files + mounts:
-                    if not os.path.exists(mount.host_path):
-                        if not mount.optional:
-                            self.warn("Not mounting non-existing host file: {}".format(mount.host_path))
-                    else:
-                        sandbox.mark_directory(mount.path)
-                        sandbox._set_mount_source(mount.path, mount.host_path)
-
-            if command:
-                argv = [arg for arg in command]
-            else:
-                argv = shell_command
-
-            self.status("Running command", detail=" ".join(argv))
-
-            # Run shells with network enabled and readonly root.
-            return sandbox.run(argv, flags, env=environment)
 
     # _open_workspace():
     #
