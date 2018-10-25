@@ -343,13 +343,13 @@ class GitMirror(SourceFetcher):
                                               '--contains', self.ref],
                                              cwd=fullpath,)
         if branch:
-            return True
+            return
         else:
             _, tag = self.source.check_output([self.source.host_git, 'tag', '--list', track,
                                                '--contains', self.ref],
                                               cwd=fullpath,)
             if tag:
-                return True
+                return
 
         detail = "The ref provided for the element does not exist locally in the provided track branch / tag " + \
                  "'{}'.\nYou may wish to track the element to update the ref from '{}' ".format(track, track) + \

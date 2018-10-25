@@ -27,9 +27,8 @@ import sys
 from contextlib import contextmanager
 from collections import namedtuple
 
-from ._cachekey import generate_key
 from ._context import Context
-from . import utils, _yaml
+from . import _yaml
 
 
 YAML_CACHE_FILENAME = "yaml_cache.pickle"
@@ -207,7 +206,7 @@ class YamlCache():
             filepath = os.path.relpath(full_path, project.directory)
         else:
             filepath = full_path
-        return full_path
+        return filepath
 
     # _calculate_key():
     #
@@ -329,7 +328,7 @@ class BstUnpickler(pickle.Unpickler):
                 if not project:
                     projects = [p.name for p in self._context.get_projects()]
                     raise pickle.UnpicklingError("No project with name {} found in {}"
-                                                 .format(key_id, projects))
+                                                 .format(project_tag, projects))
             else:
                 project = None
                 name = tagged_name

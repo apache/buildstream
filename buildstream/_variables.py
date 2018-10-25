@@ -191,8 +191,8 @@ def find_recursive_variable(variable, matched_variables, all_vars):
     for key, value in zip(matched_variables, matched_values):
         if _wrap_variable(variable) in value:
             return key
-    else:
-        return None
+    # We failed to find a recursive variable
+    return None
 
 
 def _wrap_variable(var):

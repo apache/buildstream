@@ -42,9 +42,11 @@ from .mount import Mount
 #
 class SafeHardlinks(Mount):
 
-    def __init__(self, directory, tempdir, fuse_mount_options={}):
+    def __init__(self, directory, tempdir, fuse_mount_options=None):
         self.directory = directory
         self.tempdir = tempdir
+        if fuse_mount_options is None:
+            fuse_mount_options = {}
         super().__init__(fuse_mount_options=fuse_mount_options)
 
     def create_operations(self):

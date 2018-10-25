@@ -30,7 +30,7 @@ from .._fuse import SafeHardlinks
 # Helper data object representing a single mount point in the mount map
 #
 class Mount():
-    def __init__(self, sandbox, mount_point, safe_hardlinks, fuse_mount_options={}):
+    def __init__(self, sandbox, mount_point, safe_hardlinks, fuse_mount_options=None):
         scratch_directory = sandbox._get_scratch_directory()
         # Getting _get_underlying_directory() here is acceptable as
         # we're part of the sandbox code. This will fail if our
@@ -39,7 +39,7 @@ class Mount():
 
         self.mount_point = mount_point
         self.safe_hardlinks = safe_hardlinks
-        self._fuse_mount_options = fuse_mount_options
+        self._fuse_mount_options = {} if fuse_mount_options is None else fuse_mount_options
 
         # FIXME: When the criteria for mounting something and its parent
         #        mount is identical, then there is no need to mount an additional
@@ -101,9 +101,12 @@ class Mount():
 #
 class MountMap():
 
-    def __init__(self, sandbox, root_readonly, fuse_mount_options={}):
+    def __init__(self, sandbox, root_readonly, fuse_mount_options=None):
         # We will be doing the mounts in the order in which they were declared.
         self.mounts = OrderedDict()
+
+        if fuse_mount_options is None:
+            fuse_mount_options = {}
 
         # We want safe hardlinks on rootfs whenever root is not readonly
         self.mounts['/'] = Mount(sandbox, '/', not root_readonly, fuse_mount_options)

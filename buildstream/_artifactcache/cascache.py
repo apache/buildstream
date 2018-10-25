@@ -33,11 +33,11 @@ import grpc
 
 from .. import _yaml
 
+from .._protos.google.rpc import code_pb2
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
-from .._message import MessageType, Message
 from .. import _signals, utils
 from .._exceptions import ArtifactError
 
@@ -81,8 +81,9 @@ class CASCache(ArtifactCache):
     ################################################
 
     def preflight(self):
-        if (not os.path.isdir(os.path.join(self.casdir, 'refs', 'heads')) or
-            not os.path.isdir(os.path.join(self.casdir, 'objects'))):
+        headdir = os.path.join(self.casdir, 'refs', 'heads')
+        objdir = os.path.join(self.casdir, 'objects')
+        if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise ArtifactError("CAS repository check failed for '{}'"
                                 .format(self.casdir))
 
@@ -918,7 +919,7 @@ class CASCache(ArtifactCache):
             # Skip download, already in local cache.
             pass
         elif (digest.size_bytes >= remote.max_batch_total_size_bytes or
-                not remote.batch_read_supported):
+              not remote.batch_read_supported):
             # Too large for batch request, download in independent request.
             self._ensure_blob(remote, digest)
             in_local_cache = True
@@ -958,7 +959,7 @@ class CASCache(ArtifactCache):
         batch = _CASBatchRead(remote)
 
         while len(fetch_queue) + len(fetch_next_queue) > 0:
-            if len(fetch_queue) == 0:
+            if not fetch_queue:
                 batch = self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
 
             dir_digest = fetch_queue.pop(0)
@@ -1087,6 +1088,10 @@ class _CASRemote():
         self.bytestream = None
         self.cas = None
         self.ref_storage = None
+        self.batch_update_supported = None
+        self.batch_read_supported = None
+        self.capabilities = None
+        self.max_batch_total_size_bytes = None
 
     def init(self):
         if not self._initialized:
@@ -1191,13 +1196,13 @@ class _CASBatchRead():
         assert not self._sent
         self._sent = True
 
-        if len(self._request.digests) == 0:
+        if not self._request.digests:
             return
 
         batch_response = self._remote.cas.BatchReadBlobs(self._request)
 
         for response in batch_response.responses:
-            if response.status.code != grpc.StatusCode.OK.value[0]:
+            if response.status.code != code_pb2.OK:
                 raise ArtifactError("Failed to download blob {}: {}".format(
                     response.digest.hash, response.status.code))
             if response.digest.size_bytes != len(response.data):
@@ -1236,13 +1241,13 @@ class _CASBatchUpdate():
         assert not self._sent
         self._sent = True
 
-        if len(self._request.requests) == 0:
+        if not self._request.requests:
             return
 
         batch_response = self._remote.cas.BatchUpdateBlobs(self._request)
 
         for response in batch_response.responses:
-            if response.status.code != grpc.StatusCode.OK.value[0]:
+            if response.status.code != code_pb2.OK:
                 raise ArtifactError("Failed to upload blob {}: {}".format(
                     response.digest.hash, response.status.code))
 

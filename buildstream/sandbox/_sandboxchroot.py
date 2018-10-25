@@ -72,7 +72,6 @@ class SandboxChroot(Sandbox):
         # each mount point needs to be mounted from and to
         self.mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY,
                                   self._FUSE_MOUNT_OPTIONS)
-        root_mount_source = self.mount_map.get_mount_source('/')
 
         # Create a sysroot and run the command inside it
         with ExitStack() as stack:
@@ -147,7 +146,7 @@ class SandboxChroot(Sandbox):
 
         try:
             with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
                     command,
                     close_fds=True,
                     cwd=os.path.join(rootfs, cwd.lstrip(os.sep)),
@@ -264,7 +263,7 @@ class SandboxChroot(Sandbox):
         @contextmanager
         def mount_point(point, **kwargs):
             mount_source_overrides = self._get_mount_sources()
-            if point in mount_source_overrides:
+            if point in mount_source_overrides:  # pylint: disable=consider-using-get
                 mount_source = mount_source_overrides[point]
             else:
                 mount_source = self.mount_map.get_mount_source(point)

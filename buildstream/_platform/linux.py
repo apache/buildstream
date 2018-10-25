@@ -22,7 +22,6 @@ import subprocess
 
 from .. import _site
 from .. import utils
-from .._message import Message, MessageType
 from ..sandbox import SandboxDummy
 
 from . import Platform
@@ -112,8 +111,4 @@ class Linux(Platform):
         except subprocess.CalledProcessError:
             output = ''
 
-        if output == 'root':
-            return True
-
-        else:
-            return False
+        return output == 'root'

@@ -29,13 +29,13 @@ import re
 import shutil
 import signal
 import stat
+from stat import S_ISDIR
 import string
 import subprocess
 import tempfile
 import itertools
 import functools
 from contextlib import contextmanager
-from stat import S_ISDIR
 
 import psutil
 
@@ -1088,7 +1088,8 @@ def _call(*popenargs, terminate=False, **kwargs):
             os.killpg(group_id, signal.SIGCONT)
 
     with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-        process = subprocess.Popen(*popenargs, preexec_fn=preexec_fn, **kwargs)
+        process = subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
+            *popenargs, preexec_fn=preexec_fn, **kwargs)
         output, _ = process.communicate()
         exit_code = process.poll()
 

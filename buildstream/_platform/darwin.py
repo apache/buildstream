@@ -16,9 +16,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import resource
 
-from .._exceptions import PlatformError
 from ..sandbox import SandboxDummy
 
 from . import Platform
@@ -28,10 +26,6 @@ class Darwin(Platform):
 
     # This value comes from OPEN_MAX in syslimits.h
     OPEN_MAX = 10240
-
-    def __init__(self):
-
-        super().__init__()
 
     def create_sandbox(self, *args, **kwargs):
         kwargs['dummy_reason'] = \

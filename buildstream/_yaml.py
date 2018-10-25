@@ -395,9 +395,9 @@ def node_get(node, expected_type, key, indices=None, default_value=_get_sentinel
         try:
             if (expected_type == bool and isinstance(value, str)):
                 # Dont coerce booleans to string, this makes "False" strings evaluate to True
-                if value == 'true' or value == 'True':
+                if value in ('True', 'true'):
                     value = True
-                elif value == 'false' or value == 'False':
+                elif value in ('False', 'false'):
                     value = False
                 else:
                     raise ValueError()
@@ -470,10 +470,11 @@ def node_get_project_path(node, key, project_dir, *,
                         .format(provenance, path_str))
 
     try:
+        full_path = (project_dir_path / path)
         if sys.version_info[0] == 3 and sys.version_info[1] < 6:
-            full_resolved_path = (project_dir_path / path).resolve()
+            full_resolved_path = full_path.resolve()
         else:
-            full_resolved_path = (project_dir_path / path).resolve(strict=True)
+            full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
     except FileNotFoundError:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "{}: Specified path '{}' does not exist"

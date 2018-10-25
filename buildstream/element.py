@@ -432,7 +432,7 @@ class Element(Plugin):
                                                 visited=visited, recursed=True)
 
         # Yeild self only at the end, after anything needed has been traversed
-        if should_yield and (recurse or recursed) and (scope == Scope.ALL or scope == Scope.RUN):
+        if should_yield and (recurse or recursed) and (scope in (Scope.ALL, Scope.RUN)):
             yield self
 
     def search(self, scope, name):
@@ -1563,7 +1563,7 @@ class Element(Plugin):
                     # Step 3 - Prepare
                     self.__prepare(sandbox)
                     # Step 4 - Assemble
-                    collect = self.assemble(sandbox)
+                    collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
                     self.__set_build_result(success=True, description="succeeded")
                 except BstError as e:
                     # If an error occurred assembling an element in a sandbox,
@@ -2521,7 +2521,7 @@ class Element(Plugin):
         strong_key = meta['strong']
         weak_key = meta['weak']
 
-        assert key == strong_key or key == weak_key
+        assert key in (strong_key, weak_key)
 
         self.__metadata_keys[strong_key] = meta
         self.__metadata_keys[weak_key] = meta

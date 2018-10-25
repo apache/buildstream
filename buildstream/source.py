@@ -637,7 +637,7 @@ class Source(Plugin):
             # Source consistency interrogations are silent.
             context = self._get_context()
             with context.silence():
-                self.__consistency = self.get_consistency()
+                self.__consistency = self.get_consistency()  # pylint: disable=assignment-from-no-return
 
     # Return cached consistency
     #
@@ -687,14 +687,14 @@ class Source(Plugin):
 
         key['directory'] = self.__directory
         if include_source:
-            key['unique'] = self.get_unique_key()
+            key['unique'] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
 
         return key
 
     # Wrapper for set_ref(), also returns whether it changed.
     #
     def _set_ref(self, ref, node):
-        current_ref = self.get_ref()
+        current_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
         changed = False
 
         # This comparison should work even for tuples and lists,
@@ -773,7 +773,7 @@ class Source(Plugin):
         elif project.ref_storage == ProjectRefStorage.PROJECT_REFS:
 
             # First warn if there is a ref already loaded, and reset it
-            redundant_ref = self.get_ref()
+            redundant_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
             if redundant_ref is not None:
                 self.set_ref(None, {})
 
@@ -883,7 +883,7 @@ class Source(Plugin):
         else:
             new_ref = self.__do_track()
 
-        current_ref = self.get_ref()
+        current_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
 
         if new_ref is None:
             # No tracking, keep current ref
@@ -1038,15 +1038,12 @@ class Source(Plugin):
         if not mirrors or not alias:
             return self.track(**kwargs)
 
-        context = self._get_context()
-        source_kind = type(self)
-
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
         for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass)):
             new_source = self.__clone_for_uri(uri)
             try:
-                ref = new_source.track(**kwargs)
+                ref = new_source.track(**kwargs)  # pylint: disable=assignment-from-none
             # FIXME: Need to consider temporary vs. permanent failures,
             #        and how this works with retries.
             except BstError as e:

@@ -87,8 +87,8 @@ class Mount():
     #               User Facing API                #
     ################################################
 
-    def __init__(self, fuse_mount_options={}):
-        self._fuse_mount_options = fuse_mount_options
+    def __init__(self, fuse_mount_options=None):
+        self._fuse_mount_options = {} if fuse_mount_options is None else fuse_mount_options
 
     # mount():
     #
@@ -182,7 +182,7 @@ class Mount():
 
         # Ask the subclass to give us an Operations object
         #
-        self.__operations = self.create_operations()
+        self.__operations = self.create_operations()  # pylint: disable=assignment-from-no-return
 
         # Run fuse in foreground in this child process, internally libfuse
         # will handle SIGTERM and gracefully exit its own little main loop.

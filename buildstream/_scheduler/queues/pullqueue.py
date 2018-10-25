@@ -57,7 +57,7 @@ class PullQueue(Queue):
     def done(self, _, element, result, success):
 
         if not success:
-            return False
+            return
 
         element._pull_done()
 

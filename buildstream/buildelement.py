@@ -152,7 +152,7 @@ class BuildElement(Element):
     #############################################################
     def configure(self, node):
 
-        self.__commands = {}
+        self.__commands = {}  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to

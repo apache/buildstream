@@ -156,7 +156,7 @@ class ArtifactCache():
     def setup_remotes(self, *, use_config=False, remote_url=None):
 
         # Ensure we do not double-initialise since this can be expensive
-        assert(not self._remotes_setup)
+        assert not self._remotes_setup
         self._remotes_setup = True
 
         # Initialize remote artifact caches. We allow the commandline to override
@@ -252,7 +252,7 @@ class ArtifactCache():
     #    (int): The size of the cache after having cleaned up
     #
     def clean(self):
-        artifacts = self.list_artifacts()
+        artifacts = self.list_artifacts()  # pylint: disable=assignment-from-no-return
 
         # Build a set of the cache keys which are required
         # based on the required elements at cleanup time
@@ -294,7 +294,7 @@ class ArtifactCache():
             if key not in required_artifacts:
 
                 # Remove the actual artifact, if it's not required.
-                size = self.remove(to_remove)
+                size = self.remove(to_remove)  # pylint: disable=assignment-from-no-return
 
                 # Remove the size from the removed size
                 self.set_cache_size(self._cache_size - size)
@@ -311,7 +311,7 @@ class ArtifactCache():
     #    (int): The size of the artifact cache.
     #
     def compute_cache_size(self):
-        self._cache_size = self.calculate_cache_size()
+        self._cache_size = self.calculate_cache_size()  # pylint: disable=assignment-from-no-return
 
         return self._cache_size
 
