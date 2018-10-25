@@ -57,14 +57,14 @@ class SandboxChroot(Sandbox):
         cwd = self._get_work_directory(cwd=cwd)
         env = self._get_environment(cwd=cwd, env=env)
 
+        # Convert single-string argument to a list
+        if isinstance(command, str):
+            command = [command]
+
         if not self._has_command(command[0], env):
             raise SandboxError("Staged artifacts do not provide command "
                                "'{}'".format(command[0]),
                                reason='missing-command')
-
-        # Command must be a list
-        if isinstance(command, str):
-            command = [command]
 
         stdout, stderr = self._get_output()
 
