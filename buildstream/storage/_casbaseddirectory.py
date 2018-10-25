@@ -613,17 +613,6 @@ class CasBasedDirectory(Directory):
         x = self._resolve_symlink(symlink_node, force_create=False)
         return isinstance(x, CasBasedDirectory)
 
-    def _verify_unique(self):
-        # Verifies that there are no duplicate names in this directory or subdirectories.
-        names = []
-        for entrylist in [self.pb2_directory.files, self.pb2_directory.directories, self.pb2_directory.symlinks]:
-            for e in entrylist:
-                if e.name in names:
-                    raise VirtualDirectoryError("Duplicate entry for name {} found".format(e.name))
-                names.append(e.name)
-        for d in self.pb2_directory.directories:
-            self.index[d.name].buildstream_object._verify_unique()
-    
     def _partial_import_cas_into_cas(self, source_directory, files, path_prefix="", file_list_required=True):
         """ Import only the files and symlinks listed in 'files' from source_directory to this one.
         Args:
@@ -632,11 +621,9 @@ class CasBasedDirectory(Directory):
            path_prefix (str): Prefix used to add entries to the file list result.
            file_list_required: Whether to update the file list while processing.
         """
-        print("Beginning partial import of {} into {}. Files are: >{}<".format(source_directory, self, ", ".join(files)))
         result = FileListResult()
         processed_directories = set()
         for f in files:
-            #if f == ".": continue
             fullname = os.path.join(path_prefix, f)
             components = f.split(os.path.sep)
             if len(components)>1:
@@ -656,12 +643,9 @@ class CasBasedDirectory(Directory):
                         else:
                             dest_subdir = x
                     else:
-                        print("Importing {}: {} does not exist in {}, so it is created as a directory".format(f, dirname, self))
-                        
                         self.create_directory(dirname)
                         dest_subdir = self._resolve_symlink_or_directory(dirname)
                     src_subdir = source_directory.descend(dirname)
-                    print("Now recursing into {} to continue adding {}".format(src_subdir, f))
                     import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
                                                                              path_prefix=fullname, file_list_required=file_list_required)
                     result.combine(import_result)
@@ -740,12 +724,12 @@ class CasBasedDirectory(Directory):
         replace one directory with another's hash, without doing any recursion.
         """
         if files is None:
-            #return self._full_import_cas_into_cas(source_directory, can_hardlink=True)
-            files = list(source_directory.list_relative_paths())
-            print("Extracted all files from source directory '{}': {}".format(source_directory, files))
+            files = source_directory.list_relative_paths()
+        # You must pass a list into _partial_import (not a generator)
         return self._partial_import_cas_into_cas(source_directory, list(files))
 
     def _describe(self, thing):
+        """ Only used by showdiff, and as such, not called """
         # Describes protocol buffer objects
         if isinstance(thing, remote_execution_pb2.DirectoryNode):
             return "directory called {}".format(thing.name)
@@ -756,10 +740,8 @@ class CasBasedDirectory(Directory):
         else:
             return "strange thing"
         
-    
     def showdiff(self, other):
-        print("Diffing {} and {}:".format(self, other))
-
+        """ An old function used to show differences between two directories. No longer in use. """
         def compare_list(l1, l2, name):
             item2 = None
             index = 0
@@ -834,16 +816,9 @@ class CasBasedDirectory(Directory):
 
         print("Directory before import: {}".format(self.show_files_recursive()))
 
-        # Sync self (necessary?)
-        self._recalculate_recursing_down()
-        if self.parent:
-            self.parent._recalculate_recursing_up(self)
-        
-        self._verify_unique()
         if isinstance(external_pathspec, CasBasedDirectory):
             print("-"*80 + "Performing direct CAS-to-CAS import")
             result = self._import_cas_into_cas(external_pathspec, files=files)
-            self._verify_unique()
             print("Result of cas-to-cas import: {}".format(self.show_files_recursive()))
         else:
             print("-"*80 + "Performing initial import")
