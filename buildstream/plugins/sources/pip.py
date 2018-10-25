@@ -54,19 +54,18 @@ Downloaded tarballs will be stored in a directory called ".bst_pip_downloads".
    packages:
    - flake8
 
-   # Optionally specify a relative staging directory
-   directory: path/to/stage
-
    # Specify the ref. It is a list of strings of format
    # "<package-name>==<version>", separated by "\\n".
    # Usually this will be contents of a requirements.txt file where all
    # package versions have been frozen.
    ref: "flake8==3.5.0\\nmccabe==0.6.1\\npkg-resources==0.0.0\\npycodestyle==2.3.1\\npyflakes==1.6.0"
 
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
+
 .. note::
 
    The ``pip`` plugin is available since :ref:`format version 16 <project_format_version>`
-
 """
 
 import errno

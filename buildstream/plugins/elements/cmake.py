@@ -49,6 +49,9 @@ Here is the default configuration for the ``cmake`` element in full:
 
   .. literalinclude:: ../../../buildstream/plugins/elements/cmake.yaml
      :language: yaml
+
+See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
+details on common configuration options for build elements.
 """
 
 from buildstream import BuildElement

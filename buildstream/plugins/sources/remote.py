@@ -28,9 +28,6 @@ remote - stage files from remote urls
    # Specify the remote source kind
    kind: remote
 
-   # Optionally specify a relative staging directory
-   # directory: path/to/stage
-
    # Optionally specify a relative staging filename.
    # If not specified, the basename of the url will be used.
    # filename: customfilename
@@ -47,12 +44,12 @@ remote - stage files from remote urls
    # Specify the ref. It's a sha256sum of the file you download.
    ref: 6c9f6f68a131ec6381da82f2bff978083ed7f4f7991d931bfa767b7965ebc94b
 
-
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 
 .. note::
 
    The ``remote`` plugin is available since :ref:`format version 10 <project_format_version>`
-
 """
 import os
 from buildstream import SourceError, utils

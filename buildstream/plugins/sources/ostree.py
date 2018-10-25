@@ -29,9 +29,6 @@ ostree - stage files from an OSTree repository
    # Specify the ostree source kind
    kind: ostree
 
-   # Optionally specify a relative staging directory
-   # directory: path/to/stage
-
    # Specify the repository url, using an alias defined
    # in your project configuration is recommended.
    url: upstream:runtime
@@ -48,6 +45,9 @@ ostree - stage files from an OSTree repository
    # For signed ostree repositories, specify a local project relative
    # path to the public verifying GPG key for this remote.
    gpg-key: keys/runtime.gpg
+
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 """
 
 import os

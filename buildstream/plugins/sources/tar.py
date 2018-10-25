@@ -32,9 +32,6 @@ tar - stage files from tar archives
    # Specify the tar source kind
    kind: tar
 
-   # Optionally specify a relative staging directory
-   # directory: path/to/stage
-
    # Specify the tar url. Using an alias defined in your project
    # configuration is encouraged. 'bst track' will update the
    # sha256sum in 'ref' to the downloaded file's sha256sum.
@@ -53,6 +50,9 @@ tar - stage files from tar archives
    # To extract the root of the tarball directly, this can be set
    # to an empty string.
    base-dir: '*'
+
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 """
 
 import os

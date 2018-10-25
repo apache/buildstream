@@ -32,9 +32,6 @@ git - stage files from a git repository
    # Specify the git source kind
    kind: git
 
-   # Optionally specify a relative staging directory
-   # directory: path/to/stage
-
    # Specify the repository url, using an alias defined
    # in your project configuration is recommended.
    url: upstream:foo.git
@@ -73,6 +70,9 @@ git - stage files from a git repository
      plugins/baz:
        url: upstream:baz.git
        checkout: False
+
+See :ref:`built-in functionality doumentation <core_source_builtins>` for
+details on common configuration options for sources.
 
 **Configurable Warnings:**
 

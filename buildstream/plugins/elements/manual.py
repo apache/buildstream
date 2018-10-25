@@ -26,6 +26,9 @@ add custom build commands to the array understood by the :mod:`BuildElement <bui
 The empty configuration is as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/manual.yaml
      :language: yaml
+
+See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
+details on common configuration options for build elements.
 """
 
 from buildstream import BuildElement
