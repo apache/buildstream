@@ -464,8 +464,10 @@ def pull(app, elements, deps, remote, no_fetch):
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Disable auto-fetching of junction(s)")
 @click.pass_obj
-def push(app, elements, deps, remote):
+def push(app, elements, deps, remote, no_fetch):
     """Push a built artifact to a remote artifact cache.
 
     The default destination is the highest priority configured cache. You can
@@ -478,7 +480,7 @@ def push(app, elements, deps, remote):
         all:   All dependencies
     """
     with app.initialized(session_name="Push"):
-        app.stream.push(elements, selection=deps, remote=remote)
+        app.stream.push(elements, selection=deps, remote=remote, no_fetch=no_fetch)
 
 
 ##################################################################

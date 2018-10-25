@@ -325,13 +325,15 @@ class Stream():
     #    targets (list of str): Targets to push
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    remote (str): The URL of a specific remote server to push to, or None
+    #    no_fetch (bool): Flag to disable auto-fetch of junctions needed by `targets`
     #
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
     def push(self, targets, *,
              selection=PipelineSelection.NONE,
-             remote=None):
+             remote=None,
+             no_fetch):
 
         use_config = True
         if remote:
@@ -341,7 +343,7 @@ class Stream():
                                  selection=selection,
                                  use_artifact_config=use_config,
                                  artifact_remote_url=remote,
-                                 fetch_subprojects=True)
+                                 fetch_subprojects=not no_fetch)
 
         if not self._artifacts.has_push_remotes():
             raise StreamError("No artifact caches available for pushing artifacts")
