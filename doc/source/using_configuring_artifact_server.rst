@@ -110,6 +110,15 @@ You can also use a key pair obtained from a trusted certificate authority instea
 
     openssl req -new -newkey rsa:4096 -x509 -sha256 -days 3650 -nodes -batch -subj "/CN=artifacts.com" -out server.crt -keyout server.key
 
+.. note::
+
+    Note that in the ``-subj "/CN=<foo>"`` argument, ``/CN`` is the *certificate common name*,
+    and as such ``<foo>`` should be the public hostname of the server. IP addresses will
+    **not** provide you with working authentication.
+
+    In addition to this, ensure that the host server is recognised by the client.
+    You may need to add the line: ``<ip address>`` ``<hostname>`` to
+    your ``/etc/hosts`` file.
 
 Authenticating users
 ~~~~~~~~~~~~~~~~~~~~
@@ -233,3 +242,8 @@ Pull and push:
      client-cert: client.crt
 
      push: true
+
+.. note::
+
+    Equivalent statements can be delcared in a project's configuration file
+    (the ``project.conf``).
