@@ -78,7 +78,7 @@ source_dist:
   # Go back to the toplevel and collect our reports
   - cd ../..
   - mkdir -p coverage-linux/
-  - cp dist/buildstream/.coverage.* coverage-linux/coverage."${CI_JOB_NAME}"
+  - cp dist/buildstream/.coverage coverage-linux/coverage."${CI_JOB_NAME}"
   except:
   - schedules
   artifacts:
@@ -128,7 +128,7 @@ tests-unix:
     # Go back to the toplevel and collect our reports
     - cd ../..
     - mkdir -p coverage-unix/
-    - cp dist/buildstream/.coverage.* coverage-unix/coverage.unix
+    - cp dist/buildstream/.coverage coverage-unix/coverage.unix
   except:
   - schedules
   artifacts:
