@@ -32,7 +32,7 @@ from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
 from ._artifactcache.cascache import CASCache
-from ._workspaces import Workspaces
+from ._workspaces import Workspaces, WorkspaceProjectCache
 from .plugin import _plugin_lookup
 
 
@@ -140,6 +140,7 @@ class Context():
         self._projects = []
         self._project_overrides = {}
         self._workspaces = None
+        self._workspace_project_cache = WorkspaceProjectCache()
         self._log_handle = None
         self._log_filename = None
         self._cascache = None
@@ -285,7 +286,7 @@ class Context():
     #
     def add_project(self, project):
         if not self._projects:
-            self._workspaces = Workspaces(project)
+            self._workspaces = Workspaces(project, self._workspace_project_cache)
         self._projects.append(project)
 
     # get_projects():
@@ -311,6 +312,16 @@ class Context():
 
     def get_workspaces(self):
         return self._workspaces
+
+    # get_workspace_project_cache():
+    #
+    # Return the WorkspaceProjectCache object used for this BuildStream invocation
+    #
+    # Returns:
+    #    (WorkspaceProjectCache): The WorkspaceProjectCache object
+    #
+    def get_workspace_project_cache(self):
+        return self._workspace_project_cache
 
     # get_overrides():
     #
