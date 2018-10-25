@@ -244,10 +244,8 @@ class CasBasedDirectory(Directory):
         for collection in [self.pb2_directory.files, self.pb2_directory.symlinks, self.pb2_directory.directories]:
             for thing in collection:
                 if thing.name == name:
-                    print("Removing {} from PB2".format(name))
                     collection.remove(thing)
         if name in self.index:
-            print("Removing {} from index".format(name))
             del self.index[name]
 
     def descend(self, subdirectory_spec, create=False):
@@ -534,9 +532,6 @@ class CasBasedDirectory(Directory):
         """ Imports files from a traditional directory """
         result = FileListResult()
         for entry in files:
-            print("Importing {} from file system".format(entry))
-            print("...Order of elements was {}".format(", ".join(self.index.keys())))
-
             split_path = entry.split(os.path.sep)
             # The actual file on the FS we're importing
             import_file = os.path.join(source_directory, entry)
@@ -547,7 +542,6 @@ class CasBasedDirectory(Directory):
                 # Hand this off to the importer for that subdir. This will only do one file -
                 # a better way would be to hand off all the files in this subdir at once.
                 # failed here because directory_name didn't point to a directory...
-                print("Attempting to import into {} from {}".format(directory_name, source_directory))
                 subdir_result = self._import_directory_recursively(directory_name, source_directory,
                                                                    split_path[1:], path_prefix)
                 result.combine(subdir_result)
@@ -563,8 +557,6 @@ class CasBasedDirectory(Directory):
                 if self._check_replacement(entry, path_prefix, result):
                     self._add_new_file(source_directory, entry)
                     result.files_written.append(relative_pathname)
-            print("...Order of elements is now {}".format(", ".join(self.index.keys())))
-
         return result
 
 
@@ -693,23 +685,17 @@ class CasBasedDirectory(Directory):
             else:
                 # We're importing a file or symlink - replace anything with the same name.
                 print("Import of file/symlink {} into this directory. Removing anything existing...".format(f))
-                print("   ... ordering of nodes in this dir was: {}".format(self.index.keys()))
-                print("   ... symlinks were {}".format([x.name for x in self.pb2_directory.symlinks]))
                 importable = self._check_replacement(f, path_prefix, result)
                 if importable:
                     print("   ... after replacement of '{}', symlinks are now {}".format(f, [x.name for x in self.pb2_directory.symlinks]))
                     item = source_directory.index[f].pb_object
                     if isinstance(item, remote_execution_pb2.FileNode):
-                        print("   ... importing file")
                         filenode = self.pb2_directory.files.add(digest=item.digest, name=f,
                                                                 is_executable=item.is_executable)
                         self.index[f] = IndexEntry(filenode, modified=(fullname in result.overwritten))
                     else:
-                        print("   ... importing symlink")
                         assert(isinstance(item, remote_execution_pb2.SymlinkNode))
                         self._add_new_link_direct(name=f, target=item.target)
-                        print("   ... symlinks are now {}".format([x.name for x in self.pb2_directory.symlinks]))
-                    print("   ... ordering of nodes in this dir is now: {}".format(self.index.keys()))
         return result
 
     def transfer_node_contents(destination, source):
