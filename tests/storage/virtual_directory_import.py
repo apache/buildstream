@@ -20,11 +20,17 @@ class FakeContext():
 # 'F' (file), 'S' (symlink) or 'D' (directory) with content being the contents
 # for a file or the destination for a symlink.
 root_filesets = [
+    # Arbitrary test sets
     [('a/b/c/textfile1', 'F', 'This is textfile 1\n')],
     [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
     [('a/b/d', 'D', '')],
     [('a/b/c', 'S', '/a/b/d')],
-    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')]
+    [('a/b/d', 'S', '/a/b/c')],
+    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')], 
+    [('a/b/c', 'D', ''), ('a/b/d', 'S', '/a/b/c')], 
+    [('a/b', 'F', 'This is textfile 1\n')],
+    [('a/b/c', 'F', 'This is textfile 1\n')],
+    [('a/b/c', 'D', '')]
 ]
 
 empty_hash_ref = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -178,8 +184,9 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
                     assert os.path.islink(realpath)
                     assert os.readlink(realpath) == content
             elif typename == 'D':
-                # Note that isdir accepts symlinks to dirs, so a symlink to a dir is acceptable.
-                assert os.path.isdir(realpath)
+                # We can't do any more tests than this because it depends on things present in the original. Blank directories
+                # here will be ignored and the original left in place.
+                assert os.path.lexists(realpath)
 
     # Now do the same thing with filebaseddirectories and check the contents match
     d3 = create_new_casdir(original, fake_context, tmpdir)
@@ -187,14 +194,15 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
     d3.import_files(d2)
     assert d.ref.hash == d3.ref.hash
 
-@pytest.mark.parametrize("original,overlay", combinations(range(1,6)))
+@pytest.mark.parametrize("original,overlay", combinations(range(1,len(root_filesets)+1)))
 def test_fixed_cas_import(cli, tmpdir, original, overlay):
     _import_test(tmpdir, original, overlay, generate_import_roots, verify_contents=True)
 
 @pytest.mark.parametrize("original,overlay", combinations(range(1,11)))
-def test_random_cas_import(cli, tmpdir, original, overlay):
+def test_random_cas_import_fast(cli, tmpdir, original, overlay):
     _import_test(tmpdir, original, overlay, generate_random_root, verify_contents=False)
 
+    
 def _listing_test(tmpdir, root, generator_function):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
