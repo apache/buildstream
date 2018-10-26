@@ -76,6 +76,56 @@ git - stage files from a git repository
        url: upstream:baz.git
        checkout: False
 
+   # Enable tag tracking.
+   #
+   # This causes the `tags` metadata to be populated automatically
+   # as a result of tracking the git source.
+   #
+   # By default this is 'False'.
+   #
+   track-tags: True
+
+   # If the list of tags below is set, then a lightweight dummy
+   # git repository will be staged along with the content at
+   # build time.
+   #
+   # This is useful for a growing number of modules which use
+   # `git describe` at build time in order to determine the version
+   # which will be encoded into the built software.
+   #
+   # The 'tags' below is considered as a part of the git source
+   # reference and will be stored in the 'project.refs' file if
+   # that has been selected as your project's ref-storage.
+   #
+   # Migration notes:
+   #
+   #   If you are upgrading from BuildStream 1.2, which used to
+   #   stage the entire repository by default, you will notice that
+   #   some modules which use `git describe` are broken, and will
+   #   need to enable this feature in order to fix them.
+   #
+   #   If you need to enable this feature without changing the
+   #   the specific commit that you are building, then we recommend
+   #   the following migration steps for any git sources where
+   #   `git describe` is required:
+   #
+   #     o Enable `track-tags` feature
+   #     o Set the `track` parameter to the desired commit sha which
+   #       the current `ref` points to
+   #     o Run `bst track` for these elements, this will result in
+   #       populating the `tags` portion of the refs without changing
+   #       the refs
+   #     o Restore the `track` parameter to the branches which you have
+   #       previously been tracking afterwards.
+   #
+   tags:
+   - tag: lightweight-example
+     commit: 04ad0dc656cb7cc6feb781aa13bdbf1d67d0af78
+     annotated: false
+   - tag: annotated-example
+     commit: 10abe77fe8d77385d86f225b503d9185f4ef7f3a
+     annotated: true
+
 See :ref:`built-in functionality doumentation <core_source_builtins>` for
 details on common configuration options for sources.
 
@@ -95,6 +145,7 @@ import re
 import shutil
 from collections.abc import Mapping
 from io import StringIO
+from tempfile import TemporaryFile
 
 from configparser import RawConfigParser
 
@@ -115,13 +166,14 @@ INCONSISTENT_SUBMODULE = "inconsistent-submodules"
 #
 class GitMirror(SourceFetcher):
 
-    def __init__(self, source, path, url, ref, *, primary=False):
+    def __init__(self, source, path, url, ref, *, primary=False, tags=[]):
 
         super().__init__()
         self.source = source
         self.path = path
         self.url = url
         self.ref = ref
+        self.tags = tags
         self.primary = primary
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
         self.mark_download_url(url)
@@ -214,7 +266,7 @@ class GitMirror(SourceFetcher):
             raise SourceError("{}: expected ref '{}' was not found in git repository: '{}'"
                               .format(self.source, self.ref, self.url))
 
-    def latest_commit(self, tracking):
+    def latest_commit_with_tags(self, tracking, track_tags=False):
         _, output = self.source.check_output(
             [self.source.host_git, 'rev-parse', tracking],
             fail="Unable to find commit for specified branch name '{}'".format(tracking),
@@ -230,7 +282,28 @@ class GitMirror(SourceFetcher):
             if exit_code == 0:
                 ref = output.rstrip('\n')
 
-        return ref
+        if not track_tags:
+            return ref, []
+
+        tags = set()
+        for options in [[], ['--first-parent'], ['--tags'], ['--tags', '--first-parent']]:
+            exit_code, output = self.source.check_output(
+                [self.source.host_git, 'describe', '--abbrev=0', ref] + options,
+                cwd=self.mirror)
+            if exit_code == 0:
+                tag = output.strip()
+                _, commit_ref = self.source.check_output(
+                    [self.source.host_git, 'rev-parse', tag + '^{commit}'],
+                    fail="Unable to resolve tag '{}'".format(tag),
+                    cwd=self.mirror)
+                exit_code = self.source.call(
+                    [self.source.host_git, 'cat-file', 'tag', tag],
+                    cwd=self.mirror)
+                annotated = (exit_code == 0)
+
+                tags.add((tag, commit_ref.strip(), annotated))
+
+        return ref, list(tags)
 
     def stage(self, directory, track=None):
         fullpath = os.path.join(directory, self.path)
@@ -246,12 +319,14 @@ class GitMirror(SourceFetcher):
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
 
+        # Remove .git dir
+        shutil.rmtree(os.path.join(fullpath, ".git"))
+
+        self._rebuild_git(fullpath)
+
         # Check that the user specified ref exists in the track if provided & not already tracked
         if track:
             self.assert_ref_in_track(fullpath, track)
-
-        # Remove .git dir
-        shutil.rmtree(os.path.join(fullpath, ".git"))
 
     def init_workspace(self, directory, track=None):
         fullpath = os.path.join(directory, self.path)
@@ -359,6 +434,78 @@ class GitMirror(SourceFetcher):
                          .format(self.source, self.ref, track, self.url),
                          detail=detail, warning_token=CoreWarnings.REF_NOT_IN_TRACK)
 
+    def _rebuild_git(self, fullpath):
+        if not self.tags:
+            return
+
+        with self.source.tempdir() as tmpdir:
+            included = set()
+            shallow = set()
+            for _, commit_ref, _ in self.tags:
+
+                _, out = self.source.check_output([self.source.host_git, 'rev-list',
+                                                   '--boundary', '{}..{}'.format(commit_ref, self.ref)],
+                                                  fail="Failed to get git history {}..{} in directory: {}"
+                                                  .format(commit_ref, self.ref, fullpath),
+                                                  fail_temporarily=True,
+                                                  cwd=self.mirror)
+                for line in out.splitlines():
+                    rev = line.lstrip('-')
+                    if line[0] == '-':
+                        shallow.add(rev)
+                    else:
+                        included.add(rev)
+
+            shallow -= included
+            included |= shallow
+
+            self.source.call([self.source.host_git, 'init'],
+                             fail="Cannot initialize git repository: {}".format(fullpath),
+                             cwd=fullpath)
+
+            for rev in included:
+                with TemporaryFile(dir=tmpdir) as commit_file:
+                    self.source.call([self.source.host_git, 'cat-file', 'commit', rev],
+                                     stdout=commit_file,
+                                     fail="Failed to get commit {}".format(rev),
+                                     cwd=self.mirror)
+                    commit_file.seek(0, 0)
+                    self.source.call([self.source.host_git, 'hash-object', '-w', '-t', 'commit', '--stdin'],
+                                     stdin=commit_file,
+                                     fail="Failed to add commit object {}".format(rev),
+                                     cwd=fullpath)
+
+            with open(os.path.join(fullpath, '.git', 'shallow'), 'w') as shallow_file:
+                for rev in shallow:
+                    shallow_file.write('{}\n'.format(rev))
+
+            for tag, commit_ref, annotated in self.tags:
+                if annotated:
+                    with TemporaryFile(dir=tmpdir) as tag_file:
+                        tag_data = 'object {}\ntype commit\ntag {}\n'.format(commit_ref, tag)
+                        tag_file.write(tag_data.encode('ascii'))
+                        tag_file.seek(0, 0)
+                        _, tag_ref = self.source.check_output(
+                            [self.source.host_git, 'hash-object', '-w', '-t',
+                             'tag', '--stdin'],
+                            stdin=tag_file,
+                            fail="Failed to add tag object {}".format(tag),
+                            cwd=fullpath)
+
+                    self.source.call([self.source.host_git, 'tag', tag, tag_ref.strip()],
+                                     fail="Failed to tag: {}".format(tag),
+                                     cwd=fullpath)
+                else:
+                    self.source.call([self.source.host_git, 'tag', tag, commit_ref],
+                                     fail="Failed to tag: {}".format(tag),
+                                     cwd=fullpath)
+
+            with open(os.path.join(fullpath, '.git', 'HEAD'), 'w') as head:
+                self.source.call([self.source.host_git, 'rev-parse', self.ref],
+                                 stdout=head,
+                                 fail="Failed to parse commit {}".format(self.ref),
+                                 cwd=self.mirror)
+
 
 class GitSource(Source):
     # pylint: disable=attribute-defined-outside-init
@@ -366,11 +513,20 @@ class GitSource(Source):
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', None)
 
-        config_keys = ['url', 'track', 'ref', 'submodules', 'checkout-submodules', 'ref-format']
+        config_keys = ['url', 'track', 'ref', 'submodules',
+                       'checkout-submodules', 'ref-format',
+                       'track-tags', 'tags']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
+        tags_node = self.node_get_member(node, list, 'tags', [])
+        for tag_node in tags_node:
+            self.node_validate(tag_node, ['tag', 'commit', 'annotated'])
+
+        tags = self._load_tags(node)
+        self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
+
         self.original_url = self.node_get_member(node, str, 'url')
-        self.mirror = GitMirror(self, '', self.original_url, ref, primary=True)
+        self.mirror = GitMirror(self, '', self.original_url, ref, tags=tags, primary=True)
         self.tracking = self.node_get_member(node, str, 'track', None)
 
         self.ref_format = self.node_get_member(node, str, 'ref-format', 'sha1')
@@ -417,6 +573,9 @@ class GitSource(Source):
         # the ref, if the user changes the alias to fetch the same sources
         # from another location, it should not affect the cache key.
         key = [self.original_url, self.mirror.ref]
+        if self.mirror.tags:
+            tags = {tag: (commit, annotated) for tag, commit, annotated in self.mirror.tags}
+            key.append({'tags': tags})
 
         # Only modify the cache key with checkout_submodules if it's something
         # other than the default behaviour.
@@ -442,12 +601,33 @@ class GitSource(Source):
 
     def load_ref(self, node):
         self.mirror.ref = self.node_get_member(node, str, 'ref', None)
+        self.mirror.tags = self._load_tags(node)
 
     def get_ref(self):
-        return self.mirror.ref
+        return self.mirror.ref, self.mirror.tags
 
-    def set_ref(self, ref, node):
-        node['ref'] = self.mirror.ref = ref
+    def set_ref(self, ref_data, node):
+        if not ref_data:
+            self.mirror.ref = None
+            if 'ref' in node:
+                del node['ref']
+            self.mirror.tags = []
+            if 'tags' in node:
+                del node['tags']
+        else:
+            ref, tags = ref_data
+            node['ref'] = self.mirror.ref = ref
+            self.mirror.tags = tags
+            if tags:
+                node['tags'] = []
+                for tag, commit_ref, annotated in tags:
+                    data = {'tag': tag,
+                            'commit': commit_ref,
+                            'annotated': annotated}
+                    node['tags'].append(data)
+            else:
+                if 'tags' in node:
+                    del node['tags']
 
     def track(self):
 
@@ -470,7 +650,7 @@ class GitSource(Source):
             self.mirror._fetch()
 
             # Update self.mirror.ref and node.ref from the self.tracking branch
-            ret = self.mirror.latest_commit(self.tracking)
+            ret = self.mirror.latest_commit_with_tags(self.tracking, self.track_tags)
 
         # Set tracked attribute, parameter for if self.mirror.assert_ref_in_track is needed
         self.tracked = True
@@ -555,6 +735,16 @@ class GitSource(Source):
                 submodules.append(mirror)
 
         self.submodules = submodules
+
+    def _load_tags(self, node):
+        tags = []
+        tags_node = self.node_get_member(node, list, 'tags', [])
+        for tag_node in tags_node:
+            tag = self.node_get_member(tag_node, str, 'tag')
+            commit_ref = self.node_get_member(tag_node, str, 'commit')
+            annotated = self.node_get_member(tag_node, bool, 'annotated')
+            tags.append((tag, commit_ref, annotated))
+        return tags
 
 
 # Plugin entry point

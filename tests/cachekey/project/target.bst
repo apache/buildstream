@@ -7,6 +7,7 @@ depends:
 - sources/bzr1.bst
 - sources/git1.bst
 - sources/git2.bst
+- sources/git3.bst
 - sources/local1.bst
 - sources/local2.bst
 - sources/ostree1.bst
