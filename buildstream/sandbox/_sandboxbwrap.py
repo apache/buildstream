@@ -66,14 +66,14 @@ class SandboxBwrap(Sandbox):
         cwd = self._get_work_directory(cwd=cwd)
         env = self._get_environment(cwd=cwd, env=env)
 
+        # Convert single-string argument to a list
+        if isinstance(command, str):
+            command = [command]
+
         if not self._has_command(command[0], env):
             raise SandboxError("Staged artifacts do not provide command "
                                "'{}'".format(command[0]),
                                reason='missing-command')
-
-        # We want command args as a list of strings
-        if isinstance(command, str):
-            command = [command]
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
