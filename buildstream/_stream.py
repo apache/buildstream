@@ -423,9 +423,16 @@ class Stream():
                 else:
                     if location == '-':
                         with target.timed_activity("Creating tarball"):
-                            with os.fdopen(sys.stdout.fileno(), 'wb') as fo:
-                                with tarfile.open(fileobj=fo, mode="w|") as tf:
-                                    sandbox_vroot.export_to_tar(tf, '.')
+                            # Save the stdout FD to restore later
+                            saved_fd = os.dup(sys.stdout.fileno())
+                            try:
+                                with os.fdopen(sys.stdout.fileno(), 'wb') as fo:
+                                    with tarfile.open(fileobj=fo, mode="w|") as tf:
+                                        sandbox_vroot.export_to_tar(tf, '.')
+                            finally:
+                                # No matter what, restore stdout for further use
+                                os.dup2(saved_fd, sys.stdout.fileno())
+                                os.close(saved_fd)
                     else:
                         with target.timed_activity("Creating tarball '{}'"
                                                    .format(location)):
