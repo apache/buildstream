@@ -17,7 +17,7 @@ import pytest
 # CliRunner convenience API (click.testing module) does not support
 # separation of stdout/stderr.
 #
-from _pytest.capture import MultiCapture, FDCapture
+from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
 
 # Import the main cli entrypoint
 from buildstream._frontend import cli as bst_cli
@@ -234,9 +234,10 @@ class Cli():
     #    silent (bool): Whether to pass --no-verbose
     #    env (dict): Environment variables to temporarily set during the test
     #    args (list): A list of arguments to pass buildstream
+    #    binary_capture (bool): Whether to capture the stdout/stderr as binary
     #
     def run(self, configure=True, project=None, silent=False, env=None,
-            cwd=None, options=None, args=None):
+            cwd=None, options=None, args=None, binary_capture=False):
         if args is None:
             args = []
         if options is None:
@@ -278,7 +279,7 @@ class Cli():
             except ValueError:
                 sys.__stdout__ = open('/dev/stdout', 'w')
 
-            result = self.invoke(bst_cli, bst_args)
+            result = self.invoke(bst_cli, bst_args, binary_capture=binary_capture)
 
         # Some informative stdout we can observe when anything fails
         if self.verbose:
@@ -295,7 +296,7 @@ class Cli():
 
         return result
 
-    def invoke(self, cli, args=None, color=False, **extra):
+    def invoke(self, cli, args=None, color=False, binary_capture=False, **extra):
         exc_info = None
         exception = None
         exit_code = 0
@@ -305,8 +306,8 @@ class Cli():
         old_stdin = sys.stdin
         with open(os.devnull) as devnull:
             sys.stdin = devnull
-
-            capture = MultiCapture(out=True, err=True, in_=False, Capture=FDCapture)
+            capture_kind = FDCaptureBinary if binary_capture else FDCapture
+            capture = MultiCapture(out=True, err=True, in_=False, Capture=capture_kind)
             capture.start_capturing()
 
             try:
