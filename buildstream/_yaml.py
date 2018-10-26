@@ -204,9 +204,8 @@ def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=
 
         if not data:
             data = load_data(contents, file, copy_tree=copy_tree)
-
-        if yaml_cache:
-            yaml_cache.put_from_key(project, filename, key, data)
+            if yaml_cache:
+                yaml_cache.put_from_key(project, filename, key, data)
 
         return data
     except FileNotFoundError as e:
