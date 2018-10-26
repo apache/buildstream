@@ -372,6 +372,7 @@ class Stream():
     #                will be placed at the given location. If true and
     #                location is '-', the tarball will be dumped on the
     #                standard output.
+    #    no_fetch (bool): Flag to disable auto-fetch of junctions needed by `target`
     #
     def checkout(self, target, *,
                  location=None,
@@ -379,10 +380,11 @@ class Stream():
                  deps='run',
                  integrate=True,
                  hardlinks=False,
-                 tar=False):
+                 tar=False,
+                 no_fetch):
 
         # We only have one target in a checkout command
-        elements, _ = self._load((target,), (), fetch_subprojects=True)
+        elements, _ = self._load((target,), (), fetch_subprojects=not no_fetch)
         target = elements[0]
 
         self._check_location_writable(location, force=force, tar=tar)
