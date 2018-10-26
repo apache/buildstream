@@ -400,11 +400,11 @@ class CasBasedDirectory(Directory):
             if c == ".":
                 pass
             elif c == "..":
+                if directory.parent is not None:
+                    directory = directory.parent
                 # If directory.parent *is* None, this is an attempt to access
                 # '..' from the root, which is valid under POSIX; it just
                 # returns the root.                
-                if directory.parent is not None:
-                    directory = directory.parent
             else:
                 if c in directory.index:
                     f = directory._resolve(c, absolute_symlinks_resolve, first_seen_object=first_seen_object)
