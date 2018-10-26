@@ -652,8 +652,10 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 @click.argument('element',
                 type=click.Path(readable=False))
 @click.argument('location', type=click.Path())
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Disable auto-fetching of junction(s) automatically")
 @click.pass_obj
-def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
+def checkout(app, element, location, force, deps, integrate, hardlinks, tar, no_fetch):
     """Checkout a built artifact to the specified location
     """
 
@@ -668,7 +670,8 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
                             deps=deps,
                             integrate=integrate,
                             hardlinks=hardlinks,
-                            tar=tar)
+                            tar=tar,
+                            no_fetch=no_fetch)
 
 
 ##################################################################
