@@ -155,9 +155,15 @@ Instance with push and requiring client authentication:
 Managing the cache with systemd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is better to run the cache as a systemd service, especially if it is running on a dedicated server, as this will allow systemd to manage the cache, incase the server ever encounters any issues.
+We recommend running the cache as a systemd service, especially if it is running
+on a dedicated server, as this will allow systemd to manage the cache, in case
+the server encounters any issues.
 
-Below are two examples of how to run the cache server as a systemd service, one is for pull only and the other is configured for push & pull.
+Below are two examples of how to run the cache server as a systemd service. The
+first, is for pull only and the other is configured for push & pull. Notice that
+the two configurations use different ports.
+
+``bst-artifact-serve.service``:
 
 .. code:: ini
 
@@ -176,6 +182,9 @@ Below are two examples of how to run the cache server as a systemd service, one 
    [Install]
    WantedBy=multi-user.target
 
+
+``bst-artifact-serve-receive.service``:
+
 .. code:: ini
 
    #
@@ -193,7 +202,37 @@ Below are two examples of how to run the cache server as a systemd service, one 
    [Install]
    WantedBy=multi-user.target
 
-Here we define when systemd should start the service, which is after the networking stack has been started, we then define how to run the cache with the desired configuration, under the artifacts user. The {{ }} are there to denote where you should change these files to point to your desired locations.
+
+Here we define when systemd should start the service, which is after the networking
+stack has been started, we then define how to run the cache with the desired
+configuration, under the artifacts user. The {{ }} are there to denote where you
+should change these files to point to your desired locations.
+
+.. note::
+
+    You may need to run some of the following commands as the superuser.
+
+These files should be copied to ``/etc/systemd/system/``. We can then start these services
+with:
+
+.. code:: bash
+
+    systemctl enable bst-artifact-serve.service
+    systemctl enable bst-artifact-serve-receive.service
+
+Then, to start these services:
+
+.. code:: bash
+
+    systemctl start bst-artifact-serve.service
+    systemctl start bst-artifact-serve-receive.service
+
+We can then check if the services are successfully running with:
+
+.. code:: bash
+
+    journalctl -u bst-artifact-serve.service
+    journalctl -u bst-artifact-serve-receive.service
 
 For more information on systemd services see: 
 `Creating Systemd Service Files <https://www.devdungeon.com/content/creating-systemd-service-files>`_.
