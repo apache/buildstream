@@ -335,16 +335,9 @@ def node_get_provenance(node, key=None, indices=None):
     return provenance
 
 
-# Helper to use utils.sentinel without unconditional utils import,
-# which causes issues for completion.
-#
-# Local private, but defined here because sphinx appears to break if
-# it's not defined before any functions calling it in default kwarg
-# values.
-#
-def _get_sentinel():
-    from .utils import _sentinel
-    return _sentinel
+# A sentinel to be used as a default argument for functions that need
+# to distinguish between a kwarg set to None and an unset kwarg.
+_sentinel = object()
 
 
 # node_get()
@@ -368,10 +361,10 @@ def _get_sentinel():
 # Note:
 #    Returned strings are stripped of leading and trailing whitespace
 #
-def node_get(node, expected_type, key, indices=None, default_value=_get_sentinel()):
+def node_get(node, expected_type, key, indices=None, default_value=_sentinel):
     value = node.get(key, default_value)
     provenance = node_get_provenance(node)
-    if value is _get_sentinel():
+    if value is _sentinel:
         raise LoadError(LoadErrorReason.INVALID_DATA,
                         "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 

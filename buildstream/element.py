@@ -451,7 +451,7 @@ class Element(Plugin):
 
         return None
 
-    def node_subst_member(self, node, member_name, default=utils._sentinel):
+    def node_subst_member(self, node, member_name, default=_yaml._sentinel):
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
 
