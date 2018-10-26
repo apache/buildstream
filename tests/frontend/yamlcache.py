@@ -103,7 +103,7 @@ def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction, move_project):
         yc.put_from_key(prj, element_path, key, contents)
 
     # Show that a variable has been added
-    result = cli.run(project=project, args=['show', '--format', '%{vars}', 'test.bst'])
+    result = cli.run(project=project, args=['show', '--deps', 'none', '--format', '%{vars}', 'test.bst'])
     result.assert_success()
     data = yaml.safe_load(result.output)
     assert 'modified' in data
@@ -135,7 +135,7 @@ def test_yamlcache_changed_file(cli, tmpdir, ref_storage, with_junction):
         _yaml.load(element_path, copy_tree=False, project=prj, yaml_cache=yc)
 
     # Show that a variable has been added
-    result = cli.run(project=project, args=['show', '--format', '%{vars}', 'test.bst'])
+    result = cli.run(project=project, args=['show', '--deps', 'none', '--format', '%{vars}', 'test.bst'])
     result.assert_success()
     data = yaml.safe_load(result.output)
     assert 'modified' in data
