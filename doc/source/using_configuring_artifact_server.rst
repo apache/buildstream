@@ -155,9 +155,12 @@ Instance with push and requiring client authentication:
 Managing the cache with systemd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is better to run the cache as a systemd service, especially if it is running on a dedicated server, as this will allow systemd to manage the cache, incase the server ever encounters any issues.
+It is better to run the cache as a systemd service, especially if it is running
+on a dedicated server, as this will allow systemd to manage the cache, in case
+the server encounters any issues.
 
-Below are two examples of how to run the cache server as a systemd service, one is for pull only and the other is configured for push & pull.
+Below are two examples of how to run the cache server as a systemd service, one
+is for pull only and the other is configured for push & pull.
 
 .. code:: ini
 
@@ -193,7 +196,10 @@ Below are two examples of how to run the cache server as a systemd service, one 
    [Install]
    WantedBy=multi-user.target
 
-Here we define when systemd should start the service, which is after the networking stack has been started, we then define how to run the cache with the desired configuration, under the artifacts user. The {{ }} are there to denote where you should change these files to point to your desired locations.
+Here we define when systemd should start the service, which is after the networking
+stack has been started, we then define how to run the cache with the desired
+configuration, under the artifacts user. The {{ }} are there to denote where you
+should change these files to point to your desired locations.
 
 For more information on systemd services see: 
 `Creating Systemd Service Files <https://www.devdungeon.com/content/creating-systemd-service-files>`_.
