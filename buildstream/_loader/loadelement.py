@@ -146,8 +146,8 @@ def _extract_depends_from_node(node, *, key=None):
     depends = _yaml.node_get(node, list, key, default_value=[])
     output_deps = []
 
-    for dep in depends:
-        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[depends.index(dep)])
+    for index, dep in enumerate(depends):
+        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[index])
 
         if isinstance(dep, str):
             dependency = Dependency(dep, provenance=dep_provenance, dep_type=default_dep_type)
@@ -177,10 +177,8 @@ def _extract_depends_from_node(node, *, key=None):
                                     provenance=dep_provenance)
 
         else:
-            index = depends.index(dep)
-            p = _yaml.node_get_provenance(node, key=key, indices=[index])
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dependency is not specified as a string or a dictionary".format(p))
+                            "{}: Dependency is not specified as a string or a dictionary".format(dep_provenance))
 
         output_deps.append(dependency)
 
