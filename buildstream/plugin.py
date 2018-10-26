@@ -321,7 +321,7 @@ class Plugin():
         provenance = _yaml.node_get_provenance(node, key=member_name)
         return str(provenance)
 
-    def node_get_member(self, node, expected_type, member_name, default=utils._sentinel):
+    def node_get_member(self, node, expected_type, member_name, default=_yaml._sentinel):
         """Fetch the value of a node member, raising an error if the value is
         missing or incorrectly typed.
 
