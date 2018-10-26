@@ -256,6 +256,7 @@ class Stream():
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from tracking
     #    cross_junctions (bool): Whether tracking should cross junction boundaries
+    #    no_fetch (bool): Flag to disable auto-fetch of junctions needed by `targets`
     #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
@@ -263,7 +264,8 @@ class Stream():
     def track(self, targets, *,
               selection=PipelineSelection.REDIRECT,
               except_targets=None,
-              cross_junctions=False):
+              cross_junctions=False,
+              no_fetch):
 
         # We pass no target to build. Only to track. Passing build targets
         # would fully load project configuration which might not be
@@ -274,7 +276,7 @@ class Stream():
                        except_targets=except_targets,
                        track_except_targets=except_targets,
                        track_cross_junctions=cross_junctions,
-                       fetch_subprojects=True)
+                       fetch_subprojects=not no_fetch)
 
         track_queue = TrackQueue(self._scheduler)
         self._add_queue(track_queue, track=True)

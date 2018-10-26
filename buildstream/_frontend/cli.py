@@ -397,8 +397,10 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
               help="Allow crossing junction boundaries")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Disable auto-fetching of junction(s)")
 @click.pass_obj
-def track(app, elements, deps, except_, cross_junctions):
+def track(app, elements, deps, except_, cross_junctions, no_fetch):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
@@ -419,7 +421,8 @@ def track(app, elements, deps, except_, cross_junctions):
         app.stream.track(elements,
                          selection=deps,
                          except_targets=except_,
-                         cross_junctions=cross_junctions)
+                         cross_junctions=cross_junctions,
+                         no_fetch=no_fetch)
 
 
 ##################################################################
