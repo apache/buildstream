@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/buildstream-install\" install"),
     ('cmake.bst', 'cmake',
      "cmake -B_builddir -H. -G\"Unix Makefiles\" -DCMAKE_INSTALL_PREFIX:PATH=\"/usr\" \\\n" +
-     "-DCMAKE_INSTALL_LIBDIR=lib   "),
+     "-DCMAKE_INSTALL_LIBDIR:PATH=\"lib\"   "),
     ('distutils.bst', 'python-install',
      "python3 setup.py install --prefix \"/usr\" \\\n" +
      "--root \"/buildstream-install\""),
@@ -46,7 +46,7 @@ def test_defaults(cli, datafiles, tmpdir, target, varname, expected):
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/custom/install/root\" install"),
     ('cmake.bst', 'cmake',
      "cmake -B_builddir -H. -G\"Ninja\" -DCMAKE_INSTALL_PREFIX:PATH=\"/opt\" \\\n" +
-     "-DCMAKE_INSTALL_LIBDIR=lib   "),
+     "-DCMAKE_INSTALL_LIBDIR:PATH=\"lib\"   "),
     ('distutils.bst', 'python-install',
      "python3 setup.py install --prefix \"/opt\" \\\n" +
      "--root \"/custom/install/root\""),
