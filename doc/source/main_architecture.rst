@@ -13,3 +13,5 @@ This section provides details on the overall BuildStream architecture.
    arch_data_model
    arch_dependency_model
    arch_scheduler
+   arch_cachekeys
+   arch_sandboxing
