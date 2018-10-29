@@ -111,10 +111,8 @@ class BstError(Exception):
         #
         self.detail = detail
 
-        # The build sandbox in which the error occurred, if the
-        # error occurred at element assembly time.
-        #
-        self.sandbox = None
+        # A sandbox can be created to debug this error
+        self.sandbox = False
 
         # When this exception occurred during the handling of a job, indicate
         # whether or not there is any point retrying the job.

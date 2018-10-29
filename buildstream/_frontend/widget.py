@@ -668,17 +668,6 @@ class LogLine(Widget):
 
             extra_nl = True
 
-        if message.sandbox is not None:
-            sandbox = self._indent + 'Sandbox directory: ' + message.sandbox
-
-            text += '\n'
-            if message.message_type == MessageType.FAIL:
-                text += self._err_profile.fmt(sandbox, bold=True)
-            else:
-                text += self._detail_profile.fmt(sandbox)
-            text += '\n'
-            extra_nl = True
-
         if message.scheduler and message.message_type == MessageType.FAIL:
             text += '\n'
 

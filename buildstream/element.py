@@ -1385,6 +1385,7 @@ class Element(Plugin):
             # the same filing system as the rest of our cache.
             temp_staging_location = os.path.join(self._get_context().artifactdir, "staging_temp")
             temp_staging_directory = tempfile.mkdtemp(prefix=temp_staging_location)
+            import_dir = temp_staging_directory
 
             try:
                 workspace = self._get_workspace()
@@ -1395,12 +1396,16 @@ class Element(Plugin):
                         with self.timed_activity("Staging local files at {}"
                                                  .format(workspace.get_absolute_path())):
                             workspace.stage(temp_staging_directory)
+                elif self._cached():
+                    # We have a cached buildtree to use, instead
+                    artifact_base, _ = self.__extract()
+                    import_dir = os.path.join(artifact_base, 'buildtree')
                 else:
                     # No workspace, stage directly
                     for source in self.sources():
                         source._stage(temp_staging_directory)
 
-                vdirectory.import_files(temp_staging_directory)
+                vdirectory.import_files(import_dir)
 
             finally:
                 # Staging may produce directories with less than 'rwx' permissions
@@ -1566,9 +1571,8 @@ class Element(Plugin):
                     collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
                     self.__set_build_result(success=True, description="succeeded")
                 except BstError as e:
-                    # If an error occurred assembling an element in a sandbox,
-                    # then tack on the sandbox directory to the error
-                    e.sandbox = rootdir
+                    # Shelling into a sandbox is useful to debug this error
+                    e.sandbox = True
 
                     # If there is a workspace open on this element, it will have
                     # been mounted for sandbox invocations instead of being staged.
