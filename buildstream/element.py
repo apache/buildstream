@@ -176,6 +176,15 @@ class Element(Plugin):
     *Since: 1.4*
     """
 
+    BST_STAGE_INTEGRATES = True
+    """If True, Element.stage() is expected to run integration commands for its dependencies.
+    If False, Element.integrate_dependency_artifacts() is called after Element.stage().
+
+    If True then multi-element sandboxes can't include this element.
+
+    *Since: 1.4*
+    """
+
     def __init__(self, context, project, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
@@ -291,11 +300,12 @@ class Element(Plugin):
         raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(
             kind=self.get_kind()))
 
-    def stage(self, sandbox):
+    def stage(self, sandbox, *, visited=None):
         """Stage inputs into the sandbox directories
 
         Args:
            sandbox (:class:`.Sandbox`): The build sandbox
+           visited (dict or None): Skip Elements included here and add any traversed
 
         Raises:
            (:class:`.ElementError`): When the element raises an error
@@ -304,9 +314,41 @@ class Element(Plugin):
         directory with data. This is done either by staging :class:`.Source`
         objects, by staging the artifacts of the elements this element depends
         on, or both.
+
+        The visited parameter does not need to be declared unless BST_STAGE_INTEGRATES is set to False.
+        If BST_STAGE_INTEGRATES is False then visited should be passed to calls to dependencies().
         """
         raise ImplError("element plugin '{kind}' does not implement stage()".format(
             kind=self.get_kind()))
+
+    def integrate_dependency_artifacts(self, sandbox, scope, *, visited=None):
+        """Integrate element dependencies in scope
+
+        Args:
+           sandbox (:class:`.Sandbox`): The build sandbox
+           scope (:class:`.Scope`): The scope to stage dependencies in
+           visited (dict or None): Skip Elements included here and add any traversed
+
+        This is primarily a convenience wrapper around
+        :func:`Element.integrate() <buildstream.element.Element.stage_artifact>`
+        which takes care of integrating all the dependencies in `scope`.
+
+        This defaults to just calling integrate() on every dependency.
+        If an Element needs to defer, reorder or change the selection of which Elements
+        should have their integration commands run, then this should be overridden.
+
+        This method is not guaranteed to be called when BST_STAGE_INTEGRATES is True
+        when staging this Element in a build scope,
+        but implementations of `stage()` may opt to call it in these circumstances.
+
+        *Since: 1.4*
+        """
+        if visited is None:
+            visited = {}
+
+        with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
+            for dep in self.dependencies(scope, visited=visited):
+                dep.integrate(sandbox)
 
     def prepare(self, sandbox):
         """Run one-off preparation commands.
@@ -656,7 +698,7 @@ class Element(Plugin):
         return link_result.combine(copy_result)
 
     def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
-                                   include=None, exclude=None, orphans=True):
+                                   include=None, exclude=None, orphans=True, visited=None):
         """Stage element dependencies in scope
 
         This is primarily a convenience wrapper around
@@ -671,6 +713,7 @@ class Element(Plugin):
            include (list): An optional list of domains to include files from
            exclude (list): An optional list of domains to exclude files from
            orphans (bool): Whether to include files not spoken for by split domains
+           visited (dict or None): Skip Elements included here and add any traversed
 
         Raises:
            (:class:`.ElementError`): If any of the dependencies in `scope` have not
@@ -686,7 +729,7 @@ class Element(Plugin):
         if self.__can_build_incrementally() and workspace.last_successful:
             old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
 
-        for dep in self.dependencies(scope):
+        for dep in self.dependencies(scope, visited=visited):
             # If we are workspaced, and we therefore perform an
             # incremental build, we must ensure that we update the mtimes
             # of any files created by our dependencies since the last
