@@ -58,6 +58,9 @@ class ComposeElement(Element):
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
+    # This plugin has been modified to permit calling integration after staging
+    BST_STAGE_INTEGRATES = False
+
     def configure(self, node):
         self.node_validate(node, [
             'integrate', 'include', 'exclude', 'include-orphans'
@@ -86,7 +89,10 @@ class ComposeElement(Element):
     def configure_sandbox(self, sandbox):
         pass
 
-    def stage(self, sandbox):
+    def stage(self, sandbox, *, visited=None):
+        pass
+
+    def integrate_dependency_artifacts(self, sandbox, scope, *, visited=None):
         pass
 
     def assemble(self, sandbox):
@@ -122,9 +128,7 @@ class ComposeElement(Element):
                     snapshot = set(vbasedir.list_relative_paths())
                     vbasedir.mark_unmodified()
 
-                with sandbox.batch(0):
-                    for dep in self.dependencies(Scope.BUILD):
-                        dep.integrate(sandbox)
+                super().integrate_dependency_artifacts(sandbox, Scope.BUILD)
 
                 if require_split:
                     # Calculate added, modified and removed files

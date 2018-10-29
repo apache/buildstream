@@ -211,17 +211,18 @@ class BuildElement(Element):
         self.batch_prepare_assemble(SandboxFlags.ROOT_READ_ONLY,
                                     collect=self.get_variable('install-root'))
 
-    def stage(self, sandbox):
+    def stage(self, sandbox, *, visited=None):
+        assert not self.BST_STAGE_INTEGRATES or visited is None
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependency_artifacts(sandbox, Scope.BUILD)
+            self.stage_dependency_artifacts(sandbox, Scope.BUILD, visited=visited)
 
-        # Run any integration commands provided by the dependencies
-        # once they are all staged and ready
-        with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
-            for dep in self.dependencies(Scope.BUILD):
-                dep.integrate(sandbox)
+        if self.BST_STAGE_INTEGRATES:
+            # Run any integration commands provided by the dependencies
+            # once they are all staged and ready
+            with self.timed_activity("Integrating sandbox"):
+                self.integrate_dependency_artifacts(sandbox, Scope.BUILD)
 
         # Stage sources in the build root
         self.stage_sources(sandbox, self.get_variable('build-root'))

@@ -42,6 +42,9 @@ import buildstream
 class ScriptElement(buildstream.ScriptElement):
     # pylint: disable=attribute-defined-outside-init
 
+    # This plugin has been modified to permit calling integration after staging
+    BST_STAGE_INTEGRATES = False
+
     def configure(self, node):
         for n in self.node_get_member(node, list, 'layout', []):
             dst = self.node_subst_member(n, 'destination')

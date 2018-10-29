@@ -152,7 +152,7 @@ class JunctionElement(Element):
     def configure_sandbox(self, sandbox):
         raise PipelineError("Cannot build junction elements")
 
-    def stage(self, sandbox):
+    def stage(self, sandbox, *, visited=None):
         raise PipelineError("Cannot stage junction elements")
 
     def generate_script(self):

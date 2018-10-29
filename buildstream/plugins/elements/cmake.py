@@ -61,6 +61,8 @@ from buildstream import BuildElement
 class CMakeElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
+    # This plugin has been modified to permit calling integration after staging
+    BST_STAGE_INTEGRATES = False
 
 
 # Plugin entry point

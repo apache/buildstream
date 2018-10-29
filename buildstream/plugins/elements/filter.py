@@ -97,7 +97,7 @@ class FilterElement(Element):
     def configure_sandbox(self, sandbox):
         pass
 
-    def stage(self, sandbox):
+    def stage(self, sandbox, *, visited=None):
         pass
 
     def assemble(self, sandbox):

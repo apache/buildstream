@@ -36,7 +36,8 @@ from buildstream import BuildElement
 
 # Element implementation for the 'pip' kind.
 class PipElement(BuildElement):
-    pass
+    # This plugin has been modified to permit calling integration after staging
+    BST_STAGE_INTEGRATES = False
 
 
 # Plugin entry point

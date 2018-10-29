@@ -33,6 +33,9 @@ class StackElement(Element):
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
+    # This plugin has been modified to permit calling integration after staging
+    BST_STAGE_INTEGRATES = False
+
     def configure(self, node):
         pass
 
@@ -47,7 +50,10 @@ class StackElement(Element):
     def configure_sandbox(self, sandbox):
         pass
 
-    def stage(self, sandbox):
+    def stage(self, sandbox, *, visited=None):
+        pass
+
+    def integrate_dependency_artifacts(self, sandbox, scope, *, visited=None):
         pass
 
     def assemble(self, sandbox):

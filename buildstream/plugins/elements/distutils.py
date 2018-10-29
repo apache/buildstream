@@ -36,7 +36,8 @@ from buildstream import BuildElement
 
 # Element implementation for the python 'distutils' kind.
 class DistutilsElement(BuildElement):
-    pass
+    # This plugin has been modified to permit calling integration after staging
+    BST_STAGE_INTEGRATES = False
 
 
 # Plugin entry point
