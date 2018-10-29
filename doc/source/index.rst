@@ -20,6 +20,7 @@ Later sections provide detailed information on BuildStream internals.
    main_using
    main_core
    CONTRIBUTING
+   main_architecture
 
 For any other information, including `how to install BuildStream <https://buildstream.build/install.html>`_,
 refer to `the BuildStream website <https://buildstream.build>`_.
