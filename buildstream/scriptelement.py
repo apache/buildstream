@@ -216,60 +216,71 @@ class ScriptElement(Element):
             if directory != '/':
                 sandbox.mark_directory(directory, artifact=artifact)
 
-    def stage(self, sandbox):
+    def stage(self, sandbox, *, visited=None):
+        assert not self.BST_STAGE_INTEGRATES or visited is None
 
         # Stage the elements, and run integration commands where appropriate.
-        if not self.__layout:
-            # if no layout set, stage all dependencies into /
-            for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                with self.timed_activity("Staging {} at /"
-                                         .format(build_dep.name), silent_nested=True):
-                    build_dep.stage_dependency_artifacts(sandbox, Scope.RUN, path="/")
-
-            with sandbox.batch(SandboxFlags.NONE):
-                for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                    with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
-                        for dep in build_dep.dependencies(Scope.RUN):
-                            dep.integrate(sandbox)
+        if self.__layout:
+            self.__stage_dependency_artifacts_with_layout(sandbox, visited=visited)
         else:
-            # If layout, follow its rules.
-            for item in self.__layout:
+            self.stage_dependency_artifacts(sandbox, Scope.BUILD, visited=visited)
 
-                # Skip layout members which dont stage an element
-                if not item['element']:
-                    continue
-
-                element = self.search(Scope.BUILD, item['element'])
-                if item['destination'] == '/':
-                    with self.timed_activity("Staging {} at /".format(element.name),
-                                             silent_nested=True):
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN)
-                else:
-                    with self.timed_activity("Staging {} at {}"
-                                             .format(element.name, item['destination']),
-                                             silent_nested=True):
-                        virtual_dstdir = sandbox.get_virtual_directory()
-                        virtual_dstdir.descend(item['destination'].lstrip(os.sep).split(os.sep), create=True)
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item['destination'])
-
-            with sandbox.batch(SandboxFlags.NONE):
-                for item in self.__layout:
-
-                    # Skip layout members which dont stage an element
-                    if not item['element']:
-                        continue
-
-                    element = self.search(Scope.BUILD, item['element'])
-
-                    # Integration commands can only be run for elements staged to /
-                    if item['destination'] == '/':
-                        with self.timed_activity("Integrating {}".format(element.name),
-                                                 silent_nested=True):
-                            for dep in element.dependencies(Scope.RUN):
-                                dep.integrate(sandbox)
+        if self.BST_STAGE_INTEGRATES:
+            self.integrate_dependency_artifacts(sandbox, Scope.BUILD)
 
         install_root_path_components = self.__install_root.lstrip(os.sep).split(os.sep)
         sandbox.get_virtual_directory().descend(install_root_path_components, create=True)
+
+    def integrate_dependency_artifacts(self, sandbox, scope, *, visited=None):
+        if scope is not Scope.BUILD or not self.__layout:
+            super().integrate_dependency_artifacts(sandbox, scope, visited=visited)
+            return
+
+        with sandbox.batch(SandboxFlags.NONE):
+            self.__integrate_dependency_artifacts_with_layout(sandbox, visited=visited)
+
+    def __stage_dependency_artifacts_with_layout(self, sandbox, *, path=None,
+                                                 include=None, exclude=None, orphans=True, visited=None):
+        if visited is None:
+            visited = {}
+
+        for item in self.__layout:
+
+            # Skip layout members which dont stage an element
+            if not item['element']:
+                continue
+
+            element = self.search(Scope.BUILD, item['element'])
+            if item['destination'] == '/':
+                with self.timed_activity("Staging {} at /".format(element.name), silent_nested=True):
+                    element.stage_dependency_artifacts(sandbox, Scope.RUN, path="/", visited=visited)
+            else:
+                path = item['destination']
+                with self.timed_activity("Staging {} at {}".format(element.name, path),
+                                         silent_nested=True):
+                    virtual_dstdir = sandbox.get_virtual_directory()
+                    virtual_dstdir.descend(path.lstrip(os.sep).split(os.sep), create=True)
+                    # Visited is explicitly not passed here so that staging at an alternative path
+                    # doesn't prevent an artifact being staged at root via another dependency.
+                    element.stage_dependency_artifacts(sandbox, Scope.RUN, path=path)
+
+    def __integrate_dependency_artifacts_with_layout(self, sandbox, *, visited=None):
+        if visited is None:
+            visited = {}
+
+        for item in self.__layout:
+
+            # Skip layout members which dont stage an element
+            if not item['element']:
+                continue
+
+            element = self.search(Scope.BUILD, item['element'])
+
+            # Integration commands can only be run for elements staged to /
+            if item['destination'] == '/':
+                with self.timed_activity("Integrating {}".format(element.name),
+                                         silent_nested=True):
+                    element.integrate_dependency_artifacts(sandbox, Scope.RUN, visited=visited)
 
     def assemble(self, sandbox):
 
