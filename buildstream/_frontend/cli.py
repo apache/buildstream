@@ -849,9 +849,11 @@ def workspace_list(app):
               help="The directory to write the tarball to")
 @click.argument('element',
                 type=click.Path(readable=False))
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Disable auto-fetching of junction(s)")
 @click.pass_obj
 def source_bundle(app, element, force, directory,
-                  track_, compression, except_):
+                  track_, compression, except_, no_fetch):
     """Produce a source bundle to be manually executed
     """
     with app.initialized():
@@ -859,4 +861,5 @@ def source_bundle(app, element, force, directory,
                                  track_first=track_,
                                  force=force,
                                  compression=compression,
-                                 except_targets=except_)
+                                 except_targets=except_,
+                                 no_fetch=no_fetch)

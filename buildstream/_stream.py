@@ -729,12 +729,15 @@ class Stream():
     #    track_first (bool): Track new source references before bundling
     #    compression (str): The compression type to use
     #    force (bool): Overwrite an existing tarball
+    #    no_fetch (bool): Flag to disable auto-fetch of `target` and junction(s)
+    #                     needed by `target`
     #
     def source_bundle(self, target, directory, *,
                       track_first=False,
                       force=False,
                       compression="gz",
-                      except_targets=()):
+                      except_targets=(),
+                      no_fetch):
 
         if track_first:
             track_targets = (target,)
@@ -745,7 +748,7 @@ class Stream():
                                               selection=PipelineSelection.ALL,
                                               except_targets=except_targets,
                                               track_selection=PipelineSelection.ALL,
-                                              fetch_subprojects=True)
+                                              fetch_subprojects=not no_fetch)
 
         # source-bundle only supports one target
         target = self.targets[0]
@@ -770,7 +773,12 @@ class Stream():
 
         # Fetch and possibly track first
         #
-        self._fetch(elements, track_elements=track_elements)
+        if not no_fetch:
+            self._fetch(elements, track_elements=track_elements)
+        else:
+            # No fetch, just tracking
+            self._fetch([], track_elements=track_elements)
+            self._pipeline.assert_sources_cached(elements)
 
         # We don't use the scheduler for this as it is almost entirely IO
         # bound.
