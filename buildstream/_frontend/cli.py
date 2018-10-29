@@ -798,8 +798,10 @@ def workspace_close(app, remove_dir, all_, elements):
               help="Reset all open workspaces")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Disable auto-fetching of elements and related junction(s)")
 @click.pass_obj
-def workspace_reset(app, soft, track_, all_, elements):
+def workspace_reset(app, soft, track_, all_, elements, no_fetch):
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
@@ -819,7 +821,7 @@ def workspace_reset(app, soft, track_, all_, elements):
         if all_:
             elements = tuple(element_name for element_name, _ in app.context.get_workspaces().list())
 
-        app.stream.workspace_reset(elements, soft=soft, track_first=track_)
+        app.stream.workspace_reset(elements, soft=soft, track_first=track_, no_fetch=no_fetch)
 
 
 ##################################################################
