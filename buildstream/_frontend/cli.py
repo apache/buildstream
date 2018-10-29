@@ -621,7 +621,7 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
             for host_path, path in mount
         ]
         try:
-            exitcode = app.stream.shell(element, scope, prompt,
+            exitcode = app.stream.shell([(element, scope)], prompt,
                                         directory=sysroot,
                                         mounts=mounts,
                                         isolate=isolate,

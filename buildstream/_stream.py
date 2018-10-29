@@ -25,15 +25,17 @@ import stat
 import shlex
 import shutil
 import tarfile
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from tempfile import TemporaryDirectory
 
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
 from ._message import Message, MessageType
-from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
+from ._platform import Platform
+from .sandbox._config import SandboxConfig
+from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from . import utils, _yaml, _site
-from . import Scope, Consistency
+from . import SandboxFlags, Scope, Consistency
 
 
 # Stream()
@@ -117,8 +119,7 @@ class Stream():
     # Run a shell
     #
     # Args:
-    #    element (Element): An Element object to run the shell for
-    #    scope (Scope): The scope for the shell (Scope.BUILD or Scope.RUN)
+    #    elements (List of (Element, Scope) tuples): Elements to run the shell for and their dependency scopes.
     #    prompt (str): The prompt to display in the shell
     #    directory (str): A directory where an existing prestaged sysroot is expected, or None
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
@@ -128,7 +129,7 @@ class Stream():
     # Returns:
     #    (int): The exit code of the launched shell
     #
-    def shell(self, element, scope, prompt, *,
+    def shell(self, elements, prompt, *,
               directory=None,
               mounts=None,
               isolate=False,
@@ -138,16 +139,118 @@ class Stream():
         # in which case we just blindly trust the directory, using the element
         # definitions to control the execution environment only.
         if directory is None:
-            missing_deps = [
-                dep._get_full_name()
-                for dep in self._pipeline.dependencies([element], scope)
-                if not dep._cached()
-            ]
+            missing_deps = []
+            for element, scope in elements:
+                missing_deps.extend(
+                    dep._get_full_name()
+                    for dep in self._pipeline.dependencies((element,), scope)
+                    if not dep._cached())
             if missing_deps:
                 raise StreamError("Elements need to be built or downloaded before staging a shell environment",
                                   detail="\n".join(missing_deps))
 
-        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command)
+        # Assert we're not mixing virtual directory compatible
+        # and non-virtual directory compatible elements
+        if (any(e.BST_VIRTUAL_DIRECTORY for (e, _) in elements) and
+                not all(e.BST_VIRTUAL_DIRECTORY for (e, _) in elements)):
+            raise StreamError(
+                "Elements do not support multiple-element staging",
+                detail=("Multi-element staging is not supported" +
+                        " because elements {} support BST_VIRTUAL_DIRECTORY and {} do not.").format(
+                            ', '.join(e.name for (e, _) in elements if e.BST_VIRTUAL_DIRECTORY),
+                            ', '.join(e.name for (e, _) in elements if not e.BST_VIRTUAL_DIRECTORY)))
+
+        with ExitStack() as stack:
+            # Creation logic duplicated from Element.__sandbox
+            # since most of it is creating the tmpdir
+            # and deciding whether to make a remote sandbox,
+            # which we don't want to.
+            if directory is None:
+                os.makedirs(self._context.builddir, exist_ok=True)
+                rootdir = stack.enter_context(TemporaryDirectory(dir=self._context.builddir))
+            else:
+                rootdir = directory
+
+            # SandboxConfig comes from project, element defaults and MetaElement sandbox config
+            # In the absence of it being exposed to other APIs and a merging strategy
+            # just make it from the project sandbox config.
+            sandbox_config = SandboxConfig(_yaml.node_get(self._project._sandbox, int, 'build-uid'),
+                                           _yaml.node_get(self._project._sandbox, int, 'build-gid'))
+            platform = Platform.get_platform()
+            sandbox = platform.create_sandbox(context=self._context,
+                                              project=self._project,
+                                              directory=rootdir,
+                                              stdout=None, stderr=None, config=sandbox_config,
+                                              bare_directory=directory is not None,
+                                              allow_real_directory=not any(e.BST_VIRTUAL_DIRECTORY
+                                                                           for (e, _) in elements))
+
+            # Configure the sandbox with the last element taking precedence for config.
+            for e, _ in elements:
+                e.configure_sandbox(sandbox)
+
+            # Stage contents if not passed --sysroot
+            if not directory:
+                if any(e.BST_STAGE_INTEGRATES for (e, _) in elements):
+                    if len(elements) > 1:
+                        raise StreamError(
+                            "Elements do not support multiple-element staging",
+                            detail=("Elements {} do not support multi-element staging " +
+                                    " because element kinds {} set BST_STAGE_INTEGRATES").format(
+                                        ', '.join(e.name for (e, _) in elements if e.BST_STAGE_INTEGRATES),
+                                        ', '.join(set(e.get_kind() for (e, _) in elements))))
+                    elements[0][0].stage(sandbox)
+                else:
+                    visited = {}
+                    for e, scope in elements:
+                        if scope is Scope.BUILD:
+                            e.stage(sandbox, visited=visited)
+                        else:
+                            e.stage_dependency_artifacts(sandbox, scope, visited=visited)
+
+                    visited = {}
+                    for e, scope in elements:
+                        e.integrate_dependency_artifacts(sandbox, scope, visited=visited)
+
+            environment = {}
+            for e, _ in elements:
+                environment.update(e.get_environment())
+            flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
+            shell_command, shell_environment, shell_host_files = self._project.get_shell_config()
+            environment['PS1'] = prompt
+            # Special configurations for non-isolated sandboxes
+            if not isolate:
+
+                # Open the network, and reuse calling uid/gid
+                #
+                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
+
+                # Apply project defined environment vars to set for a shell
+                for key, value in _yaml.node_items(shell_environment):
+                    environment[key] = value
+
+                # Setup any requested bind mounts
+                if mounts is None:
+                    mounts = []
+
+                for mount in shell_host_files + mounts:
+                    if not os.path.exists(mount.host_path):
+                        if not mount.optional:
+                            self._message(MessageType.WARN,
+                                          "Not mounting non-existing host file: {}".format(mount.host_path))
+                    else:
+                        sandbox.mark_directory(mount.path)
+                        sandbox._set_mount_source(mount.path, mount.host_path)
+
+            if command:
+                argv = list(command)
+            else:
+                argv = shell_command
+
+            self._message(MessageType.STATUS, "Running command", detail=" ".join(argv))
+
+            # Run shells with network enabled and readonly root.
+            return sandbox.run(argv, flags, env=environment)
 
     # build()
     #

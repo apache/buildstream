@@ -599,7 +599,7 @@ class App():
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     try:
                         prompt = self.shell_prompt(element)
-                        self.stream.shell(element, Scope.BUILD, prompt, isolate=True)
+                        self.stream.shell([(element, Scope.BUILD)], prompt, isolate=True)
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':
