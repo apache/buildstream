@@ -626,8 +626,9 @@ class Stream():
     #    targets (list of str): The target elements to reset the workspace for
     #    soft (bool): Only reset workspace state
     #    track_first (bool): Whether to also track the sources first
+    #    fetch (bool): Enable auto-fetching of target and related junction(s)
     #
-    def workspace_reset(self, targets, *, soft, track_first):
+    def workspace_reset(self, targets, *, soft, track_first, no_fetch):
 
         if track_first:
             track_targets = targets
@@ -636,7 +637,8 @@ class Stream():
 
         elements, track_elements = self._load(targets, track_targets,
                                               selection=PipelineSelection.REDIRECT,
-                                              track_selection=PipelineSelection.REDIRECT)
+                                              track_selection=PipelineSelection.REDIRECT,
+                                              fetch_subprojects=not no_fetch)
 
         nonexisting = []
         for element in elements:
@@ -645,9 +647,18 @@ class Stream():
         if nonexisting:
             raise StreamError("Workspace does not exist", detail="\n".join(nonexisting))
 
-        # Do the tracking first
+        to_track = []
         if track_first:
-            self._fetch(elements, track_elements=track_elements)
+            to_track = track_elements
+
+        to_fetch = []
+        if not no_fetch:
+            to_fetch = elements
+
+        if to_fetch or to_track:
+            self._fetch(to_fetch, track_elements=to_track)
+
+        self._pipeline.assert_sources_cached(elements)
 
         workspaces = self._context.get_workspaces()
 
