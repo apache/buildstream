@@ -16,6 +16,8 @@ recursive-include doc/source *.rst
 recursive-include doc/source *.py
 recursive-include doc/source *.in
 recursive-include doc/source *.html
+recursive-include doc/source *.odg
+recursive-include doc/source *.svg
 recursive-include doc/examples *
 
 # Tests
