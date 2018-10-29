@@ -345,11 +345,12 @@ def test_sysroot(cli, tmpdir, datafiles):
 
 
 # Test system integration commands can access devices in /dev
+@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_integration_devices(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_name = 'integration.bst'
+    element_name = 'shell/integration.bst'
 
     result = execute_shell(cli, project, ["true"], element=element_name)
     assert result.exit_code == 0
