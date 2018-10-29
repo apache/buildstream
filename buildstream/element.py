@@ -1395,6 +1395,8 @@ class Element(Plugin):
             if not directory:
                 if shell and scope == Scope.BUILD:
                     self.stage(sandbox)
+                    if not self.BST_STAGE_INTEGRATES:
+                        self.integrate_dependency_artifacts(sandbox, scope)
                 else:
                     # Stage deps in the sandbox root
                     with self.timed_activity("Staging dependencies", silent_nested=True):
@@ -1404,8 +1406,7 @@ class Element(Plugin):
                     # once they are all staged and ready
                     if integrate:
                         with self.timed_activity("Integrating sandbox"):
-                            for dep in self.dependencies(scope):
-                                dep.integrate(sandbox)
+                            self.integrate_dependency_artifacts(sandbox, scope)
 
             yield sandbox
 
@@ -1624,6 +1625,8 @@ class Element(Plugin):
                     self.__configure_sandbox(sandbox)
                     # Step 2 - Stage
                     self.stage(sandbox)
+                    if not self.BST_STAGE_INTEGRATES:
+                        self.integrate_dependency_artifacts(sandbox, Scope.BUILD)
 
                     if self.__batch_prepare_assemble:
                         cm = sandbox.batch(self.__batch_prepare_assemble_flags,
