@@ -128,7 +128,6 @@ def test_build_checkout_tarball(datafiles, cli):
     assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
 
 
-@pytest.mark.skip(reason="Capturing the binary output is causing a stacktrace")
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball_stdout(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -143,7 +142,7 @@ def test_build_checkout_tarball_stdout(datafiles, cli):
 
     checkout_args = ['checkout', '--tar', 'target.bst', '-']
 
-    result = cli.run(project=project, args=checkout_args)
+    result = cli.run(project=project, args=checkout_args, binary_capture=True)
     result.assert_success()
 
     with open(tarball, 'wb') as f:
