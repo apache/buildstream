@@ -8,12 +8,14 @@ from tests.testutils import cli
 
 from buildstream.storage import CasBasedDirectory
 from buildstream.storage import FileBasedDirectory
+from buildstream._artifactcache import ArtifactCache
+from buildstream._artifactcache.cascache import CASCache
 from buildstream import utils
 
 class FakeContext():
     def __init__(self):
         self.config_cache_quota = "65536"
-
+        
     def get_projects(self):
         return []
 
@@ -156,6 +158,8 @@ def directory_not_empty(path):
 def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
+    print("Creating CAS Cache with artifact dir {}".format(tmpdir))
+    fake_context.artifactcache = CASCache(fake_context)
     # Create some fake content
     generator_function(original, tmpdir)
     if original != overlay:
@@ -228,6 +232,8 @@ def test_random_cas_import_fast(cli, tmpdir, original, overlay):
 def _listing_test(tmpdir, root, generator_function):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
+    print("Creating CAS Cache with artifact dir {}".format(tmpdir))
+    fake_context.artifactcache = CASCache(fake_context)
     # Create some fake content
     generator_function(root, tmpdir)
 
@@ -251,3 +257,29 @@ def test_random_directory_listing(cli, tmpdir, root):
 @pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
 def test_fixed_directory_listing(cli, tmpdir, root):
     _listing_test(tmpdir, root, generate_import_roots)
+
+
+
+
+def main():
+    for i in range(1,6):
+        with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
+            test_fixed_directory_listing(None, tmpdirname, i)
+            
+    for i in range(1,11):
+        with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
+            test_random_directory_listing(None, tmpdirname, i)
+
+    for i in range(1,21):
+        for j in range(1,21):
+            with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
+                test_random_cas_import_fast(None, tmpdirname, i, j)
+
+    for i in range(1,len(root_filesets)+1):
+        for j in range(1,len(root_filesets)+1):
+            with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
+                test_fixed_cas_import(None, tmpdirname, i, j)
+                
+                
+if __name__=="__main__":
+    main()
