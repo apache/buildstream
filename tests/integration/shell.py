@@ -28,11 +28,17 @@ DATA_DIR = os.path.join(
 #    config (dict): A project.conf dictionary to composite over the default
 #    mount (tuple): A (host, target) tuple for the `--mount` option
 #    element (str): The element to build and run a shell with
+#    elements (list): Other elements to build and run a shell with
 #    isolate (bool): Whether to pass --isolate to `bst shell`
 #
-def execute_shell(cli, project, command, *, config=None, mount=None, element='base.bst', isolate=False):
+def execute_shell(cli, project, command, *, config=None, mount=None, elements=None, isolate=False):
     # Ensure the element is built
-    result = cli.run(project=project, project_config=config, args=['build', element])
+    if elements is None:
+        elements = ('base.bst',)
+
+    args = ['build', '--']
+    args.extend(elements)
+    result = cli.run(project=project, project_config=config, args=args)
     assert result.exit_code == 0
 
     args = ['shell']
@@ -41,7 +47,9 @@ def execute_shell(cli, project, command, *, config=None, mount=None, element='ba
     if mount is not None:
         host_path, target_path = mount
         args += ['--mount', host_path, target_path]
-    args += [element, '--'] + command
+    args.append('--')
+    args.extend(elements)
+    args += ['--'] + command
 
     return cli.run(project=project, project_config=config, args=args)
 
@@ -158,7 +166,7 @@ def test_no_shell(cli, tmpdir, datafiles):
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
     _yaml.dump(element, os.path.join(element_path, element_name))
 
-    result = execute_shell(cli, project, ['/bin/echo', 'Pegasissies!'], element=element_name)
+    result = execute_shell(cli, project, ['/bin/echo', 'Pegasissies!'], elements=(element_name,))
     assert result.exit_code == 0
     assert result.output == "Pegasissies!\n"
 
@@ -352,5 +360,49 @@ def test_integration_devices(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'shell/integration.bst'
 
-    result = execute_shell(cli, project, ["true"], element=element_name)
+    result = execute_shell(cli, project, ["true"], elements=(element_name,))
     assert result.exit_code == 0
+
+
+# Test multiple element shell
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_shell_multiple_elements(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    result = execute_shell(cli, project, ["sh", "-c", "foo && bar"],
+                           elements=["shell/adds-foo.bst", "shell/adds-bar.bst"])
+    assert result.exit_code == 0
+
+
+# Test multiple element build shell
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_shell_multiple_workspace(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    elements = {'workspace/workspace-mount.bst': os.path.join(cli.directory, 'workspace-mount'),
+                'make/makehello.bst': os.path.join(cli.directory, 'makehello')}
+
+    for element, workspace in elements.items():
+        res = cli.run(project=project, args=['workspace', 'open', element, '--directory', workspace])
+        assert res.exit_code == 0
+
+    for workspace in elements.values():
+        with open(os.path.join(workspace, "workspace-exists"), "w") as f:
+            pass
+
+    # Ensure the dependencies of our build failing element are built
+    result = cli.run(project=project, args=['build', 'base.bst', 'make/makehello.bst'])
+    assert result.exit_code == 0
+
+    # Test that only the first workspace exists, since only the first element may be staged for build,
+    # additional elements may only be staged as extra dependencies.
+    args = ['shell', '--build', '--'] + list(elements)
+    args += ['--', 'sh', '-c',
+             'test -e /buildstream/test/workspace/workspace-mount.bst/workspace-exists && \
+              test ! -e /buildstream/test/make/makehello.bst/workspace-exists']
+    result = cli.run(project=project, args=args)
+    assert result.exit_code == 0
+    assert result.output == ''
