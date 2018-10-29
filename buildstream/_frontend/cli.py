@@ -573,7 +573,7 @@ def show(app, elements, deps, except_, order, format_):
 ##################################################################
 @cli.command(short_help="Shell into an element's sandbox environment")
 @click.option('--build', '-b', 'build_', is_flag=True, default=False,
-              help='Stage dependencies and sources to build')
+              help='Stage dependencies and sources to build the first element')
 @click.option('--sysroot', '-s', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
               help="An existing sysroot")
@@ -582,11 +582,11 @@ def show(app, elements, deps, except_, order, format_):
               help="Mount a file or directory into the sandbox")
 @click.option('--isolate', is_flag=True, default=False,
               help='Create an isolated build sandbox')
-@click.argument('element',
-                type=click.Path(readable=False))
-@click.argument('command', type=click.STRING, nargs=-1)
+@click.argument('elements',
+                type=click.Path(readable=False), nargs=-1,
+                metavar="[ELEMENT]... [--] [COMMAND]...")
 @click.pass_obj
-def shell(app, element, sysroot, mount, isolate, build_, command):
+def shell(app, elements, sysroot, mount, isolate, build_):
     """Run a command in the target element's sandbox environment
 
     This will stage a temporary sysroot for running the target
@@ -600,6 +600,15 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
     directory or with a checkout of the given target, in order
     to use a specific sysroot.
 
+    Multiple element target names ending in .bst may be provided,
+    optionally followed by the command to run in the shell.
+
+    The first argument that doesn't end in .bst is assumed to be the beginning of COMMAND.
+
+    A -- argument may be used to disambiguate between element target names and command arguments
+    and should be used when being driven as part of a script, to prevent mis-parsing,
+    in addition to a -- before the element list.
+
     If no COMMAND is specified, the default is to attempt
     to run an interactive shell.
     """
@@ -607,13 +616,22 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
     from .._project import HostMount
     from .._pipeline import PipelineSelection
 
-    if build_:
-        scope = Scope.BUILD
-    else:
-        scope = Scope.RUN
+    targets = []
+    command = []
+    for i, arg in enumerate(elements):
+        if arg == '--':
+            command = elements[i + 1:]
+            break
+        if not arg.endswith('.bst'):
+            command = elements[i:]
+            break
+        targets.append(arg)
+
+    if not targets:
+        raise AppError('No elements specified to open a shell in')
 
     with app.initialized():
-        dependencies = app.stream.load_selection((element,), selection=PipelineSelection.NONE)
+        dependencies = app.stream.load_selection(targets, selection=PipelineSelection.NONE)
         element = dependencies[0]
         prompt = app.shell_prompt(element)
         mounts = [
@@ -621,7 +639,9 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
             for host_path, path in mount
         ]
         try:
-            exitcode = app.stream.shell([(element, scope)], prompt,
+            elements = tuple((e, Scope.BUILD if i == 0 and build_ else Scope.RUN)
+                             for (i, e) in enumerate(dependencies))
+            exitcode = app.stream.shell(elements, prompt,
                                         directory=sysroot,
                                         mounts=mounts,
                                         isolate=isolate,
