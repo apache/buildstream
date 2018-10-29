@@ -477,12 +477,14 @@ class Stream():
     #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
     #    custom_dir (str): Custom location to create a workspace or false to use default location.
+    #    no_fetch (bool): Disable auto-fetching of targets and related junction(s)
     #
     def workspace_open(self, targets, *,
                        no_checkout,
                        track_first,
                        force,
-                       custom_dir):
+                       custom_dir,
+                       no_fetch):
         # This function is a little funny but it is trying to be as atomic as possible.
 
         if track_first:
@@ -492,14 +494,14 @@ class Stream():
 
         elements, track_elements = self._load(targets, track_targets,
                                               selection=PipelineSelection.REDIRECT,
-                                              track_selection=PipelineSelection.REDIRECT)
+                                              track_selection=PipelineSelection.REDIRECT,
+                                              fetch_subprojects=not no_fetch)
 
         workspaces = self._context.get_workspaces()
 
-        # If we're going to checkout, we need at least a fetch,
-        # if we were asked to track first, we're going to fetch anyway.
+        # If we're going to checkout and we aren't explicitly told not to fetch
         #
-        if not no_checkout or track_first:
+        if not no_checkout and not no_fetch:
             track_elements = []
             if track_first:
                 track_elements = elements
@@ -523,11 +525,11 @@ class Stream():
                 raise StreamError("Element '{}' already has workspace defined at: {}"
                                   .format(target.name, workspace.get_absolute_path()))
 
-            if not no_checkout and target._get_consistency() != Consistency.CACHED:
+            # In case of `--no-fetch` flag, check if sources are available
+            if no_fetch and not no_checkout and target._get_consistency() != Consistency.CACHED:
                 raise StreamError("Could not stage uncached source. For {} ".format(target.name) +
-                                  "Use `--track` to track and " +
-                                  "fetch the latest version of the " +
-                                  "source.")
+                                  "remove `--no-fetch` to automatically fetch and optionally add " +
+                                  "`--track` to update its ref and fetch the latest version.")
 
             if not custom_dir:
                 directory = os.path.abspath(os.path.join(self._context.workspacedir, target.name))

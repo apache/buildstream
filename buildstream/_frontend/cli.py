@@ -724,8 +724,10 @@ def workspace():
 @click.option('--directory', type=click.Path(file_okay=False), default=None,
               help="Only for use when a single Element is given: Set the directory to use to create the workspace")
 @click.argument('elements', nargs=-1, type=click.Path(readable=False), required=True)
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Enable auto-fetching of elements and related junction(s)")
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track_, directory, elements):
+def workspace_open(app, no_checkout, force, track_, directory, elements, no_fetch):
     """Open a workspace for manual source modification"""
 
     with app.initialized():
@@ -733,7 +735,8 @@ def workspace_open(app, no_checkout, force, track_, directory, elements):
                                   no_checkout=no_checkout,
                                   track_first=track_,
                                   force=force,
-                                  custom_dir=directory)
+                                  custom_dir=directory,
+                                  no_fetch=no_fetch)
 
 
 ##################################################################
