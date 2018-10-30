@@ -180,16 +180,8 @@ class CasBasedDirectory(Directory):
         filenode.is_executable = is_executable
         self.index[filename] = IndexEntry(filenode, modified=(filename in self.index))
 
-    def _add_new_link(self, basename, filename):
-        existing_link = self._find_pb2_entry(filename)
-        if existing_link:
-            symlinknode = existing_link
-        else:
-            symlinknode = self.pb2_directory.symlinks.add()
-        symlinknode.name = filename
-        # A symlink node has no digest.
-        symlinknode.target = os.readlink(os.path.join(basename, filename))
-        self.index[filename] = IndexEntry(symlinknode, modified=(existing_link is not None))
+    def _copy_link_from_filesystem(self, basename, filename):
+        self._add_new_link_direct(filename, os.readlink(os.path.join(basename, filename)))
 
     def _add_new_link_direct(self, name, target):
         existing_link = self._find_pb2_entry(name)
@@ -462,7 +454,7 @@ class CasBasedDirectory(Directory):
                 result.combine(subdir_result)
             elif os.path.islink(import_file):
                 if self._check_replacement(entry, path_prefix, result):
-                    self._add_new_link(source_directory, entry)
+                    self._copy_link_from_filesystem(source_directory, entry)
                     result.files_written.append(relative_pathname)
             elif os.path.isdir(import_file):
                 # A plain directory which already exists isn't a problem; just ignore it.
