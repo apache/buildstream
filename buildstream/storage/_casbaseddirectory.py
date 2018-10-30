@@ -365,26 +365,32 @@ class CasBasedDirectory(Directory):
 
                     if isinstance(f, CasBasedDirectory):
                         directory = f
-
-                    else:
-                        # This is a file or None (i.e. broken symlink)
-                        if f is None and force_create:
-                            directory = directory.descend(c, create=True)
-                        elif components and force_create:
-                            # Oh dear. We have components left to resolve, but the one we're trying to resolve points to a file.
-                            print("Trying to resolve {}, but found {} was a file.".format(symlink.target, c))
-                            self.delete_entry(c)
-                            directory = directory.descend(c, create=True)
-                            #raise VirtualDirectoryError("Reached a file called {} while trying to resolve a symlink; cannot proceed".format(c))
+                    elif isinstance(f, remote_execution_pb2.FileNode):
+                        # F is a file
+                        if components:
+                            # We have components still to resolve, but one of the path components
+                            # is a file.
+                            if force_create:
+                                self.delete_entry(c)
+                                directory = directory.descend(c, create=True)
+                            else:
+                                return f # TODO: Why return f? We've got components left and hit a file; this should be an error.
+                                #raise VirtualDirectoryError("Reached a file called {} while trying to resolve a symlink; cannot proceed".format(c))
                         else:
+                            # It's a file, but there's no components left, so just return that.
                             return f
+                    else:
+                        # f is none, which covers many cases
+                        if force_create:
+                            directory = directory.descend(c, create=True)
+                        else:
+                            return None
                 else:
                     if force_create:
                         directory = directory.descend(c, create=True)
                     else:
                         return None
-
-        # Shouldn't get here.
+        # You can only exit the while loop with a return, so you shouldn't be here.
         
 
     def _check_replacement(self, name, path_prefix, fileListResult):
