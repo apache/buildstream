@@ -96,7 +96,7 @@ class Project():
         self.name = None
 
         # The project directory
-        self.directory = self._ensure_project_dir(directory)
+        self.directory = self._find_project_dir(directory)
 
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
@@ -650,7 +650,7 @@ class Project():
         # Source url aliases
         output._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
 
-    # _ensure_project_dir()
+    # _find_project_dir()
     #
     # Returns path of the project directory, if a configuration file is found
     # in given directory or any of its parent directories.
@@ -661,7 +661,7 @@ class Project():
     # Raises:
     #    LoadError if project.conf is not found
     #
-    def _ensure_project_dir(self, directory):
+    def _find_project_dir(self, directory):
         directory = os.path.abspath(directory)
         while not os.path.isfile(os.path.join(directory, _PROJECT_CONF_FILE)):
             parent_dir = os.path.dirname(directory)
