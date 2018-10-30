@@ -141,27 +141,6 @@ class CasBasedDirectory(Directory):
         # We don't need to do anything more than that; files were already added ealier, and symlinks are
         # part of the directory structure.
 
-    def create_directory(self, name: str) -> Directory:
-        """Creates a directory if it does not already exist. This does not
-        cause an error if something exists; it will remove files and
-        symlinks to files which have the same name in this
-        directory. Symlinks to directories with the name 'name' are
-        unaltered; it's assumed that the target of that symlink will
-        be used.
-
-        """
-        existing_item = self._find_pb2_entry(name)
-        if isinstance(existing_item, remote_execution_pb2.FileNode):
-            # Directory imported over file with same name
-            self.delete_entry(name)
-        elif isinstance(existing_item, remote_execution_pb2.SymlinkNode):
-            # Directory imported over symlink with same source name
-            if self._symlink_target_is_directory(existing_item):
-                return self._force_resolve(name) # That's fine; any files in the source directory should end up at the target of the symlink.
-            else:
-                self.delete_entry(name) # Symlinks to files get replaced
-        return self.descend(name, create=True) # Creates the directory if it doesn't already exist.
-
 
     def _find_pb2_entry(self, name):
         if name in self.index:
@@ -563,7 +542,7 @@ class CasBasedDirectory(Directory):
                         # There's either a symlink (valid or not) or existing directory with this name, so do nothing.
                         pass
                 else:
-                    self.create_directory(f)                    
+                    self.descend(f, create=True)
             else:
                 # We're importing a file or symlink - replace anything with the same name.
                 print("Import of file/symlink {} into this directory. Removing anything existing...".format(f))
