@@ -559,8 +559,7 @@ class CasBasedDirectory(Directory):
         """ A full import is significantly quicker than a partial import, because we can just
         replace one directory with another's hash, without doing any recursion.
         """
-        if files is None:
-            files = source_directory.list_relative_paths()
+
         # You must pass a list into _partial_import (not a generator)
         return self._partial_import_cas_into_cas(source_directory, list(files))
 
@@ -650,26 +649,26 @@ class CasBasedDirectory(Directory):
         can_link (bool): Ignored, since hard links do not have any meaning within CAS.
         """
 
-        print("Directory before import: {}".format(self.show_files_recursive()))
-
-        if isinstance(external_pathspec, CasBasedDirectory):
-            print("-"*80 + "Performing direct CAS-to-CAS import")
-            result = self._import_cas_into_cas(external_pathspec, files=files)
-            print("Result of cas-to-cas import: {}".format(self.show_files_recursive()))
-        else:
-            print("-"*80 + "Performing initial import")
-            if isinstance(external_pathspec, FileBasedDirectory):
-                source_directory = external_pathspec.get_underlying_directory()
-            else:
-                source_directory = external_pathspec
-            if files is None:
+        if files is None:
+            if isinstance(external_pathspec, str):
                 files = list_relative_paths(external_pathspec)
+            else:
+                assert isinstance(external_pathspec, Directory)
+                files = external_pathspec.list_relative_paths()
+
+        if isinstance(external_pathspec, FileBasedDirectory):
+            source_directory = external_pathspec.get_underlying_directory()
             result = self._import_files_from_directory(source_directory, files=files)
+        elif isinstance(external_pathspec, str):
+            source_directory = external_pathspec
+            result = self._import_files_from_directory(source_directory, files=files)
+        else:
+            assert isinstance(external_pathspec, CasBasedDirectory)
+            result = self._import_cas_into_cas(external_pathspec, files=files)
 
         # TODO: No notice is taken of report_written, update_utimes or can_link.
         # Current behaviour is to fully populate the report, which is inefficient,
         # but still correct.
-
 
         # We need to recalculate and store the hashes of all directories both
         # up and down the tree; we have changed our directory by importing files
