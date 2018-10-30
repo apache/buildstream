@@ -70,7 +70,7 @@ class Message():
         self.elapsed = elapsed            # The elapsed time, in timed messages
         self.depth = depth                # The depth of a timed message
         self.logfile = logfile            # The log file path where commands took place
-        self.sandbox = sandbox            # The sandbox directory where an error occurred (if any)
+        self.sandbox = sandbox            # The error that caused this message used a sandbox
         self.pid = os.getpid()            # The process pid
         self.unique_id = unique_id        # The plugin object ID issueing the message
         self.task_id = task_id            # The plugin object ID of the task

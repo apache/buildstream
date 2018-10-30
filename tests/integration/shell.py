@@ -302,46 +302,33 @@ def test_workspace_visible(cli, tmpdir, datafiles):
     assert result.output == workspace_hello
 
 
-# Test that we can see the workspace files in a shell
-@pytest.mark.integration
+# Test that '--sysroot' works
 @pytest.mark.datafiles(DATA_DIR)
-def test_sysroot_workspace_visible(cli, tmpdir, datafiles):
+def test_sysroot(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    workspace = os.path.join(cli.directory, 'workspace')
-    element_name = 'workspace/workspace-mount-fail.bst'
+    base_element = "base/base-alpine.bst"
+    # test element only needs to be something lightweight for this test
+    test_element = "script/script.bst"
+    checkout_dir = os.path.join(str(tmpdir), 'alpine-sysroot')
+    test_file = 'hello'
 
-    # Open a workspace on our build failing element
-    #
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
-    assert res.exit_code == 0
+    # Build and check out a sysroot
+    res = cli.run(project=project, args=['build', base_element])
+    res.assert_success()
+    res = cli.run(project=project, args=['checkout', base_element, checkout_dir])
+    res.assert_success()
 
-    # Ensure the dependencies of our build failing element are built
-    result = cli.run(project=project, args=['build', element_name])
-    result.assert_main_error(ErrorDomain.STREAM, None)
+    # Mutate the sysroot
+    test_path = os.path.join(checkout_dir, test_file)
+    with open(test_path, 'w') as f:
+        f.write('hello\n')
 
-    # Discover the sysroot of the failed build directory, after one
-    # failed build, there should be only one directory there.
-    #
-    build_base = os.path.join(cli.directory, 'build')
-    build_dirs = os.listdir(path=build_base)
-    assert len(build_dirs) == 1
-    build_dir = os.path.join(build_base, build_dirs[0])
-
-    # Obtain a copy of the hello.c content from the workspace
-    #
-    workspace_hello_path = os.path.join(cli.directory, 'workspace', 'hello.c')
-    assert os.path.exists(workspace_hello_path)
-    with open(workspace_hello_path, 'r') as f:
-        workspace_hello = f.read()
-
-    # Cat the hello.c file from a bst shell command, and assert
-    # that we got the same content here
-    #
-    result = cli.run(project=project, args=[
-        'shell', '--build', '--sysroot', build_dir, element_name, '--', 'cat', 'hello.c'
+    # Shell into the sysroot and check the test file exists
+    res = cli.run(project=project, args=[
+        'shell', '--build', '--sysroot', checkout_dir, test_element, '--',
+        'grep', '-q', 'hello', '/' + test_file
     ])
-    assert result.exit_code == 0
-    assert result.output == workspace_hello
+    res.assert_success()
 
 
 # Test system integration commands can access devices in /dev
