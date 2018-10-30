@@ -141,19 +141,6 @@ class CasBasedDirectory(Directory):
         # We don't need to do anything more than that; files were already added ealier, and symlinks are
         # part of the directory structure.
 
-    def _add_new_blank_directory(self, name) -> Directory:
-        bst_dir = CasBasedDirectory(self.context, parent=self, filename=name)
-        new_pb2_dirnode = self.pb2_directory.directories.add()
-        new_pb2_dirnode.name = name
-        # Calculate the hash for an empty directory
-        if name in self.index:
-            raise VirtualDirectoryError("Creating directory {} would overwrite an existing item in {}"
-                                        .format(name, str(self)))
-        new_pb2_directory = remote_execution_pb2.Directory()
-        self.cas_cache.add_object(digest=new_pb2_dirnode.digest, buffer=new_pb2_directory.SerializeToString())
-        self.index[name] = IndexEntry(new_pb2_dirnode, buildstream_object=bst_dir)
-        return bst_dir
-
     def create_directory(self, name: str) -> Directory:
         """Creates a directory if it does not already exist. This does not
         cause an error if something exists; it will remove files and
@@ -517,47 +504,7 @@ class CasBasedDirectory(Directory):
         return result
 
 
-    def _save(self, name):
-        """ Saves this directory into the content cache as a named ref. This function is not
-        currently in use, but may be useful later. """
-        self._recalculate_recursing_up()
-        self._recalculate_recursing_down()
-        (rel_refpath, refname) = os.path.split(name)
-        refdir = os.path.join(self.cas_directory, 'refs', 'heads', rel_refpath)
-        refname = os.path.join(refdir, refname)
-
-        if not os.path.exists(refdir):
-            os.makedirs(refdir)
-        with open(refname, "wb") as f:
-            f.write(self.ref.SerializeToString())
-
-    def find_updated_files(self, modified_directory, prefix=""):
-        """Find the list of written and overwritten files that would result
-        from importing 'modified_directory' into this one.  This does
-        not change either directory. The reason this exists is for
-        direct imports of cas directories into other ones, which can
-        be done by simply replacing a hash, but we still need the file
-        lists.
-
-        """
-        result = FileListResult()
-        for entry in modified_directory.pb2_directory.directories:
-            existing_dir = self._find_pb2_entry(entry.name)
-            if existing_dir:
-                updates_files = existing_dir.find_updated_files(modified_directory.descend(entry.name),
-                                                                os.path.join(prefix, entry.name))
-                result.combine(updated_files)
-            else:
-                for f in source_directory.descend(entry.name).list_relative_paths():
-                    result.files_written.append(os.path.join(prefix, f))
-                    # None of these can overwrite anything, since the original files don't exist
-        for entry in modified_directory.pb2_directory.files + modified_directory.pb2_directory.symlinks:
-            if self._find_pb2_entry(entry.name):
-                result.files_overwritten.apppend(os.path.join(prefix, entry.name))
-            result.file_written.apppend(os.path.join(prefix, entry.name))
-        return result
-
-    def files_in_subdir(sorted_files, dirname):
+    def _files_in_subdir(sorted_files, dirname):
         """Filters sorted_files and returns only the ones which have
            'dirname' as a prefix, with that prefix removed.
 
@@ -589,7 +536,7 @@ class CasBasedDirectory(Directory):
                 dirname = components[0]
                 if dirname not in processed_directories:
                     # Now strip off the first directory name and import files recursively.
-                    subcomponents = CasBasedDirectory.files_in_subdir(files, dirname)
+                    subcomponents = CasBasedDirectory._files_in_subdir(files, dirname)
                     # We will fail at this point if there is a file or symlink to file called 'dirname'.
                     if dirname in self.index:
                         x = self._resolve(dirname, force_create=True)
@@ -638,43 +585,6 @@ class CasBasedDirectory(Directory):
                         assert(isinstance(item, remote_execution_pb2.SymlinkNode))
                         self._add_new_link_direct(name=f, target=item.target)
         return result
-
-    def transfer_node_contents(destination, source):
-        """Transfers all fields from the source PB2 node into the
-        destination. Destination and source must be of the same type and must
-        be a FileNode, SymlinkNode or DirectoryNode.
-        """
-        assert(type(destination) == type(source))
-        destination.name = source.name
-        if isinstance(destination, remote_execution_pb2.FileNode):
-            destination.digest.hash = source.digest.hash
-            destination.digest.size_bytes = source.digest.size_bytes
-            destination.is_executable = source.is_executable
-        elif isinstance(destination, remote_execution_pb2.SymlinkNode):
-            destination.target = source.target
-        elif isinstance(destination, remote_execution_pb2.DirectoryNode):
-            destination.digest.hash = source.digest.hash
-            destination.digest.size_bytes = source.digest.size_bytes
-        else:
-            raise VirtualDirectoryError("Incompatible type '{}' used as destination for transfer_node_contents"
-                                        .format(destination.type))
-
-    def _add_directory_from_node(self, source_node, source_casdir, can_hardlink=False):
-        # Duplicate the given node and add it to our index with a CasBasedDirectory object.
-        # No existing entry with the source node's name can exist.
-        # source_casdir is only needed if can_hardlink is True.
-        assert(self._find_pb2_entry(source_node.name) is None)
-
-        if can_hardlink:
-            new_dir_node = self.pb2_directory.directories.add()
-            CasBasedDirectory.transfer_node_contents(new_dir_node, source_node)
-            self.index[source_node.name] = IndexEntry(source_node, buildstream_object=source_casdir, modified=True)
-        else:
-            new_dir_node = self.pb2_directory.directories.add()
-            CasBasedDirectory.transfer_node_contents(new_dir_node, source_node)
-            buildStreamDirectory = CasBasedDirectory(self.context, ref=source_node.digest,
-                                                     parent=self, filename=source_node.name)
-            self.index[source_node.name] = IndexEntry(source_node, buildstream_object=buildStreamDirectory, modified=True)
 
     def _import_cas_into_cas(self, source_directory, files=None):
         """ A full import is significantly quicker than a partial import, because we can just
@@ -918,12 +828,6 @@ class CasBasedDirectory(Directory):
             elif isinstance(v.pb_object, remote_execution_pb2.FileNode) and v.modified:
                 filelist.append(k)
         return filelist
-
-    def _contains_only_directories(self):
-        for (k, v) in self.index.items():
-            if not isinstance(v.buildstream_object, CasBasedDirectory):
-                return False
-        return True
 
     def list_relative_paths(self, relpath=""):
         """Provide a list of all relative paths.
