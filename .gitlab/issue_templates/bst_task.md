@@ -15,3 +15,5 @@
 [//]: # (Acceptance criteria should follow the S.M.A.R.T. principle https://en.wikipedia.org/wiki/SMART_criteria )
 
 ----
+[//]: # (To review information about possible relevant labels for this issue please view the list of labels: https://gitlab.com/BuildStream/buildstream/labels)
+
