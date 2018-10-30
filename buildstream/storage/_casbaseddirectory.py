@@ -87,9 +87,7 @@ class CasBasedDirectory(Directory):
         if ref:
             with open(self.cas_cache.objpath(ref), 'rb') as f:
                 self.pb2_directory.ParseFromString(f.read())
-                print("Opening ref {} and parsed into directory containing: {} {} {}.".format(ref.hash, [d.name for d in self.pb2_directory.directories],
-                                                                                        [d.name for d in self.pb2_directory.symlinks],
-                                                                                        [d.name for d in self.pb2_directory.files]))
+
         self.ref = ref
         self.index = OrderedDict()
         self.parent = parent
@@ -140,7 +138,6 @@ class CasBasedDirectory(Directory):
             self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         # We don't need to do anything more than that; files were already added ealier, and symlinks are
         # part of the directory structure.
-
 
     def _find_pb2_entry(self, name):
         if name in self.index:
