@@ -156,8 +156,8 @@ class CasBasedDirectory(Directory):
             self.delete_entry(name)
         elif isinstance(existing_item, remote_execution_pb2.SymlinkNode):
             # Directory imported over symlink with same source name
-            if self.symlink_target_is_directory(existing_item):
-                return self._resolve_symlink_or_directory(name) # That's fine; any files in the source directory should end up at the target of the symlink.
+            if self._symlink_target_is_directory(existing_item):
+                return self._force_resolve(name) # That's fine; any files in the source directory should end up at the target of the symlink.
             else:
                 self.delete_entry(name) # Symlinks to files get replaced
         return self.descend(name, create=True) # Creates the directory if it doesn't already exist.
@@ -303,7 +303,7 @@ class CasBasedDirectory(Directory):
         else:
             return self
 
-    def _resolve_symlink_or_directory(self, name):
+    def _force_resolve(self, name):
         """Used only by _import_files_from_directory. Tries to resolve a
         directory name or symlink name. 'name' must be an entry in this
         directory. It must be a single symlink or directory name, not a path
@@ -328,11 +328,6 @@ class CasBasedDirectory(Directory):
         print("Is {} followable? Resolved to {}".format(name, target))
         return isinstance(target, CasBasedDirectory) or target is None
 
-    def _resolve_symlink(self, node, force_create=True):
-        """Same as _resolve_symlink_or_directory but takes a SymlinkNode.
-        """
-        return self._resolve(node.name, force_create=True)
-    
     def _resolve(self, name, absolute_symlinks_resolve=True, force_create=False, first_seen_object = None):
         """ Resolves any name to an object. If the name points to a symlink in
         this directory, it returns the thing it points to,
@@ -458,7 +453,7 @@ class CasBasedDirectory(Directory):
         as a directory tree is descended. """
         if directory_name in self.index:
             if self._is_followable(directory_name): 
-                subdir = self._resolve_symlink_or_directory(directory_name)
+                subdir = self._force_resolve(directory_name)
             else:
                 print("Overwriting unfollowable thing {}".format(directory_name))
                 self.delete_entry(directory_name)
@@ -513,8 +508,8 @@ class CasBasedDirectory(Directory):
             dirname += os.path.sep
         return [f[len(dirname):] for f in sorted_files if f.startswith(dirname)]
 
-    def symlink_target_is_directory(self, symlink_node):
-        x = self._resolve_symlink(symlink_node, force_create=False)
+    def _symlink_target_is_directory(self, symlink_node):
+        x = self._resolve(symlink_node.name)
         return isinstance(x, CasBasedDirectory)
 
     def _partial_import_cas_into_cas(self, source_directory, files, path_prefix="", file_list_required=True):
@@ -547,8 +542,8 @@ class CasBasedDirectory(Directory):
                         else:
                             dest_subdir = x
                     else:
-                        self.create_directory(dirname)
-                        dest_subdir = self._resolve_symlink_or_directory(dirname)
+                        self.create_directory(dirname) # Unnecssary? Why force_resolve if we resolve?
+                        dest_subdir = self._force_resolve(dirname)
                     src_subdir = source_directory.descend(dirname)
                     import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
                                                                              path_prefix=fullname, file_list_required=file_list_required)
