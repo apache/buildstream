@@ -486,9 +486,6 @@ class CasBasedDirectory(Directory):
             dirname += os.path.sep
         return [f[len(dirname):] for f in sorted_files if f.startswith(dirname)]
 
-    def _symlink_target_is_directory(self, symlink_node):
-        x = self._resolve(symlink_node.name)
-        return isinstance(x, CasBasedDirectory)
 
     def _partial_import_cas_into_cas(self, source_directory, files, path_prefix="", file_list_required=True):
         """ Import only the files and symlinks listed in 'files' from source_directory to this one.
