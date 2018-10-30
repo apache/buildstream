@@ -195,7 +195,6 @@ class CasBasedDirectory(Directory):
         symlinknode.target = target
         self.index[name] = IndexEntry(symlinknode, modified=(existing_link is not None))
 
-        
     def delete_entry(self, name):
         for collection in [self.pb2_directory.files, self.pb2_directory.symlinks, self.pb2_directory.directories]:
             for thing in collection:
@@ -252,9 +251,6 @@ class CasBasedDirectory(Directory):
         else:
             if create:
                 newdir = self._add_directory(subdirectory_spec[0])
-                print("Created new directory called {} and descending into it".format(subdirectory_spec[0]))
-                #if subdirectory_spec[0] == "broken":
-                #    assert False
                 return newdir.descend(subdirectory_spec[1:], create)
             else:
                 error = "No entry called '{}' found in {}. There are directories called {}."
@@ -293,23 +289,31 @@ class CasBasedDirectory(Directory):
         if isinstance(self.index[name].buildstream_object, Directory):
             return True
         target = self._resolve(name)
-        print("Is {} followable? Resolved to {}".format(name, target))
-        return isinstance(target, CasBasedDirectory) or target is None
+        return isinstance(target, CasBasedDirectory) or target is None  #  TODO: But why return True if it's None (broken link/circular loop)? Surely that is against the docstring.
 
     def _resolve(self, name, absolute_symlinks_resolve=True, force_create=False, first_seen_object = None):
         """ Resolves any name to an object. If the name points to a symlink in
         this directory, it returns the thing it points to,
-        recursively. Returns a CasBasedDirectory, FileNode or
-        None.
+        recursively.
+
+        Returns a CasBasedDirectory, FileNode or
+        None. None indicates any of these cases:
+        * 'name' does not exist in this directory
+        * 'name' is a broken symlink,
+        * 'name' points to an infinite symlink loop.
+        * 'name' points to an absolute symlink and absolute_symlinks_resolve is False.
 
         If force_create is on, will attempt to create directories to make symlinks and directories resolve.
         If force_create is off, this will never alter this directory.
 
         """
-        # First check if it's a normal object and return that
 
+        # TODO: first_seen_object isn't sufficient. We could get into a loop after following one link and not detect it.
+        # TODO: 'None' is overloaded, maybe we should use exceptions and leave 'None' for actual nonexistent things.
         if name not in self.index:
             return None
+
+        # First check if it's a normal object and return that
         index_entry = self.index[name]
         if isinstance(index_entry.buildstream_object, Directory):
             return index_entry.buildstream_object
@@ -325,7 +329,6 @@ class CasBasedDirectory(Directory):
                 ### Infinite symlink loop detected ###
                 return None
         
-        print("Resolving '{}': This is a symlink node in the current directory.".format(name))
         symlink = index_entry.pb_object
         components = symlink.target.split(CasBasedDirectory._pb2_path_sep)
 
@@ -336,12 +339,12 @@ class CasBasedDirectory(Directory):
                 # Discard the first empty element
                 components.pop(0)
             else:
-                print("  _resolve: Absolute symlink, which we won't resolve.")
+                # Unresolvable absolute symlink
                 return None
         else:
             start_directory = self
+
         directory = start_directory
-        print("Resolve {}: starting from {}".format(symlink.target, start_directory))
         while True:
             if not components:
                 # We ran out of path elements and ended up in a directory
@@ -357,8 +360,9 @@ class CasBasedDirectory(Directory):
                 # returns the root.                
             else:
                 if c in directory.index:
+                    # Recursive resolve and continue
                     f = directory._resolve(c, absolute_symlinks_resolve, first_seen_object=first_seen_object)
-                    # Ultimately f must now be a file or directory
+
                     if isinstance(f, CasBasedDirectory):
                         directory = f
 
