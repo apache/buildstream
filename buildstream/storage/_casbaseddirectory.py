@@ -542,8 +542,7 @@ class CasBasedDirectory(Directory):
                         else:
                             dest_subdir = x
                     else:
-                        self.create_directory(dirname) # Unnecssary? Why force_resolve if we resolve?
-                        dest_subdir = self._force_resolve(dirname)
+                        dest_subdir = self.descend(dirname, create=True)
                     src_subdir = source_directory.descend(dirname)
                     import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
                                                                              path_prefix=fullname, file_list_required=file_list_required)
