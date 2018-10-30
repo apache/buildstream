@@ -12,10 +12,11 @@ from buildstream._artifactcache import ArtifactCache
 from buildstream._artifactcache.cascache import CASCache
 from buildstream import utils
 
+
 class FakeContext():
     def __init__(self):
         self.config_cache_quota = "65536"
-        
+
     def get_projects(self):
         return []
 
@@ -31,8 +32,8 @@ root_filesets = [
     [('a/b/d', 'D', '')],
     [('a/b/c', 'S', '/a/b/d')],
     [('a/b/d', 'S', '/a/b/c')],
-    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')], 
-    [('a/b/c', 'D', ''), ('a/b/d', 'S', '/a/b/c')], 
+    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')],
+    [('a/b/c', 'D', ''), ('a/b/d', 'S', '/a/b/c')],
     [('a/b', 'F', 'This is textfile 1\n')],
     [('a/b/c', 'F', 'This is textfile 1\n')],
     [('a/b/c', 'D', '')]
@@ -61,7 +62,7 @@ def generate_import_roots(rootno, directory):
 
 
 def generate_random_root(rootno, directory):
-    random.seed(RANDOM_SEED+rootno)
+    random.seed(RANDOM_SEED + rootno)
     rootname = "root{}".format(rootno)
     rootdir = os.path.join(directory, "content", rootname)
     things = []
@@ -164,10 +165,9 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
     generator_function(original, tmpdir)
     if original != overlay:
         generator_function(overlay, tmpdir)
-        
+
     d = create_new_casdir(original, fake_context, tmpdir)
 
-    #duplicate_cas = CasBasedDirectory(fake_context, ref=copy.copy(d.ref))
     duplicate_cas = create_new_casdir(original, fake_context, tmpdir)
 
     assert duplicate_cas.ref.hash == d.ref.hash
@@ -179,7 +179,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
     roundtrip_dir = os.path.join(tmpdir, "roundtrip")
     d2.export_files(roundtrip_dir)
     d.export_files(export_dir)
-    
+
     if verify_contents:
         for item in root_filesets[overlay - 1]:
             (path, typename, content) = item
@@ -199,8 +199,10 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
                     assert os.path.islink(realpath)
                     assert os.readlink(realpath) == content
             elif typename == 'D':
-                # We can't do any more tests than this because it depends on things present in the original. Blank directories
-                # here will be ignored and the original left in place.
+                # We can't do any more tests than this because it
+                # depends on things present in the original. Blank
+                # directories here will be ignored and the original
+                # left in place.
                 assert os.path.lexists(realpath)
 
     # Now do the same thing with filebaseddirectories and check the contents match
@@ -215,20 +217,17 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
     assert duplicate_cas.ref.hash == d.ref.hash
 
-    #d3 = create_new_casdir(original, fake_context, tmpdir)
-    #d4 = create_new_filedir(overlay, tmpdir)
-    #d3.import_files(d2)
-    #assert d.ref.hash == d3.ref.hash
 
-@pytest.mark.parametrize("original,overlay", combinations(range(1,len(root_filesets)+1)))
+@pytest.mark.parametrize("original,overlay", combinations(range(1, len(root_filesets) + 1)))
 def test_fixed_cas_import(cli, tmpdir, original, overlay):
     _import_test(tmpdir, original, overlay, generate_import_roots, verify_contents=True)
 
-@pytest.mark.parametrize("original,overlay", combinations(range(1,11)))
+
+@pytest.mark.parametrize("original,overlay", combinations(range(1, 11)))
 def test_random_cas_import_fast(cli, tmpdir, original, overlay):
     _import_test(tmpdir, original, overlay, generate_random_root, verify_contents=False)
 
-    
+
 def _listing_test(tmpdir, root, generator_function):
     fake_context = FakeContext()
     fake_context.artifactdir = tmpdir
@@ -248,38 +247,37 @@ def _listing_test(tmpdir, root, generator_function):
     print("filelist for root {} via CasBasedDirectory:".format(root))
     print("{}".format(filelist2))
     assert filelist == filelist2
-    
 
-@pytest.mark.parametrize("root", range(1,11))
+
+@pytest.mark.parametrize("root", range(1, 11))
 def test_random_directory_listing(cli, tmpdir, root):
     _listing_test(tmpdir, root, generate_random_root)
-    
+
+
 @pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
 def test_fixed_directory_listing(cli, tmpdir, root):
     _listing_test(tmpdir, root, generate_import_roots)
 
 
-
-
 def main():
-    for i in range(1,6):
+    for i in range(1, 6):
         with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
             test_fixed_directory_listing(None, tmpdirname, i)
-            
-    for i in range(1,11):
+
+    for i in range(1, 11):
         with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
             test_random_directory_listing(None, tmpdirname, i)
 
-    for i in range(1,21):
-        for j in range(1,21):
+    for i in range(1, 21):
+        for j in range(1, 21):
             with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
                 test_random_cas_import_fast(None, tmpdirname, i, j)
 
-    for i in range(1,len(root_filesets)+1):
-        for j in range(1,len(root_filesets)+1):
+    for i in range(1, len(root_filesets) + 1):
+        for j in range(1, len(root_filesets) + 1):
             with tempfile.TemporaryDirectory(prefix="/home/jimmacarthur/.cache/buildstream/cas") as tmpdirname:
                 test_fixed_cas_import(None, tmpdirname, i, j)
-                
-                
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     main()
