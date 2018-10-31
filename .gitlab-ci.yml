@@ -9,6 +9,7 @@ stages:
   - prepare
   - test
   - post
+  - benchmark
 
 #####################################################
 #                  Prepare stage                    #
@@ -298,3 +299,22 @@ pages:
   - master
   except:
   - schedules
+
+# Trigger benchmarking
+# https://gitlab.com/BuildStream/benchmarks
+# The "token" is a trigger token provided by the gitlab ui.
+# The "ref" represents the target benchmarking branch (master).
+# The "variable[BUILDSTREAM_COMMIT_SHA]" allows the Buildstream
+#   sha commit that triggers the benchmarking build to be shared
+#   with the benchmark build (future use).
+
+trigger_benchmark:
+  stage: benchmark
+  dependencies:
+  - pages
+  script:
+    - "curl request POST --form token=7cf84951174c387bc23d0afbb1acad --form ref=master --form variables[BUILDSTREAM_COMMIT_SHA]=$CI_COMMIT_SHA https://gitlab.com/api/v4/projects/BuildStream%2Fbenchmarks/trigger/pipeline"
+  only:
+    refs:
+      - master
+  allow_failure: true
