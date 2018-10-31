@@ -1259,3 +1259,34 @@ def _message_digest(message_buffer):
     digest.hash = sha.hexdigest()
     digest.size_bytes = len(message_buffer)
     return digest
+
+
+# _search_upward_for_files()
+#
+# Searches upwards (from directory, then directory's parent directory...)
+# for any of the files listed in `filenames`.
+#
+# If multiple filenames are specified, and present in the same directory,
+# the first filename in the list will be returned.
+#
+# Args:
+#    directory (str): The directory to begin searching for files from
+#    filenames (list of str): The names of files to search for
+#
+# Returns:
+#    (str): The directory a file was found in, or None
+#    (str): The name of the first file that was found in that directory, or None
+#
+def _search_upward_for_files(directory, filenames):
+    directory = os.path.abspath(directory)
+    while True:
+        for filename in filenames:
+            file_path = os.path.join(directory, filename)
+            if os.path.isfile(file_path):
+                return directory, filename
+
+        parent_dir = os.path.dirname(directory)
+        if directory == parent_dir:
+            # i.e. we've reached the root of the filesystem
+            return None, None
+        directory = parent_dir
