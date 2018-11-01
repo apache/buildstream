@@ -880,3 +880,12 @@ def source_bundle(app, element, force, directory,
                                  force=force,
                                  compression=compression,
                                  except_targets=except_)
+
+
+#############################################################
+#                     Artifact Command                      #
+#############################################################
+@cli.group(short_help="Manipulate cached Artifacts")
+def artifact():
+    """Manipulate cached Artifacts"""
+    pass

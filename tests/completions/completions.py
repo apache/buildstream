@@ -6,6 +6,7 @@ from tests.testutils import cli
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 MAIN_COMMANDS = [
+    'artifact ',
     'build ',
     'checkout ',
     'fetch ',
