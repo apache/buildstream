@@ -116,6 +116,18 @@ def complete_target(args, incomplete):
     return complete_list
 
 
+def complete_artifact(args, incomplete):
+    from .._context import Context
+    ctx = Context()
+
+    config = None
+    for i, arg in enumerate(args):
+        if arg in ('-c', '--config'):
+            config = args[i + 1]
+    ctx.load(config)
+    return [ref for ref in ctx.artifactcache.cas.list_refs() if ref.startswith(incomplete)]
+
+
 def override_completions(cmd, cmd_param, args, incomplete):
     """
     :param cmd_param: command definition
@@ -130,13 +142,15 @@ def override_completions(cmd, cmd_param, args, incomplete):
     # We can't easily extend click's data structures without
     # modifying click itself, so just do some weak special casing
     # right here and select which parameters we want to handle specially.
-    if isinstance(cmd_param.type, click.Path) and \
-       (cmd_param.name == 'elements' or
-        cmd_param.name == 'element' or
-        cmd_param.name == 'except_' or
-        cmd_param.opts == ['--track'] or
-        cmd_param.opts == ['--track-except']):
-        return complete_target(args, incomplete)
+    if isinstance(cmd_param.type, click.Path):
+        if (cmd_param.name == 'elements' or
+                cmd_param.name == 'element' or
+                cmd_param.name == 'except_' or
+                cmd_param.opts == ['--track'] or
+                cmd_param.opts == ['--track-except']):
+            return complete_target(args, incomplete)
+        if cmd_param.name == 'artifacts':
+            return complete_artifact(args, incomplete)
 
     raise CompleteUnhandled()
 
