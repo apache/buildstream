@@ -763,6 +763,28 @@ class CasBasedDirectory(Directory):
         else:
             self._mark_directory_unmodified()
 
+    def _lightweight_resolve_to_index(self, path):
+        """A lightweight function for transforming paths into IndexEntry
+        objects. This does not follow symlinks.
+
+        path: The string to resolve. This should be a series of path
+        components separated by the protocol buffer path separator
+        _pb2_path_sep.
+
+        Returns: the IndexEntry found, or None if any of the path components were not present.
+
+        """
+        directory = self
+        path_components = path.split(CasBasedDirectory._pb2_path_sep)
+        for component in path_components[:-1]:
+            if component not in directory.index:
+                return None
+            if isinstance(directory.index[component].buildstream_object, CasBasedDirectory):
+                directory = directory.index[component].buildstream_object
+            else:
+                return None
+        return directory.index.get(path_components[-1], None)
+
     def list_modified_paths(self):
         """Provide a list of relative paths which have been modified since the
         last call to mark_unmodified.
@@ -770,18 +792,13 @@ class CasBasedDirectory(Directory):
         Return value: List(str) - list of modified paths
         """
 
-        filelist = []
-        for (k, v) in self.index.items():
-            if isinstance(v.buildstream_object, CasBasedDirectory):
-                filelist.extend([k + os.path.sep + x for x in v.buildstream_object.list_modified_paths()])
-            elif isinstance(v.pb_object, remote_execution_pb2.FileNode) and v.modified:
-                filelist.append(k)
-        return filelist
+        for p in self.list_relative_paths():
+            i = self._lightweight_resolve_to_index(p)
+            if i and i.modified:
+                yield p
 
     def list_relative_paths(self, relpath=""):
         """Provide a list of all relative paths.
-
-        NOTE: This list is not in the same order as utils.list_relative_paths.
 
         Return value: List(str) - list of all paths
         """
