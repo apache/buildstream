@@ -1049,6 +1049,12 @@ class ChainMap(collections.ChainMap):
         for key in clearable:
             del self[key]
 
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
 
 def node_chain_copy(source):
     copy = ChainMap({}, source)
