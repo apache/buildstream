@@ -63,6 +63,11 @@ variables:
           -o -name '*.cmxs' -o -name '*.node' ')' \
       -exec sh -ec \
       'read -n4 hdr <"$1" # check for elf header
+       case "$1" in
+         %{install-root}%{debugdir}/*)
+           exit 0
+           ;;
+       esac
        if [ "$hdr" != "$(printf \\x7fELF)" ]; then
            exit 0
        fi
