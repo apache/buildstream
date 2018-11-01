@@ -31,6 +31,7 @@ import shutil
 import subprocess
 from ruamel.yaml.comments import CommentedSet
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS, wait_for_cache_granularity
+from tests.testutils import create_artifact_share
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
@@ -615,9 +616,12 @@ def test_list(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
 @pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
-def test_build(cli, tmpdir, datafiles, kind, strict):
+@pytest.mark.parametrize("call_from", [("project"), ("workspace")])
+def test_build(cli, tmpdir_factory, datafiles, kind, strict, call_from):
+    tmpdir = tmpdir_factory.mktemp('')
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
     checkout = os.path.join(str(tmpdir), 'checkout')
+    args_pre = ['-C', workspace] if call_from == "workspace" else []
 
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
@@ -640,15 +644,14 @@ def test_build(cli, tmpdir, datafiles, kind, strict):
     # Build modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
     assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
-    result = cli.run(project=project, args=['build', element_name])
+    result = cli.run(project=project, args=args_pre + ['build', element_name])
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
     assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
 
     # Checkout the result
-    result = cli.run(project=project, args=[
-        'checkout', element_name, checkout
-    ])
+    result = cli.run(project=project,
+                     args=args_pre + ['checkout', element_name, checkout])
     result.assert_success()
 
     # Check that the pony.conf from the modified workspace exists
@@ -1055,3 +1058,137 @@ def test_multiple_failed_builds(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=["build", element_name])
         assert "BUG" not in result.stderr
         assert cli.get_element_state(project, element_name) != "cached"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize('subdir', [True, False], ids=["subdir", "no-subdir"])
+def test_external_fetch(cli, datafiles, tmpdir_factory, subdir):
+    # Fetching from a workspace outside a project doesn't fail horribly
+    tmpdir = tmpdir_factory.mktemp('')
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+
+    if subdir:
+        call_dir = os.path.join(workspace, 'usr')
+    else:
+        call_dir = workspace
+
+    result = cli.run(project=project, args=['-C', call_dir, 'fetch', element_name])
+    result.assert_success()
+
+    # We already fetched it by opening the workspace, but we're also checking
+    # `bst show` works here
+    assert cli.get_element_state(project, element_name) == 'buildable'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_push_pull(cli, datafiles, tmpdir_factory):
+    # Pushing and pulling to/from an artifact cache works from an external workspace
+    tmpdir = tmpdir_factory.mktemp('')
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        result = cli.run(project=project, args=['-C', workspace, 'build', element_name])
+        result.assert_success()
+
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+
+        result = cli.run(project=project, args=['-C', workspace, 'push', element_name])
+        result.assert_success()
+
+        result = cli.run(project=project, args=['-C', workspace, 'pull', '--deps', 'all', element_name])
+        result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_track(cli, datafiles, tmpdir_factory):
+    # Tracking does not get horribly confused
+    tmpdir = tmpdir_factory.mktemp('')
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", True)
+
+    # The workspace is necessarily already tracked, so we only care that
+    # there's no weird errors.
+    result = cli.run(project=project, args=['-C', workspace, 'track', element_name])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_open_other(cli, datafiles, tmpdir_factory):
+    # From inside an external workspace, open another workspace
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    # Making use of the assumption that it's the same project in both invocations of open_workspace
+    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
+    beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+
+    # Closing the other element first, because I'm too lazy to create an
+    # element without opening it
+    result = cli.run(project=project, args=['workspace', 'close', beta_element])
+    result.assert_success()
+
+    result = cli.run(project=project, args=[
+        '-C', alpha_workspace, 'workspace', 'open', '--force', '--directory', beta_workspace, beta_element
+    ])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_close_other(cli, datafiles, tmpdir_factory):
+    # From inside an external workspace, close the other workspace
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    # Making use of the assumption that it's the same project in both invocations of open_workspace
+    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
+    beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+
+    result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close', beta_element])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_close_self(cli, datafiles, tmpdir_factory):
+    # From inside an external workspace, close it
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    # Making use of the assumption that it's the same project in both invocations of open_workspace
+    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
+    beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+
+    result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close', alpha_element])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_reset_other(cli, datafiles, tmpdir_factory):
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    # Making use of the assumption that it's the same project in both invocations of open_workspace
+    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
+    beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+
+    result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'reset', beta_element])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_reset_self(cli, datafiles, tmpdir):
+    element, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+
+    # Command succeeds
+    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'reset', element])
+    result.assert_success()
+
+    # Successive commands still work (i.e. .bstproject.yaml hasn't been deleted)
+    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'list'])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_external_list(cli, datafiles, tmpdir_factory):
+    tmpdir = tmpdir_factory.mktemp('')
+    # Making use of the assumption that it's the same project in both invocations of open_workspace
+    element, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+
+    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'list'])
+    result.assert_success()
