@@ -3,6 +3,7 @@ import pytest
 from tests.testutils import cli
 
 from buildstream import _yaml
+from buildstream._frontend.app import App
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream._versions import BST_FORMAT_VERSION
 
@@ -98,3 +99,34 @@ def test_bad_element_path(cli, tmpdir, element_path):
         'init', '--project-name', 'foo', '--element-path', element_path
     ])
     result.assert_main_error(ErrorDomain.APP, 'invalid-element-path')
+
+
+@pytest.mark.parametrize("element_path", [('foo'), ('foo/bar')])
+def test_element_path_interactive(cli, tmp_path, monkeypatch, element_path):
+    project = tmp_path
+    project_conf_path = project.joinpath('project.conf')
+
+    class DummyInteractiveApp(App):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.interactive = True
+
+        @classmethod
+        def create(cls, *args, **kwargs):
+            return DummyInteractiveApp(*args, **kwargs)
+
+        def _init_project_interactive(self, *args, **kwargs):
+            return ('project_name', '0', element_path)
+
+    monkeypatch.setattr(App, 'create', DummyInteractiveApp.create)
+
+    result = cli.run(project=str(project), args=['init'])
+    result.assert_success()
+
+    full_element_path = project.joinpath(element_path)
+    assert full_element_path.exists()
+
+    project_conf = _yaml.load(str(project_conf_path))
+    assert project_conf['name'] == 'project_name'
+    assert project_conf['format-version'] == '0'
+    assert project_conf['element-path'] == element_path

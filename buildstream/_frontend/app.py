@@ -305,7 +305,6 @@ class App():
         directory = self._main_options['directory']
         directory = os.path.abspath(directory)
         project_path = os.path.join(directory, 'project.conf')
-        elements_path = os.path.join(directory, element_path)
 
         try:
             # Abort if the project.conf already exists, unless `--force` was specified in `bst init`
@@ -335,6 +334,7 @@ class App():
                 raise AppError("Error creating project directory {}: {}".format(directory, e)) from e
 
             # Create the elements sub-directory if it doesnt exist
+            elements_path = os.path.join(directory, element_path)
             try:
                 os.makedirs(elements_path, exist_ok=True)
             except IOError as e:
