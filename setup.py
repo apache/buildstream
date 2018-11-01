@@ -39,6 +39,7 @@ if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRE
 try:
     from setuptools import setup, find_packages, Command
     from setuptools.command.easy_install import ScriptWriter
+    from setuptools.command.test import test as TestCommand
 except ImportError:
     print("BuildStream requires setuptools in order to build. Install it using"
           " your package manager (usually python3-setuptools) or via pip (pip3"
@@ -219,9 +220,48 @@ class BuildGRPC(Command):
                         f.write(code)
 
 
+#####################################################
+#                   Pytest command                  #
+#####################################################
+class PyTest(TestCommand):
+    """Defines a pytest command class to run tests from setup.py"""
+
+    user_options = TestCommand.user_options + [
+        ("addopts=", None, "Arguments to pass to pytest"),
+        ('index-url=', None, "Specify an index url from which to retrieve "
+                             "dependencies"),
+    ]
+
+    # pylint: disable=attribute-defined-outside-init
+    def initialize_options(self):
+        super().initialize_options()
+        self.addopts = ""
+        self.index_url = None
+
+    def run(self):
+        if self.index_url is not None:
+            if self.distribution.command_options.get("easy_install") is None:
+                self.distribution.command_options["easy_install"] = {}
+
+            self.distribution.command_options["easy_install"]["index_url"] = (
+                "cmdline", self.index_url,
+            )
+        super().run()
+
+    def run_tests(self):
+        import shlex
+        import pytest
+
+        errno = pytest.main(shlex.split(self.addopts))
+
+        if errno:
+            raise SystemExit(errno)
+
+
 def get_cmdclass():
     cmdclass = {
         'build_grpc': BuildGRPC,
+        'pytest': PyTest,
     }
     cmdclass.update(versioneer.get_cmdclass())
     return cmdclass
@@ -305,6 +345,5 @@ setup(name='BuildStream',
           'grpcio >= 1.10',
       ],
       entry_points=bst_install_entry_points,
-      setup_requires=['pytest-runner'],
       tests_require=dev_requires,
       zip_safe=False)
