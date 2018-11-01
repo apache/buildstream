@@ -42,4 +42,5 @@ class SandboxDummy(Sandbox):
                                "'{}'".format(command[0]),
                                reason='missing-command')
 
-        raise SandboxError("This platform does not support local builds: {}".format(self._reason))
+        raise SandboxError("This platform does not support local builds: {}".format(self._reason),
+                           reason="unavailable-local-sandbox")
