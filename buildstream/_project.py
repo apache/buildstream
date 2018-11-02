@@ -301,7 +301,6 @@ class Project():
     #
     # Args:
     #    targets (list): Target names
-    #    artifacts (ArtifactCache): Artifact cache
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
     #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
@@ -310,7 +309,7 @@ class Project():
     # Returns:
     #    (list): A list of loaded Element
     #
-    def load_elements(self, targets, artifacts, *,
+    def load_elements(self, targets, *,
                       rewritable=False, fetch_subprojects=False):
         with self._context.timed_activity("Loading elements", silent_nested=True):
             meta_elements = self.loader.load(targets, rewritable=rewritable,
