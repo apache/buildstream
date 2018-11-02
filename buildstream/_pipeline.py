@@ -106,7 +106,7 @@ class Pipeline():
 
         profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        elements = self._project.load_elements(targets, self._artifacts,
+        elements = self._project.load_elements(targets,
                                                rewritable=rewritable,
                                                fetch_subprojects=fetch_subprojects)
 

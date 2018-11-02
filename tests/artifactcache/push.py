@@ -69,7 +69,7 @@ def test_push(cli, tmpdir, datafiles):
         cas = context.artifactcache
 
         # Assert that the element's artifact is cached
-        element = project.load_elements(['target.bst'], cas)[0]
+        element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
         assert cas.contains(element, element_key)
 
@@ -111,7 +111,7 @@ def _test_push(user_config_file, project_dir, artifact_dir,
     cas = context.artifactcache
 
     # Load the target element
-    element = project.load_elements([element_name], cas)[0]
+    element = project.load_elements([element_name])[0]
 
     # Manually setup the CAS remote
     cas.setup_remotes(use_config=True)
@@ -168,7 +168,7 @@ def test_push_directory(cli, tmpdir, datafiles):
         cas = context.artifactcache
 
         # Assert that the element's artifact is cached
-        element = project.load_elements(['target.bst'], cas)[0]
+        element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
         assert cas.contains(element, element_key)
 
