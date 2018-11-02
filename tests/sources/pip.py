@@ -3,6 +3,7 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
+from buildstream.plugins.sources.pip import _match_package_name
 from tests.testutils import cli
 
 DATA_DIR = os.path.join(
@@ -45,3 +46,22 @@ def test_no_packages(cli, tmpdir, datafiles):
         'show', 'target.bst'
     ])
     result.assert_main_error(ErrorDomain.SOURCE, None)
+
+
+# Test that pip source parses tar ball names correctly for the ref
+@pytest.mark.parametrize(
+    'tarball, expected_name, expected_version',
+    [
+        ('dotted.package-0.9.8.tar.gz', 'dotted.package', '0.9.8'),
+        ('hyphenated-package-2.6.0.tar.gz', 'hyphenated-package', '2.6.0'),
+        ('underscore_pkg-3.1.0.tar.gz', 'underscore_pkg', '3.1.0'),
+        ('numbers2and5-1.0.1.tar.gz', 'numbers2and5', '1.0.1'),
+        ('multiple.dots.package-5.6.7.tar.gz', 'multiple.dots.package', '5.6.7'),
+        ('multiple-hyphens-package-1.2.3.tar.gz', 'multiple-hyphens-package', '1.2.3'),
+        ('multiple_underscore_pkg-3.4.5.tar.gz', 'multiple_underscore_pkg', '3.4.5'),
+        ('shortversion-1.0.tar.gz', 'shortversion', '1.0'),
+        ('longversion-1.2.3.4.tar.gz', 'longversion', '1.2.3.4')
+    ])
+def test_match_package_name(tarball, expected_name, expected_version):
+    name, version = _match_package_name(tarball)
+    assert (expected_name, expected_version) == (name, version)

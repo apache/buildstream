@@ -4,6 +4,7 @@ import pytest
 from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
+from tests.testutils.python_repo import setup_pypi_repo
 from tests.testutils.integration import assert_contains
 
 
@@ -17,11 +18,20 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_pip_source_import(cli, tmpdir, datafiles):
+def test_pip_source_import(cli, tmpdir, datafiles, setup_pypi_repo):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'pip/hello.bst'
+
+    # check that exotically named packages are imported correctly
+    myreqs_packages = ['hellolib']
+    packages = ['app2', 'app.3', 'app-4', 'app_5', 'app.no.6', 'app-no-7', 'app_no_8']
+
+    # create mock pypi repository
+    pypi_repo = os.path.join(project, 'files', 'pypi-repo')
+    os.makedirs(pypi_repo, exist_ok=True)
+    setup_pypi_repo(myreqs_packages + packages, pypi_repo)
 
     element = {
         'kind': 'import',
@@ -32,9 +42,9 @@ def test_pip_source_import(cli, tmpdir, datafiles):
             },
             {
                 'kind': 'pip',
-                'url': 'file://{}'.format(os.path.realpath(os.path.join(project, 'files', 'pypi-repo'))),
+                'url': 'file://{}'.format(os.path.realpath(pypi_repo)),
                 'requirements-files': ['myreqs.txt'],
-                'packages': ['app2']
+                'packages': packages
             }
         ]
     }
@@ -51,15 +61,30 @@ def test_pip_source_import(cli, tmpdir, datafiles):
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/.bst_pip_downloads',
-                               '/.bst_pip_downloads/HelloLib-0.1.tar.gz',
-                               '/.bst_pip_downloads/App2-0.1.tar.gz'])
+                               '/.bst_pip_downloads/hellolib-0.1.tar.gz',
+                               '/.bst_pip_downloads/app2-0.1.tar.gz',
+                               '/.bst_pip_downloads/app.3-0.1.tar.gz',
+                               '/.bst_pip_downloads/app-4-0.1.tar.gz',
+                               '/.bst_pip_downloads/app_5-0.1.tar.gz',
+                               '/.bst_pip_downloads/app.no.6-0.1.tar.gz',
+                               '/.bst_pip_downloads/app-no-7-0.1.tar.gz',
+                               '/.bst_pip_downloads/app_no_8-0.1.tar.gz'])
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_pip_source_build(cli, tmpdir, datafiles):
+def test_pip_source_build(cli, tmpdir, datafiles, setup_pypi_repo):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')
     element_name = 'pip/hello.bst'
+
+    # check that exotically named packages are imported correctly
+    myreqs_packages = ['hellolib']
+    packages = ['app2', 'app.3', 'app-4', 'app_5', 'app.no.6', 'app-no-7', 'app_no_8']
+
+    # create mock pypi repository
+    pypi_repo = os.path.join(project, 'files', 'pypi-repo')
+    os.makedirs(pypi_repo, exist_ok=True)
+    setup_pypi_repo(myreqs_packages + packages, pypi_repo)
 
     element = {
         'kind': 'manual',
@@ -71,16 +96,15 @@ def test_pip_source_build(cli, tmpdir, datafiles):
             },
             {
                 'kind': 'pip',
-                'url': 'file://{}'.format(os.path.realpath(os.path.join(project, 'files', 'pypi-repo'))),
+                'url': 'file://{}'.format(os.path.realpath(pypi_repo)),
                 'requirements-files': ['myreqs.txt'],
-                'packages': ['app2']
+                'packages': packages
             }
         ],
         'config': {
             'install-commands': [
                 'pip3 install --no-index --prefix %{install-root}/usr .bst_pip_downloads/*.tar.gz',
-                'chmod +x app1.py',
-                'install app1.py  %{install-root}/usr/bin/'
+                'install app1.py %{install-root}/usr/bin/'
             ]
         }
     }
@@ -95,5 +119,4 @@ def test_pip_source_build(cli, tmpdir, datafiles):
 
     result = cli.run(project=project, args=['shell', element_name, '/usr/bin/app1.py'])
     assert result.exit_code == 0
-    assert result.output == """Hello App1!
-"""
+    assert result.output == "Hello App1! This is hellolib\n"
