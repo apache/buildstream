@@ -1410,16 +1410,9 @@ class Element(Plugin):
 
             finally:
                 # Staging may produce directories with less than 'rwx' permissions
-                # for the owner, which will break tempfile, so we need to use chmod
-                # occasionally.
-                def make_dir_writable(fn, path, excinfo):
-                    os.chmod(os.path.dirname(path), 0o777)
-                    if os.path.isdir(path):
-                        os.rmdir(path)
-                    else:
-                        os.remove(path)
-                shutil.rmtree(temp_staging_directory, onerror=make_dir_writable)
-
+                # for the owner, which breaks tempfile. _force_rmtree will deal
+                # with these.
+                utils._force_rmtree(temp_staging_directory)
         # Ensure deterministic mtime of sources at build time
         vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time
