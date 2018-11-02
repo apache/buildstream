@@ -24,7 +24,7 @@ def test_workspace_mount(cli, tmpdir, datafiles):
     workspace = os.path.join(cli.directory, 'workspace')
     element_name = 'workspace/workspace-mount.bst'
 
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     assert res.exit_code == 0
 
     res = cli.run(project=project, args=['build', element_name])
@@ -41,7 +41,7 @@ def test_workspace_commanddir(cli, tmpdir, datafiles):
     workspace = os.path.join(cli.directory, 'workspace')
     element_name = 'workspace/workspace-commanddir.bst'
 
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     assert res.exit_code == 0
 
     res = cli.run(project=project, args=['build', element_name])
@@ -78,7 +78,7 @@ def test_workspace_updated_dependency(cli, tmpdir, datafiles):
     _yaml.dump(dependency, os.path.join(element_path, dep_name))
 
     # First open the workspace
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     assert res.exit_code == 0
 
     # We build the workspaced element, so that we have an artifact
@@ -134,7 +134,7 @@ def test_workspace_update_dependency_failed(cli, tmpdir, datafiles):
     _yaml.dump(dependency, os.path.join(element_path, dep_name))
 
     # First open the workspace
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     assert res.exit_code == 0
 
     # We build the workspaced element, so that we have an artifact
@@ -210,7 +210,7 @@ def test_updated_dependency_nested(cli, tmpdir, datafiles):
     _yaml.dump(dependency, os.path.join(element_path, dep_name))
 
     # First open the workspace
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     assert res.exit_code == 0
 
     # We build the workspaced element, so that we have an artifact
@@ -264,7 +264,7 @@ def test_incremental_configure_commands_run_only_once(cli, tmpdir, datafiles):
     _yaml.dump(element, os.path.join(element_path, element_name))
 
     # We open a workspace on the above element
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     res.assert_success()
 
     # Then we build, and check whether the configure step succeeded

@@ -290,7 +290,7 @@ def test_workspace_visible(cli, tmpdir, datafiles):
 
     # Open a workspace on our build failing element
     #
-    res = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     assert res.exit_code == 0
 
     # Ensure the dependencies of our build failing element are built

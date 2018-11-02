@@ -509,7 +509,7 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
 
     # Now open a workspace on the junction
     #
-    result = cli.run(project=project, args=['workspace', 'open', 'junction.bst', workspace])
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, 'junction.bst'])
     result.assert_success()
     filename = os.path.join(workspace, 'files', 'etc-files', 'etc', 'animal.conf')
 

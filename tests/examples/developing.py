@@ -59,7 +59,7 @@ def test_open_workspace(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace_dir = os.path.join(str(tmpdir), "workspace_hello")
 
-    result = cli.run(project=project, args=['workspace', 'open', '-f', 'hello.bst', workspace_dir])
+    result = cli.run(project=project, args=['workspace', 'open', '-f', '--directory', workspace_dir, 'hello.bst', ])
     result.assert_success()
 
     result = cli.run(project=project, args=['workspace', 'list'])
@@ -78,7 +78,7 @@ def test_make_change_in_workspace(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace_dir = os.path.join(str(tmpdir), "workspace_hello")
 
-    result = cli.run(project=project, args=['workspace', 'open', '-f', 'hello.bst', workspace_dir])
+    result = cli.run(project=project, args=['workspace', 'open', '-f', '--directory', workspace_dir, 'hello.bst'])
     result.assert_success()
 
     result = cli.run(project=project, args=['workspace', 'list'])

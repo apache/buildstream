@@ -22,6 +22,9 @@ artifactdir: ${XDG_CACHE_HOME}/buildstream/artifacts
 # Location to store build logs
 logdir: ${XDG_CACHE_HOME}/buildstream/logs
 
+# Default root location for workspaces, blank for no default set.
+workspacedir: .
+
 #
 #    Cache
 #

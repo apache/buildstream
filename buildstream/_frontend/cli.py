@@ -707,31 +707,23 @@ def workspace():
 @click.option('--no-checkout', default=False, is_flag=True,
               help="Do not checkout the source, only link to the given directory")
 @click.option('--force', '-f', default=False, is_flag=True,
-              help="Overwrite files existing in checkout directory")
+              help="The workspace will be created even if the directory in which it will be created is not empty " +
+              "or if a workspace for that element already exists")
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
-@click.argument('element',
-                type=click.Path(readable=False))
-@click.argument('directory', type=click.Path(file_okay=False))
+@click.option('--directory', type=click.Path(file_okay=False), default=None,
+              help="Only for use when a single Element is given: Set the directory to use to create the workspace")
+@click.argument('elements', nargs=-1, type=click.Path(readable=False), required=True)
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track_, element, directory):
+def workspace_open(app, no_checkout, force, track_, directory, elements):
     """Open a workspace for manual source modification"""
 
-    if os.path.exists(directory):
-
-        if not os.path.isdir(directory):
-            click.echo("Checkout directory is not a directory: {}".format(directory), err=True)
-            sys.exit(-1)
-
-        if not (no_checkout or force) and os.listdir(directory):
-            click.echo("Checkout directory is not empty: {}".format(directory), err=True)
-            sys.exit(-1)
-
     with app.initialized():
-        app.stream.workspace_open(element, directory,
+        app.stream.workspace_open(elements,
                                   no_checkout=no_checkout,
                                   track_first=track_,
-                                  force=force)
+                                  force=force,
+                                  custom_dir=directory)
 
 
 ##################################################################

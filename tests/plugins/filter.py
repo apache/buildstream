@@ -108,7 +108,7 @@ def test_filter_forbid_also_rdep(datafiles, cli):
 def test_filter_workspace_open(datafiles, cli, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace_dir = os.path.join(tmpdir.dirname, tmpdir.basename, "workspace")
-    result = cli.run(project=project, args=['workspace', 'open', 'deps-permitted.bst', workspace_dir])
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'deps-permitted.bst'])
     result.assert_success()
     assert os.path.exists(os.path.join(workspace_dir, "foo"))
     assert os.path.exists(os.path.join(workspace_dir, "bar"))
@@ -116,11 +116,20 @@ def test_filter_workspace_open(datafiles, cli, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_filter_workspace_open_multi(datafiles, cli, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(cwd=project, project=project, args=['workspace', 'open', 'deps-permitted.bst',
+                                                         'output-orphans.bst'])
+    result.assert_success()
+    assert os.path.exists(os.path.join(project, "input"))
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_workspace_build(datafiles, cli, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     tempdir = os.path.join(tmpdir.dirname, tmpdir.basename)
     workspace_dir = os.path.join(tempdir, "workspace")
-    result = cli.run(project=project, args=['workspace', 'open', 'output-orphans.bst', workspace_dir])
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'output-orphans.bst'])
     result.assert_success()
     src = os.path.join(workspace_dir, "foo")
     dst = os.path.join(workspace_dir, "quux")
@@ -138,7 +147,7 @@ def test_filter_workspace_close(datafiles, cli, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     tempdir = os.path.join(tmpdir.dirname, tmpdir.basename)
     workspace_dir = os.path.join(tempdir, "workspace")
-    result = cli.run(project=project, args=['workspace', 'open', 'output-orphans.bst', workspace_dir])
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'output-orphans.bst'])
     result.assert_success()
     src = os.path.join(workspace_dir, "foo")
     dst = os.path.join(workspace_dir, "quux")
@@ -158,7 +167,7 @@ def test_filter_workspace_reset(datafiles, cli, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     tempdir = os.path.join(tmpdir.dirname, tmpdir.basename)
     workspace_dir = os.path.join(tempdir, "workspace")
-    result = cli.run(project=project, args=['workspace', 'open', 'output-orphans.bst', workspace_dir])
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'output-orphans.bst'])
     result.assert_success()
     src = os.path.join(workspace_dir, "foo")
     dst = os.path.join(workspace_dir, "quux")

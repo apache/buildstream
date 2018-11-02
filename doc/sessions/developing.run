@@ -7,7 +7,7 @@ commands:
 # Capture workspace open output 
 - directory: ../examples/developing/
   output: ../source/sessions/developing-workspace-open.html
-  command: workspace open hello.bst workspace_hello
+  command: workspace open --directory workspace_hello hello.bst
 
 # Catpure output from workspace list
 - directory: ../examples/developing/
@@ -37,7 +37,7 @@ commands:
 # Reopen workspace
 - directory: ../examples/developing/
   output: ../source/sessions/developing-reopen-workspace.html
-  command: workspace open --no-checkout hello.bst workspace_hello
+  command: workspace open --no-checkout --directory workspace_hello hello.bst
 
 # Reset workspace
 - directory: ../examples/developing/
