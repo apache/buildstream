@@ -898,14 +898,13 @@ class Element(Plugin):
     # and it's dependencies from a meta element.
     #
     # Args:
-    #    artifacts (ArtifactCache): The artifact cache
     #    meta (MetaElement): The meta element
     #
     # Returns:
     #    (Element): A newly created Element instance
     #
     @classmethod
-    def _new_from_meta(cls, meta, artifacts):
+    def _new_from_meta(cls, meta):
 
         if not meta.first_pass:
             meta.project.ensure_fully_loaded()
@@ -930,12 +929,12 @@ class Element(Plugin):
 
         # Instantiate dependencies
         for meta_dep in meta.dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts)
+            dependency = Element._new_from_meta(meta_dep)
             element.__runtime_dependencies.append(dependency)
             dependency.__reverse_dependencies.add(element)
 
         for meta_dep in meta.build_dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts)
+            dependency = Element._new_from_meta(meta_dep)
             element.__build_dependencies.append(dependency)
             dependency.__reverse_dependencies.add(element)
 

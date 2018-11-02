@@ -533,7 +533,7 @@ class Loader():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
 
-        element = Element._new_from_meta(meta_element, self._context.artifactcache)
+        element = Element._new_from_meta(meta_element)
         element._preflight()
         element._update_state()
 

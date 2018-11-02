@@ -319,7 +319,7 @@ class Project():
 
         with self._context.timed_activity("Resolving elements"):
             elements = [
-                Element._new_from_meta(meta, artifacts)
+                Element._new_from_meta(meta)
                 for meta in meta_elements
             ]
 
