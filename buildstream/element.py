@@ -913,7 +913,7 @@ class Element(Plugin):
         if meta in cls.__instantiated_elements:
             return cls.__instantiated_elements[meta]
 
-        element = meta.project.create_element(artifacts, meta, first_pass=meta.first_pass)
+        element = meta.project.create_element(meta, first_pass=meta.first_pass)
         cls.__instantiated_elements[meta] = element
 
         # Instantiate sources

@@ -221,14 +221,13 @@ class Project():
     # Instantiate and return an element
     #
     # Args:
-    #    artifacts (ArtifactCache): The artifact cache
     #    meta (MetaElement): The loaded MetaElement
     #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    (Element): A newly created Element object of the appropriate kind
     #
-    def create_element(self, artifacts, meta, *, first_pass=False):
+    def create_element(self, meta, *, first_pass=False):
         if first_pass:
             return self.first_pass_config.element_factory.create(self._context, self, meta)
         else:
