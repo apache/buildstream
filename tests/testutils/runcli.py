@@ -7,6 +7,7 @@ import itertools
 import traceback
 import subprocess
 from contextlib import contextmanager, ExitStack
+from click.testing import CliRunner
 from ruamel import yaml
 import pytest
 
@@ -185,9 +186,10 @@ class Result():
         return list(pulled)
 
 
-class Cli():
+class Cli(CliRunner):
 
     def __init__(self, directory, verbose=True, default_options=None):
+        super().__init__(mix_stderr=False)
         self.directory = directory
         self.config = None
         self.verbose = verbose
@@ -297,49 +299,13 @@ class Cli():
         return result
 
     def invoke(self, cli, args=None, color=False, binary_capture=False, **extra):
-        exc_info = None
-        exception = None
-        exit_code = 0
+        r = super().invoke(cli, args, color=color)
 
-        # Temporarily redirect sys.stdin to /dev/null to ensure that
-        # Popen doesn't attempt to read pytest's dummy stdin.
-        old_stdin = sys.stdin
-        with open(os.devnull) as devnull:
-            sys.stdin = devnull
-            capture_kind = FDCaptureBinary if binary_capture else FDCapture
-            capture = MultiCapture(out=True, err=True, in_=False, Capture=capture_kind)
-            capture.start_capturing()
-
-            try:
-                cli.main(args=args or (), prog_name=cli.name, **extra)
-            except SystemExit as e:
-                if e.code != 0:
-                    exception = e
-
-                exc_info = sys.exc_info()
-
-                exit_code = e.code
-                if not isinstance(exit_code, int):
-                    sys.stdout.write('Program exit code was not an integer: ')
-                    sys.stdout.write(str(exit_code))
-                    sys.stdout.write('\n')
-                    exit_code = 1
-            except Exception as e:
-                exception = e
-                exit_code = -1
-                exc_info = sys.exc_info()
-            finally:
-                sys.stdout.flush()
-
-        sys.stdin = old_stdin
-        out, err = capture.readouterr()
-        capture.stop_capturing()
-
-        return Result(exit_code=exit_code,
-                      exception=exception,
-                      exc_info=exc_info,
-                      output=out,
-                      stderr=err)
+        return Result(exit_code=r.exit_code,
+                      exception=r.exception,
+                      exc_info=r.exc_info,
+                      output=r.stdout,
+                      stderr=r.stderr)
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
