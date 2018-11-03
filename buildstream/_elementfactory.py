@@ -47,7 +47,6 @@ class ElementFactory(PluginContext):
     # Args:
     #    context (object): The Context object for processing
     #    project (object): The project object
-    #    artifacts (ArtifactCache): The artifact cache
     #    meta (object): The loaded MetaElement
     #
     # Returns: A newly created Element object of the appropriate kind
@@ -56,7 +55,7 @@ class ElementFactory(PluginContext):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the element itself took issue with the config)
     #
-    def create(self, context, project, artifacts, meta):
+    def create(self, context, project, meta):
         element_type, default_config = self.lookup(meta.kind)
         element = element_type(context, project, meta, default_config)
         version = self._format_versions.get(meta.kind, 0)
