@@ -2180,6 +2180,7 @@ class Element(Plugin):
                                     stderr=stderr,
                                     config=config,
                                     server_url=self.__remote_execution_url,
+                                    bare_directory=bare_directory,
                                     allow_real_directory=False)
             yield sandbox
 
