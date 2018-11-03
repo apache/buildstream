@@ -230,9 +230,9 @@ class Project():
     #
     def create_element(self, artifacts, meta, *, first_pass=False):
         if first_pass:
-            return self.first_pass_config.element_factory.create(self._context, self, artifacts, meta)
+            return self.first_pass_config.element_factory.create(self._context, self, meta)
         else:
-            return self.config.element_factory.create(self._context, self, artifacts, meta)
+            return self.config.element_factory.create(self._context, self, meta)
 
     # create_source()
     #
