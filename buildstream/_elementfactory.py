@@ -58,7 +58,7 @@ class ElementFactory(PluginContext):
     #
     def create(self, context, project, artifacts, meta):
         element_type, default_config = self.lookup(meta.kind)
-        element = element_type(context, project, artifacts, meta, default_config)
+        element = element_type(context, project, meta, default_config)
         version = self._format_versions.get(meta.kind, 0)
         self._assert_plugin_format(element, version)
         return element
