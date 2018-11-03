@@ -179,7 +179,7 @@ class Element(Plugin):
     *Since: 1.2*
     """
 
-    def __init__(self, context, project, artifacts, meta, plugin_conf):
+    def __init__(self, context, project, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
         self.__cache_key = None                 # Our cached cache key
@@ -207,7 +207,7 @@ class Element(Plugin):
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
-        self.__artifacts = artifacts            # Artifact cache
+        self.__artifacts = context.artifactcache  # Artifact cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__cached = None                    # Whether we have a cached artifact
         self.__strong_cached = None             # Whether we have a cached artifact
