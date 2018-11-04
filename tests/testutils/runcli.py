@@ -305,7 +305,7 @@ class Cli(CliRunner):
                       exception=r.exception,
                       exc_info=r.exc_info,
                       output=r.stdout,
-                      stderr=r.stderr)
+                      stderr=r.stderr if r.stderr_bytes else "")
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
