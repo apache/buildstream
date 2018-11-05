@@ -104,6 +104,9 @@ class Context():
         # What to do when a build fails in non interactive mode
         self.sched_error_action = 'continue'
 
+        # Whether or not to attempt to pull build trees globally
+        self.pull_buildtrees = None
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -178,12 +181,15 @@ class Context():
         # our artifactdir - the artifactdir may not have been created
         # yet.
         cache = _yaml.node_get(defaults, Mapping, 'cache')
-        _yaml.node_validate(cache, ['quota'])
+        _yaml.node_validate(cache, ['quota', 'pull-buildtrees'])
 
         self.config_cache_quota = _yaml.node_get(cache, str, 'quota', default_value='infinity')
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
+
+        # Load pull build trees configuration
+        self.pull_buildtrees = _yaml.node_get(cache, bool, 'pull-buildtrees')
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')
