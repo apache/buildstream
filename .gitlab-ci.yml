@@ -166,6 +166,12 @@ docs:
     BST_EXT_REF: 1d6ab71151b93c8cbc0a91a36ffe9270f3b835f1 # 0.5.1
     FD_SDK_REF: 88d7c22c2281b987faa02edd57df80d430eecf1f # 18.08.11-35-g88d7c22c
   before_script:
+  - |
+    mkdir -p "${HOME}/.config"
+    cat <<EOF >"${HOME}/.config/buildstream.conf"
+    scheduler:
+      fetchers: 2
+    EOF
   - (cd dist && ./unpack.sh && cd buildstream && pip3 install .)
   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
