@@ -182,7 +182,8 @@ class App():
             'fetchers': 'sched_fetchers',
             'builders': 'sched_builders',
             'pushers': 'sched_pushers',
-            'network_retries': 'sched_network_retries'
+            'network_retries': 'sched_network_retries',
+            'pull_buildtrees': 'pull_buildtrees'
         }
         for cli_option, context_attr in override_map.items():
             option_value = self._main_options.get(cli_option)
