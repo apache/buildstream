@@ -90,6 +90,7 @@ class ErrorDomain(Enum):
     APP = 12
     STREAM = 13
     VIRTUAL_FS = 14
+    CAS = 15
 
 
 # BstError is an internal base exception class for BuildSream
@@ -272,6 +273,15 @@ class SandboxError(BstError):
 class ArtifactError(BstError):
     def __init__(self, message, *, detail=None, reason=None, temporary=False):
         super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason, temporary=True)
+
+
+# CASError
+#
+# Raised when errors are encountered in the CAS
+#
+class CASError(BstError):
+    def __init__(self, message, *, detail=None, reason=None, temporary=False):
+        super().__init__(message, detail=detail, domain=ErrorDomain.CAS, reason=reason, temporary=True)
 
 
 # PipelineError

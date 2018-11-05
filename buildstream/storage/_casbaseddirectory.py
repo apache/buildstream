@@ -79,7 +79,7 @@ class CasBasedDirectory(Directory):
         self.filename = filename
         self.common_name = common_name
         self.pb2_directory = remote_execution_pb2.Directory()
-        self.cas_cache = context.artifactcache
+        self.cas_cache = context.artifactcache.cas
         if ref:
             with open(self.cas_cache.objpath(ref), 'rb') as f:
                 self.pb2_directory.ParseFromString(f.read())

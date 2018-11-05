@@ -13,7 +13,7 @@ import pytest_cov
 from buildstream import _yaml
 from buildstream._artifactcache.casserver import create_server
 from buildstream._context import Context
-from buildstream._exceptions import ArtifactError
+from buildstream._exceptions import CASError
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
 
@@ -48,7 +48,7 @@ class ArtifactShare():
         context = Context()
         context.artifactdir = self.repodir
 
-        self.cas = context.artifactcache
+        self.cas = context.artifactcache.cas
 
         self.total_space = total_space
         self.free_space = free_space
@@ -135,7 +135,7 @@ class ArtifactShare():
         try:
             tree = self.cas.resolve_ref(artifact_key)
             return True
-        except ArtifactError:
+        except CASError:
             return False
 
     # close():

@@ -69,7 +69,7 @@ def test_push(cli, tmpdir, datafiles):
         cas = context.artifactcache
 
         # Assert that the element's artifact is cached
-        element = project.load_elements(['target.bst'], cas)[0]
+        element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
         assert cas.contains(element, element_key)
 
@@ -111,7 +111,7 @@ def _test_push(user_config_file, project_dir, artifact_dir,
     cas = context.artifactcache
 
     # Load the target element
-    element = project.load_elements([element_name], cas)[0]
+    element = project.load_elements([element_name])[0]
 
     # Manually setup the CAS remote
     cas.setup_remotes(use_config=True)
@@ -165,20 +165,21 @@ def test_push_directory(cli, tmpdir, datafiles):
         # Load the project and CAS cache
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
-        cas = context.artifactcache
+        artifactcache = context.artifactcache
+        cas = artifactcache.cas
 
         # Assert that the element's artifact is cached
-        element = project.load_elements(['target.bst'], cas)[0]
+        element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert cas.contains(element, element_key)
+        assert artifactcache.contains(element, element_key)
 
         # Manually setup the CAS remote
-        cas.setup_remotes(use_config=True)
-        cas.initialize_remotes()
-        assert cas.has_push_remotes(element=element)
+        artifactcache.setup_remotes(use_config=True)
+        artifactcache.initialize_remotes()
+        assert artifactcache.has_push_remotes(element=element)
 
         # Recreate the CasBasedDirectory object from the cached artifact
-        artifact_ref = cas.get_artifact_fullname(element, element_key)
+        artifact_ref = artifactcache.get_artifact_fullname(element, element_key)
         artifact_digest = cas.resolve_ref(artifact_ref)
 
         queue = multiprocessing.Queue()

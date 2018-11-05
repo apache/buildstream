@@ -32,8 +32,9 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remo
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
-from .._exceptions import ArtifactError
-from .._context import Context
+from .._exceptions import CASError
+
+from .cascache import CASCache
 
 
 # The default limit for gRPC messages is 4 MiB.
@@ -55,26 +56,23 @@ class ArtifactTooLargeException(Exception):
 #     enable_push (bool): Whether to allow blob uploads and artifact updates
 #
 def create_server(repo, *, enable_push):
-    context = Context()
-    context.artifactdir = os.path.abspath(repo)
-
-    artifactcache = context.artifactcache
+    cas = CASCache(os.path.abspath(repo))
 
     # Use max_workers default from Python 3.5+
     max_workers = (os.cpu_count() or 1) * 5
     server = grpc.server(futures.ThreadPoolExecutor(max_workers))
 
     bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
-        _ByteStreamServicer(artifactcache, enable_push=enable_push), server)
+        _ByteStreamServicer(cas, enable_push=enable_push), server)
 
     remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
-        _ContentAddressableStorageServicer(artifactcache, enable_push=enable_push), server)
+        _ContentAddressableStorageServicer(cas, enable_push=enable_push), server)
 
     remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(
         _CapabilitiesServicer(), server)
 
     buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
-        _ReferenceStorageServicer(artifactcache, enable_push=enable_push), server)
+        _ReferenceStorageServicer(cas, enable_push=enable_push), server)
 
     return server
 
@@ -333,7 +331,7 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
 
             response.digest.hash = tree.hash
             response.digest.size_bytes = tree.size_bytes
-        except ArtifactError:
+        except CASError:
             context.set_code(grpc.StatusCode.NOT_FOUND)
 
         return response
@@ -437,7 +435,7 @@ def _clean_up_cache(cas, object_size):
         return 0
 
     # obtain a list of LRP artifacts
-    LRP_artifacts = cas.list_artifacts()
+    LRP_artifacts = cas.list_refs()
 
     removed_size = 0  # in bytes
     while object_size - removed_size > free_disk_space:
