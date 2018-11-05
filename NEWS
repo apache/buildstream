@@ -38,12 +38,22 @@ buildstream 1.3.1
     a bug fix to workspaces so they can be build in workspaces too.
 
   o Creating a build shell through the interactive mode or `bst shell --build`
-    will now use the cached build tree. It is now easier to debug local build
-    failures.
+    will now use the cached build tree if available locally. It is now easier to
+    debug local build failures.
 
   o `bst shell --sysroot` now takes any directory that contains a sysroot,
     instead of just a specially-formatted build-root with a `root` and `scratch`
     subdirectory.
+
+  o Due to the element `build tree` being cached in the respective artifact their
+    size in some cases has significantly increased. In *most* cases the build trees
+    are not utilised when building targets, as such by default bst 'pull' & 'build'
+    will not fetch build trees from remotes. This behaviour can be overridden with
+    the cli main option '--pull-buildtrees', or the user configuration cache group
+    option 'pull-buildtrees = True'. The override will also add the build tree to
+    already cached artifacts. When attempting to populate an artifactcache server
+    with cached artifacts, only 'complete' elements can be pushed. If the element
+    is expected to have a populated build tree then it must be cached before pushing.
 
 
 =================

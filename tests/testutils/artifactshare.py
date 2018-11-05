@@ -114,7 +114,7 @@ class ArtifactShare():
     #    cache_key (str): The cache key
     #
     # Returns:
-    #    (bool): True if the artifact exists in the share, otherwise false.
+    #    (str): artifact digest if the artifact exists in the share, otherwise None.
     def has_artifact(self, project_name, element_name, cache_key):
 
         # NOTE: This should be kept in line with our
@@ -134,9 +134,9 @@ class ArtifactShare():
 
         try:
             tree = self.cas.resolve_ref(artifact_key)
-            return True
+            return tree
         except CASError:
-            return False
+            return None
 
     # close():
     #
