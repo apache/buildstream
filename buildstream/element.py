@@ -1397,12 +1397,12 @@ class Element(Plugin):
                         with self.timed_activity("Staging local files at {}"
                                                  .format(workspace.get_absolute_path())):
                             workspace.stage(temp_staging_directory)
-                elif self._cached():
-                    # We have a cached buildtree to use, instead
+                # Check if we have a cached buildtree to use
+                elif self.__cached_buildtree():
                     artifact_base, _ = self.__extract()
                     import_dir = os.path.join(artifact_base, 'buildtree')
                 else:
-                    # No workspace, stage directly
+                    # No workspace or cached buildtree, stage source directly
                     for source in self.sources():
                         source._stage(temp_staging_directory)
 
@@ -1691,7 +1691,9 @@ class Element(Plugin):
 
     # _pull_pending()
     #
-    # Check whether the artifact will be pulled.
+    # Check whether the artifact will be pulled. If the pull operation is to
+    # include a specific subdir of the element artifact (from cli or user conf)
+    # then the local cache is queried for the subdirs existence.
     #
     # Returns:
     #   (bool): Whether a pull operation is pending
@@ -1701,8 +1703,15 @@ class Element(Plugin):
             # Workspace builds are never pushed to artifact servers
             return False
 
-        if self.__strong_cached:
-            # Artifact already in local cache
+        # Check whether the pull has been invoked with a specific subdir requested
+        # in user context, as to complete a partial artifact
+        subdir, _ = self.__pull_directories()
+
+        if self.__strong_cached and subdir:
+            # If we've specified a subdir, check if the subdir is cached locally
+            if self.__artifacts.contains_subdir_artifact(self, self.__strict_cache_key, subdir):
+                return False
+        elif self.__strong_cached:
             return False
 
         # Pull is pending if artifact remote server available
@@ -1724,33 +1733,6 @@ class Element(Plugin):
 
         self._update_state()
 
-    def _pull_strong(self, *, progress=None):
-        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-
-        key = self.__strict_cache_key
-        if not self.__artifacts.pull(self, key, progress=progress):
-            return False
-
-        # update weak ref by pointing it to this newly fetched artifact
-        self.__artifacts.link_key(self, key, weak_key)
-
-        return True
-
-    def _pull_weak(self, *, progress=None):
-        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-
-        if not self.__artifacts.pull(self, weak_key, progress=progress):
-            return False
-
-        # extract strong cache key from this newly fetched artifact
-        self._pull_done()
-
-        # create tag for strong cache key
-        key = self._get_cache_key(strength=_KeyStrength.STRONG)
-        self.__artifacts.link_key(self, weak_key, key)
-
-        return True
-
     # _pull():
     #
     # Pull artifact from remote artifact repository into local artifact cache.
@@ -1763,11 +1745,15 @@ class Element(Plugin):
         def progress(percent, message):
             self.status(message)
 
+        # Get optional specific subdir to pull and optional list to not pull
+        # based off of user context
+        subdir, excluded_subdirs = self.__pull_directories()
+
         # Attempt to pull artifact without knowing whether it's available
-        pulled = self._pull_strong(progress=progress)
+        pulled = self.__pull_strong(progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs)
 
         if not pulled and not self._cached() and not context.get_strict():
-            pulled = self._pull_weak(progress=progress)
+            pulled = self.__pull_weak(progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs)
 
         if not pulled:
             return False
@@ -1787,10 +1773,12 @@ class Element(Plugin):
             # No push remotes for this element's project
             return True
 
-        if not self._cached():
+        # Do not push elements that aren't cached, or that are cached with a dangling buildtree
+        # artifact unless element type is expected to have an an empty buildtree directory
+        if not self.__cached_buildtree():
             return True
 
-        # Do not push tained artifact
+        # Do not push tainted artifact
         if self.__get_tainted():
             return True
 
@@ -2673,6 +2661,106 @@ class Element(Plugin):
         keys.append(self._get_cache_key(strength=_KeyStrength.WEAK))
 
         return utils._deduplicate(keys)
+
+    # __pull_strong():
+    #
+    # Attempt pulling given element from configured artifact caches with
+    # the strict cache key
+    #
+    # Args:
+    #     progress (callable): The progress callback, if any
+    #     subdir (str): The optional specific subdir to pull
+    #     excluded_subdirs (list): The optional list of subdirs to not pull
+    #
+    # Returns:
+    #     (bool): Whether or not the pull was successful
+    #
+    def __pull_strong(self, *, progress=None, subdir=None, excluded_subdirs=None):
+        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+        key = self.__strict_cache_key
+        if not self.__artifacts.pull(self, key, progress=progress, subdir=subdir,
+                                     excluded_subdirs=excluded_subdirs):
+            return False
+
+        # update weak ref by pointing it to this newly fetched artifact
+        self.__artifacts.link_key(self, key, weak_key)
+
+        return True
+
+    # __pull_weak():
+    #
+    # Attempt pulling given element from configured artifact caches with
+    # the weak cache key
+    #
+    # Args:
+    #     progress (callable): The progress callback, if any
+    #     subdir (str): The optional specific subdir to pull
+    #     excluded_subdirs (list): The optional list of subdirs to not pull
+    #
+    # Returns:
+    #     (bool): Whether or not the pull was successful
+    #
+    def __pull_weak(self, *, progress=None, subdir=None, excluded_subdirs=None):
+        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
+        if not self.__artifacts.pull(self, weak_key, progress=progress, subdir=subdir,
+                                     excluded_subdirs=excluded_subdirs):
+            return False
+
+        # extract strong cache key from this newly fetched artifact
+        self._pull_done()
+
+        # create tag for strong cache key
+        key = self._get_cache_key(strength=_KeyStrength.STRONG)
+        self.__artifacts.link_key(self, weak_key, key)
+
+        return True
+
+    # __cached_buildtree():
+    #
+    # Check if cached element artifact contains expected buildtree
+    #
+    # Returns:
+    #     (bool): True if artifact cached with buildtree, False if
+    #             element not cached or missing expected buildtree
+    #
+    def __cached_buildtree(self):
+        context = self._get_context()
+
+        if not self._cached():
+            return False
+        elif context.get_strict():
+            if not self.__artifacts.contains_subdir_artifact(self, self.__strict_cache_key, 'buildtree'):
+                return False
+        elif not self.__artifacts.contains_subdir_artifact(self, self.__weak_cache_key, 'buildtree'):
+            return False
+
+        return True
+
+    # __pull_directories():
+    #
+    # Which directories to include or exclude given the current
+    # context
+    #
+    # Returns:
+    #     subdir (str): The optional specific subdir to include, based
+    #                   on user context
+    #     excluded_subdirs (list): The optional list of subdirs to not
+    #                              pull, referenced against subdir value
+    #
+    def __pull_directories(self):
+        context = self._get_context()
+
+        # Current default exclusions on pull
+        excluded_subdirs = ["buildtree"]
+        subdir = ''
+
+        # If buildtrees are to be pulled, remove the value from exclusion list
+        # and set specific subdir
+        if context.pull_buildtrees:
+            subdir = "buildtree"
+            excluded_subdirs.remove(subdir)
+
+        return (subdir, excluded_subdirs)
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):

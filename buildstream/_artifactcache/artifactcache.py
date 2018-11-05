@@ -476,6 +476,22 @@ class ArtifactCache():
 
         return self.cas.contains(ref)
 
+    # contains_subdir_artifact():
+    #
+    # Check whether an artifact element contains a digest for a subdir
+    # which is populated in the cache, i.e non dangling.
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #     key (str): The cache key to use
+    #     subdir (str): The subdir to check
+    #
+    # Returns: True if the subdir exists & is populated in the cache, False otherwise
+    #
+    def contains_subdir_artifact(self, element, key, subdir):
+        ref = self.get_artifact_fullname(element, key)
+        return self.cas.contains_subdir_artifact(ref, subdir)
+
     # list_artifacts():
     #
     # List artifacts in this cache in LRU order.
@@ -533,6 +549,7 @@ class ArtifactCache():
     # Args:
     #     element (Element): The Element to extract
     #     key (str): The cache key to use
+    #     subdir (str): Optional specific subdir to extract
     #
     # Raises:
     #     ArtifactError: In cases there was an OSError, or if the artifact
@@ -540,12 +557,12 @@ class ArtifactCache():
     #
     # Returns: path to extracted artifact
     #
-    def extract(self, element, key):
+    def extract(self, element, key, subdir=None):
         ref = self.get_artifact_fullname(element, key)
 
         path = os.path.join(self.extractdir, element._get_project().name, element.normal_name)
 
-        return self.cas.extract(ref, path)
+        return self.cas.extract(ref, path, subdir=subdir)
 
     # commit():
     #
@@ -666,11 +683,13 @@ class ArtifactCache():
     #     element (Element): The Element whose artifact is to be fetched
     #     key (str): The cache key to use
     #     progress (callable): The progress callback, if any
+    #     subdir (str): The optional specific subdir to pull
+    #     excluded_subdirs (list): The optional list of subdirs to not pull
     #
     # Returns:
     #   (bool): True if pull was successful, False if artifact was not available
     #
-    def pull(self, element, key, *, progress=None):
+    def pull(self, element, key, *, progress=None, subdir=None, excluded_subdirs=None):
         ref = self.get_artifact_fullname(element, key)
 
         project = element._get_project()
@@ -680,8 +699,13 @@ class ArtifactCache():
                 display_key = element._get_brief_display_key()
                 element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
-                if self.cas.pull(ref, remote, progress=progress):
+                if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
                     element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
+                    if subdir:
+                        # Attempt to extract subdir into artifact extract dir if it already exists
+                        # without containing the subdir. If the respective artifact extract dir does not
+                        # exist a complete extraction will complete.
+                        self.extract(element, key, subdir)
                     # no need to pull from additional remotes
                     return True
                 else:
