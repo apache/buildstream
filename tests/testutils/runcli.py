@@ -299,7 +299,7 @@ class Cli(CliRunner):
         return result
 
     def invoke(self, cli, args=None, color=False, binary_capture=False, **extra):
-        r = super().invoke(cli, args, color=color)
+        r = super().invoke(cli, args, input=os.devnull, color=color)
 
         return Result(exit_code=r.exit_code,
                       exception=r.exception,
