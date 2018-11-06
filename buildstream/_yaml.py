@@ -914,6 +914,10 @@ RoundTripRepresenter.add_representer(SanitizedDict,
                                      SafeRepresenter.represent_dict)
 
 
+# Types we can short-circuit in node_sanitize for speed.
+__SANITIZE_SHORT_CIRCUIT_TYPES = (int, float, str, bool, tuple)
+
+
 # node_sanitize()
 #
 # Returnes an alphabetically ordered recursive copy
@@ -922,9 +926,21 @@ RoundTripRepresenter.add_representer(SanitizedDict,
 # Only dicts are ordered, list elements are left in order.
 #
 def node_sanitize(node):
+    # Short-circuit None which occurs ca. twice per element
+    if node is None:
+        return node
 
-    if isinstance(node, collections.abc.Mapping):
+    node_type = type(node)
+    # Next short-circuit integers, floats, strings, booleans, and tuples
+    if node_type in __SANITIZE_SHORT_CIRCUIT_TYPES:
+        return node
+    # Now short-circuit lists.  Note this is only for the raw list
+    # type, CommentedSeq and others get caught later.
+    elif node_type is list:
+        return [node_sanitize(elt) for elt in node]
 
+    # Finally ChainMap and dict, and other Mappings need special handling
+    if node_type in (dict, ChainMap) or isinstance(node, collections.Mapping):
         result = SanitizedDict()
 
         key_list = [key for key, _ in node_items(node)]
@@ -932,10 +948,12 @@ def node_sanitize(node):
             result[key] = node_sanitize(node[key])
 
         return result
-
+    # Catch the case of CommentedSeq and friends.  This is more rare and so
+    # we keep complexity down by still using isinstance here.
     elif isinstance(node, list):
         return [node_sanitize(elt) for elt in node]
 
+    # Everything else (such as commented scalars) just gets returned as-is.
     return node
 
 
