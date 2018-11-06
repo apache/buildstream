@@ -98,6 +98,8 @@ Command reference
    :prog: bst-artifact-server
 
 
+.. _server_authentication:
+
 Key pair for the server
 ~~~~~~~~~~~~~~~~~~~~~~~
 
