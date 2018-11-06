@@ -190,19 +190,34 @@ for more detail.
 Artifact server
 ~~~~~~~~~~~~~~~
 If you have setup an :ref:`artifact server <artifacts>` for your
-project then it is convenient to configure this in your ``project.conf``
+project then it is convenient to configure the following in your ``project.conf``
 so that users need not have any additional configuration to communicate
 with an artifact share.
 
 .. code:: yaml
 
+  #
+  # Artifacts
+  #
   artifacts:
+    # A remote cache from which to download prebuilt artifacts
+    - url: https://foo.com/artifacts:11001
+      server.cert: server.crt
+    # A remote cache from which to upload/download built/prebuilt artifacts
+    - url: https://foo.com/artifacts:11002
+      server-cert: server.crt
+      client-cert: client.crt
+      client-key: client.key
 
-    # A url from which to download prebuilt artifacts
-    url: https://foo.com/artifacts
+.. note::
 
-You can also specify a list of caches here; earlier entries in the list
-will have higher priority than later ones.
+    You can also specify a list of different caches here; earlier entries in the
+    list will have higher priority than later ones.
+
+The use of ports are required to distinguish between pull only access and
+push/pull access. For information regarding the server/client certificates
+and keys, please see: :ref:`Key pair for the server <server_authentication>`.
+
 
 Remote execution
 ~~~~~~~~~~~~~~~~
