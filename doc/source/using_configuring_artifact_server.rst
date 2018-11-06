@@ -239,52 +239,12 @@ We can then check if the services are successfully running with:
 For more information on systemd services see: 
 `Creating Systemd Service Files <https://www.devdungeon.com/content/creating-systemd-service-files>`_.
 
-User configuration
-~~~~~~~~~~~~~~~~~~
-The user configuration for artifacts is documented with the rest
-of the :ref:`user configuration documentation <user_config>`.
+Declaring remote artifact caches
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Remote artifact caches can be declared within either:
 
-Note that for self-signed certificates, the public key fields are mandatory.
+1. The :ref:`project configuration <project_essentials_artifacts>`, or
+2. The :ref:`user configuration <config_artifacts>`.
 
-Assuming you have the same setup used in this document, and that your
-host is reachable on the internet as ``artifacts.com`` (for example),
-then a user can use the following user configuration:
-
-Pull-only:
-
-.. code:: yaml
-
-   #
-   #    Artifacts
-   #
-   artifacts:
-
-     url: https://artifacts.com:11001
-
-     # Optional server certificate if not trusted by system root certificates
-     server-cert: server.crt
-
-Pull and push:
-
-.. code:: yaml
-
-   #
-   #    Artifacts
-   #
-   artifacts:
-
-     url: https://artifacts.com:11002
-
-     # Optional server certificate if not trusted by system root certificates
-     server-cert: server.crt
-
-     # Optional client key pair for authentication
-     client-key: client.key
-     client-cert: client.crt
-
-     push: true
-
-.. note::
-
-    Equivalent statements can be delcared in a project's configuration file
-    (the ``project.conf``).
+Please follow the above links to see examples showing how we declare remote
+caches in both the project configuration and the user configuration, respectively.
