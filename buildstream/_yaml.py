@@ -365,8 +365,8 @@ _sentinel = object()
 #
 def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
     value = node.get(key, default_value)
-    provenance = node_get_provenance(node)
     if value is _sentinel:
+        provenance = node_get_provenance(node)
         raise LoadError(LoadErrorReason.INVALID_DATA,
                         "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 
