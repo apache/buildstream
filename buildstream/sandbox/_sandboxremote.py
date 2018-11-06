@@ -28,10 +28,7 @@ from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.google.rpc import code_pb2
-
-
-class SandboxError(Exception):
-    pass
+from .._exceptions import SandboxError
 
 
 # SandboxRemote()
