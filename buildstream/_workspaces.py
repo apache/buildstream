@@ -370,10 +370,15 @@ class Workspace():
         if recalculate or self._key is None:
             fullpath = self.get_absolute_path()
 
+            excluded_files = (WORKSPACE_PROJECT_FILE,)
+
             # Get a list of tuples of the the project relative paths and fullpaths
             if os.path.isdir(fullpath):
                 filelist = utils.list_relative_paths(fullpath)
-                filelist = [(relpath, os.path.join(fullpath, relpath)) for relpath in filelist]
+                filelist = [
+                    (relpath, os.path.join(fullpath, relpath)) for relpath in filelist
+                    if relpath not in excluded_files
+                ]
             else:
                 filelist = [(self.get_absolute_path(), fullpath)]
 
