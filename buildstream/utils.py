@@ -634,7 +634,7 @@ def _parse_size(size, volume):
 
 # _pretty_size()
 #
-# Converts a number of bytes into a string representation in KB, MB, GB, TB
+# Converts a number of bytes into a string representation in KiB, MiB, GiB, TiB
 # represented as K, M, G, T etc.
 #
 # Args:
@@ -646,10 +646,11 @@ def _parse_size(size, volume):
 def _pretty_size(size, dec_places=0):
     psize = size
     unit = 'B'
-    for unit in ('B', 'K', 'M', 'G', 'T'):
+    units = ('B', 'K', 'M', 'G', 'T')
+    for unit in units:
         if psize < 1024:
             break
-        else:
+        elif unit != units[-1]:
             psize /= 1024
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
 
