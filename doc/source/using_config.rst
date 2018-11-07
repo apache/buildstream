@@ -32,38 +32,75 @@ the supported configurations on a project wide basis are listed here.
 
 Artifact server
 ~~~~~~~~~~~~~~~
-The project you build will often specify a :ref:`remote artifact cache
-<artifacts>` already, but you may want to specify extra caches. There are two
-ways to do this.  You can add one or more global caches:
+Although project's often specify a :ref:`remote artifact cache <artifacts>` in
+their ``project.conf``, you may also want to specify extra caches.
 
-**Example**
+Assuming that your host/server is reachable on the internet as ``artifacts.com``
+(for example), there are two ways to declare remote caches in your user
+configuration:
+
+1. Adding global caches:
 
 .. code:: yaml
 
+   #
+   # Artifacts
+   #
    artifacts:
-     url: https://artifacts.com/artifacts
+     # Add a cache to pull from
+     - url: https://artifacts.com/artifacts:11001
+       server-cert: server.crt
+     # Add a cache to push/pull to/from
+     - url: https://artifacts.com/artifacts:11002
+       server-cert: server.crt
+       client-cert: client.crt
+       client-key: client.key
+       push: true
+     # Add another cache to pull from
+     - url: https://anothercache.com/artifacts:8080
+       server-cert: another_server.crt
 
-Caches listed there will be considered lower priority than those specified
-by the project configuration.
+.. note::
 
-You can also add project-specific caches:
+    Caches declared here will be used by **all** BuildStream project's on the user's
+    machine and are considered a lower priority than those specified in the project
+    configuration.
 
-**Example**
+
+2. Specifying caches for a specific project within the user configuration:
 
 .. code:: yaml
 
    projects:
      project-name:
        artifacts:
-         - url: https://artifacts.com/artifacts1
-         - url: ssh://user@artifacts.com/artifacts2
+         # Add a cache to pull from
+         - url: https://artifacts.com/artifacts:11001
+           server-cert: server.crt
+         # Add a cache to push/pull to/from
+         - url: https://artifacts.com/artifacts:11002
+           server-cert: server.crt
+           client-cert: client.crt
+           client-key: client.key
            push: true
+         # Add another cache to pull from
+         - url: https://ourprojectcache.com/artifacts:8080
+           server-cert: project_server.crt
 
-Caches listed here will be considered higher priority than those specified
-by the project.
 
-If you give a list of URLs, earlier entries in the list will have higher
-priority than later ones.
+.. note::
+
+    Caches listed here will be considered a higher priority than those specified
+    by the project. Furthermore, for a given list of URLs, earlier entries will
+    have higher priority.
+
+
+Notice that the use of different ports for the same server distinguishes between
+pull only access and push/pull access. For information regarding this and the
+server/client certificates and keys, please see:
+:ref:`Key pair for the server <server_authentication>`.
+
+
 
 Strict build plan
 ~~~~~~~~~~~~~~~~~
