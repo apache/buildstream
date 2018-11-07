@@ -97,7 +97,13 @@ a new merge request. You can also `create a merge request for an existing branch
 You may open merge requests for the branches you create before you are ready
 to have them reviewed and considered for inclusion if you like. Until your merge
 request is ready for review, the merge request title must be prefixed with the
-``WIP:`` identifier.
+``WIP:`` identifier. GitLab `treats this specially
+<https://docs.gitlab.com/ee/user/project/merge_requests/work_in_progress_merge_requests.html>`_,
+which helps reviewers.
+
+Consider marking a merge request as WIP again if you are taking a while to
+address a review point. This signals that the next action is on you, and it
+won't appear in a reviewer's search for non-WIP merge requests to review.
 
 
 Organized commits
