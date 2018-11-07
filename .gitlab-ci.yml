@@ -89,6 +89,12 @@ tests-debian-9:
   image: buildstream/testsuite-debian:9-master-119-552f5fc6
   <<: *linux-tests
 
+tests-debian-9-aarch64:
+  image: buildstream/testsuite-debian:aarch64-9-master-123-8931e42c
+  tags:
+  - aarch64
+  <<: *linux-tests
+
 tests-fedora-27:
   image: buildstream/testsuite-fedora:27-master-119-552f5fc6
   <<: *linux-tests
@@ -97,8 +103,20 @@ tests-fedora-28:
   image: buildstream/testsuite-fedora:28-master-119-552f5fc6
   <<: *linux-tests
 
+tests-fedora-28-aarch64:
+  image: buildstream/testsuite-fedora:aarch64-27-master-123-8931e42c
+  tags:
+  - aarch64
+  <<: *linux-tests
+
 tests-ubuntu-18.04:
   image: buildstream/testsuite-ubuntu:18.04-master-119-552f5fc6
+  <<: *linux-tests
+
+tests-ubuntu-18.04-aarch64:
+  image: buildstream/testsuite-ubuntu:aarch64-27-master-123-8931e42c
+  tags:
+  - aarch64
   <<: *linux-tests
 
 tests-unix:
