@@ -18,8 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import shutil
-import subprocess
 
 #
 # Private module declaring some info about where the buildstream
@@ -46,44 +44,3 @@ build_all_template = os.path.join(root, 'data', 'build-all.sh.in')
 
 # Module building script template
 build_module_template = os.path.join(root, 'data', 'build-module.sh.in')
-
-# Cached bwrap version
-_bwrap_major = None
-_bwrap_minor = None
-_bwrap_patch = None
-
-
-# check_bwrap_version()
-#
-# Checks the version of installed bwrap against the requested version
-#
-# Args:
-#    major (int): The required major version
-#    minor (int): The required minor version
-#    patch (int): The required patch level
-#
-# Returns:
-#    (bool): Whether installed bwrap meets the requirements
-#
-def check_bwrap_version(major, minor, patch):
-    # pylint: disable=global-statement
-
-    global _bwrap_major
-    global _bwrap_minor
-    global _bwrap_patch
-
-    # Parse bwrap version and save into cache, if not already cached
-    if _bwrap_major is None:
-        bwrap_path = shutil.which('bwrap')
-        if not bwrap_path:
-            return False
-        cmd = [bwrap_path, "--version"]
-        try:
-            version = str(subprocess.check_output(cmd).split()[1], "utf-8")
-        except subprocess.CalledProcessError:
-            # Failure trying to run bubblewrap
-            return False
-        _bwrap_major, _bwrap_minor, _bwrap_patch = map(int, version.split("."))
-
-    # Check whether the installed version meets the requirements
-    return (_bwrap_major, _bwrap_minor, _bwrap_patch) >= (major, minor, patch)
