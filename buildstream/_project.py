@@ -30,6 +30,7 @@ from ._profile import Topics, profile_start, profile_end
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
+from .sandbox import SandboxRemote
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from .plugin import CoreWarnings
@@ -130,7 +131,7 @@ class Project():
         self._shell_host_files = []   # A list of HostMount objects
 
         self.artifact_cache_specs = None
-        self.remote_execution_url = None
+        self.remote_execution_specs = None
         self._sandbox = None
         self._splits = None
 
@@ -493,9 +494,7 @@ class Project():
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
 
         # Load remote-execution configuration for this project
-        remote_execution = _yaml.node_get(config, Mapping, 'remote-execution')
-        _yaml.node_validate(remote_execution, ['url'])
-        self.remote_execution_url = _yaml.node_get(remote_execution, str, 'url')
+        self.remote_execution_specs = SandboxRemote.specs_from_config_node(config, self.directory)
 
         # Load sandbox environment variables
         self.base_environment = _yaml.node_get(config, Mapping, 'environment')

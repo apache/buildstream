@@ -20,6 +20,7 @@
 
 import os
 import shlex
+from collections import namedtuple
 from urllib.parse import urlparse
 from functools import partial
 
@@ -33,7 +34,13 @@ from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.google.rpc import code_pb2
 from .._exceptions import SandboxError
+from .. import _yaml
 from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
+from .._artifactcache.cascache import CASRemote, CASRemoteSpec
+
+
+class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service')):
+    pass
 
 
 # SandboxRemote()
@@ -46,17 +53,69 @@ class SandboxRemote(Sandbox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        url = urlparse(kwargs['server_url'])
-        if not url.scheme or not url.hostname or not url.port:
-            raise SandboxError("Configured remote URL '{}' does not match the expected layout. "
-                               .format(kwargs['server_url']) +
-                               "It should be of the form <protocol>://<domain name>:<port>.")
-        elif url.scheme != 'http':
-            raise SandboxError("Configured remote '{}' uses an unsupported protocol. "
-                               "Only plain HTTP is currenlty supported (no HTTPS).")
+        config = kwargs['specs']  # This should be a RemoteExecutionSpec
+        if config is None:
+            return
 
-        self.server_url = '{}:{}'.format(url.hostname, url.port)
+        self.storage_url = config.storage_service['url']
+        self.exec_url = config.exec_service['url']
+
+        self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
+                                                 server_cert=config.storage_service['server-cert'],
+                                                 client_key=config.storage_service['client-key'],
+                                                 client_cert=config.storage_service['client-cert'])
         self.operation_name = None
+
+    @staticmethod
+    def specs_from_config_node(config_node, basedir):
+
+        def require_node(config, keyname):
+            val = config.get(keyname)
+            if val is None:
+                provenance = _yaml.node_get_provenance(remote_config, key=keyname)
+                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                                      "{}: '{}' was not present in the remote "
+                                      "execution configuration (remote-execution). "
+                                      .format(str(provenance), keyname))
+            return val
+
+        remote_config = config_node.get("remote-execution", None)
+        if remote_config is None:
+            return None
+
+        # Maintain some backwards compatibility with older configs, in which 'url' was the only valid key for
+        # remote-execution.
+
+        tls_keys = ['client-key', 'client-cert', 'server-cert']
+
+        _yaml.node_validate(remote_config, ['execution-service', 'storage-service', 'url'])
+        remote_exec_service_config = require_node(remote_config, 'execution-service')
+        remote_exec_storage_config = require_node(remote_config, 'storage-service')
+
+        _yaml.node_validate(remote_exec_service_config, ['url'])
+        _yaml.node_validate(remote_exec_storage_config, ['url'] + tls_keys)
+
+        if 'url' in remote_config:
+            if 'execution-service' not in remote_config:
+                remote_config['execution-service'] = {'url': remote_config['url']}
+            else:
+                provenance = _yaml.node_get_provenance(remote_config, key='url')
+                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                                      "{}: 'url' and 'execution-service' keys were found in the remote "
+                                      "execution configuration (remote-execution). "
+                                      "You can only specify one of these."
+                                      .format(str(provenance)))
+
+        for key in tls_keys:
+            if key not in remote_exec_storage_config:
+                provenance = _yaml.node_get_provenance(remote_config, key='storage-service')
+                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                                      "{}: The keys {} are necessary for the storage-service section of "
+                                      "remote-execution configuration. Your config is missing '{}'."
+                                      .format(str(provenance), tls_keys, key))
+
+        spec = RemoteExecutionSpec(remote_config['execution-service'], remote_config['storage-service'])
+        return spec
 
     def run_remote_command(self, command, input_root_digest, working_directory, environment):
         # Sends an execution request to the remote execution server.
@@ -75,12 +134,13 @@ class SandboxRemote(Sandbox):
                                                       output_directories=[self._output_directory],
                                                       platform=None)
         context = self._get_context()
-        cascache = context.artifactcache
-        # Upload the Command message to the remote CAS server
-        command_digest = cascache.push_message(self._get_project(), remote_command)
-        if not command_digest or not cascache.verify_digest_pushed(self._get_project(), command_digest):
-            raise SandboxError("Failed pushing build command to remote CAS.")
+        cascache = context.get_cascache()
+        casremote = CASRemote(self.storage_remote_spec)
 
+        # Upload the Command message to the remote CAS server
+        command_digest = cascache.push_message(casremote, remote_command)
+        if not command_digest or not cascache.verify_digest_on_remote(casremote, command_digest):
+            raise SandboxError("Failed pushing build command to remote CAS.")
         # Create and send the action.
         action = remote_execution_pb2.Action(command_digest=command_digest,
                                              input_root_digest=input_root_digest,
@@ -88,12 +148,21 @@ class SandboxRemote(Sandbox):
                                              do_not_cache=False)
 
         # Upload the Action message to the remote CAS server
-        action_digest = cascache.push_message(self._get_project(), action)
-        if not action_digest or not cascache.verify_digest_pushed(self._get_project(), action_digest):
+        action_digest = cascache.push_message(casremote, action)
+        if not action_digest or not cascache.verify_digest_on_remote(casremote, action_digest):
             raise SandboxError("Failed pushing build action to remote CAS.")
 
         # Next, try to create a communication channel to the BuildGrid server.
-        channel = grpc.insecure_channel(self.server_url)
+        url = urlparse(self.exec_url)
+        if not url.port:
+            raise SandboxError("You must supply a protocol and port number in the execution-service url, "
+                               "for example: http://buildservice:50051.")
+        if url.scheme == 'http':
+            channel = grpc.insecure_channel('{}:{}'.format(url.hostname, url.port))
+        else:
+            raise SandboxError("Remote execution currently only supports the 'http' protocol "
+                               "and '{}' was supplied.".format(url.scheme))
+
         stub = remote_execution_pb2_grpc.ExecutionStub(channel)
         request = remote_execution_pb2.ExecuteRequest(action_digest=action_digest,
                                                       skip_cache_lookup=False)
@@ -119,7 +188,7 @@ class SandboxRemote(Sandbox):
                 status_code = e.code()
                 if status_code == grpc.StatusCode.UNAVAILABLE:
                     raise SandboxError("Failed contacting remote execution server at {}."
-                                       .format(self.server_url))
+                                       .format(self.exec_url))
 
                 elif status_code in (grpc.StatusCode.INVALID_ARGUMENT,
                                      grpc.StatusCode.FAILED_PRECONDITION,
@@ -190,9 +259,11 @@ class SandboxRemote(Sandbox):
             raise SandboxError("Output directory structure had no digest attached.")
 
         context = self._get_context()
-        cascache = context.artifactcache
+        cascache = context.get_cascache()
+        casremote = CASRemote(self.storage_remote_spec)
+
         # Now do a pull to ensure we have the necessary parts.
-        dir_digest = cascache.pull_tree(self._get_project(), tree_digest)
+        dir_digest = cascache.pull_tree(casremote, tree_digest)
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
             raise SandboxError("Output directory structure pulling from remote failed.")
 
@@ -218,18 +289,23 @@ class SandboxRemote(Sandbox):
         # Upload sources
         upload_vdir = self.get_virtual_directory()
 
+        cascache = self._get_context().get_cascache()
         if isinstance(upload_vdir, FileBasedDirectory):
             # Make a new temporary directory to put source in
-            upload_vdir = CasBasedDirectory(self._get_context().artifactcache.cas, ref=None)
+            upload_vdir = CasBasedDirectory(cascache, ref=None)
             upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
         upload_vdir.recalculate_hash()
 
-        context = self._get_context()
-        cascache = context.artifactcache
+        casremote = CASRemote(self.storage_remote_spec)
         # Now, push that key (without necessarily needing a ref) to the remote.
-        cascache.push_directory(self._get_project(), upload_vdir)
-        if not cascache.verify_digest_pushed(self._get_project(), upload_vdir.ref):
+
+        try:
+            cascache.push_directory(casremote, upload_vdir)
+        except grpc.RpcError as e:
+            raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
+
+        if not cascache.verify_digest_on_remote(casremote, upload_vdir.ref):
             raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
 
         # Now transmit the command to execute
