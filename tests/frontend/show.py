@@ -45,6 +45,27 @@ def test_show_invalid_element_path(cli, datafiles):
         'show',
         "foo.bst"])
 
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project_default'))
+def test_show_default(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=[
+        'show'])
+
+    result.assert_success()
+
+    # Get the result output of "[state sha element]" and turn into a list
+    results = result.output.strip().split(" ")
+    expected = 'target2.bst'
+    assert results[2] == expected
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project_fail'))
+def test_show_fail(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=[
+        'show'])
+
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
