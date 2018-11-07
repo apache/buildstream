@@ -156,6 +156,16 @@ number must be referenced in the commit message.
 
   Fixes #123
 
+Note that the 'why' of a change is as important as the 'what'.
+
+When reviewing this, folks can suggest better alternatives when they know the
+'why'. Perhaps there are other ways to avoid an error when things are not
+frobnicated.
+
+When folks modify this code, there may be uncertainty around whether the foos
+should always be frobnicated. The comments, the commit message, and issue #123
+should shed some light on that.
+
 In the case that you have a commit which necessarily modifies multiple
 components, then the summary line should still mention generally what
 changed (if possible), followed by a colon and a brief summary.
