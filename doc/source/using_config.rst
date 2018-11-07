@@ -147,6 +147,44 @@ The default mirror is defined by its name, e.g.
    ``--default-mirror`` command-line option.
 
 
+Local cache expiry
+~~~~~~~~~~~~~~~~~~
+BuildStream locally caches artifacts, build trees, log files and sources within a
+cache located at ``~/.cache/buildstream`` (unless a $XDG_CACHE_HOME environment
+variable exists). When building large projects, this cache can get very large,
+thus BuildStream will attempt to clean up the cache automatically by expiring the least
+recently *used* artifacts.
+
+By default, cache expiry will begin once the file system which contains the cache
+approaches maximum usage. However, it is also possible to impose a quota on the local
+cache in the user configuration. This can be done in two ways:
+
+1. By restricting the maximum size of the cache directory itself.
+
+For example, to ensure that BuildStream's cache does not grow beyond 100 GB,
+simply declare the following in your user configuration (``~/.config/buildstream.conf``):
+
+.. code:: yaml
+
+  cache:
+    quota: 100G
+
+This quota defines the maximum size of the artifact cache in bytes.
+Other accepted values are: K, M, G or T (or you can simply declare the value in bytes, without the suffix).
+This uses the same format as systemd's
+`resource-control <https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html>`_.
+
+2. By expiring artifacts once the file system which contains the cache exceeds a specified usage.
+
+To ensure that we start cleaning the cache once we've used 80% of local disk space (on the file system
+which mounts the cache):
+
+.. code:: yaml
+
+  cache:
+    quota: 80%
+
+
 Default configuration
 ---------------------
 The default BuildStream configuration is specified here for reference:
