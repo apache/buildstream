@@ -128,6 +128,12 @@ If a commit in your branch modifies behavior such that a test must also
 be changed to match the new behavior, then the tests should be updated
 with the same commit, so that every commit passes its own tests.
 
+These principles apply whenever a branch is non-WIP. So for example, don't push
+'fixup!' commits when addressing review comments, instead amend the commits
+directly before pushing. GitLab has `good support
+<https://docs.gitlab.com/ee/user/project/merge_requests/versions.html>`_ for
+diffing between pushes, so 'fixup!' commits are not necessary for reviewers.
+
 
 Commit messages
 ~~~~~~~~~~~~~~~
