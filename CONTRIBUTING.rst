@@ -97,7 +97,13 @@ a new merge request. You can also `create a merge request for an existing branch
 You may open merge requests for the branches you create before you are ready
 to have them reviewed and considered for inclusion if you like. Until your merge
 request is ready for review, the merge request title must be prefixed with the
-``WIP:`` identifier.
+``WIP:`` identifier. GitLab `treats this specially
+<https://docs.gitlab.com/ee/user/project/merge_requests/work_in_progress_merge_requests.html>`_,
+which helps reviewers.
+
+Consider marking a merge request as WIP again if you are taking a while to
+address a review point. This signals that the next action is on you, and it
+won't appear in a reviewer's search for non-WIP merge requests to review.
 
 
 Organized commits
@@ -122,6 +128,12 @@ If a commit in your branch modifies behavior such that a test must also
 be changed to match the new behavior, then the tests should be updated
 with the same commit, so that every commit passes its own tests.
 
+These principles apply whenever a branch is non-WIP. So for example, don't push
+'fixup!' commits when addressing review comments, instead amend the commits
+directly before pushing. GitLab has `good support
+<https://docs.gitlab.com/ee/user/project/merge_requests/versions.html>`_ for
+diffing between pushes, so 'fixup!' commits are not necessary for reviewers.
+
 
 Commit messages
 ~~~~~~~~~~~~~~~
@@ -143,6 +155,16 @@ number must be referenced in the commit message.
   an error to inform the user of invalid frobnication rules.
 
   Fixes #123
+
+Note that the 'why' of a change is as important as the 'what'.
+
+When reviewing this, folks can suggest better alternatives when they know the
+'why'. Perhaps there are other ways to avoid an error when things are not
+frobnicated.
+
+When folks modify this code, there may be uncertainty around whether the foos
+should always be frobnicated. The comments, the commit message, and issue #123
+should shed some light on that.
 
 In the case that you have a commit which necessarily modifies multiple
 components, then the summary line should still mention generally what
