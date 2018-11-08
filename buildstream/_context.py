@@ -122,6 +122,10 @@ class Context():
         # remove a workspace directory.
         self.prompt_workspace_close_remove_dir = None
 
+        # Boolean, whether we double-check with the user that they meant to
+        # close the workspace when they're using it to access the project.
+        self.prompt_workspace_close_project_inaccessible = None
+
         # Boolean, whether we double-check with the user that they meant to do
         # a hard reset of a workspace, potentially losing changes.
         self.prompt_workspace_reset_hard = None
@@ -251,12 +255,15 @@ class Context():
             defaults, Mapping, 'prompt')
         _yaml.node_validate(prompt, [
             'auto-init', 'really-workspace-close-remove-dir',
+            'really-workspace-close-project-inaccessible',
             'really-workspace-reset-hard',
         ])
         self.prompt_auto_init = _node_get_option_str(
             prompt, 'auto-init', ['ask', 'no']) == 'ask'
         self.prompt_workspace_close_remove_dir = _node_get_option_str(
             prompt, 'really-workspace-close-remove-dir', ['ask', 'yes']) == 'ask'
+        self.prompt_workspace_close_project_inaccessible = _node_get_option_str(
+            prompt, 'really-workspace-close-project-inaccessible', ['ask', 'yes']) == 'ask'
         self.prompt_workspace_reset_hard = _node_get_option_str(
             prompt, 'really-workspace-reset-hard', ['ask', 'yes']) == 'ask'
 

@@ -696,6 +696,20 @@ class Stream():
 
         return False
 
+    # workspace_is_required()
+    #
+    # Checks whether the workspace belonging to element_name is required to
+    # load the project
+    #
+    # Args:
+    #    element_name (str): The element whose workspace may be required
+    #
+    # Returns:
+    #    (bool): True if the workspace is required
+    def workspace_is_required(self, element_name):
+        invoked_elm = self._project.invoked_from_workspace_element()
+        return invoked_elm == element_name
+
     # workspace_list
     #
     # Serializes the workspaces and dumps them in YAML to stdout.

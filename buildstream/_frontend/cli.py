@@ -763,11 +763,19 @@ def workspace_close(app, remove_dir, all_, elements):
 
         elements = app.stream.redirect_element_names(elements)
 
-        # Check that the workspaces in question exist
+        # Check that the workspaces in question exist, and that it's safe to
+        # remove them.
         nonexisting = []
         for element_name in elements:
             if not app.stream.workspace_exists(element_name):
                 nonexisting.append(element_name)
+            if (app.stream.workspace_is_required(element_name) and app.interactive and
+                    app.context.prompt_workspace_close_project_inaccessible):
+                click.echo("Removing '{}' will prevent you from running "
+                           "BuildStream commands from the current directory".format(element_name))
+                if not click.confirm('Are you sure you want to close this workspace?'):
+                    click.echo('Aborting', err=True)
+                    sys.exit(-1)
         if nonexisting:
             raise AppError("Workspace does not exist", detail="\n".join(nonexisting))
 
