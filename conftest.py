@@ -23,6 +23,8 @@ import shutil
 
 import pytest
 
+from buildstream._platform.platform import Platform
+
 
 def pytest_addoption(parser):
     parser.addoption('--integration', action='store_true', default=False,
@@ -52,3 +54,8 @@ def integration_cache(request):
         shutil.rmtree(os.path.join(cache_dir, 'artifacts'))
     except FileNotFoundError:
         pass
+
+
+@pytest.fixture(autouse=True)
+def clean_platform_cache():
+    Platform._instance = None
