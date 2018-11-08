@@ -1547,6 +1547,24 @@ Tests that run a sandbox should be decorated with::
 
 and use the integration cli helper.
 
+You should first aim to write tests that exercise your changes from the cli.
+This is so that the testing is end-to-end, and the changes are guaranteed to
+work for the end-user. The cli is considered stable, and so tests written in
+terms of it are unlikely to require updating as the internals of the software
+change over time.
+
+It may be impractical to sufficiently examine some changes this way. For
+example, the number of cases to test and the running time of each test may be
+too high. It may also be difficult to contrive circumstances to cover every
+line of the change. If this is the case, next you can consider also writing
+unit tests that work more directly on the changes.
+
+It is important to write unit tests in such a way that they do not break due to
+changes unrelated to what they are meant to test. For example, if the test
+relies on a lot of BuildStream internals, a large refactoring will likely
+require the test to be rewritten. Pure functions that only rely on the Python
+Standard Library are excellent candidates for unit testing.
+
 
 Measuring performance
 ---------------------
