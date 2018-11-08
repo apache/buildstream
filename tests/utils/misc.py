@@ -27,4 +27,5 @@ def test_parse_size_over_1024T(cli, tmpdir):
     patched_statvfs = mock_os.mock_statvfs(f_bavail=bavail, f_bsize=BLOCK_SIZE)
     with mock_os.monkey_patch("statvfs", patched_statvfs):
         result = cli.run(project, args=["build", "file.bst"])
-        assert "1025T of available system storage" in result.stderr
+        failure_msg = 'Your system does not have enough available space to support the cache quota specified.'
+        assert failure_msg in result.stderr
