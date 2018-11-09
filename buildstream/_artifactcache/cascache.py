@@ -24,7 +24,6 @@ import os
 import stat
 import tempfile
 import uuid
-import errno
 from urllib.parse import urlparse
 
 import grpc
@@ -140,17 +139,13 @@ class CASCache():
             checkoutdir = os.path.join(tmpdir, ref)
             self._checkout(checkoutdir, tree)
 
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
             try:
-                os.rename(checkoutdir, dest)
+                utils.move_atomic(checkoutdir, dest)
+            except utils.DirectoryExistsError:
+                # Another process beat us to rename
+                pass
             except OSError as e:
-                # With rename it's possible to get either ENOTEMPTY or EEXIST
-                # in the case that the destination path is a not empty directory.
-                #
-                # If rename fails with these errors, another process beat
-                # us to it so just ignore.
-                if e.errno not in [errno.ENOTEMPTY, errno.EEXIST]:
-                    raise CASError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
+                raise CASError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
 
         return originaldest
 
