@@ -111,6 +111,7 @@ Class Reference
 
 import os
 import subprocess
+import sys
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
@@ -190,7 +191,7 @@ class Plugin():
         # Dont send anything through the Message() pipeline at destruction time,
         # any subsequent lookup of plugin by unique id would raise KeyError.
         if self.__context.log_debug:
-            print("DEBUG: Destroyed: {}".format(self))
+            sys.stderr.write("DEBUG: Destroyed: {}\n".format(self))
 
     def __str__(self):
         return "{kind} {typetag} at {provenance}".format(
