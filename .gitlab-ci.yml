@@ -13,6 +13,7 @@ stages:
 variables:
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
+  TEST_COMMAND: 'python3 setup.py test --index-url invalid://uri --addopts --integration'
 
 #####################################################
 #                  Prepare stage                    #
@@ -77,7 +78,7 @@ source_dist:
 
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
+  - su buildstream -c "${TEST_COMMAND}"
 
   after_script:
   # Collect our reports
@@ -134,7 +135,7 @@ tests-unix:
     - dnf erase -y bubblewrap ostree
 
     # Since the unix platform is required to run as root, no user change required
-    - python3 setup.py test --index-url invalid://uri --addopts --integration
+    - ${TEST_COMMAND}
 
 
 tests-fedora-missing-deps:
@@ -152,7 +153,7 @@ tests-fedora-missing-deps:
     - useradd -Um buildstream
     - chown -R buildstream:buildstream .
 
-    - python3 setup.py test --index-url invalid://uri --addopts --integration
+    - ${TEST_COMMAND}
 
 
 # Automatically build documentation for every commit, we want to know
