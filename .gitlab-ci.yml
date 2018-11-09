@@ -152,7 +152,6 @@ tests-unix:
   artifacts:
     paths:
     - coverage-unix/
-    - logs-unix/
 
 
 # Automatically build documentation for every commit, we want to know
