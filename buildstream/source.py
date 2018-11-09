@@ -973,32 +973,34 @@ class Source(Plugin):
             # the items of source_fetchers, if it happens to be a generator.
             #
             source_fetchers = iter(source_fetchers)
-            try:
 
-                while True:
+            while True:
 
-                    with context.silence():
+                with context.silence():
+                    try:
                         fetcher = next(source_fetchers)
-
-                    alias = fetcher._get_alias()
-                    for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
-                        try:
-                            fetcher.fetch(uri)
-                        # FIXME: Need to consider temporary vs. permanent failures,
-                        #        and how this works with retries.
-                        except BstError as e:
-                            last_error = e
-                            continue
-
-                        # No error, we're done with this fetcher
+                    except StopIteration:
+                        # as per PEP479, we are not allowed to let StopIteration
+                        # thrown from a context manager.
+                        # Catching it here and breaking instead.
                         break
 
-                    else:
-                        # No break occurred, raise the last detected error
-                        raise last_error
+                alias = fetcher._get_alias()
+                for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
+                    try:
+                        fetcher.fetch(uri)
+                    # FIXME: Need to consider temporary vs. permanent failures,
+                    #        and how this works with retries.
+                    except BstError as e:
+                        last_error = e
+                        continue
 
-            except StopIteration:
-                pass
+                    # No error, we're done with this fetcher
+                    break
+
+                else:
+                    # No break occurred, raise the last detected error
+                    raise last_error
 
         # Default codepath is to reinstantiate the Source
         #
