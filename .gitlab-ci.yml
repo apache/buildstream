@@ -56,7 +56,7 @@ source_dist:
 
 # Run premerge commits
 #
-.linux-tests-template: &linux-tests
+.tests-template: &tests
   stage: test
 
   variables:
@@ -91,33 +91,28 @@ source_dist:
 
 tests-debian-9:
   image: buildstream/testsuite-debian:9-master-123-7ce6581b
-  <<: *linux-tests
-  except:
-  - schedules
+  <<: *tests
 
 tests-fedora-27:
   image: buildstream/testsuite-fedora:27-master-123-7ce6581b
-  <<: *linux-tests
-  except:
-  - schedules
+  <<: *tests
 
 tests-fedora-28:
   image: buildstream/testsuite-fedora:28-master-123-7ce6581b
-  <<: *linux-tests
-  except:
-  - schedules
+  <<: *tests
 
 tests-ubuntu-18.04:
   image: buildstream/testsuite-ubuntu:18.04-master-123-7ce6581b
-  <<: *linux-tests
-  except:
-  - schedules
+  <<: *tests
 
 overnight-fedora-28-aarch64:
   image: buildstream/testsuite-fedora:aarch64-28-master-123-7ce6581b
   tags:
     - aarch64
-  <<: *linux-tests
+  <<: *tests
+  # We need to override the exclusion from the template
+  # in order to run on schedules
+  except: []
   only:
   - schedules
 
@@ -125,9 +120,10 @@ tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
   image: buildstream/testsuite-fedora:27-master-123-7ce6581b
-  stage: test
+  <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
+    COVERAGE_DIR: coverage-unix
 
   script:
 
@@ -137,21 +133,8 @@ tests-unix:
     - dnf mark install fuse-libs
     - dnf erase -y bubblewrap ostree
 
-    # Unpack and get into dist/buildstream
-    - cd dist && ./unpack.sh && cd buildstream
-
     # Since the unix platform is required to run as root, no user change required
     - python3 setup.py test --index-url invalid://uri --addopts --integration
-
-    # Go back to the toplevel and collect our reports
-    - cd ../..
-    - mkdir -p coverage-unix/
-    - cp dist/buildstream/.coverage coverage-unix/coverage.unix
-  except:
-  - schedules
-  artifacts:
-    paths:
-    - coverage-unix/
 
 
 # Automatically build documentation for every commit, we want to know
@@ -276,7 +259,7 @@ coverage:
     - pip3 install --no-index .
     - mkdir report
     - cd report
-    - cp ../../../coverage-unix/coverage.unix .
+    - cp ../../../coverage-unix/coverage.* .
     - cp ../../../coverage-linux/coverage.* .
     - ls coverage.*
     - coverage combine --rcfile=../.coveragerc -a coverage.*
