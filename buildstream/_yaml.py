@@ -1082,15 +1082,48 @@ class ChainMap(collections.ChainMap):
             return default
 
 
+# Node copying
+#
+# Unfortunately we copy nodes a *lot* and `isinstance()` is super-slow when
+# things from collections.abc get involved.  The result is the following
+# intricate but substantially faster group of tuples and the use of `in`.
+#
+# If any of the {node,list}_{chain_,}_copy routines raise a ValueError
+# then it's likely additional types need adding to these tuples.
+
+# When chaining a copy, these types are skipped since the ChainMap will
+# retrieve them from the source node when needed.  Other copiers might copy
+# them, so we call them __QUICK_TYPES.
+__QUICK_TYPES = (str, bool,
+                 yaml.scalarstring.PreservedScalarString,
+                 yaml.scalarstring.SingleQuotedScalarString,
+                 yaml.scalarstring.DoubleQuotedScalarString)
+
+# These types have to be iterated like a dictionary
+__DICT_TYPES = (dict, ChainMap, yaml.comments.CommentedMap)
+
+# These types have to be iterated like a list
+__LIST_TYPES = (list, yaml.comments.CommentedSeq)
+
+# These are the provenance types, which have to be cloned rather than any other
+# copying tactic.
+__PROVENANCE_TYPES = (Provenance, DictProvenance, MemberProvenance, ElementProvenance)
+
+
 def node_chain_copy(source):
     copy = ChainMap({}, source)
     for key, value in source.items():
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+        if value_type in __DICT_TYPES:
             copy[key] = node_chain_copy(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             copy[key] = list_chain_copy(value)
-        elif isinstance(value, Provenance):
+        elif value_type in __PROVENANCE_TYPES:
             copy[key] = value.clone()
+        elif value_type in __QUICK_TYPES:
+            pass  # No need to copy these, the chainmap deals with it
+        else:
+            raise ValueError("Unable to be quick about node_chain_copy of {}".format(value_type))
 
     return copy
 
@@ -1098,14 +1131,17 @@ def node_chain_copy(source):
 def list_chain_copy(source):
     copy = []
     for item in source:
-        if isinstance(item, collections.abc.Mapping):
+        item_type = type(item)
+        if item_type in __DICT_TYPES:
             copy.append(node_chain_copy(item))
-        elif isinstance(item, list):
+        elif item_type in __LIST_TYPES:
             copy.append(list_chain_copy(item))
-        elif isinstance(item, Provenance):
+        elif item_type in __PROVENANCE_TYPES:
             copy.append(item.clone())
-        else:
+        elif item_type in __QUICK_TYPES:
             copy.append(item)
+        else:  # Fallback
+            raise ValueError("Unable to be quick about list_chain_copy of {}".format(item_type))
 
     return copy
 
@@ -1113,14 +1149,17 @@ def list_chain_copy(source):
 def node_copy(source):
     copy = {}
     for key, value in source.items():
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+        if value_type in __DICT_TYPES:
             copy[key] = node_copy(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             copy[key] = list_copy(value)
-        elif isinstance(value, Provenance):
+        elif value_type in __PROVENANCE_TYPES:
             copy[key] = value.clone()
-        else:
+        elif value_type in __QUICK_TYPES:
             copy[key] = value
+        else:
+            raise ValueError("Unable to be quick about node_copy of {}".format(value_type))
 
     ensure_provenance(copy)
 
@@ -1130,14 +1169,17 @@ def node_copy(source):
 def list_copy(source):
     copy = []
     for item in source:
-        if isinstance(item, collections.abc.Mapping):
+        item_type = type(item)
+        if item_type in __DICT_TYPES:
             copy.append(node_copy(item))
-        elif isinstance(item, list):
+        elif item_type in __LIST_TYPES:
             copy.append(list_copy(item))
-        elif isinstance(item, Provenance):
+        elif item_type in __PROVENANCE_TYPES:
             copy.append(item.clone())
-        else:
+        elif item_type in __QUICK_TYPES:
             copy.append(item)
+        else:
+            raise ValueError("Unable to be quick about list_copy of {}".format(item_type))
 
     return copy
 
