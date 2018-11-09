@@ -68,7 +68,6 @@ details on common configuration options for sources.
    The ``pip`` plugin is available since :ref:`format version 16 <project_format_version>`
 """
 
-import errno
 import hashlib
 import os
 import re
@@ -193,13 +192,14 @@ class PipSource(Source):
             # process has fetched the sources before us and ensure that we do
             # not raise an error in that case.
             try:
-                os.makedirs(self._mirror)
-                os.rename(package_dir, self._mirror)
-            except FileExistsError:
-                return
+                utils.move_atomic(package_dir, self._mirror)
+            except utils.DirectoryExistsError:
+                # Another process has beaten us and has fetched the sources
+                # before us.
+                pass
             except OSError as e:
-                if e.errno != errno.ENOTEMPTY:
-                    raise
+                raise SourceError("{}: Failed to move downloaded pip packages from '{}' to '{}': {}"
+                                  .format(self, package_dir, self._mirror, e)) from e
 
     def stage(self, directory):
         with self.timed_activity("Staging Python packages", silent_nested=True):
