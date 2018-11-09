@@ -59,30 +59,35 @@ source_dist:
 .linux-tests-template: &linux-tests
   stage: test
 
-  script:
+  variables:
+    COVERAGE_DIR: coverage-linux
+
+  before_script:
   # Diagnostics
   - mount
   - df -h
 
+  # Unpack
+  - cd dist && ./unpack.sh
+  - cd buildstream
+
+  script:
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
-
-  # Unpack and get into dist/buildstream
-  - cd dist && ./unpack.sh
-  - chown -R buildstream:buildstream buildstream
-  - cd buildstream
 
   # Run the tests from the source distribution, We run as a simple
   # user to test for permission issues
   - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
 
-  # Go back to the toplevel and collect our reports
-  - cd ../..
-  - mkdir -p coverage-linux/
-  - cp dist/buildstream/.coverage coverage-linux/coverage."${CI_JOB_NAME}"
+  after_script:
+  # Collect our reports
+  - mkdir -p ${COVERAGE_DIR}
+  - cp dist/buildstream/.coverage ${COVERAGE_DIR}/coverage."${CI_JOB_NAME}"
+  except:
+  - schedules
   artifacts:
     paths:
-    - coverage-linux/
+    - ${COVERAGE_DIR}
 
 tests-debian-9:
   image: buildstream/testsuite-debian:9-master-123-7ce6581b
