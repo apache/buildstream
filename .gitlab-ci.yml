@@ -10,6 +10,10 @@ stages:
   - test
   - post
 
+variables:
+  PYTEST_ADDOPTS: "--color=yes"
+  INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
+
 #####################################################
 #                  Prepare stage                    #
 #####################################################
@@ -54,9 +58,6 @@ source_dist:
 #
 .linux-tests-template: &linux-tests
   stage: test
-  variables:
-    PYTEST_ADDOPTS: "--color=yes"
-    INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
 
   script:
   # Diagnostics
@@ -122,8 +123,7 @@ tests-unix:
   stage: test
   variables:
     BST_FORCE_BACKEND: "unix"
-    PYTEST_ADDOPTS: "--color=yes"
-    INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
+
   script:
 
     # We remove the Bubblewrap and OSTree packages here so that we catch any
