@@ -137,6 +137,24 @@ tests-unix:
     - python3 setup.py test --index-url invalid://uri --addopts --integration
 
 
+tests-fedora-missing-deps:
+  # Ensure that tests behave nicely while missing bwrap and ostree
+  image: buildstream/testsuite-fedora:28-master-119-552f5fc6
+  <<: *tests
+
+  script:
+    # We remove the Bubblewrap and OSTree packages here so that we catch any
+    # codepaths that try to use them. Removing OSTree causes fuse-libs to
+    # disappear unless we mark it as user-installed.
+    - dnf mark install fuse-libs
+    - dnf erase -y bubblewrap ostree
+
+    - useradd -Um buildstream
+    - chown -R buildstream:buildstream .
+
+    - python3 setup.py test --index-url invalid://uri --addopts --integration
+
+
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
 # Note: We still do not enforce a consistent installation of python3-sphinx,
