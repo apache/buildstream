@@ -21,14 +21,11 @@
 #
 
 import os
-from unittest import mock
 import pytest
-import py.path
 
 from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml, SourceError
+from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
-from buildstream.plugins.sources.git import GitMirror
 
 from tests.testutils import cli, create_repo
 from tests.testutils.site import HAVE_GIT
@@ -37,64 +34,6 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'git',
 )
-
-
-@pytest.mark.parametrize(
-    ["type_", "setup"],
-    [
-        ("inexistent-dir", lambda path: None),
-        ("empty-dir", lambda path: path.mkdir()),
-        ("non-empty-dir", lambda path: path.join("bad").write("hi", ensure=True)),
-        ("file", lambda path: path.write("no")),
-    ],
-)
-def test_git_mirror_atomic_move(tmpdir, type_, setup):
-    # Create required elements
-    class DummySource:
-        def get_mirror_directory(self):
-            return str(tmpdir.join("source").mkdir())
-
-        status = mock.MagicMock()
-
-    url = "file://{}/url".format(tmpdir)
-
-    # Create fake download directory
-    download_dir = tmpdir.join("download_dir")
-    download_dir.join("oracle").write("hello", ensure=True)
-
-    # Initiate mirror
-    mirror = GitMirror(DummySource(), None, url, None)
-
-    # Setup destination directory
-    setup(py.path.local(mirror.mirror))
-
-    # Copy directory content
-    if type_ == "file":
-        with pytest.raises(SourceError):
-            mirror._atomic_move_mirror(str(download_dir), mirror.url)
-    else:
-        mirror._atomic_move_mirror(str(download_dir), mirror.url)
-
-    # Validate
-    if type_ == "non-empty-dir":
-        # With a non empty directory, we should not have overriden
-        # and notified a status
-        assert DummySource.status.called
-
-        expected_oracle = os.path.join(mirror.mirror, "bad")
-        expected_content = "hi"
-    elif type_ == "file":
-        expected_oracle = mirror.mirror
-        expected_content = "no"
-    else:
-        # Otherwise we should have a new directory and the data
-        expected_oracle = os.path.join(mirror.mirror, "oracle")
-        expected_content = "hello"
-
-    assert os.path.exists(expected_oracle)
-
-    with open(expected_oracle) as fp:
-        assert fp.read() == expected_content
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")

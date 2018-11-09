@@ -86,7 +86,6 @@ This plugin also utilises the following configurable core plugin warnings:
 """
 
 import os
-import errno
 import re
 import shutil
 from collections.abc import Mapping
@@ -97,6 +96,7 @@ from configparser import RawConfigParser
 from buildstream import Source, SourceError, Consistency, SourceFetcher
 from buildstream import utils
 from buildstream.plugin import CoreWarnings
+from buildstream.utils import move_atomic, DirectoryExistsError
 
 GIT_MODULES = '.gitmodules'
 
@@ -141,24 +141,16 @@ class GitMirror(SourceFetcher):
                                  fail="Failed to clone git repository {}".format(url),
                                  fail_temporarily=True)
 
-                self._atomic_move_mirror(tmpdir, url)
-
-    def _atomic_move_mirror(self, tmpdir, url):
-        # Attempt atomic rename into destination, this will fail if
-        # another process beat us to the punch
-        try:
-            os.rename(tmpdir, self.mirror)
-        except OSError as e:
-            # When renaming and the destination repo already exists, os.rename()
-            # will fail with either ENOTEMPTY or EEXIST, depending on the underlying
-            # implementation.
-            # An empty directory would always be replaced.
-            if e.errno in (errno.EEXIST, errno.ENOTEMPTY):
-                self.source.status("{}: Discarding duplicate clone of {}"
-                                   .format(self.source, url))
-            else:
-                raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}': {}"
-                                  .format(self.source, url, tmpdir, self.mirror, e)) from e
+                try:
+                    move_atomic(tmpdir, self.mirror)
+                except DirectoryExistsError:
+                    # Another process was quicker to download this repository.
+                    # Let's discard our own
+                    self.source.status("{}: Discarding duplicate clone of {}"
+                                       .format(self.source, url))
+                except OSError as e:
+                    raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}': {}"
+                                      .format(self.source, url, tmpdir, self.mirror, e)) from e
 
     def _fetch(self, alias_override=None):
         url = self.source.translate_url(self.url,
