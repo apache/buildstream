@@ -3,7 +3,7 @@ import pytest
 
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import assert_contains
-from tests.testutils.site import IS_LINUX
+from tests.testutils.site import IS_LINUX, MACHINE_ARCH
 
 pytestmark = pytest.mark.integration
 
@@ -13,6 +13,8 @@ DATA_DIR = os.path.join(
 
 
 # Test that the project builds successfully
+@pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
+                    reason='Examples are writtent for x86_64')
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build(cli, tmpdir, datafiles):
@@ -23,6 +25,8 @@ def test_build(cli, tmpdir, datafiles):
 
 
 # Test the callHello script works as expected.
+@pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
+                    reason='Examples are writtent for x86_64')
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_shell_call_hello(cli, tmpdir, datafiles):
