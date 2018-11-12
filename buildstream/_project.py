@@ -219,6 +219,19 @@ class Project():
 
         return self._cache_key
 
+    def _validate_node(self, node):
+        _yaml.node_validate(node, [
+            'format-version',
+            'element-path', 'variables',
+            'environment', 'environment-nocache',
+            'split-rules', 'elements', 'plugins',
+            'aliases', 'name',
+            'artifacts', 'options',
+            'fail-on-overlap', 'shell', 'fatal-warnings',
+            'ref-storage', 'sandbox', 'mirrors', 'remote-execution',
+            'sources', '(@)'
+        ])
+
     # create_element()
     #
     # Instantiate and return an element
@@ -402,6 +415,8 @@ class Project():
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
                 .format(format_version, major, minor, BST_FORMAT_VERSION))
 
+        self._validate_node(pre_config_node)
+
         # FIXME:
         #
         #   Performing this check manually in the absense
@@ -467,16 +482,7 @@ class Project():
 
         self._load_pass(config, self.config)
 
-        _yaml.node_validate(config, [
-            'format-version',
-            'element-path', 'variables',
-            'environment', 'environment-nocache',
-            'split-rules', 'elements', 'plugins',
-            'aliases', 'name',
-            'artifacts', 'options',
-            'fail-on-overlap', 'shell', 'fatal-warnings',
-            'ref-storage', 'sandbox', 'mirrors', 'remote-execution'
-        ])
+        self._validate_node(config)
 
         #
         # Now all YAML composition is done, from here on we just load
