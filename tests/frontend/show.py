@@ -36,6 +36,19 @@ def test_show(cli, datafiles, target, format, expected):
                              .format(expected, result.output))
 
 
+@pytest.mark.datafiles(os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "invalid_element_path",
+))
+def test_show_invalid_element_path(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        "foo.bst"])
+
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("target,except_,expected", [
     ('target.bst', 'import-bin.bst', ['import-dev.bst', 'compose-all.bst', 'target.bst']),
