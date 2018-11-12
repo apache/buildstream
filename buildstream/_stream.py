@@ -370,7 +370,7 @@ class Stream():
     #    target (str): Target to checkout
     #    location (str): Location to checkout the artifact to
     #    force (bool): Whether files can be overwritten if necessary
-    #    deps (str): The dependencies to checkout
+    #    scope (str): The scope of dependencies to checkout
     #    integrate (bool): Whether to run integration commands
     #    hardlinks (bool): Whether checking out files hardlinked to
     #                      their artifacts is acceptable
@@ -383,7 +383,7 @@ class Stream():
     def checkout(self, target, *,
                  location=None,
                  force=False,
-                 deps='run',
+                 scope=Scope.RUN,
                  integrate=True,
                  hardlinks=False,
                  tar=False):
@@ -396,7 +396,7 @@ class Stream():
 
         # Stage deps into a temporary sandbox first
         try:
-            with target._prepare_sandbox(Scope.RUN, None, deps=deps,
+            with target._prepare_sandbox(scope=scope, directory=None,
                                          integrate=integrate) as sandbox:
 
                 # Copy or move the sandbox to the target directory

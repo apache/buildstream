@@ -1339,7 +1339,7 @@ class Element(Plugin):
     # is used to stage things by the `bst checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, directory, deps='run', integrate=True):
+    def _prepare_sandbox(self, scope, directory, shell=False, integrate=True):
         # bst shell and bst checkout require a local sandbox.
         bare_directory = True if directory else False
         with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False,
@@ -1350,26 +1350,18 @@ class Element(Plugin):
 
             # Stage something if we need it
             if not directory:
-                if scope == Scope.BUILD:
+                if shell and scope == Scope.BUILD:
                     self.stage(sandbox)
-                elif scope == Scope.RUN:
-
-                    if deps == 'build':
-                        dependency_scope = Scope.BUILD
-                    elif deps == 'run':
-                        dependency_scope = Scope.RUN
-                    else:
-                        dependency_scope = Scope.NONE
-
+                else:
                     # Stage deps in the sandbox root
                     with self.timed_activity("Staging dependencies", silent_nested=True):
-                        self.stage_dependency_artifacts(sandbox, dependency_scope)
+                        self.stage_dependency_artifacts(sandbox, scope)
 
                     # Run any integration commands provided by the dependencies
                     # once they are all staged and ready
                     if integrate:
                         with self.timed_activity("Integrating sandbox"):
-                            for dep in self.dependencies(dependency_scope):
+                            for dep in self.dependencies(scope):
                                 dep.integrate(sandbox)
 
             yield sandbox
@@ -1865,7 +1857,7 @@ class Element(Plugin):
     # If directory is not specified, one will be staged using scope
     def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None):
 
-        with self._prepare_sandbox(scope, directory) as sandbox:
+        with self._prepare_sandbox(scope, directory, shell=True) as sandbox:
             environment = self.get_environment()
             environment = copy.copy(environment)
             flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY

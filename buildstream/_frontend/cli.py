@@ -657,16 +657,24 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
 def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
     """Checkout a built artifact to the specified location
     """
+    from ..element import Scope
 
     if hardlinks and tar:
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
         sys.exit(-1)
 
+    if deps == "run":
+        scope = Scope.RUN
+    elif deps == "build":
+        scope = Scope.BUILD
+    elif deps == "none":
+        scope = Scope.NONE
+
     with app.initialized():
         app.stream.checkout(element,
                             location=location,
                             force=force,
-                            deps=deps,
+                            scope=scope,
                             integrate=integrate,
                             hardlinks=hardlinks,
                             tar=tar)
