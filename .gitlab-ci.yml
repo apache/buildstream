@@ -86,25 +86,31 @@ source_dist:
     - coverage-linux/
 
 tests-debian-9:
-  image: buildstream/testsuite-debian:9-master-119-552f5fc6
+  image: buildstream/testsuite-debian:9-master-123-7ce6581b
   <<: *linux-tests
 
 tests-fedora-27:
-  image: buildstream/testsuite-fedora:27-master-119-552f5fc6
+  image: buildstream/testsuite-fedora:27-master-123-7ce6581b
   <<: *linux-tests
 
 tests-fedora-28:
-  image: buildstream/testsuite-fedora:28-master-119-552f5fc6
+  image: buildstream/testsuite-fedora:28-master-123-7ce6581b
   <<: *linux-tests
 
 tests-ubuntu-18.04:
-  image: buildstream/testsuite-ubuntu:18.04-master-119-552f5fc6
+  image: buildstream/testsuite-ubuntu:18.04-master-123-7ce6581b
+  <<: *linux-tests
+
+tests-fedora-28-aarch64:
+  image: buildstream/testsuite-fedora:aarch64-28-master-123-7ce6581b
+  tags:
+    - aarch64
   <<: *linux-tests
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: buildstream/testsuite-fedora:27-master-119-552f5fc6
+  image: buildstream/testsuite-fedora:27-master-123-7ce6581b
   stage: test
   variables:
     BST_FORCE_BACKEND: "unix"
