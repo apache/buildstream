@@ -787,6 +787,48 @@ def _ensure_real_directory(root, destpath):
     return destpath_resolved
 
 
+@functools.lru_cache(maxsize=1)
+def _symloop_max():
+    if hasattr(os, 'sysconf'):
+        try:
+            ret = os.sysconf('_SC_SYMLOOP_MAX')
+            if ret != -1:
+                return ret
+        except ValueError:
+            pass
+    return 8
+
+
+@functools.lru_cache(maxsize=64)
+def _sysroot_realpath(path, sysroot):
+    assert not os.path.isabs(path)
+    assert os.path.isabs(sysroot)
+
+    loop_count = _symloop_max()
+    while True:
+        full_path = os.path.join(sysroot, path)
+        st = os.lstat(full_path)
+        mode = st.st_mode
+        if not stat.S_ISLNK(mode):
+            break
+        loop_count = loop_count - 1
+        if loop_count < 0:
+            raise UtilError("Symlink loop detected: {}".format(os.path.join(sysroot, path)))
+        link_path = os.readlink(full_path)
+        if not os.path.isabs(link_path):
+            link_path = os.path.join('/', os.path.dirname(path), link_path)
+        path = os.path.relpath(os.path.normpath(link_path), '/')
+
+    parent = os.path.dirname(path)
+    if parent != '':
+        parent = _sysroot_realpath(parent, sysroot)
+        full_parent = os.path.join(sysroot, parent)
+        if not os.path.isdir(full_parent):
+            raise UtilError("Path is not a directory: {}".format(full_parent))
+
+    return os.path.join(parent, os.path.basename(path))
+
+
 # _process_list()
 #
 # Internal helper for copying/moving/linking file lists
@@ -817,10 +859,10 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
     # those directories.
     if not presorted:
         resolved = []
+        _sysroot_realpath.cache_clear()
         for f in filelist:
             dirname = os.path.dirname(f)
-            dirname = os.path.realpath(os.path.join(srcdir, dirname))
-            dirname = os.path.relpath(dirname, srcdir)
+            dirname = _sysroot_realpath(dirname, srcdir)
             if dirname == '.':
                 resolved.append(os.path.basename(f))
             else:
