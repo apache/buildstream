@@ -1,9 +1,11 @@
 import os
 import pytest
 
+from buildstream._exceptions import ErrorDomain
+
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import assert_contains
-from tests.testutils.site import HAVE_BWRAP
+from tests.testutils.site import HAVE_BWRAP, HAVE_BWRAP_JSON_STATUS
 
 
 pytestmark = pytest.mark.integration
@@ -29,3 +31,32 @@ def test_sandbox_bwrap_cleanup_build(cli, tmpdir, datafiles):
     # Here, BuildStream should not attempt any rmdir etc.
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAVE_BWRAP, reason='Only available with bubblewrap')
+@pytest.mark.skipif(not HAVE_BWRAP_JSON_STATUS, reason='Only available with bubblewrap supporting --json-status-fd')
+@pytest.mark.datafiles(DATA_DIR)
+def test_sandbox_bwrap_distinguish_setup_error(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'sandbox-bwrap/non-executable-shell.bst'
+
+    result = cli.run(project=project, args=['build', element_name])
+    result.assert_task_error(error_domain=ErrorDomain.SANDBOX, error_reason="bwrap-sandbox-fail")
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(not HAVE_BWRAP, reason='Only available with bubblewrap')
+@pytest.mark.datafiles(DATA_DIR)
+def test_sandbox_bwrap_return_subprocess(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'sandbox-bwrap/command-exit-42.bst'
+
+    cli.configure({
+        "logging": {
+            "message-format": "%{element}|%{message}",
+        },
+    })
+
+    result = cli.run(project=project, args=['build', element_name])
+    result.assert_task_error(error_domain=ErrorDomain.ELEMENT, error_reason=None)
+    assert "sandbox-bwrap/command-exit-42.bst|Command 'exit 42' failed with exitcode 42" in result.stderr

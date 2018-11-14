@@ -17,6 +17,8 @@
 #  Authors:
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+import collections
+import json
 import os
 import sys
 import time
@@ -24,7 +26,8 @@ import errno
 import signal
 import subprocess
 import shutil
-from contextlib import ExitStack
+from contextlib import ExitStack, suppress
+from tempfile import TemporaryFile
 
 import psutil
 
@@ -53,6 +56,7 @@ class SandboxBwrap(Sandbox):
         super().__init__(*args, **kwargs)
         self.user_ns_available = kwargs['user_ns_available']
         self.die_with_parent_available = kwargs['die_with_parent_available']
+        self.json_status_available = kwargs['json_status_available']
 
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
@@ -160,24 +164,31 @@ class SandboxBwrap(Sandbox):
                 gid = self._get_config().build_gid
                 bwrap_command += ['--uid', str(uid), '--gid', str(gid)]
 
-        # Add the command
-        bwrap_command += command
-
-        # bwrap might create some directories while being suid
-        # and may give them to root gid, if it does, we'll want
-        # to clean them up after, so record what we already had
-        # there just in case so that we can safely cleanup the debris.
-        #
-        existing_basedirs = {
-            directory: os.path.exists(os.path.join(root_directory, directory))
-            for directory in ['tmp', 'dev', 'proc']
-        }
-
-        # Use the MountMap context manager to ensure that any redirected
-        # mounts through fuse layers are in context and ready for bwrap
-        # to mount them from.
-        #
         with ExitStack() as stack:
+            pass_fds = ()
+            # Improve error reporting with json-status if available
+            if self.json_status_available:
+                json_status_file = stack.enter_context(TemporaryFile())
+                pass_fds = (json_status_file.fileno(),)
+                bwrap_command += ['--json-status-fd', str(json_status_file.fileno())]
+
+            # Add the command
+            bwrap_command += command
+
+            # bwrap might create some directories while being suid
+            # and may give them to root gid, if it does, we'll want
+            # to clean them up after, so record what we already had
+            # there just in case so that we can safely cleanup the debris.
+            #
+            existing_basedirs = {
+                directory: os.path.exists(os.path.join(root_directory, directory))
+                for directory in ['tmp', 'dev', 'proc']
+            }
+
+            # Use the MountMap context manager to ensure that any redirected
+            # mounts through fuse layers are in context and ready for bwrap
+            # to mount them from.
+            #
             stack.enter_context(mount_map.mounted(self))
 
             # If we're interactive, we want to inherit our stdin,
@@ -190,7 +201,7 @@ class SandboxBwrap(Sandbox):
 
             # Run bubblewrap !
             exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr,
-                                       (flags & SandboxFlags.INTERACTIVE))
+                                       (flags & SandboxFlags.INTERACTIVE), pass_fds)
 
             # Cleanup things which bwrap might have left behind, while
             # everything is still mounted because bwrap can be creating
@@ -238,10 +249,27 @@ class SandboxBwrap(Sandbox):
                         # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
                         pass
 
+            if self.json_status_available:
+                json_status_file.seek(0, 0)
+                child_exit_code = None
+                # The JSON status file's output is a JSON object per line
+                # with the keys present identifying the type of message.
+                # The only message relevant to us now is the exit-code of the subprocess.
+                for line in json_status_file:
+                    with suppress(json.decoder.JSONDecodeError):
+                        o = json.loads(line)
+                        if isinstance(o, collections.abc.Mapping) and 'exit-code' in o:
+                            child_exit_code = o['exit-code']
+                            break
+                if child_exit_code is None:
+                    raise SandboxError("`bwrap' terminated during sandbox setup with exitcode {}".format(exit_code),
+                                       reason="bwrap-sandbox-fail")
+                exit_code = child_exit_code
+
         self._vdir._mark_changed()
         return exit_code
 
-    def run_bwrap(self, argv, stdin, stdout, stderr, interactive):
+    def run_bwrap(self, argv, stdin, stdout, stderr, interactive, pass_fds):
         # Wrapper around subprocess.Popen() with common settings.
         #
         # This function blocks until the subprocess has terminated.
@@ -317,6 +345,7 @@ class SandboxBwrap(Sandbox):
                 # The default is to share file descriptors from the parent process
                 # to the subprocess, which is rarely good for sandboxing.
                 close_fds=True,
+                pass_fds=pass_fds,
                 stdin=stdin,
                 stdout=stdout,
                 stderr=stderr,

@@ -18,9 +18,9 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
-import shutil
 import subprocess
 
+from .. import _site
 from .. import utils
 from ..sandbox import SandboxDummy
 
@@ -38,16 +38,18 @@ class Linux(Platform):
 
         self._have_fuse = os.path.exists("/dev/fuse")
 
-        bwrap_version = self._get_bwrap_version()
+        bwrap_version = _site.get_bwrap_version()
 
         if bwrap_version is None:
             self._bwrap_exists = False
             self._have_good_bwrap = False
             self._die_with_parent_available = False
+            self._json_status_available = False
         else:
             self._bwrap_exists = True
             self._have_good_bwrap = (0, 1, 2) <= bwrap_version
             self._die_with_parent_available = (0, 1, 8) <= bwrap_version
+            self._json_status_available = (0, 3, 2) <= bwrap_version
 
         self._local_sandbox_available = self._have_fuse and self._have_good_bwrap
 
@@ -97,6 +99,7 @@ class Linux(Platform):
         # Inform the bubblewrap sandbox as to whether it can use user namespaces or not
         kwargs['user_ns_available'] = self._user_ns_available
         kwargs['die_with_parent_available'] = self._die_with_parent_available
+        kwargs['json_status_available'] = self._json_status_available
         return SandboxBwrap(*args, **kwargs)
 
     def _check_user_ns_available(self):
@@ -119,21 +122,3 @@ class Linux(Platform):
             output = ''
 
         return output == 'root'
-
-    def _get_bwrap_version(self):
-        # Get the current bwrap version
-        #
-        # returns None if no bwrap was found
-        # otherwise returns a tuple of 3 int: major, minor, patch
-        bwrap_path = shutil.which('bwrap')
-
-        if not bwrap_path:
-            return None
-
-        cmd = [bwrap_path, "--version"]
-        try:
-            version = str(subprocess.check_output(cmd).split()[1], "utf-8")
-        except subprocess.CalledProcessError:
-            return None
-
-        return tuple(int(x) for x in version.split("."))
