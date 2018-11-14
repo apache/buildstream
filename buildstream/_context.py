@@ -131,6 +131,9 @@ class Context():
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
 
+        # Which remote artifact servers to interact with. all, user or none
+        self.use_remotes = 'all'
+
         # Private variables
         self._cache_key = None
         self._message_handler = None
@@ -183,7 +186,8 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt', 'workspacedir', 'remote-execution'
+            'cache', 'prompt', 'workspacedir', 'remote-execution',
+            'useremotes'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
@@ -212,6 +216,13 @@ class Context():
 
         # Load pull build trees configuration
         self.pull_buildtrees = _yaml.node_get(cache, bool, 'pull-buildtrees')
+
+        # Load remote artifact server usage
+        self.use_remotes = _yaml.node_get(defaults, str, 'useremotes', default_value='all')
+        valid_actions = ['all', 'user', 'none']
+        if self.use_remotes not in valid_actions:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "useremotes should be one of: {}".format(", ".join(valid_actions)))
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

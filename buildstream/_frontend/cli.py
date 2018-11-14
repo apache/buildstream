@@ -252,6 +252,9 @@ def print_version(ctx, param, value):
               help="The mirror to fetch from first, before attempting other mirrors")
 @click.option('--pull-buildtrees', is_flag=True, default=None,
               help="Include an element's build tree when pulling remote element artifacts")
+@click.option('--use-remotes', default='all',
+              type=click.Choice(['all', 'user', 'none']),
+              help='The remote artifact caches to interact with (default: all)')
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
