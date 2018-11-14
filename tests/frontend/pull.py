@@ -408,3 +408,75 @@ def test_pull_missing_notifies_user(caplog, cli, tmpdir, datafiles):
 
         assert "INFO    Remote ({}) does not have".format(share.repo) in result.stderr
         assert "SKIPPED Pull" in result.stderr
+
+
+# Tests that:
+#
+#  * The bst main option --use-remotes limits remote action
+#    as expected for pull jobs
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_useremotes_cli_options(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as shareuser,\
+        create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as shareproject:
+
+        # Add shareproject repo url to project.conf
+        with open(os.path.join(project, "project.conf"), "a") as projconf:
+            projconf.write("artifacts:\n  url: {}\n  push: True".format(shareproject.repo))
+
+        # First build the target element and push to the remotes.
+        # We need the artifact available in the remotes to test against.
+        cli.configure({
+            'artifacts': {'url': shareuser.repo, 'push': True}
+        })
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+        assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+        # Assert that everything is now cached in the remotes.
+        all_elements = ['target.bst', 'import-bin.bst', 'compose-all.bst']
+        for element_name in all_elements:
+            assert_shared(cli, shareuser, project, element_name)
+            assert_shared(cli, shareproject, project, element_name)
+
+        # Now we've pushed, delete the user's local artifact cache
+        artifacts = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifacts)
+
+        # Assert that nothing is cached locally anymore
+        for element_name in all_elements:
+            assert cli.get_element_state(project, element_name) != 'cached'
+
+        # Attempt bst build with --use-remotes set as none, this should lead to
+        # a complete rebuild without pulling from either artifact remote cache
+        result = cli.run(project=project, args=['--use-remotes', 'none', 'build', 'target.bst'])
+        result.assert_success()
+        for element_name in all_elements:
+            assert element_name not in result.get_pulled_elements()
+
+        # Delete local cache again
+        artifacts = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifacts)
+
+        # Attempt bst build with --use-remotes set as user, as the shareuser is
+        # passed in as user config and not via a project, assert project remote
+        # was not attempted by it not being in the output
+        result = cli.run(project=project, args=['--use-remotes', 'user', 'build', 'target.bst'])
+        result.assert_success()
+        for element_name in all_elements:
+            assert element_name in result.get_pulled_elements()
+        assert shareproject.repo not in result.stderr
+
+        # Delete local cache again
+        artifacts = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifacts)
+
+        # Attempt bst build with --use-remotes set as all, this time
+        # assert that project remote is attempted and in the output
+        result = cli.run(project=project, args=['--use-remotes', 'all', 'build', 'target.bst'])
+        result.assert_success()
+        for element_name in all_elements:
+            assert element_name in result.get_pulled_elements()
+        assert shareproject.repo in result.stderr

@@ -148,7 +148,7 @@ class ArtifactCache():
     # Sets up which remotes to use
     #
     # Args:
-    #    use_config (bool): Whether to use project configuration
+    #    use_config (bool): Whether to use configuration
     #    remote_url (str): Remote artifact cache URL
     #
     # This requires that all of the projects which are to be processed in the session
@@ -167,11 +167,16 @@ class ArtifactCache():
             self._set_remotes([ArtifactCacheSpec(remote_url, push=True)])
             has_remote_caches = True
         if use_config:
-            for project in self.context.get_projects():
-                artifact_caches = _configured_remote_artifact_cache_specs(self.context, project)
-                if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
-                    self._set_remotes(artifact_caches, project=project)
-                    has_remote_caches = True
+            if self.context.use_remotes == 'all':
+                for project in self.context.get_projects():
+                    artifact_caches = _configured_remote_artifact_cache_specs(self.context, project)
+                    if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
+                        self._set_remotes(artifact_caches, project=project)
+                        has_remote_caches = True
+            # If configured to only use user configured remotes, pass existing user cache spec
+            elif self.context.use_remotes == 'user' and self.context.artifact_cache_specs:
+                self._set_remotes(self.context.artifact_cache_specs)
+                has_remote_caches = True
         if has_remote_caches:
             self._initialize_remotes()
 

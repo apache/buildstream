@@ -122,6 +122,15 @@ buildstream 1.3.1
     'shell', 'show', 'source-checkout', 'track', 'workspace close' and 'workspace reset'
     commands are affected.
 
+  o bst interaction with defined artifact servers can be controlled more granularly.
+    This can be done via the user configuration option `useremotes` or via the bst cli
+    main option '--use-remotes'. This can be set as 'none', 'user' or the default value
+    'all'. Unless specifically overriden, when considering wether to pull or push to
+    available artifact servers (be it user or project defined) this optional config option
+    will be used. Setting this value to 'user' for example and performing a build would
+    lead to any project or junction defined artifact server to be ignored, whilst still
+    attempting to any user defined remotes.
+
 
 =================
 buildstream 1.1.5
