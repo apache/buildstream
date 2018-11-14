@@ -61,10 +61,17 @@ class SandboxRemote(Sandbox):
 
         self.storage_url = config.storage_service['url']
         self.exec_url = config.exec_service['url']
+
         if config.action_service:
             self.action_url = config.action_service['url']
         else:
             self.action_url = None
+
+        if 'instance' in config.exec_service:
+            self.server_instance = config.exec_service['instance']
+        else:
+            # Default server instance name is always an empty string
+            self.server_instance = ""
 
         self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
                                                  server_cert=config.storage_service['server-cert'],
@@ -104,7 +111,7 @@ class SandboxRemote(Sandbox):
         remote_exec_storage_config = require_node(remote_config, 'storage-service')
         remote_exec_action_config = remote_config.get('action-cache-service')
 
-        _yaml.node_validate(remote_exec_service_config, ['url'])
+        _yaml.node_validate(remote_exec_service_config, ['url', 'instance'])
         _yaml.node_validate(remote_exec_storage_config, ['url'] + tls_keys)
         if remote_exec_action_config:
             _yaml.node_validate(remote_exec_action_config, ['url'])
@@ -142,7 +149,8 @@ class SandboxRemote(Sandbox):
 
         # Try to create a communication channel to the BuildGrid server.
         stub = remote_execution_pb2_grpc.ExecutionStub(channel)
-        request = remote_execution_pb2.ExecuteRequest(action_digest=action_digest,
+        request = remote_execution_pb2.ExecuteRequest(instance_name=self.server_instance,
+                                                      action_digest=action_digest,
                                                       skip_cache_lookup=False)
 
         def __run_remote_command(stub, execute_request=None, running_operation=None):
