@@ -155,10 +155,7 @@ class Sandbox():
 
         """
         if self._vdir is None or self._never_cache_vdirs:
-            if 'BST_CAS_DIRECTORIES' in os.environ:
-                self._vdir = CasBasedDirectory(self.__context, ref=None)
-            else:
-                self._vdir = FileBasedDirectory(self._root)
+            self._vdir = CasBasedDirectory(self.__context, ref=None)
         return self._vdir
 
     def _set_virtual_directory(self, virtual_directory):
