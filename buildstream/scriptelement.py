@@ -201,16 +201,20 @@ class ScriptElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
+        # Tell the sandbox to mount the install root
+        directories = {self.__install_root: False}
+
         # Mark the artifact directories in the layout
         for item in self.__layout:
-            if item['destination'] != '/':
-                if item['element']:
-                    sandbox.mark_directory(item['destination'], artifact=True)
-                else:
-                    sandbox.mark_directory(item['destination'])
+            destination = item['destination']
+            was_artifact = directories.get(destination, False)
+            directories[destination] = item['element'] or was_artifact
 
-        # Tell the sandbox to mount the install root
-        sandbox.mark_directory(self.__install_root)
+        for directory, artifact in directories.items():
+            # Root does not need to be marked as it is always mounted
+            # with artifact (unless explicitly marked non-artifact)
+            if directory != '/':
+                sandbox.mark_directory(directory, artifact=artifact)
 
     def stage(self, sandbox):
 

@@ -155,3 +155,70 @@ def test_script_layout(cli, tmpdir, datafiles):
         text = f.read()
 
     assert text == "Hi\n"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_regression_cache_corruption(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkout_original = os.path.join(cli.directory, 'checkout-original')
+    checkout_after = os.path.join(cli.directory, 'checkout-after')
+    element_name = 'script/corruption.bst'
+    canary_element_name = 'script/corruption-image.bst'
+
+    res = cli.run(project=project, args=['build', canary_element_name])
+    assert res.exit_code == 0
+
+    res = cli.run(project=project, args=['checkout', canary_element_name,
+                                         checkout_original])
+    assert res.exit_code == 0
+
+    with open(os.path.join(checkout_original, 'canary')) as f:
+        assert f.read() == 'alive\n'
+
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+    res = cli.run(project=project, args=['checkout', canary_element_name,
+                                         checkout_after])
+    assert res.exit_code == 0
+
+    with open(os.path.join(checkout_after, 'canary')) as f:
+        assert f.read() == 'alive\n'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_regression_tmpdir(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element_name = 'script/tmpdir.bst'
+
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_regression_cache_corruption_2(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkout_original = os.path.join(cli.directory, 'checkout-original')
+    checkout_after = os.path.join(cli.directory, 'checkout-after')
+    element_name = 'script/corruption-2.bst'
+    canary_element_name = 'script/corruption-image.bst'
+
+    res = cli.run(project=project, args=['build', canary_element_name])
+    assert res.exit_code == 0
+
+    res = cli.run(project=project, args=['checkout', canary_element_name,
+                                         checkout_original])
+    assert res.exit_code == 0
+
+    with open(os.path.join(checkout_original, 'canary')) as f:
+        assert f.read() == 'alive\n'
+
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+    res = cli.run(project=project, args=['checkout', canary_element_name,
+                                         checkout_after])
+    assert res.exit_code == 0
+
+    with open(os.path.join(checkout_after, 'canary')) as f:
+        assert f.read() == 'alive\n'
