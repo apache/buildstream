@@ -22,7 +22,7 @@ import subprocess
 
 from .. import _site
 from .. import utils
-from ..sandbox import SandboxDummy
+from ..sandbox import SandboxDummy, SandboxBuildBox
 
 from .platform import Platform
 from .._exceptions import PlatformError
@@ -66,7 +66,8 @@ class Linux(Platform):
         if not self._local_sandbox_available:
             return self._create_dummy_sandbox(*args, **kwargs)
         else:
-            return self._create_bwrap_sandbox(*args, **kwargs)
+            # return self._create_bwrap_sandbox(*args, **kwargs)
+            return SandboxBuildBox(*args, **kwargs)
 
     def check_sandbox_config(self, config):
         if not self._local_sandbox_available:
