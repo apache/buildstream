@@ -15,18 +15,6 @@ from buildstream import utils
 # These are comparitive tests that check that FileBasedDirectory and
 # CasBasedDirectory act identically.
 
-
-class FakeArtifactCache():
-    def __init__(self):
-        self.cas = None
-
-
-class FakeContext():
-    def __init__(self):
-        self.artifactdir = ''
-        self.artifactcache = FakeArtifactCache()
-
-
 # This is a set of example file system contents. It's a set of trees
 # which are either expected to be problematic or were found to be
 # problematic during random testing.
@@ -120,8 +108,8 @@ def file_contents_are(path, contents):
     return file_contents(path) == contents
 
 
-def create_new_casdir(root_number, fake_context, tmpdir):
-    d = CasBasedDirectory(fake_context)
+def create_new_casdir(root_number, cas_cache, tmpdir):
+    d = CasBasedDirectory(cas_cache)
     d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
     assert d.ref.hash != empty_hash_ref
     return d
@@ -175,20 +163,19 @@ def directory_not_empty(path):
 
 
 def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
-    fake_context = FakeContext()
-    fake_context.artifactcache.cas = CASCache(tmpdir)
+    cas_cache = CASCache(tmpdir)
     # Create some fake content
     generator_function(original, tmpdir)
     if original != overlay:
         generator_function(overlay, tmpdir)
 
-    d = create_new_casdir(original, fake_context, tmpdir)
+    d = create_new_casdir(original, cas_cache, tmpdir)
 
-    duplicate_cas = create_new_casdir(original, fake_context, tmpdir)
+    duplicate_cas = create_new_casdir(original, cas_cache, tmpdir)
 
     assert duplicate_cas.ref.hash == d.ref.hash
 
-    d2 = create_new_casdir(overlay, fake_context, tmpdir)
+    d2 = create_new_casdir(overlay, cas_cache, tmpdir)
     d.import_files(d2)
     export_dir = os.path.join(tmpdir, "output-{}-{}".format(original, overlay))
     roundtrip_dir = os.path.join(tmpdir, "roundtrip-{}-{}".format(original, overlay))
@@ -247,15 +234,14 @@ def test_random_cas_import(cli, tmpdir, original):
 
 
 def _listing_test(tmpdir, root, generator_function):
-    fake_context = FakeContext()
-    fake_context.artifactcache.cas = CASCache(tmpdir)
+    cas_cache = CASCache(tmpdir)
     # Create some fake content
     generator_function(root, tmpdir)
 
     d = create_new_filedir(root, tmpdir)
     filelist = list(d.list_relative_paths())
 
-    d2 = create_new_casdir(root, fake_context, tmpdir)
+    d2 = create_new_casdir(root, cas_cache, tmpdir)
     filelist2 = list(d2.list_relative_paths())
 
     assert filelist == filelist2
