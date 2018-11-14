@@ -351,6 +351,7 @@ _sentinel = object()
 #    expected_type (type): The expected type for the value being searched
 #    key (str): The key to get a value for in node
 #    indices (list of ints): Optionally decend into lists of lists
+#    default_value: Optionally return this value if the key is not found
 #
 # Returns:
 #    The value if found in node, otherwise default_value is returned
