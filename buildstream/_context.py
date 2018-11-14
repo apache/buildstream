@@ -230,7 +230,7 @@ class Context():
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 
-        valid_actions = ['continue', 'quit']
+        valid_actions = ['continue', 'quit', 'terminate']
         if self.sched_error_action not in valid_actions:
             provenance = _yaml.node_get_provenance(scheduler, 'on-error')
             raise LoadError(LoadErrorReason.INVALID_DATA,
