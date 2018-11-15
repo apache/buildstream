@@ -88,6 +88,13 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
 CASRemoteSpec.__new__.__defaults__ = (None, None, None)
 
 
+class BlobNotFound(CASError):
+
+    def __init__(self, blob, msg):
+        self.blob = blob
+        super().__init__(msg)
+
+
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
 #
 # Args:
@@ -299,6 +306,8 @@ class CASCache():
                 raise CASError("Failed to pull ref {}: {}".format(ref, e)) from e
             else:
                 return False
+        except BlobNotFound as e:
+            return False
 
     # pull_tree():
     #
@@ -1203,6 +1212,9 @@ class _CASBatchRead():
         batch_response = self._remote.cas.BatchReadBlobs(self._request)
 
         for response in batch_response.responses:
+            if response.status.code == code_pb2.NOT_FOUND:
+                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
+                    response.digest.hash, response.status.code))
             if response.status.code != code_pb2.OK:
                 raise CASError("Failed to download blob {}: {}".format(
                     response.digest.hash, response.status.code))
