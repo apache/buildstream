@@ -212,7 +212,7 @@ class SandboxRemote(Sandbox):
         new_dir = CasBasedDirectory(self._get_context().artifactcache.cas, ref=dir_digest)
         self._set_virtual_directory(new_dir)
 
-    def run(self, command, flags, *, cwd=None, env=None):
+    def _run(self, command, flags, *, cwd, env):
         # Upload sources
         upload_vdir = self.get_virtual_directory()
 
@@ -229,16 +229,6 @@ class SandboxRemote(Sandbox):
         cascache.push_directory(self._get_project(), upload_vdir)
         if not cascache.verify_digest_pushed(self._get_project(), upload_vdir.ref):
             raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
-
-        # Fallback to the sandbox default settings for
-        # the cwd and env.
-        #
-        cwd = self._get_work_directory(cwd=cwd)
-        env = self._get_environment(cwd=cwd, env=env)
-
-        # We want command args as a list of strings
-        if isinstance(command, str):
-            command = [command]
 
         # Now transmit the command to execute
         operation = self.run_remote_command(command, upload_vdir.ref, cwd, env)

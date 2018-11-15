@@ -234,7 +234,40 @@ class Sandbox():
            function must make sure the directory will be created if it does
            not exist yet, even if a workspace is being used.
         """
-        raise ImplError("Sandbox of type '{}' does not implement run()"
+
+        # Fallback to the sandbox default settings for
+        # the cwd and env.
+        #
+        cwd = self._get_work_directory(cwd=cwd)
+        env = self._get_environment(cwd=cwd, env=env)
+
+        # Convert single-string argument to a list
+        if isinstance(command, str):
+            command = [command]
+
+        return self._run(command, flags, cwd=cwd, env=env)
+
+    #####################################################
+    #    Abstract Methods for Sandbox implementations   #
+    #####################################################
+
+    # _run()
+    #
+    # Abstract method for running a single command
+    #
+    # Args:
+    #    command (list): The command to run in the sandboxed environment, as a list
+    #                    of strings starting with the binary to run.
+    #    flags (:class:`.SandboxFlags`): The flags for running this command.
+    #    cwd (str): The sandbox relative working directory in which to run the command.
+    #    env (dict): A dictionary of string key, value pairs to set as environment
+    #                variables inside the sandbox environment.
+    #
+    # Returns:
+    #    (int): The program exit code.
+    #
+    def _run(self, command, flags, *, cwd, env):
+        raise ImplError("Sandbox of type '{}' does not implement _run()"
                         .format(type(self).__name__))
 
     ################################################

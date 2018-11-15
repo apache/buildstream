@@ -25,17 +25,7 @@ class SandboxDummy(Sandbox):
         super().__init__(*args, **kwargs)
         self._reason = kwargs.get("dummy_reason", "no reason given")
 
-    def run(self, command, flags, *, cwd=None, env=None):
-
-        # Fallback to the sandbox default settings for
-        # the cwd and env.
-        #
-        cwd = self._get_work_directory(cwd=cwd)
-        env = self._get_environment(cwd=cwd, env=env)
-
-        # Convert single-string argument to a list
-        if isinstance(command, str):
-            command = [command]
+    def _run(self, command, flags, *, cwd, env):
 
         if not self._has_command(command[0], env):
             raise SandboxError("Staged artifacts do not provide command "
