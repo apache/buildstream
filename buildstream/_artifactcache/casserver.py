@@ -31,6 +31,7 @@ import grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
+from .._protos.google.rpc import code_pb2
 
 from .._exceptions import CASError
 
@@ -250,12 +251,12 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             try:
                 with open(self.cas.objpath(digest), 'rb') as f:
                     if os.fstat(f.fileno()).st_size != digest.size_bytes:
-                        blob_response.status.code = grpc.StatusCode.NOT_FOUND
+                        blob_response.status.code = code_pb2.NOT_FOUND
                         continue
 
                     blob_response.data = f.read(digest.size_bytes)
             except FileNotFoundError:
-                blob_response.status.code = grpc.StatusCode.NOT_FOUND
+                blob_response.status.code = code_pb2.NOT_FOUND
 
         return response
 
