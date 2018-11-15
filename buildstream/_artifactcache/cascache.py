@@ -500,6 +500,41 @@ class CASCache(ArtifactCache):
         # first element of this list will be the file modified earliest.
         return [ref for _, ref in sorted(zip(mtimes, refs))]
 
+    # list_objects():
+    #
+    # List cached objects in Least Recently Modified (LRM) order.
+    #
+    # Returns:
+    #     (list) - A list of objects and timestamps in LRM order
+    #
+    def list_objects(self):
+        objs = []
+        mtimes = []
+
+        for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
+            for filename in files:
+                obj_path = os.path.join(root, filename)
+                try:
+                    mtimes.append(os.path.getmtime(obj_path))
+                except FileNotFoundError:
+                    pass
+                else:
+                    objs.append(obj_path)
+
+        # NOTE: Sorted will sort from earliest to latest, thus the
+        # first element of this list will be the file modified earliest.
+        return sorted(zip(mtimes, objs))
+
+    def clean_up_refs_until(self, time):
+        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
+
+        for root, _, files in os.walk(ref_heads):
+            for filename in files:
+                ref_path = os.path.join(root, filename)
+                # Obtain the mtime (the time a file was last modified)
+                if os.path.getmtime(ref_path) < time:
+                    os.unlink(ref_path)
+
     # remove():
     #
     # Removes the given symbolic ref from the repo.
