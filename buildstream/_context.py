@@ -214,7 +214,8 @@ class Context():
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
         ])
-        self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
+        self.sched_error_action = _node_get_option_str(
+            scheduler, 'on-error', ['continue', 'quit', 'terminate'])
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
@@ -229,13 +230,6 @@ class Context():
             _yaml.node_validate(overrides, ['artifacts', 'options', 'strict', 'default-mirror'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
-
-        valid_actions = ['continue', 'quit', 'terminate']
-        if self.sched_error_action not in valid_actions:
-            provenance = _yaml.node_get_provenance(scheduler, 'on-error')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: on-error should be one of: {}".format(
-                                provenance, ", ".join(valid_actions)))
 
     @property
     def artifactcache(self):
@@ -589,3 +583,30 @@ class Context():
             os.environ['XDG_CONFIG_HOME'] = os.path.expanduser('~/.config')
         if not os.environ.get('XDG_DATA_HOME'):
             os.environ['XDG_DATA_HOME'] = os.path.expanduser('~/.local/share')
+
+
+# _node_get_option_str()
+#
+# Like _yaml.node_get(), but also checks value is one of the allowed option
+# strings. Fetches a value from a dictionary node, and makes sure it's one of
+# the pre-defined options.
+#
+# Args:
+#    node (dict): The dictionary node
+#    key (str): The key to get a value for in node
+#    allowed_options (iterable): Only accept these values
+#
+# Returns:
+#    The value, if found in 'node'.
+#
+# Raises:
+#    LoadError, when the value is not of the expected type, or is not found.
+#
+def _node_get_option_str(node, key, allowed_options):
+    result = _yaml.node_get(node, str, key)
+    if result not in allowed_options:
+        provenance = _yaml.node_get_provenance(node, key)
+        raise LoadError(LoadErrorReason.INVALID_DATA,
+                        "{}: {} should be one of: {}".format(
+                            provenance, key, ", ".join(allowed_options)))
+    return result
