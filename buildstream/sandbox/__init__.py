@@ -17,6 +17,6 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-from .sandbox import Sandbox, SandboxFlags
+from .sandbox import Sandbox, SandboxFlags, SandboxCommandError
 from ._sandboxremote import SandboxRemote
 from ._sandboxdummy import SandboxDummy
