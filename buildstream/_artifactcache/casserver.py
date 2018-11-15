@@ -208,7 +208,7 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                         context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
                         return response
                     out.flush()
-                    digest = self.cas.add_object(path=out.name)
+                    digest = self.cas.add_object(path=out.name, link_directly=True)
                     if digest.hash != client_digest.hash:
                         context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
                         return response
