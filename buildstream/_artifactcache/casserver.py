@@ -422,7 +422,7 @@ def _clean_up_cache(cas, object_size):
     # which mounts the repo
     stats = os.statvfs(cas.casdir)
     buffer_ = int(2e9)                # Add a 2 GB buffer
-    free_disk_space = (stats.f_bfree * stats.f_bsize) - buffer_
+    free_disk_space = (stats.f_bavail * stats.f_bsize) - buffer_
     total_disk_space = (stats.f_blocks * stats.f_bsize) - buffer_
 
     if object_size > total_disk_space:
