@@ -247,10 +247,17 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
     def FindMissingBlobs(self, request, context):
         response = remote_execution_pb2.FindMissingBlobsResponse()
         for digest in request.blob_digests:
-            if not _has_object(self.cas, digest):
-                d = response.missing_blob_digests.add()
-                d.hash = digest.hash
-                d.size_bytes = digest.size_bytes
+            objpath = self.cas.objpath(digest)
+            try:
+                os.utime(objpath)
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+                else:
+                    d = response.missing_blob_digests.add()
+                    d.hash = digest.hash
+                    d.size_bytes = digest.size_bytes
+
         return response
 
     def BatchReadBlobs(self, request, context):
@@ -347,6 +354,12 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
 
         try:
             tree = self.cas.resolve_ref(request.key, update_mtime=True)
+            try:
+                self.cas.update_tree_mtime(tree)
+            except FileNotFoundError:
+                self.cas.remove(request.key, defer_prune=True)
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                return response
 
             response.digest.hash = tree.hash
             response.digest.size_bytes = tree.size_bytes
@@ -417,11 +430,6 @@ def _digest_from_upload_resource_name(resource_name):
         return digest
     except ValueError:
         return None
-
-
-def _has_object(cas, digest):
-    objpath = cas.objpath(digest)
-    return os.path.exists(objpath)
 
 
 # _clean_up_cache()

@@ -682,6 +682,10 @@ class CASCache():
 
         return pruned
 
+    def update_tree_mtime(self, tree):
+        reachable = set()
+        self._reachable_refs_dir(reachable, tree, update_mtime=True)
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -828,9 +832,12 @@ class CASCache():
                 a += 1
                 b += 1
 
-    def _reachable_refs_dir(self, reachable, tree):
+    def _reachable_refs_dir(self, reachable, tree, update_mtime=False):
         if tree.hash in reachable:
             return
+
+        if update_mtime:
+            os.utime(self.objpath(tree))
 
         reachable.add(tree.hash)
 
@@ -840,10 +847,12 @@ class CASCache():
             directory.ParseFromString(f.read())
 
         for filenode in directory.files:
+            if update_mtime:
+                os.utime(self.objpath(filenode.digest))
             reachable.add(filenode.digest.hash)
 
         for dirnode in directory.directories:
-            self._reachable_refs_dir(reachable, dirnode.digest)
+            self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime)
 
     def _required_blobs(self, directory_digest):
         # parse directory, and recursively add blobs
