@@ -25,6 +25,7 @@ import sys
 import tempfile
 import uuid
 import errno
+import threading
 
 import click
 import grpc
@@ -450,10 +451,24 @@ def _digest_from_upload_resource_name(resource_name):
 
 class _CacheCleaner:
 
+    __cleanup_cache_lock = threading.Lock()
+
     def __init__(self, cas, max_head_size, min_head_size=int(2e9)):
         self.__cas = cas
         self.__max_head_size = max_head_size
         self.__min_head_size = min_head_size
+
+    def __has_space(self, object_size):
+        stats = os.statvfs(self.__cas.casdir)
+        free_disk_space = (stats.f_bavail * stats.f_bsize) - self.__min_head_size
+        total_disk_space = (stats.f_blocks * stats.f_bsize) - self.__min_head_size
+
+        if object_size > total_disk_space:
+            raise ArtifactTooLargeException("Artifact of size: {} is too large for "
+                                            "the filesystem which mounts the remote "
+                                            "cache".format(object_size))
+
+        return object_size <= free_disk_space
 
     # _clean_up_cache()
     #
@@ -467,51 +482,46 @@ class _CacheCleaner:
     #   int: The total bytes removed on the filesystem
     #
     def clean_up(self, object_size):
-        stats = os.statvfs(self.__cas.casdir)
-        free_disk_space = (stats.f_bavail * stats.f_bsize) - self.__min_head_size
-        total_disk_space = (stats.f_blocks * stats.f_bsize) - self.__min_head_size
-
-        if object_size > total_disk_space:
-            raise ArtifactTooLargeException("Artifact of size: {} is too large for "
-                                            "the filesystem which mounts the remote "
-                                            "cache".format(object_size))
-
-        if object_size <= free_disk_space:
-            # No need to clean up
+        if self.__has_space(object_size):
             return 0
 
-        stats = os.statvfs(self.__cas.casdir)
-        target_disk_space = (stats.f_bavail * stats.f_bsize) - self.__max_head_size
+        with _CacheCleaner.__cleanup_cache_lock:
+            if self.__has_space(object_size):
+                # Another thread has done the cleanup for us
+                return 0
 
-        # obtain a list of LRP artifacts
-        LRP_objects = self.__cas.list_objects()
+            stats = os.statvfs(self.__cas.casdir)
+            target_disk_space = (stats.f_bavail * stats.f_bsize) - self.__max_head_size
 
-        removed_size = 0  # in bytes
-        last_mtime = 0
+            # obtain a list of LRP artifacts
+            LRP_objects = self.__cas.list_objects()
 
-        while object_size - removed_size > target_disk_space:
-            try:
-                last_mtime, to_remove = LRP_objects.pop(0)  # The first element in the list is the LRP artifact
-            except IndexError:
-                # This exception is caught if there are no more artifacts in the list
-                # LRP_artifacts. This means the the artifact is too large for the filesystem
-                # so we abort the process
-                raise ArtifactTooLargeException("Artifact of size {} is too large for "
-                                                "the filesystem which mounts the remote "
-                                                "cache".format(object_size))
+            removed_size = 0  # in bytes
+            last_mtime = 0
 
-            try:
-                size = os.stat(to_remove).st_size
-                os.unlink(to_remove)
-                removed_size += size
-            except FileNotFoundError:
-                pass
+            while object_size - removed_size > target_disk_space:
+                try:
+                    last_mtime, to_remove = LRP_objects.pop(0)  # The first element in the list is the LRP artifact
+                except IndexError:
+                    # This exception is caught if there are no more artifacts in the list
+                    # LRP_artifacts. This means the the artifact is too large for the filesystem
+                    # so we abort the process
+                    raise ArtifactTooLargeException("Artifact of size {} is too large for "
+                                                    "the filesystem which mounts the remote "
+                                                    "cache".format(object_size))
 
-        self.__cas.clean_up_refs_until(last_mtime)
+                try:
+                    size = os.stat(to_remove).st_size
+                    os.unlink(to_remove)
+                    removed_size += size
+                except FileNotFoundError:
+                    pass
 
-        if removed_size > 0:
-            logging.info("Successfully removed {} bytes from the cache".format(removed_size))
-        else:
-            logging.info("No artifacts were removed from the cache.")
+            self.__cas.clean_up_refs_until(last_mtime)
 
-        return removed_size
+            if removed_size > 0:
+                logging.info("Successfully removed {} bytes from the cache".format(removed_size))
+            else:
+                logging.info("No artifacts were removed from the cache.")
+
+            return removed_size
