@@ -254,12 +254,12 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             try:
                 with open(self.cas.objpath(digest), 'rb') as f:
                     if os.fstat(f.fileno()).st_size != digest.size_bytes:
-                        blob_response.status.code = grpc.StatusCode.NOT_FOUND
+                        blob_response.status.code = grpc.StatusCode.NOT_FOUND.value[0]
                         continue
 
                     blob_response.data = f.read(digest.size_bytes)
             except FileNotFoundError:
-                blob_response.status.code = grpc.StatusCode.NOT_FOUND
+                blob_response.status.code = grpc.StatusCode.NOT_FOUND.value[0]
 
         return response
 
