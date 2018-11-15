@@ -48,6 +48,13 @@ from . import ArtifactCache
 _MAX_PAYLOAD_BYTES = 1024 * 1024
 
 
+class BlobNotFound(ArtifactError):
+
+    def __init__(self, blob, msg):
+        self.blob = blob
+        super().__init__(msg)
+
+
 # A CASCache manages artifacts in a CAS repository as specified in the
 # Remote Execution API.
 #
@@ -259,6 +266,10 @@ class CASCache(ArtifactCache):
                     element.info("Remote ({}) does not have {} cached".format(
                         remote.spec.url, element._get_brief_display_key()
                     ))
+            except BlobNotFound as e:
+                element.info("Remote ({}) does not have {} cached".format(
+                    remote.spec.url, element._get_brief_display_key()
+                ))
 
         return False
 
@@ -1079,6 +1090,9 @@ class _CASBatchRead():
         batch_response = self._remote.cas.BatchReadBlobs(self._request)
 
         for response in batch_response.responses:
+            if response.status.code == grpc.StatusCode.NOT_FOUND.value[0]:
+                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
+                    response.digest.hash, response.status.code))
             if response.status.code != grpc.StatusCode.OK.value[0]:
                 raise ArtifactError("Failed to download blob {}: {}".format(
                     response.digest.hash, response.status.code))
