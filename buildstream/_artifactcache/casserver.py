@@ -462,12 +462,13 @@ def _clean_up_cache(cas, object_size):
         return 0
 
     # obtain a list of LRP artifacts
-    LRP_artifacts = cas.list_refs()
+    LRP_objects = cas.list_objects()
 
     removed_size = 0  # in bytes
+    last_mtime = 0
     while object_size - removed_size > free_disk_space:
         try:
-            to_remove = LRP_artifacts.pop(0)  # The first element in the list is the LRP artifact
+            last_mtime, to_remove = LRP_objects.pop(0)  # The first element in the list is the LRP objects
         except IndexError:
             # This exception is caught if there are no more artifacts in the list
             # LRP_artifacts. This means the the artifact is too large for the filesystem
@@ -476,7 +477,14 @@ def _clean_up_cache(cas, object_size):
                                             "the filesystem which mounts the remote "
                                             "cache".format(object_size))
 
-        removed_size += cas.remove(to_remove, defer_prune=False)
+        try:
+            size = os.stat(to_remove).st_size
+            os.unlink(to_remove)
+            removed_size += size
+        except FileNotFoundError:
+            pass
+
+    cas.clean_up_refs_until(last_mtime)
 
     if removed_size > 0:
         logging.info("Successfully removed {} bytes from the cache".format(removed_size))
