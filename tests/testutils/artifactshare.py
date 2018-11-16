@@ -29,7 +29,11 @@ from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution
 #
 class ArtifactShare():
 
-    def __init__(self, directory, *, total_space=None, free_space=None):
+    def __init__(self, directory, *,
+                 total_space=None,
+                 free_space=None,
+                 min_head_size=int(2e9),
+                 max_head_size=int(10e9)):
 
         # The working directory for the artifact share (in case it
         # needs to do something outside of its backend's storage folder).
@@ -49,6 +53,9 @@ class ArtifactShare():
 
         self.total_space = total_space
         self.free_space = free_space
+
+        self.max_head_size = max_head_size
+        self.min_head_size = min_head_size
 
         q = Queue()
 
@@ -74,7 +81,10 @@ class ArtifactShare():
                     self.free_space = self.total_space
                 os.statvfs = self._mock_statvfs
 
-            server = create_server(self.repodir, enable_push=True)
+            server = create_server(self.repodir,
+                                   max_head_size=self.max_head_size,
+                                   min_head_size=self.min_head_size,
+                                   enable_push=True)
             port = server.add_insecure_port('localhost:0')
 
             server.start()
@@ -176,8 +186,11 @@ class ArtifactShare():
 # Create an ArtifactShare for use in a test case
 #
 @contextmanager
-def create_artifact_share(directory, *, total_space=None, free_space=None):
-    share = ArtifactShare(directory, total_space=total_space, free_space=free_space)
+def create_artifact_share(directory, *, total_space=None, free_space=None,
+                          min_head_size=int(2e9),
+                          max_head_size=int(10e9)):
+    share = ArtifactShare(directory, total_space=total_space, free_space=free_space,
+                          min_head_size=min_head_size, max_head_size=max_head_size)
     try:
         yield share
     finally:
