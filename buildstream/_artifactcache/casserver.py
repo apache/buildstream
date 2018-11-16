@@ -24,6 +24,7 @@ import signal
 import sys
 import tempfile
 import uuid
+import errno
 
 import click
 import grpc
@@ -193,17 +194,34 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                         context.set_code(grpc.StatusCode.NOT_FOUND)
                         return response
 
-                    try:
-                        _clean_up_cache(self.cas, client_digest.size_bytes)
-                    except ArtifactTooLargeException as e:
-                        context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
-                        context.set_details(str(e))
-                        return response
+                    while True:
+                        if client_digest.size_bytes == 0:
+                            break
+                        try:
+                            _clean_up_cache(self.cas, client_digest.size_bytes)
+                        except ArtifactTooLargeException as e:
+                            context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
+                            context.set_details(str(e))
+                            return response
+
+                        try:
+                            os.posix_fallocate(out.fileno(), 0, client_digest.size_bytes)
+                            break
+                        except OSError as e:
+                            # Multiple upload can happen in the same time
+                            if e.errno != errno.ENOSPC:
+                                raise
+
                 elif request.resource_name:
                     # If it is set on subsequent calls, it **must** match the value of the first request.
                     if request.resource_name != resource_name:
                         context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
                         return response
+
+                if (offset + len(request.data)) > client_digest.size_bytes:
+                    context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
+                    return response
+
                 out.write(request.data)
                 offset += len(request.data)
                 if request.finish_write:
