@@ -8,6 +8,12 @@ buildstream 1.3.1
     make changes to their .bst files if they are expecting these environment
     variables to be set.
 
+  o BREAKING CHANGE: When non-interactive, `bst workspace` commands `reset` and
+    `close --remove-dir` will abort unless told not to do so. This is to avoid
+    surprises around destructive actions. The new `--assume-yes` option to
+    those commands is the preferred way to do this for scripts. The new
+    `prompt.really-workspace-*` options in buildstream.conf is another way.
+
   o Failed builds are included in the cache as well.
     `bst checkout` will provide anything in `%{install-root}`.
     A build including cached fails will cause any dependant elements
@@ -50,6 +56,9 @@ buildstream 1.3.1
     'prompt.really-workspace-reset-hard' options. These allow users to suppress
     certain confirmation prompts, e.g. double-checking that the user meant to
     run the command as typed.
+
+  o The `bst workspace` commands `close` and `reset` learned an `--assume-yes`
+    option, for supressing prompts.
 
   o Due to the element `build tree` being cached in the respective artifact their
     size in some cases has significantly increased. In *most* cases the build trees

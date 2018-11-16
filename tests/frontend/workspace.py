@@ -393,7 +393,7 @@ def test_close(cli, tmpdir, datafiles, kind):
 
     # Close the workspace
     result = cli.run(project=project, args=[
-        'workspace', 'close', '--remove-dir', element_name
+        'workspace', 'close', '--remove-dir', '--assume-yes', element_name
     ])
     result.assert_success()
 
@@ -413,7 +413,7 @@ def test_close_external_after_move_project(cli, tmpdir, datafiles):
 
     # Close the workspace
     result = cli.run(project=moved_dir, args=[
-        'workspace', 'close', '--remove-dir', element_name
+        'workspace', 'close', '--remove-dir', '--assume-yes', element_name
     ])
     result.assert_success()
 
@@ -433,7 +433,7 @@ def test_close_internal_after_move_project(cli, tmpdir, datafiles):
 
     # Close the workspace
     result = cli.run(project=moved_dir, args=[
-        'workspace', 'close', '--remove-dir', element_name
+        'workspace', 'close', '--remove-dir', '--assume-yes', element_name
     ])
     result.assert_success()
 
@@ -471,7 +471,7 @@ def test_close_nonexistant_element(cli, tmpdir, datafiles):
 
     # Close the workspace
     result = cli.run(project=project, args=[
-        'workspace', 'close', '--remove-dir', element_name
+        'workspace', 'close', '--remove-dir', '--assume-yes', element_name
     ])
     result.assert_success()
 
@@ -490,7 +490,7 @@ def test_close_multiple(cli, tmpdir, datafiles):
 
     # Close the workspaces
     result = cli.run(project=project, args=[
-        'workspace', 'close', '--remove-dir', alpha, beta
+        'workspace', 'close', '--remove-dir', '--assume-yes', alpha, beta
     ])
     result.assert_success()
 
@@ -510,7 +510,7 @@ def test_close_all(cli, tmpdir, datafiles):
 
     # Close the workspaces
     result = cli.run(project=project, args=[
-        'workspace', 'close', '--remove-dir', '--all'
+        'workspace', 'close', '--remove-dir', '--assume-yes', '--all'
     ])
     result.assert_success()
 
@@ -533,7 +533,7 @@ def test_reset(cli, tmpdir, datafiles):
     # Now reset the open workspace, this should have the
     # effect of reverting our changes.
     result = cli.run(project=project, args=[
-        'workspace', 'reset', element_name
+        'workspace', 'reset', '--assume-yes', element_name
     ])
     result.assert_success()
     assert os.path.exists(os.path.join(workspace, 'usr', 'bin', 'hello'))
@@ -559,7 +559,7 @@ def test_reset_multiple(cli, tmpdir, datafiles):
     # Now reset the open workspaces, this should have the
     # effect of reverting our changes.
     result = cli.run(project=project, args=[
-        'workspace', 'reset', alpha, beta,
+        'workspace', 'reset', '--assume-yes', alpha, beta,
     ])
     result.assert_success()
     assert os.path.exists(os.path.join(workspace_alpha, 'usr', 'bin', 'hello'))
@@ -585,7 +585,7 @@ def test_reset_all(cli, tmpdir, datafiles):
     # Now reset the open workspace, this should have the
     # effect of reverting our changes.
     result = cli.run(project=project, args=[
-        'workspace', 'reset', '--all'
+        'workspace', 'reset', '--assume-yes', '--all'
     ])
     result.assert_success()
     assert os.path.exists(os.path.join(workspace_alpha, 'usr', 'bin', 'hello'))
@@ -947,7 +947,8 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     # Make a change to the workspaces file
     result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     result.assert_success()
-    result = cli.run(project=project, args=['workspace', 'close', '--remove-dir', element_name])
+    result = cli.run(
+        project=project, args=['workspace', 'close', '--remove-dir', '--assume-yes', element_name])
     result.assert_success()
 
     # Check that workspace config is converted correctly if necessary

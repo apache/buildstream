@@ -172,7 +172,7 @@ def test_filter_workspace_reset(datafiles, cli, tmpdir):
     src = os.path.join(workspace_dir, "foo")
     dst = os.path.join(workspace_dir, "quux")
     shutil.copyfile(src, dst)
-    result = cli.run(project=project, args=['workspace', 'reset', 'deps-permitted.bst'])
+    result = cli.run(project=project, args=['workspace', 'reset', '--assume-yes', 'deps-permitted.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'output-orphans.bst'])
     result.assert_success()

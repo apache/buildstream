@@ -82,7 +82,7 @@ def test_close_cross_junction(cli, tmpdir):
     project, workspace = open_cross_junction(cli, tmpdir)
 
     element = 'sub.bst:data.bst'
-    args = ['workspace', 'close', '--remove-dir', element]
+    args = ['workspace', 'close', '--remove-dir', '--assume-yes', element]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
@@ -101,7 +101,7 @@ def test_close_cross_junction(cli, tmpdir):
 def test_close_all_cross_junction(cli, tmpdir):
     project, workspace = open_cross_junction(cli, tmpdir)
 
-    args = ['workspace', 'close', '--remove-dir', '--all']
+    args = ['workspace', 'close', '--remove-dir', '--assume-yes', '--all']
     result = cli.run(project=project, args=args)
     result.assert_success()
 

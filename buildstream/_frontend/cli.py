@@ -734,10 +734,12 @@ def workspace_open(app, no_checkout, force, track_, directory, elements):
               help="Remove the path that contains the closed workspace")
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Close all open workspaces")
+@click.option('--assume-yes', '-y', default=False, is_flag=True,
+              help="Assume 'yes' to confirmation of destructive changes")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def workspace_close(app, remove_dir, all_, elements):
+def workspace_close(app, remove_dir, all_, assume_yes, elements):
     """Close a workspace"""
 
     if not (all_ or elements):
@@ -764,9 +766,14 @@ def workspace_close(app, remove_dir, all_, elements):
         if nonexisting:
             raise AppError("Workspace does not exist", detail="\n".join(nonexisting))
 
-        if app.interactive and remove_dir and app.context.prompt_workspace_close_remove_dir:
-            if not click.confirm('This will remove all your changes, are you sure?'):
-                click.echo('Aborting', err=True)
+        if remove_dir and not assume_yes and app.context.prompt_workspace_close_remove_dir:
+            if app.interactive:
+                if not click.confirm('This will remove all your changes, are you sure?'):
+                    click.echo('Aborting', err=True)
+                    sys.exit(-1)
+            else:
+                click.echo("Aborted destructive non-interactive action.", err=True)
+                click.echo("Please use the '--assume-yes' option to override.", err=True)
                 sys.exit(-1)
 
         for element_name in elements:
@@ -783,10 +790,12 @@ def workspace_close(app, remove_dir, all_, elements):
               help="Track and fetch the latest source before resetting")
 @click.option('--all', '-a', 'all_', default=False, is_flag=True,
               help="Reset all open workspaces")
+@click.option('--assume-yes', '-y', default=False, is_flag=True,
+              help="Assume 'yes' to confirmation of destructive changes")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def workspace_reset(app, soft, track_, all_, elements):
+def workspace_reset(app, soft, track_, all_, assume_yes, elements):
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
@@ -798,9 +807,14 @@ def workspace_reset(app, soft, track_, all_, elements):
         if all_ and not app.stream.workspace_exists():
             raise AppError("No open workspaces to reset")
 
-        if app.interactive and not soft and app.context.prompt_workspace_reset_hard:
-            if not click.confirm('This will remove all your changes, are you sure?'):
-                click.echo('Aborting', err=True)
+        if not soft and not assume_yes and app.context.prompt_workspace_reset_hard:
+            if app.interactive:
+                if not click.confirm('This will remove all your changes, are you sure?'):
+                    click.echo('Aborting', err=True)
+                    sys.exit(-1)
+            else:
+                click.echo("Aborted destructive non-interactive action.", err=True)
+                click.echo("Please use the '--assume-yes' option to override.", err=True)
                 sys.exit(-1)
 
         if all_:

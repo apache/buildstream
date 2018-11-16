@@ -65,7 +65,8 @@ def test_open_workspace(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_success()
 
-    result = cli.run(project=project, args=['workspace', 'close', '--remove-dir', 'hello.bst'])
+    result = cli.run(
+        project=project, args=['workspace', 'close', '--remove-dir', '--assume-yes', 'hello.bst'])
     result.assert_success()
 
 
@@ -95,5 +96,6 @@ def test_make_change_in_workspace(cli, tmpdir, datafiles):
     result.assert_success()
     assert result.output == 'Hello World\nWe can use workspaces!\n'
 
-    result = cli.run(project=project, args=['workspace', 'close', '--remove-dir', 'hello.bst'])
+    result = cli.run(
+        project=project, args=['workspace', 'close', '--remove-dir', '--assume-yes', 'hello.bst'])
     result.assert_success()
