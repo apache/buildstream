@@ -476,11 +476,17 @@ def node_get_project_path(node, key, project_dir, *,
     is_inside = project_dir_path.resolve() in full_resolved_path.parents or (
         full_resolved_path == project_dir_path)
 
-    if path.is_absolute() or not is_inside:
+    if not is_inside:
         raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                         "{}: Specified path '{}' must not lead outside of the "
                         "project directory"
                         .format(provenance, path_str))
+
+    if path.is_absolute():
+        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
+                        "{}: Absolute path: '{}' invalid.\n"
+                        "Please specify a path relative to the project's root."
+                        .format(provenance, path))
 
     if full_resolved_path.is_socket() or (
             full_resolved_path.is_fifo() or
