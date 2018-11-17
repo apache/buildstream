@@ -35,6 +35,9 @@ cache:
   # to the isize of the file system containing the cache.
   quota: infinity
 
+  # Whether to pull build trees when downloading element artifacts
+  pull-buildtrees: False
+
 #
 #    Scheduler
 #

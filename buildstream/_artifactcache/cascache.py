@@ -82,6 +82,27 @@ class CASCache():
         # This assumes that the repository doesn't have any dangling pointers
         return os.path.exists(refpath)
 
+    # contains_subdir_artifact():
+    #
+    # Check whether the specified artifact element tree has a digest for a subdir
+    # which is populated in the cache, i.e non dangling.
+    #
+    # Args:
+    #     ref (str): The ref to check
+    #     subdir (str): The subdir to check
+    #
+    # Returns: True if the subdir exists & is populated in the cache, False otherwise
+    #
+    def contains_subdir_artifact(self, ref, subdir):
+        tree = self.resolve_ref(ref)
+
+        # This assumes that the subdir digest is present in the element tree
+        subdirdigest = self._get_subdir(tree, subdir)
+        objpath = self.objpath(subdirdigest)
+
+        # True if subdir content is cached or if empty as expected
+        return os.path.exists(objpath)
+
     # extract():
     #
     # Extract cached directory for the specified ref if it hasn't
@@ -90,19 +111,30 @@ class CASCache():
     # Args:
     #     ref (str): The ref whose directory to extract
     #     path (str): The destination path
+    #     subdir (str): Optional specific dir to extract
     #
     # Raises:
     #     CASError: In cases there was an OSError, or if the ref did not exist.
     #
     # Returns: path to extracted directory
     #
-    def extract(self, ref, path):
+    def extract(self, ref, path, subdir=None):
         tree = self.resolve_ref(ref, update_mtime=True)
 
-        dest = os.path.join(path, tree.hash)
+        originaldest = dest = os.path.join(path, tree.hash)
+
+        # If artifact is already extracted, check if the optional subdir
+        # has also been extracted. If the artifact has not been extracted
+        # a full extraction would include the optional subdir
         if os.path.isdir(dest):
-            # directory has already been extracted
-            return dest
+            if subdir:
+                if not os.path.isdir(os.path.join(dest, subdir)):
+                    dest = os.path.join(dest, subdir)
+                    tree = self._get_subdir(tree, subdir)
+                else:
+                    return dest
+            else:
+                return dest
 
         with tempfile.TemporaryDirectory(prefix='tmp', dir=self.tmpdir) as tmpdir:
             checkoutdir = os.path.join(tmpdir, ref)
@@ -120,7 +152,7 @@ class CASCache():
                 if e.errno not in [errno.ENOTEMPTY, errno.EEXIST]:
                     raise CASError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
 
-        return dest
+        return originaldest
 
     # commit():
     #
@@ -193,11 +225,13 @@ class CASCache():
     #     ref (str): The ref to pull
     #     remote (CASRemote): The remote repository to pull from
     #     progress (callable): The progress callback, if any
+    #     subdir (str): The optional specific subdir to pull
+    #     excluded_subdirs (list): The optional list of subdirs to not pull
     #
     # Returns:
     #   (bool): True if pull was successful, False if ref was not available
     #
-    def pull(self, ref, remote, *, progress=None):
+    def pull(self, ref, remote, *, progress=None, subdir=None, excluded_subdirs=None):
         try:
             remote.init()
 
@@ -209,7 +243,12 @@ class CASCache():
             tree.hash = response.digest.hash
             tree.size_bytes = response.digest.size_bytes
 
-            self._fetch_directory(remote, tree)
+            # Check if the element artifact is present, if so just fetch the subdir.
+            if subdir and os.path.exists(self.objpath(tree)):
+                self._fetch_subdir(remote, tree, subdir)
+            else:
+                # Fetch artifact, excluded_subdirs determined in pullqueue
+                self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
 
             self.set_ref(ref, tree)
 
@@ -607,8 +646,10 @@ class CASCache():
                          stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
         for dirnode in directory.directories:
-            fullpath = os.path.join(dest, dirnode.name)
-            self._checkout(fullpath, dirnode.digest)
+            # Don't try to checkout a dangling ref
+            if os.path.exists(self.objpath(dirnode.digest)):
+                fullpath = os.path.join(dest, dirnode.name)
+                self._checkout(fullpath, dirnode.digest)
 
         for symlinknode in directory.symlinks:
             # symlink
@@ -863,11 +904,14 @@ class CASCache():
     # Args:
     #     remote (Remote): The remote to use.
     #     dir_digest (Digest): Digest object for the directory to fetch.
+    #     excluded_subdirs (list): The optional list of subdirs to not fetch
     #
-    def _fetch_directory(self, remote, dir_digest):
+    def _fetch_directory(self, remote, dir_digest, *, excluded_subdirs=None):
         fetch_queue = [dir_digest]
         fetch_next_queue = []
         batch = _CASBatchRead(remote)
+        if not excluded_subdirs:
+            excluded_subdirs = []
 
         while len(fetch_queue) + len(fetch_next_queue) > 0:
             if not fetch_queue:
@@ -882,8 +926,9 @@ class CASCache():
                 directory.ParseFromString(f.read())
 
             for dirnode in directory.directories:
-                batch = self._fetch_directory_node(remote, dirnode.digest, batch,
-                                                   fetch_queue, fetch_next_queue, recursive=True)
+                if dirnode.name not in excluded_subdirs:
+                    batch = self._fetch_directory_node(remote, dirnode.digest, batch,
+                                                       fetch_queue, fetch_next_queue, recursive=True)
 
             for filenode in directory.files:
                 batch = self._fetch_directory_node(remote, filenode.digest, batch,
@@ -891,6 +936,10 @@ class CASCache():
 
         # Fetch final batch
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
+
+    def _fetch_subdir(self, remote, tree, subdir):
+        subdirdigest = self._get_subdir(tree, subdir)
+        self._fetch_directory(remote, subdirdigest)
 
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object

@@ -70,8 +70,8 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
         })
         assert cli.get_element_state(project, element_name) != 'cached'
 
-        # Pull from cache
-        result = cli.run(project=project, args=['pull', '--deps', 'all', element_name])
+        # Pull from cache, ensuring cli options is set to pull the buildtree
+        result = cli.run(project=project, args=['--pull-buildtrees', 'pull', '--deps', 'all', element_name])
         result.assert_success()
 
         # Check it's using the cached build tree
