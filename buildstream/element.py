@@ -2158,6 +2158,7 @@ class Element(Plugin):
 
             sandbox = SandboxRemote(context, project,
                                     directory,
+                                    plugin=self,
                                     stdout=stdout,
                                     stderr=stderr,
                                     config=config,
@@ -2176,6 +2177,7 @@ class Element(Plugin):
 
             sandbox = platform.create_sandbox(context, project,
                                               directory,
+                                              plugin=self,
                                               stdout=stdout,
                                               stderr=stderr,
                                               config=config,
