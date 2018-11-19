@@ -122,8 +122,9 @@ class ComposeElement(Element):
                     snapshot = set(vbasedir.list_relative_paths())
                     vbasedir.mark_unmodified()
 
-                for dep in self.dependencies(Scope.BUILD):
-                    dep.integrate(sandbox)
+                with sandbox.batch(0):
+                    for dep in self.dependencies(Scope.BUILD):
+                        dep.integrate(sandbox)
 
                 if require_split:
                     # Calculate added, modified and removed files
