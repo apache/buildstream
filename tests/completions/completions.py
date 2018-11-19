@@ -15,6 +15,7 @@ MAIN_COMMANDS = [
     'push ',
     'shell ',
     'show ',
+    'source-checkout ',
     'source-bundle ',
     'track ',
     'workspace '
