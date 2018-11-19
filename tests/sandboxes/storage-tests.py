@@ -3,7 +3,7 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 
-from buildstream._context import Context
+from buildstream._artifactcache.cascache import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 
@@ -17,9 +17,8 @@ def setup_backend(backend_class, tmpdir):
     if backend_class == FileBasedDirectory:
         return backend_class(os.path.join(tmpdir, "vdir"))
     else:
-        context = Context()
-        context.artifactdir = os.path.join(tmpdir, "cas")
-        return backend_class(context)
+        cas_cache = CASCache(tmpdir)
+        return backend_class(cas_cache)
 
 
 @pytest.mark.parametrize("backend", [

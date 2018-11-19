@@ -182,7 +182,7 @@ class SandboxRemote(Sandbox):
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
 
-        new_dir = CasBasedDirectory(self._get_context(), ref=dir_digest)
+        new_dir = CasBasedDirectory(self._get_context().artifactcache.cas, ref=dir_digest)
         self._set_virtual_directory(new_dir)
 
     def run(self, command, flags, *, cwd=None, env=None):
@@ -191,7 +191,7 @@ class SandboxRemote(Sandbox):
 
         if isinstance(upload_vdir, FileBasedDirectory):
             # Make a new temporary directory to put source in
-            upload_vdir = CasBasedDirectory(self._get_context(), ref=None)
+            upload_vdir = CasBasedDirectory(self._get_context().artifactcache.cas, ref=None)
             upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
         upload_vdir.recalculate_hash()

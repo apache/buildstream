@@ -249,13 +249,11 @@ class CasBasedDirectory(Directory):
     _pb2_path_sep = "/"
     _pb2_absolute_path_prefix = "/"
 
-    def __init__(self, context, ref=None, parent=None, common_name="untitled", filename=None):
-        self.context = context
-        self.cas_directory = os.path.join(context.artifactdir, 'cas')
+    def __init__(self, cas_cache, ref=None, parent=None, common_name="untitled", filename=None):
         self.filename = filename
         self.common_name = common_name
         self.pb2_directory = remote_execution_pb2.Directory()
-        self.cas_cache = context.artifactcache.cas
+        self.cas_cache = cas_cache
         if ref:
             with open(self.cas_cache.objpath(ref), 'rb') as f:
                 self.pb2_directory.ParseFromString(f.read())
@@ -270,7 +268,7 @@ class CasBasedDirectory(Directory):
         if self._directory_read:
             return
         for entry in self.pb2_directory.directories:
-            buildStreamDirectory = CasBasedDirectory(self.context, ref=entry.digest,
+            buildStreamDirectory = CasBasedDirectory(self.cas_cache, ref=entry.digest,
                                                      parent=self, filename=entry.name)
             self.index[entry.name] = IndexEntry(entry, buildstream_object=buildStreamDirectory)
         for entry in self.pb2_directory.files:
@@ -333,7 +331,7 @@ class CasBasedDirectory(Directory):
                                             .format(name, str(self), type(newdir)))
             dirnode = self._find_pb2_entry(name)
         else:
-            newdir = CasBasedDirectory(self.context, parent=self, filename=name)
+            newdir = CasBasedDirectory(self.cas_cache, parent=self, filename=name)
             dirnode = self.pb2_directory.directories.add()
 
         dirnode.name = name

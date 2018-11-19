@@ -11,8 +11,8 @@ from multiprocessing import Process, Queue
 import pytest_cov
 
 from buildstream import _yaml
+from buildstream._artifactcache.cascache import CASCache
 from buildstream._artifactcache.casserver import create_server
-from buildstream._context import Context
 from buildstream._exceptions import CASError
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
@@ -45,10 +45,7 @@ class ArtifactShare():
 
         os.makedirs(self.repodir)
 
-        context = Context()
-        context.artifactdir = self.repodir
-
-        self.cas = context.artifactcache.cas
+        self.cas = CASCache(self.repodir)
 
         self.total_space = total_space
         self.free_space = free_space

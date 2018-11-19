@@ -14,9 +14,10 @@ DATA_DIR = os.path.join(
 
 def create_pipeline(tmpdir, basedir, target):
     context = Context()
-    project = Project(basedir, context)
+    context.load()
     context.deploydir = os.path.join(str(tmpdir), 'deploy')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
+    project = Project(basedir, context)
 
     def dummy_handler(message, context):
         pass

@@ -63,25 +63,25 @@ class Context():
         self.artifactdir = None
 
         # The locations from which to push and pull prebuilt artifacts
-        self.artifact_cache_specs = []
+        self.artifact_cache_specs = None
 
         # The directory to store build logs
         self.logdir = None
 
         # The abbreviated cache key length to display in the UI
-        self.log_key_length = 0
+        self.log_key_length = None
 
         # Whether debug mode is enabled
-        self.log_debug = False
+        self.log_debug = None
 
         # Whether verbose mode is enabled
-        self.log_verbose = False
+        self.log_verbose = None
 
         # Maximum number of lines to print from build logs
-        self.log_error_lines = 0
+        self.log_error_lines = None
 
         # Maximum number of lines to print in the master log for a detailed message
-        self.log_message_lines = 0
+        self.log_message_lines = None
 
         # Format string for printing the pipeline at startup time
         self.log_element_format = None
@@ -90,19 +90,22 @@ class Context():
         self.log_message_format = None
 
         # Maximum number of fetch or refresh tasks
-        self.sched_fetchers = 4
+        self.sched_fetchers = None
 
         # Maximum number of build tasks
-        self.sched_builders = 4
+        self.sched_builders = None
 
         # Maximum number of push tasks
-        self.sched_pushers = 4
+        self.sched_pushers = None
 
         # Maximum number of retries for network tasks
-        self.sched_network_retries = 2
+        self.sched_network_retries = None
 
         # What to do when a build fails in non interactive mode
-        self.sched_error_action = 'continue'
+        self.sched_error_action = None
+
+        # Size of the artifact cache in bytes
+        self.config_cache_quota = None
 
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
@@ -123,7 +126,6 @@ class Context():
         self._workspaces = None
         self._log_handle = None
         self._log_filename = None
-        self.config_cache_quota = 'infinity'
 
     # load()
     #
@@ -183,7 +185,7 @@ class Context():
         cache = _yaml.node_get(defaults, Mapping, 'cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees'])
 
-        self.config_cache_quota = _yaml.node_get(cache, str, 'quota', default_value='infinity')
+        self.config_cache_quota = _yaml.node_get(cache, str, 'quota')
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
