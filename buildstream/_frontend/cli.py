@@ -915,34 +915,3 @@ def workspace_list(app):
 
     with app.initialized():
         app.stream.workspace_list()
-
-
-##################################################################
-#                     Source Bundle Command                      #
-##################################################################
-@cli.command(name="source-bundle", short_help="Produce a build bundle to be manually executed")
-@click.option('--except', 'except_', multiple=True,
-              type=click.Path(readable=False),
-              help="Elements to except from the tarball")
-@click.option('--compression', default='gz',
-              type=click.Choice(['none', 'gz', 'bz2', 'xz']),
-              help="Compress the tar file using the given algorithm.")
-@click.option('--track', 'track_', default=False, is_flag=True,
-              help="Track new source references before bundling")
-@click.option('--force', '-f', default=False, is_flag=True,
-              help="Overwrite an existing tarball")
-@click.option('--directory', default=os.getcwd(),
-              help="The directory to write the tarball to")
-@click.argument('element',
-                type=click.Path(readable=False))
-@click.pass_obj
-def source_bundle(app, element, force, directory,
-                  track_, compression, except_):
-    """Produce a source bundle to be manually executed
-    """
-    with app.initialized():
-        app.stream.source_bundle(element, directory,
-                                 track_first=track_,
-                                 force=force,
-                                 compression=compression,
-                                 except_targets=except_)

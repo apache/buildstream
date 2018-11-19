@@ -25,7 +25,6 @@ def test_help_main(cli):
     ('push'),
     ('shell'),
     ('show'),
-    ('source-bundle'),
     ('track'),
     ('workspace')
 ])
