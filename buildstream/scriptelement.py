@@ -226,10 +226,11 @@ class ScriptElement(Element):
                                          .format(build_dep.name), silent_nested=True):
                     build_dep.stage_dependency_artifacts(sandbox, Scope.RUN, path="/")
 
-            for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
-                    for dep in build_dep.dependencies(Scope.RUN):
-                        dep.integrate(sandbox)
+            with sandbox.batch(SandboxFlags.NONE):
+                for build_dep in self.dependencies(Scope.BUILD, recurse=False):
+                    with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
+                        for dep in build_dep.dependencies(Scope.RUN):
+                            dep.integrate(sandbox)
         else:
             # If layout, follow its rules.
             for item in self.__layout:
@@ -251,20 +252,21 @@ class ScriptElement(Element):
                         virtual_dstdir.descend(item['destination'].lstrip(os.sep).split(os.sep), create=True)
                         element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item['destination'])
 
-            for item in self.__layout:
+            with sandbox.batch(SandboxFlags.NONE):
+                for item in self.__layout:
 
-                # Skip layout members which dont stage an element
-                if not item['element']:
-                    continue
+                    # Skip layout members which dont stage an element
+                    if not item['element']:
+                        continue
 
-                element = self.search(Scope.BUILD, item['element'])
+                    element = self.search(Scope.BUILD, item['element'])
 
-                # Integration commands can only be run for elements staged to /
-                if item['destination'] == '/':
-                    with self.timed_activity("Integrating {}".format(element.name),
-                                             silent_nested=True):
-                        for dep in element.dependencies(Scope.RUN):
-                            dep.integrate(sandbox)
+                    # Integration commands can only be run for elements staged to /
+                    if item['destination'] == '/':
+                        with self.timed_activity("Integrating {}".format(element.name),
+                                                 silent_nested=True):
+                            for dep in element.dependencies(Scope.RUN):
+                                dep.integrate(sandbox)
 
         install_root_path_components = self.__install_root.lstrip(os.sep).split(os.sep)
         sandbox.get_virtual_directory().descend(install_root_path_components, create=True)
@@ -275,16 +277,15 @@ class ScriptElement(Element):
         if self.__root_read_only:
             flags |= SandboxFlags.ROOT_READ_ONLY
 
-        for groupname, commands in self.__commands.items():
-            with self.timed_activity("Running '{}'".format(groupname)):
-                for cmd in commands:
-                    self.status("Running command", detail=cmd)
-                    # Note the -e switch to 'sh' means to exit with an error
-                    # if any untested command fails.
-                    exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'], flags)
-                    if exitcode != 0:
-                        raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode),
-                                           collect=self.__install_root)
+        with sandbox.batch(flags, collect=self.__install_root):
+            for groupname, commands in self.__commands.items():
+                with sandbox.batch(flags, label="Running '{}'".format(groupname)):
+                    for cmd in commands:
+                        # Note the -e switch to 'sh' means to exit with an error
+                        # if any untested command fails.
+                        sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+                                    flags,
+                                    label=cmd)
 
         # Return where the result can be collected from
         return self.__install_root
