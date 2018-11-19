@@ -505,7 +505,7 @@ def get_bst_version():
                         .format(__version__))
 
 
-def move_atomic(source, destination, ensure_parents=True):
+def move_atomic(source, destination, *, ensure_parents=True):
     """Move the source to the destination using atomic primitives.
 
     This uses `os.rename` to move a file or directory to a new destination.
