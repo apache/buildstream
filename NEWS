@@ -55,6 +55,8 @@ buildstream 1.3.1
     with cached artifacts, only 'complete' elements can be pushed. If the element
     is expected to have a populated build tree then it must be cached before pushing.
 
+  o Added new `bst source-checkout` command to checkout sources of an element.
+
 
 =================
 buildstream 1.1.5
