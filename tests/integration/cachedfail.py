@@ -4,6 +4,8 @@ import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 
+from conftest import clean_platform_cache
+
 from tests.testutils import cli_integration as cli, create_artifact_share
 from tests.testutils.site import IS_LINUX
 
@@ -158,3 +160,40 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
         assert cli.get_element_state(project, 'element.bst') == 'failed'
         # This element should have been pushed to the remote
         assert share.has_artifact('test', 'element.bst', cli.get_element_key(project, 'element.bst'))
+
+
+@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.datafiles(DATA_DIR)
+def test_host_tools_errors_are_not_cached(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = os.path.join(project, 'elements', 'element.bst')
+
+    # Write out our test target
+    element = {
+        'kind': 'script',
+        'depends': [
+            {
+                'filename': 'base.bst',
+                'type': 'build',
+            },
+        ],
+        'config': {
+            'commands': [
+                'true',
+            ],
+        },
+    }
+    _yaml.dump(element, element_path)
+
+    # Build without access to host tools, this will fail
+    result1 = cli.run(project=project, args=['build', 'element.bst'], env={'PATH': ''})
+    result1.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
+    assert cli.get_element_state(project, 'element.bst') == 'buildable'
+
+    # clean the cache before running again
+    clean_platform_cache()
+
+    # When rebuilding, this should work
+    result2 = cli.run(project=project, args=['build', 'element.bst'])
+    result2.assert_success()
+    assert cli.get_element_state(project, 'element.bst') == 'cached'
