@@ -80,6 +80,7 @@ _PYPI_INDEX_URL = 'https://pypi.org/simple/'
 
 # Used only for finding pip command
 _PYTHON_VERSIONS = [
+    'python',  # when running in a venv, we might not have the exact version
     'python2.7',
     'python3.0',
     'python3.1',
