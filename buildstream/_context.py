@@ -32,7 +32,7 @@ from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
 from ._artifactcache.cascache import CASCache
-from ._workspaces import Workspaces, WorkspaceProjectCache
+from ._workspaces import Workspaces, WorkspaceProjectCache, WORKSPACE_PROJECT_FILE
 from .plugin import _plugin_lookup
 
 
@@ -648,6 +648,20 @@ class Context():
         if self._cascache is None:
             self._cascache = CASCache(self.artifactdir)
         return self._cascache
+
+    # guess_element()
+    #
+    # Attempts to interpret which element the user intended to run commands on
+    #
+    # Returns:
+    #    (str) The name of the element, or None if no element can be guessed
+    def guess_element(self):
+        workspace_project_dir, _ = utils._search_upward_for_files(self._directory, [WORKSPACE_PROJECT_FILE])
+        if workspace_project_dir:
+            workspace_project = self._workspace_project_cache.get(workspace_project_dir)
+            return workspace_project.get_default_element()
+        else:
+            return None
 
 
 # _node_get_option_str()
