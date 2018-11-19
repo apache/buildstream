@@ -7,60 +7,51 @@ Building out of source
 Intro
 -----
 
-This example aims to show:
+This example aims to:
 
- * Give a basic overview of how out of source builds can work tying together
-   bits of information spread across different sections of the docs that tend to
+ * Give a basic overview of how out of source builds can perfomed, tying together
+   information spread across different sections of the documentaion that tends to
    group information by element rather than task.
  * Give Examples of how to use out of source builds.
    
-Buildstream aims to make out of source builds easy and consistent, across as
+Buildstream aims to make out of source builds easy and consistent across as
 many build systems as possible. However it should be noted that not all build
 systems support `out of source builds`.
 
 Key Variables
 -------------
 
-Out of source builds are configured by setting:
- 
- * ``directory`` of the source, this sets the source to open in to a folder in the
+To understand how to perform out od source builds, you must be familier with the
+following element properties.
+
+ * ``directory``: Defines the path in the build sandbox at which the element's sources will be staged. This is set for each of the element's sources.
    build root.
- * ``command-subdir`` variable, sets were the build will be run.
- * ``conf-root`` variable, tells the configuration tool were to find the root of
-   the source code.
-   
-``conf-root`` is given to the configuration tool which is run in
-``command-subdir``. It can ether be given as a relative path from 
-``command-subdir`` to the location of the source code. Or as an absolute
-location.
+ * ``command-subdir`` The working directory used for the element's configure, build and integration commands.
+ * ``conf-root`` The path to your build system's configurations file, e.g top level CMakeLists.txt for an element of cmake kind. This path is relative to the elements command-subdir unless is specified as an absolute path.
 
-By setting ``conf-root`` as a absolute path we can change ``command-subdir``
-with out having to change ``conf-root``.
+.. note:
 
-If a absolute path is given it must be from the root of the sandbox.
-To specify a absolute path from the root of the build-root the build-root
-variable can be used eg. ``conf-root`` can be set to ``"%{build-root}/Source"``
-to specify the ``Source`` folder in the root of the build-root.
+   It is recomended to specify conf-root as an absolute path to make
+   life easier if you decide to change command-subdir. Commonly one
+   would use a path such as "%{build-root}/Some/Path"
 
-These variables can be use for many of the buildstream build element kinds.
-Indeed converting to out of source builds should be as simple as adding these
-variables to the individual bst files and in some circumstance most of the
-variables could be set at a project level.
+For element kinds which support the above properties, configuring out of source
+builds should be as simple as setting them.
 
  
 Examples
 --------
 
-The out of source examples can be found in the buildstream source code in 
-``doc/examples/out-of-source`` folder in the buildstream source. The two cmake
+The examples shown here can be found in the BuildStream source code in 
+``doc/examples/out-of-source`` folder in the BuildStream source. The two cmake
 elements we will use as examples are `sourceroot.bst` and `subfolder.bst`.
 
-It is very simple to create a build element that loads a source in to the
-`build-root` and then uses the standard build tools to build the project in the
-same folder. Buildstream has lots of build element plugs so that a new element
-may only need to set its `kind` to the relevant build system and then define a
-source, the `sourceroot.bst` example element takes a cmake exmaple and expands
-it to a out of source build.
+It is very simple to create a build element that loads a source in to
+the `build-root` and then uses the standard build tools to build the
+project in the same folder. BuildStream has lots of build element
+pluggins so that a new build element may only need to set its `kind`
+and then define a source, the `sourceroot.bst` example element takes the
+cmake exmaple from the and expands it to a out of source build.
 
 An alternative build elements might build in a sub folder of the source. The
 `hello.bst` element in the `autotools` example dose this. And a out of source
@@ -73,7 +64,7 @@ Build project defined in source root
 
 This example points cmake at the src directory in the root of the source.
 
-In this example, the CMakeLis.txt in the src folder in the root of the source
+In this example, the CMakeLists.txt in the src folder in the root of the source
 causes the helloworld program to state that it was build from the root of the 
 source project when called.
 
@@ -109,7 +100,7 @@ Build project defined in source subdirectory
 
 This example points cmake at he src/main directory inside the source.
 
-In this example, the CMakeLis.txt in the folder src/main in the root of the
+In this example, the CMakeLists.txt in the folder src/main in the root of the
 source causes the helloworld program to state that it was build from a subfolder
 of the source project when called. 
 
