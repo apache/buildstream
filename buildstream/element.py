@@ -89,7 +89,7 @@ from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
     ErrorDomain
 from .utils import UtilError
 from . import Plugin, Consistency, Scope
-from . import SandboxFlags
+from . import SandboxFlags, SandboxCommandError
 from . import utils
 from . import _cachekey
 from . import _signals
@@ -1565,7 +1565,7 @@ class Element(Plugin):
                     # Step 4 - Assemble
                     collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
                     self.__set_build_result(success=True, description="succeeded")
-                except ElementError as e:
+                except (ElementError, SandboxCommandError) as e:
                     # Shelling into a sandbox is useful to debug this error
                     e.sandbox = True
 
