@@ -86,7 +86,7 @@ from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
-    ErrorDomain, SandboxError
+    ErrorDomain
 from .utils import UtilError
 from . import Plugin, Consistency, Scope
 from . import SandboxFlags
@@ -1554,9 +1554,6 @@ class Element(Plugin):
                 self.__dynamic_public = _yaml.node_copy(self.__public)
 
                 # Call the abstract plugin methods
-                collect = None
-                save_artifacts = True
-
                 try:
                     # Step 1 - Configure
                     self.configure_sandbox(sandbox)
@@ -1567,10 +1564,7 @@ class Element(Plugin):
                     # Step 4 - Assemble
                     collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
                     self.__set_build_result(success=True, description="succeeded")
-                except BstError as e:
-                    if isinstance(e, SandboxError):
-                        save_artifacts = False
-
+                except ElementError as e:
                     # Shelling into a sandbox is useful to debug this error
                     e.sandbox = True
 
@@ -1592,21 +1586,14 @@ class Element(Plugin):
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
                                       .format(e))
 
-                    if isinstance(e, ElementError):
-                        collect = e.collect  # pylint: disable=no-member
-
                     self.__set_build_result(success=False, description=str(e), detail=e.detail)
+                    self._cache_artifact(rootdir, sandbox, e.collect)
+
                     raise
+                else:
+                    return self._cache_artifact(rootdir, sandbox, collect)
                 finally:
-                    if save_artifacts:
-                        artifact_size = self._cache_artifact(rootdir, sandbox, context, collect)
-                    else:
-                        artifact_size = None
-
-                    # Finally cleanup the build dir
                     cleanup_rootdir()
-
-        return artifact_size
 
     def _cache_artifact(self, rootdir, sandbox, collect):
         if collect is not None:
