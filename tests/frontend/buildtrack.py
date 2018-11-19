@@ -115,6 +115,7 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage,
     args += ['0.bst']
 
     result = cli.run(project=project, silent=True, args=args)
+    result.assert_success()
     tracked_elements = result.get_tracked_elements()
 
     assert set(tracked_elements) == set(tracked)

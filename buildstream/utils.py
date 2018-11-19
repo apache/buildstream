@@ -72,6 +72,11 @@ class ProgramNotFoundError(BstError):
         super().__init__(message, domain=ErrorDomain.PROG_NOT_FOUND, reason=reason)
 
 
+class DirectoryExistsError(OSError):
+    """Raised when a `os.rename` is attempted but the destination is an existing directory.
+    """
+
+
 class FileListResult():
     """An object which stores the result of one of the operations
     which run on a list of files.
@@ -498,6 +503,38 @@ def get_bst_version():
         raise UtilError("Cannot convert version to integer numbers\n"
                         "Version: {} not in Integer.Integer.whatever format"
                         .format(__version__))
+
+
+def move_atomic(source, destination, ensure_parents=True):
+    """Move the source to the destination using atomic primitives.
+
+    This uses `os.rename` to move a file or directory to a new destination.
+    It wraps some `OSError` thrown errors to ensure their handling is correct.
+
+    The main reason for this to exist is that rename can throw different errors
+    for the same symptom (https://www.unix.com/man-page/POSIX/3posix/rename/).
+
+    We are especially interested here in the case when the destination already
+    exists. In this case, either EEXIST or ENOTEMPTY are thrown.
+
+    In order to ensure consistent handling of these exceptions, this function
+    should be used instead of `os.rename`
+
+    Args:
+      source (str or Path): source to rename
+      destination (str or Path): destination to which to move the source
+      ensure_parents (bool): Whether or not to create the parent's directories
+                             of the destination (default: True)
+    """
+    if ensure_parents:
+        os.makedirs(os.path.dirname(str(destination)), exist_ok=True)
+
+    try:
+        os.rename(str(source), str(destination))
+    except OSError as exc:
+        if exc.errno in (errno.EEXIST, errno.ENOTEMPTY):
+            raise DirectoryExistsError(*exc.args) from exc
+        raise
 
 
 @contextmanager
