@@ -3,7 +3,7 @@ import pytest
 
 from buildstream import _yaml
 from tests.testutils import cli_integration as cli
-from tests.testutils.site import IS_LINUX
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 from tests.testutils.integration import walk_dir
 
 
@@ -18,6 +18,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_workspace_mount(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -34,6 +35,7 @@ def test_workspace_mount(cli, tmpdir, datafiles):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_workspace_commanddir(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -51,6 +53,7 @@ def test_workspace_commanddir(cli, tmpdir, datafiles):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_workspace_updated_dependency(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -105,6 +108,7 @@ def test_workspace_updated_dependency(cli, tmpdir, datafiles):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_workspace_update_dependency_failed(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -180,6 +184,7 @@ def test_workspace_update_dependency_failed(cli, tmpdir, datafiles):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_updated_dependency_nested(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -233,6 +238,7 @@ def test_updated_dependency_nested(cli, tmpdir, datafiles):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_incremental_configure_commands_run_only_once(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')

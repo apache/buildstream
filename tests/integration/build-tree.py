@@ -3,6 +3,7 @@ import pytest
 import shutil
 
 from tests.testutils import cli, cli_integration, create_artifact_share
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 from buildstream._exceptions import ErrorDomain
 
 
@@ -16,6 +17,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_buildtree_staged(cli_integration, tmpdir, datafiles):
     # i.e. tests that cached build trees are staged by `bst shell --build`
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -31,6 +33,7 @@ def test_buildtree_staged(cli_integration, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_buildtree_from_failure(cli_integration, tmpdir, datafiles):
     # i.e. test that on a build failure, we can still shell into it
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -50,6 +53,7 @@ def test_buildtree_from_failure(cli_integration, tmpdir, datafiles):
 # Check that build shells work when pulled from a remote cache
 # This is to roughly simulate remote execution
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_buildtree_pulled(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'

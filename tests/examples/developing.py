@@ -4,7 +4,7 @@ import pytest
 import tests.testutils.patch as patch
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import assert_contains
-from tests.testutils.site import IS_LINUX, MACHINE_ARCH
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX, MACHINE_ARCH
 
 pytestmark = pytest.mark.integration
 
@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(
 # Test that the project builds successfully
 @pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
                     reason='Examples are writtent for x86_64')
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -39,7 +39,7 @@ def test_autotools_build(cli, tmpdir, datafiles):
 # Test the unmodified hello command works as expected.
 @pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
                     reason='Examples are writtent for x86_64')
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_run_unmodified_hello(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -72,7 +72,7 @@ def test_open_workspace(cli, tmpdir, datafiles):
 # Test making a change using the workspace
 @pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
                     reason='Examples are writtent for x86_64')
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_make_change_in_workspace(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)

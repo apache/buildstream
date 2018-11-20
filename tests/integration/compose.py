@@ -7,6 +7,7 @@ from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import walk_dir
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 
 pytestmark = pytest.mark.integration
@@ -82,6 +83,7 @@ def create_compose_element(name, path, config={}):
                     '/usr/share/doc', '/usr/share/doc/amhello',
                     '/usr/share/doc/amhello/README'])
 ])
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_compose_include(cli, tmpdir, datafiles, include_domains,
                          exclude_domains, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)

@@ -6,6 +6,7 @@ from buildstream import _yaml
 from tests.testutils import cli_integration as cli
 from tests.testutils.python_repo import setup_pypi_repo
 from tests.testutils.integration import assert_contains
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 
 pytestmark = pytest.mark.integration
@@ -72,6 +73,7 @@ def test_pip_source_import(cli, tmpdir, datafiles, setup_pypi_repo):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_pip_source_build(cli, tmpdir, datafiles, setup_pypi_repo):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')

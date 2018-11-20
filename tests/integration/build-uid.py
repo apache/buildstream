@@ -5,7 +5,7 @@ from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import assert_contains
-from tests.testutils.site import IS_LINUX
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 
 pytestmark = pytest.mark.integration
@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(
 )
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_uid_overridden(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -35,7 +35,7 @@ def test_build_uid_overridden(cli, tmpdir, datafiles):
     assert result.exit_code == 0
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubbelwrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_uid_in_project(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -55,6 +55,7 @@ def test_build_uid_in_project(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_build_uid_default(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')

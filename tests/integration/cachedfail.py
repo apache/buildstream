@@ -7,7 +7,7 @@ from buildstream._exceptions import ErrorDomain
 from conftest import clean_platform_cache
 
 from tests.testutils import cli_integration as cli, create_artifact_share
-from tests.testutils.site import IS_LINUX
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 
 pytestmark = pytest.mark.integration
@@ -20,6 +20,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements', 'element.bst')
@@ -63,6 +64,7 @@ def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dep_path = os.path.join(project, 'elements', 'dep.bst')
@@ -121,7 +123,7 @@ def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'waiting'
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("on_error", ("continue", "quit"))
 def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
@@ -162,7 +164,7 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
         assert share.has_artifact('test', 'element.bst', cli.get_element_key(project, 'element.bst'))
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
+@pytest.mark.skipif(not (IS_LINUX and HAVE_BWRAP), reason='Only available with bubblewrap on Linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_host_tools_errors_are_not_cached(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
