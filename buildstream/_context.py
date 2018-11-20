@@ -110,6 +110,18 @@ class Context():
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
+        # Boolean, whether to offer to create a project for the user, if we are
+        # invoked outside of a directory where we can resolve the project.
+        self.prompt_auto_init = None
+
+        # Boolean, whether we double-check with the user that they meant to
+        # remove a workspace directory.
+        self.prompt_workspace_close_remove_dir = None
+
+        # Boolean, whether we double-check with the user that they meant to do
+        # a hard reset of a workspace, potentially losing changes.
+        self.prompt_workspace_reset_hard = None
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -165,7 +177,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache'
+            'cache', 'prompt'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -214,11 +226,33 @@ class Context():
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
         ])
-        self.sched_error_action = _yaml.node_get(scheduler, str, 'on-error')
+        self.sched_error_action = _node_get_option_str(
+            scheduler, 'on-error', ['continue', 'quit', 'terminate'])
         self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
+
+        # Load prompt preferences
+        #
+        # We convert string options to booleans here, so we can be both user
+        # and coder-friendly. The string options are worded to match the
+        # responses the user would give at the cli, for least surprise. The
+        # booleans are converted here because it's easiest to eyeball that the
+        # strings are right.
+        #
+        prompt = _yaml.node_get(
+            defaults, Mapping, 'prompt')
+        _yaml.node_validate(prompt, [
+            'auto-init', 'really-workspace-close-remove-dir',
+            'really-workspace-reset-hard',
+        ])
+        self.prompt_auto_init = _node_get_option_str(
+            prompt, 'auto-init', ['ask', 'no']) == 'ask'
+        self.prompt_workspace_close_remove_dir = _node_get_option_str(
+            prompt, 'really-workspace-close-remove-dir', ['ask', 'yes']) == 'ask'
+        self.prompt_workspace_reset_hard = _node_get_option_str(
+            prompt, 'really-workspace-reset-hard', ['ask', 'yes']) == 'ask'
 
         # Load per-projects overrides
         self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
@@ -229,13 +263,6 @@ class Context():
             _yaml.node_validate(overrides, ['artifacts', 'options', 'strict', 'default-mirror'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
-
-        valid_actions = ['continue', 'quit']
-        if self.sched_error_action not in valid_actions:
-            provenance = _yaml.node_get_provenance(scheduler, 'on-error')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: on-error should be one of: {}".format(
-                                provenance, ", ".join(valid_actions)))
 
     @property
     def artifactcache(self):
@@ -589,3 +616,30 @@ class Context():
             os.environ['XDG_CONFIG_HOME'] = os.path.expanduser('~/.config')
         if not os.environ.get('XDG_DATA_HOME'):
             os.environ['XDG_DATA_HOME'] = os.path.expanduser('~/.local/share')
+
+
+# _node_get_option_str()
+#
+# Like _yaml.node_get(), but also checks value is one of the allowed option
+# strings. Fetches a value from a dictionary node, and makes sure it's one of
+# the pre-defined options.
+#
+# Args:
+#    node (dict): The dictionary node
+#    key (str): The key to get a value for in node
+#    allowed_options (iterable): Only accept these values
+#
+# Returns:
+#    The value, if found in 'node'.
+#
+# Raises:
+#    LoadError, when the value is not of the expected type, or is not found.
+#
+def _node_get_option_str(node, key, allowed_options):
+    result = _yaml.node_get(node, str, key)
+    if result not in allowed_options:
+        provenance = _yaml.node_get_provenance(node, key)
+        raise LoadError(LoadErrorReason.INVALID_DATA,
+                        "{}: {} should be one of: {}".format(
+                            provenance, key, ", ".join(allowed_options)))
+    return result
