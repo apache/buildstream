@@ -4,6 +4,7 @@ import pytest
 from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 
 pytestmark = pytest.mark.integration
@@ -31,6 +32,7 @@ def create_manual_element(name, path, config, variables, environment):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_manual_element(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -64,6 +66,7 @@ strip
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_manual_element_environment(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -93,6 +96,7 @@ def test_manual_element_environment(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_manual_element_noparallel(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')

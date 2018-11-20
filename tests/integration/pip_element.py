@@ -6,6 +6,7 @@ from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import assert_contains
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 
 pytestmark = pytest.mark.integration
@@ -18,6 +19,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_pip_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -54,6 +56,7 @@ def test_pip_build(cli, tmpdir, datafiles):
 
 # Test running an executable built with pip
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_pip_run(cli, tmpdir, datafiles):
     # Create and build our test element
     test_pip_build(cli, tmpdir, datafiles)

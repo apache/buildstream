@@ -4,6 +4,7 @@ import pytest
 
 from tests.testutils import cli_integration as cli, create_artifact_share
 from tests.testutils.integration import assert_contains
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 
@@ -30,6 +31,7 @@ def default_state(cli, tmpdir, share):
 # directory of an element.
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_pullbuildtrees(cli, tmpdir, datafiles, integration_cache):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'autotools/amhello.bst'

@@ -4,6 +4,7 @@ import pytest
 from buildstream import _yaml, utils
 from tests.testutils import create_repo, ALL_REPO_KINDS
 from tests.testutils import cli_integration as cli
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 
 DATA_DIR = os.path.join(
@@ -29,6 +30,7 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS] + ['local'])
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_cache):
     project = str(datafiles)
     element_name = 'list'
@@ -101,6 +103,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_ca
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_deterministic_source_local(cli, tmpdir, datafiles, integration_cache):
     """Only user rights should be considered for local source.
     """
