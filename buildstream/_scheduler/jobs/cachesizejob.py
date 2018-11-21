@@ -39,3 +39,6 @@ class CacheSizeJob(Job):
 
     def child_process_data(self):
         return {}
+
+    def key(self):
+        return (100, 'cache-size')

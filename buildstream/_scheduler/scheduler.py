@@ -25,6 +25,7 @@ from itertools import chain
 import signal
 import datetime
 from contextlib import contextmanager
+from sortedcontainers import SortedList
 
 # Local imports
 from .resources import Resources, ResourceType
@@ -72,7 +73,7 @@ class Scheduler():
         # Public members
         #
         self.active_jobs = []       # Jobs currently being run in the scheduler
-        self.waiting_jobs = []      # Jobs waiting for resources
+        self.waiting_jobs = SortedList([], key=lambda job: job.key())  # Jobs waiting for resources
         self.queues = None          # Exposed for the frontend to print summaries
         self.context = context      # The Context object shared with Queues
         self.terminated = False     # Whether the scheduler was asked to terminate or has terminated
@@ -222,7 +223,7 @@ class Scheduler():
     #
     def schedule_jobs(self, jobs):
         for job in jobs:
-            self.waiting_jobs.append(job)
+            self.waiting_jobs.add(job)
 
     # job_completed():
     #

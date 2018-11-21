@@ -353,6 +353,10 @@ class Job():
     def child_process_data(self):
         return {}
 
+    def key(self):
+        raise ImplError("Job '{kind}' does not implement key()"
+                        .format(kind=type(self).__name__))
+
     #######################################################
     #                  Local Private Methods              #
     #######################################################

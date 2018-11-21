@@ -32,3 +32,6 @@ class CleanupJob(Job):
     def parent_complete(self, success, result):
         if success:
             self._artifacts.set_cache_size(result)
+
+    def key(self):
+        return (0, 'cleanup')
