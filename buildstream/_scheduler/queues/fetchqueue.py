@@ -33,6 +33,7 @@ class FetchQueue(Queue):
     action_name = "Fetch"
     complete_name = "Fetched"
     resources = [ResourceType.DOWNLOAD]
+    high_priority = True
 
     def __init__(self, scheduler, skip_cached=False):
         super().__init__(scheduler)
