@@ -59,6 +59,9 @@ class Context():
         # The directory where build sandboxes will be created
         self.builddir = None
 
+        # Default root location for workspaces
+        self.workspacedir = None
+
         # The local binary artifact cache directory
         self.artifactdir = None
 
@@ -177,10 +180,10 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt'
+            'cache', 'prompt', 'workspacedir',
         ])
 
-        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
+        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #

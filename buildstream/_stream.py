@@ -464,43 +464,29 @@ class Stream():
     # Open a project workspace
     #
     # Args:
-    #    target (str): The target element to open the workspace for
-    #    directory (str): The directory to stage the source in
+    #    targets (list): List of target elements to open workspaces for
     #    no_checkout (bool): Whether to skip checking out the source
     #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
+    #    custom_dir (str): Custom location to create a workspace or false to use default location.
     #
-    def workspace_open(self, target, directory, *,
+    def workspace_open(self, targets, *,
                        no_checkout,
                        track_first,
-                       force):
+                       force,
+                       custom_dir):
+        # This function is a little funny but it is trying to be as atomic as possible.
 
         if track_first:
-            track_targets = (target,)
+            track_targets = targets
         else:
             track_targets = ()
 
-        elements, track_elements = self._load((target,), track_targets,
+        elements, track_elements = self._load(targets, track_targets,
                                               selection=PipelineSelection.REDIRECT,
                                               track_selection=PipelineSelection.REDIRECT)
-        target = elements[0]
-        directory = os.path.abspath(directory)
-
-        if not list(target.sources()):
-            build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
-            if not build_depends:
-                raise StreamError("The given element has no sources")
-            detail = "Try opening a workspace on one of its dependencies instead:\n"
-            detail += "  \n".join(build_depends)
-            raise StreamError("The given element has no sources", detail=detail)
 
         workspaces = self._context.get_workspaces()
-
-        # Check for workspace config
-        workspace = workspaces.get_workspace(target._get_full_name())
-        if workspace and not force:
-            raise StreamError("Workspace '{}' is already defined at: {}"
-                              .format(target.name, workspace.get_absolute_path()))
 
         # If we're going to checkout, we need at least a fetch,
         # if we were asked to track first, we're going to fetch anyway.
@@ -511,29 +497,88 @@ class Stream():
                 track_elements = elements
             self._fetch(elements, track_elements=track_elements)
 
-        if not no_checkout and target._get_consistency() != Consistency.CACHED:
-            raise StreamError("Could not stage uncached source. " +
-                              "Use `--track` to track and " +
-                              "fetch the latest version of the " +
-                              "source.")
+        expanded_directories = []
+        #  To try to be more atomic, loop through the elements and raise any errors we can early
+        for target in elements:
 
-        if workspace:
-            workspaces.delete_workspace(target._get_full_name())
+            if not list(target.sources()):
+                build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
+                if not build_depends:
+                    raise StreamError("The element {}  has no sources".format(target.name))
+                detail = "Try opening a workspace on one of its dependencies instead:\n"
+                detail += "  \n".join(build_depends)
+                raise StreamError("The element {} has no sources".format(target.name), detail=detail)
+
+            # Check for workspace config
+            workspace = workspaces.get_workspace(target._get_full_name())
+            if workspace and not force:
+                raise StreamError("Element '{}' already has workspace defined at: {}"
+                                  .format(target.name, workspace.get_absolute_path()))
+
+            if not no_checkout and target._get_consistency() != Consistency.CACHED:
+                raise StreamError("Could not stage uncached source. For {} ".format(target.name) +
+                                  "Use `--track` to track and " +
+                                  "fetch the latest version of the " +
+                                  "source.")
+
+            if not custom_dir:
+                directory = os.path.abspath(os.path.join(self._context.workspacedir, target.name))
+                if directory[-4:] == '.bst':
+                    directory = directory[:-4]
+                expanded_directories.append(directory)
+
+        if custom_dir:
+            if len(elements) != 1:
+                raise StreamError("Exactly one element can be given if --directory is used",
+                                  reason='directory-with-multiple-elements')
+            expanded_directories = [custom_dir, ]
+        else:
+            # If this fails it is a bug in what ever calls this, usually cli.py and so can not be tested for via the
+            # run bst test mechanism.
+            assert len(elements) == len(expanded_directories)
+
+        for target, directory in zip(elements, expanded_directories):
+            if os.path.exists(directory):
+                if not os.path.isdir(directory):
+                    raise StreamError("For element '{}', Directory path is not a directory: {}"
+                                      .format(target.name, directory), reason='bad-directory')
+
+                if not (no_checkout or force) and os.listdir(directory):
+                    raise StreamError("For element '{}', Directory path is not empty: {}"
+                                      .format(target.name, directory), reason='bad-directory')
+
+        # So far this function has tried to catch as many issues as possible with out making any changes
+        # Now it dose the bits that can not be made atomic.
+        targetGenerator = zip(elements, expanded_directories)
+        for target, directory in targetGenerator:
+            self._message(MessageType.INFO, "Creating workspace for element {}"
+                          .format(target.name))
+
+            workspace = workspaces.get_workspace(target._get_full_name())
+            if workspace:
+                workspaces.delete_workspace(target._get_full_name())
+                workspaces.save_config()
+                shutil.rmtree(directory)
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except OSError as e:
+                todo_elements = " ".join([str(target.name) for target, directory_dict in targetGenerator])
+                if todo_elements:
+                    # This output should make creating the remaining workspaces as easy as possible.
+                    todo_elements = "\nDid not try to create workspaces for " + todo_elements
+                raise StreamError("Failed to create workspace directory: {}".format(e) + todo_elements) from e
+
+            workspaces.create_workspace(target._get_full_name(), directory)
+
+            if not no_checkout:
+                with target.timed_activity("Staging sources to {}".format(directory)):
+                    target._open_workspace()
+
+            # Saving the workspace once it is set up means that if the next workspace fails to be created before
+            # the configuration gets saved. The successfully created workspace still gets saved.
             workspaces.save_config()
-            shutil.rmtree(directory)
-        try:
-            os.makedirs(directory, exist_ok=True)
-        except OSError as e:
-            raise StreamError("Failed to create workspace directory: {}".format(e)) from e
-
-        workspaces.create_workspace(target._get_full_name(), directory)
-
-        if not no_checkout:
-            with target.timed_activity("Staging sources to {}".format(directory)):
-                target._open_workspace()
-
-        workspaces.save_config()
-        self._message(MessageType.INFO, "Saved workspace configuration")
+            self._message(MessageType.INFO, "Created a workspace for element: {}"
+                          .format(target._get_full_name()))
 
     # workspace_close
     #

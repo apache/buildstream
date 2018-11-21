@@ -21,9 +21,11 @@
 #           Phillip Smyth <phillip.smyth@codethink.co.uk>
 #           Jonathan Maw <jonathan.maw@codethink.co.uk>
 #           Richard Maw <richard.maw@codethink.co.uk>
+#           William Salmon <will.salmon@codethink.co.uk>
 #
 
 import os
+import stat
 import pytest
 import shutil
 import subprocess
@@ -43,65 +45,120 @@ DATA_DIR = os.path.join(
 )
 
 
+class WorkspaceCreater():
+    def __init__(self, cli, tmpdir, datafiles, project_path=None):
+        self.cli = cli
+        self.tmpdir = tmpdir
+        self.datafiles = datafiles
+
+        if not project_path:
+            project_path = os.path.join(datafiles.dirname, datafiles.basename)
+        else:
+            shutil.copytree(os.path.join(datafiles.dirname, datafiles.basename), project_path)
+
+        self.project_path = project_path
+        self.bin_files_path = os.path.join(project_path, 'files', 'bin-files')
+
+        self.workspace_cmd = os.path.join(self.project_path, 'workspace_cmd')
+
+    def create_workspace_element(self, kind, track, suffix='', workspace_dir=None,
+                                 element_attrs=None):
+        element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
+        element_path = os.path.join(self.project_path, 'elements')
+        if not workspace_dir:
+            workspace_dir = os.path.join(self.workspace_cmd, element_name)
+            if workspace_dir[-4:] == '.bst':
+                workspace_dir = workspace_dir[:-4]
+
+        # Create our repo object of the given source type with
+        # the bin files, and then collect the initial ref.
+        repo = create_repo(kind, str(self.tmpdir))
+        ref = repo.create(self.bin_files_path)
+        if track:
+            ref = None
+
+        # Write out our test target
+        element = {
+            'kind': 'import',
+            'sources': [
+                repo.source_config(ref=ref)
+            ]
+        }
+        if element_attrs:
+            element = {**element, **element_attrs}
+        _yaml.dump(element,
+                   os.path.join(element_path,
+                                element_name))
+        return element_name, element_path, workspace_dir
+
+    def create_workspace_elements(self, kinds, track, suffixs=None, workspace_dir_usr=None,
+                                  element_attrs=None):
+
+        element_tuples = []
+
+        if suffixs is None:
+            suffixs = ['', ] * len(kinds)
+        else:
+            if len(suffixs) != len(kinds):
+                raise "terable error"
+
+        for suffix, kind in zip(suffixs, kinds):
+            element_name, element_path, workspace_dir = \
+                self.create_workspace_element(kind, track, suffix, workspace_dir_usr,
+                                              element_attrs)
+
+            # Assert that there is no reference, a track & fetch is needed
+            state = self.cli.get_element_state(self.project_path, element_name)
+            if track:
+                assert state == 'no reference'
+            else:
+                assert state == 'fetch needed'
+            element_tuples.append((element_name, workspace_dir))
+
+        return element_tuples
+
+    def open_workspaces(self, kinds, track, suffixs=None, workspace_dir=None,
+                        element_attrs=None):
+
+        element_tuples = self.create_workspace_elements(kinds, track, suffixs, workspace_dir,
+                                                        element_attrs)
+        os.makedirs(self.workspace_cmd, exist_ok=True)
+
+        # Now open the workspace, this should have the effect of automatically
+        # tracking & fetching the source from the repo.
+        args = ['workspace', 'open']
+        if track:
+            args.append('--track')
+        if workspace_dir is not None:
+            assert len(element_tuples) == 1, "test logic error"
+            _, workspace_dir = element_tuples[0]
+            args.extend(['--directory', workspace_dir])
+
+        args.extend([element_name for element_name, workspace_dir_suffix in element_tuples])
+        result = self.cli.run(cwd=self.workspace_cmd, project=self.project_path, args=args)
+
+        result.assert_success()
+
+        for element_name, workspace_dir in element_tuples:
+            # Assert that we are now buildable because the source is
+            # now cached.
+            assert self.cli.get_element_state(self.project_path, element_name) == 'buildable'
+
+            # Check that the executable hello file is found in the workspace
+            filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
+            assert os.path.exists(filename)
+
+        return element_tuples
+
+
 def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None,
                    project_path=None, element_attrs=None):
-    if not workspace_dir:
-        workspace_dir = os.path.join(str(tmpdir), 'workspace{}'.format(suffix))
-    if not project_path:
-        project_path = os.path.join(datafiles.dirname, datafiles.basename)
-    else:
-        shutil.copytree(os.path.join(datafiles.dirname, datafiles.basename), project_path)
-    bin_files_path = os.path.join(project_path, 'files', 'bin-files')
-    element_path = os.path.join(project_path, 'elements')
-    element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
-
-    # Create our repo object of the given source type with
-    # the bin files, and then collect the initial ref.
-    #
-    repo = create_repo(kind, str(tmpdir))
-    ref = repo.create(bin_files_path)
-    if track:
-        ref = None
-
-    # Write out our test target
-    element = {
-        'kind': 'import',
-        'sources': [
-            repo.source_config(ref=ref)
-        ]
-    }
-    if element_attrs:
-        element = {**element, **element_attrs}
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
-
-    # Assert that there is no reference, a track & fetch is needed
-    state = cli.get_element_state(project_path, element_name)
-    if track:
-        assert state == 'no reference'
-    else:
-        assert state == 'fetch needed'
-
-    # Now open the workspace, this should have the effect of automatically
-    # tracking & fetching the source from the repo.
-    args = ['workspace', 'open']
-    if track:
-        args.append('--track')
-    args.extend([element_name, workspace_dir])
-    result = cli.run(project=project_path, args=args)
-
-    result.assert_success()
-
-    # Assert that we are now buildable because the source is
-    # now cached.
-    assert cli.get_element_state(project_path, element_name) == 'buildable'
-
-    # Check that the executable hello file is found in the workspace
-    filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
-    assert os.path.exists(filename)
-
-    return (element_name, project_path, workspace_dir)
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles, project_path)
+    workspaces = workspace_object.open_workspaces((kind, ), track, (suffix, ), workspace_dir,
+                                                  element_attrs)
+    assert len(workspaces) == 1
+    element_name, workspace = workspaces[0]
+    return element_name, workspace_object.project_path, workspace
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -129,6 +186,128 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_open_multi(cli, tmpdir, datafiles):
+
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    workspaces = workspace_object.open_workspaces(repo_kinds, False)
+
+    for (elname, workspace), kind in zip(workspaces, repo_kinds):
+        assert kind in elname
+        workspace_lsdir = os.listdir(workspace)
+        if kind == 'git':
+            assert('.git' in workspace_lsdir)
+        elif kind == 'bzr':
+            assert('.bzr' in workspace_lsdir)
+        else:
+            assert not ('.git' in workspace_lsdir)
+            assert not ('.bzr' in workspace_lsdir)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_multi_unwritable(cli, tmpdir, datafiles):
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+
+    element_tuples = workspace_object.create_workspace_elements(repo_kinds, False, repo_kinds)
+    os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
+
+    # Now open the workspace, this should have the effect of automatically
+    # tracking & fetching the source from the repo.
+    args = ['workspace', 'open']
+    args.extend([element_name for element_name, workspace_dir_suffix in element_tuples])
+    cli.configure({'workspacedir': workspace_object.workspace_cmd})
+
+    cwdstat = os.stat(workspace_object.workspace_cmd)
+    try:
+        os.chmod(workspace_object.workspace_cmd, cwdstat.st_mode - stat.S_IWRITE)
+        result = workspace_object.cli.run(project=workspace_object.project_path, args=args)
+    finally:
+        # Using this finally to make sure we always put thing back how they should be.
+        os.chmod(workspace_object.workspace_cmd, cwdstat.st_mode)
+
+    result.assert_main_error(ErrorDomain.STREAM, None)
+    # Normally we avoid checking stderr in favour of using the mechine readable result.assert_main_error
+    # But Tristan was very keen that the names of the elements left needing workspaces were present in the out put
+    assert (" ".join([element_name for element_name, workspace_dir_suffix in element_tuples[1:]]) in result.stderr)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_multi_with_directory(cli, tmpdir, datafiles):
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+
+    element_tuples = workspace_object.create_workspace_elements(repo_kinds, False, repo_kinds)
+    os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
+
+    # Now open the workspace, this should have the effect of automatically
+    # tracking & fetching the source from the repo.
+    args = ['workspace', 'open']
+    args.extend(['--directory', 'any/dir/should/fail'])
+
+    args.extend([element_name for element_name, workspace_dir_suffix in element_tuples])
+    result = workspace_object.cli.run(cwd=workspace_object.workspace_cmd, project=workspace_object.project_path,
+                                      args=args)
+
+    result.assert_main_error(ErrorDomain.STREAM, 'directory-with-multiple-elements')
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_defaultlocation(cli, tmpdir, datafiles):
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+
+    ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
+    os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
+
+    # Now open the workspace, this should have the effect of automatically
+    # tracking & fetching the source from the repo.
+    args = ['workspace', 'open']
+    args.append(element_name)
+
+    # In the other tests we set the cmd to workspace_object.workspace_cmd with the optional
+    # argument, cwd for the workspace_object.cli.run function. But hear we set the default
+    # workspace location to workspace_object.workspace_cmd and run the cli.run function with
+    # no cwd option so that it runs in the project directory.
+    cli.configure({'workspacedir': workspace_object.workspace_cmd})
+    result = workspace_object.cli.run(project=workspace_object.project_path,
+                                      args=args)
+
+    result.assert_success()
+
+    assert cli.get_element_state(workspace_object.project_path, element_name) == 'buildable'
+
+    # Check that the executable hello file is found in the workspace
+    # even though the cli.run function was not run with cwd = workspace_object.workspace_cmd
+    # the workspace should be created in there as we used the 'workspacedir' configuration
+    # option.
+    filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
+    assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_defaultlocation_exists(cli, tmpdir, datafiles):
+    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+
+    ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
+    os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
+
+    with open(workspace_dir, 'w') as fl:
+        fl.write('foo')
+
+    # Now open the workspace, this should have the effect of automatically
+    # tracking & fetching the source from the repo.
+    args = ['workspace', 'open']
+    args.append(element_name)
+
+    # In the other tests we set the cmd to workspace_object.workspace_cmd with the optional
+    # argument, cwd for the workspace_object.cli.run function. But hear we set the default
+    # workspace location to workspace_object.workspace_cmd and run the cli.run function with
+    # no cwd option so that it runs in the project directory.
+    cli.configure({'workspacedir': workspace_object.workspace_cmd})
+    result = workspace_object.cli.run(project=workspace_object.project_path,
+                                      args=args)
+
+    result.assert_main_error(ErrorDomain.STREAM, 'bad-directory')
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
 def test_open_track(cli, tmpdir, datafiles, kind):
     open_workspace(cli, tmpdir, datafiles, kind, True)
@@ -150,7 +329,7 @@ def test_open_force(cli, tmpdir, datafiles, kind):
 
     # Now open the workspace again with --force, this should happily succeed
     result = cli.run(project=project, args=[
-        'workspace', 'open', '--force', element_name, workspace
+        'workspace', 'open', '--force', '--directory', workspace, element_name
     ])
     result.assert_success()
 
@@ -165,7 +344,7 @@ def test_open_force_open(cli, tmpdir, datafiles, kind):
 
     # Now open the workspace again with --force, this should happily succeed
     result = cli.run(project=project, args=[
-        'workspace', 'open', '--force', element_name, workspace
+        'workspace', 'open', '--force', '--directory', workspace, element_name
     ])
     result.assert_success()
 
@@ -196,7 +375,7 @@ def test_open_force_different_workspace(cli, tmpdir, datafiles, kind):
 
     # Now open the workspace again with --force, this should happily succeed
     result = cli.run(project=project, args=[
-        'workspace', 'open', '--force', element_name2, workspace
+        'workspace', 'open', '--force', '--directory', workspace, element_name2
     ])
 
     # Assert that the file in workspace 1 has been replaced
@@ -504,7 +683,7 @@ def test_buildable_no_ref(cli, tmpdir, datafiles):
     # Now open the workspace. We don't need to checkout the source though.
     workspace = os.path.join(str(tmpdir), 'workspace-no-ref')
     os.makedirs(workspace)
-    args = ['workspace', 'open', '--no-checkout', element_name, workspace]
+    args = ['workspace', 'open', '--no-checkout', '--directory', workspace, element_name]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
@@ -766,7 +945,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
                             element_name))
 
     # Make a change to the workspaces file
-    result = cli.run(project=project, args=['workspace', 'open', element_name, workspace])
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
     result.assert_success()
     result = cli.run(project=project, args=['workspace', 'close', '--remove-dir', element_name])
     result.assert_success()

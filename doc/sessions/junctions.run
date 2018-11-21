@@ -13,7 +13,7 @@ commands:
 # Open a crossJunction workspace:
 - directory: ../examples/junctions
   output: ../source/sessions/junctions-workspace-open.html
-  command: workspace open hello-junction.bst:hello.bst workspace_hello
+  command: workspace open --directory workspace_hello hello-junction.bst:hello.bst
 
 # Remove the workspace 
 - directory: ../examples/junctions

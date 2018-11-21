@@ -47,7 +47,7 @@ def open_cross_junction(cli, tmpdir):
     workspace = tmpdir.join("workspace")
 
     element = 'sub.bst:data.bst'
-    args = ['workspace', 'open', element, str(workspace)]
+    args = ['workspace', 'open', '--directory', str(workspace), element]
     result = cli.run(project=project, args=args)
     result.assert_success()
 

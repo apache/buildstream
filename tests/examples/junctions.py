@@ -48,7 +48,7 @@ def test_open_cross_junction_workspace(cli, tmpdir, datafiles):
     workspace_dir = os.path.join(str(tmpdir), "workspace_hello_junction")
 
     result = cli.run(project=project,
-                     args=['workspace', 'open', 'hello-junction.bst:hello.bst', workspace_dir])
+                     args=['workspace', 'open', '--directory', workspace_dir, 'hello-junction.bst:hello.bst'])
     result.assert_success()
 
     result = cli.run(project=project,
