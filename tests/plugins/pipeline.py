@@ -14,7 +14,7 @@ DATA_DIR = os.path.join(
 
 def create_pipeline(tmpdir, basedir, target):
     context = Context()
-    context.load()
+    context.load(config=os.devnull)
     context.deploydir = os.path.join(str(tmpdir), 'deploy')
     context.artifactdir = os.path.join(str(tmpdir), 'artifact')
     project = Project(basedir, context)
