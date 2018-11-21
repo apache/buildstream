@@ -78,6 +78,7 @@ import stat
 import copy
 from collections import OrderedDict
 from collections.abc import Mapping
+import contextlib
 from contextlib import contextmanager
 import tempfile
 import shutil
@@ -216,6 +217,10 @@ class Element(Plugin):
         self.__required = False                 # Whether the artifact is required in the current session
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None            # The path of the build log for this Element
+
+        self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
+        self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
+        self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
 
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
@@ -863,6 +868,24 @@ class Element(Plugin):
 
         return None
 
+    def batch_prepare_assemble(self, flags, *, collect=None):
+        """ Configure command batching across prepare() and assemble()
+
+        Args:
+           flags (:class:`.SandboxFlags`): The sandbox flags for the command batch
+           collect (str): An optional directory containing partial install contents
+                          on command failure.
+
+        This may be called in :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`
+        to enable batching of all sandbox commands issued in prepare() and assemble().
+        """
+        if self.__batch_prepare_assemble:
+            raise ElementError("{}: Command batching for prepare/assemble is already configured".format(self))
+
+        self.__batch_prepare_assemble = True
+        self.__batch_prepare_assemble_flags = flags
+        self.__batch_prepare_assemble_collect = collect
+
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
@@ -1323,7 +1346,7 @@ class Element(Plugin):
                             bare_directory=bare_directory) as sandbox:
 
             # Configure always comes first, and we need it.
-            self.configure_sandbox(sandbox)
+            self.__configure_sandbox(sandbox)
 
             # Stage something if we need it
             if not directory:
@@ -1556,13 +1579,22 @@ class Element(Plugin):
                 # Call the abstract plugin methods
                 try:
                     # Step 1 - Configure
-                    self.configure_sandbox(sandbox)
+                    self.__configure_sandbox(sandbox)
                     # Step 2 - Stage
                     self.stage(sandbox)
-                    # Step 3 - Prepare
-                    self.__prepare(sandbox)
-                    # Step 4 - Assemble
-                    collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
+
+                    if self.__batch_prepare_assemble:
+                        cm = sandbox.batch(self.__batch_prepare_assemble_flags,
+                                           collect=self.__batch_prepare_assemble_collect)
+                    else:
+                        cm = contextlib.suppress()
+
+                    with cm:
+                        # Step 3 - Prepare
+                        self.__prepare(sandbox)
+                        # Step 4 - Assemble
+                        collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
+
                     self.__set_build_result(success=True, description="succeeded")
                 except (ElementError, SandboxCommandError) as e:
                     # Shelling into a sandbox is useful to debug this error
@@ -2058,6 +2090,15 @@ class Element(Plugin):
     #
     def __can_build_incrementally(self):
         return bool(self._get_workspace())
+
+    # __configure_sandbox():
+    #
+    # Internal method for calling public abstract configure_sandbox() method.
+    #
+    def __configure_sandbox(self, sandbox):
+        self.__batch_prepare_assemble = False
+
+        self.configure_sandbox(sandbox)
 
     # __prepare():
     #
