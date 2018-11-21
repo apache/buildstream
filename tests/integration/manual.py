@@ -128,3 +128,28 @@ def test_manual_element_noparallel(cli, tmpdir, datafiles):
     assert text == """-j1 -Wall
 2
 """
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_manual_element_logging(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'import/import.bst'
+
+    create_manual_element(element_name, element_path, {
+        'configure-commands': ["echo configure"],
+        'build-commands': ["echo build"],
+        'install-commands': ["echo install"],
+        'strip-commands': ["echo strip"]
+    }, {}, {})
+
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+    # Verify that individual commands are logged
+    assert "echo configure" in res.stderr
+    assert "echo build" in res.stderr
+    assert "echo install" in res.stderr
+    assert "echo strip" in res.stderr
