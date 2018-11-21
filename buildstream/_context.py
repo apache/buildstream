@@ -31,6 +31,7 @@ from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
+from ._artifactcache.cascache import CASCache
 from ._workspaces import Workspaces
 from .plugin import _plugin_lookup
 
@@ -141,6 +142,7 @@ class Context():
         self._workspaces = None
         self._log_handle = None
         self._log_filename = None
+        self._cascache = None
 
     # load()
     #
@@ -619,6 +621,11 @@ class Context():
             os.environ['XDG_CONFIG_HOME'] = os.path.expanduser('~/.config')
         if not os.environ.get('XDG_DATA_HOME'):
             os.environ['XDG_DATA_HOME'] = os.path.expanduser('~/.local/share')
+
+    def get_cascache(self):
+        if self._cascache is None:
+            self._cascache = CASCache(self.artifactdir)
+        return self._cascache
 
 
 # _node_get_option_str()

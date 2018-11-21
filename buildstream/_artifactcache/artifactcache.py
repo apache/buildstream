@@ -30,7 +30,7 @@ from .. import _signals
 from .. import utils
 from .. import _yaml
 
-from .cascache import CASCache, CASRemote, CASRemoteSpec
+from .cascache import CASRemote, CASRemoteSpec
 
 
 CACHE_SIZE_FILE = "cache_size"
@@ -58,7 +58,7 @@ class ArtifactCache():
         self.context = context
         self.extractdir = os.path.join(context.artifactdir, 'extract')
 
-        self.cas = CASCache(context.artifactdir)
+        self.cas = context.get_cascache()
 
         self.global_remote_specs = []
         self.project_remote_specs = {}
