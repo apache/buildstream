@@ -1,3 +1,24 @@
+#
+#  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2018 Bloomberg Finance LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        William Salmon <will.salmon@codethink.co.uk>
+
 # Makefile for Sphinx documentation
 #
 
@@ -93,18 +114,6 @@ templates-clean:
 ############################################################
 #                   Session captures                       #
 ############################################################
-
-# Stage the stored sessions into the place where they will
-# be used in the build.
-#
-# This is separated so that the git tree does not become
-# dirty as a result of a documentation build process - which
-# messes up the docs version number and the version number
-# printed in some command line output.
-#
-sessions-prep:
-	mkdir -p source/sessions
-	cp source/sessions-stored/*.html source/sessions
 
 # By default, this will generate the html fragments of colorized BuildStream terminal
 # output only if they don't yet exist.

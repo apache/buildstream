@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2013 German M. Bravo (Kronuz)
 # Copyright (c) 2018 Codethink Limited
+# Copyright (C) 2018 Bloomberg Finance LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -311,7 +312,7 @@ def generate_html(output, directory, config_file, source_cache, tempdir, palette
 # Returns:
 #    (bool): Whether the file needs to be built
 #
-def check_needs_build(basedir, filename, force=False):
+def check_needs_build(basedir, filename, *, desc_mtime=None, force=None):
     if force:
         return True
 
@@ -322,11 +323,14 @@ def check_needs_build(basedir, filename, force=False):
     filename = os.path.realpath(filename)
     if not os.path.exists(filename):
         return True
+    elif desc_mtime and os.path.getmtime(filename) + 1 < desc_mtime:
+        return True
 
     return False
 
 
 def run_session(description, tempdir, source_cache, palette, config_file, force):
+    desc_mtime = os.path.getmtime(description)
     desc = _yaml.load(description, shortname=os.path.basename(description))
     desc_dir = os.path.dirname(description)
 
@@ -337,7 +341,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
         commands = _yaml.node_get(desc, list, 'commands')
         for command in commands:
             output = _yaml.node_get(command, str, 'output', default_value=None)
-            if output is not None and check_needs_build(desc_dir, output, force=False):
+            if output is not None and check_needs_build(desc_dir, output, desc_mtime=desc_mtime):
                 needs_build = True
                 break
         if not needs_build:
