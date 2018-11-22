@@ -30,7 +30,7 @@ from contextlib import contextmanager, suppress
 
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
 from ._message import Message, MessageType
-from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
+from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue, FormatQueue
 from ._pipeline import Pipeline, PipelineSelection
 from . import utils, _yaml, _site
 from . import Scope, Consistency
@@ -282,6 +282,34 @@ class Stream():
         track_queue = TrackQueue(self._scheduler)
         self._add_queue(track_queue, track=True)
         self._enqueue_plan(elements, queue=track_queue)
+        self._run()
+
+    # format()
+    #
+    # Formats elements into a "canonical" format.
+    #
+    # Args:
+    #    targets (list of str): Targets to format
+    #    except_targets (list of str): Specifiedtargets to except from formatting
+    #    format_all (bool): Whether to format all elements or just the targets
+    #
+    def format(self, targets, *,
+               except_targets=None,
+               format_all=False):
+        if format_all:
+            modify_selection = PipelineSelection.ALL
+        else:
+            modify_selection = PipelineSelection.REDIRECT
+
+        # Only pass targets to track, in order to load a rewritable pipeline
+        _, elements = \
+            self._load([], targets,
+                       track_selection=modify_selection,
+                       track_except_targets=except_targets,
+                       fetch_subprojects=True)
+        fmt_queue = FormatQueue(self._scheduler)
+        self._add_queue(fmt_queue, track=False)
+        self._enqueue_plan(elements, queue=fmt_queue)
         self._run()
 
     # pull()

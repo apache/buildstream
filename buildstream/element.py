@@ -1332,6 +1332,14 @@ class Element(Plugin):
 
         return refs
 
+    # _format()
+    #
+    # Dumps an element's yaml file in canonical format
+    #
+    def _format(self):
+        provenance = self._get_provenance()
+        _yaml.dump(provenance.toplevel, provenance.filename.name)
+
     # _prepare_sandbox():
     #
     # This stages things for either _shell() (below) or also

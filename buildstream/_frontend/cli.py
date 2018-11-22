@@ -354,6 +354,29 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
                          track_cross_junctions=track_cross_junctions,
                          build_all=all_)
 
+##################################################################
+#                         Format Command                         #
+##################################################################
+@cli.command(short_help="Format element files")
+@click.option('--all', 'all_', default=False, is_flag=True,
+              help="Format all dependencies of the targets")
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(readable=False),
+              help="Except certain files from formatting (has no effect without `--all`)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def fmt(app, elements, all_, except_):
+    """Formats element files into a consistent style. This style is the one
+    defaulted to by ruamel.yaml, so is the recommended format for a
+    BuildStream project.
+
+    By default this will format just the specified element, but you can format
+    all the elements at once by passing the `--all` flag.
+    """
+    with app.initialized(session_name="Format"):
+        app.stream.format(elements, except_targets=except_, format_all=all_)
+
 
 ##################################################################
 #                           Pull Command                         #

@@ -24,6 +24,7 @@ from .queues.trackqueue import TrackQueue
 from .queues.buildqueue import BuildQueue
 from .queues.pushqueue import PushQueue
 from .queues.pullqueue import PullQueue
+from .queues.formatqueue import FormatQueue
 
 from .scheduler import Scheduler, SchedStatus
 from .jobs import ElementJob
