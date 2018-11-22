@@ -751,34 +751,6 @@ class ArtifactCache():
 
         return message_digest
 
-    # verify_digest_pushed():
-    #
-    # Check whether the object is already on the server in which case
-    # there is no need to upload it.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     digest (Digest): The object digest.
-    #
-    def verify_digest_pushed(self, project, digest):
-
-        if self._has_push_remotes:
-            push_remotes = [r for r in self._remotes[project] if r.spec.push]
-        else:
-            push_remotes = []
-
-        if not push_remotes:
-            raise ArtifactError("verify_digest_pushed was called, but no remote artifact " +
-                                "servers are configured as push remotes.")
-
-        pushed = False
-
-        for remote in push_remotes:
-            if self.cas.verify_digest_on_remote(remote, digest):
-                pushed = True
-
-        return pushed
-
     # link_key():
     #
     # Add a key for an existing artifact.
