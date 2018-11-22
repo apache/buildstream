@@ -16,7 +16,6 @@
 #
 #  Authors:
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
-import os
 
 
 # SandboxConfig
@@ -24,9 +23,11 @@ import os
 # A container for sandbox configuration data. We want the internals
 # of this to be opaque, hence putting it in its own private file.
 class SandboxConfig():
-    def __init__(self, build_uid, build_gid):
+    def __init__(self, build_uid, build_gid, build_os=None, build_arch=None):
         self.build_uid = build_uid
         self.build_gid = build_gid
+        self.build_os = build_os
+        self.build_arch = build_arch
 
     # get_unique_key():
     #
@@ -45,10 +46,9 @@ class SandboxConfig():
         # However this should be the right place to support
         # such configurations in the future.
         #
-        operating_system, _, _, _, machine_arch = os.uname()
         unique_key = {
-            'os': operating_system,
-            'arch': machine_arch
+            'os': self.build_os,
+            'arch': self.build_arch
         }
 
         # Avoid breaking cache key calculation with
