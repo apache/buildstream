@@ -67,22 +67,26 @@ class ArtifactShare():
     def run(self, q):
         pytest_cov.embed.cleanup_on_sigterm()
 
-        # Optionally mock statvfs
-        if self.total_space:
-            if self.free_space is None:
-                self.free_space = self.total_space
-            os.statvfs = self._mock_statvfs
+        try:
+            # Optionally mock statvfs
+            if self.total_space:
+                if self.free_space is None:
+                    self.free_space = self.total_space
+                os.statvfs = self._mock_statvfs
 
-        server = create_server(self.repodir, enable_push=True)
-        port = server.add_insecure_port('localhost:0')
+            server = create_server(self.repodir, enable_push=True)
+            port = server.add_insecure_port('localhost:0')
 
-        server.start()
+            server.start()
 
-        # Send port to parent
-        q.put(port)
+            # Send port to parent
+            q.put(port)
 
-        # Sleep until termination by signal
-        signal.pause()
+            # Sleep until termination by signal
+            signal.pause()
+        except Exception as e:
+            q.put(None)
+            raise
 
     # has_object():
     #
