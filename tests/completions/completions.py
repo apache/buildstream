@@ -9,6 +9,7 @@ MAIN_COMMANDS = [
     'artifact ',
     'build ',
     'checkout ',
+    'fmt ',
     'help ',
     'init ',
     'pull ',
