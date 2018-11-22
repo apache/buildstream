@@ -22,6 +22,7 @@
 #           Jonathan Maw <jonathan.maw@codethink.co.uk>
 #           Richard Maw <richard.maw@codethink.co.uk>
 #           William Salmon <will.salmon@codethink.co.uk>
+#           Angelos Evripiotis <jevripiotis@bloomberg.net>
 #
 
 import os
@@ -520,6 +521,44 @@ def test_close_all(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("scenario", [
+    {'assume_yes': True, 'no_prompt': True},
+    {'assume_yes': False, 'no_prompt': True},
+    # Covered by test_close: {'assume_yes': True, 'no_prompt': False},
+    {'assume_yes': False, 'no_prompt': False},
+])
+def test_close_remove_dir_prompt(cli, tmpdir, datafiles, scenario):
+
+    assume_yes, no_prompt = scenario['assume_yes'], scenario['no_prompt']
+
+    element_name, project, workspace = open_workspace(
+        cli, tmpdir, datafiles, 'git', track=False)
+
+    workspace_args = [
+        'workspace', 'close', '--remove-dir', element_name
+    ]
+
+    if assume_yes:
+        workspace_args.append('--assume-yes')
+
+    if no_prompt:
+        cli.configure(
+            {'prompt': {'really-workspace-close-remove-dir': 'yes'}}
+        )
+
+    result = cli.run(project=project, args=workspace_args)
+
+    if assume_yes or no_prompt:
+        result.assert_success()
+        assert not os.path.exists(workspace)
+    else:
+        result.assert_main_error(
+            ErrorDomain.APP,
+            'aborted-destructive-non-interactive-not-confirmed')
+        assert os.path.exists(workspace)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_reset(cli, tmpdir, datafiles):
     # Open the workspace
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
@@ -590,6 +629,48 @@ def test_reset_all(cli, tmpdir, datafiles):
     result.assert_success()
     assert os.path.exists(os.path.join(workspace_alpha, 'usr', 'bin', 'hello'))
     assert not os.path.exists(os.path.join(workspace_beta, 'etc', 'pony.conf'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("scenario", [
+    {'assume_yes': True, 'no_prompt': True},
+    {'assume_yes': False, 'no_prompt': True},
+    # Covered by test_reset: {'assume_yes': True, 'no_prompt': False},
+    {'assume_yes': False, 'no_prompt': False},
+])
+def test_reset_prompt(cli, tmpdir, datafiles, scenario):
+
+    assume_yes, no_prompt = scenario['assume_yes'], scenario['no_prompt']
+
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
+
+    # Make a change to revert.
+    os.makedirs(os.path.join(workspace, 'etc'))
+    with open(os.path.join(workspace, 'etc', 'pony.conf'), 'w') as f:
+        f.write("PONY='pink'")
+
+    workspace_args = [
+        'workspace', 'reset', element_name
+    ]
+
+    if assume_yes:
+        workspace_args.append('--assume-yes')
+
+    if no_prompt:
+        cli.configure(
+            {'prompt': {'really-workspace-reset-hard': 'yes'}}
+        )
+
+    result = cli.run(project=project, args=workspace_args)
+
+    if assume_yes or no_prompt:
+        result.assert_success()
+        assert not os.path.exists(os.path.join(workspace, 'etc', 'pony.conf'))
+    else:
+        result.assert_main_error(
+            ErrorDomain.APP,
+            'aborted-destructive-non-interactive-not-confirmed')
+        assert os.path.exists(os.path.join(workspace, 'etc', 'pony.conf'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
