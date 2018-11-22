@@ -9,7 +9,7 @@
 
 set -eux
 
-ALPINE_ARCH=${ARCH:-x86_64}
+ALPINE_ARCH=${ARCH:-x86-64}
 ALPINE_BASE=http://dl-cdn.alpinelinux.org/alpine/v3.7/releases/${ALPINE_ARCH}/alpine-minirootfs-3.7.0-${ALPINE_ARCH}.tar.gz
 
 mkdir root

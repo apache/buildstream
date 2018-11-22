@@ -29,7 +29,7 @@ def override_uname_arch(name):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("uname,value,expected", [
     # Test explicitly provided arches
-    ('arm', 'arm', 'Army'),
+    ('arm', 'aarch32', 'Army'),
     ('arm', 'aarch64', 'Aarchy'),
 
     # Test automatically derived arches
@@ -38,7 +38,7 @@ def override_uname_arch(name):
 
     # Test that explicitly provided arches dont error out
     # when the `uname` reported arch is not supported
-    ('i386', 'arm', 'Army'),
+    ('i386', 'aarch32', 'Army'),
     ('x86_64', 'aarch64', 'Aarchy'),
 ])
 def test_conditional(cli, datafiles, uname, value, expected):
