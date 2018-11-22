@@ -25,6 +25,17 @@ def message_handler(message, context):
     pass
 
 
+# Since parent processes wait for queue events, we need
+# to put something on it if the called process raises an
+# exception.
+def _queue_wrapper(target, queue, *args):
+    try:
+        target(*args, queue=queue)
+    except Exception as e:
+        queue.put(str(e))
+        raise
+
+
 def tree_maker(cas, tree, directory):
     if tree.root.ByteSize() == 0:
         tree.root.CopyFrom(directory)
@@ -97,9 +108,9 @@ def test_pull(cli, tmpdir, datafiles):
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-        process = multiprocessing.Process(target=_test_pull,
-                                          args=(user_config_file, project_dir, artifact_dir,
-                                                'target.bst', element_key, queue))
+        process = multiprocessing.Process(target=_queue_wrapper,
+                                          args=(_test_pull, queue, user_config_file, project_dir,
+                                                artifact_dir, 'target.bst', element_key))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -205,9 +216,9 @@ def test_pull_tree(cli, tmpdir, datafiles):
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-        process = multiprocessing.Process(target=_test_push_tree,
-                                          args=(user_config_file, project_dir, artifact_dir,
-                                                artifact_digest, queue))
+        process = multiprocessing.Process(target=_queue_wrapper,
+                                          args=(_test_push_tree, queue, user_config_file, project_dir,
+                                                artifact_dir, artifact_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -233,9 +244,9 @@ def test_pull_tree(cli, tmpdir, datafiles):
 
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
-        process = multiprocessing.Process(target=_test_pull_tree,
-                                          args=(user_config_file, project_dir, artifact_dir,
-                                                tree_digest, queue))
+        process = multiprocessing.Process(target=_queue_wrapper,
+                                          args=(_test_pull_tree, queue, user_config_file, project_dir,
+                                                artifact_dir, tree_digest))
 
         try:
             # Keep SIGINT blocked in the child process
