@@ -126,13 +126,20 @@ class SandboxRemote(Sandbox):
                                  EnvironmentVariable(name=k, value=v)
                                  for (k, v) in environment.items()]
 
+        config = self._get_config()
+        platform = remote_execution_pb2.Platform()
+        platform.properties.extend([remote_execution_pb2.Platform.
+                                    Property(name="OSFamily", value=config.build_os),
+                                    remote_execution_pb2.Platform.
+                                    Property(name="ISA", value=config.build_arch)])
+
         # Create and send the Command object.
         remote_command = remote_execution_pb2.Command(arguments=command,
                                                       working_directory=working_directory,
                                                       environment_variables=environment_variables,
                                                       output_files=[],
                                                       output_directories=[self._output_directory],
-                                                      platform=None)
+                                                      platform=platform)
         context = self._get_context()
         cascache = context.get_cascache()
         casremote = CASRemote(self.storage_remote_spec)
