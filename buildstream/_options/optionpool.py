@@ -28,6 +28,7 @@ from .optionenum import OptionEnum
 from .optionflags import OptionFlags
 from .optioneltmask import OptionEltMask
 from .optionarch import OptionArch
+from .optionos import OptionOS
 
 
 _OPTION_TYPES = {
@@ -36,6 +37,7 @@ _OPTION_TYPES = {
     OptionFlags.OPTION_TYPE: OptionFlags,
     OptionEltMask.OPTION_TYPE: OptionEltMask,
     OptionArch.OPTION_TYPE: OptionArch,
+    OptionOS.OPTION_TYPE: OptionOS,
 }
 
 
