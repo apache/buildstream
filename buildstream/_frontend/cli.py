@@ -684,20 +684,20 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar, no_
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['build', 'none', 'run', 'all']),
               help='The dependencies whose sources to checkout (default: none)')
-@click.option('--fetch', 'fetch_', default=False, is_flag=True,
-              help='Fetch elements if they are not fetched')
+@click.option('--no-fetch', 'no_fetch', default=False, is_flag=True,
+              help="Disable auto-fetching of element and related junction(s)")
 @click.argument('element',
                 type=click.Path(readable=False))
 @click.argument('location', type=click.Path())
 @click.pass_obj
-def source_checkout(app, element, location, deps, fetch_, except_):
+def source_checkout(app, element, location, deps, no_fetch, except_):
     """Checkout sources of an element to the specified location
     """
     with app.initialized():
         app.stream.source_checkout(element,
                                    location=location,
                                    deps=deps,
-                                   fetch=fetch_,
+                                   fetch=not no_fetch,
                                    except_targets=except_)
 
 

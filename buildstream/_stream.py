@@ -439,13 +439,13 @@ class Stream():
     #    target (str): The target element whose sources to checkout
     #    location (str): Location to checkout the sources to
     #    deps (str): The dependencies to checkout
-    #    fetch (bool): Whether to fetch missing sources
+    #    fetch (bool): Whether to fetch missing sources, including junction(s)
     #    except_targets (list): List of targets to except from staging
     #
     def source_checkout(self, target, *,
                         location=None,
                         deps='none',
-                        fetch=False,
+                        fetch=True,
                         except_targets=()):
 
         self._check_location_writable(location)
@@ -453,7 +453,7 @@ class Stream():
         elements, _ = self._load((target,), (),
                                  selection=deps,
                                  except_targets=except_targets,
-                                 fetch_subprojects=True)
+                                 fetch_subprojects=fetch)
 
         # Assert all sources are cached
         if fetch:
