@@ -91,8 +91,8 @@ def test_source_checkout_except(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize('fetch', [(False), (True)])
-def test_source_checkout_fetch(datafiles, cli, fetch):
+@pytest.mark.parametrize('no_fetch', [(False), (True)])
+def test_source_checkout_fetch(datafiles, cli, no_fetch):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'remote-import-dev.bst'
@@ -104,18 +104,18 @@ def test_source_checkout_fetch(datafiles, cli, fetch):
         'pony.h')
     _yaml.dump(element, target_path)
 
-    # Testing --fetch option requires that we do not have the sources
+    # Testing --no-fetch option requires that we do not have the sources
     # cached already
     assert cli.get_element_state(project, target) == 'fetch needed'
 
     args = ['source-checkout']
-    if fetch:
-        args += ['--fetch']
+    if no_fetch:
+        args += ['--no-fetch']
     args += [target, checkout]
     result = cli.run(project=project, args=args)
 
-    if fetch:
+    if no_fetch:
+        result.assert_main_error(ErrorDomain.PIPELINE, 'uncached-sources')
+    else:
         result.assert_success()
         assert os.path.exists(os.path.join(checkout, 'remote-import-dev', 'pony.h'))
-    else:
-        result.assert_main_error(ErrorDomain.PIPELINE, 'uncached-sources')
