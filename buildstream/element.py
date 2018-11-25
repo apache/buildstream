@@ -774,7 +774,8 @@ class Element(Plugin):
             for i in range(len(commands)):
                 cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
                 self.status("Running integration command", detail=cmd)
-                exitcode = sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/')
+                exitcode = sandbox.run(['sh', '-e', '-c', cmd], SandboxFlags.NONE,
+                                       env=environment, cwd='/')
                 if exitcode != 0:
                     raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
