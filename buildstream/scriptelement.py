@@ -271,14 +271,17 @@ class ScriptElement(Element):
 
     def assemble(self, sandbox):
 
+        flags = SandboxFlags.NONE
+        if self.__root_read_only:
+            flags |= SandboxFlags.ROOT_READ_ONLY
+
         for groupname, commands in self.__commands.items():
             with self.timed_activity("Running '{}'".format(groupname)):
                 for cmd in commands:
                     self.status("Running command", detail=cmd)
                     # Note the -e switch to 'sh' means to exit with an error
                     # if any untested command fails.
-                    exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                           SandboxFlags.ROOT_READ_ONLY if self.__root_read_only else 0)
+                    exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'], flags)
                     if exitcode != 0:
                         raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode),
                                            collect=self.__install_root)
