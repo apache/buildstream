@@ -38,6 +38,10 @@ class SandboxFlags():
     """Flags indicating how the sandbox should be run.
     """
 
+    NONE = 0
+    """Use default sandbox configuration.
+    """
+
     ROOT_READ_ONLY = 0x01
     """The root filesystem is read only.
 
