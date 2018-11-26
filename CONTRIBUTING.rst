@@ -1547,23 +1547,50 @@ Tests that run a sandbox should be decorated with::
 
 and use the integration cli helper.
 
-You should first aim to write tests that exercise your changes from the cli.
-This is so that the testing is end-to-end, and the changes are guaranteed to
-work for the end-user. The cli is considered stable, and so tests written in
-terms of it are unlikely to require updating as the internals of the software
-change over time.
+You must test your changes in an end-to-end fashion. Consider the first end to
+be the appropriate user interface, and the other end to be the change you have
+made.
 
-It may be impractical to sufficiently examine some changes this way. For
-example, the number of cases to test and the running time of each test may be
-too high. It may also be difficult to contrive circumstances to cover every
-line of the change. If this is the case, next you can consider also writing
-unit tests that work more directly on the changes.
+The aim for our tests is to make assertions about how you impact and define the
+outward user experience. You should be able to exercise all code paths via the
+user interface, just as one can test the strength of rivets by sailing dozens
+of ocean liners. Keep in mind that your ocean liners could be sailing properly
+*because* of a malfunctioning rivet. End-to-end testing will warn you that
+fixing the rivet will sink the ships.
 
-It is important to write unit tests in such a way that they do not break due to
-changes unrelated to what they are meant to test. For example, if the test
-relies on a lot of BuildStream internals, a large refactoring will likely
-require the test to be rewritten. Pure functions that only rely on the Python
-Standard Library are excellent candidates for unit testing.
+The primary user interface is the cli, so that should be the first target 'end'
+for testing. Most of the value of BuildStream comes from what you can achieve
+with the cli.
+
+We also have what we call a *"Public API Surface"*, as previously mentioned in
+:ref:`contributing_documenting_symbols`. You should consider this a secondary
+target. This is mainly for advanced users to implement their plugins against.
+
+Note that both of these targets for testing are guaranteed to continue working
+in the same way across versions. This means that tests written in terms of them
+will be robust to large changes to the code. This important property means that
+BuildStream developers can make large refactorings without needing to rewrite
+fragile tests.
+
+Another user to consider is the BuildStream developer, therefore internal API
+surfaces are also targets for testing. For example the YAML loading code, and
+the CasCache. Remember that these surfaces are still just a means to the end of
+providing value through the cli and the *"Public API Surface"*.
+
+It may be impractical to sufficiently examine some changes in an end-to-end
+fashion. The number of cases to test, and the running time of each test, may be
+too high. Such typically low-level things, e.g. parsers, may also be tested
+with unit tests; alongside the mandatory end-to-end tests.
+
+It is important to write unit tests that are not fragile, i.e. in such a way
+that they do not break due to changes unrelated to what they are meant to test.
+For example, if the test relies on a lot of BuildStream internals, a large
+refactoring will likely require the test to be rewritten. Pure functions that
+only rely on the Python Standard Library are excellent candidates for unit
+testing.
+
+Unit tests only make it easier to implement things correctly, end-to-end tests
+make it easier to implement the right thing.
 
 
 Measuring performance
