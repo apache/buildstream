@@ -59,6 +59,9 @@ class Linux(Platform):
         else:
             self._user_ns_available = False
 
+        # Set linux32 option
+        self._linux32 = False
+
     def create_sandbox(self, *args, **kwargs):
         if not self._local_sandbox_available:
             return self._create_dummy_sandbox(*args, **kwargs)
@@ -78,11 +81,25 @@ class Linux(Platform):
             # will match the host UID/GID.
             return False
 
-        # We can't do builds for another host or architecture
-        if config.build_os != self.get_host_os():
+        # We can't do builds for another host or architecture except x86-32 on
+        # x86-64
+        host_os = self.get_host_os()
+        host_arch = self.get_host_arch()
+        if config.build_os != host_os:
             raise PlatformError("Configured and host OS don't match.")
-        elif config.build_arch != self.get_host_arch():
-            raise PlatformError("Configured and host architecture don't match.")
+        elif config.build_arch != host_arch:
+            # We can use linux32 for building 32bit on 64bit machines
+            if (host_os == "Linux" and
+                    ((config.build_arch == "x86-32" and host_arch == "x86-64") or
+                     (config.build_arch == "aarch32" and host_arch == "aarch64"))):
+                # check linux32 is available
+                try:
+                    utils.get_host_tool('linux32')
+                    self._linux32 = True
+                except utils.ProgramNotFoundError:
+                    pass
+            else:
+                raise PlatformError("Configured architecture and host architecture don't match.")
 
         return True
 
@@ -109,6 +126,7 @@ class Linux(Platform):
         kwargs['user_ns_available'] = self._user_ns_available
         kwargs['die_with_parent_available'] = self._die_with_parent_available
         kwargs['json_status_available'] = self._json_status_available
+        kwargs['linux32'] = self._linux32
         return SandboxBwrap(*args, **kwargs)
 
     def _check_user_ns_available(self):
