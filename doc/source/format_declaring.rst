@@ -294,8 +294,10 @@ can be viewed in detail in the :ref:`builtin public data <public_builtin>` secti
 Sandbox
 ~~~~~~~
 Configuration for the build sandbox (other than :ref:`environment variables <format_environment>`)
-can be placed in the ``sandbox`` configuration. At present, only the
-UID and GID used by the user in the group can be specified.
+can be placed in the ``sandbox`` configuration. The UID and GID used by the user
+in the group can be specified, as well as the desired OS and machine
+architecture. Possible machine architecture follow the same list as specified in
+the :ref:`architecture option <project_options_arch>`.
 
 .. code:: yaml
 
@@ -310,6 +312,24 @@ behaving differently when run as non-root. To support those builds,
 you can supply a different uid or gid for the sandbox. Only
 bwrap-style sandboxes support custom user IDs at the moment, and hence
 this will only work on Linux host platforms.
+
+.. code:: yaml
+
+   # Specify build OS and architecture
+   sandbox:
+     build-os: AIX
+     build-arch: power-isa-be
+
+When building locally, if these don't match the host machine then generally the
+build will fail. The exception is when the OS is Linux and the architecture
+specifies an ``x86-32`` build on an ``x86-64`` machine, or ``aarch32`` build on
+a ``aarch64`` machine, in which case the ``linux32`` command is prepended to the
+bubblewrap command.
+
+When building remotely, the OS and architecture are added to the ``Platform``
+field in the ``Command`` uploaded. Whether this actually results in a building
+the element for the desired OS and architecture is dependent on the server
+having implemented these options the same as buildstream.
 
 .. note::
 
