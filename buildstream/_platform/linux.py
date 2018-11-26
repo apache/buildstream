@@ -25,6 +25,7 @@ from .. import utils
 from ..sandbox import SandboxDummy
 
 from . import Platform
+from .._exceptions import PlatformError
 
 
 class Linux(Platform):
@@ -71,11 +72,19 @@ class Linux(Platform):
 
         if self._user_ns_available:
             # User namespace support allows arbitrary build UID/GID settings.
-            return True
-        else:
+            pass
+        elif (config.build_uid != self._uid or config.build_gid != self._gid):
             # Without user namespace support, the UID/GID in the sandbox
             # will match the host UID/GID.
-            return config.build_uid == self._uid and config.build_gid == self._gid
+            return False
+
+        # We can't do builds for another host or architecture
+        if config.build_os != self.get_host_os():
+            raise PlatformError("Configured and host OS don't match.")
+        elif config.build_arch != self.get_host_arch():
+            raise PlatformError("Configured and host architecture don't match.")
+
+        return True
 
     ################################################
     #              Private Methods                 #
