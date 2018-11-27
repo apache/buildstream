@@ -446,6 +446,9 @@ class Project():
         self.config.options = OptionPool(self.element_path)
         self.first_pass_config.options = OptionPool(self.element_path)
 
+        # Fatal warnings
+        self._fatal_warnings = _yaml.node_get(pre_config_node, list, 'fatal-warnings', default_value=[])
+
         self.loader = Loader(self._context, self,
                              parent=parent_loader,
                              tempdir=tempdir)
@@ -505,9 +508,6 @@ class Project():
 
         # Load project split rules
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
-
-        # Fatal warnings
-        self._fatal_warnings = _yaml.node_get(config, list, 'fatal-warnings', default_value=[])
 
         # Support backwards compatibility for fail-on-overlap
         fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap', default_value=None)
