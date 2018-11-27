@@ -1247,12 +1247,21 @@ To build the documentation, just run the following::
 This will give you a ``doc/build/html`` directory with the html docs which
 you can view in your browser locally to test.
 
-
 Regenerating session html
 '''''''''''''''''''''''''
-The documentation build will build the session files if they are missing,
-or if explicitly asked to rebuild. We revision the generated session html files
-in order to reduce the burden on documentation contributors.
+The documentation build will build the session files if the html is out of date
+or missing, or if explicitly asked to rebuild.
+
+You can skip running the session files and have dummy examples generated to allow
+changes to the documentation to be render if a user is unable to regenerate the
+session files them selves.
+
+  make BST_DUMMY_REBUILD=1 -C doc
+
+If a user would like to create the docs with the correct session output but is
+unable to run the session files then they may down load the latest session files
+from the gitlab-ci doc element of the master ci PIPELINE and copy them in to the
+doc/source/sessions folder. This process is not currently automated.
 
 To explicitly rebuild the session snapshot html files, it is recommended that you
 first set the ``BST_SOURCE_CACHE`` environment variable to your source cache, this

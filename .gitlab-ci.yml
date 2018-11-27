@@ -172,11 +172,13 @@ docs:
   - make BST_FORCE_SESSION_REBUILD=1 -C doc
   - cd ../..
   - mv dist/buildstream/doc/build/html public
+  - mv dist/buildstream/doc/source/sessions session-output
   except:
   - schedules
   artifacts:
     paths:
     - public/
+    - session-output
 
 .overnight-tests: &overnight-tests-template
   stage: test

@@ -51,6 +51,9 @@ BST2HTMLOPTS =
 ifneq ($(strip $(BST_FORCE_SESSION_REBUILD)),)
 BST2HTMLOPTS = --force
 endif
+ifneq ($(strip $(BST_DUMMY_REBUILD)),)
+BST2HTMLOPTS += --dummy
+endif
 
 # Help Python find buildstream and its plugins
 PYTHONPATH=$(CURDIR)/..:$(CURDIR)/../buildstream/plugins

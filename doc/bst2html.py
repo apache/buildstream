@@ -329,7 +329,7 @@ def check_needs_build(basedir, filename, *, desc_mtime=None, force=None):
     return False
 
 
-def run_session(description, tempdir, source_cache, palette, config_file, force):
+def run_session(description, tempdir, source_cache, palette, config_file, force, dummy):
     desc_mtime = os.path.getmtime(description)
     desc = _yaml.load(description, shortname=os.path.basename(description))
     desc_dir = os.path.dirname(description)
@@ -404,7 +404,9 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
         command_fake_output = _yaml.node_get(command, str, 'fake-output', default_value=None)
 
         # Run the command, or just use the fake output
-        if command_fake_output is None:
+        if dummy:
+            command_out = "Dummy Example Output\nThis doc build did not run example session."
+        elif command_fake_output is None:
             if is_shell:
                 command_out = run_shell_command(directory, command_str)
             else:
@@ -444,8 +446,10 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
 @click.option('--palette', '-p', default='tango',
               type=click.Choice(['solarized', 'solarized-xterm', 'tango', 'xterm', 'console']),
               help="Selects a palette for the output style")
+@click.option('--dummy', '-d', default=False,
+              is_flag=True, help="Create dummy output instead of running examples")
 @click.argument('description', type=click.Path(file_okay=True, dir_okay=False, readable=True))
-def run_bst(directory, force, source_cache, description, palette):
+def run_bst(directory, force, source_cache, description, palette, dummy):
     """Run a bst command and capture stdout/stderr in html
 
     This command normally takes a description yaml file, see the CONTRIBUTING
@@ -455,7 +459,7 @@ def run_bst(directory, force, source_cache, description, palette):
         source_cache = os.environ['BST_SOURCE_CACHE']
 
     with workdir(source_cache=source_cache) as (tempdir, config_file, source_cache):
-        run_session(description, tempdir, source_cache, palette, config_file, force)
+        run_session(description, tempdir, source_cache, palette, config_file, force, dummy)
 
     return 0
 
