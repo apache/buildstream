@@ -784,6 +784,12 @@ class CoreWarnings():
     which is found to be invalid based on the configured track
     """
 
+    BAD_ELEMENT_SUFFIX = "bad-element-suffix"
+    """
+    This warning will be produced when an element whose name does not end in .bst
+    is referenced either on the command line or by another element
+    """
+
 
 __CORE_WARNINGS = [
     value
