@@ -201,10 +201,10 @@ with an artifact share.
   #
   artifacts:
     # A remote cache from which to download prebuilt artifacts
-    - url: https://foo.com/artifacts:11001
+    - url: https://foo.com:11001
       server.cert: server.crt
     # A remote cache from which to upload/download built/prebuilt artifacts
-    - url: https://foo.com/artifacts:11002
+    - url: https://foo.com:11002
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
@@ -231,10 +231,24 @@ using the `remote-execution` option:
   remote-execution:
 
     # A url defining a remote execution server
-    url: http://buildserver.example.com:50051
+    execution-service:
+      url: http://buildserver.example.com:50051
+    storage-service:
+    - url: https://foo.com:11002/
+      server-cert: server.crt
+      client-cert: client.crt
+      client-key: client.key
 
-The url should contain a hostname and port separated by ':'. Only plain HTTP is
-currently suported (no HTTPS).
+The execution-service part of remote execution does not support encrypted
+connections yet, so the protocol must always be http.
+
+storage-service specifies a remote CAS store and the parameters are the
+same as those used to specify an :ref:`artifact server <artifacts>`.
+
+The storage service may be the same endpoint used for artifact
+caching. Remote execution cannot work without push access to the
+storage endpoint, so you must specify a client certificate and key,
+and a server certificate.
 
 The Remote Execution API can be found via https://github.com/bazelbuild/remote-apis.
 

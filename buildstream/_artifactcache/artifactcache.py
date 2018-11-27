@@ -21,7 +21,6 @@ import multiprocessing
 import os
 import signal
 import string
-from collections import namedtuple
 from collections.abc import Mapping
 
 from ..types import _KeyStrength
@@ -31,7 +30,7 @@ from .. import _signals
 from .. import utils
 from .. import _yaml
 
-from .cascache import CASCache, CASRemote
+from .cascache import CASRemote, CASRemoteSpec
 
 
 CACHE_SIZE_FILE = "cache_size"
@@ -45,48 +44,8 @@ CACHE_SIZE_FILE = "cache_size"
 #     push (bool): Whether we should attempt to push artifacts to this cache,
 #                  in addition to pulling from it.
 #
-class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push server_cert client_key client_cert')):
-
-    # _new_from_config_node
-    #
-    # Creates an ArtifactCacheSpec() from a YAML loaded node
-    #
-    @staticmethod
-    def _new_from_config_node(spec_node, basedir=None):
-        _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert'])
-        url = _yaml.node_get(spec_node, str, 'url')
-        push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
-        if not url:
-            provenance = _yaml.node_get_provenance(spec_node, 'url')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: empty artifact cache URL".format(provenance))
-
-        server_cert = _yaml.node_get(spec_node, str, 'server-cert', default_value=None)
-        if server_cert and basedir:
-            server_cert = os.path.join(basedir, server_cert)
-
-        client_key = _yaml.node_get(spec_node, str, 'client-key', default_value=None)
-        if client_key and basedir:
-            client_key = os.path.join(basedir, client_key)
-
-        client_cert = _yaml.node_get(spec_node, str, 'client-cert', default_value=None)
-        if client_cert and basedir:
-            client_cert = os.path.join(basedir, client_cert)
-
-        if client_key and not client_cert:
-            provenance = _yaml.node_get_provenance(spec_node, 'client-key')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: 'client-key' was specified without 'client-cert'".format(provenance))
-
-        if client_cert and not client_key:
-            provenance = _yaml.node_get_provenance(spec_node, 'client-cert')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: 'client-cert' was specified without 'client-key'".format(provenance))
-
-        return ArtifactCacheSpec(url, push, server_cert, client_key, client_cert)
-
-
-ArtifactCacheSpec.__new__.__defaults__ = (None, None, None)
+class ArtifactCacheSpec(CASRemoteSpec):
+    pass
 
 
 # An ArtifactCache manages artifacts.
@@ -99,7 +58,7 @@ class ArtifactCache():
         self.context = context
         self.extractdir = os.path.join(context.artifactdir, 'extract')
 
-        self.cas = CASCache(context.artifactdir)
+        self.cas = context.get_cascache()
 
         self.global_remote_specs = []
         self.project_remote_specs = {}
@@ -791,34 +750,6 @@ class ArtifactCache():
             message_digest = self.cas.push_message(remote, message)
 
         return message_digest
-
-    # verify_digest_pushed():
-    #
-    # Check whether the object is already on the server in which case
-    # there is no need to upload it.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     digest (Digest): The object digest.
-    #
-    def verify_digest_pushed(self, project, digest):
-
-        if self._has_push_remotes:
-            push_remotes = [r for r in self._remotes[project] if r.spec.push]
-        else:
-            push_remotes = []
-
-        if not push_remotes:
-            raise ArtifactError("verify_digest_pushed was called, but no remote artifact " +
-                                "servers are configured as push remotes.")
-
-        pushed = False
-
-        for remote in push_remotes:
-            if self.cas.verify_digest_on_remote(remote, digest):
-                pushed = True
-
-        return pushed
 
     # link_key():
     #

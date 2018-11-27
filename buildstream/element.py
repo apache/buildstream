@@ -255,9 +255,9 @@ class Element(Plugin):
 
         # Extract remote execution URL
         if not self.__is_junction:
-            self.__remote_execution_url = project.remote_execution_url
+            self.__remote_execution_specs = project.remote_execution_specs
         else:
-            self.__remote_execution_url = None
+            self.__remote_execution_specs = None
 
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(meta)
@@ -2171,7 +2171,7 @@ class Element(Plugin):
     # supports it.
     #
     def __use_remote_execution(self):
-        return self.__remote_execution_url and self.BST_VIRTUAL_DIRECTORY
+        return self.__remote_execution_specs and self.BST_VIRTUAL_DIRECTORY
 
     # __sandbox():
     #
@@ -2207,13 +2207,13 @@ class Element(Plugin):
                                     stdout=stdout,
                                     stderr=stderr,
                                     config=config,
-                                    server_url=self.__remote_execution_url,
+                                    specs=self.__remote_execution_specs,
                                     bare_directory=bare_directory,
                                     allow_real_directory=False)
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
-            if allow_remote and self.__remote_execution_url:
+            if allow_remote and self.__remote_execution_specs:
                 self.warn("Artifact {} is configured to use remote execution but element plugin does not support it."
                           .format(self.name), detail="Element plugin '{kind}' does not support virtual directories."
                           .format(kind=self.get_kind()), warning_token="remote-failure")

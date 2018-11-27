@@ -17,6 +17,7 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+from collections import namedtuple
 import hashlib
 import itertools
 import io
@@ -34,12 +35,57 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remo
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
 from .. import utils
-from .._exceptions import CASError
+from .._exceptions import CASError, LoadError, LoadErrorReason
+from .. import _yaml
 
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
 _MAX_PAYLOAD_BYTES = 1024 * 1024
+
+
+class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key client_cert')):
+
+    # _new_from_config_node
+    #
+    # Creates an CASRemoteSpec() from a YAML loaded node
+    #
+    @staticmethod
+    def _new_from_config_node(spec_node, basedir=None):
+        _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert'])
+        url = _yaml.node_get(spec_node, str, 'url')
+        push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
+        if not url:
+            provenance = _yaml.node_get_provenance(spec_node, 'url')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: empty artifact cache URL".format(provenance))
+
+        server_cert = _yaml.node_get(spec_node, str, 'server-cert', default_value=None)
+        if server_cert and basedir:
+            server_cert = os.path.join(basedir, server_cert)
+
+        client_key = _yaml.node_get(spec_node, str, 'client-key', default_value=None)
+        if client_key and basedir:
+            client_key = os.path.join(basedir, client_key)
+
+        client_cert = _yaml.node_get(spec_node, str, 'client-cert', default_value=None)
+        if client_cert and basedir:
+            client_cert = os.path.join(basedir, client_cert)
+
+        if client_key and not client_cert:
+            provenance = _yaml.node_get_provenance(spec_node, 'client-key')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: 'client-key' was specified without 'client-cert'".format(provenance))
+
+        if client_cert and not client_key:
+            provenance = _yaml.node_get_provenance(spec_node, 'client-cert')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: 'client-cert' was specified without 'client-key'".format(provenance))
+
+        return CASRemoteSpec(url, push, server_cert, client_key, client_cert)
+
+
+CASRemoteSpec.__new__.__defaults__ = (None, None, None)
 
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.

@@ -197,6 +197,3 @@ shell:
   # Command to run when `bst shell` does not provide a command
   #
   command: [ 'sh', '-i' ]
-
-remote-execution:
-  url: ""
