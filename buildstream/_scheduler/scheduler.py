@@ -25,6 +25,7 @@ from itertools import chain
 import signal
 import datetime
 from contextlib import contextmanager
+from collections import deque
 
 # Local imports
 from .resources import Resources, ResourceType
@@ -71,16 +72,16 @@ class Scheduler():
         #
         # Public members
         #
-        self.active_jobs = []       # Jobs currently being run in the scheduler
-        self.waiting_jobs = []      # Jobs waiting for resources
-        self.queues = None          # Exposed for the frontend to print summaries
-        self.context = context      # The Context object shared with Queues
-        self.terminated = False     # Whether the scheduler was asked to terminate or has terminated
-        self.suspended = False      # Whether the scheduler is currently suspended
+        self.active_jobs = []        # Jobs currently being run in the scheduler
+        self.waiting_jobs = deque()  # Jobs waiting for resources
+        self.queues = None           # Exposed for the frontend to print summaries
+        self.context = context       # The Context object shared with Queues
+        self.terminated = False      # Whether the scheduler was asked to terminate or has terminated
+        self.suspended = False       # Whether the scheduler is currently suspended
 
         # These are shared with the Job, but should probably be removed or made private in some way.
-        self.loop = None            # Shared for Job access to observe the message queue
-        self.internal_stops = 0     # Amount of SIGSTP signals we've introduced, this is shared with job.py
+        self.loop = None             # Shared for Job access to observe the message queue
+        self.internal_stops = 0      # Amount of SIGSTP signals we've introduced, this is shared with job.py
 
         #
         # Private members
@@ -215,14 +216,15 @@ class Scheduler():
     #
     # Args:
     #     jobs ([Job]): A list of jobs to schedule
+    #     priority_jobs([Job]): A list of jobs which should be prioritised over those in jobs
     #
     # Schedule 'Job's for the scheduler to run. Jobs scheduled will be
     # run as soon any other queueing jobs finish, provided sufficient
-    # resources are available for them to run
+    # resources are available for them to run.
     #
-    def schedule_jobs(self, jobs):
-        for job in jobs:
-            self.waiting_jobs.append(job)
+    def schedule_jobs(self, jobs, priority_jobs):
+            self.waiting_jobs.extend(jobs)
+            self.waiting_jobs.extendleft(priority_jobs)
 
     # job_completed():
     #
@@ -298,6 +300,7 @@ class Scheduler():
     #
     def _schedule_queue_jobs(self):
         ready = []
+        ready_priority = []
         process_queues = True
 
         while self._queue_jobs and process_queues:
@@ -322,16 +325,19 @@ class Scheduler():
             # to fetch tasks for elements which failed to pull, and
             # thus need all the pulls to complete before ever starting
             # a build
-            ready.extend(chain.from_iterable(
-                queue.pop_ready_jobs() for queue in reversed(self.queues)
-            ))
+            for queue in reversed(self.queues):
+                ready_jobs = queue.pop_ready_jobs()
+                if queue.high_priority:
+                    ready_priority.extend(ready_jobs)
+                else:
+                    ready.extend(ready_jobs)
 
             # pop_ready_jobs() may have skipped jobs, adding them to
             # the done_queue.  Pull these skipped elements forward to
             # the next queue and process them.
             process_queues = any(q.dequeue_ready() for q in self.queues)
 
-        self.schedule_jobs(ready)
+        self.schedule_jobs(ready, ready_priority)
         self._sched()
 
     # _run_cleanup()
