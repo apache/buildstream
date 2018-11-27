@@ -26,6 +26,17 @@ def message_handler(message, context):
     pass
 
 
+# Since parent processes wait for queue events, we need
+# to put something on it if the called process raises an
+# exception.
+def _queue_wrapper(target, queue, *args):
+    try:
+        target(*args, queue=queue)
+    except Exception as e:
+        queue.put(str(e))
+        raise
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_push(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
@@ -76,9 +87,9 @@ def test_push(cli, tmpdir, datafiles):
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-        process = multiprocessing.Process(target=_test_push,
-                                          args=(user_config_file, project_dir, artifact_dir,
-                                                'target.bst', element_key, queue))
+        process = multiprocessing.Process(target=_queue_wrapper,
+                                          args=(_test_push, queue, user_config_file, project_dir,
+                                                artifact_dir, 'target.bst', element_key))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -185,9 +196,9 @@ def test_push_directory(cli, tmpdir, datafiles):
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-        process = multiprocessing.Process(target=_test_push_directory,
-                                          args=(user_config_file, project_dir, artifact_dir,
-                                                artifact_digest, queue))
+        process = multiprocessing.Process(target=_queue_wrapper,
+                                          args=(_test_push_directory, queue, user_config_file,
+                                                project_dir, artifact_dir, artifact_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -260,8 +271,9 @@ def test_push_message(cli, tmpdir, datafiles):
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-        process = multiprocessing.Process(target=_test_push_message,
-                                          args=(user_config_file, project_dir, artifact_dir, queue))
+        process = multiprocessing.Process(target=_queue_wrapper,
+                                          args=(_test_push_message, queue, user_config_file,
+                                                project_dir, artifact_dir))
 
         try:
             # Keep SIGINT blocked in the child process
