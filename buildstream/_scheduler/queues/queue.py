@@ -58,7 +58,6 @@ class Queue():
     action_name = None
     complete_name = None
     resources = []                     # Resources this queues' jobs want
-    high_priority = False              # If the jobs from this queue should be prioritised by the scheduler
 
     def __init__(self, scheduler):
 
