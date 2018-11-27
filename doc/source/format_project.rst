@@ -201,10 +201,10 @@ with an artifact share.
   #
   artifacts:
     # A remote cache from which to download prebuilt artifacts
-    - url: https://foo.com/artifacts:11001
+    - url: https://foo.com:11001
       server.cert: server.crt
     # A remote cache from which to upload/download built/prebuilt artifacts
-    - url: https://foo.com/artifacts:11002
+    - url: https://foo.com:11002
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
