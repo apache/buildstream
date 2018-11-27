@@ -337,7 +337,14 @@ setup(name='BuildStream',
       install_requires=[
           'setuptools',
           'psutil',
-          'ruamel.yaml < 0.15.52',
+          # According to ruamel.yaml's PyPI page, we are suppose to use
+          # "<=0.15" in production until 0.15 becomes API stable.
+          # However we need ruamel.yaml 0.15.41 or greater for Python 3.7.
+          # We know that ruamel.yaml 0.15.52 breaks API in a way that
+          # is incompatible with BuildStream.
+          #
+          # See issues #571 and #790.
+          'ruamel.yaml >= 0.15.41, < 0.15.52',
           'pluginbase',
           'Click',
           'jinja2 >= 2.10',
