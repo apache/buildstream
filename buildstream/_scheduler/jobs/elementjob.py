@@ -22,13 +22,6 @@ from ..._message import Message, MessageType
 
 from .job import Job
 
-_ACTIONS = {
-    "Build": 10,
-    "Fetch": 20,
-    "Pull": 30,
-    "Push": 40,
-    "Track": 50,
-}
 
 # ElementJob()
 #
@@ -120,6 +113,3 @@ class ElementJob(Job):
             data['workspace'] = workspace.to_dict()
 
         return data
-
-    def key(self):
-        return (_ACTIONS.get(self.action_name, 100), self._element.name)
