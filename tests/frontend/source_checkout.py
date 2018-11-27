@@ -28,19 +28,28 @@ def generate_remote_import_element(input_path, output_path):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize('with_workspace', [('workspace'), ('no-workspace')])
-def test_source_checkout(datafiles, tmpdir_factory, cli, with_workspace):
+@pytest.mark.parametrize(
+    "with_workspace,guess_element",
+    [(True, True), (True, False), (False, False)],
+    ids=["workspace-guess", "workspace-no-guess", "no-workspace-no-guess"]
+)
+def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_element):
     tmpdir = tmpdir_factory.mktemp("")
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
     workspace = os.path.join(str(tmpdir), 'workspace')
+    elm_cmd = [target] if not guess_element else []
 
-    if with_workspace == "workspace":
-        result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, target])
+    if with_workspace:
+        ws_cmd = ['-C', workspace]
+        result = cli.run(project=project, args=["workspace", "open", "--directory", workspace, target])
         result.assert_success()
+    else:
+        ws_cmd = []
 
-    result = cli.run(project=project, args=['source-checkout', target, '--deps', 'none', checkout])
+    args = ws_cmd + ['source-checkout', '--deps', 'none'] + elm_cmd + [checkout]
+    result = cli.run(project=project, args=args)
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))
