@@ -58,21 +58,11 @@ class SandboxBwrap(Sandbox):
         self.die_with_parent_available = kwargs['die_with_parent_available']
         self.json_status_available = kwargs['json_status_available']
 
-    def run(self, command, flags, *, cwd=None, env=None):
+    def _run(self, command, flags, *, cwd, env):
         stdout, stderr = self._get_output()
 
         # Allowable access to underlying storage as we're part of the sandbox
         root_directory = self.get_virtual_directory()._get_underlying_directory()
-
-        # Fallback to the sandbox default settings for
-        # the cwd and env.
-        #
-        cwd = self._get_work_directory(cwd=cwd)
-        env = self._get_environment(cwd=cwd, env=env)
-
-        # Convert single-string argument to a list
-        if isinstance(command, str):
-            command = [command]
 
         if not self._has_command(command[0], env):
             raise SandboxError("Staged artifacts do not provide command "

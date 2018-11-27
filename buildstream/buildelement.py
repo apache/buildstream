@@ -127,7 +127,7 @@ artifact collection purposes.
 """
 
 import os
-from . import Element, Scope, ElementError
+from . import Element, Scope
 from . import SandboxFlags
 
 
@@ -207,6 +207,10 @@ class BuildElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
+        # Enable command batching across prepare() and assemble()
+        self.batch_prepare_assemble(SandboxFlags.ROOT_READ_ONLY,
+                                    collect=self.get_variable('install-root'))
+
     def stage(self, sandbox):
 
         # Stage deps in the sandbox root
@@ -215,7 +219,7 @@ class BuildElement(Element):
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
-        with self.timed_activity("Integrating sandbox"):
+        with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
             for dep in self.dependencies(Scope.BUILD):
                 dep.integrate(sandbox)
 
@@ -223,14 +227,13 @@ class BuildElement(Element):
         self.stage_sources(sandbox, self.get_variable('build-root'))
 
     def assemble(self, sandbox):
-
         # Run commands
         for command_name in _command_steps:
             commands = self.__commands[command_name]
             if not commands or command_name == 'configure-commands':
                 continue
 
-            with self.timed_activity("Running {}".format(command_name)):
+            with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running {}".format(command_name)):
                 for cmd in commands:
                     self.__run_command(sandbox, cmd, command_name)
 
@@ -254,7 +257,7 @@ class BuildElement(Element):
     def prepare(self, sandbox):
         commands = self.__commands['configure-commands']
         if commands:
-            with self.timed_activity("Running configure-commands"):
+            with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
                 for cmd in commands:
                     self.__run_command(sandbox, cmd, 'configure-commands')
 
@@ -282,13 +285,9 @@ class BuildElement(Element):
         return commands
 
     def __run_command(self, sandbox, cmd, cmd_name):
-        self.status("Running {}".format(cmd_name), detail=cmd)
-
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
-        exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                               SandboxFlags.ROOT_READ_ONLY)
-        if exitcode != 0:
-            raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode),
-                               collect=self.get_variable('install-root'))
+        sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+                    SandboxFlags.ROOT_READ_ONLY,
+                    label=cmd)

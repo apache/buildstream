@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2018 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -29,13 +30,22 @@ See also: :ref:`sandboxing`.
 """
 
 import os
-from .._exceptions import ImplError, BstError
+import shlex
+import contextlib
+from contextlib import contextmanager
+
+from .._exceptions import ImplError, BstError, SandboxError
+from .._message import Message, MessageType
 from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 
 
 class SandboxFlags():
     """Flags indicating how the sandbox should be run.
+    """
+
+    NONE = 0
+    """Use default sandbox configuration.
     """
 
     ROOT_READ_ONLY = 0x01
@@ -71,6 +81,19 @@ class SandboxFlags():
     """
 
 
+class SandboxCommandError(SandboxError):
+    """Raised by :class:`.Sandbox` implementations when a command fails.
+
+    Args:
+       message (str): The error message to report to the user
+       collect (str): An optional directory containing partial install contents
+    """
+    def __init__(self, message, *, collect=None):
+        super().__init__(message, reason='command-failed')
+
+        self.collect = collect
+
+
 class Sandbox():
     """Sandbox()
 
@@ -93,6 +116,13 @@ class Sandbox():
         self.__env = None
         self.__mount_sources = {}
         self.__allow_real_directory = kwargs['allow_real_directory']
+
+        # Plugin ID for logging
+        plugin = kwargs.get('plugin', None)
+        if plugin:
+            self.__plugin_id = plugin._get_unique_id()
+        else:
+            self.__plugin_id = None
 
         # Configuration from kwargs common to all subclasses
         self.__config = kwargs['config']
@@ -120,6 +150,9 @@ class Sandbox():
         # This is set if anyone requests access to the underlying
         # directory via get_directory.
         self._never_cache_vdirs = False
+
+        # Pending command batch
+        self.__batch = None
 
     def get_directory(self):
         """Fetches the sandbox root directory
@@ -209,8 +242,15 @@ class Sandbox():
             'artifact': artifact
         })
 
-    def run(self, command, flags, *, cwd=None, env=None):
+    def run(self, command, flags, *, cwd=None, env=None, label=None):
         """Run a command in the sandbox.
+
+        If this is called outside a batch context, the command is immediately
+        executed.
+
+        If this is called in a batch context, the command is added to the batch
+        for later execution. If the command fails, later commands will not be
+        executed. Command flags must match batch flags.
 
         Args:
             command (list): The command to run in the sandboxed environment, as a list
@@ -219,9 +259,10 @@ class Sandbox():
             cwd (str): The sandbox relative working directory in which to run the command.
             env (dict): A dictionary of string key, value pairs to set as environment
                         variables inside the sandbox environment.
+            label (str): An optional label for the command, used for logging. (*Since: 1.4*)
 
         Returns:
-            (int): The program exit code.
+            (int|None): The program exit code, or None if running in batch context.
 
         Raises:
             (:class:`.ProgramNotFoundError`): If a host tool which the given sandbox
@@ -234,8 +275,114 @@ class Sandbox():
            function must make sure the directory will be created if it does
            not exist yet, even if a workspace is being used.
         """
-        raise ImplError("Sandbox of type '{}' does not implement run()"
+
+        # Fallback to the sandbox default settings for
+        # the cwd and env.
+        #
+        cwd = self._get_work_directory(cwd=cwd)
+        env = self._get_environment(cwd=cwd, env=env)
+
+        # Convert single-string argument to a list
+        if isinstance(command, str):
+            command = [command]
+
+        if self.__batch:
+            if flags != self.__batch.flags:
+                raise SandboxError("Inconsistent sandbox flags in single command batch")
+
+            batch_command = _SandboxBatchCommand(command, cwd=cwd, env=env, label=label)
+
+            current_group = self.__batch.current_group
+            current_group.append(batch_command)
+            return None
+        else:
+            return self._run(command, flags, cwd=cwd, env=env)
+
+    @contextmanager
+    def batch(self, flags, *, label=None, collect=None):
+        """Context manager for command batching
+
+        This provides a batch context that defers execution of commands until
+        the end of the context. If a command fails, the batch will be aborted
+        and subsequent commands will not be executed.
+
+        Command batches may be nested. Execution will start only when the top
+        level batch context ends.
+
+        Args:
+            flags (:class:`.SandboxFlags`): The flags for this command batch.
+            label (str): An optional label for the batch group, used for logging.
+            collect (str): An optional directory containing partial install contents
+                           on command failure.
+
+        Raises:
+            (:class:`.SandboxCommandError`): If a command fails.
+
+        *Since: 1.4*
+        """
+
+        group = _SandboxBatchGroup(label=label)
+
+        if self.__batch:
+            # Nested batch
+            if flags != self.__batch.flags:
+                raise SandboxError("Inconsistent sandbox flags in single command batch")
+
+            parent_group = self.__batch.current_group
+            parent_group.append(group)
+            self.__batch.current_group = group
+            try:
+                yield
+            finally:
+                self.__batch.current_group = parent_group
+        else:
+            # Top-level batch
+            batch = self._create_batch(group, flags, collect=collect)
+
+            self.__batch = batch
+            try:
+                yield
+            finally:
+                self.__batch = None
+
+            batch.execute()
+
+    #####################################################
+    #    Abstract Methods for Sandbox implementations   #
+    #####################################################
+
+    # _run()
+    #
+    # Abstract method for running a single command
+    #
+    # Args:
+    #    command (list): The command to run in the sandboxed environment, as a list
+    #                    of strings starting with the binary to run.
+    #    flags (:class:`.SandboxFlags`): The flags for running this command.
+    #    cwd (str): The sandbox relative working directory in which to run the command.
+    #    env (dict): A dictionary of string key, value pairs to set as environment
+    #                variables inside the sandbox environment.
+    #
+    # Returns:
+    #    (int): The program exit code.
+    #
+    def _run(self, command, flags, *, cwd, env):
+        raise ImplError("Sandbox of type '{}' does not implement _run()"
                         .format(type(self).__name__))
+
+    # _create_batch()
+    #
+    # Abstract method for creating a batch object. Subclasses can override
+    # this method to instantiate a subclass of _SandboxBatch.
+    #
+    # Args:
+    #    main_group (:class:`_SandboxBatchGroup`): The top level batch group.
+    #    flags (:class:`.SandboxFlags`): The flags for commands in this batch.
+    #    collect (str): An optional directory containing partial install contents
+    #                   on command failure.
+    #
+    def _create_batch(self, main_group, flags, *, collect=None):
+        return _SandboxBatch(self, main_group, flags, collect=collect)
 
     ################################################
     #               Private methods                #
@@ -385,3 +532,138 @@ class Sandbox():
                 return True
 
         return False
+
+    # _get_plugin_id()
+    #
+    # Get the plugin's unique identifier
+    #
+    def _get_plugin_id(self):
+        return self.__plugin_id
+
+    # _callback()
+    #
+    # If this is called outside a batch context, the specified function is
+    # invoked immediately.
+    #
+    # If this is called in a batch context, the function is added to the batch
+    # for later invocation.
+    #
+    # Args:
+    #    callback (callable): The function to invoke
+    #
+    def _callback(self, callback):
+        if self.__batch:
+            batch_call = _SandboxBatchCall(callback)
+
+            current_group = self.__batch.current_group
+            current_group.append(batch_call)
+        else:
+            callback()
+
+
+# _SandboxBatch()
+#
+# A batch of sandbox commands.
+#
+class _SandboxBatch():
+
+    def __init__(self, sandbox, main_group, flags, *, collect=None):
+        self.sandbox = sandbox
+        self.main_group = main_group
+        self.current_group = main_group
+        self.flags = flags
+        self.collect = collect
+
+    def execute(self):
+        self.main_group.execute(self)
+
+    def execute_group(self, group):
+        if group.label:
+            context = self.sandbox._get_context()
+            cm = context.timed_activity(group.label, unique_id=self.sandbox._get_plugin_id())
+        else:
+            cm = contextlib.suppress()
+
+        with cm:
+            group.execute_children(self)
+
+    def execute_command(self, command):
+        if command.label:
+            context = self.sandbox._get_context()
+            message = Message(self.sandbox._get_plugin_id(), MessageType.STATUS,
+                              'Running {}'.format(command.label))
+            context.message(message)
+
+        exitcode = self.sandbox._run(command.command, self.flags, cwd=command.cwd, env=command.env)
+        if exitcode != 0:
+            cmdline = ' '.join(shlex.quote(cmd) for cmd in command.command)
+            label = command.label or cmdline
+            raise SandboxCommandError("Command '{}' failed with exitcode {}".format(label, exitcode),
+                                      collect=self.collect)
+
+    def execute_call(self, call):
+        call.callback()
+
+
+# _SandboxBatchItem()
+#
+# An item in a command batch.
+#
+class _SandboxBatchItem():
+
+    def __init__(self, *, label=None):
+        self.label = label
+
+
+# _SandboxBatchCommand()
+#
+# A command item in a command batch.
+#
+class _SandboxBatchCommand(_SandboxBatchItem):
+
+    def __init__(self, command, *, cwd, env, label=None):
+        super().__init__(label=label)
+
+        self.command = command
+        self.cwd = cwd
+        self.env = env
+
+    def execute(self, batch):
+        batch.execute_command(self)
+
+
+# _SandboxBatchGroup()
+#
+# A group in a command batch.
+#
+class _SandboxBatchGroup(_SandboxBatchItem):
+
+    def __init__(self, *, label=None):
+        super().__init__(label=label)
+
+        self.children = []
+
+    def append(self, item):
+        self.children.append(item)
+
+    def execute(self, batch):
+        batch.execute_group(self)
+
+    def execute_children(self, batch):
+        for item in self.children:
+            item.execute(batch)
+
+
+# _SandboxBatchCall()
+#
+# A call item in a command batch.
+#
+class _SandboxBatchCall(_SandboxBatchItem):
+
+    def __init__(self, callback):
+        super().__init__()
+
+        self.callback = callback
+
+    def execute(self, batch):
+        batch.execute_call(self)
