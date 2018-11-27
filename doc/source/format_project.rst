@@ -586,6 +586,30 @@ Architecture options can be tested with the same expressions
 as other Enumeration options.
 
 
+.. _project_options_os:
+
+OS
+~~
+
+The ``os`` option type is a special enumeration option, which defaults to the
+results of `uname -s`. It does not support assigning any default in the project
+configuration.
+
+.. code:: yaml
+
+    options:
+      machine_os:
+        type: os
+        description: The machine OS
+        values:
+        - Linux
+        - SunOS
+        - Darwin
+        - FreeBSD
+
+Os options can be tested with the same expressions as other Enumeration options.
+
+
 .. _project_options_element_mask:
 
 Element mask
