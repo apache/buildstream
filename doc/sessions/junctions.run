@@ -17,4 +17,4 @@ commands:
 
 # Remove the workspace 
 - directory: ../examples/junctions
-  command: workspace close --remove-dirs hello-junction.bst:hello.bst
+  command: workspace close --remove-dir --assume-yes hello-junction.bst:hello.bst

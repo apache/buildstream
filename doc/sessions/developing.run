@@ -42,9 +42,9 @@ commands:
 # Reset workspace
 - directory: ../examples/developing/
   output: ../source/sessions/developing-reset-workspace.html
-  command: workspace reset hello.bst 
+  command: workspace reset --assume-yes hello.bst
 
 # Discard workspace
 - directory: ../examples/developing/
   output: ../source/sessions/developing-discard-workspace.html
-  command: workspace close --remove-dir hello.bst 
+  command: workspace close --remove-dir --assume-yes hello.bst
