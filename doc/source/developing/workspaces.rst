@@ -50,10 +50,15 @@ We can open workspace_hello/hello.c and make the following change:
 .. literalinclude:: ../../examples/developing/update.patch
     :language: diff
 
-Now, rebuild the hello.bst element
+Now, rebuild the hello.bst element.
 
 .. raw:: html
    :file: ../sessions/developing-build-after-changes.html
+
+Note that if you run the command from inside the workspace, the element name is optional.
+
+.. raw:: html
+   :file: ../sessions/developing-build-after-changes-workspace.html
 
 Now running the hello command using bst shell:
 
