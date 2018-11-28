@@ -469,6 +469,10 @@ def push(app, elements, deps, remote):
     The default destination is the highest priority configured cache. You can
     override this by passing a different cache URL with the `--remote` flag.
 
+    If bst has been configured to include build trees on artifact pulls,
+    an attempt will be made to pull any required build trees to avoid the
+    skipping of partial artifacts being pushed.
+
     Specify `--deps` to control which artifacts to push:
 
     \b

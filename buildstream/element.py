@@ -1422,7 +1422,7 @@ class Element(Plugin):
                                                  .format(workspace.get_absolute_path())):
                             workspace.stage(temp_staging_directory)
                 # Check if we have a cached buildtree to use
-                elif self.__cached_buildtree():
+                elif self._cached_buildtree():
                     artifact_base, _ = self.__extract()
                     import_dir = os.path.join(artifact_base, 'buildtree')
                 else:
@@ -1808,7 +1808,7 @@ class Element(Plugin):
 
         # Do not push elements that aren't cached, or that are cached with a dangling buildtree
         # artifact unless element type is expected to have an an empty buildtree directory
-        if not self.__cached_buildtree():
+        if not self._cached_buildtree():
             return True
 
         # Do not push tainted artifact
@@ -1997,6 +1997,29 @@ class Element(Plugin):
     #
     def _get_source_element(self):
         return self
+
+    # _cached_buildtree()
+    #
+    # Check if element artifact contains expected buildtree. An
+    # element's buildtree artifact will not be present if the rest
+    # of the partial artifact is not cached.
+    #
+    # Returns:
+    #     (bool): True if artifact cached with buildtree, False if
+    #             element not cached or missing expected buildtree.
+    #
+    def _cached_buildtree(self):
+        context = self._get_context()
+
+        if not self._cached():
+            return False
+
+        key_strength = _KeyStrength.STRONG if context.get_strict() else _KeyStrength.WEAK
+        if not self.__artifacts.contains_subdir_artifact(self, self._get_cache_key(strength=key_strength),
+                                                         'buildtree'):
+            return False
+
+        return True
 
     #############################################################
     #                   Private Local Methods                   #
@@ -2761,27 +2784,6 @@ class Element(Plugin):
         # create tag for strong cache key
         key = self._get_cache_key(strength=_KeyStrength.STRONG)
         self.__artifacts.link_key(self, weak_key, key)
-
-        return True
-
-    # __cached_buildtree():
-    #
-    # Check if cached element artifact contains expected buildtree
-    #
-    # Returns:
-    #     (bool): True if artifact cached with buildtree, False if
-    #             element not cached or missing expected buildtree
-    #
-    def __cached_buildtree(self):
-        context = self._get_context()
-
-        if not self._cached():
-            return False
-        elif context.get_strict():
-            if not self.__artifacts.contains_subdir_artifact(self, self.__strict_cache_key, 'buildtree'):
-                return False
-        elif not self.__artifacts.contains_subdir_artifact(self, self.__weak_cache_key, 'buildtree'):
-            return False
 
         return True
 

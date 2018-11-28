@@ -327,6 +327,10 @@ class Stream():
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
+    # If any of the given targets are missing their expected buildtree artifact,
+    # a pull queue will be created if user context and available remotes allow for
+    # attempting to fetch them.
+    #
     def push(self, targets, *,
              selection=PipelineSelection.NONE,
              remote=None):
@@ -345,8 +349,17 @@ class Stream():
             raise StreamError("No artifact caches available for pushing artifacts")
 
         self._pipeline.assert_consistent(elements)
-        self._add_queue(PushQueue(self._scheduler))
-        self._enqueue_plan(elements)
+
+        # Check if we require a pull queue, with given artifact state and context
+        require_buildtrees = self._buildtree_pull_required(elements)
+        if require_buildtrees:
+            self._message(MessageType.INFO, "Attempting to fetch missing artifact buildtrees")
+            self._add_queue(PullQueue(self._scheduler))
+            self._enqueue_plan(require_buildtrees)
+
+        push_queue = PushQueue(self._scheduler)
+        self._add_queue(push_queue)
+        self._enqueue_plan(elements, queue=push_queue)
         self._run()
 
     # checkout()
@@ -1237,3 +1250,28 @@ class Stream():
             parts.append(element.normal_name)
 
         return os.path.join(directory, *reversed(parts))
+
+    # _buildtree_pull_required()
+    #
+    # Check if current task, given config, requires element buildtree artifact
+    #
+    # Args:
+    #    elements (list): elements to check if buildtrees are required
+    #
+    # Returns:
+    #    (list): elements requiring buildtrees
+    #
+    def _buildtree_pull_required(self, elements):
+        required_list = []
+
+        # If context is set to not pull buildtrees, or no fetch remotes, return empty list
+        if not (self._context.pull_buildtrees or self._artifacts.has_fetch_remotes()):
+            return required_list
+
+        for element in elements:
+            # Check if element is partially cached without its buildtree, as the element
+            # artifact may not be cached at all
+            if element._cached() and not element._cached_buildtree():
+                required_list.append(element)
+
+        return required_list
