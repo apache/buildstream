@@ -10,7 +10,7 @@ from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
-from tests.testutils import cli, create_artifact_share
+from tests.testutils import cli, create_artifact_share, create_timeout_artifact_share
 
 
 # Project directory
@@ -305,6 +305,107 @@ def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest
 
 
 def _test_pull_tree(user_config_file, project_dir, artifact_dir, artifact_digest, queue):
+    # Fake minimal context
+    context = Context()
+    context.load(config=user_config_file)
+    context.artifactdir = artifact_dir
+    context.set_message_handler(message_handler)
+
+    # Load the project manually
+    project = Project(project_dir, context)
+    project.ensure_fully_loaded()
+
+    # Create a local CAS cache handle
+    cas = context.artifactcache
+
+    # Manually setup the CAS remote
+    cas.setup_remotes(use_config=True)
+
+    if cas.has_push_remotes():
+        # Pull the artifact using the Tree object
+        directory_digest = cas.pull_tree(project, artifact_digest)
+        queue.put((directory_digest.hash, directory_digest.size_bytes))
+    else:
+        queue.put("No remote configured")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pully_pull(cli, tmpdir, datafiles):
+    project_dir = str(datafiles)
+
+    # Set up an artifact cache.
+    with create_timeout_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        # Configure artifact share
+        artifact_dir = os.path.join(str(tmpdir), 'cache', 'artifacts')
+        user_config_file = str(tmpdir.join('buildstream.conf'))
+        user_config = {
+            'scheduler': {
+                'pushers': 1
+            },
+            'artifacts': {
+                'url': share.repo,
+                'push': True,
+            }
+        }
+
+        # Write down the user configuration file
+        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        # Ensure CLI calls will use it
+        cli.configure(user_config)
+
+        # First build the project with the artifact cache configured
+        result = cli.run(project=project_dir, args=['build', 'target.bst'])
+        result.assert_success()
+
+        # Assert that we are now cached locally
+        assert cli.get_element_state(project_dir, 'target.bst') == 'cached'
+        # Assert that we shared/pushed the cached artifact
+        element_key = cli.get_element_key(project_dir, 'target.bst')
+        assert share.has_artifact('test', 'target.bst', element_key)
+
+        # Delete the artifact locally
+        cli.remove_artifact_from_cache(project_dir, 'target.bst')
+
+        # Assert that we are not cached locally anymore
+        assert cli.get_element_state(project_dir, 'target.bst') != 'cached'
+
+        # Fake minimal context
+        context = Context()
+        context.load(config=user_config_file)
+        context.artifactdir = os.path.join(str(tmpdir), 'cache', 'artifacts')
+        context.set_message_handler(message_handler)
+
+        # Load the project and CAS cache
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
+        cas = context.artifactcache
+
+        # Assert that the element's artifact is **not** cached
+        element = project.load_elements(['target.bst'])[0]
+        element_key = cli.get_element_key(project_dir, 'target.bst')
+        assert not cas.contains(element, element_key)
+
+        queue = multiprocessing.Queue()
+        # Use subprocess to avoid creation of gRPC threads in main BuildStream process
+        # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
+        process = multiprocessing.Process(target=_test_pull,
+                                          args=(user_config_file, project_dir, artifact_dir,
+                                                'target.bst', element_key, queue))
+
+        try:
+            # Keep SIGINT blocked in the child process
+            with _signals.blocked([signal.SIGINT], ignore=False):
+                process.start()
+
+            error = queue.get()
+            process.join()
+        except KeyboardInterrupt:
+            utils._kill_process_tree(process.pid)
+            raise
+
+        assert not error
+        assert cas.contains(element, element_key)
+
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
