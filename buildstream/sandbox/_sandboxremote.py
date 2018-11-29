@@ -139,8 +139,7 @@ class SandboxRemote(Sandbox):
 
         # Upload the Command message to the remote CAS server
         command_digest = cascache.push_message(casremote, remote_command)
-        if not command_digest or not cascache.verify_digest_on_remote(casremote, command_digest):
-            raise SandboxError("Failed pushing build command to remote CAS.")
+
         # Create and send the action.
         action = remote_execution_pb2.Action(command_digest=command_digest,
                                              input_root_digest=input_root_digest,
@@ -149,8 +148,6 @@ class SandboxRemote(Sandbox):
 
         # Upload the Action message to the remote CAS server
         action_digest = cascache.push_message(casremote, action)
-        if not action_digest or not cascache.verify_digest_on_remote(casremote, action_digest):
-            raise SandboxError("Failed pushing build action to remote CAS.")
 
         # Next, try to create a communication channel to the BuildGrid server.
         url = urlparse(self.exec_url)
@@ -299,14 +296,10 @@ class SandboxRemote(Sandbox):
 
         casremote = CASRemote(self.storage_remote_spec)
         # Now, push that key (without necessarily needing a ref) to the remote.
-
         try:
             cascache.push_directory(casremote, upload_vdir)
         except grpc.RpcError as e:
             raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
-
-        if not cascache.verify_digest_on_remote(casremote, upload_vdir.ref):
-            raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
 
         # Now transmit the command to execute
         operation = self.run_remote_command(command, upload_vdir.ref, cwd, env)
