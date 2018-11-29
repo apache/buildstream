@@ -230,6 +230,8 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
     # Mock a file system with 12 MB free disk space
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
+                               min_head_size=int(2e9),
+                               max_head_size=int(2e9),
                                total_space=int(10e9), free_space=(int(12e6) + int(2e9))) as share:
 
         # Configure bst to push to the cache
@@ -313,6 +315,8 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     # Mock a file system with 12 MB free disk space
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
+                               min_head_size=int(2e9),
+                               max_head_size=int(2e9),
                                total_space=int(10e9), free_space=(int(12e6) + int(2e9))) as share:
 
         # Configure bst to push to the cache

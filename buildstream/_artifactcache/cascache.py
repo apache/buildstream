@@ -25,6 +25,7 @@ import os
 import stat
 import tempfile
 import uuid
+import contextlib
 from urllib.parse import urlparse
 
 import grpc
@@ -86,6 +87,13 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
 
 
 CASRemoteSpec.__new__.__defaults__ = (None, None, None)
+
+
+class BlobNotFound(CASError):
+
+    def __init__(self, blob, msg):
+        self.blob = blob
+        super().__init__(msg)
 
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
@@ -299,6 +307,8 @@ class CASCache():
                 raise CASError("Failed to pull ref {}: {}".format(ref, e)) from e
             else:
                 return False
+        except BlobNotFound as e:
+            return False
 
     # pull_tree():
     #
@@ -471,13 +481,14 @@ class CASCache():
     #     digest (Digest): An optional Digest object to populate
     #     path (str): Path to file to add
     #     buffer (bytes): Byte buffer to add
+    #     link_directly (bool): Whether file given by path can be linked
     #
     # Returns:
     #     (Digest): The digest of the added object
     #
     # Either `path` or `buffer` must be passed, but not both.
     #
-    def add_object(self, *, digest=None, path=None, buffer=None):
+    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False):
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
 
@@ -487,28 +498,34 @@ class CASCache():
         try:
             h = hashlib.sha256()
             # Always write out new file to avoid corruption if input file is modified
-            with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
-                # Set mode bits to 0644
-                os.chmod(out.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-
-                if path:
-                    with open(path, 'rb') as f:
-                        for chunk in iter(lambda: f.read(4096), b""):
-                            h.update(chunk)
-                            out.write(chunk)
+            with contextlib.ExitStack() as stack:
+                if path is not None and link_directly:
+                    tmp = stack.enter_context(open(path, 'rb'))
+                    for chunk in iter(lambda: tmp.read(4096), b""):
+                        h.update(chunk)
                 else:
-                    h.update(buffer)
-                    out.write(buffer)
+                    tmp = stack.enter_context(tempfile.NamedTemporaryFile(dir=self.tmpdir))
+                    # Set mode bits to 0644
+                    os.chmod(tmp.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
-                out.flush()
+                    if path:
+                        with open(path, 'rb') as f:
+                            for chunk in iter(lambda: f.read(4096), b""):
+                                h.update(chunk)
+                                tmp.write(chunk)
+                    else:
+                        h.update(buffer)
+                        tmp.write(buffer)
+
+                    tmp.flush()
 
                 digest.hash = h.hexdigest()
-                digest.size_bytes = os.fstat(out.fileno()).st_size
+                digest.size_bytes = os.fstat(tmp.fileno()).st_size
 
                 # Place file at final location
                 objpath = self.objpath(digest)
                 os.makedirs(os.path.dirname(objpath), exist_ok=True)
-                os.link(out.name, objpath)
+                os.link(tmp.name, objpath)
 
         except FileExistsError as e:
             # We can ignore the failed link() if the object is already in the repo.
@@ -606,6 +623,41 @@ class CASCache():
         # first ref of this list will be the file modified earliest.
         return [ref for _, ref in sorted(zip(mtimes, refs))]
 
+    # list_objects():
+    #
+    # List cached objects in Least Recently Modified (LRM) order.
+    #
+    # Returns:
+    #     (list) - A list of objects and timestamps in LRM order
+    #
+    def list_objects(self):
+        objs = []
+        mtimes = []
+
+        for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
+            for filename in files:
+                obj_path = os.path.join(root, filename)
+                try:
+                    mtimes.append(os.path.getmtime(obj_path))
+                except FileNotFoundError:
+                    pass
+                else:
+                    objs.append(obj_path)
+
+        # NOTE: Sorted will sort from earliest to latest, thus the
+        # first element of this list will be the file modified earliest.
+        return sorted(zip(mtimes, objs))
+
+    def clean_up_refs_until(self, time):
+        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
+
+        for root, _, files in os.walk(ref_heads):
+            for filename in files:
+                ref_path = os.path.join(root, filename)
+                # Obtain the mtime (the time a file was last modified)
+                if os.path.getmtime(ref_path) < time:
+                    os.unlink(ref_path)
+
     # remove():
     #
     # Removes the given symbolic ref from the repo.
@@ -664,6 +716,10 @@ class CASCache():
                     os.unlink(obj_path)
 
         return pruned
+
+    def update_tree_mtime(self, tree):
+        reachable = set()
+        self._reachable_refs_dir(reachable, tree, update_mtime=True)
 
     ################################################
     #             Local Private Methods            #
@@ -811,9 +867,12 @@ class CASCache():
                 a += 1
                 b += 1
 
-    def _reachable_refs_dir(self, reachable, tree):
+    def _reachable_refs_dir(self, reachable, tree, update_mtime=False):
         if tree.hash in reachable:
             return
+
+        if update_mtime:
+            os.utime(self.objpath(tree))
 
         reachable.add(tree.hash)
 
@@ -823,10 +882,12 @@ class CASCache():
             directory.ParseFromString(f.read())
 
         for filenode in directory.files:
+            if update_mtime:
+                os.utime(self.objpath(filenode.digest))
             reachable.add(filenode.digest.hash)
 
         for dirnode in directory.directories:
-            self._reachable_refs_dir(reachable, dirnode.digest)
+            self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime)
 
     def _required_blobs(self, directory_digest):
         # parse directory, and recursively add blobs
@@ -880,7 +941,7 @@ class CASCache():
         with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
             self._fetch_blob(remote, digest, f)
 
-            added_digest = self.add_object(path=f.name)
+            added_digest = self.add_object(path=f.name, link_directly=True)
             assert added_digest.hash == digest.hash
 
         return objpath
@@ -891,7 +952,7 @@ class CASCache():
                 f.write(data)
                 f.flush()
 
-                added_digest = self.add_object(path=f.name)
+                added_digest = self.add_object(path=f.name, link_directly=True)
                 assert added_digest.hash == digest.hash
 
     # Helper function for _fetch_directory().
@@ -1203,6 +1264,9 @@ class _CASBatchRead():
         batch_response = self._remote.cas.BatchReadBlobs(self._request)
 
         for response in batch_response.responses:
+            if response.status.code == code_pb2.NOT_FOUND:
+                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
+                    response.digest.hash, response.status.code))
             if response.status.code != code_pb2.OK:
                 raise CASError("Failed to download blob {}: {}".format(
                     response.digest.hash, response.status.code))
