@@ -41,6 +41,7 @@ import psutil
 
 from . import _signals
 from ._exceptions import BstError, ErrorDomain
+from ._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
 # The magic number for timestamps: 2011-11-11 11:11:11
 _magic_timestamp = calendar.timegm([2011, 11, 11, 11, 11, 11])
@@ -1242,3 +1243,19 @@ def _deduplicate(iterable, key=None):
 def _get_link_mtime(path):
     path_stat = os.lstat(path)
     return path_stat.st_mtime
+
+
+# _message_digest()
+#
+# Args:
+#    message_buffer (str): String to create digest of
+#
+# Returns:
+#    (remote_execution_pb2.Digest): Content digest
+#
+def _message_digest(message_buffer):
+    sha = hashlib.sha256(message_buffer)
+    digest = remote_execution_pb2.Digest()
+    digest.hash = sha.hexdigest()
+    digest.size_bytes = len(message_buffer)
+    return digest
