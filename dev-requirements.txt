@@ -9,3 +9,4 @@ pytest-pep8
 pytest-pylint
 pytest-xdist
 pytest-timeout
+pyftpdlib
