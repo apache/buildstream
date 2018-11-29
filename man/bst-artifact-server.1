@@ -1,0 +1,22 @@
+.TH "BST-ARTIFACT-SERVER" "1" "29-Nov-2018" "" "bst-artifact-server Manual"
+.SH NAME
+bst-artifact-server \- CAS Artifact Server
+.SH SYNOPSIS
+.B bst-artifact-server
+[OPTIONS] REPO
+.SH OPTIONS
+.TP
+\fB\-p,\fP \-\-port INTEGER
+Port number  [required]
+.TP
+\fB\-\-server\-key\fP TEXT
+Private server key for TLS (PEM-encoded)
+.TP
+\fB\-\-server\-cert\fP TEXT
+Public server certificate for TLS (PEM-encoded)
+.TP
+\fB\-\-client\-certs\fP TEXT
+Public client certificates for TLS (PEM-encoded)
+.TP
+\fB\-\-enable\-push\fP
+Allow clients to upload blobs and update artifact cache

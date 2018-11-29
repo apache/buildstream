@@ -1,0 +1,19 @@
+.TH "BST SOURCE-CHECKOUT" "1" "29-Nov-2018" "" "bst source-checkout Manual"
+.SH NAME
+bst\-source-checkout \- Checkout sources for an element
+.SH SYNOPSIS
+.B bst source-checkout
+[OPTIONS] ELEMENT LOCATION
+.SH DESCRIPTION
+Checkout sources of an element to the specified location
+    
+.SH OPTIONS
+.TP
+\fB\-\-except\fP PATH
+Except certain dependencies
+.TP
+\fB\-d,\fP \-\-deps [build|none|run|all]
+The dependencies whose sources to checkout (default: none)
+.TP
+\fB\-\-fetch\fP
+Fetch elements if they are not fetched

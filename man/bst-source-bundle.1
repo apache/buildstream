@@ -1,9 +1,9 @@
-.TH "BST SOURCE-BUNDLE" "1" "26-Apr-2018" "" "bst source-bundle Manual"
+.TH "BST SOURCE-BUNDLE" "1" "29-Nov-2018" "" "bst source-bundle Manual"
 .SH NAME
 bst\-source-bundle \- Produce a build bundle to be manually executed
 .SH SYNOPSIS
 .B bst source-bundle
-[OPTIONS] TARGET
+[OPTIONS] ELEMENT
 .SH DESCRIPTION
 Produce a source bundle to be manually executed
     
@@ -16,10 +16,10 @@ Elements to except from the tarball
 Compress the tar file using the given algorithm.
 .TP
 \fB\-\-track\fP
-Track new source references before building
+Track new source references before bundling
 .TP
 \fB\-f,\fP \-\-force
-Overwrite files existing in checkout directory
+Overwrite an existing tarball
 .TP
 \fB\-\-directory\fP TEXT
 The directory to write the tarball to

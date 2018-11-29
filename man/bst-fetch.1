@@ -1,4 +1,4 @@
-.TH "BST FETCH" "1" "26-Apr-2018" "" "bst fetch Manual"
+.TH "BST FETCH" "1" "29-Nov-2018" "" "bst fetch Manual"
 .SH NAME
 bst\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
@@ -6,14 +6,14 @@ bst\-fetch \- Fetch sources in a pipeline
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Fetch sources required to build the pipeline
-
+.PP
 By default this will only try to fetch sources which are
 required for the build plan of the specified target element,
 omitting sources for any elements which are already built
 and available in the artifact cache.
-
+.PP
 Specify `--deps` to control which sources to fetch:
-
+.PP
 
     none:  No dependencies, just the element itself
     plan:  Only dependencies required for the build plan
