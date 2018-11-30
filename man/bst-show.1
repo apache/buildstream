@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "26-Apr-2018" "" "bst show Manual"
+.TH "BST SHOW" "1" "29-Nov-2018" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -6,25 +6,25 @@ bst\-show \- Show elements in the pipeline
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Show elements in the pipeline
-
+.PP
 By default this will show all of the dependencies of the
 specified target element.
-
+.PP
 Specify `--deps` to control which elements to show:
-
+.PP
 
     none:  No dependencies, just the element itself
     plan:  Dependencies required for a build plan
     run:   Runtime dependencies, including the element itself
     build: Build time dependencies, excluding the element itself
     all:   All dependencies
-
+.PP
 
 FORMAT
 ~~~~~~
 The --format option controls what should be printed for each element,
 the following symbols can be used in the format string:
-
+.PP
 
     %{name}           The element name
     %{key}            The abbreviated cache key (if all sources are consistent)
@@ -36,17 +36,17 @@ the following symbols can be used in the format string:
     %{public}         Public domain data
     %{workspaced}     If the element is workspaced
     %{workspace-dirs} A list of workspace directories
-
+.PP
 The value of the %{symbol} without the leading '%' character is understood
 as a pythonic formatting string, so python formatting features apply,
 examle:
-
+.PP
 
     bst show target.bst --format \
         'Name: %{name: ^20} Key: %{key: ^8} State: %{state}'
-
+.PP
 If you want to use a newline in a format string in bash, use the '$' modifier:
-
+.PP
 
     bst show target.bst --format \
         $'---------- %{name} ----------\n%{vars}'
@@ -63,6 +63,3 @@ Staging or alphabetic ordering of dependencies
 .TP
 \fB\-f,\fP \-\-format FORMAT
 Format string for each element
-.TP
-\fB\-\-downloadable\fP
-Refresh downloadable state

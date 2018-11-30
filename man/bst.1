@@ -1,4 +1,4 @@
-.TH "BST" "1" "26-Apr-2018" "" "bst Manual"
+.TH "BST" "1" "29-Nov-2018" "" "bst Manual"
 .SH NAME
 bst \- Build and manipulate BuildStream projects...
 .SH SYNOPSIS
@@ -6,15 +6,15 @@ bst \- Build and manipulate BuildStream projects...
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
 Build and manipulate BuildStream projects
-
+.PP
 Most of the main options override options in the
 user preferences configuration file.
 .SH OPTIONS
 .TP
 \fB\-\-version\fP
-
+.PP
 .TP
-\fB\-c,\fP \-\-config PATH
+\fB\-c,\fP \-\-config FILE
 Configuration file to use
 .TP
 \fB\-C,\fP \-\-directory DIRECTORY
@@ -61,58 +61,62 @@ Elements must be rebuilt when their dependencies have changed
 .TP
 \fB\-o,\fP \-\-option OPTION VALUE
 Specify a project option
+.TP
+\fB\-\-default\-mirror\fP TEXT
+The mirror to fetch from first, before attempting other mirrors
+.TP
+\fB\-\-pull\-buildtrees\fP
+Include an element's build tree when pulling remote element artifacts
 .SH COMMANDS
 .PP
-\fBcheckout\fP
-  Checkout a built artifact
-  See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
-
-.PP
-\fBfetch\fP
-  Fetch sources in a pipeline
-  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
-
-.PP
-\fBsource-bundle\fP
-  Produce a build bundle to be manually executed
-  See \fBbst-source-bundle(1)\fP for full documentation on the \fBsource-bundle\fP command.
-
-.PP
-\fBshow\fP
-  Show elements in the pipeline
-  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
-
-.PP
-\fBworkspace\fP
-  Manipulate developer workspaces
-  See \fBbst-workspace(1)\fP for full documentation on the \fBworkspace\fP command.
-
-.PP
-\fBtrack\fP
-  Track new source references
-  See \fBbst-track(1)\fP for full documentation on the \fBtrack\fP command.
-
+\fBhelp\fP
+  Print usage information
+  See \fBbst-help(1)\fP for full documentation on the \fBhelp\fP command.
 .PP
 \fBinit\fP
   Initialize a new BuildStream project
   See \fBbst-init(1)\fP for full documentation on the \fBinit\fP command.
-
-.PP
-\fBshell\fP
-  Shell into an element's sandbox environment
-  See \fBbst-shell(1)\fP for full documentation on the \fBshell\fP command.
-
 .PP
 \fBbuild\fP
   Build elements in a pipeline
   See \fBbst-build(1)\fP for full documentation on the \fBbuild\fP command.
-
+.PP
+\fBfetch\fP
+  Fetch sources in a pipeline
+  See \fBbst-fetch(1)\fP for full documentation on the \fBfetch\fP command.
+.PP
+\fBtrack\fP
+  Track new source references
+  See \fBbst-track(1)\fP for full documentation on the \fBtrack\fP command.
 .PP
 \fBpull\fP
   Pull a built artifact
   See \fBbst-pull(1)\fP for full documentation on the \fBpull\fP command.
-
 .PP
 \fBpush\fP
   Push a built artifact
   See \fBbst-push(1)\fP for full documentation on the \fBpush\fP command.
+.PP
+\fBshow\fP
+  Show elements in the pipeline
+  See \fBbst-show(1)\fP for full documentation on the \fBshow\fP command.
+.PP
+\fBshell\fP
+  Shell into an element's sandbox environment
+  See \fBbst-shell(1)\fP for full documentation on the \fBshell\fP command.
+.PP
+\fBcheckout\fP
+  Checkout a built artifact
+  See \fBbst-checkout(1)\fP for full documentation on the \fBcheckout\fP command.
+.PP
+\fBsource-checkout\fP
+  Checkout sources for an element
+  See \fBbst-source-checkout(1)\fP for full documentation on the \fBsource-checkout\fP command.
+.PP
+\fBworkspace\fP
+  Manipulate developer workspaces
+  See \fBbst-workspace(1)\fP for full documentation on the \fBworkspace\fP command.
+.PP
+\fBsource-bundle\fP
+  Produce a build bundle to be manually executed
+  See \fBbst-source-bundle(1)\fP for full documentation on the \fBsource-bundle\fP command.

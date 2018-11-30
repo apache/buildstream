@@ -1,4 +1,4 @@
-.TH "BST CHECKOUT" "1" "26-Apr-2018" "" "bst checkout Manual"
+.TH "BST CHECKOUT" "1" "29-Nov-2018" "" "bst checkout Manual"
 .SH NAME
 bst\-checkout \- Checkout a built artifact
 .SH SYNOPSIS
@@ -12,7 +12,7 @@ Checkout a built artifact to the specified location
 \fB\-f,\fP \-\-force
 Allow files to be overwritten
 .TP
-\fB\-f,\fP \-\-deps
+\fB\-d,\fP \-\-deps [run|none]
 The dependencies to checkout (default: run)
 .TP
 \fB\-\-integrate\fP / \-\-no\-integrate
@@ -22,5 +22,4 @@ Whether to run integration commands
 Checkout hardlinks instead of copies (handle with care)
 .TP
 \fB\-\-tar\fP
-Create a tarball from the artifact contents instead of a file tree. If
-LOCATION is '-', the tarball will be dumped to the standard output.
+Create a tarball from the artifact contents instead of a file tree. If LOCATION is '-', the tarball will be dumped to the standard output.

@@ -1,9 +1,9 @@
-.TH "BST WORKSPACE OPEN" "1" "26-Apr-2018" "" "bst workspace open Manual"
+.TH "BST WORKSPACE OPEN" "1" "29-Nov-2018" "" "bst workspace open Manual"
 .SH NAME
 bst\-workspace\-open \- Open a new workspace
 .SH SYNOPSIS
 .B bst workspace open
-[OPTIONS] ELEMENT DIRECTORY
+[OPTIONS] ELEMENTS...
 .SH DESCRIPTION
 Open a workspace for manual source modification
 .SH OPTIONS
@@ -12,7 +12,10 @@ Open a workspace for manual source modification
 Do not checkout the source, only link to the given directory
 .TP
 \fB\-f,\fP \-\-force
-Overwrite files existing in checkout directory
+The workspace will be created even if the directory in which it will be created is not empty or if a workspace for that element already exists
 .TP
 \fB\-\-track\fP
 Track and fetch new source references before checking out the workspace
+.TP
+\fB\-\-directory\fP DIRECTORY
+Only for use when a single Element is given: Set the directory to use to create the workspace
