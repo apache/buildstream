@@ -38,7 +38,8 @@ def test_pullbuildtrees(cli, tmpdir, datafiles, integration_cache):
 
     # Create artifact shares for pull & push testing
     with create_artifact_share(os.path.join(str(tmpdir), 'share1')) as share1,\
-        create_artifact_share(os.path.join(str(tmpdir), 'share2')) as share2:
+        create_artifact_share(os.path.join(str(tmpdir), 'share2')) as share2,\
+        create_artifact_share(os.path.join(str(tmpdir), 'share3')) as share3:
         cli.configure({
             'artifacts': {'url': share1.repo, 'push': True},
             'artifactdir': os.path.join(str(tmpdir), 'artifacts')
@@ -122,6 +123,32 @@ def test_pullbuildtrees(cli, tmpdir, datafiles, integration_cache):
         assert element_name in result.get_pushed_elements()
         assert share2.has_artifact('test', element_name, cli.get_element_key(project, element_name))
         default_state(cli, tmpdir, share1)
+
+        # Assert that bst push will automatically attempt to pull a missing buildtree
+        # if pull-buildtrees is set, however as share3 is the only defined remote and is empty,
+        # assert that no element artifact buildtrees are pulled (no available remote buildtree) and thus the
+        # artifact cannot be pushed.
+        result = cli.run(project=project, args=['pull', element_name])
+        assert element_name in result.get_pulled_elements()
+        cli.configure({'artifacts': {'url': share3.repo, 'push': True}})
+        result = cli.run(project=project, args=['--pull-buildtrees', 'push', element_name])
+        assert "Attempting to fetch missing artifact buildtrees" in result.stderr
+        assert element_name not in result.get_pulled_elements()
+        assert not os.path.isdir(buildtreedir)
+        assert element_name not in result.get_pushed_elements()
+        assert not share3.has_artifact('test', element_name, cli.get_element_key(project, element_name))
+
+        # Assert that if we add an extra remote that has the buildtree artfact cached, bst push will
+        # automatically attempt to pull it and will be successful, leading to the full artifact being pushed
+        # to the empty share3. This gives the ability to attempt push currently partial artifacts to a remote,
+        # without exlipictly requiring a bst pull.
+        cli.configure({'artifacts': [{'url': share1.repo, 'push': False}, {'url': share3.repo, 'push': True}]})
+        result = cli.run(project=project, args=['--pull-buildtrees', 'push', element_name])
+        assert "Attempting to fetch missing artifact buildtrees" in result.stderr
+        assert element_name in result.get_pulled_elements()
+        assert os.path.isdir(buildtreedir)
+        assert element_name in result.get_pushed_elements()
+        assert share3.has_artifact('test', element_name, cli.get_element_key(project, element_name))
 
 
 # Ensure that only valid pull-buildtrees boolean options make it through the loading
