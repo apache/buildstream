@@ -61,6 +61,31 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("strict,hardlinks", [
+    ("non-strict", "hardlinks"),
+])
+def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=strict_args(['build', 'target.foo'], strict))
+    result.assert_main_error(ErrorDomain.LOAD, "bad-element-suffix")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("strict,hardlinks", [
+    ("non-strict", "hardlinks"),
+])
+def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # target2.bst depends on an element called target.foo
+    result = cli.run(project=project, args=strict_args(['build', 'target2.bst'], strict))
+    result.assert_main_error(ErrorDomain.LOAD, "bad-element-suffix")
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("deps", [("run"), ("none")])
 def test_build_checkout_deps(datafiles, cli, deps):
     project = os.path.join(datafiles.dirname, datafiles.basename)

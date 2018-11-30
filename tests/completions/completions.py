@@ -66,6 +66,13 @@ PROJECT_ELEMENTS = [
     "target.bst"
 ]
 
+INVALID_ELEMENTS = [
+    "target.foo"
+    "target.bst.bar"
+]
+
+MIXED_ELEMENTS = PROJECT_ELEMENTS + INVALID_ELEMENTS
+
 
 def assert_completion(cli, cmd, word_idx, expected, cwd=None):
     result = cli.run(cwd=cwd, env={
@@ -83,6 +90,24 @@ def assert_completion(cli, cmd, word_idx, expected, cwd=None):
     words = sorted(words)
     expected = sorted(expected)
     assert words == expected
+
+
+def assert_completion_failed(cli, cmd, word_idx, expected, cwd=None):
+    result = cli.run(cwd=cwd, env={
+        '_BST_COMPLETION': 'complete',
+        'COMP_WORDS': cmd,
+        'COMP_CWORD': str(word_idx)
+    })
+    words = []
+    if result.output:
+        words = result.output.splitlines()
+
+    # The order is meaningless, bash will
+    # take the results and order it by its
+    # own little heuristics
+    words = sorted(words)
+    expected = sorted(expected)
+    assert words != expected
 
 
 @pytest.mark.parametrize("cmd,word_idx,expected", [
@@ -193,19 +218,19 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
 
     # When running in the project directory
     ('no-element-path', 'bst show ', 2,
-     [e + ' ' for e in (PROJECT_ELEMENTS + ['project.conf'])] + ['files/'], None),
+     [e + ' ' for e in PROJECT_ELEMENTS] + ['files/'], None),
     ('no-element-path', 'bst build com', 2,
      ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], None),
 
     # When running from the files subdir
     ('no-element-path', 'bst show ', 2,
-     [e + ' ' for e in (PROJECT_ELEMENTS + ['project.conf'])] + ['files/'], 'files'),
+     [e + ' ' for e in PROJECT_ELEMENTS] + ['files/'], 'files'),
     ('no-element-path', 'bst build com', 2,
      ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], 'files'),
 
     # When passing the project directory
     ('no-element-path', 'bst --directory ../ show ', 4,
-     [e + ' ' for e in (PROJECT_ELEMENTS + ['project.conf'])] + ['files/'], 'files'),
+     [e + ' ' for e in PROJECT_ELEMENTS] + ['files/'], 'files'),
     ('no-element-path', 'bst --directory ../ show f', 4, ['files/'], 'files'),
     ('no-element-path', 'bst --directory ../ show files/', 4, ['files/bin-files/', 'files/dev-files/'], 'files'),
     ('no-element-path', 'bst --directory ../ build com', 4,
@@ -224,6 +249,19 @@ def test_argument_element(datafiles, cli, project, cmd, word_idx, expected, subd
     if subdir:
         cwd = os.path.join(cwd, subdir)
     assert_completion(cli, cmd, word_idx, expected, cwd=cwd)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("project,cmd,word_idx,expected,subdir", [
+
+    # When element has invalid suffix
+    ('project', 'bst --directory ../ show ', 4, [e + ' ' for e in MIXED_ELEMENTS], 'files')
+])
+def test_argument_element_invalid(datafiles, cli, project, cmd, word_idx, expected, subdir):
+    cwd = os.path.join(str(datafiles), project)
+    if subdir:
+        cwd = os.path.join(cwd, subdir)
+    assert_completion_failed(cli, cmd, word_idx, expected, cwd=cwd)
 
 
 @pytest.mark.parametrize("cmd,word_idx,expected", [
