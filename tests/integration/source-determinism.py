@@ -33,7 +33,7 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_cache):
     project = str(datafiles)
-    element_name = 'list'
+    element_name = 'list.bst'
     element_path = os.path.join(project, 'elements', element_name)
     repodir = os.path.join(str(tmpdir), 'repo')
     sourcedir = os.path.join(project, 'source')
@@ -108,7 +108,7 @@ def test_deterministic_source_local(cli, tmpdir, datafiles, integration_cache):
     """Only user rights should be considered for local source.
     """
     project = str(datafiles)
-    element_name = 'test'
+    element_name = 'test.bst'
     element_path = os.path.join(project, 'elements', element_name)
     sourcedir = os.path.join(project, 'source')
 

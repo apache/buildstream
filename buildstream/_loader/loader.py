@@ -36,6 +36,8 @@ from .types import Symbol, Dependency
 from .loadelement import LoadElement
 from . import MetaElement
 from . import MetaSource
+from ..plugin import CoreWarnings
+from .._message import Message, MessageType
 
 
 # Loader():
@@ -97,6 +99,7 @@ class Loader():
     # Returns: The toplevel LoadElement
     def load(self, targets, rewritable=False, ticker=None, fetch_subprojects=False):
 
+        invalid_elements = []
         for filename in targets:
             if os.path.isabs(filename):
                 # XXX Should this just be an assertion ?
@@ -106,6 +109,14 @@ class Loader():
                                 "path to the base project directory: {}"
                                 .format(filename, self._basedir))
 
+            if not filename.endswith(".bst"):
+                invalid_elements.append(filename)
+
+        if invalid_elements:
+            self._warn("Target elements '{}' do not have expected file extension `.bst` "
+                       "Improperly named elements will not be discoverable by commands"
+                       .format(invalid_elements),
+                       warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX)
         # First pass, recursively load files and populate our table of LoadElements
         #
         deps = []
@@ -269,7 +280,12 @@ class Loader():
         self._elements[filename] = element
 
         # Load all dependency files for the new LoadElement
+        invalid_elements = []
         for dep in element.deps:
+            if not dep.name.endswith(".bst"):
+                invalid_elements.append(dep.name)
+                continue
+
             if dep.junction:
                 self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
@@ -284,6 +300,11 @@ class Loader():
                                 "{}: Cannot depend on junction"
                                 .format(dep.provenance))
 
+        if invalid_elements:
+            self._warn("The following dependencies do not have expected file extension `.bst`: {} "
+                       "Improperly named elements will not be discoverable by commands"
+                       .format(invalid_elements),
+                       warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX)
         return element
 
     # _check_circular_deps():
@@ -639,3 +660,22 @@ class Loader():
             loader = self._get_loader(junction_path[-2], rewritable=rewritable, ticker=ticker,
                                       fetch_subprojects=fetch_subprojects)
             return junction_path[-2], junction_path[-1], loader
+
+    # Print a warning message, checks warning_token against project configuration
+    #
+    # Args:
+    #     brief (str): The brief message
+    #     warning_token (str): An optional configurable warning assosciated with this warning,
+    #                          this will cause PluginError to be raised if this warning is configured as fatal.
+    #                          (*Since 1.4*)
+    #
+    # Raises:
+    #     (:class:`.LoadError`): When warning_token is considered fatal by the project configuration
+    #
+    def _warn(self, brief, *, warning_token=None):
+        if warning_token:
+            if self.project._warning_is_fatal(warning_token):
+                raise LoadError(warning_token, brief)
+
+        message = Message(None, MessageType.WARN, brief)
+        self._context.message(message)

@@ -109,7 +109,11 @@ def complete_target(args, incomplete):
     if element_directory:
         base_directory = os.path.join(base_directory, element_directory)
 
-    return complete_path("File", incomplete, base_directory=base_directory)
+    complete_list = []
+    for p in complete_path("File", incomplete, base_directory=base_directory):
+        if p.endswith(".bst ") or p.endswith("/"):
+            complete_list.append(p)
+    return complete_list
 
 
 def override_completions(cmd, cmd_param, args, incomplete):
