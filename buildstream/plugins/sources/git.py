@@ -25,6 +25,11 @@ git - stage files from a git repository
 
   * git
 
+.. attention::
+
+    Note that this plugin **will checkout git submodules by default**; even if
+    they are not specified in the `.bst` file.
+
 **Usage:**
 
 .. code:: yaml
