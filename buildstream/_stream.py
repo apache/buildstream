@@ -28,6 +28,7 @@ import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
 
+from ._artifactcache import ArtifactCacheSpec
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
@@ -934,14 +935,21 @@ class Stream():
             self._pipeline.resolve_elements(track_selected)
             return [], track_selected
 
-        # ArtifactCache.setup_remotes expects all projects to be fully loaded
-        for project in self._context.get_projects():
-            project.ensure_fully_loaded()
-
+        remotes = []
+        if use_artifact_config:
+            # ArtifactCache.get_remotes_from_projects expects all projects to be
+            # fully loaded
+            for project in self._context.get_projects():
+                project.ensure_fully_loaded()
+            remotes = self._artifacts.get_remotes_from_projects()
+        elif artifact_remote_url is not None:
+            # Build the ArtifactCacheSpec instance based on `--remote`
+            remotes = [(
+                [ArtifactCacheSpec(artifact_remote_url, push=artifact_remote_can_push)],
+                None
+            )]
         # Connect to remote caches, this needs to be done before resolving element state
-        self._artifacts.setup_remotes(use_config=use_artifact_config,
-                                      remote_url=artifact_remote_url,
-                                      push=artifact_remote_can_push)
+        self._artifacts.setup_remotes(remotes=remotes)
 
         # Now move on to loading primary selection.
         #

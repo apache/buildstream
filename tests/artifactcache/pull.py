@@ -146,7 +146,8 @@ def _test_pull(user_config_file, project_dir, artifact_dir,
     element = project.load_elements([element_name])[0]
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
+    remotes = cas.get_remotes_from_projects()
+    cas.setup_remotes(remotes=remotes)
 
     if cas.has_push_remotes(element=element):
         # Push the element's artifact
@@ -284,7 +285,8 @@ def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest
     cas = artifactcache.cas
 
     # Manually setup the CAS remote
-    artifactcache.setup_remotes(use_config=True)
+    remotes = artifactcache.get_remotes_from_projects()
+    artifactcache.setup_remotes(remotes=remotes)
 
     if artifactcache.has_push_remotes():
         directory = remote_execution_pb2.Directory()
@@ -319,7 +321,8 @@ def _test_pull_tree(user_config_file, project_dir, artifact_dir, artifact_digest
     cas = context.artifactcache
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
+    remotes = cas.get_remotes_from_projects()
+    cas.setup_remotes(remotes=remotes)
 
     if cas.has_push_remotes():
         # Pull the artifact using the Tree object

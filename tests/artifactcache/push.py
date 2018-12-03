@@ -125,8 +125,8 @@ def _test_push(user_config_file, project_dir, artifact_dir,
     element = project.load_elements([element_name])[0]
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
-    cas.initialize_remotes()
+    remotes = cas.get_remotes_from_projects()
+    cas.setup_remotes(remotes=remotes)
 
     if cas.has_push_remotes(element=element):
         # Push the element's artifact
@@ -185,8 +185,8 @@ def test_push_directory(cli, tmpdir, datafiles):
         assert artifactcache.contains(element, element_key)
 
         # Manually setup the CAS remote
-        artifactcache.setup_remotes(use_config=True)
-        artifactcache.initialize_remotes()
+        remotes = artifactcache.get_remotes_from_projects()
+        artifactcache.setup_remotes(remotes=remotes)
         assert artifactcache.has_push_remotes(element=element)
 
         # Recreate the CasBasedDirectory object from the cached artifact
@@ -231,8 +231,8 @@ def _test_push_directory(user_config_file, project_dir, artifact_dir, artifact_d
     cas = context.artifactcache
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
-    cas.initialize_remotes()
+    remotes = cas.get_remotes_from_projects()
+    cas.setup_remotes(remotes=remotes)
 
     if cas.has_push_remotes():
         # Create a CasBasedDirectory from local CAS cache content
@@ -307,8 +307,8 @@ def _test_push_message(user_config_file, project_dir, artifact_dir, queue):
     cas = context.artifactcache
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
-    cas.initialize_remotes()
+    remotes = cas.get_remotes_from_projects()
+    cas.setup_remotes(remotes=remotes)
 
     if cas.has_push_remotes():
         # Create an example message object

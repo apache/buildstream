@@ -110,37 +110,42 @@ class ArtifactCache():
         # assume project and element names are not allowed to contain slashes
         return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
+    # get_remotes_from_projects()
+    #
+    # Generates list artifact caches based on project configuration
+    #
+    # Returns:
+    #    (list of (list of ArtifactCacheSpec, Project)): Configurations each are
+    #        ready to be consumed by `self._set_remotes()`
+    #
+    # This requires that all of the projects which are to be processed in the session
+    # have already been loaded and are observable in the Context.
+    #
+    def get_remotes_from_projects(self):
+        return [
+            (_configured_remote_artifact_cache_specs(self.context, proj), proj)
+            for proj in self.context.get_projects()
+        ]
+
     # setup_remotes():
     #
     # Sets up which remotes to use
     #
     # Args:
-    #    use_config (bool): Whether to use project configuration
-    #    remote_url (str): Remote artifact cache URL
-    #    push (bool): Whether to enabe push for `remote_url`
+    #    remotes (list of (list of ArtifactCacheSpec, Project)): Configurations which are
+    #        ready to be consumed by `self._set_remotes()`
     #
     # This requires that all of the projects which are to be processed in the session
     # have already been loaded and are observable in the Context.
     #
-    def setup_remotes(self, *, use_config=False, remote_url=None, push=False):
-
+    def setup_remotes(self, *, remotes=None):
         # Ensure we do not double-initialise since this can be expensive
         assert not self._remotes_setup
         self._remotes_setup = True
 
-        # Initialize remote artifact caches. We allow the commandline to override
-        # the user config in some cases (for example `bst push --remote=...`).
-        has_remote_caches = False
-        if remote_url:
-            self._set_remotes([ArtifactCacheSpec(remote_url, push=push)])
-            has_remote_caches = True
-        if use_config:
-            for project in self.context.get_projects():
-                artifact_caches = _configured_remote_artifact_cache_specs(self.context, project)
-                if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
-                    self._set_remotes(artifact_caches, project=project)
-                    has_remote_caches = True
-        if has_remote_caches:
+        if remotes:
+            for caches, project in remotes:
+                self._set_remotes(caches, project=project)
             self._initialize_remotes()
 
     # specs_from_config_node()
