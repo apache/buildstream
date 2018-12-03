@@ -117,11 +117,12 @@ class ArtifactCache():
     # Args:
     #    use_config (bool): Whether to use project configuration
     #    remote_url (str): Remote artifact cache URL
+    #    push (bool): Whether to enabe push for `remote_url`
     #
     # This requires that all of the projects which are to be processed in the session
     # have already been loaded and are observable in the Context.
     #
-    def setup_remotes(self, *, use_config=False, remote_url=None):
+    def setup_remotes(self, *, use_config=False, remote_url=None, push=False):
 
         # Ensure we do not double-initialise since this can be expensive
         assert not self._remotes_setup
@@ -131,7 +132,7 @@ class ArtifactCache():
         # the user config in some cases (for example `bst push --remote=...`).
         has_remote_caches = False
         if remote_url:
-            self._set_remotes([ArtifactCacheSpec(remote_url, push=True)])
+            self._set_remotes([ArtifactCacheSpec(remote_url, push=push)])
             has_remote_caches = True
         if use_config:
             for project in self.context.get_projects():

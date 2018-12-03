@@ -308,6 +308,7 @@ class Stream():
                                  selection=selection,
                                  use_artifact_config=use_config,
                                  artifact_remote_url=remote,
+                                 artifact_remote_can_push=False,
                                  fetch_subprojects=True)
 
         if not self._artifacts.has_fetch_remotes():
@@ -346,6 +347,7 @@ class Stream():
                                  selection=selection,
                                  use_artifact_config=use_config,
                                  artifact_remote_url=remote,
+                                 artifact_remote_can_push=True,
                                  fetch_subprojects=True)
 
         if not self._artifacts.has_push_remotes():
@@ -853,6 +855,7 @@ class Stream():
     #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
     #    use_artifact_config (bool): Whether to initialize artifacts with the config
     #    artifact_remote_url (bool): A remote url for initializing the artifacts
+    #    artifact_remote_can_push (bool): Whether `artifact_remote_url` can be used to push
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Returns:
@@ -867,6 +870,7 @@ class Stream():
               track_cross_junctions=False,
               use_artifact_config=False,
               artifact_remote_url=None,
+              artifact_remote_can_push=False,
               fetch_subprojects=False,
               dynamic_plan=False):
 
@@ -935,7 +939,9 @@ class Stream():
             project.ensure_fully_loaded()
 
         # Connect to remote caches, this needs to be done before resolving element state
-        self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_remote_url)
+        self._artifacts.setup_remotes(use_config=use_artifact_config,
+                                      remote_url=artifact_remote_url,
+                                      push=artifact_remote_can_push)
 
         # Now move on to loading primary selection.
         #
