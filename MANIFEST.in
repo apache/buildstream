@@ -19,6 +19,7 @@ recursive-include doc/source *.html
 recursive-include doc/source *.odg
 recursive-include doc/source *.svg
 recursive-include doc/examples *
+recursive-include doc/sessions *.run
 
 # Tests
 recursive-include tests *
