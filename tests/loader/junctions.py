@@ -48,6 +48,16 @@ def test_simple_build(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_of_same_junction_used_twice(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'inconsistent-names')
+
+    # Check we can build a project that contains the same junction
+    # that is used twice, but named differently
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    assert result.exit_code == 0
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_nested_simple(cli, tmpdir, datafiles):
     foo = os.path.join(str(datafiles), 'foo')
     copy_subprojects(foo, datafiles, ['base'])

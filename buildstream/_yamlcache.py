@@ -68,7 +68,7 @@ class YamlCache():
     #    (bool): Whether the file is cached.
     def is_cached(self, project, filepath):
         cache_path = self._get_filepath(project, filepath)
-        project_name = project.name if project else ""
+        project_name = self.get_project_name(project)
         try:
             project_cache = self._project_caches[project_name]
             if cache_path in project_cache.elements:
@@ -167,7 +167,7 @@ class YamlCache():
     #    value (decorated dict): The data to put into the cache.
     def put_from_key(self, project, filepath, key, value):
         cache_path = self._get_filepath(project, filepath)
-        project_name = project.name if project else ""
+        project_name = self.get_project_name(project)
         try:
             project_cache = self._project_caches[project_name]
         except KeyError:
@@ -237,7 +237,7 @@ class YamlCache():
     #    (decorated dict): The parsed yaml from the cache, or None if the file isn't in the cache.
     def _get(self, project, filepath, key):
         cache_path = self._get_filepath(project, filepath)
-        project_name = project.name if project else ""
+        project_name = self.get_project_name(project)
         try:
             project_cache = self._project_caches[project_name]
             try:
@@ -252,6 +252,30 @@ class YamlCache():
         except KeyError:
             pass
         return None
+
+    # get_project_name():
+    #
+    # Gets a name appropriate for Project. Projects must use their junction's
+    # name if present, otherwise elements with the same contents under the
+    # same path with identically-named projects are considered the same yaml
+    # object, despite existing in different Projects.
+    #
+    # Args:
+    #    project (Project): The project this file is in, or None.
+    #
+    # Returns:
+    #    (str): The project's junction's name if present, the project's name,
+    #           or an empty string if there is no project
+    @staticmethod
+    def get_project_name(project):
+        if project:
+            if project.junction:
+                project_name = project.junction.name
+            else:
+                project_name = project.name
+        else:
+            project_name = ""
+        return project_name
 
 
 CachedProject = namedtuple('CachedProject', ['elements'])
@@ -287,7 +311,7 @@ class BstPickler(pickle.Pickler):
         if isinstance(obj, _yaml.ProvenanceFile):
             if obj.project:
                 # ProvenanceFile's project object cannot be stored as it is.
-                project_tag = obj.project.name
+                project_tag = YamlCache.get_project_name(obj.project)
                 # ProvenanceFile's filename must be stored relative to the
                 # project, as the project dir may move.
                 name = os.path.relpath(obj.name, obj.project.directory)
@@ -319,14 +343,14 @@ class BstUnpickler(pickle.Unpickler):
 
             if project_tag is not None:
                 for p in self._context.get_projects():
-                    if project_tag == p.name:
+                    if YamlCache.get_project_name(p) == project_tag:
                         project = p
                         break
 
                 name = os.path.join(project.directory, tagged_name)
 
                 if not project:
-                    projects = [p.name for p in self._context.get_projects()]
+                    projects = [YamlCache.get_project_name(p) for p in self._context.get_projects()]
                     raise pickle.UnpicklingError("No project with name {} found in {}"
                                                  .format(project_tag, projects))
             else:
