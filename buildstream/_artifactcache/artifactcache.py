@@ -21,7 +21,7 @@ import os
 import string
 from collections import Mapping, namedtuple
 
-from ..element import _KeyStrength
+from ..types import _KeyStrength
 from .._exceptions import ArtifactError, ImplError, LoadError, LoadErrorReason
 from .._message import Message, MessageType
 from .. import utils

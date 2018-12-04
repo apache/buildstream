@@ -108,9 +108,8 @@ from io import StringIO
 
 from configparser import RawConfigParser
 
-from buildstream import Source, SourceError, Consistency, SourceFetcher
+from buildstream import Source, SourceError, Consistency, SourceFetcher, CoreWarnings
 from buildstream import utils
-from buildstream.plugin import CoreWarnings
 
 GIT_MODULES = '.gitmodules'
 

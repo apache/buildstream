@@ -96,23 +96,8 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
-from .plugin import CoreWarnings
 from .sandbox._config import SandboxConfig
-
-
-# _KeyStrength():
-#
-# Strength of cache key
-#
-class _KeyStrength(Enum):
-
-    # Includes strong cache keys of all build dependencies and their
-    # runtime dependencies.
-    STRONG = 1
-
-    # Includes names of direct build dependencies but does not include
-    # cache keys of dependencies.
-    WEAK = 2
+from .types import _KeyStrength, CoreWarnings
 
 
 class Scope(Enum):

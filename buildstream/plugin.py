@@ -119,6 +119,7 @@ from . import _yaml
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
+from .types import CoreWarnings
 
 
 class Plugin():
@@ -817,25 +818,8 @@ class Plugin():
             return self.name
 
 
-class CoreWarnings():
-    """CoreWarnings()
-
-    Some common warnings which are raised by core functionalities within BuildStream are found in this class.
-    """
-
-    OVERLAPS = "overlaps"
-    """
-    This warning will be produced when buildstream detects an overlap on an element
-        which is not whitelisted. See :ref:`Overlap Whitelist <public_overlap_whitelist>`
-    """
-
-    REF_NOT_IN_TRACK = "ref-not-in-track"
-    """
-    This warning will be produced when a source is configured with a reference
-    which is found to be invalid based on the configured track
-    """
-
-
+# A local table for _prefix_warning()
+#
 __CORE_WARNINGS = [
     value
     for name, value in CoreWarnings.__dict__.items()

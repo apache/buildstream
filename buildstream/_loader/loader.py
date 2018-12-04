@@ -34,6 +34,7 @@ from .types import Symbol, Dependency
 from .loadelement import LoadElement
 from . import MetaElement
 from . import MetaSource
+from ..types import CoreWarnings
 
 
 # Loader():
