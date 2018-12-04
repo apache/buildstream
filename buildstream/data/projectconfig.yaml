@@ -44,38 +44,8 @@ variables:
   # Indicates the build installation directory in the sandbox
   install-root: /buildstream-install
 
-  # Arguments for tooling used when stripping debug symbols
-  objcopy-link-args: --add-gnu-debuglink
-  objcopy-extract-args: |
-
-    --only-keep-debug --compress-debug-sections
-
-  strip-args: |
-
-    --remove-section=.comment --remove-section=.note --strip-unneeded
-
-  # Generic implementation for stripping debugging symbols
-  strip-binaries: |
-
-    cd "%{install-root}" && find -type f \
-      '(' -perm -111 -o -name '*.so*' \
-          -o -name '*.cmxs' -o -name '*.node' ')' \
-      -exec sh -ec \
-      'read -n4 hdr <"$1" # check for elf header
-       case "$1" in
-         %{install-root}%{debugdir}/*)
-           exit 0
-           ;;
-       esac
-       if [ "$hdr" != "$(printf \\x7fELF)" ]; then
-           exit 0
-       fi
-       debugfile="%{install-root}%{debugdir}/$1"
-       mkdir -p "$(dirname "$debugfile")"
-       objcopy %{objcopy-extract-args} "$1" "$debugfile"
-       chmod 644 "$debugfile"
-       strip %{strip-args} "$1"
-       objcopy %{objcopy-link-args} "$debugfile" "$1"' - {} ';'
+  # You need to override this with the commands specific for your system
+  strip-binaries: ""
 
   # Generic implementation for reproducible python builds
   fix-pyc-timestamps: |
