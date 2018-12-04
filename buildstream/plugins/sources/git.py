@@ -76,7 +76,7 @@ git - stage files from a git repository
 
 **Configurable Warnings:**
 
-This plugin provides the following configurable warnings:
+This plugin provides the following :ref:`configurable warnings <configurable_warnings>`:
 
 - ``git:inconsistent-submodule`` - A submodule present in the git repository's .gitmodules was never
   added with `git submodule add`.
@@ -95,9 +95,10 @@ This plugin provides the following configurable warnings:
 
      The ``git:invalid-submodule`` warning is available since :ref:`format version 20 <project_format_version>`
 
-This plugin also utilises the following configurable core plugin warnings:
+This plugin also utilises the following configurable :class:`core warnings <buildstream.types.CoreWarnings>`:
 
-- 'ref-not-in-track' - The provided ref was not found in the provided track in the element's git repository.
+- :attr:`ref-not-in-track <buildstream.types.CoreWarnings.REF_NOT_IN_TRACK>` - The provided ref was not
+  found in the provided track in the element's git repository.
 """
 
 import os
