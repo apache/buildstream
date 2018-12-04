@@ -1140,9 +1140,9 @@ class CASRemote():
         self.cas = None
         self.batch_update_supported = None
         self.batch_read_supported = None
-        self.capabilities = None
         self.max_batch_total_size_bytes = None
 
+        self._capabilities_stub = None
         self._ref_storage_stub = None
 
     def init(self):
@@ -1181,13 +1181,13 @@ class CASRemote():
 
             self.bytestream = bytestream_pb2_grpc.ByteStreamStub(self.channel)
             self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
-            self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
+            self._capabilities_stub = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
             self._ref_storage_stub = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
 
             self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
             try:
                 request = remote_execution_pb2.GetCapabilitiesRequest()
-                response = self.capabilities.GetCapabilities(request)
+                response = self._capabilities_stub.GetCapabilities(request)
                 server_max_batch_total_size_bytes = response.cache_capabilities.max_batch_total_size_bytes
                 if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
                     self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
@@ -1218,6 +1218,10 @@ class CASRemote():
                     raise
 
             self._initialized = True
+
+    def get_capabilities(self):
+        request = remote_execution_pb2.GetCapabilitiesRequest()
+        return self._capabilities_stub.GetCapabilities(request)
 
     def get_reference(self, key):
         request = buildstream_pb2.GetReferenceRequest()
