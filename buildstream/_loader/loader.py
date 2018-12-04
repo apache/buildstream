@@ -36,7 +36,7 @@ from .types import Symbol, Dependency
 from .loadelement import LoadElement
 from . import MetaElement
 from . import MetaSource
-from ..plugin import CoreWarnings
+from ..types import CoreWarnings
 from .._message import Message, MessageType
 
 

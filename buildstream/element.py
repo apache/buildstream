@@ -96,10 +96,9 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
-from .plugin import CoreWarnings
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _KeyStrength
+from .types import _KeyStrength, CoreWarnings
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory

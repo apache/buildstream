@@ -119,6 +119,7 @@ from . import _yaml
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
+from .types import CoreWarnings
 
 
 class Plugin():
@@ -766,38 +767,6 @@ class Plugin():
             return self.name
 
 
-class CoreWarnings():
-    """CoreWarnings()
-
-    Some common warnings which are raised by core functionalities within BuildStream are found in this class.
-    """
-
-    OVERLAPS = "overlaps"
-    """
-    This warning will be produced when buildstream detects an overlap on an element
-        which is not whitelisted. See :ref:`Overlap Whitelist <public_overlap_whitelist>`
-    """
-
-    REF_NOT_IN_TRACK = "ref-not-in-track"
-    """
-    This warning will be produced when a source is configured with a reference
-    which is found to be invalid based on the configured track
-    """
-
-    BAD_ELEMENT_SUFFIX = "bad-element-suffix"
-    """
-    This warning will be produced when an element whose name does not end in .bst
-    is referenced either on the command line or by another element
-    """
-
-
-__CORE_WARNINGS = [
-    value
-    for name, value in CoreWarnings.__dict__.items()
-    if not name.startswith("__")
-]
-
-
 # Hold on to a lookup table by counter of all instantiated plugins.
 # We use this to send the id back from child processes so we can lookup
 # corresponding element/source in the master process.
@@ -828,6 +797,24 @@ def _plugin_lookup(unique_id):
     return __PLUGINS_TABLE[unique_id]
 
 
+# No need for unregister, WeakValueDictionary() will remove entries
+# in itself when the referenced plugins are garbage collected.
+def _plugin_register(plugin):
+    global __PLUGINS_UNIQUE_ID                # pylint: disable=global-statement
+    __PLUGINS_UNIQUE_ID += 1
+    __PLUGINS_TABLE[__PLUGINS_UNIQUE_ID] = plugin
+    return __PLUGINS_UNIQUE_ID
+
+
+# A local table for _prefix_warning()
+#
+__CORE_WARNINGS = [
+    value
+    for name, value in CoreWarnings.__dict__.items()
+    if not name.startswith("__")
+]
+
+
 # _prefix_warning():
 #
 # Prefix a warning with the plugin kind. CoreWarnings are not prefixed.
@@ -843,12 +830,3 @@ def _prefix_warning(plugin, warning):
     if any((warning is core_warning for core_warning in __CORE_WARNINGS)):
         return warning
     return "{}:{}".format(plugin.get_kind(), warning)
-
-
-# No need for unregister, WeakValueDictionary() will remove entries
-# in itself when the referenced plugins are garbage collected.
-def _plugin_register(plugin):
-    global __PLUGINS_UNIQUE_ID                # pylint: disable=global-statement
-    __PLUGINS_UNIQUE_ID += 1
-    __PLUGINS_TABLE[__PLUGINS_UNIQUE_ID] = plugin
-    return __PLUGINS_UNIQUE_ID

@@ -149,9 +149,8 @@ from tempfile import TemporaryFile
 
 from configparser import RawConfigParser
 
-from buildstream import Source, SourceError, Consistency, SourceFetcher
+from buildstream import Source, SourceError, Consistency, SourceFetcher, CoreWarnings
 from buildstream import utils
-from buildstream.plugin import CoreWarnings
 from buildstream.utils import move_atomic, DirectoryExistsError
 
 GIT_MODULES = '.gitmodules'
