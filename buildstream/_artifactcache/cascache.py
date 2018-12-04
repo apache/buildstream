@@ -249,7 +249,7 @@ class CASCache():
             remote.init()
 
             request = buildstream_pb2.StatusRequest()
-            response = remote.ref_storage.Status(request)
+            response = remote._ref_storage_stub.Status(request)
 
             if remote_spec.push and not response.allow_updates:
                 q.put('CAS server does not allow push')
@@ -284,9 +284,7 @@ class CASCache():
         try:
             remote.init()
 
-            request = buildstream_pb2.GetReferenceRequest()
-            request.key = ref
-            response = remote.ref_storage.GetReference(request)
+            response = remote.get_reference(ref)
 
             tree = remote_execution_pb2.Digest()
             tree.hash = response.digest.hash
@@ -369,9 +367,7 @@ class CASCache():
                 # Check whether ref is already on the server in which case
                 # there is no need to push the ref
                 try:
-                    request = buildstream_pb2.GetReferenceRequest()
-                    request.key = ref
-                    response = remote.ref_storage.GetReference(request)
+                    response = remote.get_reference(ref)
 
                     if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
                         # ref is already on the server with the same tree
@@ -384,11 +380,7 @@ class CASCache():
 
                 self._send_directory(remote, tree)
 
-                request = buildstream_pb2.UpdateReferenceRequest()
-                request.keys.append(ref)
-                request.digest.hash = tree.hash
-                request.digest.size_bytes = tree.size_bytes
-                remote.ref_storage.UpdateReference(request)
+                remote.update_reference(ref, tree.hash, tree.size_bytes)
 
                 skipped_remote = False
         except grpc.RpcError as e:
@@ -1146,11 +1138,12 @@ class CASRemote():
         self.channel = None
         self.bytestream = None
         self.cas = None
-        self.ref_storage = None
         self.batch_update_supported = None
         self.batch_read_supported = None
         self.capabilities = None
         self.max_batch_total_size_bytes = None
+
+        self._ref_storage_stub = None
 
     def init(self):
         if not self._initialized:
@@ -1189,7 +1182,7 @@ class CASRemote():
             self.bytestream = bytestream_pb2_grpc.ByteStreamStub(self.channel)
             self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
             self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
-            self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
+            self._ref_storage_stub = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
 
             self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
             try:
@@ -1225,6 +1218,18 @@ class CASRemote():
                     raise
 
             self._initialized = True
+
+    def get_reference(self, key):
+        request = buildstream_pb2.GetReferenceRequest()
+        request.key = key
+        return self._ref_storage_stub.GetReference(request)
+
+    def update_reference(self, keys, digest_hash, digest_size_bytes):
+        request = buildstream_pb2.UpdateReferenceRequest()
+        request.keys.append(keys)
+        request.digest.hash = digest_hash
+        request.digest.size_bytes = digest_size_bytes
+        return self._ref_storage_stub.UpdateReference(request)
 
 
 # Represents a batch of blobs queued for fetching.
