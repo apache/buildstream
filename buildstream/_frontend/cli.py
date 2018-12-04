@@ -527,11 +527,14 @@ def show(app, elements, deps, except_, order, format_):
               help="Mount a file or directory into the sandbox")
 @click.option('--isolate', is_flag=True, default=False,
               help='Create an isolated build sandbox')
+@click.option('--use-buildtree', '-t', 'cli_buildtree', type=click.Choice(['ask', 'try', 'always', 'never']),
+              default='ask',
+              help='Defaults to ask but if set to always the function will fail if a build tree is not available')
 @click.argument('element', required=False,
                 type=click.Path(readable=False))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, element, sysroot, mount, isolate, build_, command):
+def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command):
     """Run a command in the target element's sandbox environment
 
     This will stage a temporary sysroot for running the target
@@ -557,6 +560,8 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
     else:
         scope = Scope.RUN
 
+    use_buildtree = False
+
     with app.initialized():
         if not element:
             element = app.context.guess_element()
@@ -570,12 +575,30 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
             HostMount(path, host_path)
             for host_path, path in mount
         ]
+
+        cached = element._cached_buildtree()
+        if cli_buildtree == "always":
+            if cached:
+                use_buildtree = True
+            else:
+                raise AppError("No buildtree is cached but the use buildtree option was specified")
+        elif cli_buildtree == "never":
+            pass
+        elif cli_buildtree == "try":
+            use_buildtree = cached
+        else:
+            if app.interactive and cached:
+                use_buildtree = bool(click.confirm('Do you want to use the cached buildtree?'))
+        if use_buildtree and not element._cached_success():
+            click.echo("Warning: using a buildtree from a failed build.")
+
         try:
             exitcode = app.stream.shell(element, scope, prompt,
                                         directory=sysroot,
                                         mounts=mounts,
                                         isolate=isolate,
-                                        command=command)
+                                        command=command,
+                                        usebuildtree=use_buildtree)
         except BstError as e:
             raise AppError("Error launching shell: {}".format(e), detail=e.detail) from e
 
