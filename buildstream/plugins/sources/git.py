@@ -131,13 +131,14 @@ details on common configuration options for sources.
 
 **Configurable Warnings:**
 
-This plugin provides the following configurable warnings:
+This plugin provides the following :ref:`configurable warnings <configurable_warnings>`:
 
-- 'git:inconsistent-submodule' - A submodule was found to be missing from the underlying git repository.
+- ``git:inconsistent-submodule`` - A submodule was found to be missing from the underlying git repository.
 
-This plugin also utilises the following configurable core plugin warnings:
+This plugin also utilises the following configurable :class:`core warnings <buildstream.types.CoreWarnings>`:
 
-- 'ref-not-in-track' - The provided ref was not found in the provided track in the element's git repository.
+- :attr:`ref-not-in-track <buildstream.types.CoreWarnings.REF_NOT_IN_TRACK>` - The provided ref was not
+  found in the provided track in the element's git repository.
 """
 
 import os
@@ -156,7 +157,7 @@ from buildstream.utils import move_atomic, DirectoryExistsError
 GIT_MODULES = '.gitmodules'
 
 # Warnings
-INCONSISTENT_SUBMODULE = "inconsistent-submodules"
+INCONSISTENT_SUBMODULE = "inconsistent-submodule"
 
 
 # Because of handling of submodules, we maintain a GitMirror
