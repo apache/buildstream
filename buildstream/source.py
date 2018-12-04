@@ -404,7 +404,8 @@ class Source(Plugin):
 
         If the backend in question supports resolving references from
         a symbolic tracking branch or tag, then this should be implemented
-        to perform this task on behalf of ``build-stream track`` commands.
+        to perform this task on behalf of :ref:`bst track <invoking_track>`
+        commands.
 
         This usually requires fetching new content from a remote origin
         to see if a new ref has appeared for your branch or tag. If the
