@@ -157,7 +157,7 @@ from buildstream.utils import move_atomic, DirectoryExistsError
 GIT_MODULES = '.gitmodules'
 
 # Warnings
-INCONSISTENT_SUBMODULE = "inconsistent-submodule"
+WARN_INCONSISTENT_SUBMODULE = "inconsistent-submodule"
 
 
 # Because of handling of submodules, we maintain a GitMirror
@@ -408,7 +408,8 @@ class GitMirror(SourceFetcher):
                      "underlying git repository with `git submodule add`."
 
             self.source.warn("{}: Ignoring inconsistent submodule '{}'"
-                             .format(self.source, submodule), detail=detail, warning_token=INCONSISTENT_SUBMODULE)
+                             .format(self.source, submodule), detail=detail,
+                             warning_token=WARN_INCONSISTENT_SUBMODULE)
 
             return None
 
