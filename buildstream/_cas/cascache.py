@@ -200,34 +200,47 @@ class CASCache():
     #   (bool): True if pull was successful, False if ref was not available
     #
     def pull(self, ref, remote, *, progress=None, subdir=None, excluded_subdirs=None):
-        try:
-            remote.init()
 
-            request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
-            request.key = ref
-            response = remote.ref_storage.GetReference(request)
+        tree_found = False
 
-            tree = remote_execution_pb2.Digest()
-            tree.hash = response.digest.hash
-            tree.size_bytes = response.digest.size_bytes
+        while True:
+            try:
+                if not tree_found:
+                    remote.init()
 
-            # Check if the element artifact is present, if so just fetch the subdir.
-            if subdir and os.path.exists(self.objpath(tree)):
-                self._fetch_subdir(remote, tree, subdir)
-            else:
-                # Fetch artifact, excluded_subdirs determined in pullqueue
-                self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
+                    request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
+                    request.key = ref
+                    response = remote.ref_storage.GetReference(request)
 
-            self.set_ref(ref, tree)
+                    tree = remote_execution_pb2.Digest()
+                    tree.hash = response.digest.hash
+                    tree.size_bytes = response.digest.size_bytes
 
-            return True
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise CASCacheError("Failed to pull ref {}: {}".format(ref, e)) from e
-            else:
-                return False
-        except BlobNotFound as e:
-            return False
+                # Check if the element artifact is present, if so just fetch the subdir.
+                if subdir and os.path.exists(self.objpath(tree)):
+                    self._fetch_subdir(remote, tree, subdir)
+                else:
+                    # Fetch artifact, excluded_subdirs determined in pullqueue
+                    self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
+
+                self.set_ref(ref, tree)
+
+                return True
+            except grpc.RpcError as e:
+                if e.code() != grpc.StatusCode.NOT_FOUND:
+                    raise CASCacheError("Failed to pull ref {}: {}".format(ref, e)) from e
+                else:
+                    return False
+            except BlobNotFound as e:
+                if not excluded_subdirs and subdir:
+                    # The remote has the top level digest but could not complete a full pull,
+                    # attempt partial without the need to initialise and check for the artifact
+                    # digest. This default behaviour of dropping back to partial pulls could
+                    # be made a configurable warning given at artfictcache level.
+                    tree_found = True
+                    excluded_subdirs, subdir = subdir, excluded_subdirs
+                else:
+                    return False
 
     # pull_tree():
     #
@@ -272,6 +285,8 @@ class CASCache():
     # Args:
     #     refs (list): The refs to push
     #     remote (CASRemote): The remote to push to
+    #     subdir (string): Optional specific subdir to include in the push
+    #     excluded_subdirs (list): The optional list of subdirs to not push
     #
     # Returns:
     #   (bool): True if any remote was updated, False if no pushes were required
@@ -279,7 +294,7 @@ class CASCache():
     # Raises:
     #   (CASCacheError): if there was an error
     #
-    def push(self, refs, remote):
+    def push(self, refs, remote, *, subdir=None, excluded_subdirs=None):
         skipped_remote = True
         try:
             for ref in refs:
@@ -293,15 +308,18 @@ class CASCache():
                     response = remote.ref_storage.GetReference(request)
 
                     if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
-                        # ref is already on the server with the same tree
-                        continue
+                        # ref is already on the server with the same tree, however it might be partially cached.
+                        # If artifact is not set to be pushed partially attempt to 'complete' the remote artifact if
+                        # needed, else continue.
+                        if excluded_subdirs or remote.verify_digest_on_remote(self._get_subdir(tree, subdir)):
+                            continue
 
                 except grpc.RpcError as e:
                     if e.code() != grpc.StatusCode.NOT_FOUND:
                         # Intentionally re-raise RpcError for outer except block.
                         raise
 
-                self._send_directory(remote, tree)
+                self._send_directory(remote, tree, excluded_dir=excluded_subdirs)
 
                 request = buildstream_pb2.UpdateReferenceRequest(instance_name=remote.spec.instance_name)
                 request.keys.append(ref)
@@ -784,10 +802,17 @@ class CASCache():
                 a += 1
                 b += 1
 
-    def _reachable_refs_dir(self, reachable, tree, update_mtime=False):
+    def _reachable_refs_dir(self, reachable, tree, update_mtime=False, subdir=False):
         if tree.hash in reachable:
             return
 
+        # If looping through subdir digests, skip processing if
+        # ref path does not exist, allowing for partial objects
+        if subdir and not os.path.exists(self.objpath(tree)):
+            return
+
+        # Raises FileNotFound exception is path does not exist,
+        # which should only be thrown on the top level digest
         if update_mtime:
             os.utime(self.objpath(tree))
 
@@ -804,9 +829,9 @@ class CASCache():
             reachable.add(filenode.digest.hash)
 
         for dirnode in directory.directories:
-            self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime)
+            self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime, subdir=True)
 
-    def _required_blobs(self, directory_digest):
+    def _required_blobs(self, directory_digest, excluded_dir=None):
         # parse directory, and recursively add blobs
         d = remote_execution_pb2.Digest()
         d.hash = directory_digest.hash
@@ -825,7 +850,8 @@ class CASCache():
             yield d
 
         for dirnode in directory.directories:
-            yield from self._required_blobs(dirnode.digest)
+            if dirnode.name != excluded_dir:
+                yield from self._required_blobs(dirnode.digest)
 
     # _ensure_blob():
     #
@@ -930,6 +956,7 @@ class CASCache():
             objpath = self._ensure_blob(remote, dir_digest)
 
             directory = remote_execution_pb2.Directory()
+
             with open(objpath, 'rb') as f:
                 directory.ParseFromString(f.read())
 
@@ -972,8 +999,8 @@ class CASCache():
 
         return dirdigest
 
-    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
-        required_blobs = self._required_blobs(digest)
+    def _send_directory(self, remote, digest, u_uid=uuid.uuid4(), excluded_dir=None):
+        required_blobs = self._required_blobs(digest, excluded_dir=excluded_dir)
 
         missing_blobs = dict()
         # Limit size of FindMissingBlobs request

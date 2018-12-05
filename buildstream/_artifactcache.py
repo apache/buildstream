@@ -107,6 +107,7 @@ class ArtifactCache():
 
         self._has_fetch_remotes = False
         self._has_push_remotes = False
+        self._has_partial_push_remotes = False
 
         os.makedirs(self.extractdir, exist_ok=True)
 
@@ -488,6 +489,9 @@ class ArtifactCache():
                 self._has_fetch_remotes = True
                 if remote_spec.push:
                     self._has_push_remotes = True
+                    # Partial push requires generic push option to also be set
+                    if remote_spec.partial_push:
+                        self._has_partial_push_remotes = True
 
                 remotes[remote_spec.url] = CASRemote(remote_spec)
 
@@ -685,6 +689,32 @@ class ArtifactCache():
             remotes_for_project = self._remotes[element._get_project()]
             return any(remote.spec.push for remote in remotes_for_project)
 
+    # has_partial_push_remotes():
+    #
+    # Check whether any remote repositories are available for pushing
+    # non-complete artifacts. This option requires the generic push value
+    # to also be set.
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #
+    # Returns:
+    #   (bool): True if any remote repository is configured for optional
+    #            partial pushes, False otherwise
+    #
+    def has_partial_push_remotes(self, *, element=None):
+        # If there's no partial push remotes available, we can't partial push at all
+        if not self._has_partial_push_remotes:
+            return False
+        elif element is None:
+            # At least one remote is set to allow partial pushes
+            return True
+        else:
+            # Check whether the specified element's project has push remotes configured
+            # to not accept partial artifact pushes
+            remotes_for_project = self._remotes[element._get_project()]
+            return any(remote.spec.partial_push for remote in remotes_for_project)
+
     # push():
     #
     # Push committed artifact to remote repository.
@@ -692,6 +722,8 @@ class ArtifactCache():
     # Args:
     #     element (Element): The Element whose artifact is to be pushed
     #     keys (list): The cache keys to use
+    #     partial(bool): If the artifact is cached in a partial state
+    #     subdir(string): Optional subdir to not push
     #
     # Returns:
     #   (bool): True if any remote was updated, False if no pushes were required
@@ -699,12 +731,25 @@ class ArtifactCache():
     # Raises:
     #   (ArtifactError): if there was an error
     #
-    def push(self, element, keys):
+    def push(self, element, keys, partial=False, subdir=None):
         refs = [self.get_artifact_fullname(element, key) for key in list(keys)]
 
         project = element._get_project()
 
-        push_remotes = [r for r in self._remotes[project] if r.spec.push]
+        push_remotes = []
+        partial_remotes = []
+
+        # Create list of remotes to push to, given current element and partial push config
+        if not partial:
+            push_remotes = [r for r in self._remotes[project] if (r.spec.push and not r.spec.partial_push)]
+
+        if self._has_partial_push_remotes:
+            # Create a specific list of the remotes expecting the artifact to be push in a partial
+            # state. This list needs to be pushed in a partial state, without the optional subdir if
+            # exists locally. No need to attempt pushing a partial artifact to a remote that is queued to
+            # to also recieve a full artifact
+            partial_remotes = [r for r in self._remotes[project] if (r.spec.partial_push and r.spec.push) and
+                               r not in push_remotes]
 
         pushed = False
 
@@ -713,11 +758,26 @@ class ArtifactCache():
             display_key = element._get_brief_display_key()
             element.status("Pushing artifact {} -> {}".format(display_key, remote.spec.url))
 
-            if self.cas.push(refs, remote):
+            # Passing the optional subdir allows for remote artifacts that are cached in a 'partial'
+            # state to be completed
+            if self.cas.push(refs, remote, subdir=subdir):
                 element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
                 pushed = True
             else:
                 element.info("Remote ({}) already has {} cached".format(
+                    remote.spec.url, element._get_brief_display_key()
+                ))
+
+        for remote in partial_remotes:
+            remote.init()
+            display_key = element._get_brief_display_key()
+            element.status("Pushing partial artifact {} -> {}".format(display_key, remote.spec.url))
+
+            if self.cas.push(refs, remote, excluded_subdirs=subdir):
+                element.info("Pushed partial artifact {} -> {}".format(display_key, remote.spec.url))
+                pushed = True
+            else:
+                element.info("Remote ({}) already has {} partial cached".format(
                     remote.spec.url, element._get_brief_display_key()
                 ))
 
@@ -748,14 +808,23 @@ class ArtifactCache():
                 element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
                 if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
-                    element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
                     if subdir:
-                        # Attempt to extract subdir into artifact extract dir if it already exists
-                        # without containing the subdir. If the respective artifact extract dir does not
-                        # exist a complete extraction will complete.
-                        self.extract(element, key, subdir)
-                    # no need to pull from additional remotes
-                    return True
+                        if not self.contains_subdir_artifact(element, key, subdir):
+                            # The pull was expecting the specific subdir to be present in the remote, attempt
+                            # to find it in other available remotes
+                            element.info("Pulled partial artifact {} <- {}. Attempting to retrieve {} from remotes"
+                                         .format(display_key, remote.spec.url, subdir))
+                        else:
+                            element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
+                            # Attempt to extract subdir into artifact extract dir if it already exists
+                            # without containing the subdir. If the respective artifact extract dir does not
+                            # exist a complete extraction will complete.
+                            self.extract(element, key, subdir)
+                            # no need to pull from additional remotes
+                            return True
+                    else:
+                        element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
+                        return True
                 else:
                     element.info("Remote ({}) does not have {} cached".format(
                         remote.spec.url, element._get_brief_display_key()

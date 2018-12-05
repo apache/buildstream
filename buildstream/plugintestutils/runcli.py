@@ -238,8 +238,22 @@ class Result():
 
         return list(pushed)
 
+    def get_partial_pushed_elements(self):
+        pushed = re.findall(r'\[\s*push:(\S+)\s*\]\s*INFO\s*Pushed partial artifact', self.stderr)
+        if pushed is None:
+            return []
+
+        return list(pushed)
+
     def get_pulled_elements(self):
         pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*INFO\s*Pulled artifact', self.stderr)
+        if pulled is None:
+            return []
+
+        return list(pulled)
+
+    def get_partial_pulled_elements(self):
+        pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*INFO\s*Pulled partial artifact', self.stderr)
         if pulled is None:
             return []
 
@@ -265,10 +279,14 @@ class Cli():
     #
     # Args:
     #    config (dict): The user configuration to use
+    #    reset (bool): Optional reset of stored config
     #
-    def configure(self, config):
+    def configure(self, config, reset=False):
         if self.config is None:
             self.config = {}
+
+        if reset:
+            self.config.clear()
 
         for key, val in config.items():
             self.config[key] = val

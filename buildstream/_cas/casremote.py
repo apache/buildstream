@@ -23,7 +23,8 @@ from .. import utils
 _MAX_PAYLOAD_BYTES = 1024 * 1024
 
 
-class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key client_cert instance_name')):
+class CASRemoteSpec(namedtuple('CASRemoteSpec',
+                               'url push partial_push server_cert client_key client_cert instance_name')):
 
     # _new_from_config_node
     #
@@ -31,9 +32,18 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
     #
     @staticmethod
     def _new_from_config_node(spec_node, basedir=None):
-        _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance_name'])
+        _yaml.node_validate(spec_node, ['url', 'push', 'allow-partial-push', 'server-cert', 'client-key',
+                                        'client-cert', 'instance_name'])
         url = _yaml.node_get(spec_node, str, 'url')
         push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
+        partial_push = _yaml.node_get(spec_node, bool, 'allow-partial-push', default_value=False)
+
+        # partial_push depends on push, raise error if not configured correctly
+        if partial_push and not push:
+            provenance = _yaml.node_get_provenance(spec_node, 'allow-partial-push')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: allow-partial-push also requires push to be set".format(provenance))
+
         if not url:
             provenance = _yaml.node_get_provenance(spec_node, 'url')
             raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -63,10 +73,10 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: 'client-cert' was specified without 'client-key'".format(provenance))
 
-        return CASRemoteSpec(url, push, server_cert, client_key, client_cert, instance_name)
+        return CASRemoteSpec(url, push, partial_push, server_cert, client_key, client_cert, instance_name)
 
 
-CASRemoteSpec.__new__.__defaults__ = (None, None, None, None)
+CASRemoteSpec.__new__.__defaults__ = (False, None, None, None, None)
 
 
 class BlobNotFound(CASRemoteError):

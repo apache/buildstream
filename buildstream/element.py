@@ -1797,13 +1797,19 @@ class Element(Plugin):
     #   (bool): True if this element does not need a push job to be created
     #
     def _skip_push(self):
+
         if not self.__artifacts.has_push_remotes(element=self):
             # No push remotes for this element's project
             return True
 
         # Do not push elements that aren't cached, or that are cached with a dangling buildtree
-        # artifact unless element type is expected to have an an empty buildtree directory
-        if not self._cached_buildtree():
+        # artifact unless element type is expected to have an an empty buildtree directory. Check
+        # that this default behaviour is not overriden via a remote configured to allow pushing
+        # artifacts without their corresponding buildtree.
+        if not self._cached():
+            return True
+
+        if not self._cached_buildtree() and not self.__artifacts.has_partial_push_remotes(element=self):
             return True
 
         # Do not push tainted artifact
@@ -1814,11 +1820,14 @@ class Element(Plugin):
 
     # _push():
     #
-    # Push locally cached artifact to remote artifact repository.
+    # Push locally cached artifact to remote artifact repository. An attempt
+    # will be made to push partial artifacts if given current config dictates.
+    # If a remote set for 'full' artifact pushes is found to be cached partially
+    # in the remote, an attempt will be made to 'complete' it.
     #
     # Returns:
     #   (bool): True if the remote was updated, False if it already existed
-    #           and no updated was required
+    #           and no update was required
     #
     def _push(self):
         self.__assert_cached()
@@ -1827,8 +1836,17 @@ class Element(Plugin):
             self.warn("Not pushing tainted artifact.")
             return False
 
-        # Push all keys used for local commit
-        pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit())
+        # Push all keys used for local commit, this could be full or partial,
+        # given previous _skip_push() logic. If buildtree isn't cached, then
+        # set partial push
+
+        partial = False
+        subdir = 'buildtree'
+        if not self._cached_buildtree():
+            partial = True
+
+        pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit(), partial=partial, subdir=subdir)
+
         if not pushed:
             return False
 

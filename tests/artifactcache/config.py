@@ -139,3 +139,28 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
     # This does not happen for a simple `bst show`.
     result = cli.run(project=project, args=['artifact', 'pull', 'element.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+# Assert that if allow-partial-push is specified as true without push also being
+# set likewise, we get a comprehensive LoadError instead of an unhandled exception.
+@pytest.mark.datafiles(DATA_DIR)
+def test_partial_push_error(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'project', 'elements')
+
+    project_conf = {
+        'name': 'test',
+
+        'artifacts': {
+            'url': 'https://cache.example.com:12345',
+            'allow-partial-push': 'True'
+        }
+    }
+    project_conf_file = os.path.join(project, 'project.conf')
+    _yaml.dump(project_conf, project_conf_file)
+
+    # Use `pull` here to ensure we try to initialize the remotes, triggering the error
+    #
+    # This does not happen for a simple `bst show`.
+    result = cli.run(project=project, args=['artifact', 'pull', 'target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+    assert "allow-partial-push also requires push to be set" in result.stderr

@@ -59,6 +59,15 @@ configuration:
      # Add another cache to pull from
      - url: https://anothercache.com/artifacts:8080
        server-cert: another_server.crt
+     # Add a cache to push/pull to/from, specifying
+       that you wish to push artifacts in a 'partial'
+       state (this being without the respective buildtree).
+       Note that allow-partial-push requires push to also
+       be set.
+     - url: https://anothercache.com/artifacts:11003
+       push: true
+       allow-partial-push: true
+
 
 .. note::
 
@@ -86,6 +95,14 @@ configuration:
          # Add another cache to pull from
          - url: https://ourprojectcache.com/artifacts:8080
            server-cert: project_server.crt
+         # Add a cache to push/pull to/from, specifying
+           that you wish to push artifacts in a 'partial'
+           state (this being without the respective buildtree).
+           Note that allow-partial-push requires push to also
+           be set.
+         - url: https://anothercache.com/artifacts:11003
+           push: true
+           allow-partial-push: true
 
 
 .. note::
