@@ -481,6 +481,79 @@ def test_ref_not_in_track_warn_error(cli, tmpdir, datafiles):
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+@pytest.mark.parametrize("fail", ['warn', 'error'])
+def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Make the warning an error if we're testing errors
+    if fail == 'error':
+        project_template = {
+            "name": "foo",
+            "fatal-warnings": ['git:unlisted-submodule']
+        }
+        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
+
+    # Create the submodule first from the 'subrepofiles' subdir
+    subrepo = create_repo('git', str(tmpdir), 'subrepo')
+    subrepo.create(os.path.join(project, 'subrepofiles'))
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project, 'repofiles'))
+
+    # Add a submodule pointing to the one we created
+    ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
+
+    # Create the source, and delete the explicit configuration
+    # of the submodules.
+    #
+    # We expect this to cause an unlisted submodule warning
+    # after the source has been fetched.
+    #
+    gitsource = repo.source_config(ref=ref)
+    del gitsource['submodules']
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            gitsource
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    # We will not see the warning or error before the first fetch, because
+    # we don't have the repository yet and so we have no knowledge of
+    # the unlisted submodule.
+    result = cli.run(project=project, args=['show', 'target.bst'])
+    result.assert_success()
+    assert "git:unlisted-submodule" not in result.stderr
+
+    # We will notice this directly in fetch, as it will try to fetch
+    # the submodules it discovers as a result of fetching the primary repo.
+    result = cli.run(project=project, args=['fetch', 'target.bst'])
+
+    # Assert a warning or an error depending on what we're checking
+    if fail == 'error':
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, 'git:unlisted-submodule')
+    else:
+        result.assert_success()
+        assert "git:unlisted-submodule" in result.stderr
+
+    # Now that we've fetched it, `bst show` will discover the unlisted submodule too
+    result = cli.run(project=project, args=['show', 'target.bst'])
+
+    # Assert a warning or an error depending on what we're checking
+    if fail == 'error':
+        result.assert_main_error(ErrorDomain.PLUGIN, 'git:unlisted-submodule')
+    else:
+        result.assert_success()
+        assert "git:unlisted-submodule" in result.stderr
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
     """When using multiple remotes in cache (i.e. when using aliases), we
     need to make sure we override tags. This is not allowed to fetch
