@@ -106,10 +106,16 @@ class BuildQueue(Queue):
 
     def done(self, job, element, result, success):
 
-        if success:
-            # Inform element in main process that assembly is done
-            element._assemble_done()
+        # Inform element in main process that assembly is done
+        element._assemble_done()
 
-            # This has to be done after _assemble_done, such that the
-            # element may register its cache key as required
+        # This has to be done after _assemble_done, such that the
+        # element may register its cache key as required
+        #
+        # FIXME: Element._assemble() does not report both the failure state and the
+        #        size of the newly cached failed artifact, so we can only adjust the
+        #        artifact cache size for a successful build even though we know a
+        #        failed build also grows the artifact cache size.
+        #
+        if success:
             self._check_cache_size(job, element, result)
