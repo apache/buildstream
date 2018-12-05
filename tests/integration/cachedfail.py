@@ -54,7 +54,7 @@ def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
 
     # Now check it out
     result = cli.run(project=project, args=[
-        'checkout', 'element.bst', checkout
+        'artifact', 'checkout', 'element.bst', '--directory', checkout
     ])
     result.assert_success()
 

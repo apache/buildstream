@@ -18,7 +18,7 @@ def test_filter_include(datafiles, cli, tmpdir):
     result.assert_success()
 
     checkout = os.path.join(tmpdir.dirname, tmpdir.basename, 'checkout')
-    result = cli.run(project=project, args=['checkout', 'output-include.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'output-include.bst', '--directory', checkout])
     result.assert_success()
     assert os.path.exists(os.path.join(checkout, "foo"))
     assert not os.path.exists(os.path.join(checkout, "bar"))
@@ -31,7 +31,8 @@ def test_filter_include_dynamic(datafiles, cli, tmpdir):
     result.assert_success()
 
     checkout = os.path.join(tmpdir.dirname, tmpdir.basename, 'checkout')
-    result = cli.run(project=project, args=['checkout', 'output-dynamic-include.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'output-dynamic-include.bst',
+                                            '--directory', checkout])
     result.assert_success()
     assert os.path.exists(os.path.join(checkout, "foo"))
     assert not os.path.exists(os.path.join(checkout, "bar"))
@@ -44,7 +45,7 @@ def test_filter_exclude(datafiles, cli, tmpdir):
     result.assert_success()
 
     checkout = os.path.join(tmpdir.dirname, tmpdir.basename, 'checkout')
-    result = cli.run(project=project, args=['checkout', 'output-exclude.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'output-exclude.bst', '--directory', checkout])
     result.assert_success()
     assert not os.path.exists(os.path.join(checkout, "foo"))
     assert os.path.exists(os.path.join(checkout, "bar"))
@@ -57,7 +58,7 @@ def test_filter_orphans(datafiles, cli, tmpdir):
     result.assert_success()
 
     checkout = os.path.join(tmpdir.dirname, tmpdir.basename, 'checkout')
-    result = cli.run(project=project, args=['checkout', 'output-orphans.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'output-orphans.bst', '--directory', checkout])
     result.assert_success()
     assert os.path.exists(os.path.join(checkout, "baz"))
 
@@ -137,7 +138,7 @@ def test_filter_workspace_build(datafiles, cli, tmpdir):
     result = cli.run(project=project, args=['build', 'output-orphans.bst'])
     result.assert_success()
     checkout_dir = os.path.join(tempdir, "checkout")
-    result = cli.run(project=project, args=['checkout', 'output-orphans.bst', checkout_dir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'output-orphans.bst', '--directory', checkout_dir])
     result.assert_success()
     assert os.path.exists(os.path.join(checkout_dir, "quux"))
 
@@ -157,7 +158,7 @@ def test_filter_workspace_close(datafiles, cli, tmpdir):
     result = cli.run(project=project, args=['build', 'output-orphans.bst'])
     result.assert_success()
     checkout_dir = os.path.join(tempdir, "checkout")
-    result = cli.run(project=project, args=['checkout', 'output-orphans.bst', checkout_dir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'output-orphans.bst', '--directory', checkout_dir])
     result.assert_success()
     assert not os.path.exists(os.path.join(checkout_dir, "quux"))
 
@@ -177,7 +178,7 @@ def test_filter_workspace_reset(datafiles, cli, tmpdir):
     result = cli.run(project=project, args=['build', 'output-orphans.bst'])
     result.assert_success()
     checkout_dir = os.path.join(tempdir, "checkout")
-    result = cli.run(project=project, args=['checkout', 'output-orphans.bst', checkout_dir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'output-orphans.bst', '--directory', checkout_dir])
     result.assert_success()
     assert not os.path.exists(os.path.join(checkout_dir, "quux"))
 

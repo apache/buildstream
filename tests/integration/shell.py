@@ -328,7 +328,7 @@ def test_sysroot(cli, tmpdir, datafiles):
     # Build and check out a sysroot
     res = cli.run(project=project, args=['build', base_element])
     res.assert_success()
-    res = cli.run(project=project, args=['checkout', base_element, checkout_dir])
+    res = cli.run(project=project, args=['artifact', 'checkout', base_element, '--directory', checkout_dir])
     res.assert_success()
 
     # Mutate the sysroot

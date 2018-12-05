@@ -58,7 +58,7 @@ def test_pip_source_import(cli, tmpdir, datafiles, setup_pypi_repo):
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/.bst_pip_downloads',

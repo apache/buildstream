@@ -856,7 +856,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
     result.assert_success()
 
     checkout = os.path.join(str(tmpdir), 'checkout')
-    result = cli.run(project=project_dir, args=['checkout', element_name, checkout])
+    result = cli.run(project=project_dir, args=['artifact', 'checkout', element_name, '--directory', checkout])
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'bin', 'bin', 'hello'))
@@ -952,7 +952,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     result.assert_success()
 
     checkout = os.path.join(str(tmpdir), 'checkout')
-    result = cli.run(project=project_dir, args=['checkout', element_name, checkout])
+    result = cli.run(project=project_dir, args=['artifact', 'checkout', element_name, '--directory', checkout])
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'bin', 'bin', 'hello'))
