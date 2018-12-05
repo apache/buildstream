@@ -544,7 +544,8 @@ class Stream():
             if len(elements) != 1:
                 raise StreamError("Exactly one element can be given if --directory is used",
                                   reason='directory-with-multiple-elements')
-            expanded_directories = [custom_dir, ]
+            directory = os.path.abspath(custom_dir)
+            expanded_directories = [directory, ]
         else:
             # If this fails it is a bug in what ever calls this, usually cli.py and so can not be tested for via the
             # run bst test mechanism.
