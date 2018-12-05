@@ -22,6 +22,7 @@
 
 import os
 import pytest
+import subprocess
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
@@ -523,3 +524,155 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     # Fetch it
     result = cli.run(project=project, args=['fetch', 'target.bst'])
     result.assert_success()
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+@pytest.mark.parametrize("tag_type", [('annotated'), ('lightweight')])
+def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
+    project = str(datafiles)
+
+    project_config = _yaml.load(os.path.join(project, 'project.conf'))
+    project_config['ref-storage'] = ref_storage
+    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+
+    repofiles = os.path.join(str(tmpdir), 'repofiles')
+    os.makedirs(repofiles, exist_ok=True)
+    file0 = os.path.join(repofiles, 'file0')
+    with open(file0, 'w') as f:
+        f.write('test\n')
+
+    repo = create_repo('git', str(tmpdir))
+
+    def tag(name):
+        if tag_type == 'annotated':
+            repo.add_annotated_tag(name, name)
+        else:
+            repo.add_tag(name)
+
+    ref = repo.create(repofiles)
+    tag('uselesstag')
+
+    file1 = os.path.join(str(tmpdir), 'file1')
+    with open(file1, 'w') as f:
+        f.write('test\n')
+    repo.add_file(file1)
+    tag('tag1')
+
+    file2 = os.path.join(str(tmpdir), 'file2')
+    with open(file2, 'w') as f:
+        f.write('test\n')
+    repo.branch('branch2')
+    repo.add_file(file2)
+    tag('tag2')
+
+    repo.checkout('master')
+    file3 = os.path.join(str(tmpdir), 'file3')
+    with open(file3, 'w') as f:
+        f.write('test\n')
+    repo.add_file(file3)
+
+    repo.merge('branch2')
+
+    config = repo.source_config()
+    config['track'] = repo.latest_commit()
+    config['track-tags'] = True
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            config
+        ],
+    }
+    element_path = os.path.join(project, 'target.bst')
+    _yaml.dump(element, element_path)
+
+    if ref_storage == 'inline':
+        result = cli.run(project=project, args=['track', 'target.bst'])
+        result.assert_success()
+    else:
+        result = cli.run(project=project, args=['track', 'target.bst', '--deps', 'all'])
+        result.assert_success()
+
+    if ref_storage == 'inline':
+        element = _yaml.load(element_path)
+        tags = _yaml.node_sanitize(element['sources'][0]['tags'])
+        assert len(tags) == 2
+        for tag in tags:
+            assert 'tag' in tag
+            assert 'commit' in tag
+            assert 'annotated' in tag
+            assert tag['annotated'] == (tag_type == 'annotated')
+
+        assert set([(tag['tag'], tag['commit']) for tag in tags]) == set([('tag1', repo.rev_parse('tag1^{commit}')),
+                                                                          ('tag2', repo.rev_parse('tag2^{commit}'))])
+
+    checkout = os.path.join(str(tmpdir), 'checkout')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['checkout', 'target.bst', checkout])
+    result.assert_success()
+
+    if tag_type == 'annotated':
+        options = []
+    else:
+        options = ['--tags']
+    describe = subprocess.check_output(['git', 'describe'] + options,
+                                       cwd=checkout).decode('ascii')
+    assert describe.startswith('tag2-2-')
+
+    describe_fp = subprocess.check_output(['git', 'describe', '--first-parent'] + options,
+                                          cwd=checkout).decode('ascii')
+    assert describe_fp.startswith('tag1-2-')
+
+    tags = subprocess.check_output(['git', 'tag'],
+                                   cwd=checkout).decode('ascii')
+    tags = set(tags.splitlines())
+    assert tags == set(['tag1', 'tag2'])
+
+    p = subprocess.run(['git', 'log', repo.rev_parse('uselesstag')],
+                       cwd=checkout)
+    assert p.returncode != 0
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_default_do_not_track_tags(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    project_config = _yaml.load(os.path.join(project, 'project.conf'))
+    project_config['ref-storage'] = 'inline'
+    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+
+    repofiles = os.path.join(str(tmpdir), 'repofiles')
+    os.makedirs(repofiles, exist_ok=True)
+    file0 = os.path.join(repofiles, 'file0')
+    with open(file0, 'w') as f:
+        f.write('test\n')
+
+    repo = create_repo('git', str(tmpdir))
+
+    ref = repo.create(repofiles)
+    repo.add_tag('tag')
+
+    config = repo.source_config()
+    config['track'] = repo.latest_commit()
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            config
+        ],
+    }
+    element_path = os.path.join(project, 'target.bst')
+    _yaml.dump(element, element_path)
+
+    result = cli.run(project=project, args=['track', 'target.bst'])
+    result.assert_success()
+
+    element = _yaml.load(element_path)
+    assert 'tags' not in element['sources'][0]

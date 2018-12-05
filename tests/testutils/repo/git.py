@@ -45,6 +45,9 @@ class Git(Repo):
     def add_tag(self, tag):
         self._run_git('tag', tag)
 
+    def add_annotated_tag(self, tag, message):
+        self._run_git('tag', '-a', tag, '-m', message)
+
     def add_commit(self):
         self._run_git('commit', '--allow-empty', '-m', 'Additional commit')
         return self.latest_commit()
@@ -95,3 +98,14 @@ class Git(Repo):
 
     def branch(self, branch_name):
         self._run_git('checkout', '-b', branch_name)
+
+    def checkout(self, commit):
+        self._run_git('checkout', commit)
+
+    def merge(self, commit):
+        self._run_git('merge', '-m', 'Merge', commit)
+        return self.latest_commit()
+
+    def rev_parse(self, rev):
+        output = self._run_git('rev-parse', rev, stdout=subprocess.PIPE).stdout
+        return output.decode('UTF-8').strip()
