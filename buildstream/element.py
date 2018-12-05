@@ -2032,7 +2032,8 @@ class Element(Plugin):
     def _fetch(self):
         previous_sources = []
         for source in self.sources():
-            source._fetch(previous_sources)
+            if source._get_consistency() < Consistency.CACHED:
+                source._fetch(previous_sources)
             previous_sources.append(source)
 
     #############################################################
