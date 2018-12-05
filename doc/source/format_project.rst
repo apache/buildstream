@@ -552,9 +552,22 @@ exported as a comma separated list of selected value strings.
 
 Architecture
 ~~~~~~~~~~~~
-The ``arch`` option type is special enumeration option which
-defaults to the result of `uname -m`, and does not support
-assigning any default in the project configuration.
+The ``arch`` option type is a special enumeration option which defaults via
+`uname -m` results to the following list.
+
+* aarch32
+* aarch64
+* aarch64-be
+* power-isa-be
+* power-isa-le
+* sparc-v9
+* x86-32
+* x86-64
+
+The reason for this, opposed to using just `uname -m`, is that we want an
+OS-independent list, as well as several results mapping to the same architecture
+(e.g. i386, i486 etc. are all x86-32). It does not support assigning any default
+in the project configuration.
 
 .. code:: yaml
 
@@ -563,14 +576,38 @@ assigning any default in the project configuration.
        type: arch
        description: The machine architecture
        values:
-       - arm
+       - aarch32
        - aarch64
-       - i386
-       - x86_64
+       - x86-32
+       - x86-64
 
 
 Architecture options can be tested with the same expressions
 as other Enumeration options.
+
+
+.. _project_options_os:
+
+OS
+~~
+
+The ``os`` option type is a special enumeration option, which defaults to the
+results of `uname -s`. It does not support assigning any default in the project
+configuration.
+
+.. code:: yaml
+
+    options:
+      machine_os:
+        type: os
+        description: The machine OS
+        values:
+        - Linux
+        - SunOS
+        - Darwin
+        - FreeBSD
+
+Os options can be tested with the same expressions as other Enumeration options.
 
 
 .. _project_options_element_mask:

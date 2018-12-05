@@ -44,4 +44,13 @@ class Unix(Platform):
     def check_sandbox_config(self, config):
         # With the chroot sandbox, the UID/GID in the sandbox
         # will match the host UID/GID (typically 0/0).
-        return config.build_uid == self._uid and config.build_gid == self._gid
+        if config.build_uid != self._uid or config.build_gid != self._gid:
+            return False
+
+        # Check host os and architecture match
+        if config.build_os != self.get_host_os():
+            raise PlatformError("Configured and host OS don't match.")
+        elif config.build_arch != self.get_host_arch():
+            raise PlatformError("Configured and host architecture don't match.")
+
+        return True

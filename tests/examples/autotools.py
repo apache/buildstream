@@ -13,8 +13,8 @@ DATA_DIR = os.path.join(
 
 
 # Tests a build of the autotools amhello project on a alpine-linux base runtime
-@pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
-                    reason='Examples are writtent for x86_64')
+@pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
+                    reason='Examples are writtent for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, tmpdir, datafiles):
@@ -38,8 +38,8 @@ def test_autotools_build(cli, tmpdir, datafiles):
 
 
 # Test running an executable built with autotools.
-@pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
-                    reason='Examples are writtent for x86_64')
+@pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
+                    reason='Examples are writtent for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, tmpdir, datafiles):

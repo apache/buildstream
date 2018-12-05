@@ -17,7 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-import os
+from .._platform import Platform
 from .optionenum import OptionEnum
 
 
@@ -41,8 +41,7 @@ class OptionArch(OptionEnum):
         super(OptionArch, self).load(node, allow_default_definition=False)
 
     def load_default_value(self, node):
-        _, _, _, _, machine_arch = os.uname()
-        return machine_arch
+        return Platform.get_host_arch()
 
     def resolve(self):
 

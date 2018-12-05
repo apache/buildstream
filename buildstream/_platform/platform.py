@@ -73,6 +73,44 @@ class Platform():
         else:
             return min(cpu_count, cap)
 
+    @staticmethod
+    def get_host_os():
+        return os.uname()[0]
+
+    # get_host_arch():
+    #
+    # This returns the architecture of the host machine. The possible values
+    # map from uname -m in order to be a OS independent list.
+    #
+    # Returns:
+    #    (string): String representing the architecture
+    @staticmethod
+    def get_host_arch():
+        # get the hardware identifier from uname
+        uname_machine = os.uname()[4]
+        uname_to_arch = {
+            "aarch64": "aarch64",
+            "aarch64_be": "aarch64-be",
+            "amd64": "x86-64",
+            "arm": "aarch32",
+            "armv8l": "aarch64",
+            "armv8b": "aarch64-be",
+            "i386": "x86-32",
+            "i486": "x86-32",
+            "i586": "x86-32",
+            "i686": "x86-32",
+            "ppc64": "power-isa-be",
+            "ppc64le": "power-isa-le",
+            "sparc": "sparc-v9",
+            "sparc64": "sparc-v9",
+            "x86_64": "x86-64"
+        }
+        try:
+            return uname_to_arch[uname_machine]
+        except KeyError:
+            raise PlatformError("uname gave unsupported machine architecture: {}"
+                                .format(uname_machine))
+
     ##################################################################
     #                        Sandbox functions                       #
     ##################################################################

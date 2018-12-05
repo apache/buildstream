@@ -5,6 +5,7 @@ import os
 import sys
 
 from buildstream import _site, utils, ProgramNotFoundError
+from buildstream._platform import Platform
 
 try:
     utils.get_host_tool('bzr')
@@ -52,4 +53,4 @@ except ImportError:
 
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
 
-_, _, _, _, MACHINE_ARCH = os.uname()
+MACHINE_ARCH = Platform.get_host_arch()

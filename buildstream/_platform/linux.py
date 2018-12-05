@@ -25,6 +25,7 @@ from .. import utils
 from ..sandbox import SandboxDummy
 
 from . import Platform
+from .._exceptions import PlatformError
 
 
 class Linux(Platform):
@@ -58,6 +59,9 @@ class Linux(Platform):
         else:
             self._user_ns_available = False
 
+        # Set linux32 option
+        self._linux32 = False
+
     def create_sandbox(self, *args, **kwargs):
         if not self._local_sandbox_available:
             return self._create_dummy_sandbox(*args, **kwargs)
@@ -71,11 +75,33 @@ class Linux(Platform):
 
         if self._user_ns_available:
             # User namespace support allows arbitrary build UID/GID settings.
-            return True
-        else:
+            pass
+        elif (config.build_uid != self._uid or config.build_gid != self._gid):
             # Without user namespace support, the UID/GID in the sandbox
             # will match the host UID/GID.
-            return config.build_uid == self._uid and config.build_gid == self._gid
+            return False
+
+        # We can't do builds for another host or architecture except x86-32 on
+        # x86-64
+        host_os = self.get_host_os()
+        host_arch = self.get_host_arch()
+        if config.build_os != host_os:
+            raise PlatformError("Configured and host OS don't match.")
+        elif config.build_arch != host_arch:
+            # We can use linux32 for building 32bit on 64bit machines
+            if (host_os == "Linux" and
+                    ((config.build_arch == "x86-32" and host_arch == "x86-64") or
+                     (config.build_arch == "aarch32" and host_arch == "aarch64"))):
+                # check linux32 is available
+                try:
+                    utils.get_host_tool('linux32')
+                    self._linux32 = True
+                except utils.ProgramNotFoundError:
+                    pass
+            else:
+                raise PlatformError("Configured architecture and host architecture don't match.")
+
+        return True
 
     ################################################
     #              Private Methods                 #
@@ -100,6 +126,7 @@ class Linux(Platform):
         kwargs['user_ns_available'] = self._user_ns_available
         kwargs['die_with_parent_available'] = self._die_with_parent_available
         kwargs['json_status_available'] = self._json_status_available
+        kwargs['linux32'] = self._linux32
         return SandboxBwrap(*args, **kwargs)
 
     def _check_user_ns_available(self):

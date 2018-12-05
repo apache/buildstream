@@ -57,6 +57,7 @@ class SandboxBwrap(Sandbox):
         self.user_ns_available = kwargs['user_ns_available']
         self.die_with_parent_available = kwargs['die_with_parent_available']
         self.json_status_available = kwargs['json_status_available']
+        self.linux32 = kwargs['linux32']
 
     def _run(self, command, flags, *, cwd, env):
         stdout, stderr = self._get_output()
@@ -74,8 +75,14 @@ class SandboxBwrap(Sandbox):
         mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY)
         root_mount_source = mount_map.get_mount_source('/')
 
+        # start command with linux32 if needed
+        if self.linux32:
+            bwrap_command = [utils.get_host_tool('linux32')]
+        else:
+            bwrap_command = []
+
         # Grab the full path of the bwrap binary
-        bwrap_command = [utils.get_host_tool('bwrap')]
+        bwrap_command += [utils.get_host_tool('bwrap')]
 
         for k, v in env.items():
             bwrap_command += ['--setenv', k, v]

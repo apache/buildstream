@@ -144,7 +144,7 @@ DATA_DIR = os.path.join(
 # The cache key test uses a project which exercises all plugins,
 # so we cant run it at all if we dont have them installed.
 #
-@pytest.mark.skipif(MACHINE_ARCH != 'x86_64',
+@pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Cache keys depend on architecture')
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")
