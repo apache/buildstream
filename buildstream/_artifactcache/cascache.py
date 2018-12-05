@@ -427,10 +427,7 @@ class CASCache():
     def push_message(self, remote, message):
 
         message_buffer = message.SerializeToString()
-        message_sha = hashlib.sha256(message_buffer)
-        message_digest = remote_execution_pb2.Digest()
-        message_digest.hash = message_sha.hexdigest()
-        message_digest.size_bytes = len(message_buffer)
+        message_digest = utils._message_digest(message_buffer)
 
         remote.init()
 

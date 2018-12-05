@@ -238,12 +238,19 @@ using the `remote-execution` option:
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
+    action-cache-service:
+      url: http://bar.action.com:50052
 
 The execution-service part of remote execution does not support encrypted
 connections yet, so the protocol must always be http.
 
 storage-service specifies a remote CAS store and the parameters are the
 same as those used to specify an :ref:`artifact server <artifacts>`.
+
+The action-cache-service specifies where built actions are cached, allowing
+buildstream to check whether an action has already been executed and download it
+if so. This is similar to the artifact cache but REAPI specified, and is
+optional for remote execution to work.
 
 The storage service may be the same endpoint used for artifact
 caching. Remote execution cannot work without push access to the
