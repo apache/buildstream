@@ -27,6 +27,7 @@ from functools import partial
 import grpc
 
 from .. import utils
+from .._message import Message, MessageType
 from . import Sandbox, SandboxCommandError
 from .sandbox import _SandboxBatch
 from ..storage._filebaseddirectory import FileBasedDirectory
@@ -40,7 +41,7 @@ from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
 from .._artifactcache.cascache import CASRemote, CASRemoteSpec
 
 
-class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service')):
+class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service')):
     pass
 
 
@@ -60,12 +61,19 @@ class SandboxRemote(Sandbox):
 
         self.storage_url = config.storage_service['url']
         self.exec_url = config.exec_service['url']
+        if config.action_service:
+            self.action_url = config.action_service['url']
+        else:
+            self.action_url = None
 
         self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
                                                  server_cert=config.storage_service['server-cert'],
                                                  client_key=config.storage_service['client-key'],
                                                  client_cert=config.storage_service['client-cert'])
         self.operation_name = None
+
+    def info(self, msg):
+        self._get_context().message(Message(None, MessageType.INFO, msg))
 
     @staticmethod
     def specs_from_config_node(config_node, basedir):
@@ -89,12 +97,19 @@ class SandboxRemote(Sandbox):
 
         tls_keys = ['client-key', 'client-cert', 'server-cert']
 
-        _yaml.node_validate(remote_config, ['execution-service', 'storage-service', 'url'])
+        _yaml.node_validate(
+            remote_config,
+            ['execution-service', 'storage-service', 'url', 'action-cache-service'])
         remote_exec_service_config = require_node(remote_config, 'execution-service')
         remote_exec_storage_config = require_node(remote_config, 'storage-service')
+        remote_exec_action_config = remote_config.get('action-cache-service')
 
         _yaml.node_validate(remote_exec_service_config, ['url'])
         _yaml.node_validate(remote_exec_storage_config, ['url'] + tls_keys)
+        if remote_exec_action_config:
+            _yaml.node_validate(remote_exec_action_config, ['url'])
+        else:
+            remote_config['action-service'] = None
 
         if 'url' in remote_config:
             if 'execution-service' not in remote_config:
@@ -115,7 +130,9 @@ class SandboxRemote(Sandbox):
                                       "remote-execution configuration. Your config is missing '{}'."
                                       .format(str(provenance), tls_keys, key))
 
-        spec = RemoteExecutionSpec(remote_config['execution-service'], remote_config['storage-service'])
+        spec = RemoteExecutionSpec(remote_config['execution-service'],
+                                   remote_config['storage-service'],
+                                   remote_config['action-cache-service'])
         return spec
 
     def run_remote_command(self, channel, action_digest):
@@ -277,7 +294,7 @@ class SandboxRemote(Sandbox):
                                "and '{}' was supplied.".format(url.scheme))
 
         # check action cache download and download if there
-        action_result = self._check_action_cache(channel, action_digest)
+        action_result = self._check_action_cache(action_digest)
 
         if not action_result:
             casremote = CASRemote(self.storage_remote_spec)
@@ -318,21 +335,35 @@ class SandboxRemote(Sandbox):
 
         return 0
 
-    def _check_action_cache(self, channel, action_digest):
+    def _check_action_cache(self, action_digest):
         # Checks the action cache to see if this artifact has already been built
         #
         # Should return either the action response or None if not found, raise
         # Sandboxerror if other grpc error was raised
+        if not self.action_url:
+            return None
+        url = urlparse(self.action_url)
+        if not url.port:
+            raise SandboxError("You must supply a protocol and port number in the action-cache-service url, "
+                               "for example: http://buildservice:50051.")
+        if not url.scheme == "http":
+            raise SandboxError("Currently only support http for the action cache"
+                               "and {} was supplied".format(url.scheme))
+
+        channel = grpc.insecure_channel('{}:{}'.format(url.hostname, url.port))
         request = remote_execution_pb2.GetActionResultRequest(action_digest=action_digest)
         stub = remote_execution_pb2_grpc.ActionCacheStub(channel)
         try:
-            return stub.GetActionResult(request)
+            result = stub.GetActionResult(request)
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
                 raise SandboxError("Failed to query action cache: {} ({})"
                                    .format(e.code(), e.details()))
             else:
                 return None
+        else:
+            self.info("Action result found in action cache")
+            return result
 
     def _create_command(self, command, working_directory, environment):
         # Creates a command proto
