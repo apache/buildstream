@@ -49,7 +49,7 @@ WARN_INVALID_SUBMODULE = "invalid-submodule"
 #
 class _GitMirror(SourceFetcher):
 
-    def __init__(self, source, path, url, ref, *, primary=False, tags=[]):
+    def __init__(self, source, path, url, ref, *, primary=False, tags=[], tracking=None):
 
         super().__init__()
         self.source = source
@@ -58,11 +58,101 @@ class _GitMirror(SourceFetcher):
         self.ref = ref
         self.tags = tags
         self.primary = primary
+        dirname = utils.url_directory_name(url)
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
+        self.fetch_mirror = os.path.join(source.get_mirror_directory(), '{}-{}'.format(dirname, ref))
         self.mark_download_url(url)
+        self.tracking = tracking
+
+    def mirror_path(self):
+        if os.path.exists(self.mirror):
+            return self.mirror
+        else:
+            assert os.path.exists(self.fetch_mirror)
+            return self.fetch_mirror
+
+    def ensure_fetchable(self, alias_override=None):
+
+        if os.path.exists(self.mirror):
+            return
+
+        if self.tags:
+            for tag, commit, _ in self.tags:
+                if commit != self.ref:
+                    self.source.status("{}: tag '{}' is not on commit '{}', so a full clone is required"
+                                       .format(self.source, tag, commit))
+                    self.ensure_trackable(alias_override=alias_override)
+                    return
+
+        if os.path.exists(self.fetch_mirror):
+            return
+
+        with self.source.tempdir() as tmpdir:
+            self.source.call([self.source.host_git, 'init', '--bare', tmpdir],
+                             fail="Failed to init git repository",
+                             fail_temporarily=True)
+
+            url = self.source.translate_url(self.url, alias_override=alias_override,
+                                            primary=self.primary)
+
+            self.source.call([self.source.host_git, 'remote', 'add', '--mirror=fetch', 'origin', url],
+                             cwd=tmpdir,
+                             fail="Failed to init git repository",
+                             fail_temporarily=True)
+
+            _, refs = self.source.check_output([self.source.host_git, 'ls-remote', 'origin'],
+                                               cwd=tmpdir,
+                                               fail="Failed to clone git repository {}".format(url),
+                                               fail_temporarily=True)
+
+            advertised = None
+            for ref_line in refs.splitlines():
+                commit, ref = ref_line.split('\t', 1)
+                if ref == 'HEAD':
+                    continue
+                if self.tracking:
+                    # For validate_cache to work
+                    if ref not in ['refs/heads/{}'.format(self.tracking),
+                                   'refs/tags/{}'.format(self.tracking),
+                                   'refs/tags/{}{}'.format(self.tracking, '^{}')]:
+                        continue
+                if self.ref == commit:
+                    if ref.endswith('^{}'):
+                        ref = ref[:-3]
+                    advertised = ref
+                    break
+
+            if advertised is None:
+                self.source.status("{}: {} is not advertised on {}, so a full clone is required"
+                                   .format(self.source, self.ref, url))
+
+                self.ensure_trackable(alias_override=alias_override)
+                return
+
+            self.source.call([self.source.host_git, 'fetch', '--depth=1', 'origin', advertised],
+                             cwd=tmpdir,
+                             fail="Failed to fetch repository",
+                             fail_temporarily=True)
+
+            # We need to have a ref to make it clonable
+            self.source.call([self.source.host_git, 'update-ref', 'HEAD', self.ref],
+                             cwd=tmpdir,
+                             fail="Failed to tag HEAD",
+                             fail_temporarily=True)
+
+            try:
+                move_atomic(tmpdir, self.fetch_mirror)
+            except DirectoryExistsError:
+                # Another process was quicker to download this repository.
+                # Let's discard our own
+                self.source.status("{}: Discarding duplicate clone of {}"
+                                   .format(self.source, url))
+            except OSError as e:
+                raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}': {}"
+                                  .format(self.source, url, tmpdir, self.fetch_mirror, e)) from e
 
     # Ensures that the mirror exists
-    def ensure(self, alias_override=None):
+    def ensure_trackable(self, alias_override=None):
 
         # Unfortunately, git does not know how to only clone just a specific ref,
         # so we have to download all of those gigs even if we only need a couple
@@ -97,18 +187,20 @@ class _GitMirror(SourceFetcher):
                                         alias_override=alias_override,
                                         primary=self.primary)
 
+        mirror = self.mirror_path()
+
         if alias_override:
             remote_name = utils.url_directory_name(alias_override)
             _, remotes = self.source.check_output(
                 [self.source.host_git, 'remote'],
-                fail="Failed to retrieve list of remotes in {}".format(self.mirror),
-                cwd=self.mirror
+                fail="Failed to retrieve list of remotes in {}".format(mirror),
+                cwd=mirror
             )
             if remote_name not in remotes:
                 self.source.call(
                     [self.source.host_git, 'remote', 'add', remote_name, url],
                     fail="Failed to add remote {} with url {}".format(remote_name, url),
-                    cwd=self.mirror
+                    cwd=mirror
                 )
         else:
             remote_name = "origin"
@@ -117,7 +209,7 @@ class _GitMirror(SourceFetcher):
                           '+refs/heads/*:refs/heads/*', '+refs/tags/*:refs/tags/*'],
                          fail="Failed to fetch from remote git repository: {}".format(url),
                          fail_temporarily=True,
-                         cwd=self.mirror)
+                         cwd=mirror)
 
     def fetch(self, alias_override=None):
         # Resolve the URL for the message
@@ -128,7 +220,7 @@ class _GitMirror(SourceFetcher):
         with self.source.timed_activity("Fetching from {}"
                                         .format(resolved_url),
                                         silent_nested=True):
-            self.ensure(alias_override)
+            self.ensure_fetchable(alias_override)
             if not self.has_ref():
                 self._fetch(alias_override)
             self.assert_ref()
@@ -137,12 +229,14 @@ class _GitMirror(SourceFetcher):
         if not self.ref:
             return False
 
-        # If the mirror doesnt exist, we also dont have the ref
-        if not os.path.exists(self.mirror):
+        if not os.path.exists(self.mirror) and not os.path.exists(self.fetch_mirror):
+            # If the mirror doesnt exist, we also dont have the ref
             return False
 
+        mirror = self.mirror_path()
+
         # Check if the ref is really there
-        rc = self.source.call([self.source.host_git, 'cat-file', '-t', self.ref], cwd=self.mirror)
+        rc = self.source.call([self.source.host_git, 'cat-file', '-t', self.ref], cwd=mirror)
         return rc == 0
 
     def assert_ref(self):
@@ -192,11 +286,13 @@ class _GitMirror(SourceFetcher):
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
+        mirror = self.mirror_path()
+
         # Using --shared here avoids copying the objects into the checkout, in any
         # case we're just checking out a specific commit and then removing the .git/
         # directory.
-        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--shared', self.mirror, fullpath],
-                         fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath),
+        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--shared', mirror, fullpath],
+                         fail="Failed to create git mirror {} in directory: {}".format(mirror, fullpath),
                          fail_temporarily=True)
 
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
@@ -226,9 +322,11 @@ class _GitMirror(SourceFetcher):
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
+        mirror = self.mirror_path()
+
         modules = "{}:{}".format(self.ref, GIT_MODULES)
         exit_code, output = self.source.check_output(
-            [self.source.host_git, 'show', modules], cwd=self.mirror)
+            [self.source.host_git, 'show', modules], cwd=mirror)
 
         # If git show reports error code 128 here, we take it to mean there is
         # no .gitmodules file to display for the given revision.
@@ -256,6 +354,8 @@ class _GitMirror(SourceFetcher):
     # Fetch the ref which this mirror requires its submodule to have,
     # at the given ref of this mirror.
     def submodule_ref(self, submodule, ref=None):
+        mirror = self.mirror_path()
+
         if not ref:
             ref = self.ref
 
@@ -264,7 +364,7 @@ class _GitMirror(SourceFetcher):
         _, output = self.source.check_output([self.source.host_git, 'ls-tree', ref, submodule],
                                              fail="ls-tree failed for commit {} and submodule: {}".format(
                                                  ref, submodule),
-                                             cwd=self.mirror)
+                                             cwd=mirror)
 
         # read the commit hash from the output
         fields = output.split()
@@ -392,8 +492,11 @@ class _GitSourceBase(Source):
         self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
 
         self.original_url = self.node_get_member(node, str, 'url')
-        self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref, tags=tags, primary=True)
         self.tracking = self.node_get_member(node, str, 'track', None)
+        self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref,
+                                            tags=tags,
+                                            primary=True,
+                                            tracking=self.tracking)
 
         self.ref_format = self.node_get_member(node, str, 'ref-format', 'sha1')
         if self.ref_format not in ['sha1', 'git-describe']:
@@ -511,7 +614,7 @@ class _GitSourceBase(Source):
         with self.timed_activity("Tracking {} from {}"
                                  .format(self.tracking, resolved_url),
                                  silent_nested=True):
-            self.mirror.ensure()
+            self.mirror.ensure_trackable()
             self.mirror._fetch()
 
             # Update self.mirror.ref and node.ref from the self.tracking branch
@@ -521,6 +624,7 @@ class _GitSourceBase(Source):
 
     def init_workspace(self, directory):
         # XXX: may wish to refactor this as some code dupe with stage()
+        self.mirror.ensure_trackable()
         self._refresh_submodules()
 
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
@@ -595,15 +699,16 @@ class _GitSourceBase(Source):
         # Assert that the ref exists in the track tag/branch, if track has been specified.
         ref_in_track = False
         if self.tracking:
+            mirror = self.mirror.mirror_path()
             _, branch = self.check_output([self.host_git, 'branch', '--list', self.tracking,
                                            '--contains', self.mirror.ref],
-                                          cwd=self.mirror.mirror)
+                                          cwd=mirror)
             if branch:
                 ref_in_track = True
             else:
                 _, tag = self.check_output([self.host_git, 'tag', '--list', self.tracking,
                                             '--contains', self.mirror.ref],
-                                           cwd=self.mirror.mirror)
+                                           cwd=mirror)
                 if tag:
                     ref_in_track = True
 
@@ -628,7 +733,7 @@ class _GitSourceBase(Source):
 
         self._refresh_submodules()
         for mirror in self.submodules:
-            if not os.path.exists(mirror.mirror):
+            if not os.path.exists(mirror.mirror) and not os.path.exists(mirror.fetch_mirror):
                 return False
             if not mirror.has_ref():
                 return False
@@ -640,7 +745,7 @@ class _GitSourceBase(Source):
     # Assumes that we have our mirror and we have the ref which we point to
     #
     def _refresh_submodules(self):
-        self.mirror.ensure()
+        self.mirror.ensure_fetchable()
         submodules = []
 
         for path, url in self.mirror.submodule_list():

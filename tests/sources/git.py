@@ -34,6 +34,7 @@ from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
+from buildstream.utils import url_directory_name
 
 from tests.testutils.site import HAVE_GIT, HAVE_OLD_GIT
 
@@ -1225,3 +1226,249 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_fetch_shallow(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    repo = create_repo('git', str(tmpdir))
+    previous_ref = repo.create(os.path.join(project, 'repofiles'))
+
+    file1 = os.path.join(str(tmpdir), 'file1')
+    with open(file1, 'w') as f:
+        f.write('test\n')
+    ref = repo.add_file(file1)
+
+    source_config = repo.source_config(ref=ref)
+
+    # Write out our test target with a bad ref
+    element = {
+        'kind': 'import',
+        'sources': [
+            source_config
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    sources_dir = os.path.join(str(tmpdir), 'sources')
+    os.makedirs(sources_dir, exist_ok=True)
+    config = {
+        'sourcedir': sources_dir
+    }
+    cli.configure(config)
+
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target.bst'
+    ])
+    result.assert_success()
+
+    cache_dir_name = url_directory_name(source_config['url'])
+    full_cache_path = os.path.join(sources_dir, 'git', cache_dir_name)
+    shallow_cache_path = os.path.join(sources_dir, 'git', '{}-{}'.format(cache_dir_name, ref))
+
+    assert os.path.exists(shallow_cache_path)
+    assert not os.path.exists(full_cache_path)
+
+    output = subprocess.run(['git', 'log', '--format=format:%H'],
+                            cwd=shallow_cache_path,
+                            stdout=subprocess.PIPE).stdout.decode('ascii')
+    assert output.splitlines() == [ref]
+
+    result = cli.run(project=project, args=[
+        'build', 'target.bst'
+    ])
+    result.assert_success()
+
+    output = subprocess.run(['git', 'log', '--format=format:%H'],
+                            cwd=shallow_cache_path,
+                            stdout=subprocess.PIPE).stdout.decode('ascii')
+    assert output.splitlines() == [ref]
+
+    assert os.path.exists(shallow_cache_path)
+    assert not os.path.exists(full_cache_path)
+
+    result = cli.run(project=project, args=[
+        'source', 'track', 'target.bst'
+    ])
+    result.assert_success()
+
+    assert os.path.exists(full_cache_path)
+    output = subprocess.run(['git', 'log', '--format=format:%H'],
+                            cwd=full_cache_path,
+                            stdout=subprocess.PIPE).stdout.decode('ascii')
+    assert output.splitlines() == [ref, previous_ref]
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_fetch_shallow_not_tagged(cli, tmpdir, datafiles):
+    """When a ref is not tagged and not head of branch on remote we cannot
+    get a shallow clone.  It should automatically get a full clone.
+    """
+
+    project = str(datafiles)
+
+    repo = create_repo('git', str(tmpdir))
+    previous_ref = repo.create(os.path.join(project, 'repofiles'))
+
+    file1 = os.path.join(str(tmpdir), 'file1')
+    with open(file1, 'w') as f:
+        f.write('test\n')
+    ref = repo.add_file(file1)
+
+    source_config = repo.source_config(ref=previous_ref)
+
+    # Write out our test target with a bad ref
+    element = {
+        'kind': 'import',
+        'sources': [
+            source_config
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    sources_dir = os.path.join(str(tmpdir), 'sources')
+    os.makedirs(sources_dir, exist_ok=True)
+    config = {
+        'sourcedir': sources_dir
+    }
+    cli.configure(config)
+
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target.bst'
+    ])
+    result.assert_success()
+
+    cache_dir_name = url_directory_name(source_config['url'])
+    full_cache_path = os.path.join(sources_dir, 'git', cache_dir_name)
+    shallow_cache_path = os.path.join(sources_dir, 'git', '{}-{}'.format(cache_dir_name, previous_ref))
+
+    assert not os.path.exists(shallow_cache_path)
+    assert os.path.exists(full_cache_path)
+
+    output = subprocess.run(['git', 'log', '--format=format:%H'],
+                            cwd=full_cache_path,
+                            stdout=subprocess.PIPE).stdout.decode('ascii')
+    assert output.splitlines() == [ref, previous_ref]
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_fetch_shallow_annotated_tag(cli, tmpdir, datafiles):
+    """When a ref is not tagged and not head of branch on remote we cannot
+    get a shallow clone.  It should automatically get a full clone.
+    """
+
+    project = str(datafiles)
+
+    repo = create_repo('git', str(tmpdir))
+    previous_ref = repo.create(os.path.join(project, 'repofiles'))
+
+    repo.add_annotated_tag('tag', 'tag')
+
+    file1 = os.path.join(str(tmpdir), 'file1')
+    with open(file1, 'w') as f:
+        f.write('test\n')
+    repo.add_file(file1)
+
+    source_config = repo.source_config(ref=previous_ref)
+    del source_config['track']
+
+    # Write out our test target with a bad ref
+    element = {
+        'kind': 'import',
+        'sources': [
+            source_config
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    sources_dir = os.path.join(str(tmpdir), 'sources')
+    os.makedirs(sources_dir, exist_ok=True)
+    config = {
+        'sourcedir': sources_dir
+    }
+    cli.configure(config)
+
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target.bst'
+    ])
+    result.assert_success()
+
+    cache_dir_name = url_directory_name(source_config['url'])
+    full_cache_path = os.path.join(sources_dir, 'git', cache_dir_name)
+    shallow_cache_path = os.path.join(sources_dir, 'git', '{}-{}'.format(cache_dir_name, previous_ref))
+
+    assert os.path.exists(shallow_cache_path)
+    assert not os.path.exists(full_cache_path)
+
+    output = subprocess.run(['git', 'log', '--format=format:%H'],
+                            cwd=shallow_cache_path,
+                            stdout=subprocess.PIPE).stdout.decode('ascii')
+    assert output.splitlines() == [previous_ref]
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_fetch_shallow_workspace_open(cli, tmpdir, datafiles):
+    """
+    Workspaces should get a full clone.
+    """
+    project = str(datafiles)
+
+    repo = create_repo('git', str(tmpdir))
+    previous_ref = repo.create(os.path.join(project, 'repofiles'))
+
+    file1 = os.path.join(str(tmpdir), 'file1')
+    with open(file1, 'w') as f:
+        f.write('test\n')
+    ref = repo.add_file(file1)
+
+    source_config = repo.source_config(ref=ref)
+
+    # Write out our test target with a bad ref
+    element = {
+        'kind': 'import',
+        'sources': [
+            source_config
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    sources_dir = os.path.join(str(tmpdir), 'sources')
+    os.makedirs(sources_dir, exist_ok=True)
+    config = {
+        'sourcedir': sources_dir
+    }
+    cli.configure(config)
+
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target.bst'
+    ])
+    result.assert_success()
+
+    cache_dir_name = url_directory_name(source_config['url'])
+    full_cache_path = os.path.join(sources_dir, 'git', cache_dir_name)
+    shallow_cache_path = os.path.join(sources_dir, 'git', '{}-{}'.format(cache_dir_name, ref))
+
+    assert os.path.exists(shallow_cache_path)
+    assert not os.path.exists(full_cache_path)
+
+    output = subprocess.run(['git', 'log', '--format=format:%H'],
+                            cwd=shallow_cache_path,
+                            stdout=subprocess.PIPE).stdout.decode('ascii')
+    assert output.splitlines() == [ref]
+
+    workspace = os.path.join(str(tmpdir), 'workspace')
+
+    result = cli.run(project=project, args=[
+        'workspace', 'open', 'target.bst', '--directory', workspace
+    ])
+    result.assert_success()
+
+    output = subprocess.run(['git', 'log', '--format=format:%H'],
+                            cwd=workspace,
+                            stdout=subprocess.PIPE).stdout.decode('ascii')
+    assert output.splitlines() == [ref, previous_ref]
