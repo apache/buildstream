@@ -133,7 +133,22 @@ details on common configuration options for sources.
 
 This plugin provides the following :ref:`configurable warnings <configurable_warnings>`:
 
-- ``git:inconsistent-submodule`` - A submodule was found to be missing from the underlying git repository.
+- ``git:inconsistent-submodule`` - A submodule present in the git repository's .gitmodules was never
+  added with `git submodule add`.
+
+- ``git:unlisted-submodule`` - A submodule is present in the git repository but was not specified in
+  the source configuration and was not disabled for checkout.
+
+  .. note::
+
+     The ``git:unlisted-submodule`` warning is available since :ref:`format version 20 <project_format_version>`
+
+- ``git:invalid-submodule`` - A submodule is specified in the source configuration but does not exist
+  in the repository.
+
+  .. note::
+
+     The ``git:invalid-submodule`` warning is available since :ref:`format version 20 <project_format_version>`
 
 This plugin also utilises the following configurable :class:`core warnings <buildstream.types.CoreWarnings>`:
 
@@ -158,6 +173,8 @@ GIT_MODULES = '.gitmodules'
 
 # Warnings
 WARN_INCONSISTENT_SUBMODULE = "inconsistent-submodule"
+WARN_UNLISTED_SUBMODULE = "unlisted-submodule"
+WARN_INVALID_SUBMODULE = "invalid-submodule"
 
 
 # Because of handling of submodules, we maintain a GitMirror
@@ -680,19 +697,55 @@ class GitSource(Source):
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
             self.mirror.stage(directory, track=(self.tracking if not self.tracked else None))
             for mirror in self.submodules:
-                if mirror.path in self.submodule_checkout_overrides:
-                    checkout = self.submodule_checkout_overrides[mirror.path]
-                else:
-                    checkout = self.checkout_submodules
-
-                if checkout:
-                    mirror.stage(directory)
+                mirror.stage(directory)
 
     def get_source_fetchers(self):
         yield self.mirror
         self.refresh_submodules()
         for submodule in self.submodules:
             yield submodule
+
+    def validate_cache(self):
+        discovered_submodules = {}
+        unlisted_submodules = []
+        invalid_submodules = []
+
+        for path, url in self.mirror.submodule_list():
+            discovered_submodules[path] = url
+            if self.ignore_submodule(path):
+                continue
+
+            override_url = self.submodule_overrides.get(path)
+            if not override_url:
+                unlisted_submodules.append((path, url))
+
+        # Warn about submodules which are explicitly configured but do not exist
+        for path, url in self.submodule_overrides.items():
+            if path not in discovered_submodules:
+                invalid_submodules.append((path, url))
+
+        if invalid_submodules:
+            detail = []
+            for path, url in invalid_submodules:
+                detail.append("  Submodule URL '{}' at path '{}'".format(url, path))
+
+            self.warn("{}: Invalid submodules specified".format(self),
+                      warning_token=WARN_INVALID_SUBMODULE,
+                      detail="The following submodules are specified in the source "
+                      "description but do not exist according to the repository\n\n" +
+                      "\n".join(detail))
+
+        # Warn about submodules which exist but have not been explicitly configured
+        if unlisted_submodules:
+            detail = []
+            for path, url in unlisted_submodules:
+                detail.append("  Submodule URL '{}' at path '{}'".format(url, path))
+
+            self.warn("{}: Unlisted submodules exist".format(self),
+                      warning_token=WARN_UNLISTED_SUBMODULE,
+                      detail="The following submodules exist but are not specified " +
+                      "in the source description\n\n" +
+                      "\n".join(detail))
 
     ###########################################################
     #                     Local Functions                     #
@@ -718,11 +771,11 @@ class GitSource(Source):
         self.mirror.ensure()
         submodules = []
 
-        # XXX Here we should issue a warning if either:
-        #   A.) A submodule exists but is not defined in the element configuration
-        #   B.) The element configuration configures submodules which dont exist at the current ref
-        #
         for path, url in self.mirror.submodule_list():
+
+            # Completely ignore submodules which are disabled for checkout
+            if self.ignore_submodule(path):
+                continue
 
             # Allow configuration to override the upstream
             # location of the submodules.
@@ -746,6 +799,16 @@ class GitSource(Source):
             annotated = self.node_get_member(tag_node, bool, 'annotated')
             tags.append((tag, commit_ref, annotated))
         return tags
+
+    # Checks whether the plugin configuration has explicitly
+    # configured this submodule to be ignored
+    def ignore_submodule(self, path):
+        try:
+            checkout = self.submodule_checkout_overrides[path]
+        except KeyError:
+            checkout = self.checkout_submodules
+
+        return not checkout
 
 
 # Plugin entry point
