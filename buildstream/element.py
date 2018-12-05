@@ -2022,6 +2022,19 @@ class Element(Plugin):
 
         return True
 
+    # _fetch()
+    #
+    # Fetch the element's sources.
+    #
+    # Raises:
+    #    SourceError: If one of the element sources has an error
+    #
+    def _fetch(self):
+        previous_sources = []
+        for source in self.sources():
+            source._fetch(previous_sources)
+            previous_sources.append(source)
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
