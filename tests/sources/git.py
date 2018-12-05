@@ -414,8 +414,17 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
-def test_ref_not_in_track_warn(cli, tmpdir, datafiles):
+@pytest.mark.parametrize("fail", ['warn', 'error'])
+def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Make the warning an error if we're testing errors
+    if fail == 'error':
+        project_template = {
+            "name": "foo",
+            "fatal-warnings": [CoreWarnings.REF_NOT_IN_TRACK]
+        }
+        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
 
     # Create the repo from 'repofiles', create a branch without latest commit
     repo = create_repo('git', str(tmpdir))
@@ -435,48 +444,15 @@ def test_ref_not_in_track_warn(cli, tmpdir, datafiles):
     }
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
-    # Assert the warning is raised as ref is not in branch foo.
-    # Assert warning not error to the user, when not set as fatal.
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert "The ref provided for the element does not exist locally" in result.stderr
 
-
-@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
-def test_ref_not_in_track_warn_error(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-
-    # Add fatal-warnings ref-not-in-track to project.conf
-    project_template = {
-        "name": "foo",
-        "fatal-warnings": [CoreWarnings.REF_NOT_IN_TRACK]
-    }
-
-    _yaml.dump(project_template, os.path.join(project, 'project.conf'))
-
-    # Create the repo from 'repofiles', create a branch without latest commit
-    repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
-
-    gitsource = repo.source_config(ref=ref)
-
-    # Overwrite the track value to the added branch
-    gitsource['track'] = 'foo'
-
-    # Write out our test target
-    element = {
-        'kind': 'import',
-        'sources': [
-            gitsource
-        ]
-    }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
-
-    # Assert that build raises a warning here that is captured
-    # as plugin error, due to the fatal warning being set
-    result = cli.run(project=project, args=['build', 'target.bst'])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.REF_NOT_IN_TRACK)
+    # Assert a warning or an error depending on what we're checking
+    if fail == 'error':
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.REF_NOT_IN_TRACK)
+    else:
+        result.assert_success()
+        assert "ref-not-in-track" in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
