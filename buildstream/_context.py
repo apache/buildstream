@@ -52,7 +52,9 @@ from .plugin import _plugin_lookup
 #
 class Context():
 
-    def __init__(self, directory=None):
+    def __init__(self, directory=None, *, read_only=False):
+        # Whether to avoid operations that may involve making changes
+        self.read_only = read_only
 
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
@@ -640,7 +642,7 @@ class Context():
 
     def get_cascache(self):
         if self._cascache is None:
-            self._cascache = CASCache(self.artifactdir)
+            self._cascache = CASCache(self.artifactdir, read_only=self.read_only)
         return self._cascache
 
     # guess_element()

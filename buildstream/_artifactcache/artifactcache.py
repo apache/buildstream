@@ -75,7 +75,8 @@ class ArtifactCache():
         self._has_fetch_remotes = False
         self._has_push_remotes = False
 
-        os.makedirs(self.extractdir, exist_ok=True)
+        if not context.read_only:
+            os.makedirs(self.extractdir, exist_ok=True)
 
         self._calculate_cache_quota()
 
@@ -477,6 +478,7 @@ class ArtifactCache():
     #               Bytes, or None if defer_prune is True
     #
     def remove(self, ref):
+        assert not self.context.read_only
 
         # Remove extract if not used by other ref
         tree = self.cas.resolve_ref(ref)
@@ -517,6 +519,7 @@ class ArtifactCache():
     # Returns: path to extracted artifact
     #
     def extract(self, element, key, subdir=None):
+        assert not self.context.read_only
         ref = self.get_artifact_fullname(element, key)
 
         path = os.path.join(self.extractdir, element._get_project().name, element.normal_name)
@@ -533,6 +536,7 @@ class ArtifactCache():
     #     keys (list): The cache keys to use
     #
     def commit(self, element, content, keys):
+        assert not self.context.read_only
         refs = [self.get_artifact_fullname(element, key) for key in keys]
 
         self.cas.commit(refs, content)
@@ -649,6 +653,7 @@ class ArtifactCache():
     #   (bool): True if pull was successful, False if artifact was not available
     #
     def pull(self, element, key, *, progress=None, subdir=None, excluded_subdirs=None):
+        assert not self.context.read_only
         ref = self.get_artifact_fullname(element, key)
 
         project = element._get_project()
@@ -688,6 +693,7 @@ class ArtifactCache():
     #     digest (Digest): The digest of the tree
     #
     def pull_tree(self, project, digest):
+        assert not self.context.read_only
         for remote in self._remotes[project]:
             digest = self.cas.pull_tree(remote, digest)
 
@@ -761,6 +767,7 @@ class ArtifactCache():
     #     newkey (str): A new cache key for the artifact
     #
     def link_key(self, element, oldkey, newkey):
+        assert not self.context.read_only
         oldref = self.get_artifact_fullname(element, oldkey)
         newref = self.get_artifact_fullname(element, newkey)
 
@@ -815,6 +822,7 @@ class ArtifactCache():
     #    size (int): The size of the artifact cache to record
     #
     def _write_cache_size(self, size):
+        assert not self.context.read_only
         assert isinstance(size, int)
         size_file_path = os.path.join(self.context.artifactdir, CACHE_SIZE_FILE)
         with utils.save_file_atomic(size_file_path, "w") as f:

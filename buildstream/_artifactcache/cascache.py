@@ -105,21 +105,27 @@ class BlobNotFound(CASError):
 #
 class CASCache():
 
-    def __init__(self, path):
+    def __init__(self, path, *, read_only=False):
         self.casdir = os.path.join(path, 'cas')
         self.tmpdir = os.path.join(path, 'tmp')
-        os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
-        os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
-        os.makedirs(self.tmpdir, exist_ok=True)
+        self._read_only = read_only
+
+        headdir = os.path.join(self.casdir, 'refs', 'heads')
+        objdir = os.path.join(self.casdir, 'objects')
+        if read_only:
+            self._initialized = (os.path.isdir(headdir) and os.path.isdir(objdir) and os.path.isdir(self.tmpdir))
+        else:
+            os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
+            os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
+            os.makedirs(self.tmpdir, exist_ok=True)
+            self._initialized = True
 
     # preflight():
     #
     # Preflight check.
     #
     def preflight(self):
-        headdir = os.path.join(self.casdir, 'refs', 'heads')
-        objdir = os.path.join(self.casdir, 'objects')
-        if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
+        if not self._initialized:
             raise CASError("CAS repository check failed for '{}'".format(self.casdir))
 
     # contains():
@@ -132,6 +138,9 @@ class CASCache():
     # Returns: True if the ref is in the cache, False otherwise
     #
     def contains(self, ref):
+        if not self._initialized:
+            return False
+
         refpath = self._refpath(ref)
 
         # This assumes that the repository doesn't have any dangling pointers
@@ -149,6 +158,9 @@ class CASCache():
     # Returns: True if the subdir exists & is populated in the cache, False otherwise
     #
     def contains_subdir_artifact(self, ref, subdir):
+        if not self._initialized:
+            return False
+
         tree = self.resolve_ref(ref)
 
         # This assumes that the subdir digest is present in the element tree
@@ -174,6 +186,8 @@ class CASCache():
     # Returns: path to extracted directory
     #
     def extract(self, ref, path, subdir=None):
+        assert self._initialized
+
         tree = self.resolve_ref(ref, update_mtime=True)
 
         originaldest = dest = os.path.join(path, tree.hash)
@@ -214,6 +228,8 @@ class CASCache():
     #     path (str): The directory to import
     #
     def commit(self, refs, path):
+        assert self._initialized and not self._read_only
+
         tree = self._commit_directory(path)
 
         for ref in refs:
@@ -230,6 +246,8 @@ class CASCache():
     #     subdir (str): A subdirectory to limit the comparison to
     #
     def diff(self, ref_a, ref_b, *, subdir=None):
+        assert self._initialized
+
         tree_a = self.resolve_ref(ref_a)
         tree_b = self.resolve_ref(ref_b)
 
@@ -283,6 +301,7 @@ class CASCache():
     #   (bool): True if pull was successful, False if ref was not available
     #
     def pull(self, ref, remote, *, progress=None, subdir=None, excluded_subdirs=None):
+        assert self._initialized and not self._read_only
         try:
             remote.init()
 
@@ -322,6 +341,7 @@ class CASCache():
     #     digest (Digest): The digest of the tree
     #
     def pull_tree(self, remote, digest):
+        assert self._initialized and not self._read_only
         try:
             remote.init()
 
@@ -344,6 +364,7 @@ class CASCache():
     #     newref (str): A new ref for the same directory
     #
     def link_ref(self, oldref, newref):
+        assert self._initialized and not self._read_only
         tree = self.resolve_ref(oldref)
 
         self.set_ref(newref, tree)
@@ -363,6 +384,7 @@ class CASCache():
     #   (CASError): if there was an error
     #
     def push(self, refs, remote):
+        assert self._initialized
         skipped_remote = True
         try:
             for ref in refs:
@@ -411,6 +433,7 @@ class CASCache():
     #     (CASError): if there was an error
     #
     def push_directory(self, remote, directory):
+        assert self._initialized
         remote.init()
 
         self._send_directory(remote, directory.ref)
@@ -427,6 +450,7 @@ class CASCache():
     #     (CASError): if there was an error
     #
     def push_message(self, remote, message):
+        assert self._initialized
 
         message_buffer = message.SerializeToString()
         message_digest = utils._message_digest(message_buffer)
@@ -488,6 +512,7 @@ class CASCache():
     # Either `path` or `buffer` must be passed, but not both.
     #
     def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False):
+        assert self._initialized and not self._read_only
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
 
@@ -543,6 +568,7 @@ class CASCache():
     #     ref (str): The name of the ref
     #
     def set_ref(self, ref, tree):
+        assert self._initialized and not self._read_only
         refpath = self._refpath(ref)
         os.makedirs(os.path.dirname(refpath), exist_ok=True)
         with utils.save_file_atomic(refpath, 'wb', tempdir=self.tmpdir) as f:
@@ -560,6 +586,7 @@ class CASCache():
     #     (Digest): The digest stored in the ref
     #
     def resolve_ref(self, ref, *, update_mtime=False):
+        assert self._initialized
         refpath = self._refpath(ref)
 
         try:
@@ -582,6 +609,7 @@ class CASCache():
     #     ref (str): The ref to update
     #
     def update_mtime(self, ref):
+        assert self._initialized and not self._read_only
         try:
             os.utime(self._refpath(ref))
         except FileNotFoundError as e:
@@ -595,6 +623,8 @@ class CASCache():
     #    (int): The size of the cache.
     #
     def calculate_cache_size(self):
+        if not self._initialized:
+            return 0
         return utils._get_dir_size(self.casdir)
 
     # list_refs():
@@ -605,6 +635,8 @@ class CASCache():
     #     (list) - A list of refs in LRM order
     #
     def list_refs(self):
+        if not self._initialized:
+            return []
         # string of: /path/to/repo/refs/heads
         ref_heads = os.path.join(self.casdir, 'refs', 'heads')
 
@@ -630,6 +662,8 @@ class CASCache():
     #     (list) - A list of objects and timestamps in LRM order
     #
     def list_objects(self):
+        if not self._initialized:
+            return []
         objs = []
         mtimes = []
 
@@ -648,6 +682,7 @@ class CASCache():
         return sorted(zip(mtimes, objs))
 
     def clean_up_refs_until(self, time):
+        assert self._initialized and not self._read_only
         ref_heads = os.path.join(self.casdir, 'refs', 'heads')
 
         for root, _, files in os.walk(ref_heads):
@@ -672,6 +707,7 @@ class CASCache():
     #               Bytes, or None if defer_prune is True
     #
     def remove(self, ref, *, defer_prune=False):
+        assert self._initialized and not self._read_only
 
         # Remove cache ref
         refpath = self._refpath(ref)
@@ -691,6 +727,10 @@ class CASCache():
     # Prune unreachable objects from the repo.
     #
     def prune(self):
+        if not self._initialized:
+            return 0
+        assert self._initialized and not self._read_only
+
         ref_heads = os.path.join(self.casdir, 'refs', 'heads')
 
         pruned = 0
@@ -717,6 +757,7 @@ class CASCache():
         return pruned
 
     def update_tree_mtime(self, tree):
+        assert self._initialized and not self._read_only
         reachable = set()
         self._reachable_refs_dir(reachable, tree, update_mtime=True)
 
