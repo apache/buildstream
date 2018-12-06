@@ -1199,7 +1199,7 @@ class Stream():
             element_source_dir = self._get_element_dirname(directory, element)
             if list(element.sources()):
                 os.makedirs(element_source_dir)
-                element._stage_sources_at(element_source_dir)
+                element._stage_sources_at(element_source_dir, mount_workspaces=False)
 
     # Write a master build script to the sandbox
     def _write_build_script(self, directory, elements):
