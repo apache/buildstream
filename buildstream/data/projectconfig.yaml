@@ -54,28 +54,11 @@ variables:
 
     --remove-section=.comment --remove-section=.note --strip-unneeded
 
-  # Generic implementation for stripping debugging symbols
+  # Noop implementation of strip-binaries. Because it is not possible
+  # to have portable script, it is the dutie of projects to define it.
   strip-binaries: |
 
-    cd "%{install-root}" && find -type f \
-      '(' -perm -111 -o -name '*.so*' \
-          -o -name '*.cmxs' -o -name '*.node' ')' \
-      -exec sh -ec \
-      'read -n4 hdr <"$1" # check for elf header
-       case "$1" in
-         %{install-root}%{debugdir}/*)
-           exit 0
-           ;;
-       esac
-       if [ "$hdr" != "$(printf \\x7fELF)" ]; then
-           exit 0
-       fi
-       debugfile="%{install-root}%{debugdir}/$1"
-       mkdir -p "$(dirname "$debugfile")"
-       objcopy %{objcopy-extract-args} "$1" "$debugfile"
-       chmod 644 "$debugfile"
-       strip %{strip-args} "$1"
-       objcopy %{objcopy-link-args} "$debugfile" "$1"' - {} ';'
+    true
 
   # Generic implementation for reproducible python builds
   fix-pyc-timestamps: |

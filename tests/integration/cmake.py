@@ -28,10 +28,7 @@ def test_cmake_build(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['checkout', element_name, checkout])
     assert result.exit_code == 0
 
-    assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello',
-                               '/usr/lib/debug', '/usr/lib/debug/usr',
-                               '/usr/lib/debug/usr/bin',
-                               '/usr/lib/debug/usr/bin/hello'])
+    assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello'])
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -47,10 +44,7 @@ def test_cmake_confroot_build(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['checkout', element_name, checkout])
     assert result.exit_code == 0
 
-    assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello',
-                               '/usr/lib/debug', '/usr/lib/debug/usr',
-                               '/usr/lib/debug/usr/bin',
-                               '/usr/lib/debug/usr/bin/hello'])
+    assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello'])
 
 
 @pytest.mark.datafiles(DATA_DIR)

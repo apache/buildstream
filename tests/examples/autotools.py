@@ -29,10 +29,7 @@ def test_autotools_build(cli, tmpdir, datafiles):
     result.assert_success()
 
     assert_contains(checkout, ['/usr', '/usr/lib', '/usr/bin',
-                               '/usr/share', '/usr/lib/debug',
-                               '/usr/lib/debug/usr', '/usr/lib/debug/usr/bin',
-                               '/usr/lib/debug/usr/bin/hello',
-                               '/usr/bin/hello',
+                               '/usr/share', '/usr/bin/hello',
                                '/usr/share/doc', '/usr/share/doc/amhello',
                                '/usr/share/doc/amhello/README'])
 
