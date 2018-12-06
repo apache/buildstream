@@ -102,6 +102,11 @@ these methods are mandatory to implement.
   submodules). For details on how to define a SourceFetcher, see
   :ref:`SourceFetcher <core_source_fetcher>`.
 
+* :func:`Source.validate_cache() <buildstream.source.Source.validate_cache>`
+
+  Perform any validations which require the sources to be cached.
+
+  **Optional**: This is completely optional and will do nothing if left unimplemented.
 
 Accessing previous sources
 --------------------------
@@ -480,8 +485,21 @@ class Source(Plugin):
 
         *Since: 1.2*
         """
-
         return []
+
+    def validate_cache(self):
+        """Implement any validations once we know the sources are cached
+
+        This is guaranteed to be called only once for a given session
+        once the sources are known to be
+        :attr:`Consistency.CACHED <buildstream.types.Consistency.CACHED>`,
+        if source tracking is enabled in the session for this source,
+        then this will only be called if the sources become cached after
+        tracking completes.
+
+        *Since: 1.4*
+        """
+        pass
 
     #############################################################
     #                       Public Methods                      #
@@ -658,6 +676,11 @@ class Source(Plugin):
             context = self._get_context()
             with context.silence():
                 self.__consistency = self.get_consistency()  # pylint: disable=assignment-from-no-return
+
+                # Give the Source an opportunity to validate the cached
+                # sources as soon as the Source becomes Consistency.CACHED.
+                if self.__consistency == Consistency.CACHED:
+                    self.validate_cache()
 
     # Return cached consistency
     #
