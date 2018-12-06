@@ -322,7 +322,7 @@ class GitMirror(SourceFetcher):
 
         return ref, list(tags)
 
-    def stage(self, directory, track=None):
+    def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
         # Using --shared here avoids copying the objects into the checkout, in any
@@ -341,11 +341,7 @@ class GitMirror(SourceFetcher):
 
         self._rebuild_git(fullpath)
 
-        # Check that the user specified ref exists in the track if provided & not already tracked
-        if track:
-            self.assert_ref_in_track(fullpath, track)
-
-    def init_workspace(self, directory, track=None):
+    def init_workspace(self, directory):
         fullpath = os.path.join(directory, self.path)
         url = self.source.translate_url(self.url)
 
@@ -360,10 +356,6 @@ class GitMirror(SourceFetcher):
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
-
-        # Check that the user specified ref exists in the track if provided & not already tracked
-        if track:
-            self.assert_ref_in_track(fullpath, track)
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
@@ -429,28 +421,6 @@ class GitMirror(SourceFetcher):
                              warning_token=WARN_INCONSISTENT_SUBMODULE)
 
             return None
-
-    # Assert that ref exists in track, if track has been specified.
-    def assert_ref_in_track(self, fullpath, track):
-        _, branch = self.source.check_output([self.source.host_git, 'branch', '--list', track,
-                                              '--contains', self.ref],
-                                             cwd=fullpath,)
-        if branch:
-            return
-        else:
-            _, tag = self.source.check_output([self.source.host_git, 'tag', '--list', track,
-                                               '--contains', self.ref],
-                                              cwd=fullpath,)
-            if tag:
-                return
-
-        detail = "The ref provided for the element does not exist locally in the provided track branch / tag " + \
-                 "'{}'.\nYou may wish to track the element to update the ref from '{}' ".format(track, track) + \
-                 "with `bst track`,\nor examine the upstream at '{}' for the specific ref.".format(self.url)
-
-        self.source.warn("{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n"
-                         .format(self.source, self.ref, track, self.url),
-                         detail=detail, warning_token=CoreWarnings.REF_NOT_IN_TRACK)
 
     def _rebuild_git(self, fullpath):
         if not self.tags:
@@ -580,7 +550,6 @@ class GitSource(Source):
                 self.submodule_checkout_overrides[path] = checkout
 
         self.mark_download_url(self.original_url)
-        self.tracked = False
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
@@ -670,8 +639,6 @@ class GitSource(Source):
             # Update self.mirror.ref and node.ref from the self.tracking branch
             ret = self.mirror.latest_commit_with_tags(self.tracking, self.track_tags)
 
-        # Set tracked attribute, parameter for if self.mirror.assert_ref_in_track is needed
-        self.tracked = True
         return ret
 
     def init_workspace(self, directory):
@@ -679,7 +646,7 @@ class GitSource(Source):
         self.refresh_submodules()
 
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
-            self.mirror.init_workspace(directory, track=(self.tracking if not self.tracked else None))
+            self.mirror.init_workspace(directory)
             for mirror in self.submodules:
                 mirror.init_workspace(directory)
 
@@ -695,7 +662,7 @@ class GitSource(Source):
         # Stage the main repo in the specified directory
         #
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
-            self.mirror.stage(directory, track=(self.tracking if not self.tracked else None))
+            self.mirror.stage(directory)
             for mirror in self.submodules:
                 mirror.stage(directory)
 
@@ -746,6 +713,32 @@ class GitSource(Source):
                       detail="The following submodules exist but are not specified " +
                       "in the source description\n\n" +
                       "\n".join(detail))
+
+        # Assert that the ref exists in the track tag/branch, if track has been specified.
+        ref_in_track = False
+        if self.tracking:
+            _, branch = self.check_output([self.host_git, 'branch', '--list', self.tracking,
+                                           '--contains', self.mirror.ref],
+                                          cwd=self.mirror.mirror)
+            if branch:
+                ref_in_track = True
+            else:
+                _, tag = self.check_output([self.host_git, 'tag', '--list', self.tracking,
+                                            '--contains', self.mirror.ref],
+                                           cwd=self.mirror.mirror)
+                if tag:
+                    ref_in_track = True
+
+            if not ref_in_track:
+                detail = "The ref provided for the element does not exist locally " + \
+                         "in the provided track branch / tag '{}'.\n".format(self.tracking) + \
+                         "You may wish to track the element to update the ref from '{}' ".format(self.tracking) + \
+                         "with `bst track`,\n" + \
+                         "or examine the upstream at '{}' for the specific ref.".format(self.mirror.url)
+
+                self.warn("{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n"
+                          .format(self, self.mirror.ref, self.tracking, self.mirror.url),
+                          detail=detail, warning_token=CoreWarnings.REF_NOT_IN_TRACK)
 
     ###########################################################
     #                     Local Functions                     #
