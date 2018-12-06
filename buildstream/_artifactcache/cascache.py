@@ -1199,8 +1199,12 @@ class CASRemote():
                 if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
                     self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
             except grpc.RpcError as e:
-                # Simply use the defaults for servers that don't implement GetCapabilities()
-                if e.code() != grpc.StatusCode.UNIMPLEMENTED:
+                if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                    # Simply use the defaults for servers that don't implement GetCapabilities()
+                    pass
+                elif e.code() == grpc.StatusCode.UNAVAILABLE:
+                    raise CASError("Failed to connect to CAS service: {}".format(e.details())) from e
+                else:
                     raise
 
             # Check whether the server supports BatchReadBlobs()
