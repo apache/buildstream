@@ -18,13 +18,11 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 # System imports
-from collections.abc import Mapping
 from itertools import count
 
 from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
 # BuildStream toplevel imports
-from .._exceptions import LoadError, LoadErrorReason
 from .. import _yaml
 
 # Local package imports
@@ -174,38 +172,7 @@ def _extract_depends_from_node(node, *, key=None):
 
     for index, dep in enumerate(depends):
         dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[index])
-
-        if isinstance(dep, str):
-            dependency = Dependency(dep, provenance=dep_provenance, dep_type=default_dep_type)
-
-        elif isinstance(dep, Mapping):
-            if default_dep_type:
-                _yaml.node_validate(dep, ['filename', 'junction'])
-                dep_type = default_dep_type
-            else:
-                _yaml.node_validate(dep, ['filename', 'type', 'junction'])
-
-                # Make type optional, for this we set it to None
-                dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
-                if dep_type is None or dep_type == Symbol.ALL:
-                    dep_type = None
-                elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
-                    provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
-                    raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
-                                    .format(provenance, dep_type))
-
-            filename = _yaml.node_get(dep, str, Symbol.FILENAME)
-            junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
-            dependency = Dependency(filename,
-                                    dep_type=dep_type,
-                                    junction=junction,
-                                    provenance=dep_provenance)
-
-        else:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dependency is not specified as a string or a dictionary".format(dep_provenance))
-
+        dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
         output_deps.append(dependency)
 
     # Now delete the field, we dont want it anymore
