@@ -30,6 +30,7 @@ See also: :ref:`sandboxing`.
 import os
 import time
 from .directory import Directory, VirtualDirectoryError
+from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, _magic_timestamp
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
 
@@ -200,6 +201,9 @@ class FileBasedDirectory(Directory):
         """
 
         return list_relative_paths(self.external_directory)
+
+    def get_size(self):
+        return utils._get_dir_size(self.external_directory)
 
     def __str__(self):
         # This returns the whole path (since we don't know where the directory started)

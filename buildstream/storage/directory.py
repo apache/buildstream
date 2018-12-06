@@ -177,3 +177,9 @@ class Directory():
 
         """
         raise NotImplementedError()
+
+    def get_size(self):
+        """ Get an approximation of the storage space in bytes used by this directory
+        and all files and subdirectories in it. Storage space varies by implementation
+        and effective space used may be lower than this number due to deduplication. """
+        raise NotImplementedError()

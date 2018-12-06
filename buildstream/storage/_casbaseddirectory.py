@@ -627,6 +627,18 @@ class CasBasedDirectory(Directory):
         self._recalculate_recursing_up()
         self._recalculate_recursing_down()
 
+    def get_size(self):
+        total = len(self.pb2_directory.SerializeToString())
+        for i in self.index.values():
+            if isinstance(i.buildstream_object, CasBasedDirectory):
+                total += i.buildstream_object.get_size()
+            elif isinstance(i.pb_object, remote_execution_pb2.FileNode):
+                src_name = self.cas_cache.objpath(i.pb_object.digest)
+                filesize = os.stat(src_name).st_size
+                total += filesize
+            # Symlink nodes are encoded as part of the directory serialization.
+        return total
+
     def _get_identifier(self):
         path = ""
         if self.parent:
