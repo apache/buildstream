@@ -449,12 +449,13 @@ class Stream():
     #
     def source_checkout(self, target, *,
                         location=None,
+                        force=False,
                         deps='none',
                         fetch=False,
                         except_targets=(),
                         tar=False):
 
-        self._check_location_writable(location, tar=tar)
+        self._check_location_writable(location, force=force, tar=tar)
 
         elements, _ = self._load((target,), (),
                                  selection=deps,
@@ -468,7 +469,7 @@ class Stream():
 
         # Stage all sources determined by scope
         try:
-            self._source_checkout(elements, location, deps, fetch, tar)
+            self._source_checkout(elements, location, force, deps, fetch, tar)
         except BstError as e:
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
@@ -1193,6 +1194,7 @@ class Stream():
     # Helper function for source_checkout()
     def _source_checkout(self, elements,
                          location=None,
+                         force=False,
                          deps='none',
                          fetch=False,
                          tar=False):
@@ -1208,7 +1210,7 @@ class Stream():
             if tar:
                 self._create_tarball(temp_source_dir.name, location)
             else:
-                self._move_directory(temp_source_dir.name, location)
+                self._move_directory(temp_source_dir.name, location, force)
         except OSError as e:
             raise StreamError("Failed to checkout sources to {}: {}"
                               .format(location, e)) from e
@@ -1218,7 +1220,7 @@ class Stream():
 
     # Move a directory src to dest. This will work across devices and
     # may optionaly overwrite existing files.
-    def _move_directory(self, src, dest):
+    def _move_directory(self, src, dest, force=False):
         def is_empty_dir(path):
             return os.path.isdir(dest) and not os.listdir(dest)
 
@@ -1228,7 +1230,7 @@ class Stream():
         except OSError:
             pass
 
-        if is_empty_dir(dest):
+        if force or is_empty_dir(dest):
             try:
                 utils.link_files(src, dest)
             except utils.UtilError as e:

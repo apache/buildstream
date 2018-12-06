@@ -1,6 +1,7 @@
 import os
 import pytest
 import tarfile
+from pathlib import Path
 
 from tests.testutils import cli
 
@@ -51,6 +52,22 @@ def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_e
 
     args = ws_cmd + ['source-checkout', '--deps', 'none'] + elm_cmd + [checkout]
     result = cli.run(project=project, args=args)
+    result.assert_success()
+
+    assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize('force_flag', ['--force', '-f'])
+def test_source_checkout_force(datafiles, cli, force_flag):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'source-checkout')
+    target = 'checkout-deps.bst'
+
+    os.makedirs(os.path.join(checkout, 'some-thing'))
+    # Path(os.path.join(checkout, 'some-file')).touch()
+
+    result = cli.run(project=project, args=['source-checkout', force_flag, target, '--deps', 'none', checkout])
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))

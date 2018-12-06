@@ -725,6 +725,8 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 #                  Source Checkout Command                      #
 ##################################################################
 @cli.command(name='source-checkout', short_help='Checkout sources for an element')
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Allow files to be overwritten")
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies")
@@ -740,7 +742,7 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
                 type=click.Path(readable=False))
 @click.argument('location', type=click.Path(), required=False)
 @click.pass_obj
-def source_checkout(app, element, location, deps, fetch_, except_, tar):
+def source_checkout(app, element, location, force, deps, fetch_, except_, tar):
     """Checkout sources of an element to the specified location
     """
     if not element and not location:
@@ -760,6 +762,7 @@ def source_checkout(app, element, location, deps, fetch_, except_, tar):
 
         app.stream.source_checkout(element,
                                    location=location,
+                                   force=force,
                                    deps=deps,
                                    fetch=fetch_,
                                    except_targets=except_,
