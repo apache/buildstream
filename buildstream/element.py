@@ -103,6 +103,7 @@ from .types import _KeyStrength, CoreWarnings
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
+from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 
@@ -1681,22 +1682,22 @@ class Element(Plugin):
 
             context = self._get_context()
 
+            assemblevdir = CasBasedDirectory(cas_cache=context.artifactcache.cas, ref=None)
+            logsvdir = assemblevdir.descend("logs", create=True)
+            metavdir = assemblevdir.descend("meta", create=True)
+            buildtreevdir = assemblevdir.descend("buildtree", create=True)
+
             # Create artifact directory structure
             assembledir = os.path.join(rootdir, 'artifact')
-            filesdir = os.path.join(assembledir, 'files')
             logsdir = os.path.join(assembledir, 'logs')
             metadir = os.path.join(assembledir, 'meta')
-            buildtreedir = os.path.join(assembledir, 'buildtree')
             os.mkdir(assembledir)
-            if collect is not None and collectvdir is not None:
-                os.mkdir(filesdir)
             os.mkdir(logsdir)
             os.mkdir(metadir)
-            os.mkdir(buildtreedir)
 
-            # Hard link files from collect dir to files directory
             if collect is not None and collectvdir is not None:
-                collectvdir.export_files(filesdir, can_link=True)
+                filesvdir = assemblevdir.descend("files", create=True)
+                filesvdir.import_files(collectvdir)
 
             cache_buildtrees = context.cache_buildtrees
             build_success = self.__build_result[0]
@@ -1708,18 +1709,18 @@ class Element(Plugin):
             # with an empty buildtreedir regardless of this configuration.
 
             if cache_buildtrees == 'always' or (cache_buildtrees == 'failure' and not build_success):
+                sandbox_vroot = sandbox.get_virtual_directory()
                 try:
-                    sandbox_vroot = sandbox.get_virtual_directory()
                     sandbox_build_dir = sandbox_vroot.descend(
                         self.get_variable('build-root').lstrip(os.sep).split(os.sep))
-                    # Hard link files from build-root dir to buildtreedir directory
-                    sandbox_build_dir.export_files(buildtreedir)
+                    buildtreevdir.import_files(sandbox_build_dir)
                 except VirtualDirectoryError:
                     # Directory could not be found. Pre-virtual
                     # directory behaviour was to continue silently
                     # if the directory could not be found.
                     pass
 
+            # Write some logs out to normal directories: logsdir and metadir
             # Copy build log
             log_filename = context.get_log_filename()
             self._build_log_path = os.path.join(logsdir, 'build.log')
@@ -1762,8 +1763,11 @@ class Element(Plugin):
                 ]
             }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
-            artifact_size = utils._get_dir_size(assembledir)
-            self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+            metavdir.import_files(metadir)
+            logsvdir.import_files(logsdir)
+
+            artifact_size = assemblevdir.get_size()
+            self.__artifacts.commit(self, assemblevdir, self.__get_cache_keys_for_commit())
 
             if collect is not None and collectvdir is None:
                 raise ElementError(
