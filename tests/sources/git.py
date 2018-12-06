@@ -555,69 +555,6 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
-def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-
-    # Make the warning an error if we're testing errors
-    if fail == 'error':
-        project_template = {
-            "name": "foo",
-            "fatal-warnings": ['git:unlisted-submodule']
-        }
-        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
-
-    # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo('git', str(tmpdir), 'subrepo')
-    subrepo.create(os.path.join(project, 'subrepofiles'))
-
-    # Create the repo from 'repofiles' subdir
-    repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
-
-    # Add a submodule pointing to the one we created, but use
-    # the original ref, let the submodules appear after tracking
-    repo.add_submodule('subdir', 'file://' + subrepo.repo)
-
-    # Create the source, and delete the explicit configuration
-    # of the submodules.
-    gitsource = repo.source_config(ref=ref)
-    del gitsource['submodules']
-
-    # Write out our test target
-    element = {
-        'kind': 'import',
-        'sources': [
-            gitsource
-        ]
-    }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
-
-    # Fetch the repo, we will not see the warning because we
-    # are still pointing to a ref which predates the submodules
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
-    result.assert_success()
-    assert "git:unlisted-submodule" not in result.stderr
-
-    # We won't get a warning/error when tracking either, the source
-    # has not become Consistency.CACHED so the opportunity to check
-    # for the warning has not yet arisen.
-    result = cli.run(project=project, args=['track', 'target.bst'])
-    result.assert_success()
-    assert "git:unlisted-submodule" not in result.stderr
-
-    # Fetching the repo at the new ref will finally reveal the warning
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
-    if fail == 'error':
-        result.assert_main_error(ErrorDomain.STREAM, None)
-        result.assert_task_error(ErrorDomain.PLUGIN, 'git:unlisted-submodule')
-    else:
-        result.assert_success()
-        assert "git:unlisted-submodule" in result.stderr
-
-
-@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
-@pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_invalid_submodule(cli, tmpdir, datafiles, fail):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
@@ -681,6 +618,67 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
     # Assert a warning or an error depending on what we're checking
     if fail == 'error':
         result.assert_main_error(ErrorDomain.PLUGIN, 'git:invalid-submodule')
+    else:
+        result.assert_success()
+        assert "git:invalid-submodule" in result.stderr
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+@pytest.mark.parametrize("fail", ['warn', 'error'])
+def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Make the warning an error if we're testing errors
+    if fail == 'error':
+        project_template = {
+            "name": "foo",
+            "fatal-warnings": ['git:invalid-submodule']
+        }
+        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
+
+    # Create the submodule first from the 'subrepofiles' subdir
+    subrepo = create_repo('git', str(tmpdir), 'subrepo')
+    subrepo.create(os.path.join(project, 'subrepofiles'))
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project, 'repofiles'))
+
+    # Add a submodule pointing to the one we created
+    ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
+
+    # Add a commit beyond the ref which *removes* the submodule we've added
+    repo.remove_path('subdir')
+
+    # Create the source, this will keep the submodules so initially
+    # the configuration is valid for the ref we're using
+    gitsource = repo.source_config(ref=ref)
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            gitsource
+        ]
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    # Fetch the repo, we will not see the warning because we
+    # are still pointing to a ref which predates the submodules
+    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result.assert_success()
+    assert "git:invalid-submodule" not in result.stderr
+
+    # In this case, we will get the error directly after tracking,
+    # since the new HEAD does not require any submodules which are
+    # not locally cached, the Source will be CACHED directly after
+    # tracking and the validations will occur as a result.
+    #
+    result = cli.run(project=project, args=['track', 'target.bst'])
+    if fail == 'error':
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, 'git:invalid-submodule')
     else:
         result.assert_success()
         assert "git:invalid-submodule" in result.stderr
