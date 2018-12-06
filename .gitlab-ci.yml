@@ -201,7 +201,7 @@ docs:
 overnight-tests:
   <<: *overnight-tests-template
   script:
-  - make -C freedesktop-sdk
+  - make ARCH_OPTS="-o target_arch x86_64 -o bootstrap_target_arch x86_64" -C freedesktop-sdk
   tags:
   - overnight-tests
 
@@ -210,7 +210,7 @@ overnight-tests-no-cache:
   script:
   - sed -i '/artifacts:/,+1 d' freedesktop-sdk/bootstrap/project.conf
   - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
-  - make -C freedesktop-sdk
+  - make ARCH_OPTS="-o target_arch x86_64 -o bootstrap_target_arch x86_64" -C freedesktop-sdk
   tags:
   - overnight-tests
 
