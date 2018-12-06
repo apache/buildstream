@@ -28,10 +28,17 @@ def generate_remote_import_element(input_path, output_path):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_source_checkout(datafiles, cli):
+@pytest.mark.parametrize('with_workspace', [('workspace'), ('no-workspace')])
+def test_source_checkout(datafiles, tmpdir_factory, cli, with_workspace):
+    tmpdir = tmpdir_factory.mktemp("")
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
+    workspace = os.path.join(str(tmpdir), 'workspace')
+
+    if with_workspace == "workspace":
+        result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, target])
+        result.assert_success()
 
     result = cli.run(project=project, args=['source-checkout', target, '--deps', 'none', checkout])
     result.assert_success()
