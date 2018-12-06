@@ -451,7 +451,7 @@ class CasBasedDirectory(Directory):
                 files = external_pathspec.list_relative_paths()
 
         if isinstance(external_pathspec, FileBasedDirectory):
-            source_directory = external_pathspec.get_underlying_directory()
+            source_directory = external_pathspec._get_underlying_directory()
             result = self._import_files_from_directory(source_directory, files=files)
         elif isinstance(external_pathspec, str):
             source_directory = external_pathspec
