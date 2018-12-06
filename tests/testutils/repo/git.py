@@ -76,6 +76,12 @@ class Git(Repo):
         self._run_git('commit', '-m', 'Added the submodule')
         return self.latest_commit()
 
+    # This can also be used to a file or a submodule
+    def remove_path(self, path):
+        self._run_git('rm', path)
+        self._run_git('commit', '-m', 'Removing {}'.format(path))
+        return self.latest_commit()
+
     def source_config(self, ref=None, checkout_submodules=None):
         config = {
             'kind': 'git',
