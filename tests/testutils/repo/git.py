@@ -64,6 +64,12 @@ class Git(Repo):
         subprocess.call(['git', 'commit', '-m', 'Added the submodule'], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
+    # This can also be used to a file or a submodule
+    def remove_path(self, path):
+        subprocess.call(['git', 'rm', path], env=GIT_ENV, cwd=self.repo)
+        subprocess.call(['git', 'commit', '-m', 'Removing {}'.format(path)], env=GIT_ENV, cwd=self.repo)
+        return self.latest_commit()
+
     def source_config(self, ref=None, checkout_submodules=None):
         config = {
             'kind': 'git',
