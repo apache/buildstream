@@ -23,14 +23,14 @@ import signal
 import string
 from collections import Mapping, namedtuple
 
-from ..types import _KeyStrength
-from .._exceptions import ArtifactError, CASError, LoadError, LoadErrorReason
-from .._message import Message, MessageType
-from .. import _signals
-from .. import utils
-from .. import _yaml
+from .types import _KeyStrength
+from ._exceptions import ArtifactError, CASError, LoadError, LoadErrorReason
+from ._message import Message, MessageType
+from . import _signals
+from . import utils
+from . import _yaml
 
-from .cascache import CASCache, CASRemote
+from ._cas import CASCache, CASRemote
 
 
 CACHE_SIZE_FILE = "cache_size"

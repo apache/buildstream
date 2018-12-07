@@ -17,5 +17,4 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .artifactcache import ArtifactCache, ArtifactCacheSpec, CACHE_SIZE_FILE
-from .artifactcache import ArtifactCacheUsage
+from .cascache import CASCache, CASRemote
