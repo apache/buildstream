@@ -3,8 +3,7 @@ import pytest
 import itertools
 import os
 
-from buildstream._artifactcache import ArtifactCacheSpec
-from buildstream._artifactcache.artifactcache import _configured_remote_artifact_cache_specs
+from buildstream._artifactcache import ArtifactCacheSpec, _configured_remote_artifact_cache_specs
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream.utils import _deduplicate

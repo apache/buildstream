@@ -38,7 +38,7 @@ from .._protos.google.rpc import code_pb2
 from .._exceptions import SandboxError
 from .. import _yaml
 from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
-from .._artifactcache.cascache import CASRemote, CASRemoteSpec
+from .._cas import CASRemote, CASRemoteSpec
 
 
 class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service')):
