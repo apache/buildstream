@@ -82,7 +82,7 @@ def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction, move_project):
     # Generate the project
     project = generate_project(str(tmpdir), ref_storage, with_junction)
     if with_junction == 'junction':
-        result = cli.run(project=project, args=['fetch', '--track', 'junction.bst'])
+        result = cli.run(project=project, args=['source', 'fetch', '--track', 'junction.bst'])
         result.assert_success()
 
     # bst show to put it in the cache
@@ -118,7 +118,7 @@ def test_yamlcache_changed_file(cli, tmpdir, ref_storage, with_junction):
     # Generate the project
     project = generate_project(str(tmpdir), ref_storage, with_junction)
     if with_junction == 'junction':
-        result = cli.run(project=project, args=['fetch', '--track', 'junction.bst'])
+        result = cli.run(project=project, args=['source', 'fetch', '--track', 'junction.bst'])
         result.assert_success()
 
     # bst show to put it in the cache

@@ -38,7 +38,7 @@ def test_default_logging(cli, tmpdir, datafiles):
                             element_name))
 
     # Now try to fetch it
-    result = cli.run(project=project, args=['fetch', element_name])
+    result = cli.run(project=project, args=['source', 'fetch', element_name])
     result.assert_success()
 
     m = re.search("\[\d\d:\d\d:\d\d\]\[\]\[\] SUCCESS Checking sources", result.stderr)
@@ -74,7 +74,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
                             element_name))
 
     # Now try to fetch it
-    result = cli.run(project=project, args=['fetch', element_name])
+    result = cli.run(project=project, args=['source', 'fetch', element_name])
     result.assert_success()
 
     m = re.search("\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,,,SUCCESS,Checking sources", result.stderr)

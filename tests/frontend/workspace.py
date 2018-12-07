@@ -1078,7 +1078,7 @@ def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
     else:
         call_dir = workspace
 
-    result = cli.run(project=project, args=['-C', call_dir, 'fetch'] + arg_elm)
+    result = cli.run(project=project, args=['-C', call_dir, 'source', 'fetch'] + arg_elm)
     result.assert_success()
 
     # We already fetched it by opening the workspace, but we're also checking
@@ -1122,7 +1122,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
 
     # The workspace is necessarily already tracked, so we only care that
     # there's no weird errors.
-    result = cli.run(project=project, args=['-C', workspace, 'track'] + arg_elm)
+    result = cli.run(project=project, args=['-C', workspace, 'source', 'track'] + arg_elm)
     result.assert_success()
 
 

@@ -91,7 +91,7 @@ def test_compose_include(cli, tmpdir, datafiles, include_domains,
     }
     create_compose_element(element_name, element_path, config=config)
 
-    result = cli.run(project=project, args=['track', 'compose/amhello.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'compose/amhello.bst'])
     assert result.exit_code == 0
 
     result = cli.run(project=project, args=['build', element_name])

@@ -41,7 +41,7 @@ def test_fetch(cli, tmpdir, datafiles, kind):
     assert cli.get_element_state(project, element_name) == 'fetch needed'
 
     # Now try to fetch it
-    result = cli.run(project=project, args=['fetch', element_name])
+    result = cli.run(project=project, args=['source', 'fetch', element_name])
     result.assert_success()
 
     # Assert that we are now buildable because the source is
@@ -55,7 +55,7 @@ def test_fetch_consistency_error(cli, tmpdir, datafiles):
 
     # When the error occurs outside of the scheduler at load time,
     # then the SourceError is reported directly as the main error.
-    result = cli.run(project=project, args=['fetch', 'error.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'error.bst'])
     result.assert_main_error(ErrorDomain.SOURCE, 'the-consistency-error')
 
 
@@ -70,7 +70,7 @@ def test_fetch_consistency_bug(cli, tmpdir, datafiles):
     #    for a fetch command, we could report this to the user
     #    more gracefully as a BUG message.
     #
-    result = cli.run(project=project, args=['fetch', 'bug.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'bug.bst'])
     assert result.exc is not None
     assert str(result.exc) == "Something went terribly wrong"
 
@@ -121,7 +121,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
 
     # Now try to fetch it, this should automatically result in fetching
     # the junction itself.
-    result = cli.run(project=project, args=['fetch', 'junction-dep.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'junction-dep.bst'])
     result.assert_success()
 
 
@@ -155,7 +155,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
 
     # Now try to fetch it, this will bail with the appropriate error
     # informing the user to track the junction first
-    result = cli.run(project=project, args=['fetch', 'junction-dep.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
 
@@ -188,10 +188,10 @@ def test_fetch_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     generate_junction(tmpdir, subproject_path, junction_path, store_ref=(ref_storage == 'inline'))
 
     if ref_storage == 'project.refs':
-        result = cli.run(project=project, args=['track', 'junction.bst'])
+        result = cli.run(project=project, args=['source', 'track', 'junction.bst'])
         result.assert_success()
-        result = cli.run(project=project, args=['track', 'junction.bst:import-etc.bst'])
+        result = cli.run(project=project, args=['source', 'track', 'junction.bst:import-etc.bst'])
         result.assert_success()
 
-    result = cli.run(project=project, args=['fetch', 'junction.bst:import-etc.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'junction.bst:import-etc.bst'])
     result.assert_success()

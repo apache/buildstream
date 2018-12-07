@@ -234,7 +234,7 @@ def test_git_show(cli, tmpdir, datafiles):
     assert result.exception.reason == LoadErrorReason.SUBPROJECT_FETCH_NEEDED
 
     # Explicitly fetch subproject
-    result = cli.run(project=project, args=['fetch', 'base.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'base.bst'])
     assert result.exit_code == 0
 
     # Check that bst show succeeds now and the pipeline includes the subproject element

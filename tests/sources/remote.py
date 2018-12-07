@@ -50,7 +50,7 @@ def test_missing_file(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
 
     result.assert_main_error(ErrorDomain.STREAM, None)
@@ -64,7 +64,7 @@ def test_path_in_filename(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
 
     # The bst file has a / in the filename param
@@ -79,7 +79,7 @@ def test_simple_file_build(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     result.assert_success()
 
@@ -112,7 +112,7 @@ def test_simple_file_custom_name_build(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     result.assert_success()
 
@@ -141,7 +141,7 @@ def test_unique_key(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target-custom-executable.bst') == "fetch needed"
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
 
     # We should download the file only once
@@ -198,7 +198,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
         server.start()
 
-        result = cli.run(project=project, args=['fetch', 'target.bst'])
+        result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
         result.assert_success()
         result = cli.run(project=project, args=['build', 'target.bst'])
         result.assert_success()

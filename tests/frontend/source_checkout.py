@@ -50,7 +50,7 @@ def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_e
     else:
         ws_cmd = []
 
-    args = ws_cmd + ['source-checkout', '--deps', 'none'] + elm_cmd + [checkout]
+    args = ws_cmd + ['source', 'checkout', '--deps', 'none'] + elm_cmd + [checkout]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
@@ -67,7 +67,7 @@ def test_source_checkout_force(datafiles, cli, force_flag):
     os.makedirs(os.path.join(checkout, 'some-thing'))
     # Path(os.path.join(checkout, 'some-file')).touch()
 
-    result = cli.run(project=project, args=['source-checkout', force_flag, target, '--deps', 'none', checkout])
+    result = cli.run(project=project, args=['source', 'checkout', force_flag, target, '--deps', 'none', checkout])
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))
@@ -79,7 +79,7 @@ def test_source_checkout_tar(datafiles, cli):
     checkout = os.path.join(cli.directory, 'source-checkout.tar')
     target = 'checkout-deps.bst'
 
-    result = cli.run(project=project, args=['source-checkout', '--tar', target, '--deps', 'none', checkout])
+    result = cli.run(project=project, args=['source', 'checkout', '--tar', target, '--deps', 'none', checkout])
     result.assert_success()
 
     assert os.path.exists(checkout)
@@ -97,7 +97,7 @@ def test_source_checkout_deps(datafiles, cli, deps):
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
-    result = cli.run(project=project, args=['source-checkout', target, '--deps', deps, checkout])
+    result = cli.run(project=project, args=['source', 'checkout', target, '--deps', deps, checkout])
     result.assert_success()
 
     # Sources of the target
@@ -125,7 +125,7 @@ def test_source_checkout_except(datafiles, cli):
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
-    result = cli.run(project=project, args=['source-checkout', target,
+    result = cli.run(project=project, args=['source', 'checkout', target,
                                             '--deps', 'all',
                                             '--except', 'import-bin.bst',
                                             checkout])
@@ -159,7 +159,7 @@ def test_source_checkout_fetch(datafiles, cli, fetch):
     # cached already
     assert cli.get_element_state(project, target) == 'fetch needed'
 
-    args = ['source-checkout']
+    args = ['source', 'checkout']
     if fetch:
         args += ['--fetch']
     args += [target, checkout]
@@ -179,7 +179,7 @@ def test_source_checkout_build_scripts(cli, tmpdir, datafiles):
     normal_name = 'source-bundle-source-bundle-hello'
     checkout = os.path.join(str(tmpdir), 'source-checkout')
 
-    args = ['source-checkout', '--include-build-scripts', element_name, checkout]
+    args = ['source', 'checkout', '--include-build-scripts', element_name, checkout]
     result = cli.run(project=project_path, args=args)
     result.assert_success()
 
@@ -196,7 +196,7 @@ def test_source_checkout_tar_buildscripts(cli, tmpdir, datafiles):
     normal_name = 'source-bundle-source-bundle-hello'
     tar_file = os.path.join(str(tmpdir), 'source-checkout.tar')
 
-    args = ['source-checkout', '--include-build-scripts', '--tar', element_name, tar_file]
+    args = ['source', 'checkout', '--include-build-scripts', '--tar', element_name, tar_file]
     result = cli.run(project=project_path, args=args)
     result.assert_success()
 

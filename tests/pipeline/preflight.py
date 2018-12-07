@@ -15,5 +15,5 @@ def test_load_simple(cli, datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Lets try to fetch it...
-    result = cli.run(project=basedir, args=['fetch', 'error.bst'])
+    result = cli.run(project=basedir, args=['source', 'fetch', 'error.bst'])
     result.assert_main_error(ErrorDomain.SOURCE, "the-preflight-error")

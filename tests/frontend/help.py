@@ -20,12 +20,11 @@ def test_help_main(cli):
 @pytest.mark.parametrize("command", [
     ('build'),
     ('checkout'),
-    ('fetch'),
     ('pull'),
     ('push'),
     ('shell'),
     ('show'),
-    ('track'),
+    ('source'),
     ('workspace')
 ])
 def test_help(cli, command):

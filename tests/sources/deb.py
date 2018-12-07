@@ -54,7 +54,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     assert "FAILURE Try #" in result.stderr
     result.assert_main_error(ErrorDomain.STREAM, None)
@@ -72,7 +72,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
@@ -90,7 +90,7 @@ def test_track_warning(cli, tmpdir, datafiles):
 
     # Track it
     result = cli.run(project=project, args=[
-        'track', 'target.bst'
+        'source', 'track', 'target.bst'
     ])
     result.assert_success()
     assert "Potential man-in-the-middle attack!" in result.stderr
@@ -108,9 +108,9 @@ def test_stage_default_basedir(cli, tmpdir, datafiles):
     _copy_deb(DATA_DIR, tmpdir)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -136,9 +136,9 @@ def test_stage_no_basedir(cli, tmpdir, datafiles):
     _copy_deb(DATA_DIR, tmpdir)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -164,9 +164,9 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles):
     _copy_deb(DATA_DIR, tmpdir)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()

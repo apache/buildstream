@@ -58,7 +58,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 
     # Assert that fetch raises an error here
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
@@ -91,7 +91,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -130,7 +130,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -169,7 +169,7 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -208,7 +208,7 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -252,7 +252,7 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -297,7 +297,7 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -337,7 +337,7 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -375,11 +375,11 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
     repo.add_file(os.path.join(project, 'inconsistent-submodule', '.gitmodules'))
 
     # Fetch should work, we're not yet at the offending ref
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
 
     # Track will encounter an inconsistent submodule without any ref
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
 
     # Assert that we are just fine without it, and emit a warning to the user.
@@ -508,7 +508,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
 
     # We will notice this directly in fetch, as it will try to fetch
     # the submodules it discovers as a result of fetching the primary repo.
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
 
     # Assert a warning or an error depending on what we're checking
     if fail == 'error':
@@ -571,19 +571,19 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
 
     # Fetch the repo, we will not see the warning because we
     # are still pointing to a ref which predates the submodules
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     assert "git:unlisted-submodule" not in result.stderr
 
     # We won't get a warning/error when tracking either, the source
     # has not become Consistency.CACHED so the opportunity to check
     # for the warning has not yet arisen.
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
     assert "git:unlisted-submodule" not in result.stderr
 
     # Fetching the repo at the new ref will finally reveal the warning
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     if fail == 'error':
         result.assert_main_error(ErrorDomain.STREAM, None)
         result.assert_task_error(ErrorDomain.PLUGIN, 'git:unlisted-submodule')
@@ -642,7 +642,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
 
     # We will notice this directly in fetch, as it will try to fetch
     # the submodules it discovers as a result of fetching the primary repo.
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
 
     # Assert a warning or an error depending on what we're checking
     if fail == 'error':
@@ -706,7 +706,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
 
     # Fetch the repo, we will not see the warning because we
     # are still pointing to a ref which predates the submodules
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     assert "git:invalid-submodule" not in result.stderr
 
@@ -715,7 +715,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
     # not locally cached, the Source will be CACHED directly after
     # tracking and the validations will occur as a result.
     #
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     if fail == 'error':
         result.assert_main_error(ErrorDomain.STREAM, None)
         result.assert_task_error(ErrorDomain.PLUGIN, 'git:invalid-submodule')
@@ -751,7 +751,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     _yaml.dump(element, element_path)
 
     # Track it
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
 
     element = _yaml.load(element_path)
@@ -767,7 +767,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     assert len(new_ref) == 40
 
     # Fetch it
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
 
 
@@ -835,10 +835,10 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     _yaml.dump(element, element_path)
 
     if ref_storage == 'inline':
-        result = cli.run(project=project, args=['track', 'target.bst'])
+        result = cli.run(project=project, args=['source', 'track', 'target.bst'])
         result.assert_success()
     else:
-        result = cli.run(project=project, args=['track', 'target.bst', '--deps', 'all'])
+        result = cli.run(project=project, args=['source', 'track', 'target.bst', '--deps', 'all'])
         result.assert_success()
 
     if ref_storage == 'inline':
@@ -916,7 +916,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     element_path = os.path.join(project, 'target.bst')
     _yaml.dump(element, element_path)
 
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
 
     element = _yaml.load(element_path)

@@ -346,7 +346,7 @@ setup(name='BuildStream',
           # See issues #571 and #790.
           'ruamel.yaml >= 0.15.41, < 0.15.52',
           'pluginbase',
-          'Click',
+          'Click >= 7.0',
           'jinja2 >= 2.10',
           'protobuf >= 3.5',
           'grpcio >= 1.10',

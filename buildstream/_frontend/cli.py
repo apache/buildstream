@@ -49,7 +49,8 @@ def search_command(args, *, context=None):
 def complete_commands(cmd, args, incomplete):
     command_ctx = search_command(args[1:])
     if command_ctx and command_ctx.command and isinstance(command_ctx.command, click.MultiCommand):
-        return [subcommand + " " for subcommand in command_ctx.command.list_commands(command_ctx)]
+        return [subcommand + " " for subcommand in command_ctx.command.list_commands(command_ctx)
+                if not command_ctx.command.get_command(command_ctx, subcommand).hidden]
 
     return []
 
@@ -355,106 +356,6 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 
 
 ##################################################################
-#                          Fetch Command                         #
-##################################################################
-@cli.command(short_help="Fetch sources in a pipeline")
-@click.option('--except', 'except_', multiple=True,
-              type=click.Path(readable=False),
-              help="Except certain dependencies from fetching")
-@click.option('--deps', '-d', default='plan',
-              type=click.Choice(['none', 'plan', 'all']),
-              help='The dependencies to fetch (default: plan)')
-@click.option('--track', 'track_', default=False, is_flag=True,
-              help="Track new source references before fetching")
-@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
-              help="Allow tracking to cross junction boundaries")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
-@click.pass_obj
-def fetch(app, elements, deps, track_, except_, track_cross_junctions):
-    """Fetch sources required to build the pipeline
-
-    By default this will only try to fetch sources which are
-    required for the build plan of the specified target element,
-    omitting sources for any elements which are already built
-    and available in the artifact cache.
-
-    Specify `--deps` to control which sources to fetch:
-
-    \b
-        none:  No dependencies, just the element itself
-        plan:  Only dependencies required for the build plan
-        all:   All dependencies
-    """
-    from .._pipeline import PipelineSelection
-
-    if track_cross_junctions and not track_:
-        click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
-        sys.exit(-1)
-
-    if track_ and deps == PipelineSelection.PLAN:
-        click.echo("WARNING: --track specified for tracking of a build plan\n\n"
-                   "Since tracking modifies the build plan, all elements will be tracked.", err=True)
-        deps = PipelineSelection.ALL
-
-    with app.initialized(session_name="Fetch"):
-        if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
-
-        app.stream.fetch(elements,
-                         selection=deps,
-                         except_targets=except_,
-                         track_targets=track_,
-                         track_cross_junctions=track_cross_junctions)
-
-
-##################################################################
-#                          Track Command                         #
-##################################################################
-@cli.command(short_help="Track new source references")
-@click.option('--except', 'except_', multiple=True,
-              type=click.Path(readable=False),
-              help="Except certain dependencies from tracking")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'all']),
-              help='The dependencies to track (default: none)')
-@click.option('--cross-junctions', '-J', default=False, is_flag=True,
-              help="Allow crossing junction boundaries")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
-@click.pass_obj
-def track(app, elements, deps, except_, cross_junctions):
-    """Consults the specified tracking branches for new versions available
-    to build and updates the project with any newly available references.
-
-    By default this will track just the specified element, but you can also
-    update a whole tree of dependencies in one go.
-
-    Specify `--deps` to control which sources to track:
-
-    \b
-        none:  No dependencies, just the specified elements
-        all:   All dependencies of all specified elements
-    """
-    with app.initialized(session_name="Track"):
-        if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
-
-        # Substitute 'none' for 'redirect' so that element redirections
-        # will be done
-        if deps == 'none':
-            deps = 'redirect'
-        app.stream.track(elements,
-                         selection=deps,
-                         except_targets=except_,
-                         cross_junctions=cross_junctions)
-
-
-##################################################################
 #                           Pull Command                         #
 ##################################################################
 @cli.command(short_help="Pull a built artifact")
@@ -744,9 +645,108 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 
 
 ##################################################################
+#                        Source Command                          #
+##################################################################
+@cli.group(short_help="Manipulate sources for an element")
+def source():
+    """Manipulate sources for an element"""
+    pass
+
+
+##################################################################
+#                     Source Fetch Command                       #
+##################################################################
+@source.command(name="fetch", short_help="Fetch sources in a pipeline")
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(readable=False),
+              help="Except certain dependencies from fetching")
+@click.option('--deps', '-d', default='plan',
+              type=click.Choice(['none', 'plan', 'all']),
+              help='The dependencies to fetch (default: plan)')
+@click.option('--track', 'track_', default=False, is_flag=True,
+              help="Track new source references before fetching")
+@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
+              help="Allow tracking to cross junction boundaries")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def source_fetch(app, elements, deps, track_, except_, track_cross_junctions):
+    """Fetch sources required to build the pipeline
+
+    By default this will only try to fetch sources which are
+    required for the build plan of the specified target element,
+    omitting sources for any elements which are already built
+    and available in the artifact cache.
+
+    Specify `--deps` to control which sources to fetch:
+
+    \b
+        none:  No dependencies, just the element itself
+        plan:  Only dependencies required for the build plan
+        all:   All dependencies
+    """
+    from .._pipeline import PipelineSelection
+
+    if track_cross_junctions and not track_:
+        click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
+        sys.exit(-1)
+
+    if track_ and deps == PipelineSelection.PLAN:
+        click.echo("WARNING: --track specified for tracking of a build plan\n\n"
+                   "Since tracking modifies the build plan, all elements will be tracked.", err=True)
+        deps = PipelineSelection.ALL
+
+    with app.initialized(session_name="Fetch"):
+        app.stream.fetch(elements,
+                         selection=deps,
+                         except_targets=except_,
+                         track_targets=track_,
+                         track_cross_junctions=track_cross_junctions)
+
+
+##################################################################
+#                     Source Track Command                       #
+##################################################################
+@source.command(name="track", short_help="Track new source references")
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(readable=False),
+              help="Except certain dependencies from tracking")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to track (default: none)')
+@click.option('--cross-junctions', '-J', default=False, is_flag=True,
+              help="Allow crossing junction boundaries")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def source_track(app, elements, deps, except_, cross_junctions):
+    """Consults the specified tracking branches for new versions available
+    to build and updates the project with any newly available references.
+
+    By default this will track just the specified element, but you can also
+    update a whole tree of dependencies in one go.
+
+    Specify `--deps` to control which sources to track:
+
+    \b
+        none:  No dependencies, just the specified elements
+        all:   All dependencies of all specified elements
+    """
+    with app.initialized(session_name="Track"):
+        # Substitute 'none' for 'redirect' so that element redirections
+        # will be done
+        if deps == 'none':
+            deps = 'redirect'
+        app.stream.track(elements,
+                         selection=deps,
+                         except_targets=except_,
+                         cross_junctions=cross_junctions)
+
+
+##################################################################
 #                  Source Checkout Command                      #
 ##################################################################
-@cli.command(name='source-checkout', short_help='Checkout sources for an element')
+@source.command(name='checkout', short_help='Checkout sources for an element')
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--except', 'except_', multiple=True,
@@ -1035,3 +1035,54 @@ def artifact_log(app, artifacts):
                 with open(log) as f:
                     data = f.read()
                     click.echo_via_pager(data)
+
+
+##################################################################
+#                      DEPRECATED Commands                       #
+##################################################################
+
+# XXX: The following commands are now obsolete, but they are kept
+# here along with all the options so that we can provide nice error
+# messages when they are called.
+# Also, note that these commands are hidden from the top-level help.
+
+##################################################################
+#                          Fetch Command                         #
+##################################################################
+@cli.command(short_help="Fetch sources in a pipeline", hidden=True)
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(readable=False),
+              help="Except certain dependencies from fetching")
+@click.option('--deps', '-d', default='plan',
+              type=click.Choice(['none', 'plan', 'all']),
+              help='The dependencies to fetch (default: plan)')
+@click.option('--track', 'track_', default=False, is_flag=True,
+              help="Track new source references before fetching")
+@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
+              help="Allow tracking to cross junction boundaries")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def fetch(app, elements, deps, track_, except_, track_cross_junctions):
+    click.echo("This command is now obsolete. Use `bst source fetch` instead.", err=True)
+    sys.exit(1)
+
+
+##################################################################
+#                          Track Command                         #
+##################################################################
+@cli.command(short_help="Track new source references", hidden=True)
+@click.option('--except', 'except_', multiple=True,
+              type=click.Path(readable=False),
+              help="Except certain dependencies from tracking")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to track (default: none)')
+@click.option('--cross-junctions', '-J', default=False, is_flag=True,
+              help="Allow crossing junction boundaries")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def track(app, elements, deps, except_, cross_junctions):
+    click.echo("This command is now obsolete. Use `bst source track` instead.", err=True)
+    sys.exit(1)
