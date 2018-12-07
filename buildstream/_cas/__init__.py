@@ -17,4 +17,5 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .cascache import CASCache, CASRemote, CASRemoteSpec
+from .cascache import CASCache
+from .casremote import CASRemote, CASRemoteSpec

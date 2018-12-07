@@ -284,6 +284,21 @@ class CASError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.CAS, reason=reason, temporary=True)
 
 
+# CASRemoteError
+#
+# Raised when errors are encountered in the remote CAS
+class CASRemoteError(CASError):
+    pass
+
+
+# CASCacheError
+#
+# Raised when errors are encountered in the local CASCacheError
+#
+class CASCacheError(CASError):
+    pass
+
+
 # PipelineError
 #
 # Raised from pipeline operations
