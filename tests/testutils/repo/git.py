@@ -82,9 +82,22 @@ class Git(Repo):
 
     def latest_commit(self):
         output = subprocess.check_output([
-            'git', 'rev-parse', 'master'
+            'git', 'rev-parse', 'HEAD'
         ], env=GIT_ENV, cwd=self.repo)
         return output.decode('UTF-8').strip()
 
     def branch(self, branch_name):
         subprocess.call(['git', 'checkout', '-b', branch_name], env=GIT_ENV, cwd=self.repo)
+
+    def delete_tag(self, tag_name):
+        subprocess.call(['git', 'tag', '-d', tag_name],
+                        env=GIT_ENV, cwd=self.repo)
+
+    def checkout(self, commit):
+        subprocess.call(['git', 'checkout', commit],
+                        env=GIT_ENV, cwd=self.repo)
+
+    def add_annotated_tag(self, tag, message):
+        subprocess.call(['git', 'tag', '-a', tag, '-m', message],
+                        env=GIT_ENV, cwd=self.repo)
+        return self.latest_commit()

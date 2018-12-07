@@ -22,6 +22,7 @@
 
 import os
 import pytest
+import shutil
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
@@ -408,3 +409,100 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['show', 'target.bst'])
     result.assert_main_error(ErrorDomain.SOURCE, "missing-track-and-ref")
     result.assert_task_error(None, None)
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
+    """When using multiple remotes in cache (i.e. when using aliases), we
+    need to make sure we override tags. This is not allowed to fetch
+    tags that were present from different origins
+    """
+
+    project = str(datafiles)
+
+    repofiles = os.path.join(str(tmpdir), 'repofiles')
+    os.makedirs(repofiles, exist_ok=True)
+    file0 = os.path.join(repofiles, 'file0')
+    with open(file0, 'w') as f:
+        f.write('test\n')
+
+    repo = create_repo('git', str(tmpdir))
+
+    top_commit = repo.create(repofiles)
+
+    repodir, reponame = os.path.split(repo.repo)
+    project_config = _yaml.load(os.path.join(project, 'project.conf'))
+    project_config['aliases'] = {
+        'repo': 'http://example.com/'
+    }
+    project_config['mirrors'] = [
+        {
+            'name': 'middle-earth',
+            'aliases': {
+                'repo': ['file://{}/'.format(repodir)]
+            }
+        }
+    ]
+    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+
+    repo.add_annotated_tag('tag', 'tag')
+
+    file1 = os.path.join(repofiles, 'file1')
+    with open(file1, 'w') as f:
+        f.write('test\n')
+
+    ref = repo.add_file(file1)
+
+    config = repo.source_config(ref=ref)
+    del config['track']
+    config['url'] = 'repo:{}'.format(reponame)
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            config
+        ],
+    }
+    element_path = os.path.join(project, 'target.bst')
+    _yaml.dump(element, element_path)
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    repo.checkout(top_commit)
+
+    file2 = os.path.join(repofiles, 'file2')
+    with open(file2, 'w') as f:
+        f.write('test\n')
+
+    new_ref = repo.add_file(file2)
+
+    repo.delete_tag('tag')
+    repo.add_annotated_tag('tag', 'tag')
+    repo.checkout('master')
+
+    otherpath = os.path.join(str(tmpdir), 'other_path')
+    shutil.copytree(repo.repo,
+                    os.path.join(otherpath, 'repo'))
+    new_repo = create_repo('git', otherpath)
+
+    repodir, reponame = os.path.split(repo.repo)
+
+    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+
+    config = repo.source_config(ref=new_ref)
+    del config['track']
+    config['url'] = 'repo:{}'.format(reponame)
+
+    element = {
+        'kind': 'import',
+        'sources': [
+            config
+        ],
+    }
+    _yaml.dump(element, element_path)
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
