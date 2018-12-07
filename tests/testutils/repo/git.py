@@ -99,11 +99,14 @@ class Git(Repo):
         return config
 
     def latest_commit(self):
-        output = self._run_git('rev-parse', 'master', stdout=subprocess.PIPE).stdout
+        output = self._run_git('rev-parse', 'HEAD', stdout=subprocess.PIPE).stdout
         return output.decode('UTF-8').strip()
 
     def branch(self, branch_name):
         self._run_git('checkout', '-b', branch_name)
+
+    def delete_tag(self, tag_name):
+        self._run_git('tag', '-d', tag_name)
 
     def checkout(self, commit):
         self._run_git('checkout', commit)
