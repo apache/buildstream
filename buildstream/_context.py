@@ -31,7 +31,7 @@ from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
-from ._artifactcache.cascache import CASCache
+from ._cas import CASCache
 from ._workspaces import Workspaces, WorkspaceProjectCache, WORKSPACE_PROJECT_FILE
 from .plugin import _plugin_lookup
 from .sandbox import SandboxRemote
