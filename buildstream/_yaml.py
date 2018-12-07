@@ -352,6 +352,7 @@ _sentinel = object()
 #    key (str): The key to get a value for in node
 #    indices (list of ints): Optionally decend into lists of lists
 #    default_value: Optionally return this value if the key is not found
+#    allow_none: (bool): Allow None to be a valid value
 #
 # Returns:
 #    The value if found in node, otherwise default_value is returned
@@ -362,7 +363,7 @@ _sentinel = object()
 # Note:
 #    Returned strings are stripped of leading and trailing whitespace
 #
-def node_get(node, expected_type, key, indices=None, default_value=_sentinel):
+def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
     value = node.get(key, default_value)
     provenance = node_get_provenance(node)
     if value is _sentinel:
@@ -377,8 +378,8 @@ def node_get(node, expected_type, key, indices=None, default_value=_sentinel):
             value = value[index]
             path += '[{:d}]'.format(index)
 
-    # We want to allow None as a valid value for any type
-    if value is None:
+    # Optionally allow None as a valid value for any type
+    if value is None and (allow_none or default_value is None):
         return None
 
     if not isinstance(value, expected_type):

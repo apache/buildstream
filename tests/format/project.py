@@ -200,3 +200,10 @@ def test_element_path_project_path_contains_symlinks(cli, datafiles, tmpdir):
         f.write("kind: manual\n")
     result = cli.run(project=linked_project, args=['show', 'element.bst'])
     result.assert_success()
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_empty_depends(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "empty-depends")
+    result = cli.run(project=project, args=['show', 'manual.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

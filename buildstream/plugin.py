@@ -323,7 +323,7 @@ class Plugin():
         provenance = _yaml.node_get_provenance(node, key=member_name)
         return str(provenance)
 
-    def node_get_member(self, node, expected_type, member_name, default=_yaml._sentinel):
+    def node_get_member(self, node, expected_type, member_name, default=_yaml._sentinel, *, allow_none=False):
         """Fetch the value of a node member, raising an error if the value is
         missing or incorrectly typed.
 
@@ -332,6 +332,7 @@ class Plugin():
            expected_type (type): The expected type of the node member
            member_name (str): The name of the member to fetch
            default (expected_type): A value to return when *member_name* is not specified in *node*
+           allow_none (bool): Allow explicitly set None values in the YAML (*Since: 1.4*)
 
         Returns:
            The value of *member_name* in *node*, otherwise *default*
@@ -352,7 +353,7 @@ class Plugin():
           # Fetch an optional integer
           level = self.node_get_member(node, int, 'level', -1)
         """
-        return _yaml.node_get(node, expected_type, member_name, default_value=default)
+        return _yaml.node_get(node, expected_type, member_name, default_value=default, allow_none=allow_none)
 
     def node_get_project_path(self, node, key, *,
                               check_is_file=False, check_is_dir=False):
