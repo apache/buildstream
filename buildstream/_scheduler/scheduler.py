@@ -72,7 +72,6 @@ class Scheduler():
         # Public members
         #
         self.active_jobs = []       # Jobs currently being run in the scheduler
-        self.waiting_jobs = []      # Jobs waiting for resources
         self.queues = None          # Exposed for the frontend to print summaries
         self.context = context      # The Context object shared with Queues
         self.terminated = False     # Whether the scheduler was asked to terminate or has terminated
@@ -85,6 +84,7 @@ class Scheduler():
         #
         # Private members
         #
+        self._waiting_jobs = []      # Jobs waiting for resources
         self._interrupt_callback = interrupt_callback
         self._ticker_callback = ticker_callback
         self._job_start_callback = job_start_callback
@@ -222,7 +222,7 @@ class Scheduler():
     #
     def schedule_jobs(self, jobs):
         for job in jobs:
-            self.waiting_jobs.append(job)
+            self._waiting_jobs.append(job)
 
     # job_completed():
     #
@@ -269,22 +269,23 @@ class Scheduler():
     # automatically when Scheduler.run() is called initially,
     #
     def _sched(self):
-        for job in self.waiting_jobs:
+
+        for job in self._waiting_jobs:
             self._resources.reserve_exclusive_resources(job)
 
-        for job in self.waiting_jobs:
+        for job in self._waiting_jobs:
             if not self._resources.reserve_job_resources(job):
                 continue
 
             job.spawn()
-            self.waiting_jobs.remove(job)
+            self._waiting_jobs.remove(job)
             self.active_jobs.append(job)
 
             if self._job_start_callback:
                 self._job_start_callback(job)
 
         # If nothings ticking, time to bail out
-        if not self.active_jobs and not self.waiting_jobs:
+        if not self.active_jobs and not self._waiting_jobs:
             self.loop.stop()
 
     # _schedule_queue_jobs()
@@ -460,7 +461,7 @@ class Scheduler():
                 job.kill()
 
         # Clear out the waiting jobs
-        self.waiting_jobs = []
+        self._waiting_jobs = []
 
     # Regular timeout for driving status in the UI
     def _tick(self):
