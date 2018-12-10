@@ -35,6 +35,14 @@ This section will give a brief summary of how some of the common features work,
 some of them or the variables they use will be further detailed in the following
 sections.
 
+The `strip-binaries` variable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `strip-binaries` variable is by default **empty**. You need to use the
+appropiate commands depending of the system you are building.
+If you are targetting Linux, ones known to work are the ones used by the
+`freedesktop-sdk <https://freedesktop-sdk.io/>`_, you can take a look to them in their
+`project.conf <https://gitlab.com/freedesktop-sdk/freedesktop-sdk/blob/freedesktop-sdk-18.08.21/project.conf#L74>`_
+
 Location for running commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``command-subdir`` variable sets where the build commands will be executed,

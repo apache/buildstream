@@ -38,48 +38,40 @@ def create_compose_element(name, path, config={}):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("include_domains,exclude_domains,expected", [
     # Test flat inclusion
-    ([], [], ['/usr', '/usr/lib', '/usr/bin',
-              '/usr/share', '/usr/lib/debug',
-              '/usr/lib/debug/usr', '/usr/lib/debug/usr/bin',
-              '/usr/lib/debug/usr/bin/hello', '/usr/bin/hello',
+    ([], [], ['/usr', '/usr/bin',
+              '/usr/share',
+              '/usr/bin/hello',
               '/usr/share/doc', '/usr/share/doc/amhello',
               '/usr/share/doc/amhello/README',
               '/tests', '/tests/test']),
     # Test only runtime
-    (['runtime'], [], ['/usr', '/usr/lib', '/usr/share',
+    (['runtime'], [], ['/usr', '/usr/share',
                        '/usr/bin', '/usr/bin/hello']),
     # Test with runtime and doc
-    (['runtime', 'doc'], [], ['/usr', '/usr/lib', '/usr/share',
+    (['runtime', 'doc'], [], ['/usr', '/usr/share',
                               '/usr/bin', '/usr/bin/hello',
                               '/usr/share/doc', '/usr/share/doc/amhello',
                               '/usr/share/doc/amhello/README']),
     # Test with only runtime excluded
-    ([], ['runtime'], ['/usr', '/usr/lib', '/usr/share',
-                       '/usr/lib/debug', '/usr/lib/debug/usr',
-                       '/usr/lib/debug/usr/bin',
-                       '/usr/lib/debug/usr/bin/hello',
+    ([], ['runtime'], ['/usr', '/usr/share',
                        '/usr/share/doc', '/usr/share/doc/amhello',
                        '/usr/share/doc/amhello/README',
                        '/tests', '/tests/test']),
     # Test with runtime and doc excluded
-    ([], ['runtime', 'doc'], ['/usr', '/usr/lib', '/usr/share',
-                              '/usr/lib/debug', '/usr/lib/debug/usr',
-                              '/usr/lib/debug/usr/bin',
-                              '/usr/lib/debug/usr/bin/hello',
+    ([], ['runtime', 'doc'], ['/usr', '/usr/share',
                               '/tests', '/tests/test']),
     # Test with runtime simultaneously in- and excluded
-    (['runtime'], ['runtime'], ['/usr', '/usr/lib', '/usr/share']),
+    (['runtime'], ['runtime'], ['/usr', '/usr/share']),
     # Test with runtime included and doc excluded
-    (['runtime'], ['doc'], ['/usr', '/usr/lib', '/usr/share',
+    (['runtime'], ['doc'], ['/usr', '/usr/share',
                             '/usr/bin', '/usr/bin/hello']),
     # Test including a custom 'test' domain
-    (['test'], [], ['/usr', '/usr/lib', '/usr/share',
+    (['test'], [], ['/usr', '/usr/share',
                     '/tests', '/tests/test']),
     # Test excluding a custom 'test' domain
-    ([], ['test'], ['/usr', '/usr/lib', '/usr/bin',
-                    '/usr/share', '/usr/lib/debug',
-                    '/usr/lib/debug/usr', '/usr/lib/debug/usr/bin',
-                    '/usr/lib/debug/usr/bin/hello', '/usr/bin/hello',
+    ([], ['test'], ['/usr', '/usr/bin',
+                    '/usr/share',
+                    '/usr/bin/hello',
                     '/usr/share/doc', '/usr/share/doc/amhello',
                     '/usr/share/doc/amhello/README'])
 ])
