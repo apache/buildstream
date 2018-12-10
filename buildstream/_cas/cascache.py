@@ -33,7 +33,7 @@ from .._protos.buildstream.v2 import buildstream_pb2
 from .. import utils
 from .._exceptions import CASCacheError
 
-from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
+from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate, _retry
 
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
@@ -203,7 +203,9 @@ class CASCache():
 
             request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
             request.key = ref
-            response = remote.ref_storage.GetReference(request)
+            for attempt in _retry():
+                with attempt:
+                    response = remote.ref_storage.GetReference(request)
 
             tree = remote_execution_pb2.Digest()
             tree.hash = response.digest.hash
@@ -288,7 +290,9 @@ class CASCache():
                 try:
                     request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
                     request.key = ref
-                    response = remote.ref_storage.GetReference(request)
+                    for attempt in _retry():
+                        with attempt:
+                            response = remote.ref_storage.GetReference(request)
 
                     if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
                         # ref is already on the server with the same tree
@@ -305,7 +309,9 @@ class CASCache():
                 request.keys.append(ref)
                 request.digest.hash = tree.hash
                 request.digest.size_bytes = tree.size_bytes
-                remote.ref_storage.UpdateReference(request)
+                for attempt in _retry():
+                    with attempt:
+                        remote.ref_storage.UpdateReference(request)
 
                 skipped_remote = False
         except grpc.RpcError as e:
@@ -983,7 +989,9 @@ class CASCache():
                 d.hash = required_digest.hash
                 d.size_bytes = required_digest.size_bytes
 
-            response = remote.cas.FindMissingBlobs(request)
+            for attempt in _retry():
+                with attempt:
+                    response = remote.cas.FindMissingBlobs(request)
             for missing_digest in response.missing_blob_digests:
                 d = remote_execution_pb2.Digest()
                 d.hash = missing_digest.hash
