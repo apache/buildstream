@@ -10,6 +10,12 @@ buildstream 1.3.1
     an element's sources and generated build scripts you can do the command
     `bst source-checkout --include-build-scripts --tar foo.bst some-file.tar`
 
+  o BREAKING CHANGE: `bst track` and `bst fetch` commands are now osbolete.
+    Their functionality is provided by `bst source track` and
+    `bst source fetch` respectively.
+
+  o Added new `bst source checkout` command to checkout sources of an element.
+
   o BREAKING CHANGE: Default strip-commands have been removed as they are too
     specific. Recommendation if you are building in Linux is to use the
     ones being used in freedesktop-sdk project, for example
@@ -76,8 +82,6 @@ buildstream 1.3.1
     already cached artifacts. When attempting to populate an artifactcache server
     with cached artifacts, only 'complete' elements can be pushed. If the element
     is expected to have a populated build tree then it must be cached before pushing.
-
-  o Added new `bst source-checkout` command to checkout sources of an element.
 
   o `bst workspace open` now supports the creation of multiple elements and
     allows the user to set a default location for their creation. This has meant
