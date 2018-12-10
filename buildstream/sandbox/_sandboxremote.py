@@ -67,16 +67,14 @@ class SandboxRemote(Sandbox):
         else:
             self.action_url = None
 
-        if 'instance' in config.exec_service:
-            self.server_instance = config.exec_service['instance']
-        else:
-            # Default server instance name is always an empty string
-            self.server_instance = ""
+        self.server_instance = config.exec_service.get('instance', None)
+        self.storage_instance = config.storage_service.get('instance', None)
 
         self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
                                                  server_cert=config.storage_service['server-cert'],
                                                  client_key=config.storage_service['client-key'],
-                                                 client_cert=config.storage_service['client-cert'])
+                                                 client_cert=config.storage_service['client-cert'],
+                                                 instance_name=self.storage_instance)
         self.operation_name = None
 
     def info(self, msg):
@@ -109,10 +107,10 @@ class SandboxRemote(Sandbox):
             ['execution-service', 'storage-service', 'url', 'action-cache-service'])
         remote_exec_service_config = require_node(remote_config, 'execution-service')
         remote_exec_storage_config = require_node(remote_config, 'storage-service')
-        remote_exec_action_config = remote_config.get('action-cache-service')
+        remote_exec_action_config = remote_config.get('action-cache-service', {})
 
         _yaml.node_validate(remote_exec_service_config, ['url', 'instance'])
-        _yaml.node_validate(remote_exec_storage_config, ['url'] + tls_keys)
+        _yaml.node_validate(remote_exec_storage_config, ['url', 'instance'] + tls_keys)
         if remote_exec_action_config:
             _yaml.node_validate(remote_exec_action_config, ['url'])
         else:
@@ -139,7 +137,7 @@ class SandboxRemote(Sandbox):
 
         spec = RemoteExecutionSpec(remote_config['execution-service'],
                                    remote_config['storage-service'],
-                                   remote_config['action-cache-service'])
+                                   remote_exec_action_config)
         return spec
 
     def run_remote_command(self, channel, action_digest):
