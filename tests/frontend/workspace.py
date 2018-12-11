@@ -122,7 +122,7 @@ class WorkspaceCreater():
         return element_tuples
 
     def open_workspaces(self, kinds, track, suffixs=None, workspace_dir=None,
-                        element_attrs=None, no_checkout=False):
+                        element_attrs=None, no_checkout=False, force=False):
 
         element_tuples = self.create_workspace_elements(kinds, track, suffixs, workspace_dir,
                                                         element_attrs)
@@ -135,6 +135,8 @@ class WorkspaceCreater():
             args.append('--track')
         if no_checkout:
             args.append('--no-checkout')
+        if force:
+            args.append('--force')
         if workspace_dir is not None:
             assert len(element_tuples) == 1, "test logic error"
             _, workspace_dir = element_tuples[0]
@@ -161,10 +163,10 @@ class WorkspaceCreater():
 
 
 def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None,
-                   project_path=None, element_attrs=None, no_checkout=False):
+                   project_path=None, element_attrs=None, no_checkout=False, force=False):
     workspace_object = WorkspaceCreater(cli, tmpdir, datafiles, project_path)
     workspaces = workspace_object.open_workspaces((kind, ), track, (suffix, ), workspace_dir,
-                                                  element_attrs, no_checkout)
+                                                  element_attrs, no_checkout, force)
     assert len(workspaces) == 1
     element_name, workspace = workspaces[0]
     return element_name, workspace_object.project_path, workspace
@@ -1238,3 +1240,65 @@ def test_external_list(cli, datafiles, tmpdir_factory):
 
     result = cli.run(project=project, args=['-C', workspace, 'workspace', 'list'])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "force, close_from_external",
+    [(False, False), (True, True), (True, False)],
+    ids=["no-force", "close-from-external", "no-close-from-external"]
+)
+def test_multiple_projects(cli, datafiles, tmpdir_factory, force, close_from_external):
+    # i.e. multiple projects can open the same workspace
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    workspace_dir = os.path.join(str(tmpdir1), "workspace")
+    alpha_project = os.path.join(str(tmpdir1), "alpha-project")
+    beta_project = os.path.join(str(tmpdir2), "beta-project")
+
+    # Open the same workspace with two different projects
+    alpha_element, alpha_project, _ = open_workspace(
+        cli, tmpdir1, datafiles, "git", False, workspace_dir=workspace_dir,
+        project_path=alpha_project, suffix="-alpha"
+    )
+    if force:
+        beta_element, beta_project, _ = open_workspace(
+            cli, tmpdir2, datafiles, "git", False, workspace_dir=workspace_dir,
+            project_path=beta_project, suffix="-beta", force=force
+        )
+    else:
+        # Opening a workspace on an existing workspace must only work with "--force"
+        message = "Opening an already-existing workspace without --force should fail"
+        with pytest.raises(AssertionError, message=message):
+            open_workspace(cli, tmpdir2, datafiles, "git", False, workspace_dir=workspace_dir,
+                           project_path=beta_project, suffix="-beta", force=force)
+        return
+
+    # Run a command and assert it came from the alpha-element
+    # Using element guessing as a way of easily telling which project was used
+    result = cli.run(project=alpha_project, args=['-C', workspace_dir, 'show', '--format', '%{name}'])
+    result.assert_success()
+    assert result.output.strip() == alpha_element
+
+    # Close the workspace
+    args = ((["-C", workspace_dir] if close_from_external else []) +
+            ['workspace', 'close'] +
+            ([] if close_from_external else [alpha_element]))
+    result = cli.run(project=alpha_project, args=args)
+    result.assert_success()
+
+    # Check that the 'beta' element is now found
+    result = cli.run(project=beta_project, args=['-C', workspace_dir, 'show', '--format', '%{name}'])
+    result.assert_success()
+    assert result.output.strip() == beta_element
+
+    # Close the workspace again
+    args = ((["-C", workspace_dir] if close_from_external else []) +
+            ['workspace', 'close'] +
+            ([] if close_from_external else [beta_element]))
+    result = cli.run(project=beta_project, args=args)
+    result.assert_success()
+
+    # Check that the workspace no longer works
+    result = cli.run(project=alpha_project, args=['-C', workspace_dir, 'show', '--format', '%{name}'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_PROJECT_CONF)
