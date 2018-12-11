@@ -2,6 +2,14 @@
 buildstream 1.3.1
 =================
 
+  o BREAKING CHANGE: BuildStream no longer strips whitespace from loaded YAML
+    by default.
+
+    This is a very minor breakage, because unless the user has explicitly
+    quoted a string with intentional whitespace, the YAML library will automatically
+    strip whitespace in compliance with the specification. This change results
+    in explicit whitespace being allowed to be specified in YAML.
+
   o BREAKING CHANGE: Default strip-commands have been removed as they are too
     specific. Recommendation if you are building in Linux is to use the
     ones being used in freedesktop-sdk project, for example
