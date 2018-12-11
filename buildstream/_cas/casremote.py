@@ -1,16 +1,22 @@
 from collections import namedtuple
+import io
 import os
+import multiprocessing
+import signal
 from urllib.parse import urlparse
+import uuid
 
 import grpc
 
 from .. import _yaml
 from .._protos.google.rpc import code_pb2
-from .._protos.google.bytestream import bytestream_pb2_grpc
+from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.buildstream.v2 import buildstream_pb2_grpc
+from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
 from .._exceptions import CASRemoteError, LoadError, LoadErrorReason
+from .. import _signals
+from .. import utils
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
@@ -158,6 +164,137 @@ class CASRemote():
                     raise
 
             self._initialized = True
+
+    # check_remote
+    #
+    # Used when checking whether remote_specs work in the buildstream main
+    # thread, runs this in a seperate process to avoid creation of gRPC threads
+    # in the main BuildStream process
+    # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
+    @classmethod
+    def check_remote(cls, remote_spec, q):
+
+        def __check_remote():
+            try:
+                remote = cls(remote_spec)
+                remote.init()
+
+                request = buildstream_pb2.StatusRequest()
+                response = remote.ref_storage.Status(request)
+
+                if remote_spec.push and not response.allow_updates:
+                    q.put('CAS server does not allow push')
+                else:
+                    # No error
+                    q.put(None)
+
+            except grpc.RpcError as e:
+                # str(e) is too verbose for errors reported to the user
+                q.put(e.details())
+
+            except Exception as e:               # pylint: disable=broad-except
+                # Whatever happens, we need to return it to the calling process
+                #
+                q.put(str(e))
+
+        p = multiprocessing.Process(target=__check_remote)
+
+        try:
+            # Keep SIGINT blocked in the child process
+            with _signals.blocked([signal.SIGINT], ignore=False):
+                p.start()
+
+            error = q.get()
+            p.join()
+        except KeyboardInterrupt:
+            utils._kill_process_tree(p.pid)
+            raise
+
+        return error
+
+    # verify_digest_on_remote():
+    #
+    # Check whether the object is already on the server in which case
+    # there is no need to upload it.
+    #
+    # Args:
+    #     digest (Digest): The object digest.
+    #
+    def verify_digest_on_remote(self, digest):
+        self.init()
+
+        request = remote_execution_pb2.FindMissingBlobsRequest()
+        request.blob_digests.extend([digest])
+
+        response = self.cas.FindMissingBlobs(request)
+        if digest in response.missing_blob_digests:
+            return False
+
+        return True
+
+    # push_message():
+    #
+    # Push the given protobuf message to a remote.
+    #
+    # Args:
+    #     message (Message): A protobuf message to push.
+    #
+    # Raises:
+    #     (CASRemoteError): if there was an error
+    #
+    def push_message(self, message):
+
+        message_buffer = message.SerializeToString()
+        message_digest = utils._message_digest(message_buffer)
+
+        self.init()
+
+        with io.BytesIO(message_buffer) as b:
+            self._send_blob(message_digest, b)
+
+        return message_digest
+
+    ################################################
+    #             Local Private Methods            #
+    ################################################
+    def _fetch_blob(self, digest, stream):
+        resource_name = '/'.join(['blobs', digest.hash, str(digest.size_bytes)])
+        request = bytestream_pb2.ReadRequest()
+        request.resource_name = resource_name
+        request.read_offset = 0
+        for response in self.bytestream.Read(request):
+            stream.write(response.data)
+        stream.flush()
+
+        assert digest.size_bytes == os.fstat(stream.fileno()).st_size
+
+    def _send_blob(self, digest, stream, u_uid=uuid.uuid4()):
+        resource_name = '/'.join(['uploads', str(u_uid), 'blobs',
+                                  digest.hash, str(digest.size_bytes)])
+
+        def request_stream(resname, instream):
+            offset = 0
+            finished = False
+            remaining = digest.size_bytes
+            while not finished:
+                chunk_size = min(remaining, _MAX_PAYLOAD_BYTES)
+                remaining -= chunk_size
+
+                request = bytestream_pb2.WriteRequest()
+                request.write_offset = offset
+                # max. _MAX_PAYLOAD_BYTES chunks
+                request.data = instream.read(chunk_size)
+                request.resource_name = resname
+                request.finish_write = remaining <= 0
+
+                yield request
+
+                offset += chunk_size
+                finished = request.finish_write
+
+        response = self.bytestream.Write(request_stream(resource_name, stream))
+
+        assert response.committed_size == digest.size_bytes
 
 
 # Represents a batch of blobs queued for fetching.
