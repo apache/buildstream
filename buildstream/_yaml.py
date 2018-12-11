@@ -360,9 +360,6 @@ _sentinel = object()
 # Raises:
 #    LoadError, when the value found is not of the expected type
 #
-# Note:
-#    Returned strings are stripped of leading and trailing whitespace
-#
 def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
     value = node.get(key, default_value)
     provenance = node_get_provenance(node)
@@ -406,10 +403,6 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, expected_type.__name__))
-
-    # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
-    if isinstance(value, str):
-        value = value.strip()
 
     return value
 
