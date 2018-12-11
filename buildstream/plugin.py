@@ -340,9 +340,6 @@ class Plugin():
         Raises:
            :class:`.LoadError`: When *member_name* is not found and no *default* was provided
 
-        Note:
-           Returned strings are stripped of leading and trailing whitespace
-
         **Example:**
 
         .. code:: python
@@ -440,9 +437,6 @@ class Plugin():
 
         Raises:
            :class:`.LoadError`
-
-        Note:
-           Returned strings are stripped of leading and trailing whitespace
 
         **Example:**
 
