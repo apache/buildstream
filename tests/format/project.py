@@ -207,3 +207,15 @@ def test_empty_depends(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "empty-depends")
     result = cli.run(project=project, args=['show', 'manual.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_preserve_whitespace(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "preserve-whitespace")
+    result = cli.run(project=project, args=['show', '--format', '%{vars}', 'manual.bst'])
+    result.assert_success()
+
+    loaded = _yaml.load_data(result.output)
+    assert loaded['trail'] == 'trailing whitespace '
+    assert loaded['lead'] == ' leading whitespace'
+    assert loaded['both'] == ' both '
