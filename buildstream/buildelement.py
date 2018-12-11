@@ -293,6 +293,13 @@ class BuildElement(Element):
         return commands
 
     def __run_command(self, sandbox, cmd, cmd_name):
+
+        # Because of variable expansion, sometimes the command
+        # may have trailing whitespace or newlines, strip this
+        # out and ensure we feed a sanitized string to the shell.
+        #
+        cmd = cmd.strip()
+
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
