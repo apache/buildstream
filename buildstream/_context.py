@@ -32,7 +32,7 @@ from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
 from ._artifactcache.cascache import CASCache
-from ._workspaces import Workspaces
+from ._workspaces import Workspaces, WorkspaceProjectCache
 from .plugin import _plugin_lookup
 
 
@@ -122,6 +122,10 @@ class Context():
         # remove a workspace directory.
         self.prompt_workspace_close_remove_dir = None
 
+        # Boolean, whether we double-check with the user that they meant to
+        # close the workspace when they're using it to access the project.
+        self.prompt_workspace_close_project_inaccessible = None
+
         # Boolean, whether we double-check with the user that they meant to do
         # a hard reset of a workspace, potentially losing changes.
         self.prompt_workspace_reset_hard = None
@@ -140,6 +144,7 @@ class Context():
         self._projects = []
         self._project_overrides = {}
         self._workspaces = None
+        self._workspace_project_cache = WorkspaceProjectCache()
         self._log_handle = None
         self._log_filename = None
         self._cascache = None
@@ -250,12 +255,15 @@ class Context():
             defaults, Mapping, 'prompt')
         _yaml.node_validate(prompt, [
             'auto-init', 'really-workspace-close-remove-dir',
+            'really-workspace-close-project-inaccessible',
             'really-workspace-reset-hard',
         ])
         self.prompt_auto_init = _node_get_option_str(
             prompt, 'auto-init', ['ask', 'no']) == 'ask'
         self.prompt_workspace_close_remove_dir = _node_get_option_str(
             prompt, 'really-workspace-close-remove-dir', ['ask', 'yes']) == 'ask'
+        self.prompt_workspace_close_project_inaccessible = _node_get_option_str(
+            prompt, 'really-workspace-close-project-inaccessible', ['ask', 'yes']) == 'ask'
         self.prompt_workspace_reset_hard = _node_get_option_str(
             prompt, 'really-workspace-reset-hard', ['ask', 'yes']) == 'ask'
 
@@ -285,7 +293,7 @@ class Context():
     #
     def add_project(self, project):
         if not self._projects:
-            self._workspaces = Workspaces(project)
+            self._workspaces = Workspaces(project, self._workspace_project_cache)
         self._projects.append(project)
 
     # get_projects():
@@ -311,6 +319,16 @@ class Context():
 
     def get_workspaces(self):
         return self._workspaces
+
+    # get_workspace_project_cache():
+    #
+    # Return the WorkspaceProjectCache object used for this BuildStream invocation
+    #
+    # Returns:
+    #    (WorkspaceProjectCache): The WorkspaceProjectCache object
+    #
+    def get_workspace_project_cache(self):
+        return self._workspace_project_cache
 
     # get_overrides():
     #

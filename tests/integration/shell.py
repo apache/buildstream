@@ -353,3 +353,29 @@ def test_integration_devices(cli, tmpdir, datafiles):
 
     result = execute_shell(cli, project, ["true"], element=element_name)
     assert result.exit_code == 0
+
+
+# Test that a shell can be opened from an external workspace
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("build_shell", [("build"), ("nobuild")])
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_shell):
+    tmpdir = tmpdir_factory.mktemp("")
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'autotools/amhello.bst'
+    workspace_dir = os.path.join(str(tmpdir), 'workspace')
+
+    result = cli.run(project=project, args=[
+        'workspace', 'open', '--directory', workspace_dir, element_name
+    ])
+    result.assert_success()
+
+    result = cli.run(project=project, args=['-C', workspace_dir, 'build', element_name])
+    result.assert_success()
+
+    command = ['shell']
+    if build_shell == 'build':
+        command.append('--build')
+    command.extend([element_name, '--', 'true'])
+    result = cli.run(project=project, cwd=workspace_dir, args=command)
+    result.assert_success()

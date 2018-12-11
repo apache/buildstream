@@ -41,6 +41,7 @@ from .element import Element
 from ._message import Message, MessageType
 from ._includes import Includes
 from ._platform import Platform
+from ._workspaces import WORKSPACE_PROJECT_FILE
 
 
 # Project Configuration file
@@ -95,8 +96,10 @@ class Project():
         # The project name
         self.name = None
 
-        # The project directory
-        self.directory = self._ensure_project_dir(directory)
+        self._context = context  # The invocation Context, a private member
+
+        # The project directory, and whether the element whose workspace it was invoked from
+        self.directory, self._invoked_from_workspace_element = self._find_project_dir(directory)
 
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
@@ -117,7 +120,6 @@ class Project():
         #
         # Private Members
         #
-        self._context = context  # The invocation Context
 
         self._default_mirror = default_mirror    # The name of the preferred mirror.
 
@@ -370,6 +372,14 @@ class Project():
             self.junction._get_project().ensure_fully_loaded()
 
         self._load_second_pass()
+
+    # invoked_from_workspace_element()
+    #
+    # Returns the element whose workspace was used to invoke buildstream
+    # if buildstream was invoked from an external workspace
+    #
+    def invoked_from_workspace_element(self):
+        return self._invoked_from_workspace_element
 
     # cleanup()
     #
@@ -650,7 +660,7 @@ class Project():
         # Source url aliases
         output._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
 
-    # _ensure_project_dir()
+    # _find_project_dir()
     #
     # Returns path of the project directory, if a configuration file is found
     # in given directory or any of its parent directories.
@@ -661,18 +671,30 @@ class Project():
     # Raises:
     #    LoadError if project.conf is not found
     #
-    def _ensure_project_dir(self, directory):
-        directory = os.path.abspath(directory)
-        while not os.path.isfile(os.path.join(directory, _PROJECT_CONF_FILE)):
-            parent_dir = os.path.dirname(directory)
-            if directory == parent_dir:
-                raise LoadError(
-                    LoadErrorReason.MISSING_PROJECT_CONF,
-                    '{} not found in current directory or any of its parent directories'
-                    .format(_PROJECT_CONF_FILE))
-            directory = parent_dir
+    # Returns:
+    #    (str) - the directory that contains the project, and
+    #    (str) - the name of the element required to find the project, or None
+    #
+    def _find_project_dir(self, directory):
+        workspace_element = None
+        found_directory, filename = utils._search_upward_for_files(
+            directory, [_PROJECT_CONF_FILE, WORKSPACE_PROJECT_FILE]
+        )
+        if filename == _PROJECT_CONF_FILE:
+            project_directory = found_directory
+        elif filename == WORKSPACE_PROJECT_FILE:
+            workspace_project_cache = self._context.get_workspace_project_cache()
+            workspace_project = workspace_project_cache.get(found_directory)
+            if workspace_project:
+                project_directory = workspace_project.get_default_project_path()
+                workspace_element = workspace_project.get_default_element()
+        else:
+            raise LoadError(
+                LoadErrorReason.MISSING_PROJECT_CONF,
+                '{} not found in current directory or any of its parent directories'
+                .format(_PROJECT_CONF_FILE))
 
-        return directory
+        return project_directory, workspace_element
 
     def _load_plugin_factories(self, config, output):
         plugin_source_origins = []   # Origins of custom sources

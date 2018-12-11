@@ -115,3 +115,23 @@ def test_close_all_cross_junction(cli, tmpdir):
     assert isinstance(loaded.get('workspaces'), list)
     workspaces = loaded['workspaces']
     assert len(workspaces) == 0
+
+
+def test_subdir_command_cross_junction(cli, tmpdir):
+    # i.e. commands can be run successfully from a subdirectory of the
+    # junction's workspace, in case project loading logic has gone wrong
+    project = prepare_junction_project(cli, tmpdir)
+    workspace = os.path.join(str(tmpdir), 'workspace')
+    junction_element = 'sub.bst'
+
+    # Open the junction as a workspace
+    args = ['workspace', 'open', '--directory', workspace, junction_element]
+    result = cli.run(project=project, args=args)
+    result.assert_success()
+
+    # Run commands from a subdirectory of the workspace
+    newdir = os.path.join(str(workspace), "newdir")
+    element_name = 'data.bst'
+    os.makedirs(newdir)
+    result = cli.run(project=str(workspace), args=['-C', newdir, 'show', element_name])
+    result.assert_success()

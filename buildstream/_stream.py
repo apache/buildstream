@@ -581,15 +581,7 @@ class Stream():
                     todo_elements = "\nDid not try to create workspaces for " + todo_elements
                 raise StreamError("Failed to create workspace directory: {}".format(e) + todo_elements) from e
 
-            workspaces.create_workspace(target._get_full_name(), directory)
-
-            if not no_checkout:
-                with target.timed_activity("Staging sources to {}".format(directory)):
-                    target._open_workspace()
-
-            # Saving the workspace once it is set up means that if the next workspace fails to be created before
-            # the configuration gets saved. The successfully created workspace still gets saved.
-            workspaces.save_config()
+            workspaces.create_workspace(target, directory, checkout=not no_checkout)
             self._message(MessageType.INFO, "Created a workspace for element: {}"
                           .format(target._get_full_name()))
 
@@ -672,10 +664,7 @@ class Stream():
                                       .format(workspace_path, e)) from e
 
             workspaces.delete_workspace(element._get_full_name())
-            workspaces.create_workspace(element._get_full_name(), workspace_path)
-
-            with element.timed_activity("Staging sources to {}".format(workspace_path)):
-                element._open_workspace()
+            workspaces.create_workspace(element, workspace_path, checkout=True)
 
             self._message(MessageType.INFO,
                           "Reset workspace for {} at: {}".format(element.name,
@@ -706,6 +695,20 @@ class Stream():
             return True
 
         return False
+
+    # workspace_is_required()
+    #
+    # Checks whether the workspace belonging to element_name is required to
+    # load the project
+    #
+    # Args:
+    #    element_name (str): The element whose workspace may be required
+    #
+    # Returns:
+    #    (bool): True if the workspace is required
+    def workspace_is_required(self, element_name):
+        invoked_elm = self._project.invoked_from_workspace_element()
+        return invoked_elm == element_name
 
     # workspace_list
     #

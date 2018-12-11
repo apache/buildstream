@@ -128,6 +128,14 @@ prompt:
   #
   really-workspace-close-remove-dir: ask
 
+  # Whether to really proceed with 'bst workspace close' when doing so would
+  # stop them from running bst commands in this workspace.
+  #
+  #  ask - Ask the user if they are sure.
+  #  yes - Always close, without asking.
+  #
+  really-workspace-close-project-inaccessible: ask
+
   # Whether to really proceed with 'bst workspace reset' doing a hard reset of
   # a workspace, potentially losing changes.
   #
