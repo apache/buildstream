@@ -1212,6 +1212,37 @@ def artifact_list(app, null, artifact_prefix):
               end=sentinel)
 
 
+##########################################################################
+#                     Artifact List Contents Command                     #
+##########################################################################
+@artifact.command(name='list-contents', short_help="List contents of artifacts")
+@click.option('--null', '-z', default=False, is_flag=True,
+              help="Separate tokens with NUL bytes instead of newlines")
+@click.argument('artifacts', type=click.Path(), nargs=-1)
+@click.pass_obj
+def artifact_list_contents(app, null, artifacts):
+    """List the contents of artifacts"""
+
+    sentinel = '\0' if null else '\n'
+
+    with app.initialized():
+        cache = app.context.artifactcache
+
+        elements, artifacts = _classify_artifacts(artifacts, cache.cas,
+                                                  app.project.directory)
+
+        if not elements and not artifacts:
+            element = app.context.guess_element()
+            if element is not None:
+                elements = [element]
+
+        vdirs = _load_vdirs(app, elements, artifacts)
+
+        for vdir in vdirs:
+            vdir = vdir.descend(["files"])
+            print(sentinel.join(vdir.list_relative_paths()), end=sentinel)
+
+
 ##################################################################
 #                      DEPRECATED Commands                       #
 ##################################################################
