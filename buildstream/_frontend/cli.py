@@ -150,6 +150,8 @@ def override_completions(cmd, cmd_param, args, incomplete):
             complete_list = complete_target(args, incomplete)
             complete_list.extend(complete_artifact(args, incomplete))
             return complete_list
+        if cmd_param.name == 'artifact_prefix':
+            return complete_artifact(args, incomplete)
 
     raise CompleteUnhandled()
 
@@ -1186,6 +1188,28 @@ def artifact_delete(app, artifacts):
                 cache.remove(cache.get_artifact_fullname(element, element._get_cache_key()))
         for i, ref in enumerate(artifacts, start=1):
             cache.cas.remove(ref, defer_prune=(i != len(artifacts)))
+
+
+#################################################################
+#                     Artifact List Command                     #
+#################################################################
+@artifact.command(name='list', short_help="List artifacts that match the prefix")
+@click.option('--null', '-z', default=False, is_flag=True,
+              help="Separate tokens with NUL bytes instead of newlines")
+@click.argument('artifact_prefix', type=click.Path(), nargs=-1)
+@click.pass_obj
+def artifact_list(app, null, artifact_prefix):
+    """List artifact refs that match the prefix"""
+
+    sentinel = '\0' if null else '\n'
+
+    with app.initialized():
+        cas = app.context.artifactcache.cas
+
+        prefixes = _classify_artifact_refs(artifact_prefix, cas)
+        print(sentinel.join(ref for ref in cas.list_refs()
+                            if any(ref.startswith(pfx) for pfx in prefixes)),
+              end=sentinel)
 
 
 ##################################################################
