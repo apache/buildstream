@@ -1018,6 +1018,11 @@ def artifact_log(app, artifacts):
         elements, artifacts = _classify_artifacts(artifacts, cache.cas,
                                                   app.project.directory)
 
+        if not elements and not artifacts:
+            element = app.context.guess_element()
+            if element is not None:
+                elements = [element]
+
         vdirs = []
         extractdirs = []
         if artifacts:
