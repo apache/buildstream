@@ -2,6 +2,23 @@
 buildstream 1.3.1
 =================
 
+  o Added `bst artifact {list,list-contents,delete,diff}` subcommands.
+
+    `bst artifact list` shows the artifacts in the cache.
+    `bst artifact list-contents` shows the files in artifacts in the cache.
+    `bst artifact delete` removes artifacts from the cache.
+    `bst artifact diff` summarises the difference between artifacts.
+
+  o Added `bst artifact checkout` subcommand.
+
+    This implements the features of `bst checkout`,
+    though it takes `--directory` and `--tar` options
+    instead of using a location argument,
+    since it may be passed multiple element targets or artifact refs.
+
+    `--deps`, `--tar` and `--integrate` are not supported
+    when not passed a single element target.
+
   o Added `bst artifact log` subcommand for viewing build logs.
 
   o BREAKING CHANGE: The bst source-bundle command has been removed. The
