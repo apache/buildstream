@@ -738,11 +738,12 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 @click.option('--tar', 'tar', default=False, is_flag=True,
               help='Create a tarball from the element\'s sources instead of a '
                    'file tree.')
-@click.argument('element', required=False,
-                type=click.Path(readable=False))
+@click.option('--include-build-scripts', 'build_scripts', is_flag=True)
+@click.argument('element', required=False, type=click.Path(readable=False))
 @click.argument('location', type=click.Path(), required=False)
 @click.pass_obj
-def source_checkout(app, element, location, force, deps, fetch_, except_, tar):
+def source_checkout(app, element, location, force, deps, fetch_, except_,
+                    tar, build_scripts):
     """Checkout sources of an element to the specified location
     """
     if not element and not location:
@@ -766,7 +767,8 @@ def source_checkout(app, element, location, force, deps, fetch_, except_, tar):
                                    deps=deps,
                                    fetch=fetch_,
                                    except_targets=except_,
-                                   tar=tar)
+                                   tar=tar,
+                                   include_build_scripts=build_scripts)
 
 
 ##################################################################

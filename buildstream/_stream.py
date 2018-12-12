@@ -453,7 +453,8 @@ class Stream():
                         deps='none',
                         fetch=False,
                         except_targets=(),
-                        tar=False):
+                        tar=False,
+                        include_build_scripts=False):
 
         self._check_location_writable(location, force=force, tar=tar)
 
@@ -469,7 +470,8 @@ class Stream():
 
         # Stage all sources determined by scope
         try:
-            self._source_checkout(elements, location, force, deps, fetch, tar)
+            self._source_checkout(elements, location, force, deps,
+                                  fetch, tar, include_build_scripts)
         except BstError as e:
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
@@ -807,7 +809,7 @@ class Stream():
             ]
 
             self._write_element_sources(os.path.join(tempdir, "source"), elements)
-            self._write_build_script(tempdir, elements)
+            self._write_master_build_script(tempdir, elements)
             self._collect_sources(tempdir, tar_location,
                                   target.normal_name, compression)
 
@@ -1197,7 +1199,8 @@ class Stream():
                          force=False,
                          deps='none',
                          fetch=False,
-                         tar=False):
+                         tar=False,
+                         include_build_scripts=False):
         location = os.path.abspath(location)
         location_parent = os.path.abspath(os.path.join(location, ".."))
 
@@ -1207,6 +1210,8 @@ class Stream():
         temp_source_dir = tempfile.TemporaryDirectory(dir=location_parent)
         try:
             self._write_element_sources(temp_source_dir.name, elements)
+            if include_build_scripts:
+                self._write_build_scripts(temp_source_dir.name, elements)
             if tar:
                 self._create_tarball(temp_source_dir.name, location)
             else:
@@ -1266,8 +1271,14 @@ class Stream():
         except OSError as e:
             raise StreamError("Failed to create tar archive: {}".format(e)) from e
 
+    # Write all the build_scripts for elements in the directory location
+    def _write_build_scripts(self, location, elements):
+        for element in elements:
+            self._write_element_script(location, element)
+        self._write_master_build_script(location, elements)
+
     # Write a master build script to the sandbox
-    def _write_build_script(self, directory, elements):
+    def _write_master_build_script(self, directory, elements):
 
         module_string = ""
         for element in elements:

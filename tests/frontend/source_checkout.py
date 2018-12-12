@@ -170,3 +170,38 @@ def test_source_checkout_fetch(datafiles, cli, fetch):
         assert os.path.exists(os.path.join(checkout, 'remote-import-dev', 'pony.h'))
     else:
         result.assert_main_error(ErrorDomain.PIPELINE, 'uncached-sources')
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_build_scripts(cli, tmpdir, datafiles):
+    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'source-bundle/source-bundle-hello.bst'
+    normal_name = 'source-bundle-source-bundle-hello'
+    checkout = os.path.join(str(tmpdir), 'source-checkout')
+
+    args = ['source-checkout', '--include-build-scripts', element_name, checkout]
+    result = cli.run(project=project_path, args=args)
+    result.assert_success()
+
+    # There sould be a script for each element (just one in this case) and a top level build script
+    expected_scripts = ['build.sh', 'build-' + normal_name]
+    for script in expected_scripts:
+        assert script in os.listdir(checkout)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_tar_buildscripts(cli, tmpdir, datafiles):
+    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'source-bundle/source-bundle-hello.bst'
+    normal_name = 'source-bundle-source-bundle-hello'
+    tar_file = os.path.join(str(tmpdir), 'source-checkout.tar')
+
+    args = ['source-checkout', '--include-build-scripts', '--tar', element_name, tar_file]
+    result = cli.run(project=project_path, args=args)
+    result.assert_success()
+
+    expected_scripts = ['build.sh', 'build-' + normal_name]
+
+    with tarfile.open(tar_file, 'r') as tf:
+        for script in expected_scripts:
+            assert script in tf.getnames()
