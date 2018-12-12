@@ -146,7 +146,7 @@ def override_completions(cmd, cmd_param, args, incomplete):
                 cmd_param.opts == ['--track'] or
                 cmd_param.opts == ['--track-except']):
             return complete_target(args, incomplete)
-        if cmd_param.name == 'artifacts':
+        if cmd_param.name in ('artifacts', 'artifact_orig', 'artifact_new'):
             complete_list = complete_target(args, incomplete)
             complete_list.extend(complete_artifact(args, incomplete))
             return complete_list
@@ -1241,6 +1241,51 @@ def artifact_list_contents(app, null, artifacts):
         for vdir in vdirs:
             vdir = vdir.descend(["files"])
             print(sentinel.join(vdir.list_relative_paths()), end=sentinel)
+
+
+#################################################################
+#                     Artifact Diff Command                     #
+#################################################################
+@artifact.command(name='diff', short_help="Compute the difference between two artifacts")
+@click.option('--null', '-z', default=False, is_flag=True,
+              help="Separate tokens with NUL bytes instead of newlines")
+@click.argument('artifact_orig', type=click.Path(), nargs=1)
+@click.argument('artifact_new', type=click.Path(), nargs=1)
+@click.pass_obj
+def artifact_diff(app, null, artifact_orig, artifact_new):
+    """List the differences between artifacts"""
+    from .._pipeline import PipelineSelection
+
+    sentinel = '\0' if null else '\n'
+
+    with app.initialized():
+        cache = app.context.artifactcache
+
+        def parse_artifact_ref(artifact_ref):
+            elements, artifacts = _classify_artifacts((artifact_ref,), cache.cas,
+                                                      app.project.directory)
+            if len(elements) + len(artifacts) > 1:
+                raise AppError("{} expanded to multiple artifacts".format(artifact_ref))
+
+            if artifacts:
+                return artifacts[0]
+
+            elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
+            element = elements[0]
+            if not element._cached():
+                raise AppError("Element {} is not cached".format(artifact_ref))
+            return cache.get_artifact_fullname(element, element._get_cache_key())
+
+        orig = parse_artifact_ref(artifact_orig)
+        new = parse_artifact_ref(artifact_new)
+
+        modified, removed, added = cache.cas.diff(orig, new, subdir="files")
+        if modified:
+            print(sentinel.join('modified ' + path for path in modified), end=sentinel)
+        if removed:
+            print(sentinel.join('removed  ' + path for path in removed), end=sentinel)
+        if added:
+            print(sentinel.join('added    ' + path for path in added), end=sentinel)
 
 
 ##################################################################
