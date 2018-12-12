@@ -1,5 +1,8 @@
 import os
 import sys
+from contextlib import ExitStack
+from fnmatch import fnmatch
+from tempfile import TemporaryDirectory
 
 import click
 from .. import _yaml
@@ -107,6 +110,23 @@ def complete_target(args, incomplete):
     return complete_list
 
 
+def complete_artifact(args, incomplete):
+    from .._context import Context
+    ctx = Context()
+
+    config = None
+    for i, arg in enumerate(args):
+        if arg in ('-c', '--config'):
+            config = args[i + 1]
+    ctx.load(config)
+
+    # element targets are valid artifact names
+    complete_list = complete_target(args, incomplete)
+    complete_list.extend(ref for ref in ctx.artifactcache.cas.list_refs() if ref.startswith(incomplete))
+
+    return complete_list
+
+
 def override_completions(cmd, cmd_param, args, incomplete):
     """
     :param cmd_param: command definition
@@ -121,13 +141,15 @@ def override_completions(cmd, cmd_param, args, incomplete):
     # We can't easily extend click's data structures without
     # modifying click itself, so just do some weak special casing
     # right here and select which parameters we want to handle specially.
-    if isinstance(cmd_param.type, click.Path) and \
-       (cmd_param.name == 'elements' or
-        cmd_param.name == 'element' or
-        cmd_param.name == 'except_' or
-        cmd_param.opts == ['--track'] or
-        cmd_param.opts == ['--track-except']):
-        return complete_target(args, incomplete)
+    if isinstance(cmd_param.type, click.Path):
+        if (cmd_param.name == 'elements' or
+                cmd_param.name == 'element' or
+                cmd_param.name == 'except_' or
+                cmd_param.opts == ['--track'] or
+                cmd_param.opts == ['--track-except']):
+            return complete_target(args, incomplete)
+        if cmd_param.name == 'artifacts':
+            return complete_artifact(args, incomplete)
 
     raise CompleteUnhandled()
 
@@ -915,3 +937,101 @@ def workspace_list(app):
 
     with app.initialized():
         app.stream.workspace_list()
+
+
+#############################################################
+#                     Artifact Commands                     #
+#############################################################
+def _classify_artifacts(names, cas, project_directory):
+    element_targets = []
+    artifact_refs = []
+    element_globs = []
+    artifact_globs = []
+
+    for name in names:
+        if name.endswith('.bst'):
+            if any(c in "*?[" for c in name):
+                element_globs.append(name)
+            else:
+                element_targets.append(name)
+        else:
+            if any(c in "*?[" for c in name):
+                artifact_globs.append(name)
+            else:
+                artifact_refs.append(name)
+
+    if element_globs:
+        for dirpath, _, filenames in os.walk(project_directory):
+            for filename in filenames:
+                element_path = os.path.join(dirpath, filename).lstrip(project_directory).lstrip('/')
+                if any(fnmatch(element_path, glob) for glob in element_globs):
+                    element_targets.append(element_path)
+
+    if artifact_globs:
+        artifact_refs.extend(ref for ref in cas.list_refs()
+                             if any(fnmatch(ref, glob) for glob in artifact_globs))
+
+    return element_targets, artifact_refs
+
+
+@cli.group(short_help="Manipulate cached artifacts")
+def artifact():
+    """Manipulate cached artifacts"""
+    pass
+
+
+################################################################
+#                     Artifact Log Command                     #
+################################################################
+@artifact.command(name='log', short_help="Show logs of an artifact")
+@click.argument('artifacts', type=click.Path(), nargs=-1)
+@click.pass_obj
+def artifact_log(app, artifacts):
+    """Show logs of all artifacts"""
+    from .._exceptions import CASError
+    from .._message import MessageType
+    from .._pipeline import PipelineSelection
+    from ..storage._casbaseddirectory import CasBasedDirectory
+
+    with ExitStack() as stack:
+        stack.enter_context(app.initialized())
+        cache = app.context.artifactcache
+
+        elements, artifacts = _classify_artifacts(artifacts, cache.cas,
+                                                  app.project.directory)
+
+        vdirs = []
+        extractdirs = []
+        if artifacts:
+            for ref in artifacts:
+                try:
+                    cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
+                    vdir = CasBasedDirectory(cache.cas, cache_id)
+                    vdirs.append(vdir)
+                except CASError as e:
+                    app._message(MessageType.WARN, "Artifact {} is not cached".format(ref), detail=str(e))
+                    continue
+        if elements:
+            elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
+            for element in elements:
+                if not element._cached():
+                    app._message(MessageType.WARN, "Element {} is not cached".format(element))
+                    continue
+                ref = cache.get_artifact_fullname(element, element._get_cache_key())
+                cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
+                vdir = CasBasedDirectory(cache.cas, cache_id)
+                vdirs.append(vdir)
+
+        for vdir in vdirs:
+            # NOTE: If reading the logs feels unresponsive, here would be a good place to provide progress information.
+            logsdir = vdir.descend(["logs"])
+            td = stack.enter_context(TemporaryDirectory())
+            logsdir.export_files(td, can_link=True)
+            extractdirs.append(td)
+
+        for extractdir in extractdirs:
+            for log in (os.path.join(extractdir, log) for log in os.listdir(extractdir)):
+                # NOTE: Should click gain the ability to pass files to the pager this can be optimised.
+                with open(log) as f:
+                    data = f.read()
+                    click.echo_via_pager(data)
