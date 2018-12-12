@@ -25,8 +25,8 @@ import stat
 import shlex
 import shutil
 import tarfile
-from contextlib import contextmanager
-from tempfile import TemporaryDirectory
+import tempfile
+from contextlib import contextmanager, suppress
 
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
 from ._message import Message, MessageType
@@ -449,11 +449,14 @@ class Stream():
     #
     def source_checkout(self, target, *,
                         location=None,
+                        force=False,
                         deps='none',
                         fetch=False,
-                        except_targets=()):
+                        except_targets=(),
+                        tar=False,
+                        include_build_scripts=False):
 
-        self._check_location_writable(location)
+        self._check_location_writable(location, force=force, tar=tar)
 
         elements, _ = self._load((target,), (),
                                  selection=deps,
@@ -467,7 +470,8 @@ class Stream():
 
         # Stage all sources determined by scope
         try:
-            self._write_element_sources(location, elements)
+            self._source_checkout(elements, location, force, deps,
+                                  fetch, tar, include_build_scripts)
         except BstError as e:
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
@@ -727,87 +731,6 @@ class Stream():
         _yaml.dump({
             'workspaces': workspaces
         })
-
-    # source_bundle()
-    #
-    # Create a host buildable tarball bundle for the given target.
-    #
-    # Args:
-    #    target (str): The target element to bundle
-    #    directory (str): The directory to output the tarball
-    #    track_first (bool): Track new source references before bundling
-    #    compression (str): The compression type to use
-    #    force (bool): Overwrite an existing tarball
-    #
-    def source_bundle(self, target, directory, *,
-                      track_first=False,
-                      force=False,
-                      compression="gz",
-                      except_targets=()):
-
-        if track_first:
-            track_targets = (target,)
-        else:
-            track_targets = ()
-
-        elements, track_elements = self._load((target,), track_targets,
-                                              selection=PipelineSelection.ALL,
-                                              except_targets=except_targets,
-                                              track_selection=PipelineSelection.ALL,
-                                              fetch_subprojects=True)
-
-        # source-bundle only supports one target
-        target = self.targets[0]
-
-        self._message(MessageType.INFO, "Bundling sources for target {}".format(target.name))
-
-        # Find the correct filename for the compression algorithm
-        tar_location = os.path.join(directory, target.normal_name + ".tar")
-        if compression != "none":
-            tar_location += "." + compression
-
-        # Attempt writing a file to generate a good error message
-        # early
-        #
-        # FIXME: A bit hackish
-        try:
-            open(tar_location, mode="x")
-            os.remove(tar_location)
-        except IOError as e:
-            raise StreamError("Cannot write to {0}: {1}"
-                              .format(tar_location, e)) from e
-
-        # Fetch and possibly track first
-        #
-        self._fetch(elements, track_elements=track_elements)
-
-        # We don't use the scheduler for this as it is almost entirely IO
-        # bound.
-
-        # Create a temporary directory to build the source tree in
-        builddir = self._context.builddir
-        os.makedirs(builddir, exist_ok=True)
-        prefix = "{}-".format(target.normal_name)
-
-        with TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:
-            source_directory = os.path.join(tempdir, 'source')
-            try:
-                os.makedirs(source_directory)
-            except OSError as e:
-                raise StreamError("Failed to create directory: {}"
-                                  .format(e)) from e
-
-            # Any elements that don't implement _write_script
-            # should not be included in the later stages.
-            elements = [
-                element for element in elements
-                if self._write_element_script(source_directory, element)
-            ]
-
-            self._write_element_sources(os.path.join(tempdir, "source"), elements)
-            self._write_build_script(tempdir, elements)
-            self._collect_sources(tempdir, tar_location,
-                                  target.normal_name, compression)
 
     # redirect_element_names()
     #
@@ -1189,6 +1112,54 @@ class Stream():
 
         sandbox_vroot.export_files(directory, can_link=True, can_destroy=True)
 
+    # Helper function for source_checkout()
+    def _source_checkout(self, elements,
+                         location=None,
+                         force=False,
+                         deps='none',
+                         fetch=False,
+                         tar=False,
+                         include_build_scripts=False):
+        location = os.path.abspath(location)
+        location_parent = os.path.abspath(os.path.join(location, ".."))
+
+        # Stage all our sources in a temporary directory. The this
+        # directory can be used to either construct a tarball or moved
+        # to the final desired location.
+        temp_source_dir = tempfile.TemporaryDirectory(dir=location_parent)
+        try:
+            self._write_element_sources(temp_source_dir.name, elements)
+            if include_build_scripts:
+                self._write_build_scripts(temp_source_dir.name, elements)
+            if tar:
+                self._create_tarball(temp_source_dir.name, location)
+            else:
+                self._move_directory(temp_source_dir.name, location, force)
+        except OSError as e:
+            raise StreamError("Failed to checkout sources to {}: {}"
+                              .format(location, e)) from e
+        finally:
+            with suppress(FileNotFoundError):
+                temp_source_dir.cleanup()
+
+    # Move a directory src to dest. This will work across devices and
+    # may optionaly overwrite existing files.
+    def _move_directory(self, src, dest, force=False):
+        def is_empty_dir(path):
+            return os.path.isdir(dest) and not os.listdir(dest)
+
+        try:
+            os.rename(src, dest)
+            return
+        except OSError:
+            pass
+
+        if force or is_empty_dir(dest):
+            try:
+                utils.link_files(src, dest)
+            except utils.UtilError as e:
+                raise StreamError("Failed to move directory: {}".format(e)) from e
+
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
         try:
@@ -1205,8 +1176,28 @@ class Stream():
                 os.makedirs(element_source_dir)
                 element._stage_sources_at(element_source_dir, mount_workspaces=False)
 
+    # Create a tarball from the content of directory
+    def _create_tarball(self, directory, tar_name):
+        try:
+            with utils.save_file_atomic(tar_name, mode='wb') as f:
+                # This TarFile does not need to be explicitly closed
+                # as the underlying file object will be closed be the
+                # save_file_atomic contect manager
+                tarball = tarfile.open(fileobj=f, mode='w')
+                for item in os.listdir(str(directory)):
+                    file_to_add = os.path.join(directory, item)
+                    tarball.add(file_to_add, arcname=item)
+        except OSError as e:
+            raise StreamError("Failed to create tar archive: {}".format(e)) from e
+
+    # Write all the build_scripts for elements in the directory location
+    def _write_build_scripts(self, location, elements):
+        for element in elements:
+            self._write_element_script(location, element)
+        self._write_master_build_script(location, elements)
+
     # Write a master build script to the sandbox
-    def _write_build_script(self, directory, elements):
+    def _write_master_build_script(self, directory, elements):
 
         module_string = ""
         for element in elements:

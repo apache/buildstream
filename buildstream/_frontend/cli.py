@@ -725,6 +725,8 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 #                  Source Checkout Command                      #
 ##################################################################
 @cli.command(name='source-checkout', short_help='Checkout sources for an element')
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Allow files to be overwritten")
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies")
@@ -733,11 +735,15 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
               help='The dependencies whose sources to checkout (default: none)')
 @click.option('--fetch', 'fetch_', default=False, is_flag=True,
               help='Fetch elements if they are not fetched')
-@click.argument('element', required=False,
-                type=click.Path(readable=False))
+@click.option('--tar', 'tar', default=False, is_flag=True,
+              help='Create a tarball from the element\'s sources instead of a '
+                   'file tree.')
+@click.option('--include-build-scripts', 'build_scripts', is_flag=True)
+@click.argument('element', required=False, type=click.Path(readable=False))
 @click.argument('location', type=click.Path(), required=False)
 @click.pass_obj
-def source_checkout(app, element, location, deps, fetch_, except_):
+def source_checkout(app, element, location, force, deps, fetch_, except_,
+                    tar, build_scripts):
     """Checkout sources of an element to the specified location
     """
     if not element and not location:
@@ -757,9 +763,12 @@ def source_checkout(app, element, location, deps, fetch_, except_):
 
         app.stream.source_checkout(element,
                                    location=location,
+                                   force=force,
                                    deps=deps,
                                    fetch=fetch_,
-                                   except_targets=except_)
+                                   except_targets=except_,
+                                   tar=tar,
+                                   include_build_scripts=build_scripts)
 
 
 ##################################################################
@@ -906,34 +915,3 @@ def workspace_list(app):
 
     with app.initialized():
         app.stream.workspace_list()
-
-
-##################################################################
-#                     Source Bundle Command                      #
-##################################################################
-@cli.command(name="source-bundle", short_help="Produce a build bundle to be manually executed")
-@click.option('--except', 'except_', multiple=True,
-              type=click.Path(readable=False),
-              help="Elements to except from the tarball")
-@click.option('--compression', default='gz',
-              type=click.Choice(['none', 'gz', 'bz2', 'xz']),
-              help="Compress the tar file using the given algorithm.")
-@click.option('--track', 'track_', default=False, is_flag=True,
-              help="Track new source references before bundling")
-@click.option('--force', '-f', default=False, is_flag=True,
-              help="Overwrite an existing tarball")
-@click.option('--directory', default=os.getcwd(),
-              help="The directory to write the tarball to")
-@click.argument('element',
-                type=click.Path(readable=False))
-@click.pass_obj
-def source_bundle(app, element, force, directory,
-                  track_, compression, except_):
-    """Produce a source bundle to be manually executed
-    """
-    with app.initialized():
-        app.stream.source_bundle(element, directory,
-                                 track_first=track_,
-                                 force=force,
-                                 compression=compression,
-                                 except_targets=except_)

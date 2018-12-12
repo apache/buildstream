@@ -1,5 +1,7 @@
 import os
 import pytest
+import tarfile
+from pathlib import Path
 
 from tests.testutils import cli
 
@@ -53,6 +55,39 @@ def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_e
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize('force_flag', ['--force', '-f'])
+def test_source_checkout_force(datafiles, cli, force_flag):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'source-checkout')
+    target = 'checkout-deps.bst'
+
+    os.makedirs(os.path.join(checkout, 'some-thing'))
+    # Path(os.path.join(checkout, 'some-file')).touch()
+
+    result = cli.run(project=project, args=['source-checkout', force_flag, target, '--deps', 'none', checkout])
+    result.assert_success()
+
+    assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_tar(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'source-checkout.tar')
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source-checkout', '--tar', target, '--deps', 'none', checkout])
+    result.assert_success()
+
+    assert os.path.exists(checkout)
+    with tarfile.open(checkout) as tf:
+        expected_content = os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config')
+        tar_members = [f.name for f in tf]
+        for member in tar_members:
+            assert member in expected_content
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -135,3 +170,38 @@ def test_source_checkout_fetch(datafiles, cli, fetch):
         assert os.path.exists(os.path.join(checkout, 'remote-import-dev', 'pony.h'))
     else:
         result.assert_main_error(ErrorDomain.PIPELINE, 'uncached-sources')
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_build_scripts(cli, tmpdir, datafiles):
+    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'source-bundle/source-bundle-hello.bst'
+    normal_name = 'source-bundle-source-bundle-hello'
+    checkout = os.path.join(str(tmpdir), 'source-checkout')
+
+    args = ['source-checkout', '--include-build-scripts', element_name, checkout]
+    result = cli.run(project=project_path, args=args)
+    result.assert_success()
+
+    # There sould be a script for each element (just one in this case) and a top level build script
+    expected_scripts = ['build.sh', 'build-' + normal_name]
+    for script in expected_scripts:
+        assert script in os.listdir(checkout)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_tar_buildscripts(cli, tmpdir, datafiles):
+    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'source-bundle/source-bundle-hello.bst'
+    normal_name = 'source-bundle-source-bundle-hello'
+    tar_file = os.path.join(str(tmpdir), 'source-checkout.tar')
+
+    args = ['source-checkout', '--include-build-scripts', '--tar', element_name, tar_file]
+    result = cli.run(project=project_path, args=args)
+    result.assert_success()
+
+    expected_scripts = ['build.sh', 'build-' + normal_name]
+
+    with tarfile.open(tar_file, 'r') as tf:
+        for script in expected_scripts:
+            assert script in tf.getnames()

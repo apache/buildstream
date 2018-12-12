@@ -2,6 +2,12 @@
 buildstream 1.3.1
 =================
 
+  o BREAKING CHANGE: The bst source-bundle command has been removed. The
+    functionality it provided has been replaced by the `--include-build-scripts`
+    option of the `bst source-checkout` command. To produce a tarball containing
+    an element's sources and generated build scripts you can do the command
+    `bst source-checkout --include-build-scripts --tar foo.bst some-file.tar`
+
   o BREAKING CHANGE: Default strip-commands have been removed as they are too
     specific. Recommendation if you are building in Linux is to use the
     ones being used in freedesktop-sdk project, for example

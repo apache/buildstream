@@ -86,13 +86,6 @@ project's main directory.
 
 ----
 
-.. _invoking_source_bundle:
-
-.. click:: buildstream._frontend.cli:source_bundle
-   :prog: bst source bundle
-
-----
-
 .. _invoking_workspace:
 
 .. click:: buildstream._frontend.cli:workspace
