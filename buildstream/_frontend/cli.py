@@ -306,7 +306,11 @@ def init(app, project_name, format_version, element_path, force):
                 type=click.Path(readable=False))
 @click.pass_obj
 def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions):
-    """Build elements in a pipeline"""
+    """Build elements in a pipeline
+
+       Declaring no elements with result in building a default element if one is declared in the project configuration.
+
+       If no default is declared, all elements in the project will be built"""
 
     if (track_except or track_cross_junctions) and not (track_ or track_all):
         click.echo("ERROR: The --track-except and --track-cross-junctions options "
@@ -321,6 +325,8 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
             guessed_target = app.context.guess_element()
             if guessed_target:
                 elements = (guessed_target,)
+            else:
+                app.project.get_default_elements()
 
         if track_all:
             track_ = elements
