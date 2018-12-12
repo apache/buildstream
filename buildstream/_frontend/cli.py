@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
+from ..storage._casbaseddirectory import CasBasedDirectory
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 
@@ -1016,6 +1017,35 @@ def _classify_artifacts(names, cas, project_directory):
     return targets, refs
 
 
+def _load_vdirs(app, elements, artifacts):
+    from .._exceptions import CASError
+    from .._message import MessageType
+    from .._pipeline import PipelineSelection
+    cache = app.context.artifactcache
+    vdirs = []
+
+    for ref in artifacts:
+        try:
+            cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
+            vdir = CasBasedDirectory(cache.cas, cache_id)
+            vdirs.append(vdir)
+        except CASError as e:
+            app._message(MessageType.WARN, "Artifact {} is not cached".format(ref), detail=str(e))
+            continue
+
+    if elements:
+        elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
+        for element in elements:
+            if not element._cached():
+                app._message(MessageType.WARN, "Element {} is not cached".format(element))
+                continue
+            ref = cache.get_artifact_fullname(element, element._get_cache_key())
+            cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
+            vdir = CasBasedDirectory(cache.cas, cache_id)
+            vdirs.append(vdir)
+
+    return vdirs
+
 
 @cli.group(short_help="Manipulate cached artifacts")
 def artifact():
@@ -1030,10 +1060,6 @@ def artifact():
 @click.pass_obj
 def artifact_log(app, artifacts):
     """Show logs of all artifacts"""
-    from .._exceptions import CASError
-    from .._message import MessageType
-    from .._pipeline import PipelineSelection
-    from ..storage._casbaseddirectory import CasBasedDirectory
 
     with ExitStack() as stack:
         stack.enter_context(app.initialized())
@@ -1042,27 +1068,8 @@ def artifact_log(app, artifacts):
         elements, artifacts = _classify_artifacts(artifacts, cache.cas,
                                                   app.project.directory)
 
-        vdirs = []
+        vdirs = _load_vdirs(app, elements, artifacts)
         extractdirs = []
-        if artifacts:
-            for ref in artifacts:
-                try:
-                    cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
-                    vdir = CasBasedDirectory(cache.cas, cache_id)
-                    vdirs.append(vdir)
-                except CASError as e:
-                    app._message(MessageType.WARN, "Artifact {} is not cached".format(ref), detail=str(e))
-                    continue
-        if elements:
-            elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
-            for element in elements:
-                if not element._cached():
-                    app._message(MessageType.WARN, "Element {} is not cached".format(element))
-                    continue
-                ref = cache.get_artifact_fullname(element, element._get_cache_key())
-                cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
-                vdir = CasBasedDirectory(cache.cas, cache_id)
-                vdirs.append(vdir)
 
         for vdir in vdirs:
             # NOTE: If reading the logs feels unresponsive, here would be a good place to provide progress information.
