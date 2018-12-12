@@ -228,7 +228,7 @@ class Project():
             'element-path', 'variables',
             'environment', 'environment-nocache',
             'split-rules', 'elements', 'plugins',
-            'aliases', 'name',
+            'aliases', 'name', 'defaults',
             'artifacts', 'options',
             'fail-on-overlap', 'shell', 'fatal-warnings',
             'ref-storage', 'sandbox', 'mirrors', 'remote-execution',
@@ -390,6 +390,36 @@ class Project():
 
         # Reset the element loader state
         Element._reset_load_state()
+
+
+    # get_default_elements()
+    #
+    # This function is used to gather either:
+    # The project default element (if defined in project.conf)
+    # or
+    # All elements in the project
+    #
+    def get_default_elements(self):
+        output = []
+
+        # The project is not required to have an element-path
+        element_directory = self._project_conf.get('element-path')
+
+        # The project may have a default element defined
+        default_element = self._project_conf.get("defaults", {}).get("target-element", None)
+
+        if default_element:
+            return (default_element,)
+
+        directory = os.path.join(self.directory, element_directory)
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if file.endswith(".bst"):
+                    rel_dir = os.path.relpath(root, directory)
+                    rel_file = os.path.join(rel_dir, file).lstrip("./")
+                    output.append(rel_file)
+        return tuple(output)
+
 
     # _load():
     #
