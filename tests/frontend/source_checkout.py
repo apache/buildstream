@@ -1,5 +1,6 @@
 import os
 import pytest
+import tarfile
 
 from tests.testutils import cli
 
@@ -53,6 +54,23 @@ def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_e
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_tar(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'source-checkout.tar')
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source-checkout', '--tar', target, '--deps', 'none', checkout])
+    result.assert_success()
+
+    assert os.path.exists(checkout)
+    with tarfile.open(checkout) as tf:
+        expected_content = os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config')
+        tar_members = [f.name for f in tf]
+        for member in tar_members:
+            assert member in expected_content
 
 
 @pytest.mark.datafiles(DATA_DIR)

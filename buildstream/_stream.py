@@ -25,8 +25,8 @@ import stat
 import shlex
 import shutil
 import tarfile
-from contextlib import contextmanager
-from tempfile import TemporaryDirectory
+import tempfile
+from contextlib import contextmanager, suppress
 
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
 from ._message import Message, MessageType
@@ -451,9 +451,10 @@ class Stream():
                         location=None,
                         deps='none',
                         fetch=False,
-                        except_targets=()):
+                        except_targets=(),
+                        tar=False):
 
-        self._check_location_writable(location)
+        self._check_location_writable(location, tar=tar)
 
         elements, _ = self._load((target,), (),
                                  selection=deps,
@@ -467,7 +468,7 @@ class Stream():
 
         # Stage all sources determined by scope
         try:
-            self._write_element_sources(location, elements)
+            self._source_checkout(elements, location, deps, fetch, tar)
         except BstError as e:
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
@@ -789,7 +790,7 @@ class Stream():
         os.makedirs(builddir, exist_ok=True)
         prefix = "{}-".format(target.normal_name)
 
-        with TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:
+        with tempfile.TemporaryDirectory(prefix=prefix, dir=builddir) as tempdir:
             source_directory = os.path.join(tempdir, 'source')
             try:
                 os.makedirs(source_directory)
@@ -1189,6 +1190,50 @@ class Stream():
 
         sandbox_vroot.export_files(directory, can_link=True, can_destroy=True)
 
+    # Helper function for source_checkout()
+    def _source_checkout(self, elements,
+                         location=None,
+                         deps='none',
+                         fetch=False,
+                         tar=False):
+        location = os.path.abspath(location)
+        location_parent = os.path.abspath(os.path.join(location, ".."))
+
+        # Stage all our sources in a temporary directory. The this
+        # directory can be used to either construct a tarball or moved
+        # to the final desired location.
+        temp_source_dir = tempfile.TemporaryDirectory(dir=location_parent)
+        try:
+            self._write_element_sources(temp_source_dir.name, elements)
+            if tar:
+                self._create_tarball(temp_source_dir.name, location)
+            else:
+                self._move_directory(temp_source_dir.name, location)
+        except OSError as e:
+            raise StreamError("Failed to checkout sources to {}: {}"
+                              .format(location, e)) from e
+        finally:
+            with suppress(FileNotFoundError):
+                temp_source_dir.cleanup()
+
+    # Move a directory src to dest. This will work across devices and
+    # may optionaly overwrite existing files.
+    def _move_directory(self, src, dest):
+        def is_empty_dir(path):
+            return os.path.isdir(dest) and not os.listdir(dest)
+
+        try:
+            os.rename(src, dest)
+            return
+        except OSError:
+            pass
+
+        if is_empty_dir(dest):
+            try:
+                utils.link_files(src, dest)
+            except utils.UtilError as e:
+                raise StreamError("Failed to move directory: {}".format(e)) from e
+
     # Write the element build script to the given directory
     def _write_element_script(self, directory, element):
         try:
@@ -1204,6 +1249,20 @@ class Stream():
             if list(element.sources()):
                 os.makedirs(element_source_dir)
                 element._stage_sources_at(element_source_dir, mount_workspaces=False)
+
+    # Create a tarball from the content of directory
+    def _create_tarball(self, directory, tar_name):
+        try:
+            with utils.save_file_atomic(tar_name, mode='wb') as f:
+                # This TarFile does not need to be explicitly closed
+                # as the underlying file object will be closed be the
+                # save_file_atomic contect manager
+                tarball = tarfile.open(fileobj=f, mode='w')
+                for item in os.listdir(str(directory)):
+                    file_to_add = os.path.join(directory, item)
+                    tarball.add(file_to_add, arcname=item)
+        except OSError as e:
+            raise StreamError("Failed to create tar archive: {}".format(e)) from e
 
     # Write a master build script to the sandbox
     def _write_build_script(self, directory, elements):
