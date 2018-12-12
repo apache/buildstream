@@ -1160,6 +1160,34 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, ar
             vdir.export_files(directory, can_link=hardlinks, can_destroy=force)
 
 
+###################################################################
+#                     Artifact Delete Command                     #
+###################################################################
+@artifact.command(name='delete', short_help="Delete matching artifacts")
+@click.argument('artifacts', type=click.Path(), nargs=-1)
+@click.pass_obj
+def artifact_delete(app, artifacts):
+    '''Delete matching artifacts from the cache'''
+    from .._pipeline import PipelineSelection
+    with app.initialized():
+        cache = app.context.artifactcache
+
+        elements, artifacts = _classify_artifacts(artifacts, cache.cas,
+                                                  app.project.directory)
+
+        if not elements and not artifacts:
+            element = app.context.guess_element()
+            if element is not None:
+                elements = [element]
+
+        if elements:
+            elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
+            for element in elements:
+                cache.remove(cache.get_artifact_fullname(element, element._get_cache_key()))
+        for i, ref in enumerate(artifacts, start=1):
+            cache.cas.remove(ref, defer_prune=(i != len(artifacts)))
+
+
 ##################################################################
 #                      DEPRECATED Commands                       #
 ##################################################################
