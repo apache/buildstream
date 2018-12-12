@@ -167,3 +167,10 @@ shell:
   # Command to run when `bst shell` does not provide a command
   #
   command: [ 'sh', '-i' ]
+
+# Default Targets
+#
+defaults:
+
+  # Set a Default element to build when none are defined 
+  target-element: None
