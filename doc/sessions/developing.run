@@ -24,6 +24,11 @@ commands:
   output: ../source/sessions/developing-build-after-changes.html
   command: build hello.bst
 
+# Rebuild, from the workspace
+- directory: ../examples/developing/workspace_hello
+  output: ../source/sessions/developing-build-after-changes-workspace.html
+  command: build
+
 # Capture shell output with changes
 - directory: ../examples/developing/
   output: ../source/sessions/developing-shell-after-changes.html

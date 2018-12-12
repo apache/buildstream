@@ -316,10 +316,15 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
     if track_save:
         click.echo("WARNING: --track-save is deprecated, saving is now unconditional", err=True)
 
-    if track_all:
-        track_ = elements
-
     with app.initialized(session_name="Build"):
+        if not all_ and not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
+        if track_all:
+            track_ = elements
+
         app.stream.build(elements,
                          track_targets=track_,
                          track_except=track_except,
@@ -371,6 +376,11 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
         deps = PipelineSelection.ALL
 
     with app.initialized(session_name="Fetch"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
         app.stream.fetch(elements,
                          selection=deps,
                          except_targets=except_,
@@ -407,6 +417,11 @@ def track(app, elements, deps, except_, cross_junctions):
         all:   All dependencies of all specified elements
     """
     with app.initialized(session_name="Track"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
         # Substitute 'none' for 'redirect' so that element redirections
         # will be done
         if deps == 'none':
@@ -442,7 +457,13 @@ def pull(app, elements, deps, remote):
         none:  No dependencies, just the element itself
         all:   All dependencies
     """
+
     with app.initialized(session_name="Pull"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
         app.stream.pull(elements, selection=deps, remote=remote)
 
 
@@ -475,6 +496,11 @@ def push(app, elements, deps, remote):
         all:   All dependencies
     """
     with app.initialized(session_name="Push"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
         app.stream.push(elements, selection=deps, remote=remote)
 
 
@@ -545,6 +571,11 @@ def show(app, elements, deps, except_, order, format_):
             $'---------- %{name} ----------\\n%{vars}'
     """
     with app.initialized():
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
         dependencies = app.stream.load_selection(elements,
                                                  selection=deps,
                                                  except_targets=except_)
@@ -573,7 +604,7 @@ def show(app, elements, deps, except_, order, format_):
               help="Mount a file or directory into the sandbox")
 @click.option('--isolate', is_flag=True, default=False,
               help='Create an isolated build sandbox')
-@click.argument('element',
+@click.argument('element', required=False,
                 type=click.Path(readable=False))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
@@ -604,6 +635,11 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
         scope = Scope.RUN
 
     with app.initialized():
+        if not element:
+            element = app.context.guess_element()
+            if not element:
+                raise AppError('Missing argument "ELEMENT".')
+
         dependencies = app.stream.load_selection((element,), selection=PipelineSelection.NONE)
         element = dependencies[0]
         prompt = app.shell_prompt(element)
@@ -641,14 +677,23 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
               help="Create a tarball from the artifact contents instead "
                    "of a file tree. If LOCATION is '-', the tarball "
                    "will be dumped to the standard output.")
-@click.argument('element',
+@click.argument('element', required=False,
                 type=click.Path(readable=False))
-@click.argument('location', type=click.Path())
+@click.argument('location', type=click.Path(), required=False)
 @click.pass_obj
 def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
     """Checkout a built artifact to the specified location
     """
     from ..element import Scope
+
+    if not element and not location:
+        click.echo("ERROR: LOCATION is not specified", err=True)
+        sys.exit(-1)
+
+    if element and not location:
+        # Nasty hack to get around click's optional args
+        location = element
+        element = None
 
     if hardlinks and tar:
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
@@ -662,6 +707,11 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
         scope = Scope.NONE
 
     with app.initialized():
+        if not element:
+            element = app.context.guess_element()
+            if not element:
+                raise AppError('Missing argument "ELEMENT".')
+
         app.stream.checkout(element,
                             location=location,
                             force=force,
@@ -683,14 +733,28 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
               help='The dependencies whose sources to checkout (default: none)')
 @click.option('--fetch', 'fetch_', default=False, is_flag=True,
               help='Fetch elements if they are not fetched')
-@click.argument('element',
+@click.argument('element', required=False,
                 type=click.Path(readable=False))
-@click.argument('location', type=click.Path())
+@click.argument('location', type=click.Path(), required=False)
 @click.pass_obj
 def source_checkout(app, element, location, deps, fetch_, except_):
     """Checkout sources of an element to the specified location
     """
+    if not element and not location:
+        click.echo("ERROR: LOCATION is not specified", err=True)
+        sys.exit(-1)
+
+    if element and not location:
+        # Nasty hack to get around click's optional args
+        location = element
+        element = None
+
     with app.initialized():
+        if not element:
+            element = app.context.guess_element()
+            if not element:
+                raise AppError('Missing argument "ELEMENT".')
+
         app.stream.source_checkout(element,
                                    location=location,
                                    deps=deps,
@@ -747,11 +811,15 @@ def workspace_open(app, no_checkout, force, track_, directory, elements):
 def workspace_close(app, remove_dir, all_, elements):
     """Close a workspace"""
 
-    if not (all_ or elements):
-        click.echo('ERROR: no elements specified', err=True)
-        sys.exit(-1)
-
     with app.initialized():
+        if not (all_ or elements):
+            # NOTE: I may need to revisit this when implementing multiple projects
+            # opening one workspace.
+            element = app.context.guess_element()
+            if element:
+                elements = (element,)
+            else:
+                raise AppError('No elements specified')
 
         # Early exit if we specified `all` and there are no workspaces
         if all_ and not app.stream.workspace_exists():
@@ -808,7 +876,11 @@ def workspace_reset(app, soft, track_, all_, elements):
     with app.initialized():
 
         if not (all_ or elements):
-            raise AppError('No elements specified to reset')
+            element = app.context.guess_element()
+            if element:
+                elements = (element,)
+            else:
+                raise AppError('No elements specified to reset')
 
         if all_ and not app.stream.workspace_exists():
             raise AppError("No open workspaces to reset")

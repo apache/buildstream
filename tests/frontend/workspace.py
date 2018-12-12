@@ -616,12 +616,16 @@ def test_list(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", repo_kinds)
 @pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
-@pytest.mark.parametrize("call_from", [("project"), ("workspace")])
-def test_build(cli, tmpdir_factory, datafiles, kind, strict, call_from):
+@pytest.mark.parametrize(
+    "from_workspace,guess_element",
+    [(False, False), (True, True), (True, False)],
+    ids=["project-no-guess", "workspace-guess", "workspace-no-guess"])
+def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, guess_element):
     tmpdir = tmpdir_factory.mktemp('')
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
     checkout = os.path.join(str(tmpdir), 'checkout')
-    args_pre = ['-C', workspace] if call_from == "workspace" else []
+    args_dir = ['-C', workspace] if from_workspace else []
+    args_elm = [element_name] if not guess_element else []
 
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
@@ -644,14 +648,14 @@ def test_build(cli, tmpdir_factory, datafiles, kind, strict, call_from):
     # Build modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
     assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
-    result = cli.run(project=project, args=args_pre + ['build', element_name])
+    result = cli.run(project=project, args=args_dir + ['build'] + args_elm)
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
     assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
 
     # Checkout the result
     result = cli.run(project=project,
-                     args=args_pre + ['checkout', element_name, checkout])
+                     args=args_dir + ['checkout'] + args_elm + [checkout])
     result.assert_success()
 
     # Check that the pony.conf from the modified workspace exists
@@ -1062,29 +1066,36 @@ def test_multiple_failed_builds(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize('subdir', [True, False], ids=["subdir", "no-subdir"])
-def test_external_fetch(cli, datafiles, tmpdir_factory, subdir):
+@pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
+def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
     # Fetching from a workspace outside a project doesn't fail horribly
     tmpdir = tmpdir_factory.mktemp('')
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+    arg_elm = [element_name] if not guess_element else []
 
     if subdir:
         call_dir = os.path.join(workspace, 'usr')
     else:
         call_dir = workspace
 
-    result = cli.run(project=project, args=['-C', call_dir, 'fetch', element_name])
+    result = cli.run(project=project, args=['-C', call_dir, 'fetch'] + arg_elm)
     result.assert_success()
 
     # We already fetched it by opening the workspace, but we're also checking
     # `bst show` works here
-    assert cli.get_element_state(project, element_name) == 'buildable'
+    result = cli.run(project=project,
+                     args=['-C', call_dir, 'show', '--deps', 'none', '--format', '%{state}'] + arg_elm)
+    result.assert_success()
+    assert result.output.strip() == 'buildable'
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_external_push_pull(cli, datafiles, tmpdir_factory):
+@pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
+def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
     # Pushing and pulling to/from an artifact cache works from an external workspace
     tmpdir = tmpdir_factory.mktemp('')
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+    arg_elm = [element_name] if not guess_element else []
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         result = cli.run(project=project, args=['-C', workspace, 'build', element_name])
@@ -1094,22 +1105,24 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory):
             'artifacts': {'url': share.repo, 'push': True}
         })
 
-        result = cli.run(project=project, args=['-C', workspace, 'push', element_name])
+        result = cli.run(project=project, args=['-C', workspace, 'push'] + arg_elm)
         result.assert_success()
 
-        result = cli.run(project=project, args=['-C', workspace, 'pull', '--deps', 'all', element_name])
+        result = cli.run(project=project, args=['-C', workspace, 'pull', '--deps', 'all'] + arg_elm)
         result.assert_success()
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_external_track(cli, datafiles, tmpdir_factory):
+@pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
+def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     # Tracking does not get horribly confused
     tmpdir = tmpdir_factory.mktemp('')
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", True)
+    arg_elm = [element_name] if not guess_element else []
 
     # The workspace is necessarily already tracked, so we only care that
     # there's no weird errors.
-    result = cli.run(project=project, args=['-C', workspace, 'track', element_name])
+    result = cli.run(project=project, args=['-C', workspace, 'track'] + arg_elm)
     result.assert_success()
 
 
@@ -1147,15 +1160,17 @@ def test_external_close_other(cli, datafiles, tmpdir_factory):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_external_close_self(cli, datafiles, tmpdir_factory):
+@pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
+def test_external_close_self(cli, datafiles, tmpdir_factory, guess_element):
     # From inside an external workspace, close it
     tmpdir1 = tmpdir_factory.mktemp('')
     tmpdir2 = tmpdir_factory.mktemp('')
     # Making use of the assumption that it's the same project in both invocations of open_workspace
     alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
     beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+    arg_elm = [alpha_element] if not guess_element else []
 
-    result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close', alpha_element])
+    result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close'] + arg_elm)
     result.assert_success()
 
 
@@ -1172,11 +1187,13 @@ def test_external_reset_other(cli, datafiles, tmpdir_factory):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_external_reset_self(cli, datafiles, tmpdir):
+@pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
+def test_external_reset_self(cli, datafiles, tmpdir, guess_element):
     element, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+    arg_elm = [element] if not guess_element else []
 
     # Command succeeds
-    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'reset', element])
+    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'reset'] + arg_elm)
     result.assert_success()
 
     # Successive commands still work (i.e. .bstproject.yaml hasn't been deleted)
