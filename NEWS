@@ -12,6 +12,10 @@ buildstream 1.3.1
     specific. Recommendation if you are building in Linux is to use the
     ones being used in freedesktop-sdk project, for example
 
+  o Running `bst build` without elements specified will now attempt to build
+    the default element defined in the projcet configuration.
+    If no default element is defined, all elements in the project will be built
+
   o All elements must now be suffixed with `.bst`
     Attempting to use an element that does not have the `.bst` extension,
     will result in a warning.
