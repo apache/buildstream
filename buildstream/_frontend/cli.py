@@ -113,7 +113,7 @@ def complete_target(args, incomplete):
 
 def complete_artifact(args, incomplete):
     from .._context import Context
-    ctx = Context()
+    ctx = Context(read_only=True)
 
     config = None
     for i, arg in enumerate(args):
@@ -121,11 +121,7 @@ def complete_artifact(args, incomplete):
             config = args[i + 1]
     ctx.load(config)
 
-    # element targets are valid artifact names
-    complete_list = complete_target(args, incomplete)
-    complete_list.extend(ref for ref in ctx.artifactcache.cas.list_refs() if ref.startswith(incomplete))
-
-    return complete_list
+    return [ref for ref in ctx.artifactcache.cas.list_refs() if ref.startswith(incomplete)]
 
 
 def override_completions(cmd, cmd_param, args, incomplete):
@@ -150,7 +146,9 @@ def override_completions(cmd, cmd_param, args, incomplete):
                 cmd_param.opts == ['--track-except']):
             return complete_target(args, incomplete)
         if cmd_param.name == 'artifacts':
-            return complete_artifact(args, incomplete)
+            complete_list = complete_target(args, incomplete)
+            complete_list.extend(complete_artifact(args, incomplete))
+            return complete_list
 
     raise CompleteUnhandled()
 
