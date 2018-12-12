@@ -656,6 +656,9 @@ class Stream():
             self._message(MessageType.INFO, "Creating workspace for element {}"
                           .format(target.name))
 
+            # Ensure the WorkspaceProject is loaded before we delete it
+            workspaces.get_workspace_project(directory)
+
             workspace = workspaces.get_workspace(target._get_full_name())
             if workspace:
                 workspaces.delete_workspace(target._get_full_name())
@@ -670,7 +673,7 @@ class Stream():
                     todo_elements = "\nDid not try to create workspaces for " + todo_elements
                 raise StreamError("Failed to create workspace directory: {}".format(e) + todo_elements) from e
 
-            workspaces.create_workspace(target, directory, checkout=not no_checkout)
+            workspaces.create_workspace(target, directory, checkout=not no_checkout, append=force)
             self._message(MessageType.INFO, "Created a workspace for element: {}"
                           .format(target._get_full_name()))
 
@@ -744,6 +747,9 @@ class Stream():
                               .format(element.name, workspace_path))
                 continue
 
+            # Ensure the WorkspaceProject is in the cache before it gets deleted
+            workspaces.get_workspace_project(workspace_path)
+
             with element.timed_activity("Removing workspace directory {}"
                                         .format(workspace_path)):
                 try:
@@ -752,8 +758,10 @@ class Stream():
                     raise StreamError("Could not remove  '{}': {}"
                                       .format(workspace_path, e)) from e
 
-            workspaces.delete_workspace(element._get_full_name())
-            workspaces.create_workspace(element, workspace_path, checkout=True)
+            workspaces.delete_workspace(element._get_full_name(),
+                                        preserve_workspace_project=True)
+            workspaces.create_workspace(element, workspace_path, checkout=True,
+                                        append=False, preserve_workspace_project=True)
 
             self._message(MessageType.INFO,
                           "Reset workspace for {} at: {}".format(element.name,

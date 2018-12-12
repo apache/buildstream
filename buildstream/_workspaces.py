@@ -143,8 +143,38 @@ class WorkspaceProject():
     #    element_name (str): The name of the element that the workspace belongs to.
     #
     def add_project(self, project_path, element_name):
-        assert (project_path and element_name)
-        self._projects.append({'project-path': project_path, 'element-name': element_name})
+        # TODO: Decide whether to raise an exception if the project already exists.
+        project = {'project-path': project_path, 'element-name': element_name}
+        if project not in self._projects:
+            self._projects.append(project)
+
+    # set_project()
+    #
+    # Sets the project to only contain the project_path and element_name specified.
+    #
+    # Args:
+    #    project_path (str): the path to the project that opened the workspace.
+    #    element_name (str): the name of the element that the workspace belongs to.
+    #
+    def set_project(self, project_path, element_name):
+        self._projects = [{'project-path': project_path, 'element-name': element_name}]
+
+    # remove_project()
+    #
+    # Removes the first project entry that matches the project_path and element_name
+    def remove_project(self, project_path, element_name):
+        # NOTE: This will need revisiting if projects' data format changes
+        # TODO: Figure out what to do if there is no project for those parameters
+        self._projects.remove({'project-path': project_path, 'element-name': element_name})
+
+    # has_projects()
+    #
+    # Returns whether there are any projects in this WorkspaceProject
+    #
+    # Returns:
+    #    (bool): True if there are any projects, or False if there aren't any
+    def has_projects(self):
+        return any(self._projects)
 
 
 # WorkspaceProjectCache()
@@ -186,17 +216,21 @@ class WorkspaceProjectCache():
     #    directory (str): The directory to search for a WorkspaceProject.
     #    project_path (str): The path to the project that refers to this workspace
     #    element_name (str): The element in the project that was refers to this workspace
+    #    append (bool): Whether the project_path and element_name should be appended
     #
     # Returns:
     #    (WorkspaceProject): The WorkspaceProject that was found for that directory.
     #
-    def add(self, directory, project_path, element_name):
+    def add(self, directory, project_path, element_name, *, append):
         workspace_project = self.get(directory)
         if not workspace_project:
             workspace_project = WorkspaceProject(directory)
             self._projects[directory] = workspace_project
 
-        workspace_project.add_project(project_path, element_name)
+        if append:
+            workspace_project.add_project(project_path, element_name)
+        else:
+            workspace_project.set_project(project_path, element_name)
         return workspace_project
 
     # remove()
@@ -204,23 +238,28 @@ class WorkspaceProjectCache():
     # Removes the project path and element name from the WorkspaceProject that exists
     # for that directory.
     #
-    # NOTE: This currently just deletes the file, but with support for multiple
-    # projects opening the same workspace, this will involve decreasing the count
-    # and deleting the file if there are no more projects.
-    #
     # Args:
     #    directory (str): The directory to search for a WorkspaceProject.
+    #    project_path (str): the path to the project that should be removed.
+    #    element_name (str): the name of the element in the project that should be removed.
     #
-    def remove(self, directory):
+    def remove(self, directory, project_path, element_name):
         workspace_project = self.get(directory)
         if not workspace_project:
             raise LoadError(LoadErrorReason.MISSING_FILE,
                             "Failed to find a {} file to remove".format(WORKSPACE_PROJECT_FILE))
-        path = workspace_project.get_filename()
-        try:
-            os.unlink(path)
-        except FileNotFoundError:
-            pass
+
+        workspace_project.remove_project(project_path, element_name)
+
+        if workspace_project.has_projects():
+            workspace_project.write()
+        else:
+            # Remove the WorkspaceProject file if it's now empty
+            path = workspace_project.get_filename()
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
 
 
 # Workspace()
@@ -429,8 +468,10 @@ class Workspaces():
     #    target (Element) - The element to create a workspace for
     #    path (str) - The path in which the workspace should be kept
     #    checkout (bool): Whether to check-out the element's sources into the directory
+    #    append (bool): Whether the WorkspaceProject file should append this project
+    #    preserve_workspace_project (bool): Whether the WorkspaceProject should be altered
     #
-    def create_workspace(self, target, path, *, checkout):
+    def create_workspace(self, target, path, *, checkout, append, preserve_workspace_project=False):
         element_name = target._get_full_name()
         project_dir = self._toplevel_project.directory
         if path.startswith(project_dir):
@@ -444,7 +485,11 @@ class Workspaces():
             with target.timed_activity("Staging sources to {}".format(path)):
                 target._open_workspace()
 
-        workspace_project = self._workspace_project_cache.add(path, project_dir, element_name)
+        if preserve_workspace_project:
+            workspace_project = self._workspace_project_cache.get(path)
+        else:
+            workspace_project = self._workspace_project_cache.add(path, project_dir, element_name, append=append)
+
         project_file_path = workspace_project.get_filename()
 
         if os.path.exists(project_file_path):
@@ -468,6 +513,21 @@ class Workspaces():
         if element_name not in self._workspaces:
             return None
         return self._workspaces[element_name]
+
+    # get_workspace_project()
+    #
+    # Returns a WorkspaceProject for a given directory, retrieving from the cache if
+    # present.
+    #
+    # Args:
+    #    directory (str): The directory to search for a WorkspaceProject.
+    #
+    # Returns:
+    #    (WorkspaceProject): The WorkspaceProject that was found for that directory.
+    #    or      (NoneType): None, if no WorkspaceProject can be found.
+    #
+    def get_workspace_project(self, directory):
+        return self._workspace_project_cache.get(directory)
 
     # update_workspace()
     #
@@ -498,20 +558,23 @@ class Workspaces():
     #
     # Args:
     #    element_name (str) - The element name whose workspace to delete
+    #    preserve_workspace_project (bool): Whether the WorkspaceProject should be altered
     #
-    def delete_workspace(self, element_name):
+    def delete_workspace(self, element_name, preserve_workspace_project=False):
         workspace = self.get_workspace(element_name)
         del self._workspaces[element_name]
 
-        # Remove from the cache if it exists
-        try:
-            self._workspace_project_cache.remove(workspace.get_absolute_path())
-        except LoadError as e:
-            # We might be closing a workspace with a deleted directory
-            if e.reason == LoadErrorReason.MISSING_FILE:
-                pass
-            else:
-                raise
+        if not preserve_workspace_project:
+            # Remove from the cache if it exists
+            project_dir = self._toplevel_project.directory
+            try:
+                self._workspace_project_cache.remove(workspace.get_absolute_path(), project_dir, element_name)
+            except LoadError as e:
+                # We might be closing a workspace with a deleted directory
+                if e.reason == LoadErrorReason.MISSING_FILE:
+                    pass
+                else:
+                    raise
 
     # save_config()
     #
