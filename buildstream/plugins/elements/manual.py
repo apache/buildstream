@@ -36,7 +36,8 @@ from buildstream import BuildElement
 
 # Element implementation for the 'manual' kind.
 class ManualElement(BuildElement):
-    pass
+    # Supports virtual directories (required for remote execution)
+    BST_VIRTUAL_DIRECTORY = True
 
 
 # Plugin entry point
