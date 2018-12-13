@@ -28,7 +28,8 @@ from ._message import Message, MessageType
 from . import utils
 from . import _yaml
 
-from ._cas import CASRemote, CASRemoteSpec
+from ._cas import BlobNotFound, CASRemote, CASRemoteSpec
+from ._cas.transfer import cas_directory_download, cas_tree_download
 
 
 CACHE_SIZE_FILE = "cache_size"
@@ -644,19 +645,31 @@ class ArtifactCache():
                 display_key = element._get_brief_display_key()
                 element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
-                if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
-                    element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
-                    if subdir:
-                        # Attempt to extract subdir into artifact extract dir if it already exists
-                        # without containing the subdir. If the respective artifact extract dir does not
-                        # exist a complete extraction will complete.
-                        self.extract(element, key, subdir)
-                    # no need to pull from additional remotes
-                    return True
-                else:
+                root_digest = remote.get_reference(ref)
+
+                if not root_digest:
                     element.info("Remote ({}) does not have {} cached".format(
-                        remote.spec.url, element._get_brief_display_key()
-                    ))
+                        remote.spec.url, element._get_brief_display_key()))
+                    continue
+
+                try:
+                    cas_directory_download(self.cas, remote, root_digest, excluded_subdirs)
+                except BlobNotFound:
+                    element.info("Remote ({}) is missing blobs for {}".format(
+                        remote.spec.url, element._get_brief_display_key()))
+                    continue
+
+                self.cas.set_ref(ref, root_digest)
+
+                if subdir:
+                    # Attempt to extract subdir into artifact extract dir if it already exists
+                    # without containing the subdir. If the respective artifact extract dir does not
+                    # exist a complete extraction will complete.
+                    self.extract(element, key, subdir)
+
+                element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
+                # no need to pull from additional remotes
+                return True
 
             except CASError as e:
                 raise ArtifactError("Failed to pull artifact {}: {}".format(
@@ -671,15 +684,16 @@ class ArtifactCache():
     #
     # Args:
     #     project (Project): The current project
-    #     digest (Digest): The digest of the tree
+    #     tree_digest (Digest): The digest of the tree
     #
-    def pull_tree(self, project, digest):
+    def pull_tree(self, project, tree_digest):
         for remote in self._remotes[project]:
-            digest = self.cas.pull_tree(remote, digest)
-
-            if digest:
-                # no need to pull from additional remotes
-                return digest
+            try:
+                root_digest = cas_tree_download(self.cas, remote, tree_digest)
+            except BlobNotFound:
+                continue
+            else:
+                return root_digest
 
         return None
 

@@ -3,6 +3,7 @@ import io
 import os
 import multiprocessing
 import signal
+import tempfile
 from urllib.parse import urlparse
 import uuid
 
@@ -96,6 +97,11 @@ class CASRemote():
         self.tmpdir = str(tmpdir)
         os.makedirs(self.tmpdir, exist_ok=True)
 
+        self.__tmp_downloads = []  # files in the tmpdir waiting to be added to local caches
+
+        self.__batch_read = None
+        self.__batch_update = None
+
     def init(self):
         if not self._initialized:
             url = urlparse(self.spec.url)
@@ -153,6 +159,7 @@ class CASRemote():
                 request = remote_execution_pb2.BatchReadBlobsRequest()
                 response = self.cas.BatchReadBlobs(request)
                 self.batch_read_supported = True
+                self.__batch_read = _CASBatchRead(self)
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.UNIMPLEMENTED:
                     raise
@@ -163,6 +170,7 @@ class CASRemote():
                 request = remote_execution_pb2.BatchUpdateBlobsRequest()
                 response = self.cas.BatchUpdateBlobs(request)
                 self.batch_update_supported = True
+                self.__batch_update = _CASBatchUpdate(self)
             except grpc.RpcError as e:
                 if (e.code() != grpc.StatusCode.UNIMPLEMENTED and
                         e.code() != grpc.StatusCode.PERMISSION_DENIED):
@@ -259,6 +267,136 @@ class CASRemote():
 
         return message_digest
 
+    # get_reference():
+    #
+    # Args:
+    #    ref (str): The ref to request
+    #
+    # Returns:
+    #    (digest): digest of ref, None if not found
+    #
+    def get_reference(self, ref):
+        try:
+            self.init()
+
+            request = buildstream_pb2.GetReferenceRequest()
+            request.key = ref
+            return self.ref_storage.GetReference(request).digest
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.NOT_FOUND:
+                raise CASRemoteError("Failed to find ref {}: {}".format(ref, e)) from e
+            else:
+                return None
+
+    def get_tree_blob(self, tree_digest):
+        self.init()
+        f = tempfile.NamedTemporaryFile(dir=self.tmpdir)
+        self._fetch_blob(tree_digest, f)
+
+        tree = remote_execution_pb2.Tree()
+        with open(f.name, 'rb') as tmp:
+            tree.ParseFromString(tmp.read())
+
+        return tree
+
+    # yield_directory_digests():
+    #
+    # Recursively iterates over digests for files, symbolic links and other
+    # directories starting from a root digest
+    #
+    # Args:
+    #     root_digest (digest): The root_digest to get a tree of
+    #     progress (callable): The progress callback, if any
+    #     subdir (str): The optional specific subdir to pull
+    #     excluded_subdirs (list): The optional list of subdirs to not pull
+    #
+    # Returns:
+    #     (iter digests): recursively iterates over digests contained in root directory
+    #
+    def yield_directory_digests(self, root_digest, *, progress=None,
+                                subdir=None, excluded_subdirs=None):
+        self.init()
+
+        # Fetch artifact, excluded_subdirs determined in pullqueue
+        if excluded_subdirs is None:
+            excluded_subdirs = []
+
+        # get directory blob
+        f = tempfile.NamedTemporaryFile(dir=self.tmpdir)
+        self._fetch_blob(root_digest, f)
+
+        directory = remote_execution_pb2.Directory()
+        with open(f.name, 'rb') as tmp:
+            directory.ParseFromString(tmp.read())
+
+        yield root_digest
+        for filenode in directory.files:
+            yield filenode.digest
+
+        for dirnode in directory.directories:
+            if dirnode.name not in excluded_subdirs:
+                yield from self.yield_directory_digests(dirnode.digest)
+
+    # yield_tree_digests():
+    #
+    # Fetches a tree file from digests and then iterates over child digests
+    #
+    # Args:
+    #     tree_digest (digest): tree digest
+    #
+    # Returns:
+    #     (iter digests): iterates over digests in tree message
+    def yield_tree_digests(self, tree):
+        self.init()
+
+        tree.children.extend([tree.root])
+        for directory in tree.children:
+            for filenode in directory.files:
+                yield filenode.digest
+
+            # add the directory to downloaded tmp files to be added
+            f = tempfile.NamedTemporaryFile(dir=self.tmpdir)
+            f.write(directory.SerializeToString())
+            f.flush()
+            self.__tmp_downloads.append(f)
+
+    # request_blob():
+    #
+    # Request blob, triggering download depending via bytestream or cas
+    # BatchReadBlobs depending on size.
+    #
+    # Args:
+    #    digest (Digest): digest of the requested blob
+    #
+    def request_blob(self, digest):
+        if (not self.batch_read_supported or
+                digest.size_bytes > self.max_batch_total_size_bytes):
+            f = tempfile.NamedTemporaryFile(dir=self.tmpdir)
+            self._fetch_blob(digest, f)
+            self.__tmp_downloads.append(f)
+        elif self.__batch_read.add(digest) is False:
+            self._download_batch()
+            self.__batch_read.add(digest)
+
+    # get_blobs():
+    #
+    # Yield over downloaded blobs in the tmp file locations, causing the files
+    # to be deleted once they go out of scope.
+    #
+    # Args:
+    #    complete_batch (bool): download any outstanding batch read request
+    #
+    # Returns:
+    #    iterator over NamedTemporaryFile
+    def get_blobs(self, complete_batch=False):
+        # Send read batch request and download
+        if (complete_batch is True and
+                self.batch_read_supported is True):
+            self._download_batch()
+
+        while self.__tmp_downloads:
+            yield self.__tmp_downloads.pop()
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -300,6 +438,15 @@ class CASRemote():
         response = self.bytestream.Write(request_stream(resource_name, stream))
 
         assert response.committed_size == digest.size_bytes
+
+    def _download_batch(self):
+        for _, data in self.__batch_read.send():
+            f = tempfile.NamedTemporaryFile(dir=self.tmpdir)
+            f.write(data)
+            f.flush()
+            self.__tmp_downloads.append(f)
+
+        self.__batch_read = _CASBatchRead(self)
 
 
 # Represents a batch of blobs queued for fetching.

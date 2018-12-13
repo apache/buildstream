@@ -89,7 +89,7 @@ def test_push(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push, queue, user_config_file, project_dir,
-                                                artifact_dir, 'target.bst', element_key))
+                                                artifact_dir, tmpdir, 'target.bst', element_key))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -105,14 +105,18 @@ def test_push(cli, tmpdir, datafiles):
         assert not error
         assert share.has_artifact('test', 'target.bst', element_key)
 
+        # Check tmpdir for downloads is cleared
+        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'tmp')) == []
 
-def _test_push(user_config_file, project_dir, artifact_dir,
+
+def _test_push(user_config_file, project_dir, artifact_dir, tmpdir,
                element_name, element_key, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
     context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
+    context.tmpdir = os.path.join(str(tmpdir), 'cache', 'tmp')
 
     # Load the project manually
     project = Project(project_dir, context)
@@ -196,9 +200,10 @@ def test_push_directory(cli, tmpdir, datafiles):
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-        process = multiprocessing.Process(target=_queue_wrapper,
-                                          args=(_test_push_directory, queue, user_config_file,
-                                                project_dir, artifact_dir, artifact_digest))
+        process = multiprocessing.Process(
+            target=_queue_wrapper,
+            args=(_test_push_directory, queue, user_config_file, project_dir,
+                  artifact_dir, tmpdir, artifact_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -215,13 +220,17 @@ def test_push_directory(cli, tmpdir, datafiles):
         assert artifact_digest.hash == directory_hash
         assert share.has_object(artifact_digest)
 
+        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'tmp')) == []
 
-def _test_push_directory(user_config_file, project_dir, artifact_dir, artifact_digest, queue):
+
+def _test_push_directory(user_config_file, project_dir, artifact_dir, tmpdir,
+                         artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
     context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
+    context.tmpdir = os.path.join(str(tmpdir), 'cache', 'tmp')
 
     # Load the project manually
     project = Project(project_dir, context)
@@ -273,7 +282,7 @@ def test_push_message(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push_message, queue, user_config_file,
-                                                project_dir, artifact_dir))
+                                                project_dir, artifact_dir, tmpdir))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -291,13 +300,16 @@ def test_push_message(cli, tmpdir, datafiles):
                                                      size_bytes=message_size)
         assert share.has_object(message_digest)
 
+        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'tmp')) == []
 
-def _test_push_message(user_config_file, project_dir, artifact_dir, queue):
+
+def _test_push_message(user_config_file, project_dir, artifact_dir, tmpdir, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
     context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
+    context.tmpdir = os.path.join(str(tmpdir), 'cache', 'tmp')
 
     # Load the project manually
     project = Project(project_dir, context)

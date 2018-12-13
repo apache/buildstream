@@ -33,7 +33,7 @@ from .._protos.buildstream.v2 import buildstream_pb2
 from .. import utils
 from .._exceptions import CASCacheError
 
-from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
+from .casremote import _CASBatchUpdate
 
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
@@ -182,73 +182,6 @@ class CASCache():
         self._diff_trees(tree_a, tree_b, added=added, removed=removed, modified=modified)
 
         return modified, removed, added
-
-    # pull():
-    #
-    # Pull a ref from a remote repository.
-    #
-    # Args:
-    #     ref (str): The ref to pull
-    #     remote (CASRemote): The remote repository to pull from
-    #     progress (callable): The progress callback, if any
-    #     subdir (str): The optional specific subdir to pull
-    #     excluded_subdirs (list): The optional list of subdirs to not pull
-    #
-    # Returns:
-    #   (bool): True if pull was successful, False if ref was not available
-    #
-    def pull(self, ref, remote, *, progress=None, subdir=None, excluded_subdirs=None):
-        try:
-            remote.init()
-
-            request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
-            request.key = ref
-            response = remote.ref_storage.GetReference(request)
-
-            tree = remote_execution_pb2.Digest()
-            tree.hash = response.digest.hash
-            tree.size_bytes = response.digest.size_bytes
-
-            # Check if the element artifact is present, if so just fetch the subdir.
-            if subdir and os.path.exists(self.objpath(tree)):
-                self._fetch_subdir(remote, tree, subdir)
-            else:
-                # Fetch artifact, excluded_subdirs determined in pullqueue
-                self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
-
-            self.set_ref(ref, tree)
-
-            return True
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise CASCacheError("Failed to pull ref {}: {}".format(ref, e)) from e
-            else:
-                return False
-        except BlobNotFound as e:
-            return False
-
-    # pull_tree():
-    #
-    # Pull a single Tree rather than a ref.
-    # Does not update local refs.
-    #
-    # Args:
-    #     remote (CASRemote): The remote to pull from
-    #     digest (Digest): The digest of the tree
-    #
-    def pull_tree(self, remote, digest):
-        try:
-            remote.init()
-
-            digest = self._fetch_tree(remote, digest)
-
-            return digest
-
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise
-
-        return None
 
     # link_ref():
     #
@@ -591,6 +524,16 @@ class CASCache():
         reachable = set()
         self._reachable_refs_dir(reachable, tree, update_mtime=True)
 
+    # Check to see if a blob is in the local CAS
+    # return None if not
+    def check_blob(self, digest):
+        objpath = self.objpath(digest)
+        if os.path.exists(objpath):
+            # already in local repository
+            return objpath
+        else:
+            return None
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -779,151 +722,6 @@ class CASCache():
 
         for dirnode in directory.directories:
             yield from self._required_blobs(dirnode.digest)
-
-    # _ensure_blob():
-    #
-    # Fetch and add blob if it's not already local.
-    #
-    # Args:
-    #     remote (Remote): The remote to use.
-    #     digest (Digest): Digest object for the blob to fetch.
-    #
-    # Returns:
-    #     (str): The path of the object
-    #
-    def _ensure_blob(self, remote, digest):
-        objpath = self.objpath(digest)
-        if os.path.exists(objpath):
-            # already in local repository
-            return objpath
-
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
-            remote._fetch_blob(digest, f)
-
-            added_digest = self.add_object(path=f.name, link_directly=True)
-            assert added_digest.hash == digest.hash
-
-        return objpath
-
-    def _batch_download_complete(self, batch):
-        for digest, data in batch.send():
-            with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
-                f.write(data)
-                f.flush()
-
-                added_digest = self.add_object(path=f.name, link_directly=True)
-                assert added_digest.hash == digest.hash
-
-    # Helper function for _fetch_directory().
-    def _fetch_directory_batch(self, remote, batch, fetch_queue, fetch_next_queue):
-        self._batch_download_complete(batch)
-
-        # All previously scheduled directories are now locally available,
-        # move them to the processing queue.
-        fetch_queue.extend(fetch_next_queue)
-        fetch_next_queue.clear()
-        return _CASBatchRead(remote)
-
-    # Helper function for _fetch_directory().
-    def _fetch_directory_node(self, remote, digest, batch, fetch_queue, fetch_next_queue, *, recursive=False):
-        in_local_cache = os.path.exists(self.objpath(digest))
-
-        if in_local_cache:
-            # Skip download, already in local cache.
-            pass
-        elif (digest.size_bytes >= remote.max_batch_total_size_bytes or
-              not remote.batch_read_supported):
-            # Too large for batch request, download in independent request.
-            self._ensure_blob(remote, digest)
-            in_local_cache = True
-        else:
-            if not batch.add(digest):
-                # Not enough space left in batch request.
-                # Complete pending batch first.
-                batch = self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-                batch.add(digest)
-
-        if recursive:
-            if in_local_cache:
-                # Add directory to processing queue.
-                fetch_queue.append(digest)
-            else:
-                # Directory will be available after completing pending batch.
-                # Add directory to deferred processing queue.
-                fetch_next_queue.append(digest)
-
-        return batch
-
-    # _fetch_directory():
-    #
-    # Fetches remote directory and adds it to content addressable store.
-    #
-    # Fetches files, symbolic links and recursively other directories in
-    # the remote directory and adds them to the content addressable
-    # store.
-    #
-    # Args:
-    #     remote (Remote): The remote to use.
-    #     dir_digest (Digest): Digest object for the directory to fetch.
-    #     excluded_subdirs (list): The optional list of subdirs to not fetch
-    #
-    def _fetch_directory(self, remote, dir_digest, *, excluded_subdirs=None):
-        fetch_queue = [dir_digest]
-        fetch_next_queue = []
-        batch = _CASBatchRead(remote)
-        if not excluded_subdirs:
-            excluded_subdirs = []
-
-        while len(fetch_queue) + len(fetch_next_queue) > 0:
-            if not fetch_queue:
-                batch = self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-
-            dir_digest = fetch_queue.pop(0)
-
-            objpath = self._ensure_blob(remote, dir_digest)
-
-            directory = remote_execution_pb2.Directory()
-            with open(objpath, 'rb') as f:
-                directory.ParseFromString(f.read())
-
-            for dirnode in directory.directories:
-                if dirnode.name not in excluded_subdirs:
-                    batch = self._fetch_directory_node(remote, dirnode.digest, batch,
-                                                       fetch_queue, fetch_next_queue, recursive=True)
-
-            for filenode in directory.files:
-                batch = self._fetch_directory_node(remote, filenode.digest, batch,
-                                                   fetch_queue, fetch_next_queue)
-
-        # Fetch final batch
-        self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-
-    def _fetch_subdir(self, remote, tree, subdir):
-        subdirdigest = self._get_subdir(tree, subdir)
-        self._fetch_directory(remote, subdirdigest)
-
-    def _fetch_tree(self, remote, digest):
-        # download but do not store the Tree object
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
-            remote._fetch_blob(digest, out)
-
-            tree = remote_execution_pb2.Tree()
-
-            with open(out.name, 'rb') as f:
-                tree.ParseFromString(f.read())
-
-            tree.children.extend([tree.root])
-            for directory in tree.children:
-                for filenode in directory.files:
-                    self._ensure_blob(remote, filenode.digest)
-
-                # place directory blob only in final location when we've downloaded
-                # all referenced blobs to avoid dangling references in the repository
-                dirbuffer = directory.SerializeToString()
-                dirdigest = self.add_object(buffer=dirbuffer)
-                assert dirdigest.size_bytes == len(dirbuffer)
-
-        return dirdigest
 
     def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
         required_blobs = self._required_blobs(digest)

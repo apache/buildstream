@@ -77,6 +77,8 @@ def test_pullbuildtrees(cli, tmpdir, datafiles, integration_cache):
         result = cli.run(project=project, args=['--pull-buildtrees', 'pull', element_name])
         assert element_name in result.get_pulled_elements()
         assert os.path.isdir(buildtreedir)
+        # Check tmpdir for downloads is cleared
+        assert os.listdir(os.path.join(str(tmpdir), 'artifacts', 'tmp')) == []
         default_state(cli, tmpdir, share1)
 
         # Pull artifact with pullbuildtrees set in user config, then assert
@@ -89,6 +91,8 @@ def test_pullbuildtrees(cli, tmpdir, datafiles, integration_cache):
         assert element_name not in result.get_pulled_elements()
         result = cli.run(project=project, args=['--pull-buildtrees', 'pull', element_name])
         assert element_name not in result.get_pulled_elements()
+        # Check tmpdir for downloads is cleared
+        assert os.listdir(os.path.join(str(tmpdir), 'artifacts', 'tmp')) == []
         default_state(cli, tmpdir, share1)
 
         # Pull artifact with default config and buildtrees cli flag set, then assert
@@ -99,6 +103,8 @@ def test_pullbuildtrees(cli, tmpdir, datafiles, integration_cache):
         cli.configure({'cache': {'pull-buildtrees': True}})
         result = cli.run(project=project, args=['pull', element_name])
         assert element_name not in result.get_pulled_elements()
+        # Check tmpdir for downloads is cleared
+        assert os.listdir(os.path.join(str(tmpdir), 'artifacts', 'tmp')) == []
         default_state(cli, tmpdir, share1)
 
         # Assert that a partial build element (not containing a populated buildtree dir)

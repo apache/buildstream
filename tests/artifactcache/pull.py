@@ -110,7 +110,7 @@ def test_pull(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_pull, queue, user_config_file, project_dir,
-                                                artifact_dir, 'target.bst', element_key))
+                                                artifact_dir, tmpdir, 'target.bst', element_key))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -126,14 +126,18 @@ def test_pull(cli, tmpdir, datafiles):
         assert not error
         assert cas.contains(element, element_key)
 
+        # Check that the tmp dir is cleared out
+        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'tmp')) == []
 
-def _test_pull(user_config_file, project_dir, artifact_dir,
+
+def _test_pull(user_config_file, project_dir, artifact_dir, tmpdir,
                element_name, element_key, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
     context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
+    context.tmpdir = os.path.join(str(tmpdir), 'cache', 'tmp')
 
     # Load the project manually
     project = Project(project_dir, context)
@@ -218,7 +222,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push_tree, queue, user_config_file, project_dir,
-                                                artifact_dir, artifact_digest))
+                                                artifact_dir, tmpdir, artifact_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -239,6 +243,9 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Assert that we are not cached locally anymore
         assert cli.get_element_state(project_dir, 'target.bst') != 'cached'
 
+        # Check that the tmp dir is cleared out
+        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'tmp')) == []
+
         tree_digest = remote_execution_pb2.Digest(hash=tree_hash,
                                                   size_bytes=tree_size)
 
@@ -246,7 +253,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_pull_tree, queue, user_config_file, project_dir,
-                                                artifact_dir, tree_digest))
+                                                artifact_dir, tmpdir, tree_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -267,13 +274,18 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Ensure the entire Tree stucture has been pulled
         assert os.path.exists(cas.objpath(directory_digest))
 
+        # Check that the tmp dir is cleared out
+        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'tmp')) == []
 
-def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest, queue):
+
+def _test_push_tree(user_config_file, project_dir, artifact_dir, tmpdir,
+                    artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
     context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
+    context.tmpdir = os.path.join(str(tmpdir), 'cache', 'tmp')
 
     # Load the project manually
     project = Project(project_dir, context)
@@ -304,12 +316,14 @@ def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest
         queue.put("No remote configured")
 
 
-def _test_pull_tree(user_config_file, project_dir, artifact_dir, artifact_digest, queue):
+def _test_pull_tree(user_config_file, project_dir, artifact_dir, tmpdir,
+                    artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
     context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
+    context.tmpdir = os.path.join(str(tmpdir), 'cache', 'tmp')
 
     # Load the project manually
     project = Project(project_dir, context)

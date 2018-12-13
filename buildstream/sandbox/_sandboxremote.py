@@ -39,6 +39,7 @@ from .._exceptions import SandboxError
 from .. import _yaml
 from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
 from .._cas import CASRemote, CASRemoteSpec
+from .._cas.transfer import cas_tree_download
 
 
 class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service')):
@@ -281,8 +282,7 @@ class SandboxRemote(Sandbox):
         cascache = context.get_cascache()
         casremote = CASRemote(self.storage_remote_spec, context.tmpdir)
 
-        # Now do a pull to ensure we have the necessary parts.
-        dir_digest = cascache.pull_tree(casremote, tree_digest)
+        dir_digest = cas_tree_download(cascache, casremote, tree_digest)
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
             raise SandboxError("Output directory structure pulling from remote failed.")
 

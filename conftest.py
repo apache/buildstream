@@ -46,6 +46,13 @@ def integration_cache(request):
     else:
         cache_dir = os.path.abspath('./integration-cache')
 
+    # Clean up the tmp dir, should be empty but something in CI tests is
+    # leaving files here
+    try:
+        shutil.rmtree(os.path.join(cache_dir, 'tmp'))
+    except FileNotFoundError:
+        pass
+
     yield cache_dir
 
     # Clean up the artifacts after each test run - we only want to
