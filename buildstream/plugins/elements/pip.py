@@ -36,7 +36,8 @@ from buildstream import BuildElement
 
 # Element implementation for the 'pip' kind.
 class PipElement(BuildElement):
-    pass
+    # Supports virtual directories (required for remote execution)
+    BST_VIRTUAL_DIRECTORY = True
 
 
 # Plugin entry point
