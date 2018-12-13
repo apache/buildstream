@@ -215,10 +215,6 @@ class BuildElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
-        # Enable command batching across prepare() and assemble()
-        self.batch_prepare_assemble(SandboxFlags.ROOT_READ_ONLY,
-                                    collect=self.get_variable('install-root'))
-
     def stage(self, sandbox):
 
         # Stage deps in the sandbox root
