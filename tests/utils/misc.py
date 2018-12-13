@@ -1,9 +1,9 @@
-from buildstream import _yaml
-from ..testutils import mock_os
-from ..testutils.runcli import cli
-
 import os
-import pytest
+from unittest import mock
+
+from buildstream import _yaml
+
+from ..testutils.runcli import cli
 
 
 KiB = 1024
@@ -13,7 +13,6 @@ TiB = (GiB * 1024)
 
 
 def test_parse_size_over_1024T(cli, tmpdir):
-    BLOCK_SIZE = 4096
     cli.configure({
         'cache': {
             'quota': 2048 * TiB
@@ -23,9 +22,13 @@ def test_parse_size_over_1024T(cli, tmpdir):
     os.makedirs(str(project))
     _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
 
-    bavail = (1025 * TiB) / BLOCK_SIZE
-    patched_statvfs = mock_os.mock_statvfs(f_bavail=bavail, f_bsize=BLOCK_SIZE)
-    with mock_os.monkey_patch("statvfs", patched_statvfs):
+    volume_space_patch = mock.patch(
+        "buildstream._artifactcache.artifactcache.ArtifactCache._get_volume_space_info_for",
+        autospec=True,
+        return_value=(1025 * TiB, 1025 * TiB)
+    )
+
+    with volume_space_patch:
         result = cli.run(project, args=["build", "file.bst"])
         failure_msg = 'Your system does not have enough available space to support the cache quota specified.'
         assert failure_msg in result.stderr

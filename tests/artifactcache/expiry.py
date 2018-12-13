@@ -18,6 +18,7 @@
 #
 
 import os
+from unittest import mock
 
 import pytest
 
@@ -311,6 +312,8 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
     ("0", True),
     ("-1", False),
     ("pony", False),
+    ("7K", False),
+    ("70%", False),
     ("200%", False)
 ])
 @pytest.mark.datafiles(DATA_DIR)
@@ -324,7 +327,35 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, success):
         }
     })
 
-    res = cli.run(project=project, args=['workspace', 'list'])
+    # We patch how we get space information
+    # Ideally we would instead create a FUSE device on which we control
+    # everything.
+    # If the value is a percentage, we fix the current values to take into
+    # account the block size, since this is important in how we compute the size
+
+    if quota.endswith("%"):  # We set the used space at 60% of total space
+        stats = os.statvfs(".")
+        free_space = 0.6 * stats.f_bsize * stats.f_blocks
+        total_space = stats.f_bsize * stats.f_blocks
+    else:
+        free_space = 6000
+        total_space = 10000
+
+    volume_space_patch = mock.patch(
+        "buildstream._artifactcache.artifactcache.ArtifactCache._get_volume_space_info_for",
+        autospec=True,
+        return_value=(free_space, total_space),
+    )
+
+    cache_size_patch = mock.patch(
+        "buildstream._artifactcache.artifactcache.ArtifactCache.get_cache_size",
+        autospec=True,
+        return_value=0,
+    )
+
+    with volume_space_patch, cache_size_patch:
+        res = cli.run(project=project, args=['workspace', 'list'])
+
     if success:
         res.assert_success()
     else:
