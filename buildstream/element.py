@@ -1612,9 +1612,9 @@ class Element(Plugin):
                         sandbox_vpath = sandbox_vroot.descend(path_components)
                         try:
                             sandbox_vpath.import_files(workspace.get_absolute_path())
-                        except UtilError as e:
+                        except UtilError as e2:
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
-                                      .format(e))
+                                      .format(e2))
 
                     self.__set_build_result(success=False, description=str(e), detail=e.detail)
                     self._cache_artifact(rootdir, sandbox, e.collect)
