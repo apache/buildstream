@@ -34,3 +34,8 @@ if "_BST_COMPLETION" not in os.environ:
     from .element import Element, ElementError
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement
+
+    # XXX We are exposing a private member here as we expect it to move to a
+    # separate package soon. See the following discussion for more details:
+    # https://gitlab.com/BuildStream/buildstream/issues/739#note_124819869
+    from ._gitsourcebase import _GitSourceBase
