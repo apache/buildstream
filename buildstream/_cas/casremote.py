@@ -79,7 +79,7 @@ class BlobNotFound(CASRemoteError):
 # Represents a single remote CAS cache.
 #
 class CASRemote():
-    def __init__(self, spec):
+    def __init__(self, spec, tmpdir):
         self.spec = spec
         self._initialized = False
         self.channel = None
@@ -90,6 +90,11 @@ class CASRemote():
         self.batch_read_supported = None
         self.capabilities = None
         self.max_batch_total_size_bytes = None
+
+        # Need str because python 3.5 and lower doesn't deal with path like
+        # objects here.
+        self.tmpdir = str(tmpdir)
+        os.makedirs(self.tmpdir, exist_ok=True)
 
     def init(self):
         if not self._initialized:
@@ -172,11 +177,11 @@ class CASRemote():
     # in the main BuildStream process
     # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
     @classmethod
-    def check_remote(cls, remote_spec, q):
+    def check_remote(cls, remote_spec, tmpdir, q):
 
         def __check_remote():
             try:
-                remote = cls(remote_spec)
+                remote = cls(remote_spec, tmpdir)
                 remote.init()
 
                 request = buildstream_pb2.StatusRequest()

@@ -279,7 +279,7 @@ class SandboxRemote(Sandbox):
 
         context = self._get_context()
         cascache = context.get_cascache()
-        casremote = CASRemote(self.storage_remote_spec)
+        casremote = CASRemote(self.storage_remote_spec, context.tmpdir)
 
         # Now do a pull to ensure we have the necessary parts.
         dir_digest = cascache.pull_tree(casremote, tree_digest)
@@ -306,8 +306,9 @@ class SandboxRemote(Sandbox):
 
     def _run(self, command, flags, *, cwd, env):
         # set up virtual dircetory
+        context = self._get_context()
         upload_vdir = self.get_virtual_directory()
-        cascache = self._get_context().get_cascache()
+        cascache = context.get_cascache()
         if isinstance(upload_vdir, FileBasedDirectory):
             # Make a new temporary directory to put source in
             upload_vdir = CasBasedDirectory(cascache, ref=None)
@@ -340,7 +341,7 @@ class SandboxRemote(Sandbox):
         action_result = self._check_action_cache(action_digest)
 
         if not action_result:
-            casremote = CASRemote(self.storage_remote_spec)
+            casremote = CASRemote(self.storage_remote_spec, context.tmpdir)
 
             # Now, push that key (without necessarily needing a ref) to the remote.
             try:

@@ -191,10 +191,13 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt', 'workspacedir', 'remote-execution'
+            'cache', 'prompt', 'workspacedir', 'remote-execution',
         ])
 
-        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
+        defaults['tmpdir'] = os.path.join(defaults['artifactdir'], 'tmp')
+
+        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir',
+                          'tmpdir', 'workspacedir']:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #

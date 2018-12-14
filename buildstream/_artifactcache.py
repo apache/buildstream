@@ -374,7 +374,7 @@ class ArtifactCache():
         q = multiprocessing.Queue()
         for remote_spec in remote_specs:
 
-            error = CASRemote.check_remote(remote_spec, q)
+            error = CASRemote.check_remote(remote_spec, self.context.tmpdir, q)
 
             if error and on_failure:
                 on_failure(remote_spec.url, error)
@@ -385,7 +385,7 @@ class ArtifactCache():
                 if remote_spec.push:
                     self._has_push_remotes = True
 
-                remotes[remote_spec.url] = CASRemote(remote_spec)
+                remotes[remote_spec.url] = CASRemote(remote_spec, self.context.tmpdir)
 
         for project in self.context.get_projects():
             remote_specs = self.global_remote_specs
