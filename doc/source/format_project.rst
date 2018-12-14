@@ -233,11 +233,13 @@ using the `remote-execution` option:
     # A url defining a remote execution server
     execution-service:
       url: http://buildserver.example.com:50051
+      instance-name: development-emea-1
     storage-service:
-    - url: https://foo.com:11002/
+      url: https://foo.com:11002/
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
+      instance-name: development-emea-1
     action-cache-service:
       url: http://bar.action.com:50052
 
@@ -256,6 +258,13 @@ The storage service may be the same endpoint used for artifact
 caching. Remote execution cannot work without push access to the
 storage endpoint, so you must specify a client certificate and key,
 and a server certificate.
+
+Instance name is optional. Instance names separate different shards on
+the same endpoint (url).  You can supply a different instance name for
+`execution-service` and `storage-service`, if needed.  The instance
+name should be given to you by the service provider of each
+service. Not all remote execution and storage services support
+instance names.
 
 The Remote Execution API can be found via https://github.com/bazelbuild/remote-apis.
 
