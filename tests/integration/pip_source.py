@@ -52,7 +52,7 @@ def test_pip_source_import(cli, tmpdir, datafiles, setup_pypi_repo):
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
     _yaml.dump(element, os.path.join(element_path, element_name))
 
-    result = cli.run(project=project, args=['track', element_name])
+    result = cli.run(project=project, args=['source', 'track', element_name])
     assert result.exit_code == 0
 
     result = cli.run(project=project, args=['build', element_name])
@@ -113,7 +113,7 @@ def test_pip_source_build(cli, tmpdir, datafiles, setup_pypi_repo):
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
     _yaml.dump(element, os.path.join(element_path, element_name))
 
-    result = cli.run(project=project, args=['track', element_name])
+    result = cli.run(project=project, args=['source', 'track', element_name])
     assert result.exit_code == 0
 
     result = cli.run(project=project, args=['build', element_name])

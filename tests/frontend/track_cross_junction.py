@@ -100,7 +100,7 @@ def test_cross_junction_multiple_projects(cli, tmpdir, datafiles, kind):
     generate_junction(tmpdir.join('repo_b'), project_b_path, junction_b_path, store_ref=False)
 
     # Track the junctions.
-    result = cli.run(project=project, args=['track', junction_a, junction_b])
+    result = cli.run(project=project, args=['source', 'track', junction_a, junction_b])
     result.assert_success()
 
     # Import elements from a and b in to main.
@@ -111,7 +111,10 @@ def test_cross_junction_multiple_projects(cli, tmpdir, datafiles, kind):
     all_bst = generate_simple_stack(project, 'all', [imported_a, imported_b, element_c])
 
     # Track without following junctions. But explicitly also track the elements in project a.
-    result = cli.run(project=project, args=['track', '--deps', 'all', all_bst, '{}:{}'.format(junction_a, stack_a)])
+    result = cli.run(project=project, args=['source', 'track',
+                                            '--deps', 'all',
+                                            all_bst,
+                                            '{}:{}'.format(junction_a, stack_a)])
     result.assert_success()
 
     # Elements in project b should not be tracked. But elements in project a and main should.
@@ -137,14 +140,14 @@ def test_track_exceptions(cli, tmpdir, datafiles, kind):
     junction_a_path = os.path.join(project, 'elements', junction_a)
     generate_junction(tmpdir.join('repo_a'), project_a_path, junction_a_path, store_ref=False)
 
-    result = cli.run(project=project, args=['track', junction_a])
+    result = cli.run(project=project, args=['source', 'track', junction_a])
     result.assert_success()
 
     imported_b = generate_cross_element(project, project_a, element_b)
     indirection = generate_simple_stack(project, 'indirection', [imported_b])
 
     result = cli.run(project=project,
-                     args=['track', '--deps', 'all',
+                     args=['source', 'track', '--deps', 'all',
                            '--except', indirection,
                            '{}:{}'.format(junction_a, all_bst), imported_b])
     result.assert_success()

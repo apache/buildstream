@@ -236,7 +236,7 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name):
     _yaml.dump(element, element_path)
 
     result = cli.run(project=project, silent=True, args=[
-        'fetch', 'junction.bst'])
+        'source', 'fetch', 'junction.bst'])
 
     result.assert_success()
 

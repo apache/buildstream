@@ -227,7 +227,7 @@ def test_filter_track(datafiles, cli, tmpdir):
     assert cli.get_element_state(project, input_name) == 'no reference'
 
     # Now try to track it
-    result = cli.run(project=project, args=["track", "filter2.bst"])
+    result = cli.run(project=project, args=["source", "track", "filter2.bst"])
     result.assert_success()
 
     # Now check that a ref field exists
@@ -280,7 +280,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
     assert cli.get_element_state(project, input_name) == 'no reference'
 
     # Now try to track it
-    result = cli.run(project=project, args=["track", "filter2.bst", "--except", "input.bst"])
+    result = cli.run(project=project, args=["source", "track", "filter2.bst", "--except", "input.bst"])
     result.assert_success()
 
     # Now check that a ref field exists
@@ -333,7 +333,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
     assert cli.get_element_state(project, input_name) == 'no reference'
 
     # Now try to track it
-    result = cli.run(project=project, args=["track", "filter1.bst", "filter2.bst"])
+    result = cli.run(project=project, args=["source", "track", "filter1.bst", "filter2.bst"])
     result.assert_success()
 
     # Now check that a ref field exists
@@ -392,7 +392,7 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
     assert cli.get_element_state(project, input2_name) == 'no reference'
 
     # Now try to track it
-    result = cli.run(project=project, args=["track", "filter1.bst", "filter2.bst"])
+    result = cli.run(project=project, args=["source", "track", "filter1.bst", "filter2.bst"])
     result.assert_success()
 
     # Now check that a ref field exists
@@ -453,7 +453,7 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
     assert cli.get_element_state(project, input2_name) == 'no reference'
 
     # Now try to track it
-    result = cli.run(project=project, args=["track", "filter1.bst", "filter2.bst", "--except", input_name])
+    result = cli.run(project=project, args=["source", "track", "filter1.bst", "filter2.bst", "--except", input_name])
     result.assert_success()
 
     # Now check that a ref field exists

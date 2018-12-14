@@ -135,7 +135,7 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
     # No obvious ways of checking that the mirror has been fetched
     # But at least we can be sure it succeeds
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
 
@@ -211,7 +211,7 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
     project_file = os.path.join(project_dir, 'project.conf')
     _yaml.dump(project, project_file)
 
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
 
@@ -268,7 +268,7 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
     project_file = os.path.join(project_dir, 'project.conf')
     _yaml.dump(project, project_file)
 
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
 
@@ -287,7 +287,7 @@ def test_mirror_fetch_multi(cli, tmpdir, datafiles):
     project = generate_project()
     _yaml.dump(project, project_file)
 
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
     with open(output_file) as f:
         contents = f.read()
@@ -310,7 +310,7 @@ def test_mirror_fetch_default_cmdline(cli, tmpdir, datafiles):
     project = generate_project()
     _yaml.dump(project, project_file)
 
-    result = cli.run(project=project_dir, args=['--default-mirror', 'arrakis', 'fetch', element_name])
+    result = cli.run(project=project_dir, args=['--default-mirror', 'arrakis', 'source', 'fetch', element_name])
     result.assert_success()
     with open(output_file) as f:
         contents = f.read()
@@ -349,7 +349,7 @@ def test_mirror_fetch_default_userconfig(cli, tmpdir, datafiles):
     }
     cli.configure(userconfig)
 
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
     with open(output_file) as f:
         contents = f.read()
@@ -388,7 +388,7 @@ def test_mirror_fetch_default_cmdline_overrides_config(cli, tmpdir, datafiles):
     }
     cli.configure(userconfig)
 
-    result = cli.run(project=project_dir, args=['--default-mirror', 'arrakis', 'fetch', element_name])
+    result = cli.run(project=project_dir, args=['--default-mirror', 'arrakis', 'source', 'fetch', element_name])
     result.assert_success()
     with open(output_file) as f:
         contents = f.read()
@@ -459,7 +459,7 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
     project_file = os.path.join(project_dir, 'project.conf')
     _yaml.dump(project, project_file)
 
-    result = cli.run(project=project_dir, args=['track', element_name])
+    result = cli.run(project=project_dir, args=['source', 'track', element_name])
     result.assert_success()
 
     # Tracking tries upstream first. Check the ref is from upstream.
@@ -525,7 +525,7 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     project_file = os.path.join(project_dir, 'project.conf')
     _yaml.dump(project, project_file)
 
-    result = cli.run(project=project_dir, args=['track', element_name])
+    result = cli.run(project=project_dir, args=['source', 'track', element_name])
     result.assert_success()
 
     # Check that tracking fell back to the mirror
@@ -604,7 +604,7 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
 
     # Now make the upstream unavailable.
     os.rename(upstream_repo.repo, '{}.bak'.format(upstream_repo.repo))
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
 
@@ -678,11 +678,11 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
 
     # Now make the upstream unavailable.
     os.rename(upstream_repo.repo, '{}.bak'.format(upstream_repo.repo))
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_main_error(ErrorDomain.STREAM, None)
     # Now make the upstream available again.
     os.rename('{}.bak'.format(upstream_repo.repo), upstream_repo.repo)
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
 
@@ -762,7 +762,7 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
     project_file = os.path.join(project_dir, 'project.conf')
     _yaml.dump(project, project_file)
 
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
 
@@ -849,7 +849,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
 
     # Now make the upstream unavailable.
     os.rename(upstream_bin_repo.repo, '{}.bak'.format(upstream_bin_repo.repo))
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
     result = cli.run(project=project_dir, args=['build', element_name])
@@ -945,7 +945,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
 
     # Now make the upstream unavailable.
     os.rename(upstream_main_repo.repo, '{}.bak'.format(upstream_main_repo.repo))
-    result = cli.run(project=project_dir, args=['fetch', element_name])
+    result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
 
     result = cli.run(project=project_dir, args=['build', element_name])

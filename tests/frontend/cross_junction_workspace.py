@@ -35,7 +35,7 @@ def prepare_junction_project(cli, tmpdir):
                 'sources': [sub_repo.source_config(ref=sub_ref)]},
                str(main_project.join("sub.bst")))
 
-    args = ['fetch', 'sub.bst']
+    args = ['source', 'fetch', 'sub.bst']
     result = cli.run(project=str(main_project), args=args)
     result.assert_success()
 

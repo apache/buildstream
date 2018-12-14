@@ -77,7 +77,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     assert "FAILURE Try #" in result.stderr
     result.assert_main_error(ErrorDomain.STREAM, None)
@@ -96,7 +96,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 
     # Try to fetch it
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
@@ -114,7 +114,7 @@ def test_track_warning(cli, tmpdir, datafiles):
 
     # Track it
     result = cli.run(project=project, args=[
-        'track', 'target.bst'
+        'source', 'track', 'target.bst'
     ])
     result.assert_success()
     assert "Potential man-in-the-middle attack!" in result.stderr
@@ -133,9 +133,9 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
     _assemble_tar(os.path.join(str(datafiles), "content"), srcdir, src_tar)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -162,9 +162,9 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
     _assemble_tar(os.path.join(str(datafiles), "content"), srcdir, src_tar)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -191,9 +191,9 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
     _assemble_tar(os.path.join(str(datafiles), "content"), srcdir, src_tar)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -227,9 +227,9 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
     _assemble_tar(os.path.join(str(datafiles), "content"), "base-directory", src_tar)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -256,9 +256,9 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     _assemble_tar_lz(os.path.join(str(datafiles), "content"), srcdir, src_tar)
 
     # Track, fetch, build, checkout
-    result = cli.run(project=project, args=['track', 'target-lz.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'target-lz.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['fetch', 'target-lz.bst'])
+    result = cli.run(project=project, args=['source', 'fetch', 'target-lz.bst'])
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target-lz.bst'])
     result.assert_success()
@@ -297,9 +297,9 @@ def test_read_only_dir(cli, tmpdir, datafiles):
         env = {"TMP": tmpdir_str}
 
         # Track, fetch, build, checkout
-        result = cli.run(project=project, args=['track', 'target.bst'], env=env)
+        result = cli.run(project=project, args=['source', 'track', 'target.bst'], env=env)
         result.assert_success()
-        result = cli.run(project=project, args=['fetch', 'target.bst'], env=env)
+        result = cli.run(project=project, args=['source', 'fetch', 'target.bst'], env=env)
         result.assert_success()
         result = cli.run(project=project, args=['build', 'target.bst'], env=env)
         result.assert_success()
@@ -342,9 +342,9 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
         server.start()
 
-        result = cli.run(project=project, args=['track', 'target.bst'])
+        result = cli.run(project=project, args=['source', 'track', 'target.bst'])
         result.assert_success()
-        result = cli.run(project=project, args=['fetch', 'target.bst'])
+        result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
         result.assert_success()
         result = cli.run(project=project, args=['build', 'target.bst'])
         result.assert_success()
@@ -385,6 +385,6 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
 
         server.start()
 
-        result = cli.run(project=project, args=['track', 'target.bst'])
+        result = cli.run(project=project, args=['source', 'track', 'target.bst'])
         result.assert_main_error(ErrorDomain.STREAM, None)
         result.assert_task_error(ErrorDomain.SOURCE, None)

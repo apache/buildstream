@@ -52,14 +52,14 @@ def test_track(cli, tmpdir, datafiles, ref_storage, kind):
     assert cli.get_element_state(project, element_name) == 'no reference'
 
     # Now first try to track it
-    result = cli.run(project=project, args=['track', element_name])
+    result = cli.run(project=project, args=['source', 'track', element_name])
     result.assert_success()
 
     # And now fetch it: The Source has probably already cached the
     # latest ref locally, but it is not required to have cached
     # the associated content of the latest ref at track time, that
     # is the job of fetch.
-    result = cli.run(project=project, args=['fetch', element_name])
+    result = cli.run(project=project, args=['source', 'fetch', element_name])
     result.assert_success()
 
     # Assert that we are now buildable because the source is
@@ -99,7 +99,7 @@ def test_track_recurse(cli, tmpdir, datafiles, kind):
 
     # Now first try to track it
     result = cli.run(project=project, args=[
-        'track', '--deps', 'all',
+        'source', 'track', '--deps', 'all',
         element_target_name])
     result.assert_success()
 
@@ -108,7 +108,7 @@ def test_track_recurse(cli, tmpdir, datafiles, kind):
     # the associated content of the latest ref at track time, that
     # is the job of fetch.
     result = cli.run(project=project, args=[
-        'fetch', '--deps', 'all',
+        'source', 'fetch', '--deps', 'all',
         element_target_name])
     result.assert_success()
 
@@ -142,13 +142,13 @@ def test_track_single(cli, tmpdir, datafiles):
 
     # Now first try to track only one element
     result = cli.run(project=project, args=[
-        'track', '--deps', 'none',
+        'source', 'track', '--deps', 'none',
         element_target_name])
     result.assert_success()
 
     # And now fetch it
     result = cli.run(project=project, args=[
-        'fetch', '--deps', 'none',
+        'source', 'fetch', '--deps', 'none',
         element_target_name])
     result.assert_success()
 
@@ -183,7 +183,7 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
 
     # Now first try to track it
     result = cli.run(project=project, args=[
-        'track', '--deps', 'all', '--except', element_dep_name,
+        'source', 'track', '--deps', 'all', '--except', element_dep_name,
         element_target_name])
     result.assert_success()
 
@@ -192,7 +192,7 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     # the associated content of the latest ref at track time, that
     # is the job of fetch.
     result = cli.run(project=project, args=[
-        'fetch', '--deps', 'none',
+        'source', 'fetch', '--deps', 'none',
         element_target_name])
     result.assert_success()
 
@@ -231,9 +231,9 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     #
     # We want to track and persist the ref separately in this test
     #
-    result = cli.run(project=project, args=['--option', 'test', 'False', 'track', 'target.bst'])
+    result = cli.run(project=project, args=['--option', 'test', 'False', 'source', 'track', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['--option', 'test', 'True', 'track', 'target.bst'])
+    result = cli.run(project=project, args=['--option', 'test', 'True', 'source', 'track', 'target.bst'])
     result.assert_success()
 
     # Now fetch the key for both options
@@ -309,7 +309,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
     assert get_subproject_element_state() == 'no reference'
 
     # Track recursively across the junction
-    args = ['track', '--deps', 'all']
+    args = ['source', 'track', '--deps', 'all']
     if cross_junction == 'cross':
         args += ['--cross-junctions']
     args += ['target.bst']
@@ -350,7 +350,7 @@ def test_track_consistency_error(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Track the element causing a consistency error
-    result = cli.run(project=project, args=['track', 'error.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'error.bst'])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, 'the-consistency-error')
 
@@ -360,7 +360,7 @@ def test_track_consistency_bug(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Track the element causing an unhandled exception
-    result = cli.run(project=project, args=['track', 'bug.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'bug.bst'])
 
     # We expect BuildStream to fail gracefully, with no recorded exception.
     result.assert_main_error(ErrorDomain.STREAM, None)
@@ -396,7 +396,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
 
     # Now try to track it, this will bail with the appropriate error
     # informing the user to track the junction first
-    result = cli.run(project=project, args=['track', 'junction-dep.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
 
@@ -433,7 +433,7 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
     # Now track the junction itself
-    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'junction.bst'])
     result.assert_success()
 
     # Now assert element state (via bst show under the hood) of the dep again
@@ -464,13 +464,13 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
                       subproject_path, junction_path, store_ref=False)
 
     # Track the junction itself first.
-    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'junction.bst'])
     result.assert_success()
 
     assert cli.get_element_state(project, 'junction.bst:import-etc-repo.bst') == 'no reference'
 
     # Track the cross junction element. -J is not given, it is implied.
-    result = cli.run(project=project, args=['track', 'junction.bst:import-etc-repo.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'junction.bst:import-etc-repo.bst'])
 
     if ref_storage == 'inline':
         # This is not allowed to track cross junction without project.refs.
@@ -520,14 +520,14 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
     assert cli.get_element_state(project, element_name) == 'no reference'
 
     # Now first try to track it
-    result = cli.run(project=project, args=['track', element_name])
+    result = cli.run(project=project, args=['source', 'track', element_name])
     result.assert_success()
 
     # And now fetch it: The Source has probably already cached the
     # latest ref locally, but it is not required to have cached
     # the associated content of the latest ref at track time, that
     # is the job of fetch.
-    result = cli.run(project=project, args=['fetch', element_name])
+    result = cli.run(project=project, args=['source', 'fetch', element_name])
     result.assert_success()
 
     # Assert that we are now buildable because the source is
@@ -585,14 +585,14 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
     generate_junction(str(tmpdir.join('junction_repo')),
                       subproject_path, junction_path, store_ref=True)
 
-    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'junction.bst'])
     result.assert_success()
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, element_name) == 'no reference'
 
     # Now first try to track it
-    result = cli.run(project=project, args=['track', element_name])
+    result = cli.run(project=project, args=['source', 'track', element_name])
 
     # Assert there was a project.refs created, depending on the configuration
     if ref_storage == 'inline':
@@ -607,7 +607,7 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
         # latest ref locally, but it is not required to have cached
         # the associated content of the latest ref at track time, that
         # is the job of fetch.
-        result = cli.run(project=project, args=['fetch', element_name])
+        result = cli.run(project=project, args=['source', 'fetch', element_name])
         result.assert_success()
 
         # Assert that we are now buildable because the source is
@@ -633,7 +633,7 @@ def test_track_junction_included(cli, tmpdir, datafiles, ref_storage, kind):
     generate_junction(str(tmpdir.join('junction_repo')),
                       subproject_path, junction_path, store_ref=False)
 
-    result = cli.run(project=project, args=['track', 'junction.bst'])
+    result = cli.run(project=project, args=['source', 'track', 'junction.bst'])
     result.assert_success()
 
 
@@ -663,7 +663,7 @@ def test_track_error_cannot_write_file(cli, tmpdir, datafiles, kind):
         read_mask = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
         os.chmod(element_path, stat.S_IMODE(st.st_mode) & ~read_mask)
 
-        result = cli.run(project=project, args=['track', element_name])
+        result = cli.run(project=project, args=['source', 'track', element_name])
         result.assert_main_error(ErrorDomain.STREAM, None)
         result.assert_task_error(ErrorDomain.SOURCE, 'save-ref-error')
     finally:

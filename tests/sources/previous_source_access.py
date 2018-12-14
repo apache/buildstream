@@ -19,13 +19,13 @@ def test_custom_transform_source(cli, tmpdir, datafiles):
 
     # Ensure we can track
     result = cli.run(project=project, args=[
-        'track', 'target.bst'
+        'source', 'track', 'target.bst'
     ])
     result.assert_success()
 
     # Ensure we can fetch
     result = cli.run(project=project, args=[
-        'fetch', 'target.bst'
+        'source', 'fetch', 'target.bst'
     ])
     result.assert_success()
 

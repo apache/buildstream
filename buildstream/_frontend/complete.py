@@ -297,12 +297,15 @@ def get_choices(cli, prog_name, args, incomplete, override):
 
     if not found_param and isinstance(ctx.command, MultiCommand):
         # completion for any subcommands
-        choices.extend([cmd + " " for cmd in ctx.command.list_commands(ctx)])
+        choices.extend([cmd + " " for cmd in ctx.command.list_commands(ctx)
+                        if not ctx.command.get_command(ctx, cmd).hidden])
 
     if not start_of_option(incomplete) and ctx.parent is not None \
        and isinstance(ctx.parent.command, MultiCommand) and ctx.parent.command.chain:
         # completion for chained commands
-        remaining_comands = set(ctx.parent.command.list_commands(ctx.parent)) - set(ctx.parent.protected_args)
+        visible_commands = [cmd for cmd in ctx.parent.command.list_commands(ctx.parent)
+                            if not ctx.parent.command.get_command(ctx.parent, cmd).hidden]
+        remaining_comands = set(visible_commands) - set(ctx.parent.protected_args)
         choices.extend([cmd + " " for cmd in remaining_comands])
 
     for item in choices:
