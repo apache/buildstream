@@ -326,7 +326,6 @@ class Element(Plugin):
 
         *Since: 1.2*
         """
-        pass
 
     def assemble(self, sandbox):
         """Assemble the output artifact
@@ -1340,7 +1339,7 @@ class Element(Plugin):
     @contextmanager
     def _prepare_sandbox(self, scope, directory, shell=False, integrate=True, usebuildtree=False):
         # bst shell and bst checkout require a local sandbox.
-        bare_directory = True if directory else False
+        bare_directory = bool(directory)
         with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False,
                             bare_directory=bare_directory) as sandbox:
             sandbox._usebuildtree = usebuildtree
@@ -1695,7 +1694,7 @@ class Element(Plugin):
 
         # Store workspaced.yaml
         _yaml.dump(_yaml.node_sanitize({
-            'workspaced': True if self._get_workspace() else False
+            'workspaced': bool(self._get_workspace())
         }), os.path.join(metadir, 'workspaced.yaml'))
 
         # Store workspaced-dependencies.yaml
