@@ -53,12 +53,10 @@ class IndexEntry():
 class ResolutionException(VirtualDirectoryError):
     """ Superclass of all exceptions that can be raised by
     CasBasedDirectory._resolve. Should not be used outside this module. """
-    pass
 
 
 class InfiniteSymlinkException(ResolutionException):
     """ Raised when an infinite symlink loop is found. """
-    pass
 
 
 class AbsoluteSymlinkException(ResolutionException):
@@ -66,7 +64,6 @@ class AbsoluteSymlinkException(ResolutionException):
     target starts with the path separator) and we have disallowed
     following such symlinks.
     """
-    pass
 
 
 class UnexpectedFileException(ResolutionException):
@@ -664,13 +661,11 @@ class CasBasedDirectory(Directory):
         """ Sets a static modification time for all regular files in this directory.
         Since we don't store any modification time, we don't need to do anything.
         """
-        pass
 
     def set_deterministic_user(self):
         """ Sets all files in this directory to the current user's euid/egid.
         We also don't store user data, so this can be ignored.
         """
-        pass
 
     def export_files(self, to_directory, *, can_link=False, can_destroy=False):
         """Copies everything from this into to_directory, which must be the name
