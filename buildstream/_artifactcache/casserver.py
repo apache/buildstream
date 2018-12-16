@@ -27,8 +27,8 @@ import uuid
 import errno
 import threading
 
-import click
 import grpc
+import click
 
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
