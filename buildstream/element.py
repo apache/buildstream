@@ -1620,12 +1620,12 @@ class Element(Plugin):
                 self.__dynamic_public = _yaml.node_copy(self.__public)
 
                 # Call the abstract plugin methods
-                try:
-                    # Step 1 - Configure
-                    self.__configure_sandbox(sandbox)
-                    # Step 2 - Stage
-                    self.stage(sandbox)
 
+                # Step 1 - Configure
+                self.__configure_sandbox(sandbox)
+                # Step 2 - Stage
+                self.stage(sandbox)
+                try:
                     if self.__batch_prepare_assemble:
                         cm = sandbox.batch(self.__batch_prepare_assemble_flags,
                                            collect=self.__batch_prepare_assemble_collect)
