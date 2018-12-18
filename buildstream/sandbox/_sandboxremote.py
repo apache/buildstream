@@ -61,15 +61,20 @@ class SandboxRemote(Sandbox):
 
         self.storage_url = config.storage_service['url']
         self.exec_url = config.exec_service['url']
+
         if config.action_service:
             self.action_url = config.action_service['url']
         else:
             self.action_url = None
 
+        self.server_instance = config.exec_service.get('instance', None)
+        self.storage_instance = config.storage_service.get('instance', None)
+
         self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
                                                  server_cert=config.storage_service['server-cert'],
                                                  client_key=config.storage_service['client-key'],
-                                                 client_cert=config.storage_service['client-cert'])
+                                                 client_cert=config.storage_service['client-cert'],
+                                                 instance_name=self.storage_instance)
         self.operation_name = None
 
     def info(self, msg):
@@ -102,10 +107,10 @@ class SandboxRemote(Sandbox):
             ['execution-service', 'storage-service', 'url', 'action-cache-service'])
         remote_exec_service_config = require_node(remote_config, 'execution-service')
         remote_exec_storage_config = require_node(remote_config, 'storage-service')
-        remote_exec_action_config = remote_config.get('action-cache-service')
+        remote_exec_action_config = remote_config.get('action-cache-service', {})
 
-        _yaml.node_validate(remote_exec_service_config, ['url'])
-        _yaml.node_validate(remote_exec_storage_config, ['url'] + tls_keys)
+        _yaml.node_validate(remote_exec_service_config, ['url', 'instance'])
+        _yaml.node_validate(remote_exec_storage_config, ['url', 'instance'] + tls_keys)
         if remote_exec_action_config:
             _yaml.node_validate(remote_exec_action_config, ['url'])
         else:
@@ -132,7 +137,7 @@ class SandboxRemote(Sandbox):
 
         spec = RemoteExecutionSpec(remote_config['execution-service'],
                                    remote_config['storage-service'],
-                                   remote_config['action-cache-service'])
+                                   remote_exec_action_config)
         return spec
 
     def run_remote_command(self, channel, action_digest):
@@ -142,7 +147,8 @@ class SandboxRemote(Sandbox):
 
         # Try to create a communication channel to the BuildGrid server.
         stub = remote_execution_pb2_grpc.ExecutionStub(channel)
-        request = remote_execution_pb2.ExecuteRequest(action_digest=action_digest,
+        request = remote_execution_pb2.ExecuteRequest(instance_name=self.server_instance,
+                                                      action_digest=action_digest,
                                                       skip_cache_lookup=False)
 
         def __run_remote_command(stub, execute_request=None, running_operation=None):
