@@ -677,8 +677,9 @@ class Project():
     #
     def _find_project_dir(self, directory):
         workspace_element = None
+        config_filenames = [_PROJECT_CONF_FILE, WORKSPACE_PROJECT_FILE]
         found_directory, filename = utils._search_upward_for_files(
-            directory, [_PROJECT_CONF_FILE, WORKSPACE_PROJECT_FILE]
+            directory, config_filenames
         )
         if filename == _PROJECT_CONF_FILE:
             project_directory = found_directory
@@ -691,8 +692,8 @@ class Project():
         else:
             raise LoadError(
                 LoadErrorReason.MISSING_PROJECT_CONF,
-                '{} not found in current directory or any of its parent directories'
-                .format(_PROJECT_CONF_FILE))
+                "None of {names} found in '{path}' or any of its parent directories"
+                .format(names=config_filenames, path=directory))
 
         return project_directory, workspace_element
 
