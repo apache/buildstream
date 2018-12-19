@@ -124,6 +124,7 @@ class Stream():
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
+    #    usebuildtree (bool): Wheather to use a buildtree as the source.
     #
     # Returns:
     #    (int): The exit code of the launched shell
@@ -132,7 +133,8 @@ class Stream():
               directory=None,
               mounts=None,
               isolate=False,
-              command=None):
+              command=None,
+              usebuildtree=False):
 
         # Assert we have everything we need built, unless the directory is specified
         # in which case we just blindly trust the directory, using the element
@@ -147,7 +149,8 @@ class Stream():
                 raise StreamError("Elements need to be built or downloaded before staging a shell environment",
                                   detail="\n".join(missing_deps))
 
-        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command)
+        return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command,
+                              usebuildtree=usebuildtree)
 
     # build()
     #

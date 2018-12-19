@@ -146,6 +146,7 @@ class Sandbox():
 
         self._output_directory = None
         self._vdir = None
+        self._usebuildtree = False
 
         # This is set if anyone requests access to the underlying
         # directory via get_directory.

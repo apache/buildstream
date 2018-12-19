@@ -1338,11 +1338,12 @@ class Element(Plugin):
     # is used to stage things by the `bst checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, directory, shell=False, integrate=True):
+    def _prepare_sandbox(self, scope, directory, shell=False, integrate=True, usebuildtree=False):
         # bst shell and bst checkout require a local sandbox.
         bare_directory = True if directory else False
         with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False,
                             bare_directory=bare_directory) as sandbox:
+            sandbox._usebuildtree = usebuildtree
 
             # Configure always comes first, and we need it.
             self.__configure_sandbox(sandbox)
@@ -1386,7 +1387,7 @@ class Element(Plugin):
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
         host_vdirectory = sandbox_vroot.descend(directory.lstrip(os.sep).split(os.sep), create=True)
-        self._stage_sources_at(host_vdirectory, mount_workspaces=mount_workspaces)
+        self._stage_sources_at(host_vdirectory, mount_workspaces=mount_workspaces, usebuildtree=sandbox._usebuildtree)
 
     # _stage_sources_at():
     #
@@ -1395,10 +1396,10 @@ class Element(Plugin):
     # Args:
     #     vdirectory (:class:`.storage.Directory`): A virtual directory object to stage sources into.
     #     mount_workspaces (bool): mount workspaces if True, copy otherwise
+    #     usebuildtree (bool): use a the elements build tree as its source.
     #
-    def _stage_sources_at(self, vdirectory, mount_workspaces=True):
+    def _stage_sources_at(self, vdirectory, mount_workspaces=True, usebuildtree=False):
         with self.timed_activity("Staging sources", silent_nested=True):
-
             if not isinstance(vdirectory, Directory):
                 vdirectory = FileBasedDirectory(vdirectory)
             if not vdirectory.is_empty():
@@ -1420,7 +1421,7 @@ class Element(Plugin):
                                                  .format(workspace.get_absolute_path())):
                             workspace.stage(temp_staging_directory)
                 # Check if we have a cached buildtree to use
-                elif self._cached_buildtree():
+                elif usebuildtree:
                     artifact_base, _ = self.__extract()
                     import_dir = os.path.join(artifact_base, 'buildtree')
                 else:
@@ -1850,13 +1851,15 @@ class Element(Plugin):
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    prompt (str): A suitable prompt string for PS1
     #    command (list): An argv to launch in the sandbox
+    #    usebuildtree (bool): Use the buildtree as its source
     #
     # Returns: Exit code
     #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None):
+    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None,
+               usebuildtree=False):
 
-        with self._prepare_sandbox(scope, directory, shell=True) as sandbox:
+        with self._prepare_sandbox(scope, directory, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = self.get_environment()
             environment = copy.copy(environment)
             flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY

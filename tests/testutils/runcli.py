@@ -153,6 +153,20 @@ class Result():
         assert self.task_error_domain == error_domain, fail_message
         assert self.task_error_reason == error_reason, fail_message
 
+    # assert_shell_error()
+    #
+    # Asserts that the buildstream created a shell and that the task in the
+    # shell failed.
+    #
+    # Args:
+    #    fail_message (str): An optional message to override the automatic
+    #                        assertion error messages
+    # Raises:
+    #    (AssertionError): If any of the assertions fail
+    #
+    def assert_shell_error(self, fail_message=''):
+        assert self.exit_code == 1, fail_message
+
     # get_tracked_elements()
     #
     # Produces a list of element names on which tracking occurred
