@@ -16,6 +16,9 @@ About
 .. image:: https://img.shields.io/pypi/v/BuildStream.svg
    :target: https://pypi.org/project/BuildStream
 
+.. image:: https://app.fossa.io/api/projects/git%2Bgitlab.com%2FBuildStream%2Fbuildstream.svg?type=shield
+   :target: https://app.fossa.io/projects/git%2Bgitlab.com%2FBuildStream%2Fbuildstream?ref=badge_shield
+
 
 What is BuildStream?
 ====================
