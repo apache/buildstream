@@ -41,7 +41,7 @@ from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
 from .._artifactcache.cascache import CASRemote, CASRemoteSpec
 
 
-class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service')):
+class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service basedir')):
     pass
 
 
@@ -59,6 +59,12 @@ class SandboxRemote(Sandbox):
         if config is None:
             return
 
+        def resolve_path(path):
+            if config.basedir and path:
+                return os.path.join(config.basedir, path)
+            else:
+                return path
+
         self.storage_url = config.storage_service['url']
         self.exec_url = config.exec_service['url']
 
@@ -70,11 +76,13 @@ class SandboxRemote(Sandbox):
         self.server_instance = config.exec_service.get('instance', None)
         self.storage_instance = config.storage_service.get('instance', None)
 
-        self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
-                                                 server_cert=config.storage_service['server-cert'],
-                                                 client_key=config.storage_service['client-key'],
-                                                 client_cert=config.storage_service['client-cert'],
-                                                 instance_name=self.storage_instance)
+        self.storage_remote_spec = CASRemoteSpec(
+            self.storage_url, push=True,
+            server_cert=resolve_path(config.storage_service['server-cert']),
+            client_key=resolve_path(config.storage_service['client-key']),
+            client_cert=resolve_path(config.storage_service['client-cert']),
+            instance_name=self.storage_instance)
+
         self.operation_name = None
 
     def info(self, msg):
@@ -137,7 +145,8 @@ class SandboxRemote(Sandbox):
 
         spec = RemoteExecutionSpec(remote_config['execution-service'],
                                    remote_config['storage-service'],
-                                   remote_exec_action_config)
+                                   remote_exec_action_config,
+                                   basedir)
         return spec
 
     def run_remote_command(self, channel, action_digest):
