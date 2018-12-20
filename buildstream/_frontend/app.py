@@ -183,7 +183,8 @@ class App():
             'builders': 'sched_builders',
             'pushers': 'sched_pushers',
             'network_retries': 'sched_network_retries',
-            'pull_buildtrees': 'pull_buildtrees'
+            'pull_buildtrees': 'pull_buildtrees',
+            'remote_execution': 'remote_execution'
         }
         for cli_option, context_attr in override_map.items():
             option_value = self._main_options.get(cli_option)

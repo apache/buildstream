@@ -511,12 +511,23 @@ class Project():
         override_specs = SandboxRemote.specs_from_config_node(
             self._context.get_overrides(self.name), self.directory)
 
-        if override_specs is not None:
-            self.remote_execution_specs = override_specs
-        elif project_specs is not None:
+        if self._context.remote_execution == 'any':
+            if override_specs is not None:
+                self.remote_execution_specs = override_specs
+            elif project_specs is not None:
+                self.remote_execution_specs = project_specs
+            else:
+                self.remote_execution_specs = self._context.remote_execution_specs
+        elif self._context.remote_execution == 'user':
+            if override_specs is not None:
+                self.remote_execution_specs = override_specs
+            else:
+                self.remote_execution_specs = self._context.remote_execution_specs
+        elif self._context.remote_execution == 'project':
             self.remote_execution_specs = project_specs
         else:
-            self.remote_execution_specs = self._context.remote_execution_specs
+            assert self._context.remote_execution == 'none'
+            self.remote_execution_specs = None
 
         # Load sandbox environment variables
         self.base_environment = _yaml.node_get(config, Mapping, 'environment')

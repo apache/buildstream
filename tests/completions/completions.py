@@ -42,6 +42,7 @@ MAIN_OPTIONS = [
     "--option ",
     "--on-error ",
     "--pull-buildtrees ",
+    "--remote-execution ",
     "--pushers ",
     "--strict ",
     "--verbose ",

@@ -121,6 +121,9 @@ class Context():
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
+        # Which configured remote execution server to use
+        self.remote_execution = 'any'
+
         # Boolean, whether we double-check with the user that they meant to
         # remove a workspace directory.
         self.prompt_workspace_close_remove_dir = None
