@@ -135,6 +135,16 @@ class SandboxRemote(Sandbox):
                                       "remote-execution configuration. Your config is missing '{}'."
                                       .format(str(provenance), tls_keys, key))
 
+        def resolve_path(path):
+            if basedir and path:
+                return os.path.join(basedir, path)
+            else:
+                return path
+
+        for key in tls_keys:
+            if key in remote_config['execution-service']:
+                remote_config['execution-service'][key] = resolve_path(remote_config['execution-service'][key])
+
         spec = RemoteExecutionSpec(remote_config['execution-service'],
                                    remote_config['storage-service'],
                                    remote_exec_action_config)
