@@ -269,6 +269,9 @@ class Element(Plugin):
                 # This will taint the artifact, disable pushing.
                 self.__sandbox_config_supported = False
 
+        self.keyorder = ['kind', 'description', 'depends', 'variables',
+                         'environment', 'config', 'public', 'sandbox', 'sources']
+
     def __lt__(self, other):
         return self.name < other.name
 
@@ -1338,7 +1341,17 @@ class Element(Plugin):
     #
     def _format(self):
         provenance = self._get_provenance()
-        _yaml.dump(provenance.toplevel, provenance.filename.name)
+
+        _yaml.BstFormatter.keyorder = self.keyorder
+
+        # We need to add the key orders for each source into the
+        # global keyorder, as sources are dumped with the element.
+        for s in self.sources():
+            for key in s.keyorder:
+                if key not in _yaml.BstFormatter.keyorder:
+                    _yaml.BstFormatter.keyorder += s.keyorder
+
+        _yaml.dump(provenance.toplevel, provenance.filename.name, dumper=_yaml.BstFormatter)
 
     # _prepare_sandbox():
     #

@@ -82,6 +82,8 @@ class DownloadableFileSource(Source):
         self.url = self.translate_url(self.original_url)
         self._warn_deprecated_etag(node)
 
+        self.keyorder += ['url', 'ref', 'etag']
+
     def preflight(self):
         return
 

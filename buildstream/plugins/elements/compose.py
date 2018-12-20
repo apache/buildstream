@@ -70,6 +70,8 @@ class ComposeElement(Element):
         self.exclude = self.node_get_member(node, list, 'exclude')
         self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
 
+        self.keyorder += ['integrate', 'include', 'exclude', 'include-orphans']
+
     def preflight(self):
         pass
 

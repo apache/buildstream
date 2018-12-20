@@ -53,6 +53,7 @@ class PatchSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
+        self.keyorder += ['strip-level', 'path']
         self.path = self.node_get_project_path(node, 'path',
                                                check_is_file=True)
         self.strip_level = self.node_get_member(node, int, "strip-level", 1)

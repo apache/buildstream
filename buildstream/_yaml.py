@@ -51,6 +51,31 @@ class ProvenanceFile():
         self.project = project
 
 
+# A custom yaml dumper to reorder keys in dicts to a canonical order, defined
+# in each plugin
+class BstFormatter(yaml.RoundTripDumper):
+
+    keyorder = []
+
+    @classmethod
+    def _iter_in_global_order(cls, mapping):
+        for key in cls.keyorder:
+            if key in mapping.keys():
+                yield key, mapping[key]
+        for key in sorted(mapping.keys()):
+            if key not in cls.keyorder:
+                yield key, mapping[key]
+
+    @classmethod
+    def _represent_dict(cls, dumper, mapping):
+        return dumper.represent_mapping('tag:yaml.org,2002:map', cls._iter_in_global_order(mapping))
+
+    def __init__(self, *args, **kwargs):
+        yaml.RoundTripDumper.__init__(self, *args, **kwargs)
+        self.no_newline = False
+        self.add_representer(dict, self._represent_dict)
+
+
 # Provenance tracks the origin of a given node in the parsed dictionary.
 #
 # Args:
@@ -244,15 +269,16 @@ def load_data(data, file=None, copy_tree=False):
 # Args:
 #    node (dict): A node previously loaded with _yaml.load() above
 #    filename (str): The YAML file to load
+#    dumper (yaml.Dumper): The yaml dumper to be used
 #
-def dump(node, filename=None):
+def dump(node, filename=None, dumper=yaml.RoundTripDumper):
     with ExitStack() as stack:
         if filename:
             from . import utils
             f = stack.enter_context(utils.save_file_atomic(filename, 'w'))
         else:
             f = sys.stdout
-        yaml.round_trip_dump(node, f)
+        yaml.round_trip_dump(node, f, Dumper=dumper)
 
 
 # node_decorated_copy()

@@ -75,6 +75,7 @@ class TarSource(DownloadableFileSource):
         self.base_dir = self.node_get_member(node, str, 'base-dir', '*') or None
 
         self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
+        self.keyorder += ['base-dir']
 
     def preflight(self):
         self.host_lzip = None

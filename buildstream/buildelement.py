@@ -172,6 +172,7 @@ class BuildElement(Element):
         for command_name in _legacy_command_steps:
             if command_name in _command_steps:
                 self.__commands[command_name] = self.__get_commands(node, command_name)
+                self.keyorder.append(command_name)
             else:
                 self.__commands[command_name] = []
 

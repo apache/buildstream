@@ -53,6 +53,7 @@ class LocalSource(Source):
 
     def configure(self, node):
         self.node_validate(node, ['path'] + Source.COMMON_CONFIG_KEYS)
+        self.keyorder += ['path']
         self.path = self.node_get_project_path(node, 'path')
         self.fullpath = os.path.join(self.get_project_directory(), self.path)
 

@@ -302,6 +302,8 @@ class Source(Plugin):
         # FIXME: Reconstruct a MetaSource from a Source instead of storing it.
         self.__meta = meta                              # MetaSource stored so we can copy this source later.
 
+        self.keyorder = ['directory'] + self.keyorder
+
         # Collect the composited element configuration and
         # ask the element to configure itself.
         self.__init_defaults(meta)

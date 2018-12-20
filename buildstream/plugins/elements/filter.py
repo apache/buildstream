@@ -65,6 +65,8 @@ class FilterElement(Element):
         self.exclude = self.node_get_member(node, list, 'exclude')
         self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
 
+        self.keyorder += ['include', 'exclude', 'include-orphans']
+
     def preflight(self):
         # Exactly one build-depend is permitted
         build_deps = list(self.dependencies(Scope.BUILD, recurse=False))

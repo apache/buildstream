@@ -506,6 +506,8 @@ class GitSource(Source):
                        'track-tags', 'tags']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
+        self.keyorder += config_keys
+
         tags_node = self.node_get_member(node, list, 'tags', [])
         for tag_node in tags_node:
             self.node_validate(tag_node, ['tag', 'commit', 'annotated'])

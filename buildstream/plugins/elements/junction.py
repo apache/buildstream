@@ -140,6 +140,7 @@ class JunctionElement(Element):
     def configure(self, node):
         self.path = self.node_get_member(node, str, 'path', default='')
         self.options = self.node_get_member(node, Mapping, 'options', default={})
+        self.keyorder += ['path', 'options']
 
     def preflight(self):
         pass

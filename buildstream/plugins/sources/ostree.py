@@ -65,6 +65,7 @@ class OSTreeSource(Source):
     def configure(self, node):
 
         self.node_validate(node, ['url', 'ref', 'track', 'gpg-key'] + Source.COMMON_CONFIG_KEYS)
+        self.keyorder += ['url', 'track', 'ref', 'gpg-key']
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.url = self.translate_url(self.original_url)

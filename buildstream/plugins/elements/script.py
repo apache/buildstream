@@ -51,6 +51,7 @@ class ScriptElement(buildstream.ScriptElement):
         self.node_validate(node, [
             'commands', 'root-read-only', 'layout'
         ])
+        self.keyorder += ['layout', 'root-read-only', 'commands']
 
         cmds = self.node_subst_list(node, "commands")
         self.add_commands("commands", cmds)

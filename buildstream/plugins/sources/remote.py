@@ -61,6 +61,7 @@ class RemoteSource(DownloadableFileSource):
 
     def configure(self, node):
         super().configure(node)
+        self.keyorder += ['filename']
 
         self.filename = self.node_get_member(node, str, 'filename', os.path.basename(self.url))
         self.executable = self.node_get_member(node, bool, 'executable', False)
