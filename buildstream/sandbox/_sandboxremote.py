@@ -89,7 +89,7 @@ class SandboxRemote(Sandbox):
         self._get_context().message(Message(None, MessageType.INFO, msg))
 
     @staticmethod
-    def specs_from_config_node(config_node, basedir):
+    def specs_from_config_node(config_node, basedir=None):
 
         def require_node(config, keyname):
             val = config.get(keyname)

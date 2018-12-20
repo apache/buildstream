@@ -507,7 +507,16 @@ class Project():
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
 
         # Load remote-execution configuration for this project
-        self.remote_execution_specs = SandboxRemote.specs_from_config_node(config, self.directory)
+        project_specs = SandboxRemote.specs_from_config_node(config, self.directory)
+        override_specs = SandboxRemote.specs_from_config_node(
+            self._context.get_overrides(self.name), self.directory)
+
+        if override_specs is not None:
+            self.remote_execution_specs = override_specs
+        elif project_specs is not None:
+            self.remote_execution_specs = project_specs
+        else:
+            self.remote_execution_specs = self._context.remote_execution_specs
 
         # Load sandbox environment variables
         self.base_environment = _yaml.node_get(config, Mapping, 'environment')
