@@ -31,7 +31,7 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-import collections
+import collections.abc
 import copy
 import os
 
@@ -218,7 +218,7 @@ def is_incomplete_argument(current_params, cmd_param):
         return True
     if cmd_param.nargs == -1:
         return True
-    if isinstance(current_param_values, collections.Iterable) \
+    if isinstance(current_param_values, collections.abc.Iterable) \
             and cmd_param.nargs > 1 and len(current_param_values) < cmd_param.nargs:
         return True
     return False
