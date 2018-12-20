@@ -244,9 +244,6 @@ using the `remote-execution` option:
     action-cache-service:
       url: http://bar.action.com:50052
 
-The execution-service part of remote execution does not support encrypted
-connections yet, so the protocol must always be http.
-
 storage-service specifies a remote CAS store and the parameters are the
 same as those used to specify an :ref:`artifact server <artifacts>`.
 
