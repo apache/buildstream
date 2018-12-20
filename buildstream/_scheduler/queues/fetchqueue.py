@@ -40,10 +40,7 @@ class FetchQueue(Queue):
         self._skip_cached = skip_cached
 
     def process(self, element):
-        previous_sources = []
-        for source in element.sources():
-            source._fetch(previous_sources)
-            previous_sources.append(source)
+        element._fetch()
 
     def status(self, element):
         # state of dependencies may have changed, recalculate element state
