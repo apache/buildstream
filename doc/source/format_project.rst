@@ -218,6 +218,7 @@ The use of ports are required to distinguish between pull only access and
 push/pull access. For information regarding the server/client certificates
 and keys, please see: :ref:`Key pair for the server <server_authentication>`.
 
+.. _project_remote_execution:
 
 Remote execution
 ~~~~~~~~~~~~~~~~
@@ -267,6 +268,9 @@ service. Not all remote execution and storage services support
 instance names.
 
 The Remote Execution API can be found via https://github.com/bazelbuild/remote-apis.
+
+Remote execution configuration can be also provided in the `user
+configuration <user_config_remote_execution>`.
 
 .. _project_essentials_mirrors:
 

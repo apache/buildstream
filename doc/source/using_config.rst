@@ -100,6 +100,54 @@ pull only access and push/pull access. For information regarding this and the
 server/client certificates and keys, please see:
 :ref:`Key pair for the server <server_authentication>`.
 
+.. _user_config_remote_execution:
+
+Remote execution
+~~~~~~~~~~~~~~~~
+
+The same configuration for :ref:`remote execution <project_remote_execution>`
+in ``project.conf`` can be provided in the user configuation.
+
+There is only one remote execution configuration used per project.
+
+The project overrides will be taken in priority. The global
+configuration will be used as fallback.
+
+1. Global remote execution fallback:
+
+.. code:: yaml
+
+  remote-execution:
+    execution-service:
+      url: http://execution.fallback.example.com:50051
+      instance-name: main
+    storage-service:
+      url: https://storage.fallback.example.com:11002/
+      server-cert: /keys/server.crt
+      client-cert: /keys/client.crt
+      client-key: /keys/client.key
+      instance-name: main
+    action-cache-service:
+      url: http://action.flalback.example.com:50052
+
+2. Project override:
+
+.. code:: yaml
+
+  projects:
+    some_project:
+      remote-execution:
+        execution-service:
+          url: http://execution.some_project.example.com:50051
+          instance-name: main
+        storage-service:
+          url: https://storage.some_project.example.com:11002/
+          server-cert: /some_project_keys/server.crt
+          client-cert: /some_project_keys/client.crt
+          client-key: /some_project_keys/client.key
+          instance-name: main
+        action-cache-service:
+          url: http://action.some_project.example.com:50052
 
 
 Strict build plan
