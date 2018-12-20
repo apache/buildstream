@@ -38,4 +38,4 @@ if "_BST_COMPLETION" not in os.environ:
     # XXX We are exposing a private member here as we expect it to move to a
     # separate package soon. See the following discussion for more details:
     # https://gitlab.com/BuildStream/buildstream/issues/739#note_124819869
-    from ._gitsourcebase import _GitSourceBase
+    from ._gitsourcebase import _GitSourceBase, _GitMirror

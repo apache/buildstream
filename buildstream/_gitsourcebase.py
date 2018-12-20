@@ -42,11 +42,11 @@ WARN_UNLISTED_SUBMODULE = "unlisted-submodule"
 WARN_INVALID_SUBMODULE = "invalid-submodule"
 
 
-# Because of handling of submodules, we maintain a GitMirror
+# Because of handling of submodules, we maintain a _GitMirror
 # for the primary git source and also for each submodule it
 # might have at a given time
 #
-class GitMirror(SourceFetcher):
+class _GitMirror(SourceFetcher):
 
     def __init__(self, source, path, url, ref, *, primary=False, tags=[]):
 
@@ -386,7 +386,7 @@ class _GitSourceBase(Source):
         self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
 
         self.original_url = self.node_get_member(node, str, 'url')
-        self.mirror = GitMirror(self, '', self.original_url, ref, tags=tags, primary=True)
+        self.mirror = _GitMirror(self, '', self.original_url, ref, tags=tags, primary=True)
         self.tracking = self.node_get_member(node, str, 'track', None)
 
         self.ref_format = self.node_get_member(node, str, 'ref-format', 'sha1')
@@ -629,7 +629,7 @@ class _GitSourceBase(Source):
 
         return True
 
-    # Refreshes the GitMirror objects for submodules
+    # Refreshes the _GitMirror objects for submodules
     #
     # Assumes that we have our mirror and we have the ref which we point to
     #
@@ -651,7 +651,7 @@ class _GitSourceBase(Source):
 
             ref = self.mirror.submodule_ref(path)
             if ref is not None:
-                mirror = GitMirror(self, path, url, ref)
+                mirror = _GitMirror(self, path, url, ref)
                 submodules.append(mirror)
 
         self.submodules = submodules
