@@ -219,13 +219,13 @@ class App():
                                    default_mirror=self._main_options.get('default_mirror'))
         except LoadError as e:
 
-            # Let's automatically start a `bst init` session in this case
-            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF and self.interactive:
-                click.echo("A project was not detected in the directory: {}".format(directory), err=True)
-                if self.context.prompt_auto_init:
-                    click.echo("", err=True)
-                    if click.confirm("Would you like to create a new project here?"):
-                        self.init_project(None)
+            # Help users that are new to BuildStream by suggesting 'init'.
+            # We don't want to slow down users that just made a mistake, so
+            # don't stop them with an offer to create a project for them.
+            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
+                click.echo("No project found. You can create a new project like so:", err=True)
+                click.echo("", err=True)
+                click.echo("    bst init", err=True)
 
             self._error_exit(e, "Error loading project")
 

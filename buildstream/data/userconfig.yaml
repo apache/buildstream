@@ -112,14 +112,6 @@ logging:
 #
 prompt:
 
-  # Whether to create a project with 'bst init' if we are invoked outside of a
-  # directory where we can resolve the project.
-  #
-  #  ask - Prompt the user to choose.
-  #  no  - Never create the project.
-  #
-  auto-init: ask
-
   # Whether to really proceed with 'bst workspace close --remove-dir' removing
   # a workspace directory, potentially losing changes.
   #

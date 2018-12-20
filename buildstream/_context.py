@@ -117,10 +117,6 @@ class Context():
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
-        # Boolean, whether to offer to create a project for the user, if we are
-        # invoked outside of a directory where we can resolve the project.
-        self.prompt_auto_init = None
-
         # Boolean, whether we double-check with the user that they meant to
         # remove a workspace directory.
         self.prompt_workspace_close_remove_dir = None
@@ -258,12 +254,10 @@ class Context():
         prompt = _yaml.node_get(
             defaults, Mapping, 'prompt')
         _yaml.node_validate(prompt, [
-            'auto-init', 'really-workspace-close-remove-dir',
+            'really-workspace-close-remove-dir',
             'really-workspace-close-project-inaccessible',
             'really-workspace-reset-hard',
         ])
-        self.prompt_auto_init = _node_get_option_str(
-            prompt, 'auto-init', ['ask', 'no']) == 'ask'
         self.prompt_workspace_close_remove_dir = _node_get_option_str(
             prompt, 'really-workspace-close-remove-dir', ['ask', 'yes']) == 'ask'
         self.prompt_workspace_close_project_inaccessible = _node_get_option_str(

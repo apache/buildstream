@@ -30,6 +30,12 @@ buildstream 1.3.1
     make changes to their .bst files if they are expecting these environment
     variables to be set.
 
+  o BREAKING CHANGE: The 'auto-init' functionality has been removed. This would
+    offer to create a project in the event that bst was run against a directory
+    without a project, to be friendly to new users. It has been replaced with
+    an error message and a hint instead, to avoid bothering folks that just
+    made a mistake.
+
   o Failed builds are included in the cache as well.
     `bst checkout` will provide anything in `%{install-root}`.
     A build including cached fails will cause any dependant elements
@@ -67,8 +73,8 @@ buildstream 1.3.1
     instead of just a specially-formatted build-root with a `root` and `scratch`
     subdirectory.
 
-  o The buildstream.conf file learned new 'prompt.auto-init',
-    'prompt.really-workspace-close-remove-dir', and
+  o The buildstream.conf file learned new
+    'prompt.really-workspace-close-remove-dir' and
     'prompt.really-workspace-reset-hard' options. These allow users to suppress
     certain confirmation prompts, e.g. double-checking that the user meant to
     run the command as typed.
