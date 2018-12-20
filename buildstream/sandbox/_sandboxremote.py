@@ -68,10 +68,32 @@ class SandboxRemote(Sandbox):
         self.storage_url = config.storage_service['url']
         self.exec_url = config.exec_service['url']
 
+        exec_certs = {}
+        for key in ['client-cert', 'client-key', 'server-cert']:
+            if key in config.exec_service:
+                with open(resolve_path(config.exec_service[key]), 'rb') as f:
+                    exec_certs[key] = f.read()
+
+        self.exec_credentials = grpc.ssl_channel_credentials(
+            root_certificates=exec_certs.get('server-cert'),
+            private_key=exec_certs.get('client-key'),
+            certificate_chain=exec_certs.get('client-cert'))
+
+        action_certs = {}
+        for key in ['client-cert', 'client-key', 'server-cert']:
+            if key in config.action_service:
+                with open(resolve_path(config.exec_service[key]), 'rb') as f:
+                    action_certs[key] = f.read()
+
         if config.action_service:
             self.action_url = config.action_service['url']
+            self.action_credentials = grpc.ssl_channel_credentials(
+                root_certificates=action_certs.get('server-cert'),
+                private_key=action_certs.get('client-key'),
+                certificate_chain=action_certs.get('client-cert'))
         else:
             self.action_url = None
+            self.action_credentials = None
 
         self.server_instance = config.exec_service.get('instance', None)
         self.storage_instance = config.storage_service.get('instance', None)
@@ -117,7 +139,7 @@ class SandboxRemote(Sandbox):
         remote_exec_storage_config = require_node(remote_config, 'storage-service')
         remote_exec_action_config = remote_config.get('action-cache-service', {})
 
-        _yaml.node_validate(remote_exec_service_config, ['url', 'instance'])
+        _yaml.node_validate(remote_exec_service_config, ['url', 'instance'] + tls_keys)
         _yaml.node_validate(remote_exec_storage_config, ['url', 'instance'] + tls_keys)
         if remote_exec_action_config:
             _yaml.node_validate(remote_exec_action_config, ['url'])
@@ -304,6 +326,8 @@ class SandboxRemote(Sandbox):
                                "for example: http://buildservice:50051.")
         if url.scheme == 'http':
             channel = grpc.insecure_channel('{}:{}'.format(url.hostname, url.port))
+        elif url.scheme == 'https':
+            channel = grpc.secure_channel('{}:{}'.format(url.hostname, url.port), self.exec_credentials)
         else:
             raise SandboxError("Remote execution currently only supports the 'http' protocol "
                                "and '{}' was supplied.".format(url.scheme))
@@ -361,11 +385,11 @@ class SandboxRemote(Sandbox):
         if not url.port:
             raise SandboxError("You must supply a protocol and port number in the action-cache-service url, "
                                "for example: http://buildservice:50051.")
-        if not url.scheme == "http":
-            raise SandboxError("Currently only support http for the action cache"
-                               "and {} was supplied".format(url.scheme))
+        if url.scheme == 'http':
+            channel = grpc.insecure_channel('{}:{}'.format(url.hostname, url.port))
+        elif url.scheme == 'https':
+            channel = grpc.secure_channel('{}:{}'.format(url.hostname, url.port), self.action_credentials)
 
-        channel = grpc.insecure_channel('{}:{}'.format(url.hostname, url.port))
         request = remote_execution_pb2.GetActionResultRequest(action_digest=action_digest)
         stub = remote_execution_pb2_grpc.ActionCacheStub(channel)
         try:
