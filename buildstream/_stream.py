@@ -1263,7 +1263,7 @@ class Stream():
         required_list = []
 
         # If context is set to not pull buildtrees, or no fetch remotes, return empty list
-        if not (self._context.pull_buildtrees or self._artifacts.has_fetch_remotes()):
+        if not self._context.pull_buildtrees or not self._artifacts.has_fetch_remotes():
             return required_list
 
         for element in elements:
