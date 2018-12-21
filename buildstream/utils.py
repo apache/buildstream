@@ -934,11 +934,11 @@ def _relative_symlink_target(root, symlink, target):
 
         # We want a relative path from the directory in which symlink
         # is located, not from the symlink itself.
-        symlinkdir, _ = os.path.split(_resolve_symlinks(symlink))
+        symlinkdir, _ = os.path.split(symlink)
 
         # Create a full path to the target, including the leading staging
         # directory
-        fulltarget = os.path.join(_resolve_symlinks(root), target)
+        fulltarget = os.path.join(root, target)
 
         # now get the relative path from the directory where the symlink
         # is located within the staging root, to the target within the same
