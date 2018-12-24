@@ -228,8 +228,11 @@ def get_cmdclass():
 #####################################################
 #               Gather requirements                 #
 #####################################################
-with open('dev-requirements.txt') as dev_reqs:
+with open('requirements/dev-requirements.in') as dev_reqs:
     dev_requires = dev_reqs.read().splitlines()
+
+with open('requirements/requirements.in') as install_reqs:
+    install_requires = install_reqs.read().splitlines()
 
 #####################################################
 #     Prepare package description from README       #
@@ -291,16 +294,7 @@ setup(name='BuildStream',
               os.path.join('buildstream', 'data', 'bst')
           ])
       ],
-      install_requires=[
-          'setuptools',
-          'psutil',
-          'ruamel.yaml < 0.15.52',
-          'pluginbase',
-          'Click',
-          'jinja2 >= 2.10',
-          'protobuf >= 3.5',
-          'grpcio >= 1.10',
-      ],
+      install_requires=install_requires,
       entry_points=bst_install_entry_points,
       setup_requires=['pytest-runner'],
       tests_require=dev_requires,
