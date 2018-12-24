@@ -1,0 +1,18 @@
+Click==7.0
+grpcio==1.17.1
+pluginbase==0.7
+protobuf==3.6.1
+psutil==5.4.8
+# According to ruamel.yaml's PyPI page, we are suppose to use
+# "<=0.15" in production until 0.15 becomes API stable.
+# However we need ruamel.yaml 0.15.41 or greater for Python 3.7.
+# We know that ruamel.yaml 0.15.52 breaks API in a way that
+# is incompatible with BuildStream.
+#
+# See issues #571 and #790.
+ruamel.yaml==0.15.51
+setuptools==39.0.1
+## The following requirements were added by pip freeze:
+Jinja2==2.10
+MarkupSafe==1.1.0
+six==1.12.0

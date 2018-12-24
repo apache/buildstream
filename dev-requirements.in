@@ -1,0 +1,11 @@
+coverage == 4.4.0
+pylint
+pytest >= 3.9
+pytest-codestyle >= 1.4.0
+pytest-cov >= 2.5.0
+pytest-datafiles >= 2.0
+pytest-env
+pytest-pylint
+pytest-xdist
+pytest-timeout
+pyftpdlib

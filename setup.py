@@ -270,8 +270,11 @@ def get_cmdclass():
 #####################################################
 #               Gather requirements                 #
 #####################################################
-with open('dev-requirements.txt') as dev_reqs:
+with open('dev-requirements.in') as dev_reqs:
     dev_requires = dev_reqs.read().splitlines()
+
+with open('requirements.in') as install_reqs:
+    install_requires = install_reqs.read().splitlines()
 
 #####################################################
 #     Prepare package description from README       #
@@ -334,23 +337,7 @@ setup(name='BuildStream',
               os.path.join('buildstream', 'data', 'bst')
           ])
       ],
-      install_requires=[
-          'setuptools',
-          'psutil',
-          # According to ruamel.yaml's PyPI page, we are suppose to use
-          # "<=0.15" in production until 0.15 becomes API stable.
-          # However we need ruamel.yaml 0.15.41 or greater for Python 3.7.
-          # We know that ruamel.yaml 0.15.52 breaks API in a way that
-          # is incompatible with BuildStream.
-          #
-          # See issues #571 and #790.
-          'ruamel.yaml >= 0.15.41, < 0.15.52',
-          'pluginbase',
-          'Click >= 7.0',
-          'jinja2 >= 2.10',
-          'protobuf >= 3.5',
-          'grpcio >= 1.10',
-      ],
+      install_requires=install_requires,
       entry_points=bst_install_entry_points,
       tests_require=dev_requires,
       zip_safe=False)

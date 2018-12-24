@@ -31,7 +31,12 @@ include .pylintrc
 recursive-include buildstream/_protos *.proto
 
 # Requirements files
+include requirements.in
+include requirements.txt
+include dev-requirements.in
 include dev-requirements.txt
+include plugin-requirements.in
+include plugin-requirements.txt
 
 # Versioneer
 include versioneer.py
