@@ -112,7 +112,7 @@ class ImportElement(BuildElement):
 
         # Ensure target directory parent exists but target directory doesn't
         commands.append("mkdir -p {}".format(os.path.dirname(outputdir)))
-        commands.append("[ ! -e {} ] || rmdir {}".format(outputdir, outputdir))
+        commands.append("[ ! -e {outputdir} ] || rmdir {outputdir}".format(outputdir=outputdir))
 
         # Move it over
         commands.append("mv {} {}".format(inputdir, outputdir))

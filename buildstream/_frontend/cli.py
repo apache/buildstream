@@ -673,7 +673,6 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 @cli.group(short_help="Manipulate sources for an element")
 def source():
     """Manipulate sources for an element"""
-    pass
 
 
 ##################################################################
@@ -822,7 +821,6 @@ def source_checkout(app, element, location, force, deps, fetch_, except_,
 @cli.group(short_help="Manipulate developer workspaces")
 def workspace():
     """Manipulate developer workspaces"""
-    pass
 
 
 ##################################################################
@@ -1000,7 +998,6 @@ def _classify_artifacts(names, cas, project_directory):
 @cli.group(short_help="Manipulate cached artifacts")
 def artifact():
     """Manipulate cached artifacts"""
-    pass
 
 
 ################################################################

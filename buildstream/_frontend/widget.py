@@ -23,8 +23,8 @@ from contextlib import ExitStack
 from mmap import mmap
 import re
 import textwrap
-import click
 from ruamel import yaml
+import click
 
 from . import Profile
 from .. import Element, Consistency

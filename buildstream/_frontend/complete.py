@@ -203,7 +203,7 @@ def is_incomplete_option(all_args, cmd_param):
         if start_of_option(arg_str):
             last_option = arg_str
 
-    return True if last_option and last_option in cmd_param.opts else False
+    return bool(last_option and last_option in cmd_param.opts)
 
 
 def is_incomplete_argument(current_params, cmd_param):

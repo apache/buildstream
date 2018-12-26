@@ -77,7 +77,7 @@ def terminator(terminate_func):
         yield
         return
 
-    outermost = False if terminator_stack else True
+    outermost = bool(not terminator_stack)
 
     terminator_stack.append(terminate_func)
     if outermost:
@@ -137,7 +137,7 @@ def suspend_handler(sig, frame):
 def suspendable(suspend_callback, resume_callback):
     global suspendable_stack                  # pylint: disable=global-statement
 
-    outermost = False if suspendable_stack else True
+    outermost = bool(not suspendable_stack)
     suspender = Suspender(suspend_callback, resume_callback)
     suspendable_stack.append(suspender)
 
