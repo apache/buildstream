@@ -388,3 +388,19 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
         result = cli.run(project=project, args=['source', 'track', 'target.bst'])
         result.assert_main_error(ErrorDomain.STREAM, None)
         result.assert_task_error(ErrorDomain.SOURCE, None)
+
+
+# Test that BuildStream doesnt crash if HOME is unset while
+# the netrc module is trying to find it's ~/.netrc file.
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_homeless_environment(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    generate_project(project, tmpdir)
+
+    # Create a local tar
+    src_tar = os.path.join(str(tmpdir), "a.tar.gz")
+    _assemble_tar(os.path.join(str(datafiles), "content"), "a", src_tar)
+
+    # Use a track, make sure the plugin tries to find a ~/.netrc
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'], env={'HOME': None})
+    result.assert_success()
