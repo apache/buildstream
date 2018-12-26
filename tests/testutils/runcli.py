@@ -529,13 +529,16 @@ def environment(env):
     old_env = {}
     for key, value in env.items():
         old_env[key] = os.environ.get(key)
-        os.environ[key] = value
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
 
     yield
 
     for key, value in old_env.items():
         if value is None:
-            del os.environ[key]
+            os.environ.pop(key, None)
         else:
             os.environ[key] = value
 
