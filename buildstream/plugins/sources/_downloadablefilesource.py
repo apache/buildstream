@@ -231,7 +231,13 @@ class DownloadableFileSource(Source):
         if not DownloadableFileSource.__urlopener:
             try:
                 netrc_config = netrc.netrc()
-            except FileNotFoundError:
+            except OSError:
+                # If the .netrc file was not found, FileNotFoundError will be
+                # raised, but OSError will be raised directly by the netrc package
+                # in the case that $HOME is not set.
+                #
+                # This will catch both cases.
+                #
                 DownloadableFileSource.__urlopener = urllib.request.build_opener()
             except netrc.NetrcParseError as e:
                 self.warn('{}: While reading .netrc: {}'.format(self, e))
