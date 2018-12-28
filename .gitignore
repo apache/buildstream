@@ -17,6 +17,7 @@ tmp
 .cache
 .pytest_cache/
 *.bst/
+.tox
 
 # Pycache, in case buildstream is ran directly from within the source
 # tree
