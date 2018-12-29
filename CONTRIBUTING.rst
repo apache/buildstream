@@ -1468,19 +1468,37 @@ regenerate them locally in order to build the docs.
 
 Testing
 -------
-BuildStream uses pytest for regression tests and testing out
-the behavior of newly added components.
+BuildStream uses `tox <https://tox.readthedocs.org/>`_ as a frontend to run the
+tests which are implemented using `pytest <https://pytest.org/>`_. We use
+pytest for regression tests and testing out the behavior of newly added
+components.
 
 The elaborate documentation for pytest can be found here: http://doc.pytest.org/en/latest/contents.html
 
 Don't get lost in the docs if you don't need to, follow existing examples instead.
 
 
+Installing build dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Some of BuildStream's dependencies have non-python build dependencies. When
+running tests with ``tox``, you will first need to install these dependencies.
+Exact steps to install these will depend on your oprtation systemm. Commands
+for installing them for some common distributions are lised below.
+
+For Fedora-based systems::
+
+  dnf install gcc pkg-config python3-devel cairo-gobject-devel glib2-devel gobject-introspection-devel
+
+
+For Debian-based systems::
+
+  apt install gcc pkg-config python3-dev libcairo2-dev libgirepository1.0-dev
+
+
 Running tests
 ~~~~~~~~~~~~~
-We use `tox <https://tox.readthedocs.org/>`_ as a frontend run the tests which
-are implemented using `pytest <https://pytest.org/>`_. To run the tests, simply
-navigate to the toplevel directory of your buildstream checkout and run::
+To run the tests, simply navigate to the toplevel directory of your BuildStream
+checkout and run::
 
   tox
 
@@ -1533,6 +1551,15 @@ with::
 
 Alternatively, any IDE plugin that uses pytest should automatically
 detect the ``.pylintrc`` in the project's root directory.
+
+.. note::
+
+   By default, we do not allow use of site packages in our ``tox``
+   confguration to enable running the tests in an isolated environment.
+   If you need to enable use of site packages for whatever reason, you can
+   do so by passing the ``--sitepackages`` option to ``tox``. Also, you will
+   not need to install any of the build dependencies mentioned above if you
+   use this approach.
 
 .. note::
 
