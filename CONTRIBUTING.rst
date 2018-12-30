@@ -1222,27 +1222,13 @@ For further information about using the reStructuredText with sphinx, please see
 
 Building Docs
 ~~~~~~~~~~~~~
-The documentation build is not integrated into the ``setup.py`` and is
-difficult (or impossible) to do so, so there is a little bit of setup
-you need to take care of first.
-
-Before you can build the BuildStream documentation yourself, you need
-to first install ``sphinx`` along with some additional plugins and dependencies,
-using pip or some other mechanism::
-
-  # Install sphinx
-  pip3 install --user sphinx
-
-  # Install some sphinx extensions
-  pip3 install --user sphinx-click
-  pip3 install --user sphinx_rtd_theme
-
-  # Additional optional dependencies required
-  pip3 install --user arpy
+Before you can build the docs, you will end to ensure that you have installed
+the required :ref:`buid dependencies <contributing_build_deps>` as mentioned
+in the testing section above.
 
 To build the documentation, just run the following::
 
-  make -C doc
+  tox -e docs
 
 This will give you a ``doc/build/html`` directory with the html docs which
 you can view in your browser locally to test.
@@ -1260,9 +1246,10 @@ will make the docs build reuse already downloaded sources::
 
   export BST_SOURCE_CACHE=~/.cache/buildstream/sources
 
-To force rebuild session html while building the doc, simply build the docs like this::
+To force rebuild session html while building the doc, simply run `tox` with the
+``BST_FORCE_SESSION_REBUILD`` environment variable set, like so::
 
-  make BST_FORCE_SESSION_REBUILD=1 -C doc
+  env BST_FORCE_SESSION_REBUILD=1 tox -e docs
 
 
 Man pages
@@ -1477,6 +1464,8 @@ The elaborate documentation for pytest can be found here: http://doc.pytest.org/
 
 Don't get lost in the docs if you don't need to, follow existing examples instead.
 
+
+.. _contributing_build_deps:
 
 Installing build dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

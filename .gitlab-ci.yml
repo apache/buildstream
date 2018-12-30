@@ -154,20 +154,13 @@ tests-fedora-missing-deps:
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
-# Note: We still do not enforce a consistent installation of python3-sphinx,
-#       as it will significantly grow the backing image.
 docs:
   stage: test
+  variables:
+    BST_FORCE_SESSION_REBUILD: 1
   script:
-  - export BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources"
-  # Currently sphinx_rtd_theme does not support Sphinx >1.8, this breaks search functionality
-  - pip3 install sphinx==1.7.9
-  - pip3 install sphinx-click
-  - pip3 install sphinx_rtd_theme
-  - cd dist && ./unpack.sh && cd buildstream
-  - make BST_FORCE_SESSION_REBUILD=1 -C doc
-  - cd ../..
-  - mv dist/buildstream/doc/build/html public
+  - env BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources" tox -e docs
+  - mv doc/build/html public
   except:
   - schedules
   artifacts:
