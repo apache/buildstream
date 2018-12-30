@@ -99,7 +99,6 @@ class Loader():
     # Returns: The toplevel LoadElement
     def load(self, targets, rewritable=False, ticker=None, fetch_subprojects=False):
 
-        invalid_elements = []
         for filename in targets:
             if os.path.isabs(filename):
                 # XXX Should this just be an assertion ?
@@ -109,14 +108,8 @@ class Loader():
                                 "path to the base project directory: {}"
                                 .format(filename, self._basedir))
 
-            if not filename.endswith(".bst"):
-                invalid_elements.append(filename)
+        self._warn_invalid_elements(targets)
 
-        if invalid_elements:
-            self._warn("Target elements '{}' do not have expected file extension `.bst` "
-                       "Improperly named elements will not be discoverable by commands"
-                       .format(invalid_elements),
-                       warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX)
         # First pass, recursively load files and populate our table of LoadElements
         #
         deps = []
@@ -280,12 +273,7 @@ class Loader():
         self._elements[filename] = element
 
         # Load all dependency files for the new LoadElement
-        invalid_elements = []
         for dep in element.deps:
-            if not dep.name.endswith(".bst"):
-                invalid_elements.append(dep.name)
-                continue
-
             if dep.junction:
                 self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
@@ -300,11 +288,9 @@ class Loader():
                                 "{}: Cannot depend on junction"
                                 .format(dep.provenance))
 
-        if invalid_elements:
-            self._warn("The following dependencies do not have expected file extension `.bst`: {} "
-                       "Improperly named elements will not be discoverable by commands"
-                       .format(invalid_elements),
-                       warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX)
+        deps_names = [dep.name for dep in element.deps]
+        self._warn_invalid_elements(deps_names)
+
         return element
 
     # _check_circular_deps():
@@ -679,3 +665,32 @@ class Loader():
 
         message = Message(None, MessageType.WARN, brief)
         self._context.message(message)
+
+    # Print warning messages if any of the specified elements have invalid names.
+    #
+    # Valid filenames should end with ".bst" extension.
+    #
+    # Args:
+    #    elements (list): List of element names
+    #
+    # Raises:
+    #     (:class:`.LoadError`): When warning_token is considered fatal by the project configuration
+    #
+    def _warn_invalid_elements(self, elements):
+
+        # invalid_elements
+        #
+        # A dict that maps warning types to the matching elements.
+        invalid_elements = {
+            CoreWarnings.BAD_ELEMENT_SUFFIX: [],
+        }
+
+        for filename in elements:
+            if not filename.endswith(".bst"):
+                invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX].append(filename)
+
+        if invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]:
+            self._warn("Target elements '{}' do not have expected file extension `.bst` "
+                       "Improperly named elements will not be discoverable by commands"
+                       .format(invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]),
+                       warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX)
