@@ -526,3 +526,27 @@ read-only variables are also dynamically declared by BuildStream:
   build, support for this is conditional on the element type
   and the build system used (any element using 'make' can
   implement this).
+
+
+Naming elements
+---------------
+When naming the element files, use the following rules:
+
+* The name of the file must have ``.bst`` extension.
+
+* All characters in the name must be printable 7-bit ASCII characters.
+
+* Following characters are reserved and must not be part of the name:
+
+  - ``<`` (less than)
+  - ``>`` (greater than)
+  - ``:`` (colon)
+  - ``"`` (double quote)
+  - ``/`` (forward slash)
+  - ``\`` (backslash)
+  - ``|`` (vertical bar)
+  - ``?`` (question mark)
+  - ``*`` (asterisk)
+
+BuildStream will attempt to raise warnings when any of these rules are violated
+but that may not always be possible.
