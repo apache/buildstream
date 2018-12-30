@@ -105,6 +105,12 @@ class CoreWarnings():
     is referenced either on the command line or by another element
     """
 
+    BAD_CHARACTERS_IN_NAME = "bad-characters-in-name"
+    """
+    This warning will be produces when filename for a target contains invalid
+    characters in its name.
+    """
+
 
 # _KeyStrength():
 #

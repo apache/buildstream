@@ -683,14 +683,51 @@ class Loader():
         # A dict that maps warning types to the matching elements.
         invalid_elements = {
             CoreWarnings.BAD_ELEMENT_SUFFIX: [],
+            CoreWarnings.BAD_CHARACTERS_IN_NAME: [],
         }
 
         for filename in elements:
             if not filename.endswith(".bst"):
                 invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX].append(filename)
+            if not self._valid_chars_name(filename):
+                invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME].append(filename)
 
         if invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]:
             self._warn("Target elements '{}' do not have expected file extension `.bst` "
                        "Improperly named elements will not be discoverable by commands"
                        .format(invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]),
                        warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX)
+        if invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME]:
+            self._warn("Target elements '{}' have invalid characerts in their name."
+                       .format(invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME]),
+                       warning_token=CoreWarnings.BAD_CHARACTERS_IN_NAME)
+
+    # Check if given filename containers valid characters.
+    #
+    # Args:
+    #    name (str): Name of the file
+    #
+    # Returns:
+    #    (bool): True if all characters are valid, False otherwise.
+    #
+    def _valid_chars_name(self, name):
+        for char in name:
+            char_val = ord(char)
+
+            # 0-31 are control chars, 127 is DEL, and >127 means non-ASCII
+            if char_val <= 31 or char_val >= 127:
+                return False
+
+            # Disallow characters that are invalid on Windows. The list can be
+            # found at https://docs.microsoft.com/en-us/windows/desktop/FileIO/naming-a-file
+            #
+            # Note that although : (colon) is not allowed, we do not raise
+            # warnings because of that, since we use it as a separator for
+            # junctioned elements.
+            #
+            # We also do not raise warnings on slashes since they are used as
+            # path separators.
+            if char in r'<>"|?*':
+                return False
+
+        return True
