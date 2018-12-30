@@ -270,10 +270,10 @@ def get_cmdclass():
 #####################################################
 #               Gather requirements                 #
 #####################################################
-with open('dev-requirements.in') as dev_reqs:
+with open('tools/dev-requirements.in') as dev_reqs:
     dev_requires = dev_reqs.read().splitlines()
 
-with open('requirements.in') as install_reqs:
+with open('tools/requirements.in') as install_reqs:
     install_requires = install_reqs.read().splitlines()
 
 #####################################################
