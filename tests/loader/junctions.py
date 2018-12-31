@@ -118,14 +118,26 @@ def test_nested_conflict(cli, datafiles):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CONFLICTING_JUNCTION)
 
 
+# Test that we error correctly when the junction element itself is missing
 @pytest.mark.datafiles(DATA_DIR)
-def test_invalid_missing(cli, datafiles):
+def test_missing_junction(cli, datafiles):
     project = os.path.join(str(datafiles), 'invalid')
 
     result = cli.run(project=project, args=['build', 'missing.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
 
 
+# Test that we error correctly when an element is not found in the subproject
+@pytest.mark.datafiles(DATA_DIR)
+def test_missing_subproject_element(cli, datafiles):
+    project = os.path.join(str(datafiles), 'invalid')
+    copy_subprojects(project, datafiles, ['base'])
+
+    result = cli.run(project=project, args=['build', 'missing-element.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+
+# Test that we error correctly when a junction itself has dependencies
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_with_deps(cli, datafiles):
     project = os.path.join(str(datafiles), 'invalid')
@@ -135,6 +147,7 @@ def test_invalid_with_deps(cli, datafiles):
     result.assert_main_error(ErrorDomain.ELEMENT, 'element-forbidden-depends')
 
 
+# Test that we error correctly when a junction is directly depended on
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_junction_dep(cli, datafiles):
     project = os.path.join(str(datafiles), 'invalid')
