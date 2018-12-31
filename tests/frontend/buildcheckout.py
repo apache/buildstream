@@ -86,6 +86,20 @@ def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_invalid_filename_chars(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=strict_args(['build', 'invalid-chars|<>-in-name.bst'], 'non-strict'))
+    result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_invalid_filename_chars_dep(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=strict_args(['build', 'invalid-chars-in-dep.bst'], 'non-strict'))
+    result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("deps", [("run"), ("none"), ("build")])
 def test_build_checkout_deps(datafiles, cli, deps):
     project = os.path.join(datafiles.dirname, datafiles.basename)
