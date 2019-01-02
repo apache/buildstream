@@ -38,7 +38,7 @@ def terminator_handler(signal_, frame):
         terminator_ = terminator_stack.pop()
         try:
             terminator_()
-        except:                                                 # pylint: disable=bare-except
+        except:                               # noqa pylint: disable=bare-except
             # Ensure we print something if there's an exception raised when
             # processing the handlers. Note that the default exception
             # handler won't be called because we os._exit next, so we must
