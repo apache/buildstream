@@ -647,8 +647,9 @@ class LogLine(Widget):
             abbrev = False
             if message.message_type not in ERROR_MESSAGES \
                and not frontend_message and n_lines > self._message_lines:
-                abbrev = True
                 lines = lines[0:self._message_lines]
+                if self._message_lines > 0:
+                    abbrev = True
             else:
                 lines[n_lines - 1] = lines[n_lines - 1].rstrip('\n')
 
@@ -674,7 +675,7 @@ class LogLine(Widget):
             if self.context is not None and not self.context.log_verbose:
                 text += self._indent + self._err_profile.fmt("Log file: ")
                 text += self._indent + self._logfile_widget.render(message) + '\n'
-            else:
+            elif self._log_lines > 0:
                 text += self._indent + self._err_profile.fmt("Printing the last {} lines from log file:"
                                                              .format(self._log_lines)) + '\n'
                 text += self._indent + self._logfile_widget.render(message, abbrev=False) + '\n'
