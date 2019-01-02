@@ -6,10 +6,10 @@
 # we dont use the standard `sphinx-build` and `sphinx-apidoc` entry points.
 #
 # The following technique works as long as sphinx is installed for python3,
-# regardless of the entry point which might be in /usr/bin or PATH, but
-# will stop working in sphinx >= 2.0. Hopefully by then, the mentioned
-# bug will be fixed and we can use a standard python3 specific script to
-# invoke sphnix.
+# regardless of the entry point which might be in /usr/bin or PATH.
+#
+# Since Sphinx 2.0 is planned to be Python 3-only, this workaround should not
+# be needed once Spinx 2.0 is released, and we upgrade to it
 #
 SPHINXOPTS    =
 SPHINXBUILD   = python3 -m sphinx
