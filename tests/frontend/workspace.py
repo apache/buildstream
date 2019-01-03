@@ -1243,12 +1243,88 @@ def test_external_list(cli, datafiles, tmpdir_factory):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_multiple_projects_no_force(cli, datafiles, tmpdir_factory):
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    workspace_dir = os.path.join(str(tmpdir1), "workspace")
+    alpha_project = os.path.join(str(tmpdir1), "alpha-project")
+    beta_project = os.path.join(str(tmpdir2), "beta-project")
+
+    # Open the same workspace with two different projects
+    # without force, we expect this to fail.
+    alpha_element, alpha_project, _ = open_workspace(
+        cli, tmpdir1, datafiles, "git", False, workspace_dir=workspace_dir,
+        project_path=alpha_project, suffix="-alpha"
+    )
+
+    message = "Opening an already-existing workspace without --force should fail"
+    with pytest.raises(AssertionError, message=message):
+        open_workspace(cli, tmpdir2, datafiles, "git", False, workspace_dir=workspace_dir,
+                       project_path=beta_project, suffix="-beta", force=False)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_multiple_projects_repeat_open(cli, datafiles, tmpdir_factory):
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    workspace_dir = os.path.join(str(tmpdir1), "workspace")
+    other_workspace = os.path.join(str(tmpdir1), "workspace2")
+    alpha_project = os.path.join(str(tmpdir1), "alpha-project")
+    beta_project = os.path.join(str(tmpdir2), "beta-project")
+
+    # Open the same workspace with the same project twice to different workspaces
+    # Expect this to succeed because we must use --force for multiple project
+    # behaviour, anyway.
+    # This test mostly exists so that this behaviour stays consistent.
+    alpha_element, alpha_project, _ = open_workspace(
+        cli, tmpdir1, datafiles, "git", False, workspace_dir=workspace_dir,
+        project_path=alpha_project, suffix="-alpha"
+    )
+
+    args = ['-C', workspace_dir, 'workspace', 'open', '-f', '--directory',
+            other_workspace, alpha_element]
+    result = cli.run(project=alpha_project, args=args)
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_multiple_projects_repeat_close(cli, datafiles, tmpdir_factory):
+    tmpdir1 = tmpdir_factory.mktemp('')
+    tmpdir2 = tmpdir_factory.mktemp('')
+    workspace_dir = os.path.join(str(tmpdir1), "workspace")
+    alpha_project = os.path.join(str(tmpdir1), "alpha-project")
+    beta_project = os.path.join(str(tmpdir2), "beta-project")
+
+    alpha_element, alpha_project, _ = open_workspace(
+        cli, tmpdir1, datafiles, "git", False, workspace_dir=workspace_dir,
+        project_path=alpha_project, suffix="-alpha"
+    )
+
+    beta_element, beta_project, _ = open_workspace(
+        cli, tmpdir2, datafiles, "git", False, workspace_dir=workspace_dir,
+        project_path=beta_project, suffix="-beta", force=True
+    )
+
+    # Close the workspace from one project
+    args = ["-C", workspace_dir, "workspace", "close"]
+    result = cli.run(project=alpha_project, args=args)
+    result.assert_success()
+
+    # Close the workspace from the other project
+    result = cli.run(project=beta_project, args=args)
+    result.assert_success()
+
+    # Close the project after it's been closed
+    result = cli.run(project=beta_project, args=args)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_PROJECT_CONF)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "force, close_from_external",
-    [(False, False), (True, True), (True, False)],
-    ids=["no-force", "close-from-external", "no-close-from-external"]
+    "close_from_external", [(True), (False)],
+    ids=["close-from-external", "no-close-from-external"]
 )
-def test_multiple_projects(cli, datafiles, tmpdir_factory, force, close_from_external):
+def test_multiple_projects(cli, datafiles, tmpdir_factory, close_from_external):
     # i.e. multiple projects can open the same workspace
     tmpdir1 = tmpdir_factory.mktemp('')
     tmpdir2 = tmpdir_factory.mktemp('')
@@ -1261,18 +1337,11 @@ def test_multiple_projects(cli, datafiles, tmpdir_factory, force, close_from_ext
         cli, tmpdir1, datafiles, "git", False, workspace_dir=workspace_dir,
         project_path=alpha_project, suffix="-alpha"
     )
-    if force:
-        beta_element, beta_project, _ = open_workspace(
-            cli, tmpdir2, datafiles, "git", False, workspace_dir=workspace_dir,
-            project_path=beta_project, suffix="-beta", force=force
-        )
-    else:
-        # Opening a workspace on an existing workspace must only work with "--force"
-        message = "Opening an already-existing workspace without --force should fail"
-        with pytest.raises(AssertionError, message=message):
-            open_workspace(cli, tmpdir2, datafiles, "git", False, workspace_dir=workspace_dir,
-                           project_path=beta_project, suffix="-beta", force=force)
-        return
+
+    beta_element, beta_project, _ = open_workspace(
+        cli, tmpdir2, datafiles, "git", False, workspace_dir=workspace_dir,
+        project_path=beta_project, suffix="-beta", force=True
+    )
 
     # Run a command and assert it came from the alpha-element
     # Using element guessing as a way of easily telling which project was used
