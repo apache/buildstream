@@ -1,4 +1,4 @@
-image: buildstream/testsuite-debian:9-06bab030-b848172c
+image: buildstream/testsuite-debian:9-5da27168-32c47d1c
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -13,7 +13,7 @@ stages:
 variables:
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
-  TEST_COMMAND: 'python3 setup.py test --index-url invalid://uri --addopts --integration'
+  TEST_COMMAND: "tox -- --color=yes --integration"
 
 #####################################################
 #                  Prepare stage                    #
@@ -68,10 +68,6 @@ source_dist:
   - mount
   - df -h
 
-  # Unpack
-  - cd dist && ./unpack.sh
-  - cd buildstream
-
   script:
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
@@ -83,7 +79,7 @@ source_dist:
   after_script:
   # Collect our reports
   - mkdir -p ${COVERAGE_DIR}
-  - cp dist/buildstream/.coverage ${COVERAGE_DIR}/coverage."${CI_JOB_NAME}"
+  - cp .coverage ${COVERAGE_DIR}/coverage."${CI_JOB_NAME}"
   except:
   - schedules
   artifacts:
@@ -91,19 +87,19 @@ source_dist:
     - ${COVERAGE_DIR}
 
 tests-debian-9:
-  image: buildstream/testsuite-debian:9-06bab030-b848172c
+  image: buildstream/testsuite-debian:9-5da27168-32c47d1c
   <<: *tests
 
 tests-fedora-27:
-  image: buildstream/testsuite-fedora:27-06bab030-b848172c
+  image: buildstream/testsuite-fedora:27-5da27168-32c47d1c
   <<: *tests
 
 tests-fedora-28:
-  image: buildstream/testsuite-fedora:28-06bab030-b848172c
+  image: buildstream/testsuite-fedora:28-5da27168-32c47d1c
   <<: *tests
 
 tests-ubuntu-18.04:
-  image: buildstream/testsuite-ubuntu:18.04-06bab030-b848172c
+  image: buildstream/testsuite-ubuntu:18.04-5da27168-32c47d1c
   <<: *tests
 
 overnight-fedora-28-aarch64:
@@ -120,7 +116,7 @@ overnight-fedora-28-aarch64:
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: buildstream/testsuite-fedora:27-06bab030-b848172c
+  image: buildstream/testsuite-fedora:27-5da27168-32c47d1c
   <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
@@ -140,7 +136,7 @@ tests-unix:
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
-  image: buildstream/testsuite-fedora:28-06bab030-b848172c
+  image: buildstream/testsuite-fedora:28-5da27168-32c47d1c
   <<: *tests
 
   script:
@@ -158,20 +154,13 @@ tests-fedora-missing-deps:
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
-# Note: We still do not enforce a consistent installation of python3-sphinx,
-#       as it will significantly grow the backing image.
 docs:
   stage: test
+  variables:
+    BST_FORCE_SESSION_REBUILD: 1
   script:
-  - export BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources"
-  # Currently sphinx_rtd_theme does not support Sphinx >1.8, this breaks search functionality
-  - pip3 install sphinx==1.7.9
-  - pip3 install sphinx-click
-  - pip3 install sphinx_rtd_theme
-  - cd dist && ./unpack.sh && cd buildstream
-  - make BST_FORCE_SESSION_REBUILD=1 -C doc
-  - cd ../..
-  - mv dist/buildstream/doc/build/html public
+  - env BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources" tox -e docs
+  - mv doc/build/html public
   except:
   - schedules
   artifacts:
@@ -275,6 +264,7 @@ coverage:
   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
     - cd dist && ./unpack.sh && cd buildstream
+    - pip3 install -r tools/requirements.txt -r tools/dev-requirements.txt
     - pip3 install --no-index .
     - mkdir report
     - cd report

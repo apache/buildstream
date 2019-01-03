@@ -24,6 +24,7 @@ recursive-include doc/sessions *.run
 # Tests
 recursive-include tests *
 include conftest.py
+include tox.ini
 include .coveragerc
 include .pylintrc
 
@@ -31,7 +32,12 @@ include .pylintrc
 recursive-include buildstream/_protos *.proto
 
 # Requirements files
-include dev-requirements.txt
+include tools/requirements.in
+include tools/requirements.txt
+include tools/dev-requirements.in
+include tools/dev-requirements.txt
+include tools/plugin-requirements.in
+include tools/plugin-requirements.txt
 
 # Versioneer
 include versioneer.py
