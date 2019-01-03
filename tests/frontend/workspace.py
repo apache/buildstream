@@ -1371,3 +1371,9 @@ def test_multiple_projects(cli, datafiles, tmpdir_factory, close_from_external):
     # Check that the workspace no longer works
     result = cli.run(project=alpha_project, args=['-C', workspace_dir, 'show', '--format', '%{name}'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_PROJECT_CONF)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_multi_element_multiple_projects(cli, datafiles, tmpdir_factory):
+    # Test that behaviour is consistent when two elements that use the same
+    # repository as a source open the same workspace
