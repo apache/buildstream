@@ -39,7 +39,7 @@ from .._exceptions import SandboxError
 from .. import _yaml
 from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
 from .._cas import CASRemote, CASRemoteSpec
-from .._cas.transfer import cas_tree_download
+from .._cas.transfer import cas_tree_download, cas_directory_upload
 
 
 class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service')):
@@ -345,7 +345,7 @@ class SandboxRemote(Sandbox):
 
             # Now, push that key (without necessarily needing a ref) to the remote.
             try:
-                cascache.push_directory(casremote, upload_vdir)
+                cas_directory_upload(cascache, casremote, upload_vdir.ref)
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
 

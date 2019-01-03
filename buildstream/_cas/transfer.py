@@ -49,3 +49,14 @@ def cas_tree_download(caslocal, casremote, tree_digest):
 
     # get root digest from tree and return that
     return _message_digest(tree.root.SerializeToString())
+
+
+def cas_directory_upload(caslocal, casremote, root_digest):
+    required_blobs = caslocal.yield_directory_digests(root_digest)
+    missing_blobs = casremote.find_missing_blobs(required_blobs)
+    for blob in missing_blobs.values():
+        blob_file = caslocal.objpath(blob)
+        casremote.upload_blob(blob, blob_file)
+
+    # send remaining blobs
+    casremote.send_update_batch()

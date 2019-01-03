@@ -18,22 +18,15 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 import hashlib
-import itertools
 import os
 import stat
 import tempfile
-import uuid
 import contextlib
 
-import grpc
-
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from .._protos.buildstream.v2 import buildstream_pb2
 
 from .. import utils
 from .._exceptions import CASCacheError
-
-from .casremote import _CASBatchUpdate
 
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
@@ -195,73 +188,6 @@ class CASCache():
         tree = self.resolve_ref(oldref)
 
         self.set_ref(newref, tree)
-
-    # push():
-    #
-    # Push committed refs to remote repository.
-    #
-    # Args:
-    #     refs (list): The refs to push
-    #     remote (CASRemote): The remote to push to
-    #
-    # Returns:
-    #   (bool): True if any remote was updated, False if no pushes were required
-    #
-    # Raises:
-    #   (CASCacheError): if there was an error
-    #
-    def push(self, refs, remote):
-        skipped_remote = True
-        try:
-            for ref in refs:
-                tree = self.resolve_ref(ref)
-
-                # Check whether ref is already on the server in which case
-                # there is no need to push the ref
-                try:
-                    request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
-                    request.key = ref
-                    response = remote.ref_storage.GetReference(request)
-
-                    if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
-                        # ref is already on the server with the same tree
-                        continue
-
-                except grpc.RpcError as e:
-                    if e.code() != grpc.StatusCode.NOT_FOUND:
-                        # Intentionally re-raise RpcError for outer except block.
-                        raise
-
-                self._send_directory(remote, tree)
-
-                request = buildstream_pb2.UpdateReferenceRequest(instance_name=remote.spec.instance_name)
-                request.keys.append(ref)
-                request.digest.hash = tree.hash
-                request.digest.size_bytes = tree.size_bytes
-                remote.ref_storage.UpdateReference(request)
-
-                skipped_remote = False
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise CASCacheError("Failed to push ref {}: {}".format(refs, e), temporary=True) from e
-
-        return not skipped_remote
-
-    # push_directory():
-    #
-    # Push the given virtual directory to a remote.
-    #
-    # Args:
-    #     remote (CASRemote): The remote to push to
-    #     directory (Directory): A virtual directory object to push.
-    #
-    # Raises:
-    #     (CASCacheError): if there was an error
-    #
-    def push_directory(self, remote, directory):
-        remote.init()
-
-        self._send_directory(remote, directory.ref)
 
     # objpath():
     #
@@ -534,6 +460,27 @@ class CASCache():
         else:
             return None
 
+    def yield_directory_digests(self, directory_digest):
+        # parse directory, and recursively add blobs
+        d = remote_execution_pb2.Digest()
+        d.hash = directory_digest.hash
+        d.size_bytes = directory_digest.size_bytes
+        yield d
+
+        directory = remote_execution_pb2.Directory()
+
+        with open(self.objpath(directory_digest), 'rb') as f:
+            directory.ParseFromString(f.read())
+
+        for filenode in directory.files:
+            d = remote_execution_pb2.Digest()
+            d.hash = filenode.digest.hash
+            d.size_bytes = filenode.digest.size_bytes
+            yield d
+
+        for dirnode in directory.directories:
+            yield from self.yield_directory_digests(dirnode.digest)
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -722,57 +669,3 @@ class CASCache():
 
         for dirnode in directory.directories:
             yield from self._required_blobs(dirnode.digest)
-
-    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
-        required_blobs = self._required_blobs(digest)
-
-        missing_blobs = dict()
-        # Limit size of FindMissingBlobs request
-        for required_blobs_group in _grouper(required_blobs, 512):
-            request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
-
-            for required_digest in required_blobs_group:
-                d = request.blob_digests.add()
-                d.hash = required_digest.hash
-                d.size_bytes = required_digest.size_bytes
-
-            response = remote.cas.FindMissingBlobs(request)
-            for missing_digest in response.missing_blob_digests:
-                d = remote_execution_pb2.Digest()
-                d.hash = missing_digest.hash
-                d.size_bytes = missing_digest.size_bytes
-                missing_blobs[d.hash] = d
-
-        # Upload any blobs missing on the server
-        self._send_blobs(remote, missing_blobs.values(), u_uid)
-
-    def _send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
-        batch = _CASBatchUpdate(remote)
-
-        for digest in digests:
-            with open(self.objpath(digest), 'rb') as f:
-                assert os.fstat(f.fileno()).st_size == digest.size_bytes
-
-                if (digest.size_bytes >= remote.max_batch_total_size_bytes or
-                        not remote.batch_update_supported):
-                    # Too large for batch request, upload in independent request.
-                    remote._send_blob(digest, f, u_uid=u_uid)
-                else:
-                    if not batch.add(digest, f):
-                        # Not enough space left in batch request.
-                        # Complete pending batch first.
-                        batch.send()
-                        batch = _CASBatchUpdate(remote)
-                        batch.add(digest, f)
-
-        # Send final batch
-        batch.send()
-
-
-def _grouper(iterable, n):
-    while True:
-        try:
-            current = next(iterable)
-        except StopIteration:
-            return
-        yield itertools.chain([current], itertools.islice(iterable, n - 1))

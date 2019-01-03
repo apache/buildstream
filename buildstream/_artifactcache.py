@@ -29,7 +29,7 @@ from . import utils
 from . import _yaml
 
 from ._cas import BlobNotFound, CASRemote, CASRemoteSpec
-from ._cas.transfer import cas_directory_download, cas_tree_download
+from ._cas.transfer import cas_directory_upload, cas_directory_download, cas_tree_download
 
 
 CACHE_SIZE_FILE = "cache_size"
@@ -608,16 +608,41 @@ class ArtifactCache():
 
         for remote in push_remotes:
             remote.init()
+            skipped_remote = True
             display_key = element._get_brief_display_key()
             element.status("Pushing artifact {} -> {}".format(display_key, remote.spec.url))
 
-            if self.cas.push(refs, remote):
-                element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
+            try:
+                for ref in refs:
+                    # Check whether ref is already on the server in which case
+                    # there is no need to push the ref
+                    root_digest = self.cas.resolve_ref(ref)
+                    response = remote.get_reference(ref)
+                    if (response is not None and
+                            response.hash == root_digest.hash and
+                            response.size_bytes == root_digest.size_bytes):
+                        element.info("Remote ({}) already has {} cached".format(
+                            remote.spec.url, element._get_brief_display_key()))
+                        continue
+
+                    # upload blobs
+                    cas_directory_upload(self.cas, remote, root_digest)
+                    remote.update_reference(ref, root_digest)
+
+                    skipped_remote = False
+
+            except CASError as e:
+                if str(e.reason) == "StatusCode.RESOURCE_EXHAUSTED":
+                    element.warn("Failed to push element to {}: Resource exhuasted"
+                                 .format(remote.spec.url))
+                    continue
+                else:
+                    raise ArtifactError("Failed to push refs {}: {}".format(refs, e),
+                                        temporary=True) from e
+
+            if skipped_remote is False:
                 pushed = True
-            else:
-                element.info("Remote ({}) already has {} cached".format(
-                    remote.spec.url, element._get_brief_display_key()
-                ))
+                element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
 
         return pushed
 
@@ -722,7 +747,7 @@ class ArtifactCache():
             return
 
         for remote in push_remotes:
-            self.cas.push_directory(remote, directory)
+            cas_directory_upload(self.cas, remote, directory.ref)
 
     # push_message():
     #

@@ -1,5 +1,6 @@
 from collections import namedtuple
 import io
+import itertools
 import os
 import multiprocessing
 import signal
@@ -288,6 +289,18 @@ class CASRemote():
             else:
                 return None
 
+    # update_reference():
+    #
+    # Args:
+    #    ref (str): Reference to update
+    #    digest (Digest): New digest to update ref with
+    def update_reference(self, ref, digest):
+        request = buildstream_pb2.UpdateReferenceRequest()
+        request.keys.append(ref)
+        request.digest.hash = digest.hash
+        request.digest.size_bytes = digest.size_bytes
+        self.ref_storage.UpdateReference(request)
+
     def get_tree_blob(self, tree_digest):
         self.init()
         f = tempfile.NamedTemporaryFile(dir=self.tmpdir)
@@ -397,6 +410,68 @@ class CASRemote():
         while self.__tmp_downloads:
             yield self.__tmp_downloads.pop()
 
+    # upload_blob():
+    #
+    # Push blobs given an iterator over blob files
+    #
+    # Args:
+    #    digest (Digest): digest we want to upload
+    #    blob_file (str): Name of file location
+    #    u_uid (str): Used to identify to the bytestream service
+    #
+    def upload_blob(self, digest, blob_file, u_uid=uuid.uuid4()):
+        with open(blob_file, 'rb') as f:
+            assert os.fstat(f.fileno()).st_size == digest.size_bytes
+
+            if (digest.size_bytes >= self.max_batch_total_size_bytes or
+                    not self.batch_update_supported):
+                # Too large for batch request, upload in independent request.
+                self._send_blob(digest, f, u_uid=u_uid)
+            else:
+                if self.__batch_update.add(digest, f) is False:
+                    self.__batch_update.send()
+                    self.__batch_update = _CASBatchUpdate(self)
+                    self.__batch_update.add(digest, f)
+
+    # send_update_batch():
+    #
+    # Sends anything left in the update batch
+    #
+    def send_update_batch(self):
+        # make sure everything is sent
+        self.__batch_update.send()
+        self.__batch_update = _CASBatchUpdate(self)
+
+    # find_missing_blobs()
+    #
+    # Does FindMissingBlobs request to remote
+    #
+    # Args:
+    #    required_blobs ([Digest]): list of blobs required
+    #
+    # Returns:
+    #    (Dict(Digest)): missing blobs
+    def find_missing_blobs(self, required_blobs):
+        self.init()
+        missing_blobs = dict()
+        # Limit size of FindMissingBlobs request
+        for required_blobs_group in _grouper(required_blobs, 512):
+            request = remote_execution_pb2.FindMissingBlobsRequest()
+
+            for required_digest in required_blobs_group:
+                d = request.blob_digests.add()
+                d.hash = required_digest.hash
+                d.size_bytes = required_digest.size_bytes
+
+            response = self.cas.FindMissingBlobs(request)
+            for missing_digest in response.missing_blob_digests:
+                d = remote_execution_pb2.Digest()
+                d.hash = missing_digest.hash
+                d.size_bytes = missing_digest.size_bytes
+                missing_blobs[d.hash] = d
+
+        return missing_blobs
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -435,7 +510,10 @@ class CASRemote():
                 offset += chunk_size
                 finished = request.finish_write
 
-        response = self.bytestream.Write(request_stream(resource_name, stream))
+        try:
+            response = self.bytestream.Write(request_stream(resource_name, stream))
+        except grpc.RpcError as e:
+            raise CASRemoteError("Failed to upload blob: {}".format(e), reason=e.code())
 
         assert response.committed_size == digest.size_bytes
 
@@ -447,6 +525,15 @@ class CASRemote():
             self.__tmp_downloads.append(f)
 
         self.__batch_read = _CASBatchRead(self)
+
+
+def _grouper(iterable, n):
+    while True:
+        try:
+            current = next(iterable)
+        except StopIteration:
+            return
+        yield itertools.chain([current], itertools.islice(iterable, n - 1))
 
 
 # Represents a batch of blobs queued for fetching.
@@ -480,7 +567,11 @@ class _CASBatchRead():
         if not self._request.digests:
             return
 
-        batch_response = self._remote.cas.BatchReadBlobs(self._request)
+        try:
+            batch_response = self._remote.cas.BatchReadBlobs(self._request)
+        except grpc.RpcError as e:
+            raise CASRemoteError("Failed to read blob batch: {}".format(e),
+                                 reason=e.code()) from e
 
         for response in batch_response.responses:
             if response.status.code == code_pb2.NOT_FOUND:
@@ -528,7 +619,12 @@ class _CASBatchUpdate():
         if not self._request.requests:
             return
 
-        batch_response = self._remote.cas.BatchUpdateBlobs(self._request)
+        # Want to raise a CASRemoteError if
+        try:
+            batch_response = self._remote.cas.BatchUpdateBlobs(self._request)
+        except grpc.RpcError as e:
+            raise CASRemoteError("Failed to upload blob batch: {}".format(e),
+                                 reason=e.code()) from e
 
         for response in batch_response.responses:
             if response.status.code != code_pb2.OK:
