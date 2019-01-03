@@ -1541,6 +1541,12 @@ with::
 Alternatively, any IDE plugin that uses pytest should automatically
 detect the ``.pylintrc`` in the project's root directory.
 
+In case BuildStream's dependencies were updated since you last ran the
+tests, you might see some errors like
+``pytest: error: unrecognized arguments: --codestyle``. If this happens, you
+will need to force ``tox`` to recreate the test environment(s). To do so, you
+can run ``tox`` with ``-r`` or  ``--recreate`` option.
+
 .. note::
 
    By default, we do not allow use of site packages in our ``tox``
