@@ -2441,11 +2441,17 @@ class Element(Plugin):
         # Sandbox config, unlike others, has fixed members so we should validate them
         _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
 
+        build_arch = self.node_get_member(sandbox_config, str, 'build-arch', default=None)
+        if build_arch:
+            build_arch = Platform.canonicalize_arch(build_arch)
+        else:
+            build_arch = host_arch
+
         return SandboxConfig(
             self.node_get_member(sandbox_config, int, 'build-uid'),
             self.node_get_member(sandbox_config, int, 'build-gid'),
             self.node_get_member(sandbox_config, str, 'build-os', default=host_os),
-            self.node_get_member(sandbox_config, str, 'build-arch', default=host_arch))
+            build_arch)
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
