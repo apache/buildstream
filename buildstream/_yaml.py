@@ -287,7 +287,7 @@ def node_decorate_dict(filename, target, source, toplevel):
         provenance.members[key] = member
 
         target_value = target.get(key)
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, collections.abc.Mapping):
             node_decorate_dict(filename, target_value, value, toplevel)
         elif isinstance(value, list):
             member.elements = node_decorate_list(filename, target_value, value, toplevel)
@@ -302,7 +302,7 @@ def node_decorate_list(filename, target, source, toplevel):
         target_item = target[idx]
         element = ElementProvenance(filename, source, idx, toplevel)
 
-        if isinstance(item, collections.Mapping):
+        if isinstance(item, collections.abc.Mapping):
             node_decorate_dict(filename, target_item, item, toplevel)
         elif isinstance(item, list):
             element.elements = node_decorate_list(filename, target_item, item, toplevel)
@@ -578,7 +578,7 @@ def is_ruamel_str(value):
 #
 def is_composite_list(node):
 
-    if isinstance(node, collections.Mapping):
+    if isinstance(node, collections.abc.Mapping):
         has_directives = False
         has_keys = False
 
@@ -847,7 +847,7 @@ def composite_dict(target, source, path=None):
 
         target_value = target.get(key)
 
-        if isinstance(source_value, collections.Mapping):
+        if isinstance(source_value, collections.abc.Mapping):
 
             # Handle creating new dicts on target side
             if target_value is None:
@@ -862,7 +862,7 @@ def composite_dict(target, source, path=None):
                 # Add a new provenance member element to the containing dict
                 target_provenance.members[key] = source_provenance.members[key]
 
-            if not isinstance(target_value, collections.Mapping):
+            if not isinstance(target_value, collections.abc.Mapping):
                 raise CompositeTypeError(thispath, type(target_value), type(source_value))
 
             # Recurse into matching dictionary
@@ -923,7 +923,7 @@ RoundTripRepresenter.add_representer(SanitizedDict,
 #
 def node_sanitize(node):
 
-    if isinstance(node, collections.Mapping):
+    if isinstance(node, collections.abc.Mapping):
 
         result = SanitizedDict()
 
@@ -1067,7 +1067,7 @@ class ChainMap(collections.ChainMap):
 def node_chain_copy(source):
     copy = ChainMap({}, source)
     for key, value in source.items():
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, collections.abc.Mapping):
             copy[key] = node_chain_copy(value)
         elif isinstance(value, list):
             copy[key] = list_chain_copy(value)
@@ -1080,7 +1080,7 @@ def node_chain_copy(source):
 def list_chain_copy(source):
     copy = []
     for item in source:
-        if isinstance(item, collections.Mapping):
+        if isinstance(item, collections.abc.Mapping):
             copy.append(node_chain_copy(item))
         elif isinstance(item, list):
             copy.append(list_chain_copy(item))
@@ -1095,7 +1095,7 @@ def list_chain_copy(source):
 def node_copy(source):
     copy = {}
     for key, value in source.items():
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, collections.abc.Mapping):
             copy[key] = node_copy(value)
         elif isinstance(value, list):
             copy[key] = list_copy(value)
@@ -1112,7 +1112,7 @@ def node_copy(source):
 def list_copy(source):
     copy = []
     for item in source:
-        if isinstance(item, collections.Mapping):
+        if isinstance(item, collections.abc.Mapping):
             copy.append(node_copy(item))
         elif isinstance(item, list):
             copy.append(list_copy(item))
@@ -1147,7 +1147,7 @@ def node_final_assertions(node):
             raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
                             "{}: Attempt to override non-existing list".format(provenance))
 
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, collections.abc.Mapping):
             node_final_assertions(value)
         elif isinstance(value, list):
             list_final_assertions(value)
@@ -1155,7 +1155,7 @@ def node_final_assertions(node):
 
 def list_final_assertions(values):
     for value in values:
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, collections.abc.Mapping):
             node_final_assertions(value)
         elif isinstance(value, list):
             list_final_assertions(value)
