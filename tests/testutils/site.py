@@ -52,5 +52,6 @@ except ImportError:
     HAVE_ARPY = False
 
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
+IS_WINDOWS = (os.name == 'nt')
 
 MACHINE_ARCH = Platform.get_host_arch()

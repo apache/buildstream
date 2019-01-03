@@ -3,6 +3,7 @@ import tarfile
 import hashlib
 import pytest
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
+from tests.testutils.site import IS_WINDOWS
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -85,16 +86,37 @@ def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
     result.assert_main_error(ErrorDomain.LOAD, "bad-element-suffix")
 
 
+@pytest.mark.skipif(IS_WINDOWS, reason='Not available on Windows')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_invalid_filename_chars(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    result = cli.run(project=project, args=strict_args(['build', 'invalid-chars|<>-in-name.bst'], 'non-strict'))
+    element_name = 'invalid-chars|<>-in-name.bst'
+
+    # The name of this file contains characters that are not allowed by
+    # BuildStream, using it should raise a warning.
+    element = {
+        'kind': 'stack',
+    }
+    _yaml.dump(element, os.path.join(project, 'elements', element_name))
+
+    result = cli.run(project=project, args=strict_args(['build', element_name], 'non-strict'))
     result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
 
 
+@pytest.mark.skipif(IS_WINDOWS, reason='Not available on Windows')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_invalid_filename_chars_dep(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'invalid-chars|<>-in-name.bst'
+
+    # The name of this file contains characters that are not allowed by
+    # BuildStream, and is listed as a dependency of 'invalid-chars-in-dep.bst'.
+    # This should also raise a warning.
+    element = {
+        'kind': 'stack',
+    }
+    _yaml.dump(element, os.path.join(project, 'elements', element_name))
+
     result = cli.run(project=project, args=strict_args(['build', 'invalid-chars-in-dep.bst'], 'non-strict'))
     result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
 
