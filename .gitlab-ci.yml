@@ -151,6 +151,18 @@ tests-fedora-missing-deps:
 
     - ${TEST_COMMAND}
 
+# Lint separately from testing
+lint:
+  stage: test
+
+  before_script:
+  # Diagnostics
+  - python3 --version
+
+  script:
+  - tox -e lint
+  except:
+  - schedules
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
