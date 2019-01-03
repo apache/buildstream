@@ -1736,10 +1736,8 @@ obtain profiles::
       ForceCommand BST_PROFILE=artifact-receive cd /tmp && bst-artifact-receive --pull-url https://example.com/ /home/artifacts/artifacts
 
 
-The MANIFEST.in and setup.py
-----------------------------
-When adding a dependency to BuildStream, it's important to update the setup.py accordingly.
-
+Managing data files
+-------------------
 When adding data files which need to be discovered at runtime by BuildStream, update setup.py accordingly.
 
 When adding data files for the purpose of docs or tests, or anything that is not covered by
@@ -1749,3 +1747,23 @@ At any time, running the following command to create a source distribution shoul
 creating a tarball which contains everything we want it to include::
 
   ./setup.py sdist
+
+
+Updating BuildStream's Python dependencies
+------------------------------------------
+BuildStream's Python dependencies are listed in multiple
+`requirements files <https://pip.readthedocs.io/en/latest/reference/pip_install/#requirements-file-format>`
+present in the ``requirements`` directory.
+
+All ``.txt`` files in this directory are generated from the corresponding
+``.in`` file, and each ``.in`` file represents a set of dependencies. For
+example, ``requirements.in`` contains all runtime dependencies of BuildStream.
+``requirements.txt`` is generated from it, and contains pinned versions of all
+runtime dependencies (including transitive dependencies) of BuildStream.
+
+When adding a new dependency to BuildStream, or updating existing dependencies,
+it is important to update the appropriate requirements file accordingly. After
+changing the ``.in`` file, run the following to update the matching ``.txt``
+file::
+
+   make -C requirements
