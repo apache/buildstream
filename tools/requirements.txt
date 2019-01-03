@@ -1,5 +1,6 @@
 Click==7.0
 grpcio==1.17.1
+Jinja2==2.10
 pluginbase==0.7
 protobuf==3.6.1
 psutil==5.4.8
@@ -13,6 +14,5 @@ psutil==5.4.8
 ruamel.yaml==0.15.51
 setuptools==39.0.1
 ## The following requirements were added by pip freeze:
-Jinja2==2.10
 MarkupSafe==1.1.0
 six==1.12.0
