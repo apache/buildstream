@@ -1120,15 +1120,23 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
-    # Tracking does not get horribly confused
     tmpdir = tmpdir_factory.mktemp('')
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", True)
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+    element_file = os.path.join(str(datafiles), 'elements', element_name)
     arg_elm = [element_name] if not guess_element else []
 
-    # The workspace is necessarily already tracked, so we only care that
-    # there's no weird errors.
+    # Delete the ref from the source so that we can detect if the
+    # element has been tracked
+    element_contents = _yaml.load(element_file)
+    del element_contents['sources'][0]['ref']
+    _yaml.dump(_yaml.node_sanitize(element_contents), element_file)
+
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track'] + arg_elm)
     result.assert_success()
+
+    # Element is tracked now
+    element_contents = _yaml.load(element_file)
+    assert 'ref' in element_contents['sources'][0]
 
 
 @pytest.mark.datafiles(DATA_DIR)
