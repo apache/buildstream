@@ -6,7 +6,6 @@ cache:
     - cache/
 
 stages:
-  - prepare
   - test
   - post
 
@@ -14,41 +13,6 @@ variables:
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   TEST_COMMAND: "tox -- --color=yes --integration"
-
-#####################################################
-#                  Prepare stage                    #
-#####################################################
-
-# Create a source distribution
-#
-source_dist:
-  stage: prepare
-  script:
-
-  # Generate the source distribution tarball
-  #
-  - python3 setup.py sdist
-  - tar -ztf dist/*
-  - tarball=$(cd dist && echo $(ls *))
-
-  # Verify that the source distribution tarball can be installed correctly
-  #
-  - pip3 install dist/*.tar.gz
-  - bst --version
-
-  # unpack tarball as `dist/buildstream` directory
-  - |
-    cat > dist/unpack.sh << EOF
-    #!/bin/sh
-    tar -zxf ${tarball}
-    mv ${tarball%.tar.gz} buildstream
-    EOF
-
-  # Make our helpers executable
-  - chmod +x dist/unpack.sh
-  artifacts:
-    paths:
-    - dist/
 
 
 #####################################################
@@ -72,8 +36,7 @@ source_dist:
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
 
-  # Run the tests from the source distribution, We run as a simple
-  # user to test for permission issues
+  # Run the tests as a simple user to test for permission issues
   - su buildstream -c "${TEST_COMMAND}"
 
   after_script:
@@ -192,7 +155,8 @@ docs:
     scheduler:
       fetchers: 2
     EOF
-  - (cd dist && ./unpack.sh && cd buildstream && pip3 install .)
+  - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
+  - pip3 install --no-index .
   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
@@ -275,13 +239,12 @@ coverage:
   stage: post
   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
-    - cd dist && ./unpack.sh && cd buildstream
     - pip3 install -r requirements/requirements.txt -r requirements/dev-requirements.txt
     - pip3 install --no-index .
     - mkdir report
     - cd report
-    - cp ../../../coverage-unix/coverage.* .
-    - cp ../../../coverage-linux/coverage.* .
+    - cp ../coverage-unix/coverage.* .
+    - cp ../coverage-linux/coverage.* .
     - ls coverage.*
     - coverage combine --rcfile=../.coveragerc -a coverage.*
     - coverage report --rcfile=../.coveragerc -m
@@ -290,7 +253,6 @@ coverage:
   - tests-fedora-27
   - tests-fedora-28
   - tests-unix
-  - source_dist
   except:
   - schedules
 
@@ -299,7 +261,6 @@ coverage:
 pages:
   stage: post
   dependencies:
-  - source_dist
   - docs
   variables:
     ACME_DIR: public/.well-known/acme-challenge
