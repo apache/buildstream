@@ -719,6 +719,11 @@ def source_fetch(app, elements, deps, track_, except_, track_cross_junctions):
         deps = PipelineSelection.ALL
 
     with app.initialized(session_name="Fetch"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
         app.stream.fetch(elements,
                          selection=deps,
                          except_targets=except_,
@@ -755,6 +760,11 @@ def source_track(app, elements, deps, except_, cross_junctions):
         all:   All dependencies of all specified elements
     """
     with app.initialized(session_name="Track"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
         # Substitute 'none' for 'redirect' so that element redirections
         # will be done
         if deps == 'none':
