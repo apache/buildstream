@@ -276,7 +276,7 @@ coverage:
   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
     - cd dist && ./unpack.sh && cd buildstream
-    - pip3 install -r tools/requirements.txt -r tools/dev-requirements.txt
+    - pip3 install -r requirements/requirements.txt -r requirements/dev-requirements.txt
     - pip3 install --no-index .
     - mkdir report
     - cd report
