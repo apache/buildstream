@@ -210,19 +210,6 @@ class Scheduler():
             starttime = timenow
         return timenow - starttime
 
-    # schedule_jobs()
-    #
-    # Args:
-    #     jobs ([Job]): A list of jobs to schedule
-    #
-    # Schedule 'Job's for the scheduler to run. Jobs scheduled will be
-    # run as soon any other queueing jobs finish, provided sufficient
-    # resources are available for them to run
-    #
-    def schedule_jobs(self, jobs):
-        for job in jobs:
-            self.waiting_jobs.append(job)
-
     # job_completed():
     #
     # Called when a Job completes
@@ -256,7 +243,7 @@ class Scheduler():
                            resources=[ResourceType.CACHE,
                                       ResourceType.PROCESS],
                            complete_cb=self._run_cleanup)
-        self.schedule_jobs([job])
+        self._schedule_jobs([job])
 
     #######################################################
     #                  Local Private Methods              #
@@ -285,6 +272,21 @@ class Scheduler():
         # If nothings ticking, time to bail out
         if not self.active_jobs and not self.waiting_jobs:
             self.loop.stop()
+
+    # _schedule_jobs()
+    #
+    # The main entry point for jobs to be scheduled.
+    #
+    # This is called either as a result of scanning the queues
+    # in _schedule_queue_jobs(), or directly by the Scheduler
+    # to insert special jobs like cleanups.
+    #
+    # Args:
+    #     jobs ([Job]): A list of jobs to schedule
+    #
+    def _schedule_jobs(self, jobs):
+        for job in jobs:
+            self.waiting_jobs.append(job)
 
     # _schedule_queue_jobs()
     #
@@ -330,7 +332,7 @@ class Scheduler():
             # the next queue and process them.
             process_queues = any(q.dequeue_ready() for q in self.queues)
 
-        self.schedule_jobs(ready)
+        self._schedule_jobs(ready)
         self._sched()
 
     # _run_cleanup()
@@ -356,7 +358,7 @@ class Scheduler():
                          resources=[ResourceType.CACHE,
                                     ResourceType.PROCESS],
                          exclusive_resources=[ResourceType.CACHE])
-        self.schedule_jobs([job])
+        self._schedule_jobs([job])
 
     # _suspend_jobs()
     #
