@@ -38,6 +38,16 @@ class SchedStatus():
     TERMINATED = 1
 
 
+# Our _REDUNDANT_EXCLUSIVE_ACTIONS jobs are special ones
+# which we launch dynamically, they have the property of being
+# meaningless to queue if one is already queued, and it also
+# doesnt make sense to run them in parallel
+#
+_ACTION_NAME_CLEANUP = 'cleanup'
+_ACTION_NAME_CACHE_SIZE = 'cache_size'
+_REDUNDANT_EXCLUSIVE_ACTIONS = [_ACTION_NAME_CLEANUP, _ACTION_NAME_CACHE_SIZE]
+
+
 # Scheduler()
 #
 # The scheduler operates on a list queues, each of which is meant to accomplish
@@ -93,6 +103,15 @@ class Scheduler():
         self._starttime = start_time
         self._suspendtime = None
         self._queue_jobs = True      # Whether we should continue to queue jobs
+
+        # Whether our exclusive jobs, like 'cleanup' are currently already
+        # waiting or active.
+        #
+        # This is just a bit quicker than scanning the wait queue and active
+        # queue and comparing job action names.
+        #
+        self._exclusive_waiting = set()
+        self._exclusive_active = set()
 
         self._resources = Resources(context.sched_builders,
                                     context.sched_fetchers,
@@ -223,6 +242,8 @@ class Scheduler():
     def job_completed(self, job, success):
         self._resources.clear_job_resources(job)
         self.active_jobs.remove(job)
+        if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS:
+            self._exclusive_active.remove(job.action_name)
         self._job_complete_callback(job, success)
         self._schedule_queue_jobs()
         self._sched()
@@ -233,14 +254,9 @@ class Scheduler():
     # size is calculated, a cleanup job will be run automatically
     # if needed.
     #
-    # FIXME: This should ensure that only one cache size job
-    #        is ever pending at a given time. If a cache size
-    #        job is already running, it is correct to queue
-    #        a new one, it is incorrect to have more than one
-    #        of these jobs pending at a given time, though.
-    #
     def check_cache_size(self):
-        job = CacheSizeJob(self, 'cache_size', 'cache_size/cache_size',
+        job = CacheSizeJob(self, _ACTION_NAME_CACHE_SIZE,
+                           'cache_size/cache_size',
                            resources=[ResourceType.CACHE,
                                       ResourceType.PROCESS],
                            complete_cb=self._run_cleanup)
@@ -263,9 +279,18 @@ class Scheduler():
             if not self._resources.reserve_job_resources(job):
                 continue
 
+            # Postpone these jobs if one is already running
+            if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS and \
+               job.action_name in self._exclusive_active:
+                continue
+
             job.spawn()
             self.waiting_jobs.remove(job)
             self.active_jobs.append(job)
+
+            if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS:
+                self._exclusive_waiting.remove(job.action_name)
+                self._exclusive_active.add(job.action_name)
 
             if self._job_start_callback:
                 self._job_start_callback(job)
@@ -287,6 +312,18 @@ class Scheduler():
     #
     def _schedule_jobs(self, jobs):
         for job in jobs:
+
+            # Special treatment of our redundant exclusive jobs
+            #
+            if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS:
+
+                # Drop the job if one is already queued
+                if job.action_name in self._exclusive_waiting:
+                    continue
+
+                # Mark this action type as queued
+                self._exclusive_waiting.add(job.action_name)
+
             self.waiting_jobs.append(job)
 
     # _schedule_queue_jobs()
@@ -355,7 +392,7 @@ class Scheduler():
         if not artifacts.has_quota_exceeded():
             return
 
-        job = CleanupJob(self, 'cleanup', 'cleanup/cleanup',
+        job = CleanupJob(self, _ACTION_NAME_CLEANUP, 'cleanup/cleanup',
                          resources=[ResourceType.CACHE,
                                     ResourceType.PROCESS],
                          exclusive_resources=[ResourceType.CACHE])
