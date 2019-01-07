@@ -41,6 +41,22 @@ RC_PERM_FAIL = 2
 RC_SKIPPED = 3
 
 
+# JobStatus:
+#
+# The job completion status, passed back through the
+# complete callbacks.
+#
+class JobStatus():
+    # Job succeeded
+    OK = 0
+
+    # A temporary BstError was raised
+    FAIL = 1
+
+    # A SkipJob was raised
+    SKIPPED = 3
+
+
 # Used to distinguish between status messages and return values
 class Envelope():
     def __init__(self, message_type, message):
@@ -295,10 +311,10 @@ class Job():
     # pass the result to the main thread.
     #
     # Args:
-    #    success (bool): Whether the job was successful.
+    #    status (JobStatus): The job exit status
     #    result (any): The result returned by child_process().
     #
-    def parent_complete(self, success, result):
+    def parent_complete(self, status, result):
         raise ImplError("Job '{kind}' does not implement parent_complete()"
                         .format(kind=type(self).__name__))
 
@@ -569,9 +585,19 @@ class Job():
             self.spawn()
             return
 
-        success = returncode in (RC_OK, RC_SKIPPED)
-        self.parent_complete(success, self._result)
-        self._scheduler.job_completed(self, success)
+        # Resolve the outward facing overall job completion status
+        #
+        if returncode == RC_OK:
+            status = JobStatus.OK
+        elif returncode == RC_SKIPPED:
+            status = JobStatus.SKIPPED
+        elif returncode in (RC_FAIL, RC_PERM_FAIL):
+            status = JobStatus.FAIL
+        else:
+            status = JobStatus.FAIL
+
+        self.parent_complete(status, self._result)
+        self._scheduler.job_completed(self, status)
 
         # Force the deletion of the queue and process objects to try and clean up FDs
         self._queue = self._process = None

@@ -21,6 +21,7 @@
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
+from ..jobs import JobStatus
 from ..._exceptions import SkipJob
 
 
@@ -54,9 +55,9 @@ class PullQueue(Queue):
         else:
             return QueueStatus.SKIP
 
-    def done(self, _, element, result, success):
+    def done(self, _, element, result, status):
 
-        if not success:
+        if status == JobStatus.FAIL:
             return
 
         element._pull_done()
@@ -64,4 +65,5 @@ class PullQueue(Queue):
         # Build jobs will check the "approximate" size first. Since we
         # do not get an artifact size from pull jobs, we have to
         # actually check the cache size.
-        self._scheduler.check_cache_size()
+        if status == JobStatus.OK:
+            self._scheduler.check_cache_size()
