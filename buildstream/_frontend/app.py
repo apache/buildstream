@@ -38,7 +38,7 @@ from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION
 from .. import _yaml
-from .._scheduler import ElementJob
+from .._scheduler import ElementJob, JobStatus
 
 # Import frontend assets
 from . import Profile, LogLine, Status
@@ -515,13 +515,13 @@ class App():
         self._status.add_job(job)
         self._maybe_render_status()
 
-    def _job_completed(self, job, success):
+    def _job_completed(self, job, status):
         self._status.remove_job(job)
         self._maybe_render_status()
 
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
-        if not success and not self.stream.terminated:
+        if status == JobStatus.FAIL and not self.stream.terminated:
 
             if isinstance(job, ElementJob):
                 element = job.element
