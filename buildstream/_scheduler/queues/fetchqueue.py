@@ -24,6 +24,7 @@ from ... import Consistency
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
+from ..jobs import JobStatus
 
 
 # A queue which fetches element sources
@@ -64,9 +65,9 @@ class FetchQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, _, element, result, success):
+    def done(self, _, element, result, status):
 
-        if not success:
+        if status == JobStatus.FAIL:
             return
 
         element._fetch_done()

@@ -236,14 +236,14 @@ class Scheduler():
     # Args:
     #    queue (Queue): The Queue holding a complete job
     #    job (Job): The completed Job
-    #    success (bool): Whether the Job completed with a success status
+    #    status (JobStatus): The status of the completed job
     #
-    def job_completed(self, job, success):
+    def job_completed(self, job, status):
         self._resources.clear_job_resources(job)
         self.active_jobs.remove(job)
         if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS:
             self._exclusive_active.remove(job.action_name)
-        self._job_complete_callback(job, success)
+        self._job_complete_callback(job, status)
         self._schedule_queue_jobs()
         self._sched()
 
