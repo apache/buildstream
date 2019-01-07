@@ -130,7 +130,8 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Pull from cache, ensuring cli options is set to pull the buildtree
-        result = cli.run(project=project, args=['--pull-buildtrees', 'pull', '--deps', 'all', element_name])
+        result = cli.run(project=project,
+                         args=['--pull-buildtrees', 'artifact', 'pull', '--deps', 'all', element_name])
         result.assert_success()
 
         # Check it's using the cached build tree
@@ -164,7 +165,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Pull from cache, but do not include buildtrees.
-        result = cli.run(project=project, args=['pull', '--deps', 'all', element_name])
+        result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', element_name])
         result.assert_success()
 
         # The above is the simplest way I know to create a local cache without any buildtrees.

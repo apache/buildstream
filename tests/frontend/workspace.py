@@ -1105,10 +1105,10 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
             'artifacts': {'url': share.repo, 'push': True}
         })
 
-        result = cli.run(project=project, args=['-C', workspace, 'push'] + arg_elm)
+        result = cli.run(project=project, args=['-C', workspace, 'artifact', 'push'] + arg_elm)
         result.assert_success()
 
-        result = cli.run(project=project, args=['-C', workspace, 'pull', '--deps', 'all'] + arg_elm)
+        result = cli.run(project=project, args=['-C', workspace, 'artifact', 'pull', '--deps', 'all'] + arg_elm)
         result.assert_success()
 
 
