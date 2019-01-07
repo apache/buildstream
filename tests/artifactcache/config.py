@@ -137,5 +137,5 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
     # Use `pull` here to ensure we try to initialize the remotes, triggering the error
     #
     # This does not happen for a simple `bst show`.
-    result = cli.run(project=project, args=['pull', 'element.bst'])
+    result = cli.run(project=project, args=['artifact', 'pull', 'element.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

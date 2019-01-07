@@ -14,8 +14,6 @@ MAIN_COMMANDS = [
     'checkout ',
     'help ',
     'init ',
-    'pull ',
-    'push ',
     'shell ',
     'show ',
     'source ',
@@ -55,6 +53,12 @@ SOURCE_COMMANDS = [
     'checkout ',
     'fetch ',
     'track ',
+]
+
+ARTIFACT_COMMANDS = [
+    'push ',
+    'pull ',
+    'log ',
 ]
 
 WORKSPACE_COMMANDS = [
@@ -120,8 +124,7 @@ def assert_completion_failed(cli, cmd, word_idx, expected, cwd=None):
 @pytest.mark.parametrize("cmd,word_idx,expected", [
     ('bst', 0, []),
     ('bst ', 1, MAIN_COMMANDS),
-    ('bst pu', 1, ['pull ', 'push ']),
-    ('bst pul', 1, ['pull ']),
+    ('bst artifact ', 2, ARTIFACT_COMMANDS),
     ('bst source ', 2, SOURCE_COMMANDS),
     ('bst w ', 1, ['workspace ']),
     ('bst workspace ', 2, WORKSPACE_COMMANDS),
@@ -275,9 +278,8 @@ def test_argument_element_invalid(datafiles, cli, project, cmd, word_idx, expect
 @pytest.mark.parametrize("cmd,word_idx,expected", [
     ('bst he', 1, ['help ']),
     ('bst help ', 2, MAIN_COMMANDS),
+    ('bst help artifact ', 3, ARTIFACT_COMMANDS),
     ('bst help in', 2, ['init ']),
-    ('bst help p', 2, ['pull ', 'push ']),
-    ('bst help p', 2, ['pull ', 'push ']),
     ('bst help source ', 3, SOURCE_COMMANDS),
     ('bst help w', 2, ['workspace ']),
     ('bst help workspace ', 3, WORKSPACE_COMMANDS),

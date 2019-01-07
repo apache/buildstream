@@ -58,7 +58,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         project_set_artifacts(base_project, base_share.repo)
 
         # Now try bst push
-        result = cli.run(project=project, args=['push', '--deps', 'all', 'target.bst'])
+        result = cli.run(project=project, args=['artifact', 'push', '--deps', 'all', 'target.bst'])
         assert result.exit_code == 0
 
         # And finally assert that the artifacts are in the right shares
@@ -78,7 +78,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         assert state != 'cached'
 
         # Now try bst pull
-        result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
+        result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
         assert result.exit_code == 0
 
         # And assert that they are again in the local cache, without having built

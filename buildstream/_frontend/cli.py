@@ -369,78 +369,6 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 
 
 ##################################################################
-#                           Pull Command                         #
-##################################################################
-@cli.command(short_help="Pull a built artifact")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'all']),
-              help='The dependency artifacts to pull (default: none)')
-@click.option('--remote', '-r',
-              help="The URL of the remote cache (defaults to the first configured cache)")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
-@click.pass_obj
-def pull(app, elements, deps, remote):
-    """Pull a built artifact from the configured remote artifact cache.
-
-    By default the artifact will be pulled one of the configured caches
-    if possible, following the usual priority order. If the `--remote` flag
-    is given, only the specified cache will be queried.
-
-    Specify `--deps` to control which artifacts to pull:
-
-    \b
-        none:  No dependencies, just the element itself
-        all:   All dependencies
-    """
-
-    with app.initialized(session_name="Pull"):
-        if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
-
-        app.stream.pull(elements, selection=deps, remote=remote)
-
-
-##################################################################
-#                           Push Command                         #
-##################################################################
-@cli.command(short_help="Push a built artifact")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'all']),
-              help='The dependencies to push (default: none)')
-@click.option('--remote', '-r', default=None,
-              help="The URL of the remote cache (defaults to the first configured cache)")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
-@click.pass_obj
-def push(app, elements, deps, remote):
-    """Push a built artifact to a remote artifact cache.
-
-    The default destination is the highest priority configured cache. You can
-    override this by passing a different cache URL with the `--remote` flag.
-
-    If bst has been configured to include build trees on artifact pulls,
-    an attempt will be made to pull any required build trees to avoid the
-    skipping of partial artifacts being pushed.
-
-    Specify `--deps` to control which artifacts to push:
-
-    \b
-        none:  No dependencies, just the element itself
-        all:   All dependencies
-    """
-    with app.initialized(session_name="Push"):
-        if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
-
-        app.stream.push(elements, selection=deps, remote=remote)
-
-
-##################################################################
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
@@ -1030,6 +958,78 @@ def artifact():
 
 
 ################################################################
+#                     Artifact Pull Command                    #
+################################################################
+@artifact.command(name="pull", short_help="Pull a built artifact")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependency artifacts to pull (default: none)')
+@click.option('--remote', '-r',
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def artifact_pull(app, elements, deps, remote):
+    """Pull a built artifact from the configured remote artifact cache.
+
+    By default the artifact will be pulled one of the configured caches
+    if possible, following the usual priority order. If the `--remote` flag
+    is given, only the specified cache will be queried.
+
+    Specify `--deps` to control which artifacts to pull:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
+    """
+
+    with app.initialized(session_name="Pull"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
+        app.stream.pull(elements, selection=deps, remote=remote)
+
+
+##################################################################
+#                     Artifact Push Command                      #
+##################################################################
+@artifact.command(name="push", short_help="Push a built artifact")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to push (default: none)')
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def artifact_push(app, elements, deps, remote):
+    """Push a built artifact to a remote artifact cache.
+
+    The default destination is the highest priority configured cache. You can
+    override this by passing a different cache URL with the `--remote` flag.
+
+    If bst has been configured to include build trees on artifact pulls,
+    an attempt will be made to pull any required build trees to avoid the
+    skipping of partial artifacts being pushed.
+
+    Specify `--deps` to control which artifacts to push:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
+    """
+    with app.initialized(session_name="Push"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
+        app.stream.push(elements, selection=deps, remote=remote)
+
+
+################################################################
 #                     Artifact Log Command                     #
 ################################################################
 @artifact.command(name='log', short_help="Show logs of an artifact")
@@ -1134,4 +1134,38 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 @click.pass_obj
 def track(app, elements, deps, except_, cross_junctions):
     click.echo("This command is now obsolete. Use `bst source track` instead.", err=True)
+    sys.exit(1)
+
+
+################################################################
+#                          Pull Command                        #
+################################################################
+@cli.command(short_help="Pull a built artifact", hidden=True)
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependency artifacts to pull (default: none)')
+@click.option('--remote', '-r',
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def pull(app, elements, deps, remote):
+    click.echo("This command is now obsolete. Use `bst artifact pull` instead.", err=True)
+    sys.exit(1)
+
+
+##################################################################
+#                           Push Command                         #
+##################################################################
+@cli.command(short_help="Push a built artifact", hidden=True)
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to push (default: none)')
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def push(app, elements, deps, remote):
+    click.echo("This command is now obsolete. Use `bst artifact push` instead.", err=True)
     sys.exit(1)
