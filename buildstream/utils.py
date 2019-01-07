@@ -998,6 +998,11 @@ def _kill_process_tree(pid):
             # Ignore this error, it can happen with
             # some setuid bwrap processes.
             pass
+        except psutil.NoSuchProcess:
+            # It is certain that this has already been sent
+            # SIGTERM, so there is a window where the process
+            # could have exited already.
+            pass
 
     # Bloody Murder
     for child in children:
