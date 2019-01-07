@@ -215,17 +215,10 @@ class Job():
     # Forcefully kill the process, and any children it might have.
     #
     def kill(self):
-
         # Force kill
         self.message(MessageType.WARN,
                      "{} did not terminate gracefully, killing".format(self.action_name))
-
-        try:
-            utils._kill_process_tree(self._process.pid)
-        # This can happen if the process died of its own accord before
-        # we try to kill it
-        except psutil.NoSuchProcess:
-            return
+        utils._kill_process_tree(self._process.pid)
 
     # suspend()
     #
