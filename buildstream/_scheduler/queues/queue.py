@@ -331,10 +331,8 @@ class Queue():
             # All jobs get placed on the done queue for later processing.
             self._done_queue.append(job)
 
-            # A Job can be skipped whether or not it has failed,
-            # we want to only bookkeep them as processed or failed
-            # if they are not skipped.
-            if job.skipped:
+            # These lists are for bookkeeping purposes for the UI and logging.
+            if status == JobStatus.SKIPPED:
                 self.skipped_elements.append(element)
             elif status == JobStatus.OK:
                 self.processed_elements.append(element)

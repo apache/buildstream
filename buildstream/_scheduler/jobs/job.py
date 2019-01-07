@@ -132,7 +132,6 @@ class Job():
         self._max_retries = max_retries        # Maximum number of automatic retries
         self._result = None                    # Return value of child action in the parent
         self._tries = 0                        # Try count, for retryable jobs
-        self._skipped_flag = False             # Indicate whether the job was skipped.
         self._terminated = False               # Whether this job has been explicitly terminated
 
         # If False, a retry will not be attempted regardless of whether _tries is less than _max_retries.
@@ -288,18 +287,6 @@ class Job():
     #
     def set_task_id(self, task_id):
         self._task_id = task_id
-
-    # skipped
-    #
-    # This will evaluate to True if the job was skipped
-    # during processing, or if it was forcefully terminated.
-    #
-    # Returns:
-    #    (bool): Whether the job should appear as skipped
-    #
-    @property
-    def skipped(self):
-        return self._skipped_flag or self._terminated
 
     #######################################################
     #                  Abstract Methods                   #
@@ -577,9 +564,6 @@ class Job():
         # This is set in _child_action but must also be set for the parent.
         #
         self._retry_flag = returncode == RC_FAIL
-
-        # Set the flag to alert Queue that this job skipped.
-        self._skipped_flag = returncode == RC_SKIPPED
 
         if self._retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.spawn()
