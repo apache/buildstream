@@ -26,4 +26,4 @@ from .queues.pushqueue import PushQueue
 from .queues.pullqueue import PullQueue
 
 from .scheduler import Scheduler, SchedStatus
-from .jobs import ElementJob
+from .jobs import ElementJob, JobStatus

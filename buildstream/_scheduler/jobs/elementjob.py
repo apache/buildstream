@@ -60,7 +60,7 @@ from .job import Job
 #     Args:
 #        job (Job): The job object which completed
 #        element (Element): The element passed to the Job() constructor
-#        success (bool): True if the action_cb did not raise an exception
+#        status (JobStatus): The status of whether the workload raised an exception
 #        result (object): The deserialized object returned by the `action_cb`, or None
 #                         if `success` is False
 #
@@ -93,8 +93,8 @@ class ElementJob(Job):
         # Run the action
         return self._action_cb(self._element)
 
-    def parent_complete(self, success, result):
-        self._complete_cb(self, self._element, success, self._result)
+    def parent_complete(self, status, result):
+        self._complete_cb(self, self._element, status, self._result)
 
     def message(self, message_type, message, **kwargs):
         args = dict(kwargs)

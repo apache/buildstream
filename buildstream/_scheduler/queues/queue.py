@@ -25,7 +25,7 @@ from enum import Enum
 import traceback
 
 # Local imports
-from ..jobs import ElementJob
+from ..jobs import ElementJob, JobStatus
 from ..resources import ResourceType
 
 # BuildStream toplevel imports
@@ -133,10 +133,9 @@ class Queue():
     #    job (Job): The job which completed processing
     #    element (Element): The element which completed processing
     #    result (any): The return value of the process() implementation
-    #    success (bool): True if the process() implementation did not
-    #                    raise any exception
+    #    status (JobStatus): The return status of the Job
     #
-    def done(self, job, element, result, success):
+    def done(self, job, element, result, status):
         pass
 
     #####################################################
@@ -291,7 +290,7 @@ class Queue():
     #
     # See the Job object for an explanation of the call signature
     #
-    def _job_done(self, job, element, success, result):
+    def _job_done(self, job, element, status, result):
 
         # Update values that need to be synchronized in the main task
         # before calling any queue implementation
@@ -301,7 +300,7 @@ class Queue():
         # and determine if it should be considered as processed
         # or skipped.
         try:
-            self.done(job, element, result, success)
+            self.done(job, element, result, status)
         except BstError as e:
 
             # Report error and mark as failed
@@ -332,12 +331,10 @@ class Queue():
             # All jobs get placed on the done queue for later processing.
             self._done_queue.append(job)
 
-            # A Job can be skipped whether or not it has failed,
-            # we want to only bookkeep them as processed or failed
-            # if they are not skipped.
-            if job.skipped:
+            # These lists are for bookkeeping purposes for the UI and logging.
+            if status == JobStatus.SKIPPED:
                 self.skipped_elements.append(element)
-            elif success:
+            elif status == JobStatus.OK:
                 self.processed_elements.append(element)
             else:
                 self.failed_elements.append(element)

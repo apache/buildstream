@@ -41,6 +41,22 @@ RC_PERM_FAIL = 2
 RC_SKIPPED = 3
 
 
+# JobStatus:
+#
+# The job completion status, passed back through the
+# complete callbacks.
+#
+class JobStatus():
+    # Job succeeded
+    OK = 0
+
+    # A temporary BstError was raised
+    FAIL = 1
+
+    # A SkipJob was raised
+    SKIPPED = 3
+
+
 # Used to distinguish between status messages and return values
 class Envelope():
     def __init__(self, message_type, message):
@@ -116,7 +132,6 @@ class Job():
         self._max_retries = max_retries        # Maximum number of automatic retries
         self._result = None                    # Return value of child action in the parent
         self._tries = 0                        # Try count, for retryable jobs
-        self._skipped_flag = False             # Indicate whether the job was skipped.
         self._terminated = False               # Whether this job has been explicitly terminated
 
         # If False, a retry will not be attempted regardless of whether _tries is less than _max_retries.
@@ -273,18 +288,6 @@ class Job():
     def set_task_id(self, task_id):
         self._task_id = task_id
 
-    # skipped
-    #
-    # This will evaluate to True if the job was skipped
-    # during processing, or if it was forcefully terminated.
-    #
-    # Returns:
-    #    (bool): Whether the job should appear as skipped
-    #
-    @property
-    def skipped(self):
-        return self._skipped_flag or self._terminated
-
     #######################################################
     #                  Abstract Methods                   #
     #######################################################
@@ -295,10 +298,10 @@ class Job():
     # pass the result to the main thread.
     #
     # Args:
-    #    success (bool): Whether the job was successful.
+    #    status (JobStatus): The job exit status
     #    result (any): The result returned by child_process().
     #
-    def parent_complete(self, success, result):
+    def parent_complete(self, status, result):
         raise ImplError("Job '{kind}' does not implement parent_complete()"
                         .format(kind=type(self).__name__))
 
@@ -562,16 +565,23 @@ class Job():
         #
         self._retry_flag = returncode == RC_FAIL
 
-        # Set the flag to alert Queue that this job skipped.
-        self._skipped_flag = returncode == RC_SKIPPED
-
         if self._retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.spawn()
             return
 
-        success = returncode in (RC_OK, RC_SKIPPED)
-        self.parent_complete(success, self._result)
-        self._scheduler.job_completed(self, success)
+        # Resolve the outward facing overall job completion status
+        #
+        if returncode == RC_OK:
+            status = JobStatus.OK
+        elif returncode == RC_SKIPPED:
+            status = JobStatus.SKIPPED
+        elif returncode in (RC_FAIL, RC_PERM_FAIL):
+            status = JobStatus.FAIL
+        else:
+            status = JobStatus.FAIL
+
+        self.parent_complete(status, self._result)
+        self._scheduler.job_completed(self, status)
 
         # Force the deletion of the queue and process objects to try and clean up FDs
         self._queue = self._process = None

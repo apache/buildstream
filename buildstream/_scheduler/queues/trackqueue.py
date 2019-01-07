@@ -24,6 +24,7 @@ from ...plugin import _plugin_lookup
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
+from ..jobs import JobStatus
 
 
 # A queue which tracks sources
@@ -47,9 +48,9 @@ class TrackQueue(Queue):
 
         return QueueStatus.READY
 
-    def done(self, _, element, result, success):
+    def done(self, _, element, result, status):
 
-        if not success:
+        if status == JobStatus.FAIL:
             return
 
         # Set the new refs in the main process one by one as they complete

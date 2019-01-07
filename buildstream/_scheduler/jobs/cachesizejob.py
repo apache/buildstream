@@ -16,7 +16,7 @@
 #  Author:
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
-from .job import Job
+from .job import Job, JobStatus
 
 
 class CacheSizeJob(Job):
@@ -30,8 +30,8 @@ class CacheSizeJob(Job):
     def child_process(self):
         return self._artifacts.compute_cache_size()
 
-    def parent_complete(self, success, result):
-        if success:
+    def parent_complete(self, status, result):
+        if status == JobStatus.OK:
             self._artifacts.set_cache_size(result)
 
             if self._complete_cb:

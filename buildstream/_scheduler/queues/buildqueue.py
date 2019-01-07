@@ -21,7 +21,7 @@
 from datetime import timedelta
 
 from . import Queue, QueueStatus
-from ..jobs import ElementJob
+from ..jobs import ElementJob, JobStatus
 from ..resources import ResourceType
 from ..._message import MessageType
 
@@ -104,7 +104,7 @@ class BuildQueue(Queue):
         if artifacts.has_quota_exceeded():
             self._scheduler.check_cache_size()
 
-    def done(self, job, element, result, success):
+    def done(self, job, element, result, status):
 
         # Inform element in main process that assembly is done
         element._assemble_done()
@@ -117,5 +117,5 @@ class BuildQueue(Queue):
         #        artifact cache size for a successful build even though we know a
         #        failed build also grows the artifact cache size.
         #
-        if success:
+        if status == JobStatus.OK:
             self._check_cache_size(job, element, result)
