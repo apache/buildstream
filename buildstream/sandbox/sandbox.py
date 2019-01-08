@@ -288,8 +288,8 @@ class Sandbox():
             command = [command]
 
         if self.__batch:
-            if flags != self.__batch.flags:
-                raise SandboxError("Inconsistent sandbox flags in single command batch")
+            assert flags == self.__batch.flags, \
+                "Inconsistent sandbox flags in single command batch"
 
             batch_command = _SandboxBatchCommand(command, cwd=cwd, env=env, label=label)
 
@@ -326,8 +326,8 @@ class Sandbox():
 
         if self.__batch:
             # Nested batch
-            if flags != self.__batch.flags:
-                raise SandboxError("Inconsistent sandbox flags in single command batch")
+            assert flags == self.__batch.flags, \
+                "Inconsistent sandbox flags in single command batch"
 
             parent_group = self.__batch.current_group
             parent_group.append(group)
