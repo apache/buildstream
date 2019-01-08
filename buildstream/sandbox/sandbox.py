@@ -592,7 +592,7 @@ class _SandboxBatch():
         if command.label:
             context = self.sandbox._get_context()
             message = Message(self.sandbox._get_plugin_id(), MessageType.STATUS,
-                              'Running {}'.format(command.label))
+                              'Running command', detail=command.label)
             context.message(message)
 
         exitcode = self.sandbox._run(command.command, self.flags, cwd=command.cwd, env=command.env)
