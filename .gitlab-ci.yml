@@ -13,6 +13,7 @@ variables:
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   TEST_COMMAND: "tox -- --color=yes --integration"
+  COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
 #####################################################
@@ -23,9 +24,6 @@ variables:
 #
 .tests-template: &tests
   stage: test
-
-  variables:
-    COVERAGE_DIR: coverage-linux
 
   before_script:
   # Diagnostics
@@ -40,14 +38,11 @@ variables:
   - su buildstream -c "${TEST_COMMAND}"
 
   after_script:
-  # Collect our reports
-  - mkdir -p ${COVERAGE_DIR}
-  - cp .coverage ${COVERAGE_DIR}/coverage."${CI_JOB_NAME}"
   except:
   - schedules
   artifacts:
     paths:
-    - ${COVERAGE_DIR}
+    - .coverage-reports
 
 tests-debian-9:
   image: buildstream/testsuite-debian:9-5da27168-32c47d1c
@@ -83,7 +78,6 @@ tests-unix:
   <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
-    COVERAGE_DIR: coverage-unix
 
   script:
 
@@ -239,22 +233,22 @@ coverage:
   stage: post
   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
-    - pip3 install -r requirements/requirements.txt -r requirements/dev-requirements.txt
-    - pip3 install --no-index .
-    - mkdir report
-    - cd report
-    - cp ../coverage-unix/coverage.* .
-    - cp ../coverage-linux/coverage.* .
-    - ls coverage.*
-    - coverage combine --rcfile=../.coveragerc -a coverage.*
-    - coverage report --rcfile=../.coveragerc -m
+    - cp -a .coverage-reports/ ./coverage-sources
+    - tox -e coverage
+    - cp -a .coverage-reports/ ./coverage-report
   dependencies:
   - tests-debian-9
   - tests-fedora-27
   - tests-fedora-28
+  - tests-fedora-missing-deps
+  - tests-ubuntu-18.04
   - tests-unix
   except:
   - schedules
+  artifacts:
+    paths:
+    - coverage-sources/
+    - coverage-report/
 
 # Deploy, only for merges which land on master branch.
 #
