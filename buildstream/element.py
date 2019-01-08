@@ -65,7 +65,7 @@ Miscellaneous abstract methods also exist:
 
 * :func:`Element.generate_script() <buildstream.element.Element.generate_script>`
 
-  For the purpose of ``bst source bundle``, an Element may optionally implement this.
+  For the purpose of ``bst source checkout --include-build-scripts``, an Element may optionally implement this.
 
 
 Class Reference
