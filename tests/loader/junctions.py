@@ -39,7 +39,7 @@ def test_simple_build(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
@@ -70,7 +70,7 @@ def test_nested_simple(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected files from all subprojects
@@ -94,7 +94,7 @@ def test_nested_double(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected files from all subprojects
@@ -167,7 +167,7 @@ def test_options_default(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     assert(os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
@@ -184,7 +184,7 @@ def test_options(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     assert(not os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
@@ -201,7 +201,7 @@ def test_options_inherit(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     assert(not os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
@@ -262,7 +262,7 @@ def test_git_build(cli, tmpdir, datafiles):
     # Build (with implicit fetch of subproject), checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
@@ -303,7 +303,7 @@ def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
     # Build (with implicit fetch of subproject), checkout
     result = cli.run(project=project, args=['build', 'base.bst:target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'base.bst:target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'base.bst:target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects

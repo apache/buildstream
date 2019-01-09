@@ -24,7 +24,7 @@ def test_compose_splits(datafiles, cli, target):
 
     # Now check it out
     result = cli.run(project=project, args=[
-        'checkout', target, checkout
+        'artifact', 'checkout', target, '--directory', checkout
     ])
     result.assert_success()
 

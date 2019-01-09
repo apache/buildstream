@@ -655,7 +655,7 @@ def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, gue
 
     # Checkout the result
     result = cli.run(project=project,
-                     args=args_dir + ['checkout'] + args_elm + [checkout])
+                     args=args_dir + ['artifact', 'checkout', '--directory', checkout] + args_elm)
     result.assert_success()
 
     # Check that the pony.conf from the modified workspace exists
@@ -757,7 +757,7 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
 
     # Checkout the result
     result = cli.run(project=project, args=[
-        'checkout', element_name, checkout
+        'artifact', 'checkout', element_name, '--directory', checkout
     ])
     result.assert_success()
 
@@ -1033,7 +1033,7 @@ def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, strict):
 
     # Checkout the result
     result = cli.run(project=project, args=[
-        'checkout', back_dep_element_name, checkout
+        'artifact', 'checkout', back_dep_element_name, '--directory', checkout
     ])
     result.assert_success()
 

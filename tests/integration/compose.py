@@ -97,7 +97,7 @@ def test_compose_include(cli, tmpdir, datafiles, include_domains,
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == 0
 
     assert set(walk_dir(checkout)) == set(expected)

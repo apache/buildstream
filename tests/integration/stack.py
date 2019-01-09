@@ -26,7 +26,7 @@ def test_stack(cli, tmpdir, datafiles):
     res = cli.run(project=project, args=['build', element_name])
     assert res.exit_code == 0
 
-    cli.run(project=project, args=['checkout', element_name, checkout])
+    cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert res.exit_code == 0
 
     with open(os.path.join(checkout, 'hi')) as f:

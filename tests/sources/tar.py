@@ -139,7 +139,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
@@ -168,7 +168,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the full content of the tarball is checked out (base-dir: '')
@@ -197,7 +197,7 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
@@ -233,7 +233,7 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
@@ -262,7 +262,7 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target-lz.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target-lz.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target-lz.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the content of the first directory is checked out (base-dir: '*')
@@ -348,7 +348,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
         result.assert_success()
         result = cli.run(project=project, args=['build', 'target.bst'])
         result.assert_success()
-        result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+        result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
         result.assert_success()
 
         original_dir = os.path.join(str(datafiles), 'content', 'a')

@@ -35,7 +35,7 @@ def test_custom_transform_source(cli, tmpdir, datafiles):
     ])
     destpath = os.path.join(cli.directory, 'checkout')
     result = cli.run(project=project, args=[
-        'checkout', 'target.bst', destpath
+        'artifact', 'checkout', 'target.bst', '--directory', destpath
     ])
     result.assert_success()
     # Assert that files from both sources exist, and that they have

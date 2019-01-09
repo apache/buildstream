@@ -36,7 +36,8 @@ def test_compose_symlinks(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', 'compose-symlinks/compose.bst'])
     result.assert_success()
 
-    result = cli.run(project=project, args=['checkout', 'compose-symlinks/compose.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'compose-symlinks/compose.bst',
+                                            '--directory', checkout])
     result.assert_success()
 
     assert set(walk_dir(checkout)) == set(['/sbin', '/usr', '/usr/sbin',

@@ -608,67 +608,6 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
 
 
 ##################################################################
-#                        Checkout Command                        #
-##################################################################
-@cli.command(short_help="Checkout a built artifact")
-@click.option('--force', '-f', default=False, is_flag=True,
-              help="Allow files to be overwritten")
-@click.option('--deps', '-d', default='run',
-              type=click.Choice(['run', 'build', 'none']),
-              help='The dependencies to checkout (default: run)')
-@click.option('--integrate/--no-integrate', default=True, is_flag=True,
-              help="Whether to run integration commands")
-@click.option('--hardlinks', default=False, is_flag=True,
-              help="Checkout hardlinks instead of copies (handle with care)")
-@click.option('--tar', default=False, is_flag=True,
-              help="Create a tarball from the artifact contents instead "
-                   "of a file tree. If LOCATION is '-', the tarball "
-                   "will be dumped to the standard output.")
-@click.argument('element', required=False,
-                type=click.Path(readable=False))
-@click.argument('location', type=click.Path(), required=False)
-@click.pass_obj
-def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
-    """Checkout a built artifact to the specified location
-    """
-    from ..element import Scope
-
-    if not element and not location:
-        click.echo("ERROR: LOCATION is not specified", err=True)
-        sys.exit(-1)
-
-    if element and not location:
-        # Nasty hack to get around click's optional args
-        location = element
-        element = None
-
-    if hardlinks and tar:
-        click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
-        sys.exit(-1)
-
-    if deps == "run":
-        scope = Scope.RUN
-    elif deps == "build":
-        scope = Scope.BUILD
-    elif deps == "none":
-        scope = Scope.NONE
-
-    with app.initialized():
-        if not element:
-            element = app.context.guess_element()
-            if not element:
-                raise AppError('Missing argument "ELEMENT".')
-
-        app.stream.checkout(element,
-                            location=location,
-                            force=force,
-                            scope=scope,
-                            integrate=integrate,
-                            hardlinks=hardlinks,
-                            tar=tar)
-
-
-##################################################################
 #                        Source Command                          #
 ##################################################################
 @cli.group(short_help="Manipulate sources for an element")
@@ -1215,4 +1154,31 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 @click.pass_obj
 def track(app, elements, deps, except_, cross_junctions):
     click.echo("This command is now obsolete. Use `bst source track` instead.", err=True)
+    sys.exit(1)
+
+
+##################################################################
+#                        Checkout Command                        #
+##################################################################
+@cli.command(short_help="Checkout a built artifact", hidden=True)
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Allow files to be overwritten")
+@click.option('--deps', '-d', default='run',
+              type=click.Choice(['run', 'build', 'none']),
+              help='The dependencies to checkout (default: run)')
+@click.option('--integrate/--no-integrate', default=True, is_flag=True,
+              help="Whether to run integration commands")
+@click.option('--hardlinks', default=False, is_flag=True,
+              help="Checkout hardlinks instead of copies (handle with care)")
+@click.option('--tar', default=False, is_flag=True,
+              help="Create a tarball from the artifact contents instead "
+                   "of a file tree. If LOCATION is '-', the tarball "
+                   "will be dumped to the standard output.")
+@click.argument('element', required=False,
+                type=click.Path(readable=False))
+@click.argument('location', type=click.Path(), required=False)
+@click.pass_obj
+def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
+    click.echo("This command is now obsolete. Use `bst artifact checkout` instead " +
+               "and use the --directory option to specify LOCATION", err=True)
     sys.exit(1)
