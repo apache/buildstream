@@ -167,6 +167,23 @@ class Result():
     def assert_shell_error(self, fail_message=''):
         assert self.exit_code == 1, fail_message
 
+    # get_start_order()
+    #
+    # Gets the list of elements processed in a given queue, in the
+    # order of their first appearances in the session.
+    #
+    # Args:
+    #    activity (str): The queue activity name (like 'fetch')
+    #
+    # Returns:
+    #    (list): A list of element names in the order which they first appeared in the result
+    #
+    def get_start_order(self, activity):
+        results = re.findall(r'\[\s*{}:(\S+)\s*\]\s*START\s*.*\.log'.format(activity), self.stderr)
+        if results is None:
+            return []
+        return list(results)
+
     # get_tracked_elements()
     #
     # Produces a list of element names on which tracking occurred
