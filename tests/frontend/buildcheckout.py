@@ -631,3 +631,67 @@ def test_build_checkout_cross_junction(datafiles, cli, tmpdir):
 
     filename = os.path.join(checkout, 'etc', 'animal.conf')
     assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_checkout_single_artifact(datafiles, cli, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=['build', 'import-bin.bst'])
+    result.assert_success()
+
+    key = cli.get_element_key(project, 'import-bin.bst')
+    artifact = os.path.join('test', 'import-bin', key)  # 'test' is the project's name
+
+    result = cli.run(project=project, args=['artifact', 'checkout', artifact, '--directory', checkout])
+    result.assert_success()
+
+    filename = os.path.join(checkout, 'usr', 'bin', 'hello')
+    assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_checkout_multiple_artifacts(datafiles, cli, tmpdir):
+    # Now let's built and checkout two of the built artifacts
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])  # depends on import-bin and import-dev.bst
+    result.assert_success()
+
+    bin_key = cli.get_element_key(project, 'import-bin.bst')
+    artifact1 = os.path.join('test', 'import-bin', bin_key)  # 'test' is the project's name
+    dev_key = cli.get_element_key(project, 'import-dev.bst')
+    artifact2 = os.path.join('test', 'import-dev', dev_key)
+
+    result = cli.run(project=project, args=['artifact', 'checkout', artifact1, artifact2,
+                                            '--directory', checkout])
+    result.assert_success()
+
+    bin_file = os.path.join(checkout, 'usr', 'bin', 'hello')
+    assert os.path.exists(bin_file)
+    dev_file = os.path.join(checkout, 'usr', 'include', 'pony.h')
+    assert os.path.exists(dev_file)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_checkout_element_and_artifact(datafiles, cli, tmpdir):
+    # Now let's built and checkout two of the built artifacts
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])  # depends on import-bin and import-dev.bst
+    result.assert_success()
+
+    dev_key = cli.get_element_key(project, 'import-dev.bst')
+    artifact = os.path.join('test', 'import-dev', dev_key)
+
+    result = cli.run(project=project, args=['artifact', 'checkout', 'import-bin.bst', artifact,
+                                            '--directory', checkout])
+    result.assert_success()
+
+    bin_file = os.path.join(checkout, 'usr', 'bin', 'hello')
+    assert os.path.exists(bin_file)
+    dev_file = os.path.join(checkout, 'usr', 'include', 'pony.h')
+    assert os.path.exists(dev_file)
