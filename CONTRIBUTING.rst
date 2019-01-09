@@ -1498,6 +1498,13 @@ option when running tox::
 
   tox -e py37
 
+If you would like to test and lint at the same time, or if you do have multiple
+python versions installed and would like to test against multiple versions, then
+we recommend using `detox <https://github.com/tox-dev/detox>`_, just run it with
+the same arguments you would give `tox`::
+
+  detox -e lint,py36,py37
+
 Linting is performed separately from testing. In order to run the linting step which
 consists of running the ``pycodestyle`` and ``pylint`` tools, run the following::
 
@@ -1572,6 +1579,19 @@ can run ``tox`` with ``-r`` or  ``--recreate`` option.
    option::
 
      ./setup.py test --addopts 'tests/frontend/buildtrack.py::test_build_track'
+
+
+Observing coverage
+~~~~~~~~~~~~~~~~~~
+Once you have run the tests using `tox` (or `detox`), some coverage reports will
+have been left behind.
+
+To view the coverage report of the last test run, simply run::
+
+  tox -e coverage
+
+This will collate any reports from separate python environments that may be
+under test before displaying the combined coverage.
 
 
 Adding tests
