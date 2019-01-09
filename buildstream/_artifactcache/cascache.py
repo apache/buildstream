@@ -53,7 +53,7 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
     #
     @staticmethod
     def _new_from_config_node(spec_node, basedir=None):
-        _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance_name'])
+        _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance-name'])
         url = _yaml.node_get(spec_node, str, 'url')
         push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
         if not url:
@@ -61,7 +61,7 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: empty artifact cache URL".format(provenance))
 
-        instance_name = _yaml.node_get(spec_node, str, 'instance_name', default_value=None)
+        instance_name = _yaml.node_get(spec_node, str, 'instance-name', default_value=None)
 
         server_cert = _yaml.node_get(spec_node, str, 'server-cert', default_value=None)
         if server_cert and basedir:
