@@ -23,7 +23,7 @@ def test_first_project_build_checkout(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', 'hello.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'hello.bst', '--directory', checkout])
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/hello.world'])

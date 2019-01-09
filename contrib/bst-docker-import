@@ -90,7 +90,7 @@ element="$1"
 checkout_tar="bst-checkout-$(basename "$element")-$RANDOM.tar"
 
 echo "INFO: Checking out $element ..." >&2
-$bst_cmd checkout --tar "$element" "$checkout_tar" || die "Failed to checkout $element"
+$bst_cmd artifact checkout "$element" --tar "$checkout_tar" || die "Failed to checkout $element"
 echo "INFO: Successfully checked out $element" >&2
 
 echo "INFO: Importing Docker image ..." >&2

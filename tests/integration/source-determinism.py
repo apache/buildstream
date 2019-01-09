@@ -87,7 +87,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_ca
             result = cli.run(project=project, args=['build', element_name])
             result.assert_success()
 
-            result = cli.run(project=project, args=['checkout', element_name, checkoutdir])
+            result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkoutdir])
             result.assert_success()
 
             with open(os.path.join(checkoutdir, 'ls-l'), 'r') as f:
@@ -150,7 +150,7 @@ def test_deterministic_source_local(cli, tmpdir, datafiles, integration_cache):
             result = cli.run(project=project, args=['build', element_name])
             result.assert_success()
 
-            result = cli.run(project=project, args=['checkout', element_name, checkoutdir])
+            result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkoutdir])
             result.assert_success()
 
             with open(os.path.join(checkoutdir, 'ls-l'), 'r') as f:

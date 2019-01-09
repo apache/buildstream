@@ -36,7 +36,7 @@ def test_fetch_checkout(cli, tmpdir, datafiles):
     assert result.exit_code == 0
     result = cli.run(project=project, args=['build', 'target.bst'])
     assert result.exit_code == 0
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     assert result.exit_code == 0
 
     # Assert we checked out the file as it was commited

@@ -77,7 +77,7 @@ def test_stage_file(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected file
@@ -92,7 +92,7 @@ def test_stage_directory(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected file and directory and other file
@@ -117,7 +117,7 @@ def test_stage_symlink(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Check that the checkout contains the expected file and directory and other file

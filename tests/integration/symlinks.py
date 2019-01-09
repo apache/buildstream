@@ -28,7 +28,7 @@ def test_absolute_symlinks_made_relative(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == 0
 
     symlink = os.path.join(checkout, 'opt', 'orgname')
@@ -52,7 +52,7 @@ def test_allow_overlaps_inside_symlink_with_dangling_target(cli, tmpdir, datafil
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == 0
 
     # See the dangling-symlink*.bst elements for details on what we are testing.
@@ -73,6 +73,6 @@ def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, tmpdir, datafiles
     # ...but when we compose them together, the overlaps create paths that
     # point outside the sandbox which BuildStream needs to detect before it
     # tries to actually write there.
-    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == -1
     assert "Destination path resolves to a path outside of the staging area" in result.stderr

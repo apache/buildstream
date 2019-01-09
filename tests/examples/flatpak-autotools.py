@@ -44,7 +44,7 @@ def test_autotools_build(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', 'hello.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'hello.bst', '--directory', checkout])
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/usr', '/usr/lib', '/usr/bin',
