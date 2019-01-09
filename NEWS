@@ -2,6 +2,21 @@
 buildstream 1.3.1
 =================
 
+   o BREAKING CHANGE: Moved `checkout` to the artifact subcommands. `bst checkout` is
+     now obsolete.
+
+     The command is now `bst artifact checkout`. `bst checkout` has been deprecated.
+     This implements the features of `bst checkout`, although the mandatory LOCATION
+     argument should now be specified with the `--directory` option.
+
+     `artifact checkout` can handle both element names and artifact refs, of which it
+     can take multiple.
+
+     `--deps`, `--tar` and `--integrate` options are only supported when passed a
+     single ELEMENT target. In addition to this, `--tar` is no longer a flag, it is
+     a mutually incompatible option to `--directory`. For example,
+     `bst artifact checkout foo.bst --tar foo.tar.gz`.
+
   o Added `bst artifact log` subcommand for viewing build logs.
 
   o BREAKING CHANGE: The bst source-bundle command has been removed. The
