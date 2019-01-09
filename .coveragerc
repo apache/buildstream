@@ -9,6 +9,8 @@ omit =
   # Omit generated code
   */buildstream/_protos/*
   */.eggs/*
+  # Omit .tox directory
+  */.tox/*
 
 [report]
 show_missing = True
