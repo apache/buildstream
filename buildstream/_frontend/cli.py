@@ -944,7 +944,6 @@ def _classify_artifacts(names, cas, project_directory):
     return targets, refs
 
 
-
 @cli.group(short_help="Manipulate cached artifacts")
 def artifact():
     """Manipulate cached artifacts"""
@@ -959,10 +958,9 @@ def artifact():
               help='The dependency artifacts to pull (default: none)')
 @click.option('--remote', '-r',
               help="The URL of the remote cache (defaults to the first configured cache)")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
+@click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
-def artifact_pull(app, elements, deps, remote):
+def artifact_pull(app, artifacts, deps, remote):
     """Pull a built artifact from the configured remote artifact cache.
 
     By default the artifact will be pulled one of the configured caches
@@ -977,12 +975,40 @@ def artifact_pull(app, elements, deps, remote):
     """
 
     with app.initialized(session_name="Pull"):
-        if not elements:
+        cache = app.context.artifactcache
+
+        elements, artifacts = _classify_artifacts(artifacts, cache.cas,
+                                                  app.project.directory)
+
+        # Guess the element if we're in a workspace
+        if not elements and not artifacts:
             guessed_target = app.context.guess_element()
             if guessed_target:
                 elements = (guessed_target,)
 
-        app.stream.pull(elements, selection=deps, remote=remote)
+        if artifacts and deps != 'none':
+            raise AppError("--deps may not be used with artifact refs")
+
+        if elements:
+            app.stream.pull(elements, selection=deps, remote=remote)
+        if artifacts:
+            # Determine all available remotes
+            usr_remotes = app.context.artifact_cache_specs  # list of CASRemoteSpec objects
+
+            project = app.context.get_toplevel_project()  # Should I get all projects here...?
+            project.ensure_fully_loaded()
+            project_remotes = project.artifact_cache_specs  # list of CASRemoteSpec objects
+
+            remotes = usr_remotes + project_remotes
+
+            # Try to pull the artifact from one of the remotes
+            remotes = [cache.create_remote(spec) for spec in remotes]
+            for ref in artifacts:
+                if cache.contains_ref(ref):
+                    continue
+                for remote in remotes:
+                    if cache.pull_ref(ref, remote):
+                        break
 
 
 ##################################################################
@@ -994,10 +1020,9 @@ def artifact_pull(app, elements, deps, remote):
               help='The dependencies to push (default: none)')
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
+@click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
-def artifact_push(app, elements, deps, remote):
+def artifact_push(app, artifacts, deps, remote):
     """Push a built artifact to a remote artifact cache.
 
     The default destination is the highest priority configured cache. You can
@@ -1014,12 +1039,28 @@ def artifact_push(app, elements, deps, remote):
         all:   All dependencies
     """
     with app.initialized(session_name="Push"):
+        cache = app.context.artifactcache
+
+        elements, artifacts = _classify_artifacts(artifacts, cache.cas,
+                                                  app.project.directory)
+
+        # Guess the element if we're in a workspace
         if not elements:
             guessed_target = app.context.guess_element()
             if guessed_target:
                 elements = (guessed_target,)
 
-        app.stream.push(elements, selection=deps, remote=remote)
+        if artifacts and deps != 'none':
+            raise AppError("--deps may not be used with artifact refs")
+
+        if elements:
+            app.stream.push(elements, selection=deps, remote=remote)
+        # FIXME: We can only obtain project/user config through the stream API,
+        # which we need to determine the remote in order for pull to pull from.
+        # We can't just go straight to artifactcache here. Thus Stream.Pull()
+        # will fail because it expects a list of element names (.bst).
+        if artifacts:
+            app.stream.push(artifacts, selection='none', remote=remote)
 
 
 ################################################################
