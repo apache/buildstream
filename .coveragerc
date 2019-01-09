@@ -4,8 +4,10 @@ include =
   */buildstream/*
 
 omit =
-  # Omit profiling helper module
+  # Omit some internals
   */buildstream/_profile.py
+  */buildstream/__main__.py
+  */buildstream/_version.py
   # Omit generated code
   */buildstream/_protos/*
   */.eggs/*
