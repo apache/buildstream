@@ -34,6 +34,7 @@ from ._artifactcache import ArtifactCache
 from ._artifactcache.cascache import CASCache
 from ._workspaces import Workspaces, WorkspaceProjectCache, WORKSPACE_PROJECT_FILE
 from .plugin import _plugin_lookup
+from .sandbox import SandboxRemote
 
 
 # Context()
@@ -71,6 +72,9 @@ class Context():
 
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = None
+
+        # The global remote execution configuration
+        self.remote_execution_specs = None
 
         # The directory to store build logs
         self.logdir = None
@@ -187,7 +191,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt', 'workspacedir',
+            'cache', 'prompt', 'workspacedir', 'remote-execution'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
@@ -211,6 +215,8 @@ class Context():
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
+
+        self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
 
         # Load pull build trees configuration
         self.pull_buildtrees = _yaml.node_get(cache, bool, 'pull-buildtrees')
@@ -271,7 +277,8 @@ class Context():
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
         for _, overrides in _yaml.node_items(self._project_overrides):
-            _yaml.node_validate(overrides, ['artifacts', 'options', 'strict', 'default-mirror'])
+            _yaml.node_validate(overrides, ['artifacts', 'options', 'strict', 'default-mirror',
+                                            'remote-execution'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 
