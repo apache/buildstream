@@ -164,6 +164,25 @@ class Plugin():
        core format version :ref:`core format version <project_format_version>`.
     """
 
+    BST_PLUGIN_DEPRECATED = False
+    """True if this element plugin has been deprecated.
+
+    If this is set to true, BuildStream will emmit a deprecation
+    warning when this plugin is loaded. This deprecation warning may
+    be suppressed on a plugin by plugin basis by setting
+    ``suppress-deprecation-warnings: true`` in the relevent section of
+    the project's :ref:`plugin configuration overrides <project_overrides>`.
+
+    """
+
+    BST_PLUGIN_DEPRECATION_MESSAGE = ""
+    """ The message printed when this element shows a deprecation warning.
+
+    This should be set if BST_PLUGIN_DEPRECATED is True and should direct the user
+    to the deprecated plug-in's replacement.
+
+    """
+
     def __init__(self, name, context, project, provenance, type_tag):
 
         self.name = name
@@ -187,6 +206,12 @@ class Plugin():
         modulename = type(self).__module__
         self.__kind = modulename.split('.')[-1]
         self.debug("Created: {}".format(self))
+
+        # If this plugin has been deprecated, emit a warning.
+        if self.BST_PLUGIN_DEPRECATED and not self.__deprecation_warning_silenced():
+            detail = "Using deprecated plugin {}: {}".format(self.__kind,
+                                                             self.BST_PLUGIN_DEPRECATION_MESSAGE)
+            self.__message(MessageType.WARN, detail)
 
     def __del__(self):
         # Dont send anything through the Message() pipeline at destruction time,
@@ -766,6 +791,20 @@ class Plugin():
             return '{}:{}'.format(project.junction.name, self.name)
         else:
             return self.name
+
+    def __deprecation_warning_silenced(self):
+        if not self.BST_PLUGIN_DEPRECATED:
+            return False
+        else:
+            silenced_warnings = set()
+            project = self.__project
+            plugin_overrides = {**project.element_overrides, **project.source_overrides}
+
+            for key, value in self.node_items(plugin_overrides):
+                if value.get('suppress-deprecation-warnings', False):
+                    silenced_warnings.add(key)
+
+            return self.get_kind() in silenced_warnings
 
 
 # Hold on to a lookup table by counter of all instantiated plugins.
