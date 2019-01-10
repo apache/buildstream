@@ -101,19 +101,22 @@ class Stream():
     #    targets (list of str): Targets to pull
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
+    #    use_artifact_config (bool): If artifact remote config should be loaded
     #
     # Returns:
     #    (list of Element): The selected elements
     def load_selection(self, targets, *,
                        selection=PipelineSelection.NONE,
-                       except_targets=()):
+                       except_targets=(),
+                       use_artifact_config=False):
 
         profile_start(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
 
         elements, _ = self._load(targets, (),
                                  selection=selection,
                                  except_targets=except_targets,
-                                 fetch_subprojects=False)
+                                 fetch_subprojects=False
+                                 use_artifact_config=use_artifact_config)
 
         profile_end(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
 
