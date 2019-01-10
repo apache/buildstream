@@ -22,6 +22,7 @@
 import os
 import itertools
 from operator import itemgetter
+from collections import OrderedDict
 
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
@@ -479,7 +480,7 @@ class Pipeline():
 #
 class _Planner():
     def __init__(self):
-        self.depth_map = {}
+        self.depth_map = OrderedDict()
         self.visiting_elements = set()
 
     # Here we want to traverse the same element more than once when
