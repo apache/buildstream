@@ -553,7 +553,7 @@ One problem which arises from this is that we end up having symbols
 which are *public* according to the :ref:`rules discussed in the previous section
 <contributing_public_and_private>`, but must be hidden away from the
 *"Public API Surface"*. For example, BuildStream internal classes need
-to invoke methods on the ``Element`` and ``Source`` classes, wheras these
+to invoke methods on the ``Element`` and ``Source`` classes, whereas these
 methods need to be hidden from the *"Public API Surface"*.
 
 This is where BuildStream deviates from the PEP-8 standard for public
@@ -631,7 +631,7 @@ An element plugin will derive from Element by importing::
 
   from buildstream import Element
 
-When importing utilities specifically, dont import function names
+When importing utilities specifically, don't import function names
 from there, instead import the module itself::
 
   from . import utils
@@ -737,7 +737,7 @@ Abstract methods
 ~~~~~~~~~~~~~~~~
 In BuildStream, an *"Abstract Method"* is a bit of a misnomer and does
 not match up to how Python defines abstract methods, we need to seek out
-a new nomanclature to refer to these methods.
+a new nomenclature to refer to these methods.
 
 In Python, an *"Abstract Method"* is a method which **must** be
 implemented by a subclass, whereas all methods in Python can be
@@ -960,7 +960,7 @@ possible, and avoid any cyclic relationships in modules.
 For instance, the ``Source`` objects are owned by ``Element``
 objects in the BuildStream data model, and as such the ``Element``
 will delegate some activities to the ``Source`` objects in its
-possesion. The ``Source`` objects should however never call functions
+possession. The ``Source`` objects should however never call functions
 on the ``Element`` object, nor should the ``Source`` object itself
 have any understanding of what an ``Element`` is.
 
@@ -1223,7 +1223,7 @@ For further information about using the reStructuredText with sphinx, please see
 Building Docs
 ~~~~~~~~~~~~~
 Before you can build the docs, you will end to ensure that you have installed
-the required :ref:`buid dependencies <contributing_build_deps>` as mentioned
+the required :ref:`build dependencies <contributing_build_deps>` as mentioned
 in the testing section above.
 
 To build the documentation, just run the following::
@@ -1365,7 +1365,7 @@ Structure of an example
 '''''''''''''''''''''''
 The :ref:`tutorial <tutorial>` and the :ref:`examples <examples>` sections
 of the documentation contain a series of sample projects, each chapter in
-the tutoral, or standalone example uses a sample project.
+the tutorial, or standalone example uses a sample project.
 
 Here is the the structure for adding new examples and tutorial chapters.
 
@@ -1471,8 +1471,8 @@ Installing build dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Some of BuildStream's dependencies have non-python build dependencies. When
 running tests with ``tox``, you will first need to install these dependencies.
-Exact steps to install these will depend on your oprtation systemm. Commands
-for installing them for some common distributions are lised below.
+Exact steps to install these will depend on your operating system. Commands
+for installing them for some common distributions are listed below.
 
 For Fedora-based systems::
 
@@ -1540,7 +1540,7 @@ the frontend tests you can do::
 
   tox -- tests/frontend/
 
-Specific tests can be chosen by using the :: delimeter after the test module.
+Specific tests can be chosen by using the :: delimiter after the test module.
 If you wanted to run the test_build_track test within frontend/buildtrack.py you could do::
 
   tox -- tests/frontend/buildtrack.py::test_build_track
@@ -1560,7 +1560,7 @@ can run ``tox`` with ``-r`` or  ``--recreate`` option.
 .. note::
 
    By default, we do not allow use of site packages in our ``tox``
-   confguration to enable running the tests in an isolated environment.
+   configuration to enable running the tests in an isolated environment.
    If you need to enable use of site packages for whatever reason, you can
    do so by passing the ``--sitepackages`` option to ``tox``. Also, you will
    not need to install any of the build dependencies mentioned above if you
@@ -1597,7 +1597,7 @@ under test before displaying the combined coverage.
 Adding tests
 ~~~~~~~~~~~~
 Tests are found in the tests subdirectory, inside of which
-there is a separarate directory for each *domain* of tests.
+there is a separate directory for each *domain* of tests.
 All tests are collected as::
 
   tests/*/*.py
