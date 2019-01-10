@@ -75,3 +75,47 @@ def test_unsupported_arch(cli, datafiles):
         ])
 
         result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_alias(cli, datafiles):
+
+    with override_uname_arch("arm"):
+        project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch-alias')
+        result = cli.run(project=project, silent=True, args=[
+            'show',
+            '--deps', 'none',
+            '--format', '%{vars}',
+            'element.bst'
+        ])
+
+        result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_unknown_host_arch(cli, datafiles):
+
+    with override_uname_arch("x86_128"):
+        project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
+        result = cli.run(project=project, silent=True, args=[
+            'show',
+            '--deps', 'none',
+            '--format', '%{vars}',
+            'element.bst'
+        ])
+
+        result.assert_main_error(ErrorDomain.PLATFORM, None)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_unknown_project_arch(cli, datafiles):
+
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch-unknown')
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{vars}',
+        'element.bst'
+    ])
+
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

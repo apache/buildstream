@@ -17,6 +17,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from .. import _yaml
+from .._exceptions import LoadError, LoadErrorReason, PlatformError
 from .._platform import Platform
 from .optionenum import OptionEnum
 
@@ -41,7 +43,34 @@ class OptionArch(OptionEnum):
         super(OptionArch, self).load(node, allow_default_definition=False)
 
     def load_default_value(self, node):
-        return Platform.get_host_arch()
+        arch = Platform.get_host_arch()
+
+        default_value = None
+
+        for index, value in enumerate(self.values):
+            try:
+                canonical_value = Platform.canonicalize_arch(value)
+                if default_value is None and canonical_value == arch:
+                    default_value = value
+                    # Do not terminate the loop early to ensure we validate
+                    # all values in the list.
+            except PlatformError as e:
+                provenance = _yaml.node_get_provenance(node, key='values', indices=[index])
+                prefix = ""
+                if provenance:
+                    prefix = "{}: ".format(provenance)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}Invalid value for {} option '{}': {}"
+                                .format(prefix, self.OPTION_TYPE, self.name, e))
+
+        if default_value is None:
+            # Host architecture is not supported by the project.
+            # Do not raise an error here as the user may override it.
+            # If the user does not override it, an error will be raised
+            # by resolve()/validate().
+            default_value = arch
+
+        return default_value
 
     def resolve(self):
 
