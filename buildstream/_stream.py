@@ -115,7 +115,7 @@ class Stream():
         elements, _ = self._load(targets, (),
                                  selection=selection,
                                  except_targets=except_targets,
-                                 fetch_subprojects=False
+                                 fetch_subprojects=False,
                                  use_artifact_config=use_artifact_config)
 
         profile_end(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
@@ -134,7 +134,7 @@ class Stream():
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
-    #    usebuildtree (bool): Wheather to use a buildtree as the source.
+    #    usebuildtree (str): Whether to use a buildtree as the source, given cli option
     #
     # Returns:
     #    (int): The exit code of the launched shell
@@ -144,7 +144,7 @@ class Stream():
               mounts=None,
               isolate=False,
               command=None,
-              usebuildtree=False):
+              usebuildtree=None):
 
         # Assert we have everything we need built, unless the directory is specified
         # in which case we just blindly trust the directory, using the element
@@ -159,8 +159,31 @@ class Stream():
                 raise StreamError("Elements need to be built or downloaded before staging a shell environment",
                                   detail="\n".join(missing_deps))
 
+        buildtree = False
+        # Check if we require a pull queue attempt, with given artifact state and context
+        if usebuildtree:
+            if not element._cached_buildtree():
+                require_buildtree = self._buildtree_pull_required([element])
+                # Attempt a pull queue for the given element if remote and context allow it
+                if require_buildtree:
+                    self._message(MessageType.INFO, "Attempting to fetch missing artifact buildtree")
+                    self._add_queue(PullQueue(self._scheduler))
+                    self._enqueue_plan(require_buildtree)
+                    self._run()
+                    # Now check if the buildtree was successfully fetched
+                    if element._cached_buildtree():
+                        buildtree = True
+                if not buildtree:
+                    if usebuildtree == "always":
+                        raise StreamError("Buildtree is not cached locally or in available remotes")
+                    else:
+                        self._message(MessageType.INFO, """Buildtree is not cached locally or in available remotes,
+                                                        shell will be loaded without it""")
+            else:
+                buildtree = True
+
         return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command,
-                              usebuildtree=usebuildtree)
+                              usebuildtree=buildtree)
 
     # build()
     #
