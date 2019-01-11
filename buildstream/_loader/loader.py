@@ -31,8 +31,9 @@ from ..element import Element
 from .._profile import Topics, profile_start, profile_end
 from .._includes import Includes
 from .._yamlcache import YamlCache
+from ..dependency_loader import Dependency
 
-from .types import Symbol, Dependency
+from .types import Symbol
 from .loadelement import LoadElement
 from . import MetaElement
 from . import MetaSource
@@ -269,6 +270,13 @@ class Loader():
             self._options.process_node(node)
 
         element = LoadElement(node, filename, self)
+
+        if kind != "junction":
+            config = _yaml.node_get(node, Mapping, Symbol.CONFIG, default_value={})
+            dependency_loader = self.project.get_dependency_loader(kind)
+
+            if dependency_loader is not None:
+                element.deps.extend(dependency_loader._get_dependencies(config))
 
         self._elements[filename] = element
 

@@ -137,6 +137,8 @@ class Project():
         self._sandbox = None
         self._splits = None
 
+        self.__dependency_loaders = {}
+
         self._context.add_project(self)
 
         self._partially_loaded = False
@@ -268,6 +270,22 @@ class Project():
             return self.first_pass_config.source_factory.create(self._context, self, meta)
         else:
             return self.config.source_factory.create(self._context, self, meta)
+
+    # get_dependency_loader()
+    #
+    # Get an instance of dependency loader for the requested kind
+    #
+    # Args:
+    #    kind (str): The requested kind
+    #
+    # Returns:
+    #    (DependencyLoader): An instance of the dependency loader for
+    #          the requested kind or None if not available.
+    def get_dependency_loader(self, kind):
+        if kind not in self.__dependency_loaders:
+            loader = self.config.element_factory.get_dependency_loader(self._context, self, kind)
+            self.__dependency_loaders[kind] = loader
+        return self.__dependency_loaders[kind]
 
     # get_alias_uri()
     #

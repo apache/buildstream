@@ -20,3 +20,4 @@ useful for working on BuildStream itself.
    buildstream.scriptelement
    buildstream.sandbox.sandbox
    buildstream.utils
+   buildstream.dependency_loader

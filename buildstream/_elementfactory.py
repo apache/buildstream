@@ -20,6 +20,7 @@
 from . import _site
 from ._plugincontext import PluginContext
 from .element import Element
+from ._exceptions import PluginError
 
 
 # A ElementFactory creates Element instances
@@ -61,3 +62,26 @@ class ElementFactory(PluginContext):
         version = self._format_versions.get(meta.kind, 0)
         self._assert_plugin_format(element, version)
         return element
+
+    # get_dependency_loader()
+    #
+    # Get the dependency loader for an Element plugin
+    #
+    # Args:
+    #    context (object): The Context object for processing
+    #    project (object): The project object
+    #    kind (str): The kind of the Element plugin
+    #
+    # Returns:
+    #    (DependencyLoader): An instance of the dependency loader for
+    #          the requested kind or None if not available.
+
+    def get_dependency_loader(self, context, project, kind):
+        try:
+            element_type, default_config = self.lookup(kind)
+        except PluginError:
+            return None
+
+        if not hasattr(element_type, 'DEPENDENCY_LOADER'):
+            return None
+        return element_type.DEPENDENCY_LOADER(kind, context, project, default_config)

@@ -23,9 +23,10 @@ from collections.abc import Mapping
 # BuildStream toplevel imports
 from .._exceptions import LoadError, LoadErrorReason
 from .. import _yaml
+from ..dependency_loader import Dependency
 
 # Local package imports
-from .types import Symbol, Dependency
+from .types import Symbol
 
 
 # LoadElement():

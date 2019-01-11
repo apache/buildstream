@@ -41,24 +41,3 @@ class Symbol():
     DIRECTORY = "directory"
     JUNCTION = "junction"
     SANDBOX = "sandbox"
-
-
-# Dependency()
-#
-# A simple object describing a dependency
-#
-# Args:
-#    name (str): The element name
-#    dep_type (str): The type of dependency, can be
-#                    Symbol.ALL, Symbol.BUILD, or Symbol.RUNTIME
-#    junction (str): The element name of the junction, or None
-#    provenance (Provenance): The YAML node provenance of where this
-#                             dependency was declared
-#
-class Dependency():
-    def __init__(self, name,
-                 dep_type=None, junction=None, provenance=None):
-        self.name = name
-        self.dep_type = dep_type
-        self.junction = junction
-        self.provenance = provenance
