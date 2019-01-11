@@ -1101,13 +1101,19 @@ def artifact_delete(app, artifacts):
             if element is not None:
                 elements = [element]
 
+        # Remove specified elements and artifacts
         if elements:
             elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
             for element in elements:
-                cache.remove(cache.get_artifact_fullname(element, element._get_cache_key()))
+                cache_key = element._get_cache_key()
+                ref = cache.get_artifact_fullname(element, cache_key)
+                cache.remove(ref, defer_prune=True)
         if artifacts:
-            for i, ref in enumerate(artifacts, start=1):
-                cache.cas.remove(ref, defer_prune=(i != len(artifacts)))
+            for ref in artifacts:
+                cache.remove(ref, defer_prune=True)
+
+        # Now we've removed all the refs, prune the unreachable objects
+        cache.prune()
 
 
 ##################################################################
