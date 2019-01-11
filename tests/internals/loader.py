@@ -2,13 +2,26 @@ import os
 import pytest
 
 from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._context import Context
+from buildstream._project import Project
 from buildstream._loader import Loader, MetaElement
-from . import make_loader
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
-    'basics',
+    'loader',
 )
+
+
+def dummy_handler(message, context):
+    pass
+
+
+def make_loader(basedir):
+    context = Context()
+    context.load(config=os.devnull)
+    context.set_message_handler(dummy_handler)
+    project = Project(basedir, context)
+    return project.loader
 
 
 ##############################################################
