@@ -1534,6 +1534,10 @@ You can always abort on the first failure by running::
 
   tox -- -x
 
+Similarly, you may also be interested in the ``--last-failed`` and
+``--failed-first`` options as per the
+`pytest cache <https://docs.pytest.org/en/latest/cache.html>`_ documentation.
+
 If you want to run a specific test or a group of tests, you
 can specify a prefix to match. E.g. if you want to run all of
 the frontend tests you can do::
@@ -1544,6 +1548,12 @@ Specific tests can be chosen by using the :: delimiter after the test module.
 If you wanted to run the test_build_track test within frontend/buildtrack.py you could do::
 
   tox -- tests/frontend/buildtrack.py::test_build_track
+
+When running only a few tests, you may find the coverage and timing output
+excessive, there are options to trim them. Note that coverage step will fail.
+Here is an example::
+
+  tox -- --no-cov --durations=1 tests/frontend/buildtrack.py::test_build_track
 
 We also have a set of slow integration tests that are disabled by
 default - you will notice most of them marked with SKIP in the pytest
