@@ -1107,10 +1107,29 @@ def artifact_delete(app, artifacts):
             for element in elements:
                 cache_key = element._get_cache_key()
                 ref = cache.get_artifact_fullname(element, cache_key)
-                cache.remove(ref, defer_prune=True)
+                if cache.contains(element, cache_key):
+                    cache.remove(ref, defer_prune=True)
+                    click.echo("Removed {}.".format(ref))
+                else:
+                    # If the ref is not present when we try to delete it, we should
+                    # not fail but just continue to delete. The pruning will take care
+                    # of any unreachable objects.
+                    click.echo("WARNING: {}, not found in local cache - no delete required"
+                               .format(ref), err=True)
+                    continue
+
         if artifacts:
             for ref in artifacts:
-                cache.remove(ref, defer_prune=True)
+                if cache.contains_ref(ref):
+                    cache.remove(ref, defer_prune=True)
+                    click.echo("Removed {}.".format(ref))
+                else:
+                    # If the ref is not present when we try to delete it, we should
+                    # not fail but just continue to delete. The pruning will take care
+                    # of any unreachable objects.
+                    click.echo("WARNING: {}, not found in local cache - no delete required"
+                               .format(ref), err=True)
+                    continue
 
         # Now we've removed all the refs, prune the unreachable objects
         cache.prune()

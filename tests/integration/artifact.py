@@ -153,3 +153,30 @@ def test_artifact_delete_element_and_artifact(cli, tmpdir, datafiles):
 
     # Check that the dependency ELEMENT is no longer cached
     assert cli.get_element_state(project, dep) != 'cached'
+
+
+# Test that we receive the appropriate stderr when we try to delete an artifact
+# that is not present in the cache.
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_delete_unbuilt_artifact(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element = 'integration.bst'
+
+    # Configure a local cache
+    local_cache = os.path.join(str(tmpdir), 'artifacts')
+    cli.configure({'artifactdir': local_cache})
+
+    # Ensure the element is not cached
+    assert cli.get_element_state(project, element) != 'cached'
+
+    # Obtain the artifact ref
+    cache_key = cli.get_element_key(project, element)
+    artifact = os.path.join('test', os.path.splitext(element)[0], cache_key)
+
+    # Try deleting the uncached artifact
+    result = cli.run(project=project, args=['artifact', 'delete', artifact])
+    result.assert_success()
+
+    expected_err = 'WARNING: {}, not found in local cache - no delete required\n'.format(artifact)
+    assert result.stderr == expected_err
