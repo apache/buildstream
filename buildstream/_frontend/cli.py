@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 
 import click
 from .. import _yaml
+from ..types import _KeyStrength
 from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
@@ -1105,18 +1106,20 @@ def artifact_delete(app, artifacts):
         if elements:
             elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
             for element in elements:
-                cache_key = element._get_cache_key()
-                ref = cache.get_artifact_fullname(element, cache_key)
-                if cache.contains(element, cache_key):
-                    cache.remove(ref, defer_prune=True)
-                    click.echo("Removed {}.".format(ref))
-                else:
-                    # If the ref is not present when we try to delete it, we should
-                    # not fail but just continue to delete. The pruning will take care
-                    # of any unreachable objects.
-                    click.echo("WARNING: {}, not found in local cache - no delete required"
-                               .format(ref), err=True)
-                    continue
+                cache_keys = set([element._get_cache_key(),
+                                  element._get_cache_key(strength=_KeyStrength.WEAK)])
+                for cache_key in cache_keys:
+                    ref = cache.get_artifact_fullname(element, cache_key)
+                    if cache.contains(element, cache_key):
+                        cache.remove(ref, defer_prune=True)
+                        click.echo("Removed {}.".format(ref))
+                    else:
+                        # If the ref is not present when we try to delete it, we should
+                        # not fail but just continue to delete. The pruning will take care
+                        # of any unreachable objects.
+                        click.echo("WARNING: {}, not found in local cache - no delete required"
+                                   .format(ref), err=True)
+                        continue
 
         if artifacts:
             for ref in artifacts:
