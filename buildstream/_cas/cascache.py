@@ -791,16 +791,20 @@ class CASCache():
     def _reachable_refs_dir(self, reachable, tree, update_mtime=False):
         if tree.hash in reachable:
             return
+        try:
+            if update_mtime:
+                os.utime(self.objpath(tree))
 
-        if update_mtime:
-            os.utime(self.objpath(tree))
+            reachable.add(tree.hash)
 
-        reachable.add(tree.hash)
+            directory = remote_execution_pb2.Directory()
 
-        directory = remote_execution_pb2.Directory()
+            with open(self.objpath(tree), 'rb') as f:
+                directory.ParseFromString(f.read())
 
-        with open(self.objpath(tree), 'rb') as f:
-            directory.ParseFromString(f.read())
+        except FileNotFoundError:
+            # Just exit early if the file doesn't exist
+            return
 
         for filenode in directory.files:
             if update_mtime:
