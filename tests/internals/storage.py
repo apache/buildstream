@@ -9,7 +9,7 @@ from buildstream.storage._filebaseddirectory import FileBasedDirectory
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
-    "storage-test"
+    "storage"
 )
 
 
