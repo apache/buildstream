@@ -156,6 +156,38 @@ def test_project_plugin_load_forbidden(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_project_plugin_no_load_ref(cli, datafiles, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename, 'plugin-no-load-ref')
+
+    # Generate project with access to the noloadref plugin and project.refs enabled
+    #
+    config = {
+        'name': 'test',
+        'ref-storage': ref_storage,
+        'plugins': [
+            {
+                'origin': 'local',
+                'path': 'plugins',
+                'sources': {
+                    'noloadref': 0
+                }
+            }
+        ]
+    }
+    _yaml.dump(config, os.path.join(project, 'project.conf'))
+
+    result = cli.run(project=project, silent=True, args=['show', 'noloadref.bst'])
+
+    # There is no error if project.refs is not in use, otherwise we
+    # assert our graceful failure
+    if ref_storage == 'inline':
+        result.assert_success()
+    else:
+        result.assert_main_error(ErrorDomain.SOURCE, 'unsupported-load-ref')
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_project_conf_duplicate_plugins(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, 'duplicate-plugins')
     result = cli.run(project=project, silent=True, args=[
