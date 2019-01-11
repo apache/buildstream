@@ -841,11 +841,6 @@ def workspace_close(app, remove_dir, all_, elements):
         if nonexisting:
             raise AppError("Workspace does not exist", detail="\n".join(nonexisting))
 
-        if app.interactive and remove_dir and app.context.prompt_workspace_close_remove_dir:
-            if not click.confirm('This will remove all your changes, are you sure?'):
-                click.echo('Aborting', err=True)
-                sys.exit(-1)
-
         for element_name in elements:
             app.stream.workspace_close(element_name, remove_dir=remove_dir)
 
@@ -878,11 +873,6 @@ def workspace_reset(app, soft, track_, all_, elements):
 
         if all_ and not app.stream.workspace_exists():
             raise AppError("No open workspaces to reset")
-
-        if app.interactive and not soft and app.context.prompt_workspace_reset_hard:
-            if not click.confirm('This will remove all your changes, are you sure?'):
-                click.echo('Aborting', err=True)
-                sys.exit(-1)
 
         if all_:
             elements = tuple(element_name for element_name, _ in app.context.get_workspaces().list())
