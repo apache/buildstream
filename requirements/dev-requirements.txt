@@ -2,7 +2,7 @@ coverage==4.4
 pylint==2.2.2
 pycodestyle==2.4.0
 pytest==4.0.2
-pytest-cov==2.6.0
+pytest-cov==2.6.1
 pytest-datafiles==2.0
 pytest-env==0.6.2
 pytest-xdist==1.25.0
