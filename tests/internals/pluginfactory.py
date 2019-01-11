@@ -8,7 +8,7 @@ from buildstream._exceptions import PluginError
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
-    'basics',
+    'pluginfactory',
 )
 
 
