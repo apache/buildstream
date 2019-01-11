@@ -180,3 +180,43 @@ def test_artifact_delete_unbuilt_artifact(cli, tmpdir, datafiles):
 
     expected_err = 'WARNING: {}, not found in local cache - no delete required\n'.format(artifact)
     assert result.stderr == expected_err
+
+
+# Test that an artifact pulled from it's remote cache (without it's buildtree) will not
+# throw an Exception when trying to prune the cache.
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_artifact_delete_pulled_artifact_without_buildtree(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element = 'autotools/amhello.bst'
+
+    # Set up remote and local shares
+    local_cache = os.path.join(str(tmpdir), 'artifacts')
+    with create_artifact_share(os.path.join(str(tmpdir), 'remote')) as remote:
+        cli.configure({
+            'artifacts': {'url': remote.repo, 'push': True},
+            'artifactdir': local_cache,
+        })
+
+        # Build the element
+        result = cli.run(project=project, args=['build', element])
+        result.assert_success()
+
+        # Make sure it's in the share
+        cache_key = cli.get_element_key(project, element)
+        assert remote.has_artifact('test', element, cache_key)
+
+        # Delete and then pull the artifact (without its buildtree)
+        result = cli.run(project=project, args=['artifact', 'delete', element])
+        result.assert_success()
+        assert cli.get_element_state(project, element) != 'cached'
+        result = cli.run(project=project, args=['pull', element])
+        result.assert_success()
+        assert cli.get_element_state(project, element) == 'cached'
+
+        # Now delete it again (it should have been pulled without the buildtree, but
+        # a digest of the buildtree is pointed to in the artifact's metadata
+        result = cli.run(project=project, args=['artifact', 'delete', element])
+        result.assert_success()
+        assert cli.get_element_state(project, element) != 'cached'

@@ -740,6 +740,9 @@ class CASCache():
         if tree.hash in reachable:
             return
 
+        if not os.path.exists(self.objpath(tree)):
+            return
+
         if update_mtime:
             os.utime(self.objpath(tree))
 
