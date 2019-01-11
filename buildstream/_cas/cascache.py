@@ -543,7 +543,6 @@ class CASCache():
     #               Bytes, or None if defer_prune is True
     #
     def remove(self, ref, *, defer_prune=False):
-
         # Remove cache ref
         refpath = self._refpath(ref)
         if not os.path.exists(refpath):

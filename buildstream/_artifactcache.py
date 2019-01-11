@@ -462,8 +462,7 @@ class ArtifactCache():
     #    (int|None) The amount of space pruned from the repository in
     #               Bytes, or None if defer_prune is True
     #
-    def remove(self, ref):
-
+    def remove(self, ref, *, defer_prune=False):
         # Remove extract if not used by other ref
         tree = self.cas.resolve_ref(ref)
         ref_name, ref_hash = os.path.split(ref)
@@ -482,7 +481,21 @@ class ArtifactCache():
             if remove_extract:
                 utils._force_rmtree(extract)
 
-        return self.cas.remove(ref)
+        return self.cas.remove(ref, defer_prune=defer_prune)
+
+    # prune():
+    #
+    # Prunes the artifact cache of objects which are unreachable from
+    # the repo
+    #
+    # Args:
+    #     None
+    #
+    # Returns:
+    #    (int) The amount of space pruned from the repository in bytes
+    #
+    def prune(self):
+        return self.cas.prune()
 
     # extract():
     #
