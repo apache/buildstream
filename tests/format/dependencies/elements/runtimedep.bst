@@ -1,5 +1,5 @@
-kind: pony
+kind: manual
 description: This element has a runtime-only dependency
 depends:
-  - filename: elements/firstdep.bst
+  - filename: firstdep.bst
     type: runtime

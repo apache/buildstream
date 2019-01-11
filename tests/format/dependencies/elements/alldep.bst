@@ -1,5 +1,5 @@
-kind: pony
+kind: manual
 description: This element has a dependency with type 'all'
 depends:
-  - filename: elements/firstdep.bst
+  - filename: firstdep.bst
     type: all

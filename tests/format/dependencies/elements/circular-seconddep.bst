@@ -1,4 +1,4 @@
-kind: pony
+kind: manual
 description: Depend on the target, creating a circular dependency
 depends:
-- elements/circulartarget.bst
+- circulartarget.bst

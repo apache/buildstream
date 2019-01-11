@@ -1,4 +1,4 @@
-kind: shareddep
+kind: stack
 description: This is the first dependency
 depends:
-- elements/firstdep.bst
+- firstdep.bst

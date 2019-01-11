@@ -1,4 +1,5 @@
-kind: pony
+kind: stack
 description: This is the main target
 depends:
-- filename: elements/firstdep.bst
+- firstdep.bst
+- shareddep.bst
