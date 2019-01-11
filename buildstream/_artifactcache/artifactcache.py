@@ -424,18 +424,30 @@ class ArtifactCache():
 
     # contains():
     #
-    # Check whether the artifact for the specified Element is already available
-    # in the local artifact cache.
+    # Check whether the (project state) artifact of the specified Element is
+    # already available in the local artifact cache.
     #
     # Args:
     #     element (Element): The Element to check
     #     key (str): The cache key to use
     #
-    # Returns: True if the artifact is in the cache, False otherwise
+    # Returns: True if the Element's (project state) artifact  is in the cache,
+    # False otherwise
     #
     def contains(self, element, key):
         ref = self.get_artifact_fullname(element, key)
+        return self.contains_ref(ref)
 
+    # contains_ref():
+    #
+    # Check whether an artifact is already available in the local artifact cache.
+    #
+    # Args:
+    #     ref (str): The ref to check
+    #
+    # Returns: True if the artifact is in the cache, False otherwise
+    #
+    def contains_ref(self, ref):
         return self.cas.contains(ref)
 
     # contains_subdir_artifact():
