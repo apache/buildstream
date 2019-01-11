@@ -1,5 +1,10 @@
 image: buildstream/testsuite-debian:9-5da27168-32c47d1c
 
+services:
+  - jimmacarthur/buildgrid-test:buildgrid_buildbox_server
+
+# How do we attach a volume?
+
 cache:
   key: "$CI_JOB_NAME-"
   paths:
