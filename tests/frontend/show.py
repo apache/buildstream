@@ -12,11 +12,10 @@ from . import configure_project
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
-    "project",
 )
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("target,format,expected", [
     ('import-bin.bst', '%{name}', 'import-bin.bst'),
     ('import-bin.bst', '%{state}', 'buildable'),
@@ -49,14 +48,14 @@ def test_show_invalid_element_path(cli, datafiles):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("target,except_,expected", [
     ('target.bst', 'import-bin.bst', ['import-dev.bst', 'compose-all.bst', 'target.bst']),
     ('target.bst', 'import-dev.bst', ['import-bin.bst', 'compose-all.bst', 'target.bst']),
     ('target.bst', 'compose-all.bst', ['import-bin.bst', 'target.bst']),
     ('compose-all.bst', 'import-bin.bst', ['import-dev.bst', 'compose-all.bst'])
 ])
-def test_show_except(cli, datafiles, target, except_, expected):
+def test_show_except_simple(cli, datafiles, target, except_, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, silent=True, args=[
         'show',
@@ -73,10 +72,88 @@ def test_show_except(cli, datafiles, target, except_, expected):
                              .format(expected, results))
 
 
+# This test checks various constructions of a pipeline
+# with one or more targets and 0 or more exception elements,
+# each data set provides the targets, exceptions and expected
+# result list.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'exceptions'))
+@pytest.mark.parametrize("targets,exceptions,expected", [
+
+    # Test without exceptions, lets just see the whole list here
+    (['build.bst'], None, [
+        'fourth-level-1.bst',
+        'third-level-1.bst',
+        'fourth-level-2.bst',
+        'third-level-2.bst',
+        'fourth-level-3.bst',
+        'third-level-3.bst',
+        'second-level-1.bst',
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # Test one target and excepting a part of the pipeline, this
+    # removes forth-level-1 and third-level-1
+    (['build.bst'], ['third-level-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',
+        'fourth-level-3.bst',
+        'third-level-3.bst',
+        'second-level-1.bst',
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # Test one target and excepting a part of the pipeline, check that
+    # excepted dependencies remain in the pipeline if depended on from
+    # outside of the except element
+    (['build.bst'], ['second-level-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',  # first-level-2 depends on this, so not excepted
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # The same as the above test, but excluding the toplevel build.bst,
+    # instead only select the two toplevel dependencies as targets
+    (['first-level-1.bst', 'first-level-2.bst'], ['second-level-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',  # first-level-2 depends on this, so not excepted
+        'first-level-1.bst',
+        'first-level-2.bst',
+    ]),
+
+    # Test one target and excepting an element outisde the pipeline
+    (['build.bst'], ['unrelated-1.bst'], [
+        'fourth-level-2.bst',
+        'third-level-2.bst',  # first-level-2 depends on this, so not excepted
+        'first-level-1.bst',
+        'first-level-2.bst',
+        'build.bst',
+    ]),
+
+    # Test one target and excepting two elements
+    (['build.bst'], ['unrelated-1.bst', 'unrelated-2.bst'], [
+        'first-level-1.bst',
+        'build.bst',
+    ]),
+])
+def test_show_except(cli, datafiles, targets, exceptions, expected):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    results = cli.get_pipeline(basedir, targets, except_=exceptions, scope='all')
+    if results != expected:
+        raise AssertionError("Expected elements:\n{}\nInstead received elements:\n{}"
+                             .format(expected, results))
+
+
 ###############################################################
 #                   Testing multiple targets                  #
 ###############################################################
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 def test_parallel_order(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['multiple_targets/order/0.bst',
@@ -105,7 +182,7 @@ def test_parallel_order(cli, tmpdir, datafiles):
     assert names in orderings, "We got: {}".format(", ".join(names))
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 def test_target_is_dependency(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['multiple_targets/dependency/zebry.bst',
@@ -123,7 +200,7 @@ def test_target_is_dependency(cli, tmpdir, datafiles):
     assert names == ['pony.bst', 'horsey.bst', 'zebry.bst']
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
 def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
@@ -175,7 +252,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
 def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, element_name):
@@ -211,7 +288,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, element_name
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
 def test_fetched_junction(cli, tmpdir, datafiles, element_name):
     project = os.path.join(datafiles.dirname, datafiles.basename)
