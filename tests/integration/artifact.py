@@ -21,8 +21,8 @@
 import os
 import pytest
 
-from tests.testutils import cli_integration as cli
-
+from tests.testutils import cli_integration as cli, create_artifact_share
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX
 
 pytestmark = pytest.mark.integration
 
@@ -66,3 +66,90 @@ def test_artifact_log(cli, tmpdir, datafiles):
     assert result.exit_code == 0
     # The artifact is cached under both a strong key and a weak key
     assert (log + log) == result.output
+
+
+# Test that we can delete the artifact of the element which corresponds
+# to the current project state
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_artifact_delete_element(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element = 'integration.bst'
+
+    # Build the element and ensure it's cached
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+    assert cli.get_element_state(project, element) == 'cached'
+
+    result = cli.run(project=project, args=['artifact', 'delete', element])
+    result.assert_success()
+    assert cli.get_element_state(project, element) != 'cached'
+
+
+# Test that we can delete an artifact by specifying its ref.
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_artifact_delete_artifact(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element = 'integration.bst'
+
+    # Configure a local cache
+    local_cache = os.path.join(str(tmpdir), 'artifacts')
+    cli.configure({'artifactdir': local_cache})
+
+    # First build an element so that we can find its artifact
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+
+    # Obtain the artifact ref
+    cache_key = cli.get_element_key(project, element)
+    artifact = os.path.join('test', os.path.splitext(element)[0], cache_key)
+
+    # Explicitly check that the ARTIFACT exists in the cache
+    assert os.path.exists(os.path.join(local_cache, 'cas', 'refs', 'heads', artifact))
+
+    # Delete the artifact
+    result = cli.run(project=project, args=['artifact', 'delete', artifact])
+    result.assert_success()
+
+    # Check that the ARTIFACT is no longer in the cache
+    assert not os.path.exists(os.path.join(local_cache, 'cas', 'refs', 'heads', artifact))
+
+
+# Test the `bst artifact delete` command with multiple, different arguments.
+@pytest.mark.integration
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+def test_artifact_delete_element_and_artifact(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element = 'integration.bst'
+    dep = 'base/base-alpine.bst'
+
+    # Configure a local cache
+    local_cache = os.path.join(str(tmpdir), 'artifacts')
+    cli.configure({'artifactdir': local_cache})
+
+    # First build an element so that we can find its artifact
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+    assert cli.get_element_state(project, element) == 'cached'
+    assert cli.get_element_state(project, dep) == 'cached'
+
+    # Obtain the artifact ref
+    cache_key = cli.get_element_key(project, element)
+    artifact = os.path.join('test', os.path.splitext(element)[0], cache_key)
+
+    # Explicitly check that the ARTIFACT exists in the cache
+    assert os.path.exists(os.path.join(local_cache, 'cas', 'refs', 'heads', artifact))
+
+    # Delete the artifact
+    result = cli.run(project=project, args=['artifact', 'delete', artifact, dep])
+    result.assert_success()
+
+    # Check that the ARTIFACT is no longer in the cache
+    assert not os.path.exists(os.path.join(local_cache, 'cas', 'refs', 'heads', artifact))
+
+    # Check that the dependency ELEMENT is no longer cached
+    assert cli.get_element_state(project, dep) != 'cached'
