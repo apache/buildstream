@@ -170,9 +170,9 @@ class Queue():
         skip = [job for job in jobs if self.status(job.element) == QueueStatus.SKIP]
         wait = [job for job in jobs if job not in skip]
 
+        self.skipped_elements.extend([job.element for job in skip])
         self._wait_queue.extend(wait)
         self._done_queue.extend(skip)
-        self.skipped_elements.extend(skip)
 
     # dequeue()
     #
