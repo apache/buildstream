@@ -312,6 +312,19 @@ class GitMirror(SourceFetcher):
             shallow -= included
             included |= shallow
 
+            # Don't treat tags as shallow if all their parents are included
+            _, out = self.source.check_output([self.source.host_git, 'show', '--quiet',
+                                               '--format=tformat:%H %P'] + list(shallow),
+                                              fail="Failed to get parents of shallow commits in directory: {}"
+                                              .format(fullpath),
+                                              fail_temporarily=True,
+                                              cwd=self.mirror)
+            for line in out.splitlines():
+                commit, line = line.split(" ", 1)
+                parents = line.split(" ")
+                if included.issuperset(parents):
+                    shallow.discard(commit)
+
             self.source.call([self.source.host_git, 'init'],
                              fail="Cannot initialize git repository: {}".format(fullpath),
                              cwd=fullpath)
