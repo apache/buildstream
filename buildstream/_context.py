@@ -317,7 +317,7 @@ class Context():
     # invoked with as opposed to a junctioned subproject.
     #
     # Returns:
-    #    (list): The list of projects
+    #    (Project): The Project object
     #
     def get_toplevel_project(self):
         return self._projects[0]
