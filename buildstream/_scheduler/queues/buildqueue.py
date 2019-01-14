@@ -70,9 +70,6 @@ class BuildQueue(Queue):
         return element._assemble()
 
     def status(self, element):
-        # state of dependencies may have changed, recalculate element state
-        element._update_state()
-
         if not element._is_required():
             # Artifact is not currently required but it may be requested later.
             # Keep it in the queue.
