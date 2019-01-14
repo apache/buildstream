@@ -281,3 +281,44 @@ def test_argument_element_invalid(datafiles, cli, project, cmd, word_idx, expect
 ])
 def test_help_commands(cli, cmd, word_idx, expected):
     assert_completion(cli, cmd, word_idx, expected)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
+def test_argument_artifact(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Build an import element with no dependencies (as there will only be ONE cache key)
+    result = cli.run(project=project, args=['build', 'import-bin.bst'])  # Has no dependencies
+    result.assert_success()
+
+    # Get the key and the artifact ref ($project/$element_name/$key)
+    key = cli.get_element_key(project, 'import-bin.bst')
+    artifact = os.path.join('test', 'import-bin', key)
+
+    # Test autocompletion of the artifact
+    cmds = [
+        'bst artifact log ',
+        'bst artifact log t',
+        'bst artifact log test/'
+    ]
+
+    for i, cmd in enumerate(cmds):
+        word_idx = 3
+        result = cli.run(project=project, cwd=project, env={
+            '_BST_COMPLETION': 'complete',
+            'COMP_WORDS': cmd,
+            'COMP_CWORD': str(word_idx)
+        })
+        words = []
+        if result.output:
+            words = result.output.splitlines()  # This leaves an extra space on each e.g. ['foo.bst ']
+            words = [word.strip() for word in words]
+
+            if i == 0:
+                expected = PROJECT_ELEMENTS + [artifact]  # We should now be able to see the artifact
+            elif i == 1:
+                expected = ['target.bst', artifact]
+            elif i == 2:
+                expected = [artifact]
+
+            assert expected == words

@@ -2,6 +2,7 @@ import os
 import sys
 from contextlib import ExitStack
 from fnmatch import fnmatch
+from functools import partial
 from tempfile import TemporaryDirectory
 
 import click
@@ -111,14 +112,25 @@ def complete_target(args, incomplete):
     return complete_list
 
 
-def complete_artifact(args, incomplete):
+def complete_artifact(orig_args, args, incomplete):
     from .._context import Context
     ctx = Context()
 
     config = None
-    for i, arg in enumerate(args):
-        if arg in ('-c', '--config'):
-            config = args[i + 1]
+    if orig_args:
+        for i, arg in enumerate(orig_args):
+            if arg in ('-c', '--config'):
+                try:
+                    config = orig_args[i + 1]
+                except IndexError:
+                    pass
+    if args:
+        for i, arg in enumerate(args):
+            if arg in ('-c', '--config'):
+                try:
+                    config = args[i + 1]
+                except IndexError:
+                    pass
     ctx.load(config)
 
     # element targets are valid artifact names
@@ -128,8 +140,9 @@ def complete_artifact(args, incomplete):
     return complete_list
 
 
-def override_completions(cmd, cmd_param, args, incomplete):
+def override_completions(orig_args, cmd, cmd_param, args, incomplete):
     """
+    :param orig_args: original, non-completion args
     :param cmd_param: command definition
     :param args: full list of args typed before the incomplete arg
     :param incomplete: the incomplete text to autocomplete
@@ -150,7 +163,7 @@ def override_completions(cmd, cmd_param, args, incomplete):
                 cmd_param.opts == ['--track-except']):
             return complete_target(args, incomplete)
         if cmd_param.name == 'artifacts':
-            return complete_artifact(args, incomplete)
+            return complete_artifact(orig_args, args, incomplete)
 
     raise CompleteUnhandled()
 
@@ -161,7 +174,7 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
     # Hook for the Bash completion.  This only activates if the Bash
     # completion is actually enabled, otherwise this is quite a fast
     # noop.
-    if main_bashcomplete(self, prog_name, override_completions):
+    if main_bashcomplete(self, prog_name, partial(override_completions, args)):
 
         # If we're running tests we cant just go calling exit()
         # from the main process.
