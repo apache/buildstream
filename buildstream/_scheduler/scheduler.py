@@ -28,7 +28,7 @@ from contextlib import contextmanager
 
 # Local imports
 from .resources import Resources, ResourceType
-from .jobs import CacheSizeJob, CleanupJob
+from .jobs import JobStatus, CacheSizeJob, CleanupJob
 
 
 # A decent return code for Scheduler.run()
@@ -38,14 +38,10 @@ class SchedStatus():
     TERMINATED = 1
 
 
-# Our _REDUNDANT_EXCLUSIVE_ACTIONS jobs are special ones
-# which we launch dynamically, they have the property of being
-# meaningless to queue if one is already queued, and it also
-# doesnt make sense to run them in parallel
+# Some action names for the internal jobs we launch
 #
 _ACTION_NAME_CLEANUP = 'cleanup'
 _ACTION_NAME_CACHE_SIZE = 'cache_size'
-_REDUNDANT_EXCLUSIVE_ACTIONS = [_ACTION_NAME_CLEANUP, _ACTION_NAME_CACHE_SIZE]
 
 
 # Scheduler()
@@ -81,8 +77,6 @@ class Scheduler():
         #
         # Public members
         #
-        self.active_jobs = []       # Jobs currently being run in the scheduler
-        self.waiting_jobs = []      # Jobs waiting for resources
         self.queues = None          # Exposed for the frontend to print summaries
         self.context = context      # The Context object shared with Queues
         self.terminated = False     # Whether the scheduler was asked to terminate or has terminated
@@ -95,14 +89,22 @@ class Scheduler():
         #
         # Private members
         #
+        self._active_jobs = []                # Jobs currently being run in the scheduler
+        self._starttime = start_time          # Initial application start time
+        self._suspendtime = None              # Session time compensation for suspended state
+        self._queue_jobs = True               # Whether we should continue to queue jobs
+
+        # State of cache management related jobs
+        self._cache_size_scheduled = False    # Whether we have a cache size job scheduled
+        self._cache_size_running = None       # A running CacheSizeJob, or None
+        self._cleanup_scheduled = False       # Whether we have a cleanup job scheduled
+        self._cleanup_running = None          # A running CleanupJob, or None
+
+        # Callbacks to report back to the Scheduler owner
         self._interrupt_callback = interrupt_callback
         self._ticker_callback = ticker_callback
         self._job_start_callback = job_start_callback
         self._job_complete_callback = job_complete_callback
-
-        self._starttime = start_time
-        self._suspendtime = None
-        self._queue_jobs = True      # Whether we should continue to queue jobs
 
         # Whether our exclusive jobs, like 'cleanup' are currently already
         # waiting or active.
@@ -113,9 +115,9 @@ class Scheduler():
         self._exclusive_waiting = set()
         self._exclusive_active = set()
 
-        self._resources = Resources(context.sched_builders,
-                                    context.sched_fetchers,
-                                    context.sched_pushers)
+        self.resources = Resources(context.sched_builders,
+                                   context.sched_fetchers,
+                                   context.sched_pushers)
 
     # run()
     #
@@ -150,7 +152,7 @@ class Scheduler():
         self._connect_signals()
 
         # Run the queues
-        self._schedule_queue_jobs()
+        self._sched()
         self.loop.run_forever()
         self.loop.close()
 
@@ -240,12 +242,14 @@ class Scheduler():
     #    status (JobStatus): The status of the completed job
     #
     def job_completed(self, job, status):
-        self._resources.clear_job_resources(job)
-        self.active_jobs.remove(job)
-        if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS:
-            self._exclusive_active.remove(job.action_name)
+
+        # Remove from the active jobs list
+        self._active_jobs.remove(job)
+
+        # Scheduler owner facing callback
         self._job_complete_callback(job, status)
-        self._schedule_queue_jobs()
+
+        # Now check for more jobs
         self._sched()
 
     # check_cache_size():
@@ -255,78 +259,104 @@ class Scheduler():
     # if needed.
     #
     def check_cache_size(self):
-        job = CacheSizeJob(self, _ACTION_NAME_CACHE_SIZE,
-                           'cache_size/cache_size',
-                           resources=[ResourceType.CACHE,
-                                      ResourceType.PROCESS],
-                           complete_cb=self._run_cleanup)
-        self._schedule_jobs([job])
+
+        # Here we assume we are called in response to a job
+        # completion callback, or before entering the scheduler.
+        #
+        # As such there is no need to call `_sched()` from here,
+        # and we prefer to run it once at the last moment.
+        #
+        self._cache_size_scheduled = True
 
     #######################################################
     #                  Local Private Methods              #
     #######################################################
 
-    # _sched()
+    # _spawn_job()
     #
-    # The main driving function of the scheduler, it will be called
-    # automatically when Scheduler.run() is called initially,
-    #
-    def _sched(self):
-        for job in self.waiting_jobs:
-            self._resources.reserve_exclusive_resources(job)
-
-        for job in self.waiting_jobs:
-            if not self._resources.reserve_job_resources(job):
-                continue
-
-            # Postpone these jobs if one is already running
-            if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS and \
-               job.action_name in self._exclusive_active:
-                continue
-
-            job.spawn()
-            self.waiting_jobs.remove(job)
-            self.active_jobs.append(job)
-
-            if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS:
-                self._exclusive_waiting.remove(job.action_name)
-                self._exclusive_active.add(job.action_name)
-
-            if self._job_start_callback:
-                self._job_start_callback(job)
-
-        # If nothings ticking, time to bail out
-        if not self.active_jobs and not self.waiting_jobs:
-            self.loop.stop()
-
-    # _schedule_jobs()
-    #
-    # The main entry point for jobs to be scheduled.
-    #
-    # This is called either as a result of scanning the queues
-    # in _schedule_queue_jobs(), or directly by the Scheduler
-    # to insert special jobs like cleanups.
+    # Spanws a job
     #
     # Args:
-    #     jobs ([Job]): A list of jobs to schedule
+    #    job (Job): The job to spawn
     #
-    def _schedule_jobs(self, jobs):
-        for job in jobs:
+    def _spawn_job(self, job):
+        job.spawn()
+        self._active_jobs.append(job)
+        if self._job_start_callback:
+            self._job_start_callback(job)
 
-            # Special treatment of our redundant exclusive jobs
-            #
-            if job.action_name in _REDUNDANT_EXCLUSIVE_ACTIONS:
+    # Callback for the cache size job
+    def _cache_size_job_complete(self, status, cache_size):
 
-                # Drop the job if one is already queued
-                if job.action_name in self._exclusive_waiting:
-                    continue
+        # Deallocate cache size job resources
+        self._cache_size_running = None
+        self.resources.release([ResourceType.CACHE, ResourceType.PROCESS])
 
-                # Mark this action type as queued
-                self._exclusive_waiting.add(job.action_name)
+        # Schedule a cleanup job if we've hit the threshold
+        if status != JobStatus.OK:
+            return
 
-            self.waiting_jobs.append(job)
+        context = self.context
+        artifacts = context.artifactcache
 
-    # _schedule_queue_jobs()
+        if artifacts.has_quota_exceeded():
+            self._cleanup_scheduled = True
+
+    # Callback for the cleanup job
+    def _cleanup_job_complete(self, status, cache_size):
+
+        # Deallocate cleanup job resources
+        self._cleanup_running = None
+        self.resources.release([ResourceType.CACHE, ResourceType.PROCESS])
+
+        # Unregister the exclusive interest when we're done with it
+        if not self._cleanup_scheduled:
+            self.resources.unregister_exclusive_interest(
+                [ResourceType.CACHE], 'cache-cleanup'
+            )
+
+    # _sched_cleanup_job()
+    #
+    # Runs a cleanup job if one is scheduled to run now and
+    # sufficient recources are available.
+    #
+    def _sched_cleanup_job(self):
+
+        if self._cleanup_scheduled and self._cleanup_running is None:
+
+            # Ensure we have an exclusive interest in the resources
+            self.resources.register_exclusive_interest(
+                [ResourceType.CACHE], 'cache-cleanup'
+            )
+
+            if self.resources.reserve([ResourceType.CACHE, ResourceType.PROCESS],
+                                      [ResourceType.CACHE]):
+
+                # Update state and launch
+                self._cleanup_scheduled = False
+                self._cleanup_running = \
+                    CleanupJob(self, _ACTION_NAME_CLEANUP, 'cleanup/cleanup',
+                               complete_cb=self._cleanup_job_complete)
+                self._spawn_job(self._cleanup_running)
+
+    # _sched_cache_size_job()
+    #
+    # Runs a cache size job if one is scheduled to run now and
+    # sufficient recources are available.
+    #
+    def _sched_cache_size_job(self):
+
+        if self._cache_size_scheduled and not self._cache_size_running:
+
+            if self.resources.reserve([ResourceType.CACHE, ResourceType.PROCESS]):
+                self._cache_size_scheduled = False
+                self._cache_size_running = \
+                    CacheSizeJob(self, _ACTION_NAME_CACHE_SIZE,
+                                 'cache_size/cache_size',
+                                 complete_cb=self._cache_size_job_complete)
+                self._spawn_job(self._cache_size_running)
+
+    # _sched_queue_jobs()
     #
     # Ask the queues what jobs they want to schedule and schedule
     # them. This is done here so we can ask for new jobs when jobs
@@ -335,7 +365,7 @@ class Scheduler():
     # This will process the Queues, pull elements through the Queues
     # and process anything that is ready.
     #
-    def _schedule_queue_jobs(self):
+    def _sched_queue_jobs(self):
         ready = []
         process_queues = True
 
@@ -344,10 +374,7 @@ class Scheduler():
             # Pull elements forward through queues
             elements = []
             for queue in self.queues:
-                # Enqueue elements complete from the last queue
                 queue.enqueue(elements)
-
-                # Dequeue processed elements for the next queue
                 elements = list(queue.dequeue())
 
             # Kickoff whatever processes can be processed at this time
@@ -362,41 +389,51 @@ class Scheduler():
             # thus need all the pulls to complete before ever starting
             # a build
             ready.extend(chain.from_iterable(
-                queue.pop_ready_jobs() for queue in reversed(self.queues)
+                q.harvest_jobs() for q in reversed(self.queues)
             ))
 
-            # pop_ready_jobs() may have skipped jobs, adding them to
-            # the done_queue.  Pull these skipped elements forward to
-            # the next queue and process them.
+            # harvest_jobs() may have decided to skip some jobs, making
+            # them eligible for promotion to the next queue as a side effect.
+            #
+            # If that happens, do another round.
             process_queues = any(q.dequeue_ready() for q in self.queues)
 
-        self._schedule_jobs(ready)
-        self._sched()
+        # Spawn the jobs
+        #
+        for job in ready:
+            self._spawn_job(job)
 
-    # _run_cleanup()
+    # _sched()
     #
-    # Schedules the cache cleanup job if the passed size
-    # exceeds the cache quota.
+    # Run any jobs which are ready to run, or quit the main loop
+    # when nothing is running or is ready to run.
     #
-    # Args:
-    #    cache_size (int): The calculated cache size (ignored)
+    # This is the main driving function of the scheduler, it is called
+    # initially when we enter Scheduler.run(), and at the end of whenever
+    # any job completes, after any bussiness logic has occurred and before
+    # going back to sleep.
     #
-    # NOTE: This runs in response to completion of the cache size
-    #       calculation job lauched by Scheduler.check_cache_size(),
-    #       which will report the calculated cache size.
-    #
-    def _run_cleanup(self, cache_size):
-        context = self.context
-        artifacts = context.artifactcache
+    def _sched(self):
 
-        if not artifacts.has_quota_exceeded():
-            return
+        if not self.terminated:
 
-        job = CleanupJob(self, _ACTION_NAME_CLEANUP, 'cleanup/cleanup',
-                         resources=[ResourceType.CACHE,
-                                    ResourceType.PROCESS],
-                         exclusive_resources=[ResourceType.CACHE])
-        self._schedule_jobs([job])
+            #
+            # Try the cache management jobs
+            #
+            self._sched_cleanup_job()
+            self._sched_cache_size_job()
+
+            #
+            # Run as many jobs as the queues can handle for the
+            # available resources
+            #
+            self._sched_queue_jobs()
+
+        #
+        # If nothing is ticking then bail out
+        #
+        if not self._active_jobs:
+            self.loop.stop()
 
     # _suspend_jobs()
     #
@@ -406,7 +443,7 @@ class Scheduler():
         if not self.suspended:
             self._suspendtime = datetime.datetime.now()
             self.suspended = True
-            for job in self.active_jobs:
+            for job in self._active_jobs:
                 job.suspend()
 
     # _resume_jobs()
@@ -415,7 +452,7 @@ class Scheduler():
     #
     def _resume_jobs(self):
         if self.suspended:
-            for job in self.active_jobs:
+            for job in self._active_jobs:
                 job.resume()
             self.suspended = False
             self._starttime += (datetime.datetime.now() - self._suspendtime)
@@ -488,18 +525,15 @@ class Scheduler():
         wait_limit = 20.0
 
         # First tell all jobs to terminate
-        for job in self.active_jobs:
+        for job in self._active_jobs:
             job.terminate()
 
         # Now wait for them to really terminate
-        for job in self.active_jobs:
+        for job in self._active_jobs:
             elapsed = datetime.datetime.now() - wait_start
             timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
             if not job.terminate_wait(timeout):
                 job.kill()
-
-        # Clear out the waiting jobs
-        self.waiting_jobs = []
 
     # Regular timeout for driving status in the UI
     def _tick(self):

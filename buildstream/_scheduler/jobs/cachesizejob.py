@@ -34,8 +34,8 @@ class CacheSizeJob(Job):
         if status == JobStatus.OK:
             self._artifacts.set_cache_size(result)
 
-            if self._complete_cb:
-                self._complete_cb(result)
+        if self._complete_cb:
+            self._complete_cb(status, result)
 
     def child_process_data(self):
         return {}
