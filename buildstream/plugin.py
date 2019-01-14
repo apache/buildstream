@@ -178,6 +178,12 @@ class Plugin():
         # Unique ID
         #
         # This id allows to uniquely identify a plugin.
+        #
+        # /!\ the unique id must be an increasing value /!\
+        # This is because we are depending on it in buildstream.element.Element
+        # to give us a topological sort over all elements.
+        # Modifying how we handle ids here will modify the behavior of the
+        # Element's state handling.
         self._unique_id = next(self.__id_generator)
 
         # register ourself in the table containing all existing plugins
