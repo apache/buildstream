@@ -12,7 +12,6 @@ stages:
 variables:
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
-  TEST_COMMAND: "tox -- --color=yes --integration"
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
@@ -30,6 +29,9 @@ variables:
   - mount
   - df -h
 
+  # Remove MANIFEST.in
+  - rm MANIFEST.in
+
   script:
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
@@ -43,3 +45,15 @@ variables:
   artifacts:
     paths:
     - .coverage-reports
+
+normal-tests:
+  <<: *tests
+
+  variables:
+    TEST_COMMAND: "tox -- --color=yes --integration"
+
+skip-sdist:
+  <<: *tests
+
+  variables:
+    TEST_COMMAND: "tox --develop -- --color=yes --integration"
