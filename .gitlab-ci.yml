@@ -61,7 +61,7 @@ tests-ubuntu-18.04:
   <<: *tests
 
 overnight-fedora-28-aarch64:
-  image: buildstream/testsuite-fedora:aarch64-28-06bab030-32a101f6
+  image: buildstream/testsuite-fedora:aarch64-28-5da27168-32c47d1c
   tags:
     - aarch64
   <<: *tests
@@ -70,6 +70,12 @@ overnight-fedora-28-aarch64:
   except: []
   only:
   - schedules
+  before_script:
+    # grpcio needs to be compiled from source on aarch64 so we additionally
+    # need a C++ compiler here.
+    # FIXME: Ideally this would be provided by the base image. This will be
+    # unblocked by https://gitlab.com/BuildStream/buildstream-docker-images/issues/34
+    - dnf install -y gcc-c++
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
