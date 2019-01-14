@@ -322,6 +322,13 @@ class Context():
     def get_toplevel_project(self):
         return self._projects[0]
 
+    # get_workspaces():
+    #
+    # Return a Workspaces object containing a list of workspaces.
+    #
+    # Returns:
+    #    (Workspaces): The Workspaces object
+    #
     def get_workspaces(self):
         return self._workspaces
 
