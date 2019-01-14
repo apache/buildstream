@@ -869,14 +869,17 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
                                        cwd=checkout).decode('ascii')
     assert describe.startswith('tag2-2-')
 
-    describe_fp = subprocess.check_output(['git', 'describe', '--first-parent'] + options,
-                                          cwd=checkout).decode('ascii')
-    assert describe_fp.startswith('tag1-2-')
+    p = subprocess.run(['git', 'describe', '--first-parent'] + options,
+                       cwd=checkout, stdout=subprocess.PIPE)
+    has_first_parent = p.returncode == 0
+    if has_first_parent:
+        describe_fp = p.stdout.decode('ascii')
+        assert describe_fp.startswith('tag1-2-')
 
     tags = subprocess.check_output(['git', 'tag'],
                                    cwd=checkout).decode('ascii')
     tags = set(tags.splitlines())
-    assert tags == set(['tag1', 'tag2'])
+    assert tags == set(['tag1', 'tag2']) if has_first_parent else set(['tag2'])
 
     p = subprocess.run(['git', 'log', repo.rev_parse('uselesstag')],
                        cwd=checkout)
