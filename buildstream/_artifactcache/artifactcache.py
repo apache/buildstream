@@ -399,7 +399,7 @@ class ArtifactCache():
                 if remote_spec.push:
                     self._has_push_remotes = True
 
-                remotes[remote_spec.url] = CASRemote(remote_spec)
+                remotes[remote_spec.url] = self.create_remote(remote_spec)
 
         for project in self.context.get_projects():
             remote_specs = self.global_remote_specs
@@ -418,6 +418,9 @@ class ArtifactCache():
                 project_remotes.append(remote)
 
             self._remotes[project] = project_remotes
+
+    def create_remote(self, remote_spec):
+        return CASRemote(remote_spec)
 
     # contains():
     #
