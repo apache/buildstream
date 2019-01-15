@@ -28,7 +28,7 @@ import tarfile
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
-from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
+from ._exceptions import StreamError, ImplError, BstError
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
@@ -1006,17 +1006,6 @@ class Stream():
             self._session_start_callback()
 
         _, status = self._scheduler.run(self.queues)
-
-        # Force update element states after a run, such that the summary
-        # is more coherent
-        try:
-            for element in self.total_elements:
-                element._update_state()
-        except BstError as e:
-            self._message(MessageType.ERROR, "Error resolving final state", detail=str(e))
-            set_last_task_error(e.domain, e.reason)
-        except Exception as e:   # pylint: disable=broad-except
-            self._message(MessageType.BUG, "Unhandled exception while resolving final state", detail=str(e))
 
         if status == SchedStatus.ERROR:
             raise StreamError()
