@@ -661,7 +661,7 @@ class ArtifactCache():
                 display_key = element._get_brief_display_key()
                 element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
-                if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
+                if self.pull_ref(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
                     element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
                     if subdir:
                         # Attempt to extract subdir into artifact extract dir if it already exists
@@ -680,6 +680,22 @@ class ArtifactCache():
                     element._get_brief_display_key(), e)) from e
 
         return False
+
+    # pull_ref():
+    #
+    # Pull artifact from one of the configured remote repositories.
+    #
+    # Args:
+    #     ref (str): The ref to pull
+    #     progress (callable): The progress callback, if any
+    #     subdir (str): The optional specific subdir to pull
+    #     excluded_subdirs (list): The optional list of subdirs to not pull
+    #
+    # Returns:
+    #   (bool): True if pull was successful, False if artifact was not available
+    #
+    def pull_ref(self, ref, remote, *, progress=None, subdir=None, excluded_subdirs=None):
+        return self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs)
 
     # pull_tree():
     #
