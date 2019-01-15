@@ -297,7 +297,8 @@ class GitMirror(SourceFetcher):
             for _, commit_ref, _ in self.tags:
 
                 _, out = self.source.check_output([self.source.host_git, 'rev-list',
-                                                   '--boundary', '{}..{}'.format(commit_ref, self.ref)],
+                                                   '--ancestry-path', '--boundary',
+                                                   '{}..{}'.format(commit_ref, self.ref)],
                                                   fail="Failed to get git history {}..{} in directory: {}"
                                                   .format(commit_ref, self.ref, fullpath),
                                                   fail_temporarily=True,

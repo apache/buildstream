@@ -885,6 +885,84 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_git_describe_relevant_history(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    project_config = _yaml.load(os.path.join(project, 'project.conf'))
+    project_config['ref-storage'] = 'project.refs'
+    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+
+    repofiles = os.path.join(str(tmpdir), 'repofiles')
+    os.makedirs(repofiles, exist_ok=True)
+    file0 = os.path.join(repofiles, 'file0')
+    with open(file0, 'w') as f:
+        f.write('test\n')
+
+    repo = create_repo('git', str(tmpdir))
+    repo.create(repofiles)
+
+    file1 = os.path.join(str(tmpdir), 'file1')
+    with open(file1, 'w') as f:
+        f.write('test\n')
+    repo.add_file(file1)
+    repo.branch('branch')
+    repo.checkout('master')
+
+    file2 = os.path.join(str(tmpdir), 'file2')
+    with open(file2, 'w') as f:
+        f.write('test\n')
+    repo.add_file(file2)
+
+    file3 = os.path.join(str(tmpdir), 'file3')
+    with open(file3, 'w') as f:
+        f.write('test\n')
+    branch_boundary = repo.add_file(file3)
+
+    repo.checkout('branch')
+    file4 = os.path.join(str(tmpdir), 'file4')
+    with open(file4, 'w') as f:
+        f.write('test\n')
+    tagged_ref = repo.add_file(file4)
+    repo.add_annotated_tag('tag1', 'tag1')
+
+    head = repo.merge('master')
+
+    config = repo.source_config()
+    config['track'] = head
+    config['track-tags'] = True
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            config
+        ],
+    }
+    element_path = os.path.join(project, 'target.bst')
+    _yaml.dump(element, element_path)
+
+    result = cli.run(project=project, args=['source', 'track', 'target.bst', '--deps', 'all'])
+    result.assert_success()
+
+    checkout = os.path.join(str(tmpdir), 'checkout')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['checkout', 'target.bst', checkout])
+    result.assert_success()
+
+    describe = subprocess.check_output(['git', 'describe'],
+                                       cwd=checkout).decode('ascii')
+    assert describe.startswith('tag1-2-')
+
+    rev_list = subprocess.check_output(['git', 'rev-list', '--all'],
+                                       cwd=checkout).decode('ascii')
+
+    assert set(rev_list.splitlines()) == set([head, tagged_ref, branch_boundary])
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     project = str(datafiles)
 
