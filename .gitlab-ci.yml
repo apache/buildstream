@@ -60,6 +60,16 @@ tests-ubuntu-18.04:
   image: buildstream/testsuite-ubuntu:18.04-5da27168-32c47d1c
   <<: *tests
 
+tests-python-3.7-stretch:
+  image: buildstream/testsuite-python:3.7-stretch-a60f0c39
+  <<: *tests
+
+  variables:
+    # Note that we explicitly specify TOXENV in this case because this
+    # image has both 3.6 and 3.7 versions. python3.6 cannot be removed because
+    # some of our base dependencies declare it as their runtime dependency.
+    TOXENV: py37
+
 overnight-fedora-28-aarch64:
   image: buildstream/testsuite-fedora:aarch64-28-5da27168-32c47d1c
   tags:
