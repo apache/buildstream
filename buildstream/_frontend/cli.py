@@ -1001,13 +1001,16 @@ def artifact_pull(app, artifacts, deps, remote):
 
             remotes = usr_remotes + project_remotes
 
+            # Pull buildtrees?
+            excluded_subdirs = ["buildtree"] if app.context.pull_buildtrees else None
+
             # Try to pull the artifact from one of the remotes
             remotes = [cache.create_remote(spec) for spec in remotes]
             for ref in artifacts:
                 if cache.contains_ref(ref):
                     continue
                 for remote in remotes:
-                    if cache.pull_ref(ref, remote):
+                    if cache.pull_ref(ref, remote, exclude_subdirs=exclude_subdirs):
                         break
 
 
