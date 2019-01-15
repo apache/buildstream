@@ -1001,6 +1001,18 @@ def artifact_pull(app, artifacts, deps, remote):
 
             remotes = usr_remotes + project_remotes
 
+            if remote:  # Check if this is one of the available remotes
+                # Here we are restricting the user to only use a remote that is defined
+                # in either the project.conf or the user config, should the user be able to *try*
+                # and pull from any specified remote?
+                remote_found = False
+                for spec in remotes:
+                    if remote == spec.url:
+                        remotes = [spec]
+                        remote_found = True
+                if not remote_found:
+                    raise AppError("Remote: '{}' not found.".format(remote))
+
             # Pull buildtrees?
             excluded_subdirs = ["buildtree"] if app.context.pull_buildtrees else None
 
