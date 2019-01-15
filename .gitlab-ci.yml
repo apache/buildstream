@@ -96,7 +96,6 @@ tests-unix:
     # Since the unix platform is required to run as root, no user change required
     - ${TEST_COMMAND}
 
-
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
   image: buildstream/testsuite-fedora:28-5da27168-32c47d1c
@@ -113,6 +112,22 @@ tests-fedora-missing-deps:
     - chown -R buildstream:buildstream .
 
     - ${TEST_COMMAND}
+
+tests-fedora-update-deps:
+  # Check if the tests pass after updating requirements to their latest
+  # allowed version.
+  allow_failure: true
+  image: buildstream/testsuite-fedora:28-5da27168-32c47d1c
+  <<: *tests
+
+  script:
+    - useradd -Um buildstream
+    - chown -R buildstream:buildstream .
+
+    - make --always-make --directory requirements
+    - cat requirements/*.txt
+
+    - su buildstream -c "${TEST_COMMAND}"
 
 # Lint separately from testing
 lint:
