@@ -296,18 +296,24 @@ class GitMirror(SourceFetcher):
             shallow = set()
             for _, commit_ref, _ in self.tags:
 
-                _, out = self.source.check_output([self.source.host_git, 'rev-list',
-                                                   '--boundary', '{}..{}'.format(commit_ref, self.ref)],
-                                                  fail="Failed to get git history {}..{} in directory: {}"
-                                                  .format(commit_ref, self.ref, fullpath),
-                                                  fail_temporarily=True,
-                                                  cwd=self.mirror)
-                for line in out.splitlines():
-                    rev = line.lstrip('-')
-                    if line[0] == '-':
-                        shallow.add(rev)
-                    else:
-                        included.add(rev)
+                if commit_ref == self.ref:
+                    # rev-list does not work in case of same rev
+                    shallow.add(self.ref)
+                else:
+                    _, out = self.source.check_output([self.source.host_git, 'rev-list',
+                                                       '--ancestry-path', '--boundary',
+                                                       '{}..{}'.format(commit_ref, self.ref)],
+                                                      fail="Failed to get git history {}..{} in directory: {}"
+                                                      .format(commit_ref, self.ref, fullpath),
+                                                      fail_temporarily=True,
+                                                      cwd=self.mirror)
+                    self.source.warn("refs {}..{}: {}".format(commit_ref, self.ref, out.splitlines()))
+                    for line in out.splitlines():
+                        rev = line.lstrip('-')
+                        if line[0] == '-':
+                            shallow.add(rev)
+                        else:
+                            included.add(rev)
 
             shallow -= included
             included |= shallow
