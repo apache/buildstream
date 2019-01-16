@@ -16,7 +16,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Chadnan Singh <csingh43@bloomberg.net>
+#        Chandan Singh <csingh43@bloomberg.net>
 
 # This is a helper script to generate Docker images using checkouts of
 # BuildStream elements.
