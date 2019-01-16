@@ -2,7 +2,8 @@ import os
 import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from tests.testutils import cli, filetypegenerator
+from buildstream.plugintestutils import cli
+from tests.testutils import filetypegenerator
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

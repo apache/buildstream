@@ -28,8 +28,10 @@ import shutil
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
+from buildstream.plugintestutils import cli
 
-from tests.testutils import cli, create_repo
+from tests.testutils.site import HAVE_GIT, HAVE_OLD_GIT
+from tests.testutils import create_repo
 from tests.testutils.site import HAVE_GIT, HAVE_OLD_GIT
 
 DATA_DIR = os.path.join(

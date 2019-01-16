@@ -8,7 +8,7 @@ from shutil import copyfile, rmtree
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 from tests.testutils.file_server import create_file_server
 from tests.testutils.site import HAVE_LZIP
 from . import list_dir_contents

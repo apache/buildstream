@@ -1,6 +1,6 @@
 import os
 import pytest
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 
 # Project directory
 DATA_DIR = os.path.join(

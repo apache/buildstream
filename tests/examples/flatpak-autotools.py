@@ -1,8 +1,8 @@
 import os
 import pytest
 
-from tests.testutils import cli_integration as cli
-from tests.testutils.integration import assert_contains
+from buildstream.plugintestutils import cli_integration as cli
+from buildstream.plugintestutils.integration import assert_contains
 from tests.testutils.site import HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
 
 

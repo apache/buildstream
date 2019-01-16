@@ -1,5 +1,5 @@
 import pytest
-from tests.testutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli
 
 
 def assert_help(cli_output):

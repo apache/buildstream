@@ -2,7 +2,9 @@ import os
 import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from tests.testutils import cli, filetypegenerator
+from buildstream.plugintestutils import cli
+
+from tests.testutils import filetypegenerator
 
 
 # Project directory

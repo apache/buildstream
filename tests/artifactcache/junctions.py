@@ -1,9 +1,11 @@
 import os
 import shutil
 import pytest
-from tests.testutils import cli, create_artifact_share
 
 from buildstream import _yaml
+from buildstream.plugintestutils import cli
+
+from tests.testutils import create_artifact_share
 
 
 DATA_DIR = os.path.join(

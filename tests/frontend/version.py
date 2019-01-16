@@ -1,4 +1,4 @@
-from tests.testutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli
 
 # For utils.get_bst_version()
 from buildstream import utils

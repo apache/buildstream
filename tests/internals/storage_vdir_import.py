@@ -3,7 +3,7 @@ import os
 import pytest
 import random
 import tempfile
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory

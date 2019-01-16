@@ -4,7 +4,8 @@ import pytest
 from buildstream._pipeline import PipelineError
 from buildstream import _yaml
 
-from tests.testutils import cli, create_repo
+from buildstream.plugintestutils import cli
+from tests.testutils import create_repo
 from tests.testutils.site import HAVE_BZR
 
 DATA_DIR = os.path.join(

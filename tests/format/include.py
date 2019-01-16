@@ -2,7 +2,9 @@ import os
 import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from tests.testutils import cli, generate_junction, create_repo
+from buildstream.plugintestutils import cli
+
+from tests.testutils import generate_junction, create_repo
 
 
 # Project directory

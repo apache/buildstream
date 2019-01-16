@@ -1,6 +1,8 @@
 import os
 import pytest
-from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
+from tests.testutils import create_repo, ALL_REPO_KINDS, generate_junction
+
+from buildstream.plugintestutils import cli
 from buildstream import _yaml
 
 

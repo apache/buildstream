@@ -1,8 +1,8 @@
 import os
 
 import pytest
-from tests.testutils import cli, create_repo
-
+from tests.testutils import create_repo
+from buildstream.plugintestutils import cli
 from buildstream import _yaml
 
 # Project directory

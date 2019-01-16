@@ -3,8 +3,8 @@ import pytest
 
 from buildstream import _yaml
 
-from tests.testutils import cli_integration as cli
-from tests.testutils.integration import walk_dir
+from buildstream.plugintestutils import cli_integration as cli
+from buildstream.plugintestutils.integration import walk_dir
 
 
 pytestmark = pytest.mark.integration

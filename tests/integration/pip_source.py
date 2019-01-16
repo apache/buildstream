@@ -3,9 +3,9 @@ import pytest
 
 from buildstream import _yaml
 
-from tests.testutils import cli_integration as cli
+from buildstream.plugintestutils import cli_integration as cli
+from buildstream.plugintestutils.integration import assert_contains
 from tests.testutils.python_repo import setup_pypi_repo
-from tests.testutils.integration import assert_contains
 from tests.testutils.site import HAVE_SANDBOX
 
 

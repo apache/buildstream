@@ -2,7 +2,7 @@
 import os
 import pytest
 from buildstream import _yaml
-from tests.testutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli
 
 # Project directory
 DATA_DIR = os.path.join(

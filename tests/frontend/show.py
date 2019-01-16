@@ -3,7 +3,8 @@ import sys
 import shutil
 import itertools
 import pytest
-from tests.testutils import cli, generate_junction
+from tests.testutils import generate_junction
+from buildstream.plugintestutils import cli
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 

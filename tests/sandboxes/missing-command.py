@@ -3,7 +3,7 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 
 
 DATA_DIR = os.path.join(

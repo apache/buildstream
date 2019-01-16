@@ -3,10 +3,10 @@ import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
+from buildstream.plugintestutils import cli_integration as cli
 
 from conftest import clean_platform_cache
-
-from tests.testutils import cli_integration as cli, create_artifact_share
+from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_BWRAP, IS_LINUX, HAVE_SANDBOX
 
 

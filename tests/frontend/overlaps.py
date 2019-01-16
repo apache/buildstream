@@ -1,6 +1,6 @@
 import os
 import pytest
-from tests.testutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugin import CoreWarnings

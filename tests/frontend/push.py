@@ -24,8 +24,8 @@ import os
 import pytest
 
 from buildstream._exceptions import ErrorDomain
-from tests.testutils import cli, create_artifact_share, create_element_size
-from tests.testutils import generate_junction, wait_for_cache_granularity
+from buildstream.plugintestutils import cli
+from tests.testutils import create_artifact_share, create_element_size, generate_junction, wait_for_cache_granularity
 from . import configure_project
 
 

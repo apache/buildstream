@@ -1,6 +1,6 @@
 import os
 import pytest
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 from tests.testutils.site import IS_LINUX
 
 from buildstream import _yaml

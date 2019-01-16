@@ -3,7 +3,7 @@ import pytest
 import sys
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from tests.testutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli
 
 
 # Project directory
