@@ -3,7 +3,7 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 
-from buildstream._artifactcache.cascache import CASCache
+from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 

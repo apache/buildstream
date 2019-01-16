@@ -19,18 +19,16 @@
 
 import multiprocessing
 import os
-import signal
 import string
 from collections.abc import Mapping
 
-from ..types import _KeyStrength
-from .._exceptions import ArtifactError, CASError, LoadError, LoadErrorReason
-from .._message import Message, MessageType
-from .. import _signals
-from .. import utils
-from .. import _yaml
+from .types import _KeyStrength
+from ._exceptions import ArtifactError, CASError, LoadError, LoadErrorReason
+from ._message import Message, MessageType
+from . import utils
+from . import _yaml
 
-from .cascache import CASRemote, CASRemoteSpec
+from ._cas import CASRemote, CASRemoteSpec
 
 
 CACHE_SIZE_FILE = "cache_size"
@@ -375,20 +373,8 @@ class ArtifactCache():
         remotes = {}
         q = multiprocessing.Queue()
         for remote_spec in remote_specs:
-            # Use subprocess to avoid creation of gRPC threads in main BuildStream process
-            # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-            p = multiprocessing.Process(target=self.cas.initialize_remote, args=(remote_spec, q))
 
-            try:
-                # Keep SIGINT blocked in the child process
-                with _signals.blocked([signal.SIGINT], ignore=False):
-                    p.start()
-
-                error = q.get()
-                p.join()
-            except KeyboardInterrupt:
-                utils._kill_process_tree(p.pid)
-                raise
+            error = CASRemote.check_remote(remote_spec, q)
 
             if error and on_failure:
                 on_failure(remote_spec.url, error)
@@ -747,7 +733,7 @@ class ArtifactCache():
                                 "servers are configured as push remotes.")
 
         for remote in push_remotes:
-            message_digest = self.cas.push_message(remote, message)
+            message_digest = remote.push_message(message)
 
         return message_digest
 

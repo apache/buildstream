@@ -342,13 +342,13 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, success):
         total_space = 10000
 
     volume_space_patch = mock.patch(
-        "buildstream._artifactcache.artifactcache.ArtifactCache._get_volume_space_info_for",
+        "buildstream._artifactcache.ArtifactCache._get_volume_space_info_for",
         autospec=True,
         return_value=(free_space, total_space),
     )
 
     cache_size_patch = mock.patch(
-        "buildstream._artifactcache.artifactcache.ArtifactCache.get_cache_size",
+        "buildstream._artifactcache.ArtifactCache.get_cache_size",
         autospec=True,
         return_value=0,
     )

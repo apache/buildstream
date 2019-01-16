@@ -17,85 +17,23 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-from collections import namedtuple
 import hashlib
 import itertools
-import io
 import os
 import stat
 import tempfile
 import uuid
 import contextlib
-from urllib.parse import urlparse
 
 import grpc
 
-from .._protos.google.rpc import code_pb2
-from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from .._protos.buildstream.v2 import buildstream_pb2
 
 from .. import utils
-from .._exceptions import CASError, LoadError, LoadErrorReason
-from .. import _yaml
+from .._exceptions import CASCacheError
 
-
-# The default limit for gRPC messages is 4 MiB.
-# Limit payload to 1 MiB to leave sufficient headroom for metadata.
-_MAX_PAYLOAD_BYTES = 1024 * 1024
-
-
-class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key client_cert instance_name')):
-
-    # _new_from_config_node
-    #
-    # Creates an CASRemoteSpec() from a YAML loaded node
-    #
-    @staticmethod
-    def _new_from_config_node(spec_node, basedir=None):
-        _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance-name'])
-        url = _yaml.node_get(spec_node, str, 'url')
-        push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
-        if not url:
-            provenance = _yaml.node_get_provenance(spec_node, 'url')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: empty artifact cache URL".format(provenance))
-
-        instance_name = _yaml.node_get(spec_node, str, 'instance-name', default_value=None)
-
-        server_cert = _yaml.node_get(spec_node, str, 'server-cert', default_value=None)
-        if server_cert and basedir:
-            server_cert = os.path.join(basedir, server_cert)
-
-        client_key = _yaml.node_get(spec_node, str, 'client-key', default_value=None)
-        if client_key and basedir:
-            client_key = os.path.join(basedir, client_key)
-
-        client_cert = _yaml.node_get(spec_node, str, 'client-cert', default_value=None)
-        if client_cert and basedir:
-            client_cert = os.path.join(basedir, client_cert)
-
-        if client_key and not client_cert:
-            provenance = _yaml.node_get_provenance(spec_node, 'client-key')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: 'client-key' was specified without 'client-cert'".format(provenance))
-
-        if client_cert and not client_key:
-            provenance = _yaml.node_get_provenance(spec_node, 'client-cert')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: 'client-cert' was specified without 'client-key'".format(provenance))
-
-        return CASRemoteSpec(url, push, server_cert, client_key, client_cert, instance_name)
-
-
-CASRemoteSpec.__new__.__defaults__ = (None, None, None, None)
-
-
-class BlobNotFound(CASError):
-
-    def __init__(self, blob, msg):
-        self.blob = blob
-        super().__init__(msg)
+from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
 
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
@@ -120,7 +58,7 @@ class CASCache():
         headdir = os.path.join(self.casdir, 'refs', 'heads')
         objdir = os.path.join(self.casdir, 'objects')
         if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
-            raise CASError("CAS repository check failed for '{}'".format(self.casdir))
+            raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
 
     # contains():
     #
@@ -169,7 +107,7 @@ class CASCache():
     #     subdir (str): Optional specific dir to extract
     #
     # Raises:
-    #     CASError: In cases there was an OSError, or if the ref did not exist.
+    #     CASCacheError: In cases there was an OSError, or if the ref did not exist.
     #
     # Returns: path to extracted directory
     #
@@ -201,7 +139,7 @@ class CASCache():
                 # Another process beat us to rename
                 pass
             except OSError as e:
-                raise CASError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
+                raise CASCacheError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
 
         return originaldest
 
@@ -245,29 +183,6 @@ class CASCache():
 
         return modified, removed, added
 
-    def initialize_remote(self, remote_spec, q):
-        try:
-            remote = CASRemote(remote_spec)
-            remote.init()
-
-            request = buildstream_pb2.StatusRequest(instance_name=remote_spec.instance_name)
-            response = remote.ref_storage.Status(request)
-
-            if remote_spec.push and not response.allow_updates:
-                q.put('CAS server does not allow push')
-            else:
-                # No error
-                q.put(None)
-
-        except grpc.RpcError as e:
-            # str(e) is too verbose for errors reported to the user
-            q.put(e.details())
-
-        except Exception as e:               # pylint: disable=broad-except
-            # Whatever happens, we need to return it to the calling process
-            #
-            q.put(str(e))
-
     # pull():
     #
     # Pull a ref from a remote repository.
@@ -306,7 +221,7 @@ class CASCache():
             return True
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise CASError("Failed to pull ref {}: {}".format(ref, e)) from e
+                raise CASCacheError("Failed to pull ref {}: {}".format(ref, e)) from e
             else:
                 return False
         except BlobNotFound as e:
@@ -360,7 +275,7 @@ class CASCache():
     #   (bool): True if any remote was updated, False if no pushes were required
     #
     # Raises:
-    #   (CASError): if there was an error
+    #   (CASCacheError): if there was an error
     #
     def push(self, refs, remote):
         skipped_remote = True
@@ -395,7 +310,7 @@ class CASCache():
                 skipped_remote = False
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise CASError("Failed to push ref {}: {}".format(refs, e), temporary=True) from e
+                raise CASCacheError("Failed to push ref {}: {}".format(refs, e), temporary=True) from e
 
         return not skipped_remote
 
@@ -408,56 +323,12 @@ class CASCache():
     #     directory (Directory): A virtual directory object to push.
     #
     # Raises:
-    #     (CASError): if there was an error
+    #     (CASCacheError): if there was an error
     #
     def push_directory(self, remote, directory):
         remote.init()
 
         self._send_directory(remote, directory.ref)
-
-    # push_message():
-    #
-    # Push the given protobuf message to a remote.
-    #
-    # Args:
-    #     remote (CASRemote): The remote to push to
-    #     message (Message): A protobuf message to push.
-    #
-    # Raises:
-    #     (CASError): if there was an error
-    #
-    def push_message(self, remote, message):
-
-        message_buffer = message.SerializeToString()
-        message_digest = utils._message_digest(message_buffer)
-
-        remote.init()
-
-        with io.BytesIO(message_buffer) as b:
-            self._send_blob(remote, message_digest, b)
-
-        return message_digest
-
-    # verify_digest_on_remote():
-    #
-    # Check whether the object is already on the server in which case
-    # there is no need to upload it.
-    #
-    # Args:
-    #     remote (CASRemote): The remote to check
-    #     digest (Digest): The object digest.
-    #
-    def verify_digest_on_remote(self, remote, digest):
-        remote.init()
-
-        request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
-        request.blob_digests.extend([digest])
-
-        response = remote.cas.FindMissingBlobs(request)
-        if digest in response.missing_blob_digests:
-            return False
-
-        return True
 
     # objpath():
     #
@@ -531,7 +402,7 @@ class CASCache():
             pass
 
         except OSError as e:
-            raise CASError("Failed to hash object: {}".format(e)) from e
+            raise CASCacheError("Failed to hash object: {}".format(e)) from e
 
         return digest
 
@@ -572,7 +443,7 @@ class CASCache():
                 return digest
 
         except FileNotFoundError as e:
-            raise CASError("Attempt to access unavailable ref: {}".format(e)) from e
+            raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
 
     # update_mtime()
     #
@@ -585,7 +456,7 @@ class CASCache():
         try:
             os.utime(self._refpath(ref))
         except FileNotFoundError as e:
-            raise CASError("Attempt to access unavailable ref: {}".format(e)) from e
+            raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
 
     # calculate_cache_size()
     #
@@ -676,7 +547,7 @@ class CASCache():
         # Remove cache ref
         refpath = self._refpath(ref)
         if not os.path.exists(refpath):
-            raise CASError("Could not find ref '{}'".format(ref))
+            raise CASCacheError("Could not find ref '{}'".format(ref))
 
         os.unlink(refpath)
 
@@ -792,7 +663,7 @@ class CASCache():
                 # The process serving the socket can't be cached anyway
                 pass
             else:
-                raise CASError("Unsupported file type for {}".format(full_path))
+                raise CASCacheError("Unsupported file type for {}".format(full_path))
 
         return self.add_object(digest=dir_digest,
                                buffer=directory.SerializeToString())
@@ -811,7 +682,7 @@ class CASCache():
             if dirnode.name == name:
                 return dirnode.digest
 
-        raise CASError("Subdirectory {} not found".format(name))
+        raise CASCacheError("Subdirectory {} not found".format(name))
 
     def _diff_trees(self, tree_a, tree_b, *, added, removed, modified, path=""):
         dir_a = remote_execution_pb2.Directory()
@@ -909,23 +780,6 @@ class CASCache():
         for dirnode in directory.directories:
             yield from self._required_blobs(dirnode.digest)
 
-    def _fetch_blob(self, remote, digest, stream):
-        resource_name_components = ['blobs', digest.hash, str(digest.size_bytes)]
-
-        if remote.spec.instance_name:
-            resource_name_components.insert(0, remote.spec.instance_name)
-
-        resource_name = '/'.join(resource_name_components)
-
-        request = bytestream_pb2.ReadRequest()
-        request.resource_name = resource_name
-        request.read_offset = 0
-        for response in remote.bytestream.Read(request):
-            stream.write(response.data)
-        stream.flush()
-
-        assert digest.size_bytes == os.fstat(stream.fileno()).st_size
-
     # _ensure_blob():
     #
     # Fetch and add blob if it's not already local.
@@ -944,7 +798,7 @@ class CASCache():
             return objpath
 
         with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
-            self._fetch_blob(remote, digest, f)
+            remote._fetch_blob(digest, f)
 
             added_digest = self.add_object(path=f.name, link_directly=True)
             assert added_digest.hash == digest.hash
@@ -1051,7 +905,7 @@ class CASCache():
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object
         with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
-            self._fetch_blob(remote, digest, out)
+            remote._fetch_blob(digest, out)
 
             tree = remote_execution_pb2.Tree()
 
@@ -1070,39 +924,6 @@ class CASCache():
                 assert dirdigest.size_bytes == len(dirbuffer)
 
         return dirdigest
-
-    def _send_blob(self, remote, digest, stream, u_uid=uuid.uuid4()):
-        resource_name_components = ['uploads', str(u_uid), 'blobs',
-                                    digest.hash, str(digest.size_bytes)]
-
-        if remote.spec.instance_name:
-            resource_name_components.insert(0, remote.spec.instance_name)
-
-        resource_name = '/'.join(resource_name_components)
-
-        def request_stream(resname, instream):
-            offset = 0
-            finished = False
-            remaining = digest.size_bytes
-            while not finished:
-                chunk_size = min(remaining, _MAX_PAYLOAD_BYTES)
-                remaining -= chunk_size
-
-                request = bytestream_pb2.WriteRequest()
-                request.write_offset = offset
-                # max. _MAX_PAYLOAD_BYTES chunks
-                request.data = instream.read(chunk_size)
-                request.resource_name = resname
-                request.finish_write = remaining <= 0
-
-                yield request
-
-                offset += chunk_size
-                finished = request.finish_write
-
-        response = remote.bytestream.Write(request_stream(resource_name, stream))
-
-        assert response.committed_size == digest.size_bytes
 
     def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
         required_blobs = self._required_blobs(digest)
@@ -1137,7 +958,7 @@ class CASCache():
                 if (digest.size_bytes >= remote.max_batch_total_size_bytes or
                         not remote.batch_update_supported):
                     # Too large for batch request, upload in independent request.
-                    self._send_blob(remote, digest, f, u_uid=u_uid)
+                    remote._send_blob(digest, f, u_uid=u_uid)
                 else:
                     if not batch.add(digest, f):
                         # Not enough space left in batch request.
@@ -1148,183 +969,6 @@ class CASCache():
 
         # Send final batch
         batch.send()
-
-
-# Represents a single remote CAS cache.
-#
-class CASRemote():
-    def __init__(self, spec):
-        self.spec = spec
-        self._initialized = False
-        self.channel = None
-        self.bytestream = None
-        self.cas = None
-        self.ref_storage = None
-        self.batch_update_supported = None
-        self.batch_read_supported = None
-        self.capabilities = None
-        self.max_batch_total_size_bytes = None
-
-    def init(self):
-        if not self._initialized:
-            url = urlparse(self.spec.url)
-            if url.scheme == 'http':
-                port = url.port or 80
-                self.channel = grpc.insecure_channel('{}:{}'.format(url.hostname, port))
-            elif url.scheme == 'https':
-                port = url.port or 443
-
-                if self.spec.server_cert:
-                    with open(self.spec.server_cert, 'rb') as f:
-                        server_cert_bytes = f.read()
-                else:
-                    server_cert_bytes = None
-
-                if self.spec.client_key:
-                    with open(self.spec.client_key, 'rb') as f:
-                        client_key_bytes = f.read()
-                else:
-                    client_key_bytes = None
-
-                if self.spec.client_cert:
-                    with open(self.spec.client_cert, 'rb') as f:
-                        client_cert_bytes = f.read()
-                else:
-                    client_cert_bytes = None
-
-                credentials = grpc.ssl_channel_credentials(root_certificates=server_cert_bytes,
-                                                           private_key=client_key_bytes,
-                                                           certificate_chain=client_cert_bytes)
-                self.channel = grpc.secure_channel('{}:{}'.format(url.hostname, port), credentials)
-            else:
-                raise CASError("Unsupported URL: {}".format(self.spec.url))
-
-            self.bytestream = bytestream_pb2_grpc.ByteStreamStub(self.channel)
-            self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
-            self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
-            self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
-
-            self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
-            try:
-                request = remote_execution_pb2.GetCapabilitiesRequest(instance_name=self.spec.instance_name)
-                response = self.capabilities.GetCapabilities(request)
-                server_max_batch_total_size_bytes = response.cache_capabilities.max_batch_total_size_bytes
-                if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
-                    self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
-            except grpc.RpcError as e:
-                # Simply use the defaults for servers that don't implement GetCapabilities()
-                if e.code() != grpc.StatusCode.UNIMPLEMENTED:
-                    raise
-
-            # Check whether the server supports BatchReadBlobs()
-            self.batch_read_supported = False
-            try:
-                request = remote_execution_pb2.BatchReadBlobsRequest(instance_name=self.spec.instance_name)
-                response = self.cas.BatchReadBlobs(request)
-                self.batch_read_supported = True
-            except grpc.RpcError as e:
-                if e.code() != grpc.StatusCode.UNIMPLEMENTED:
-                    raise
-
-            # Check whether the server supports BatchUpdateBlobs()
-            self.batch_update_supported = False
-            try:
-                request = remote_execution_pb2.BatchUpdateBlobsRequest(instance_name=self.spec.instance_name)
-                response = self.cas.BatchUpdateBlobs(request)
-                self.batch_update_supported = True
-            except grpc.RpcError as e:
-                if (e.code() != grpc.StatusCode.UNIMPLEMENTED and
-                        e.code() != grpc.StatusCode.PERMISSION_DENIED):
-                    raise
-
-            self._initialized = True
-
-
-# Represents a batch of blobs queued for fetching.
-#
-class _CASBatchRead():
-    def __init__(self, remote):
-        self._remote = remote
-        self._max_total_size_bytes = remote.max_batch_total_size_bytes
-        self._request = remote_execution_pb2.BatchReadBlobsRequest(instance_name=remote.spec.instance_name)
-        self._size = 0
-        self._sent = False
-
-    def add(self, digest):
-        assert not self._sent
-
-        new_batch_size = self._size + digest.size_bytes
-        if new_batch_size > self._max_total_size_bytes:
-            # Not enough space left in current batch
-            return False
-
-        request_digest = self._request.digests.add()
-        request_digest.hash = digest.hash
-        request_digest.size_bytes = digest.size_bytes
-        self._size = new_batch_size
-        return True
-
-    def send(self):
-        assert not self._sent
-        self._sent = True
-
-        if not self._request.digests:
-            return
-
-        batch_response = self._remote.cas.BatchReadBlobs(self._request)
-
-        for response in batch_response.responses:
-            if response.status.code == code_pb2.NOT_FOUND:
-                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
-                    response.digest.hash, response.status.code))
-            if response.status.code != code_pb2.OK:
-                raise CASError("Failed to download blob {}: {}".format(
-                    response.digest.hash, response.status.code))
-            if response.digest.size_bytes != len(response.data):
-                raise CASError("Failed to download blob {}: expected {} bytes, received {} bytes".format(
-                    response.digest.hash, response.digest.size_bytes, len(response.data)))
-
-            yield (response.digest, response.data)
-
-
-# Represents a batch of blobs queued for upload.
-#
-class _CASBatchUpdate():
-    def __init__(self, remote):
-        self._remote = remote
-        self._max_total_size_bytes = remote.max_batch_total_size_bytes
-        self._request = remote_execution_pb2.BatchUpdateBlobsRequest(instance_name=remote.spec.instance_name)
-        self._size = 0
-        self._sent = False
-
-    def add(self, digest, stream):
-        assert not self._sent
-
-        new_batch_size = self._size + digest.size_bytes
-        if new_batch_size > self._max_total_size_bytes:
-            # Not enough space left in current batch
-            return False
-
-        blob_request = self._request.requests.add()
-        blob_request.digest.hash = digest.hash
-        blob_request.digest.size_bytes = digest.size_bytes
-        blob_request.data = stream.read(digest.size_bytes)
-        self._size = new_batch_size
-        return True
-
-    def send(self):
-        assert not self._sent
-        self._sent = True
-
-        if not self._request.requests:
-            return
-
-        batch_response = self._remote.cas.BatchUpdateBlobs(self._request)
-
-        for response in batch_response.responses:
-            if response.status.code != code_pb2.OK:
-                raise CASError("Failed to upload blob {}: {}".format(
-                    response.digest.hash, response.status.code))
 
 
 def _grouper(iterable, n):

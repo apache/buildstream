@@ -11,8 +11,8 @@ from multiprocessing import Process, Queue
 import pytest_cov
 
 from buildstream import _yaml
-from buildstream._artifactcache.cascache import CASCache
-from buildstream._artifactcache.casserver import create_server
+from buildstream._cas import CASCache
+from buildstream._cas.casserver import create_server
 from buildstream._exceptions import CASError
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 

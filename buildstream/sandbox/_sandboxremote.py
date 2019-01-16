@@ -38,7 +38,7 @@ from .._protos.google.rpc import code_pb2
 from .._exceptions import SandboxError
 from .. import _yaml
 from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
-from .._artifactcache.cascache import CASRemote, CASRemoteSpec
+from .._cas import CASRemote, CASRemoteSpec
 
 
 class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service')):
@@ -348,17 +348,17 @@ class SandboxRemote(Sandbox):
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
 
-            if not cascache.verify_digest_on_remote(casremote, upload_vdir.ref):
+            if not casremote.verify_digest_on_remote(upload_vdir.ref):
                 raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
 
             # Push command and action
             try:
-                cascache.push_message(casremote, command_proto)
+                casremote.push_message(command_proto)
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push command to remote: {}".format(e))
 
             try:
-                cascache.push_message(casremote, action)
+                casremote.push_message(action)
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push action to remote: {}".format(e))
 

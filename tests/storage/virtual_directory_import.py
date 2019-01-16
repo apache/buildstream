@@ -8,7 +8,7 @@ from tests.testutils import cli
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._artifactcache import ArtifactCache
-from buildstream._artifactcache.cascache import CASCache
+from buildstream._cas import CASCache
 from buildstream import utils
 
 
