@@ -17,15 +17,23 @@
 #
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
-
+#
 import os
 import shutil
-
+import tempfile
 import pytest
-
 from buildstream._platform.platform import Platform
 
+#
+# This file is loaded by pytest, we use it to add a custom
+# `--integration` option to our test suite, and to install
+# a session scope fixture.
+#
 
+
+#################################################
+#            Implement pytest option            #
+#################################################
 def pytest_addoption(parser):
     parser.addoption('--integration', action='store_true', default=False,
                      help='Run integration tests')
@@ -36,26 +44,57 @@ def pytest_runtest_setup(item):
         pytest.skip('skipping integration test')
 
 
+#################################################
+#           integration_cache fixture           #
+#################################################
+#
+# This is yielded by the `integration_cache` fixture
+#
+class IntegrationCache():
+
+    def __init__(self, cache):
+        cache = os.path.abspath(cache)
+
+        # Use the same sources every time
+        self.sources = os.path.join(cache, 'sources')
+
+        # Create a temp directory for the duration of the test for
+        # the artifacts directory
+        try:
+            self.artifacts = tempfile.mkdtemp(dir=cache, prefix='artifacts-')
+        except OSError as e:
+            raise AssertionError("Unable to create test directory !") from e
+
+
 @pytest.fixture(scope='session')
 def integration_cache(request):
 
-    # Set the tempdir to the INTEGRATION_CACHE variable, or the
+    # Set the cache dir to the INTEGRATION_CACHE variable, or the
     # default if that is not set.
     if 'INTEGRATION_CACHE' in os.environ:
         cache_dir = os.environ['INTEGRATION_CACHE']
     else:
         cache_dir = os.path.abspath('./integration-cache')
 
-    yield cache_dir
+    cache = IntegrationCache(cache_dir)
+
+    yield cache
 
     # Clean up the artifacts after each test run - we only want to
-    # cache sources
+    # cache sources between runs
     try:
-        shutil.rmtree(os.path.join(cache_dir, 'artifacts'))
+        shutil.rmtree(cache.artifacts)
     except FileNotFoundError:
         pass
 
 
+#################################################
+#         Automatically reset the platform      #
+#################################################
+#
+# This might need some refactor, maybe buildstream
+# needs to cleanup more gracefully and we could remove this.
+#
 def clean_platform_cache():
     Platform._instance = None
 
