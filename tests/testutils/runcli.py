@@ -525,8 +525,8 @@ def cli_integration(tmpdir, integration_cache):
     # We want to cache sources for integration tests more permanently,
     # to avoid downloading the huge base-sdk repeatedly
     fixture.configure({
-        'sourcedir': os.path.join(integration_cache, 'sources'),
-        'artifactdir': os.path.join(integration_cache, 'artifacts')
+        'sourcedir': integration_cache.sources,
+        'artifactdir': integration_cache.artifacts
     })
 
     return fixture

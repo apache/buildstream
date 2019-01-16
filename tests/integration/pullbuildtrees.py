@@ -32,7 +32,7 @@ def default_state(cli, tmpdir, share):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
-def test_pullbuildtrees(cli, tmpdir, datafiles, integration_cache):
+def test_pullbuildtrees(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'autotools/amhello.bst'
 
