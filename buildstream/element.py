@@ -1398,43 +1398,40 @@ class Element(Plugin):
     #     usebuildtree (bool): use a the elements build tree as its source.
     #
     def _stage_sources_at(self, vdirectory, mount_workspaces=True, usebuildtree=False):
-        with self.timed_activity("Staging sources", silent_nested=True):
+        context = self._get_context()
+
+        # It's advantageous to have this temporary directory on
+        # the same file system as the rest of our cache.
+        with self.timed_activity("Staging sources", silent_nested=True), \
+            utils._tempdir(dir=context.artifactdir, prefix='staging-temp') as temp_staging_directory:
+
+            import_dir = temp_staging_directory
+
             if not isinstance(vdirectory, Directory):
                 vdirectory = FileBasedDirectory(vdirectory)
             if not vdirectory.is_empty():
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
-            # It's advantageous to have this temporary directory on
-            # the same filing system as the rest of our cache.
-            temp_staging_location = os.path.join(self._get_context().artifactdir, "staging_temp")
-            temp_staging_directory = tempfile.mkdtemp(prefix=temp_staging_location)
-            import_dir = temp_staging_directory
+            workspace = self._get_workspace()
+            if workspace:
+                # If mount_workspaces is set and we're doing incremental builds,
+                # the workspace is already mounted into the sandbox.
+                if not (mount_workspaces and self.__can_build_incrementally()):
+                    with self.timed_activity("Staging local files at {}"
+                                             .format(workspace.get_absolute_path())):
+                        workspace.stage(temp_staging_directory)
 
-            try:
-                workspace = self._get_workspace()
-                if workspace:
-                    # If mount_workspaces is set and we're doing incremental builds,
-                    # the workspace is already mounted into the sandbox.
-                    if not (mount_workspaces and self.__can_build_incrementally()):
-                        with self.timed_activity("Staging local files at {}"
-                                                 .format(workspace.get_absolute_path())):
-                            workspace.stage(temp_staging_directory)
-                # Check if we have a cached buildtree to use
-                elif usebuildtree:
-                    artifact_base, _ = self.__extract()
-                    import_dir = os.path.join(artifact_base, 'buildtree')
-                else:
-                    # No workspace or cached buildtree, stage source directly
-                    for source in self.sources():
-                        source._stage(temp_staging_directory)
+            # Check if we have a cached buildtree to use
+            elif usebuildtree:
+                artifact_base, _ = self.__extract()
+                import_dir = os.path.join(artifact_base, 'buildtree')
+            else:
+                # No workspace or cached buildtree, stage source directly
+                for source in self.sources():
+                    source._stage(temp_staging_directory)
 
-                vdirectory.import_files(import_dir)
+            vdirectory.import_files(import_dir)
 
-            finally:
-                # Staging may produce directories with less than 'rwx' permissions
-                # for the owner, which breaks tempfile. _force_rmtree will deal
-                # with these.
-                utils._force_rmtree(temp_staging_directory)
         # Ensure deterministic mtime of sources at build time
         vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time

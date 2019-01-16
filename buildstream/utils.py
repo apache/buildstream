@@ -1023,7 +1023,7 @@ def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-bu
 
     def cleanup_tempdir():
         if os.path.isdir(tempdir):
-            shutil.rmtree(tempdir)
+            _force_rmtree(tempdir)
 
     try:
         with _signals.terminator(cleanup_tempdir):
