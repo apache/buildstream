@@ -124,7 +124,7 @@ def list_man_pages():
 # So screw it, lets just use an env var.
 bst_install_entry_points = {
     'console_scripts': [
-        'bst-artifact-server = buildstream._artifactcache.casserver:server_main'
+        'bst-artifact-server = buildstream._cas.casserver:server_main'
     ],
 }
 
