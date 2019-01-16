@@ -282,8 +282,7 @@ def test_workspace_missing_last_successful(cli, datafiles, integration_cache):
     assert res.exit_code == 0
 
     # Remove the artifact from the cache, invalidating the last successful build
-    cache_dir = os.path.join(integration_cache, 'artifacts')
-    cli.remove_artifact_from_cache(project, element_name, cache_dir=cache_dir)
+    cli.remove_artifact_from_cache(project, element_name, cache_dir=integration_cache.artifacts)
 
     # Build again, ensure we dont crash just because the artifact went missing
     res = cli.run(project=project, args=['build', element_name])

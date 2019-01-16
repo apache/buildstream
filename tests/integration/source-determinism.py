@@ -92,7 +92,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_ca
                 return f.read()
         finally:
             os.umask(old_umask)
-            cache_dir = os.path.join(integration_cache, 'artifacts')
+            cache_dir = integration_cache.artifacts
             cli.remove_artifact_from_cache(project, element_name,
                                            cache_dir=cache_dir)
 
@@ -153,7 +153,7 @@ def test_deterministic_source_local(cli, tmpdir, datafiles, integration_cache):
             with open(os.path.join(checkoutdir, 'ls-l'), 'r') as f:
                 return f.read()
         finally:
-            cache_dir = os.path.join(integration_cache, 'artifacts')
+            cache_dir = integration_cache.artifacts
             cli.remove_artifact_from_cache(project, element_name,
                                            cache_dir=cache_dir)
 
