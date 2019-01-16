@@ -554,6 +554,12 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
     element, assuming it has already been built and all required
     artifacts are in the local cache.
 
+    Use '--' to separate a command from the options to bst,
+    otherwise bst may respond to them instead. e.g.
+
+    \b
+        bst shell example.bst -- df -h
+
     Use the --build option to create a temporary sysroot for
     building the element instead.
 
