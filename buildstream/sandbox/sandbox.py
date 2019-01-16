@@ -86,10 +86,11 @@ class SandboxCommandError(SandboxError):
 
     Args:
        message (str): The error message to report to the user
+       detail (str): The detailed error string
        collect (str): An optional directory containing partial install contents
     """
-    def __init__(self, message, *, collect=None):
-        super().__init__(message, reason='command-failed')
+    def __init__(self, message, *, detail=None, collect=None):
+        super().__init__(message, detail=detail, reason='command-failed')
 
         self.collect = collect
 
@@ -599,8 +600,8 @@ class _SandboxBatch():
         if exitcode != 0:
             cmdline = ' '.join(shlex.quote(cmd) for cmd in command.command)
             label = command.label or cmdline
-            raise SandboxCommandError("Command '{}' failed with exitcode {}".format(label, exitcode),
-                                      collect=self.collect)
+            raise SandboxCommandError("Command failed with exitcode {}".format(exitcode),
+                                      detail=label, collect=self.collect)
 
     def execute_call(self, call):
         call.callback()
