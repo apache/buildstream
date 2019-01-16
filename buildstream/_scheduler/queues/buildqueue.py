@@ -57,11 +57,10 @@ class BuildQueue(Queue):
                           logfile=logfile)
             job = ElementJob(self._scheduler, self.action_name,
                              logfile, element=element, queue=self,
-                             resources=self.resources,
                              action_cb=self.process,
                              complete_cb=self._job_done,
                              max_retries=self._max_retries)
-            self._done_queue.append(job)
+            self._done_queue.append(element)
             self.failed_elements.append(element)
             self._scheduler._job_complete_callback(job, False)
 

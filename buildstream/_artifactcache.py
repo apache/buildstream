@@ -247,7 +247,7 @@ class ArtifactCache():
                 # FIXME: Asking the user what to do may be neater
                 default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
                                             'buildstream.conf')
-                detail = ("There is not enough space to build the given element.\n"
+                detail = ("There is not enough space to complete the build.\n"
                           "Please increase the cache-quota in {}."
                           .format(self.context.config_origin or default_conf))
 

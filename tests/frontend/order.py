@@ -12,7 +12,21 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_element(repo, name, path, dependencies, ref=None):
+# create_element()
+#
+# Args:
+#    project (str): The project directory where testing is happening
+#    name (str): The element name to create
+#    dependencies (list): The list of dependencies to dump into YAML format
+#
+# Returns:
+#    (Repo): The corresponding git repository created for the element
+def create_element(project, name, dependencies):
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+    element_path = os.path.join(project, 'elements')
+    repo = create_repo('git', project, "{}-repo".format(name))
+    ref = repo.create(dev_files_path)
+
     element = {
         'kind': 'import',
         'sources': [
@@ -20,7 +34,9 @@ def create_element(repo, name, path, dependencies, ref=None):
         ],
         'depends': dependencies
     }
-    _yaml.dump(element, os.path.join(path, name))
+    _yaml.dump(element, os.path.join(element_path, name))
+
+    return repo
 
 
 # This tests a variety of scenarios and checks that the order in
@@ -59,18 +75,6 @@ def create_element(repo, name, path, dependencies, ref=None):
 @pytest.mark.parametrize("operation", [('show'), ('fetch'), ('build')])
 def test_order(cli, datafiles, tmpdir, operation, target, template, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    dev_files_path = os.path.join(project, 'files', 'dev-files')
-    element_path = os.path.join(project, 'elements')
-
-    # FIXME: Remove this when the test passes reliably.
-    #
-    #        There is no reason why the order should not
-    #        be preserved when the builders is set to 1,
-    #        the scheduler queue processing still seems to
-    #        be losing the order.
-    #
-    if operation == 'build':
-        pytest.skip("FIXME: This still only sometimes passes")
 
     # Configure to only allow one fetcher at a time, make it easy to
     # determine what is being planned in what order.
@@ -84,11 +88,8 @@ def test_order(cli, datafiles, tmpdir, operation, target, template, expected):
     # Build the project from the template, make import elements
     # all with the same repo
     #
-    repo = create_repo('git', str(tmpdir))
-    ref = repo.create(dev_files_path)
     for element, dependencies in template.items():
-        create_element(repo, element, element_path, dependencies, ref=ref)
-        repo.add_commit()
+        create_element(project, element, dependencies)
 
     # Run test and collect results
     if operation == 'show':
