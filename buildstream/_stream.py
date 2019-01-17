@@ -27,6 +27,7 @@ import shutil
 import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
+from fnmatch import fnmatch
 
 from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
 from ._message import Message, MessageType
@@ -1331,3 +1332,47 @@ class Stream():
                 required_list.append(element)
 
         return required_list
+
+    # _classify_artifacts()
+    #
+    # Split up a list of tagets into element names and artifact refs
+    #
+    # Args:
+    #    names (list): A list of targets
+    #    cas (CASCache): The CASCache object
+    #    project_directory (str): Absolute path to the project
+    #
+    # Returns:
+    #    (list): element names present in the targets
+    #    (list): artifact refs present in the targets
+    #
+    def _classify_artifacts(names, cas, project_directory):
+        element_targets = []
+        artifact_refs = []
+        element_globs = []
+        artifact_globs = []
+
+        for name in names:
+            if name.endswith('.bst'):
+                if any(c in "*?[" for c in name):
+                    element_globs.append(name)
+                else:
+                    element_targets.append(name)
+            else:
+                if any(c in "*?[" for c in name):
+                    artifact_globs.append(name)
+                else:
+                    artifact_refs.append(name)
+
+        if element_globs:
+            for dirpath, _, filenames in os.walk(project_directory):
+                for filename in filenames:
+                    element_path = os.path.join(dirpath, filename).lstrip(project_directory).lstrip('/')
+                    if any(fnmatch(element_path, glob) for glob in element_globs):
+                        element_targets.append(element_path)
+
+        if artifact_globs:
+            artifact_refs.extend(ref for ref in cas.list_refs()
+                                 if any(fnmatch(ref, glob) for glob in artifact_globs))
+
+        return element_targets, artifact_refs
