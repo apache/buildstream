@@ -159,6 +159,64 @@ See :ref:`format_dependencies` for more information on the dependency model.
 
    The ``runtime-depends`` configuration is available since :ref:`format version 14 <project_format_version>`
 
+Sysroot'ed dependencies
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Build elements and script elements can support sysroot'ed
+dependencies.  Sysroot'ed dependencies are intended for bootstraping
+base systems or cross-compiling.
+
+Because sysroot'ed dependencies are plugin specific, they are defined
+within the plugin configuration node.
+
+.. code:: yaml
+
+   config:
+     # Specify some sysroot'ed dependencies
+     sysroots:
+     - path: /sysroot
+       depends:
+       - element1.bst
+       - element2.bst
+
+During build, or initialization of build shell, sysroot'ed build
+dependencies will be staged in the given sysroot path instead of '/'
+together with the runtime dependencies of those sysroot'ed build
+dependencies.
+
+It is possible to end up with indirect runtime dependencies in
+different sysroots if they are staged from build dependencies with
+different sysroots. They will be staged multiple times.
+
+Sysroot paths only apply to build dependencies. It is not possible to
+define runtime dependencies either with ``type: runtime`` or
+``runtime-depends``. It is possible to use ``all`` dependencies, but
+the sysroot part is only for the build part not the runtime.
+
+For example:
+
+.. code:: yaml
+
+   config:
+     sysroots:
+     - path: /sysroot
+       depends:
+       - element.bst
+
+is equivalent to:
+
+.. code:: yaml
+
+   config:
+     runtime-depends:
+     - element.bst
+     sysroots:
+     - path: /sysroot
+       build-depends:
+       - element.bst
+
+:ref:`Integration commands <public_integration>` are never executed for
+sysroot'ed dependencies.
 
 .. _format_sources:
 

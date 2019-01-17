@@ -36,6 +36,7 @@ The default configuration and possible options are as such:
 """
 
 import buildstream
+from buildstream._sysroot_dependency_loader import DependencyLoader
 
 
 # Element implementation for the 'script' kind.
@@ -46,6 +47,8 @@ class ScriptElement(buildstream.ScriptElement):
     BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
+        super().configure(node)
+
         for n in self.node_get_member(node, list, 'layout', []):
             dst = self.node_subst_member(n, 'destination')
             elm = self.node_subst_member(n, 'element', None)
@@ -53,7 +56,7 @@ class ScriptElement(buildstream.ScriptElement):
 
         self.node_validate(node, [
             'commands', 'root-read-only', 'layout'
-        ])
+        ] + self.COMMON_CONFIG_KEYS)
 
         cmds = self.node_subst_list(node, "commands")
         self.add_commands("commands", cmds)

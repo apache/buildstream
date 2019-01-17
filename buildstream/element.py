@@ -677,7 +677,8 @@ class Element(Plugin):
         return link_result.combine(copy_result)
 
     def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
-                                   include=None, exclude=None, orphans=True):
+                                   include=None, exclude=None, orphans=True,
+                                   dependencies=None):
         """Stage element dependencies in scope
 
         This is primarily a convenience wrapper around
@@ -692,6 +693,7 @@ class Element(Plugin):
            include (list): An optional list of domains to include files from
            exclude (list): An optional list of domains to exclude files from
            orphans (bool): Whether to include files not spoken for by split domains
+           dependencies (list): An optional list of dependencies to stage
 
         Raises:
            (:class:`.ElementError`): If any of the dependencies in `scope` have not
@@ -707,7 +709,9 @@ class Element(Plugin):
         if self.__can_build_incrementally() and workspace.last_successful:
             old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
 
-        for dep in self.dependencies(scope):
+        if dependencies is None:
+            dependencies = self.dependencies(scope)
+        for dep in dependencies:
             # If we are workspaced, and we therefore perform an
             # incremental build, we must ensure that we update the mtimes
             # of any files created by our dependencies since the last

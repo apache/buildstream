@@ -35,7 +35,8 @@ implementations.
 import os
 from collections import OrderedDict
 
-from . import Element, ElementError, Scope, SandboxFlags
+from . import Element, SandboxFlags
+from ._sysroot_dependency_loader import SysrootDependencyLoader, SysrootHelper
 
 
 class ScriptElement(Element):
@@ -43,7 +44,6 @@ class ScriptElement(Element):
     __cwd = "/"
     __root_read_only = False
     __commands = None
-    __layout = []
 
     # The compose element's output is its dependencies, so
     # we must rebuild if the dependencies change even when
@@ -58,6 +58,15 @@ class ScriptElement(Element):
     # This element ignores sources, so we should forbid them from being
     # added, to reduce the potential for confusion
     BST_FORBID_SOURCES = True
+
+    COMMON_CONFIG_KEYS = SysrootHelper.CONFIG_KEYS
+
+    DEPENDENCY_LOADER = SysrootDependencyLoader
+
+    def configure(self, node):
+
+        self.__stage_all = True  # pylint: disable=attribute-defined-outside-init
+        self.__sysroots = SysrootHelper(self, node)  # pylint: disable=attribute-defined-outside-init
 
     def set_work_dir(self, work_dir=None):
         """Sets the working dir
@@ -134,14 +143,8 @@ class ScriptElement(Element):
            In the case that no element is specified, a read-write directory will
            be made available at the specified location.
         """
-        #
-        # Even if this is an empty list by default, make sure that its
-        # instance data instead of appending stuff directly onto class data.
-        #
-        if not self.__layout:
-            self.__layout = []
-        self.__layout.append({"element": element,
-                              "destination": destination})
+        self.__stage_all = False  # pylint: disable=attribute-defined-outside-init
+        self.__sysroots.layout_add(element, destination)
 
     def add_commands(self, group_name, command_list):
         """Adds a list of commands under the group-name.
@@ -164,32 +167,15 @@ class ScriptElement(Element):
             self.__commands = OrderedDict()
         self.__commands[group_name] = command_list
 
-    def __validate_layout(self):
-        if self.__layout:
-            # Cannot proceeed if layout is used, but none are for "/"
-            root_defined = any([(entry['destination'] == '/') for entry in self.__layout])
-            if not root_defined:
-                raise ElementError("{}: Using layout, but none are staged as '/'"
-                                   .format(self))
-
-            # Cannot proceed if layout specifies an element that isn't part
-            # of the dependencies.
-            for item in self.__layout:
-                if item['element']:
-                    if not self.search(Scope.BUILD, item['element']):
-                        raise ElementError("{}: '{}' in layout not found in dependencies"
-                                           .format(self, item['element']))
-
     def preflight(self):
-        # The layout, if set, must make sense.
-        self.__validate_layout()
+        self.__sysroots.validate()
 
     def get_unique_key(self):
         return {
             'commands': self.__commands,
             'cwd': self.__cwd,
             'install-root': self.__install_root,
-            'layout': self.__layout,
+            'layout': self.__sysroots.get_unique_key(),
             'root-read-only': self.__root_read_only
         }
 
@@ -201,72 +187,11 @@ class ScriptElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
-        # Tell the sandbox to mount the install root
-        directories = {self.__install_root: False}
-
-        # Mark the artifact directories in the layout
-        for item in self.__layout:
-            destination = item['destination']
-            was_artifact = directories.get(destination, False)
-            directories[destination] = item['element'] or was_artifact
-
-        for directory, artifact in directories.items():
-            # Root does not need to be marked as it is always mounted
-            # with artifact (unless explicitly marked non-artifact)
-            if directory != '/':
-                sandbox.mark_directory(directory, artifact=artifact)
+        self.__sysroots.configure_sandbox(sandbox, [self.__install_root])
 
     def stage(self, sandbox):
 
-        # Stage the elements, and run integration commands where appropriate.
-        if not self.__layout:
-            # if no layout set, stage all dependencies into /
-            for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                with self.timed_activity("Staging {} at /"
-                                         .format(build_dep.name), silent_nested=True):
-                    build_dep.stage_dependency_artifacts(sandbox, Scope.RUN, path="/")
-
-            with sandbox.batch(SandboxFlags.NONE):
-                for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                    with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
-                        for dep in build_dep.dependencies(Scope.RUN):
-                            dep.integrate(sandbox)
-        else:
-            # If layout, follow its rules.
-            for item in self.__layout:
-
-                # Skip layout members which dont stage an element
-                if not item['element']:
-                    continue
-
-                element = self.search(Scope.BUILD, item['element'])
-                if item['destination'] == '/':
-                    with self.timed_activity("Staging {} at /".format(element.name),
-                                             silent_nested=True):
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN)
-                else:
-                    with self.timed_activity("Staging {} at {}"
-                                             .format(element.name, item['destination']),
-                                             silent_nested=True):
-                        virtual_dstdir = sandbox.get_virtual_directory()
-                        virtual_dstdir.descend(item['destination'].lstrip(os.sep).split(os.sep), create=True)
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item['destination'])
-
-            with sandbox.batch(SandboxFlags.NONE):
-                for item in self.__layout:
-
-                    # Skip layout members which dont stage an element
-                    if not item['element']:
-                        continue
-
-                    element = self.search(Scope.BUILD, item['element'])
-
-                    # Integration commands can only be run for elements staged to /
-                    if item['destination'] == '/':
-                        with self.timed_activity("Integrating {}".format(element.name),
-                                                 silent_nested=True):
-                            for dep in element.dependencies(Scope.RUN):
-                                dep.integrate(sandbox)
+        self.__sysroots.stage(sandbox, self.__stage_all)
 
         install_root_path_components = self.__install_root.lstrip(os.sep).split(os.sep)
         sandbox.get_virtual_directory().descend(install_root_path_components, create=True)

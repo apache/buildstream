@@ -135,8 +135,10 @@ artifact collection purposes.
 """
 
 import os
-from . import Element, Scope
+
+from . import Element
 from . import SandboxFlags
+from ._sysroot_dependency_loader import SysrootDependencyLoader, SysrootHelper
 
 
 # This list is preserved because of an unfortunate situation, we
@@ -157,17 +159,20 @@ _command_steps = ['configure-commands',
 
 class BuildElement(Element):
 
+    DEPENDENCY_LOADER = SysrootDependencyLoader
+
     #############################################################
     #             Abstract Method Implementations               #
     #############################################################
     def configure(self, node):
 
         self.__commands = {}  # pylint: disable=attribute-defined-outside-init
+        self.__sysroots = SysrootHelper(self, node)  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
         #        extend the configuration
-        self.node_validate(node, _command_steps)
+        self.node_validate(node, _command_steps + SysrootHelper.CONFIG_KEYS)
 
         for command_name in _legacy_command_steps:
             if command_name in _command_steps:
@@ -191,6 +196,9 @@ class BuildElement(Element):
         if self.get_variable('notparallel'):
             dictionary['notparallel'] = True
 
+        if self.__sysroots.has_sysroots():
+            dictionary['sysroots'] = self.__sysroots.get_unique_key()
+
         return dictionary
 
     def configure_sandbox(self, sandbox):
@@ -198,8 +206,8 @@ class BuildElement(Element):
         install_root = self.get_variable('install-root')
 
         # Tell the sandbox to mount the build root and install root
-        sandbox.mark_directory(build_root)
-        sandbox.mark_directory(install_root)
+        self.__sysroots.configure_sandbox(sandbox, [build_root,
+                                                    install_root])
 
         # Allow running all commands in a specified subdirectory
         command_subdir = self.get_variable('command-subdir')
@@ -217,15 +225,7 @@ class BuildElement(Element):
 
     def stage(self, sandbox):
 
-        # Stage deps in the sandbox root
-        with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependency_artifacts(sandbox, Scope.BUILD)
-
-        # Run any integration commands provided by the dependencies
-        # once they are all staged and ready
-        with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
-            for dep in self.dependencies(Scope.BUILD):
-                dep.integrate(sandbox)
+        self.__sysroots.stage(sandbox, True)
 
         # Stage sources in the build root
         self.stage_sources(sandbox, self.get_variable('build-root'))
