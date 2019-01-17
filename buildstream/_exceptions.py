@@ -262,8 +262,8 @@ class PlatformError(BstError):
 # Raised when errors are encountered by the sandbox implementation
 #
 class SandboxError(BstError):
-    def __init__(self, message, reason=None):
-        super().__init__(message, domain=ErrorDomain.SANDBOX, reason=reason)
+    def __init__(self, message, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason)
 
 
 # ArtifactError

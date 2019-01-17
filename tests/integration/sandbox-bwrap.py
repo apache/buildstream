@@ -59,4 +59,4 @@ def test_sandbox_bwrap_return_subprocess(cli, tmpdir, datafiles):
 
     result = cli.run(project=project, args=['build', element_name])
     result.assert_task_error(error_domain=ErrorDomain.SANDBOX, error_reason="command-failed")
-    assert "sandbox-bwrap/command-exit-42.bst|Command 'exit 42' failed with exitcode 42" in result.stderr
+    assert "sandbox-bwrap/command-exit-42.bst|Command failed with exitcode 42" in result.stderr
