@@ -62,15 +62,15 @@ class Profile():
     def end(self):
         self.profiler.disable()
 
+        dt = datetime.datetime.fromtimestamp(self.start)
+        timestamp = dt.strftime('%Y%m%dT%H%M%S')
+
         filename = self.key.replace('/', '-')
         filename = filename.replace('.', '-')
-        filename = os.path.join(os.getcwd(), 'profile-' + filename + '.log')
+        filename = os.path.join(os.getcwd(), 'profile-' + timestamp + '-' + filename + '.log')
 
         with open(filename, "a", encoding="utf-8") as f:
-
-            dt = datetime.datetime.fromtimestamp(self.start)
             time_ = dt.strftime('%Y-%m-%d %H:%M:%S')
-
             heading = '================================================================\n'
             heading += 'Profile for key: {}\n'.format(self.key)
             heading += 'Started at: {}\n'.format(time_)
