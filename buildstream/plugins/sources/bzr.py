@@ -56,6 +56,7 @@ details on common configuration options for sources.
 
 import os
 import shutil
+import fcntl
 from contextlib import contextmanager
 
 from buildstream import Source, SourceError, Consistency
@@ -84,10 +85,12 @@ class BzrSource(Source):
         if self.ref is None or self.tracking is None:
             return Consistency.INCONSISTENT
 
-        if self._check_ref():
-            return Consistency.CACHED
-        else:
-            return Consistency.RESOLVED
+        # Lock for the _check_ref()
+        with self._locked():
+            if self._check_ref():
+                return Consistency.CACHED
+            else:
+                return Consistency.RESOLVED
 
     def load_ref(self, node):
         self.ref = self.node_get_member(node, str, 'ref', None)
@@ -100,7 +103,7 @@ class BzrSource(Source):
 
     def track(self):
         with self.timed_activity("Tracking {}".format(self.url),
-                                 silent_nested=True):
+                                 silent_nested=True), self._locked():
             self._ensure_mirror(skip_ref_check=True)
             ret, out = self.check_output([self.host_bzr, "version-info",
                                           "--custom", "--template={revno}",
@@ -114,7 +117,7 @@ class BzrSource(Source):
 
     def fetch(self):
         with self.timed_activity("Fetching {}".format(self.url),
-                                 silent_nested=True):
+                                 silent_nested=True), self._locked():
             self._ensure_mirror()
 
     def stage(self, directory):
@@ -140,6 +143,26 @@ class BzrSource(Source):
             self.call([self.host_bzr, "switch",
                        "--directory={}".format(directory), url],
                       fail="Failed to switch workspace's parent branch to {}".format(url))
+
+    # _locked()
+    #
+    # This context manager ensures exclusive access to the
+    # bzr repository.
+    #
+    @contextmanager
+    def _locked(self):
+        lockdir = os.path.join(self.get_mirror_directory(), 'locks')
+        lockfile = os.path.join(
+            lockdir,
+            utils.url_directory_name(self.original_url) + '.lock'
+        )
+        os.makedirs(lockdir, exist_ok=True)
+        with open(lockfile, 'w') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock, fcntl.LOCK_UN)
 
     def _check_ref(self):
         # If the mirror doesnt exist yet, then we dont have the ref
