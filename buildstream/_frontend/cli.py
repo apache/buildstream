@@ -957,6 +957,75 @@ def artifact():
     """Manipulate cached artifacts"""
 
 
+#####################################################################
+#                     Artifact Checkout Command                     #
+#####################################################################
+@artifact.command(name='checkout', short_help="Checkout contents of an artifact")
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Allow files to be overwritten")
+@click.option('--deps', '-d', default=None,
+              type=click.Choice(['run', 'build', 'none']),
+              help='The dependencies to checkout (default: run)')
+@click.option('--integrate/--no-integrate', default=None, is_flag=True,
+              help="Whether to run integration commands")
+@click.option('--hardlinks', default=False, is_flag=True,
+              help="Checkout hardlinks instead of copying if possible")
+@click.option('--tar', default=None, metavar='LOCATION',
+              type=click.Path(),
+              help="Create a tarball from the artifact contents instead "
+                   "of a file tree. If LOCATION is '-', the tarball "
+                   "will be dumped to the standard output.")
+@click.option('--directory', default=None,
+              type=click.Path(file_okay=False),
+              help="The directory to checkout the artifact to")
+@click.argument('element', required=False,
+                type=click.Path(readable=False))
+@click.pass_obj
+def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, element):
+    """Checkout contents of an artifact"""
+    from ..element import Scope
+
+    if hardlinks and tar is not None:
+        click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
+        sys.exit(-1)
+
+    if tar is None and directory is None:
+        click.echo("ERROR: One of --directory or --tar must be provided", err=True)
+        sys.exit(-1)
+
+    if tar is not None and directory is not None:
+        click.echo("ERROR: options --directory and --tar conflict", err=True)
+        sys.exit(-1)
+
+    if tar is not None:
+        location = tar
+        tar = True
+    else:
+        location = os.getcwd() if directory is None else directory
+        tar = False
+
+    if deps == "build":
+        scope = Scope.BUILD
+    elif deps == "none":
+        scope = Scope.NONE
+    else:
+        scope = Scope.RUN
+
+    with app.initialized():
+        if not element:
+            element = app.context.guess_element()
+            if not element:
+                raise AppError('Missing argument "ELEMENT".')
+
+        app.stream.checkout(element,
+                            location=location,
+                            force=force,
+                            scope=scope,
+                            integrate=True if integrate is None else integrate,
+                            hardlinks=hardlinks,
+                            tar=tar)
+
+
 ################################################################
 #                     Artifact Pull Command                    #
 ################################################################
