@@ -122,6 +122,9 @@ class ElementError(BstError):
         self.collect = collect
 
 
+IGNORE_JUNCTION = object()
+
+
 class Element(Plugin):
     """Element()
 
@@ -439,19 +442,39 @@ class Element(Plugin):
         if should_yield and (recurse or recursed) and scope != Scope.BUILD:
             yield self
 
-    def search(self, scope, name):
+    IGNORE_JUNCTION = IGNORE_JUNCTION
+    """Special value for :func:`Element.search <buildstream.element.Element.search>`
+    """
+
+    def search(self, scope, name, junction=IGNORE_JUNCTION):
         """Search for a dependency by name
 
         Args:
            scope (:class:`.Scope`): The scope to search
            name (str): The dependency to search for
+           junction (str): The name of the junction
 
         Returns:
-           (:class:`.Element`): The dependency element, or None if not found.
+           (:class:`.Element`): The dependency element, or ``None`` if not found.
+
+        Special values for junctions are:
+
+        - ``None``: This dependency must not come from a junction
+        - :attr:`Element.IGNORE_JUNCTION <buildstream.element.Element.IGNORE_JUNCTION>`:
+           This dependency can come from any junction or none.
         """
         for dep in self.dependencies(scope):
             if dep.name == name:
-                return dep
+                if junction is Element.IGNORE_JUNCTION:
+                    return dep
+                else:
+                    dep_project = dep._get_project()
+                    if junction is None:
+                        if dep_project.junction is None or dep_project is self._get_project():
+                            return dep
+                    else:
+                        if dep_project.junction.name == junction and dep_project is not self._get_project():
+                            return dep
 
         return None
 
