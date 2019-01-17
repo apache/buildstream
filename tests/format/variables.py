@@ -12,6 +12,14 @@ DATA_DIR = os.path.join(
     "variables"
 )
 
+# List of BuildStream protected variables
+PROTECTED_VARIABLES = [('project-name'), ('element-name'), ('max-jobs')]
+
+
+def print_warning(msg):
+    RED, END = "\033[91m", "\033[0m"
+    print(("\n{}{}{}").format(RED, msg, END), file=sys.stderr)
+
 
 ###############################################################
 #  Test proper loading of some default commands from plugins  #
@@ -87,6 +95,84 @@ def test_cyclic_variables(cli, datafiles):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
 
 
-def print_warning(msg):
-    RED, END = "\033[91m", "\033[0m"
-    print(("\n{}{}{}").format(RED, msg, END), file=sys.stderr)
+@pytest.mark.parametrize('protected_var', PROTECTED_VARIABLES)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'protected-vars'))
+def test_use_of_protected_var_project_conf(cli, tmpdir, datafiles, protected_var):
+    project = str(datafiles)
+    conf = {
+        'name': 'test',
+        'variables': {
+            protected_var: 'some-value'
+        }
+    }
+    _yaml.dump(conf, os.path.join(project, 'project.conf'))
+
+    element = {
+        'kind': 'import',
+        'sources': [
+            {
+                'kind': 'local',
+                'path': 'foo.txt'
+            }
+        ],
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.PROTECTED_VARIABLE_REDEFINED)
+
+
+@pytest.mark.parametrize('protected_var', PROTECTED_VARIABLES)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'protected-vars'))
+def test_use_of_protected_var_element_overrides(cli, tmpdir, datafiles, protected_var):
+    project = str(datafiles)
+    conf = {
+        'name': 'test',
+        'elements': {
+            'manual': {
+                'variables': {
+                    protected_var: 'some-value'
+                }
+            }
+        }
+    }
+    _yaml.dump(conf, os.path.join(project, 'project.conf'))
+
+    element = {
+        'kind': 'manual',
+        'sources': [
+            {
+                'kind': 'local',
+                'path': 'foo.txt'
+            }
+        ],
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.PROTECTED_VARIABLE_REDEFINED)
+
+
+@pytest.mark.parametrize('protected_var', PROTECTED_VARIABLES)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'protected-vars'))
+def test_use_of_protected_var_in_element(cli, tmpdir, datafiles, protected_var):
+    project = str(datafiles)
+    element = {
+        'kind': 'import',
+        'sources': [
+            {
+                'kind': 'local',
+                'path': 'foo.txt'
+            }
+        ],
+        'variables': {
+            protected_var: 'some-value'
+        }
+    }
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.PROTECTED_VARIABLE_REDEFINED)
