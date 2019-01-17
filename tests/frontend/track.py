@@ -73,14 +73,36 @@ def test_track(cli, tmpdir, datafiles, ref_storage, kind):
         assert not os.path.exists(os.path.join(project, 'project.refs'))
 
 
+# NOTE:
+#
+#    This test checks that recursive tracking works by observing
+#    element states after running a recursive tracking operation.
+#
+#    However, this test is ALSO valuable as it stresses the source
+#    plugins in a situation where many source plugins are operating
+#    at once on the same backing repository.
+#
+#    Do not change this test to use a separate 'Repo' per element
+#    as that would defeat the purpose of the stress test, otherwise
+#    please refactor that aspect into another test.
+#
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("amount", [(1), (10)])
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
-def test_track_recurse(cli, tmpdir, datafiles, kind):
+def test_track_recurse(cli, tmpdir, datafiles, kind, amount):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
-    element_dep_name = 'track-test-dep-{}.bst'.format(kind)
-    element_target_name = 'track-test-target-{}.bst'.format(kind)
+
+    # Try to actually launch as many fetch jobs as possible at the same time
+    #
+    # This stresses the Source plugins and helps to ensure that
+    # they handle concurrent access to the store correctly.
+    cli.configure({
+        'scheduler': {
+            'fetchers': amount,
+        }
+    })
 
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
@@ -89,18 +111,26 @@ def test_track_recurse(cli, tmpdir, datafiles, kind):
     ref = repo.create(dev_files_path)
 
     # Write out our test targets
-    generate_element(repo, os.path.join(element_path, element_dep_name))
-    generate_element(repo, os.path.join(element_path, element_target_name),
-                     dep_name=element_dep_name)
+    element_names = []
+    last_element_name = None
+    for i in range(amount + 1):
+        element_name = 'track-test-{}-{}.bst'.format(kind, i + 1)
+        filename = os.path.join(element_path, element_name)
+
+        element_names.append(element_name)
+
+        generate_element(repo, filename, dep_name=last_element_name)
+        last_element_name = element_name
 
     # Assert that a fetch is needed
-    assert cli.get_element_state(project, element_dep_name) == 'no reference'
-    assert cli.get_element_state(project, element_target_name) == 'no reference'
+    states = cli.get_element_states(project, last_element_name)
+    for element_name in element_names:
+        assert states[element_name] == 'no reference'
 
     # Now first try to track it
     result = cli.run(project=project, args=[
         'source', 'track', '--deps', 'all',
-        element_target_name])
+        last_element_name])
     result.assert_success()
 
     # And now fetch it: The Source has probably already cached the
@@ -109,12 +139,16 @@ def test_track_recurse(cli, tmpdir, datafiles, kind):
     # is the job of fetch.
     result = cli.run(project=project, args=[
         'source', 'fetch', '--deps', 'all',
-        element_target_name])
+        last_element_name])
     result.assert_success()
 
-    # Assert that the dependency is buildable and the target is waiting
-    assert cli.get_element_state(project, element_dep_name) == 'buildable'
-    assert cli.get_element_state(project, element_target_name) == 'waiting'
+    # Assert that the base is buildable and the rest are waiting
+    states = cli.get_element_states(project, last_element_name)
+    for element_name in element_names:
+        if element_name == element_names[0]:
+            assert states[element_name] == 'buildable'
+        else:
+            assert states[element_name] == 'waiting'
 
 
 @pytest.mark.datafiles(DATA_DIR)
