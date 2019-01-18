@@ -82,6 +82,7 @@ import contextlib
 from contextlib import contextmanager
 import tempfile
 import shutil
+import string
 
 from . import _yaml
 from ._variables import Variables
@@ -576,6 +577,38 @@ class Element(Plugin):
         """
         self.__assert_cached()
         return self.__compute_splits(include, exclude, orphans)
+
+    def get_artifact_name(self, key=None):
+        """Compute and return this element's full artifact name
+
+        Generate a full name for an artifact, including the project
+        namespace, element name and cache key.
+
+        This can also be used as a relative path safely, and
+        will normalize parts of the element name such that only
+        digits, letters and some select characters are allowed.
+
+        Args:
+           key (str): The element's cache key. Defaults to None
+
+        Returns:
+           (str): The relative path for the artifact
+        """
+        project = self._get_project()
+        if key is None:
+            key = self._get_cache_key()
+
+        assert key is not None
+
+        valid_chars = string.digits + string.ascii_letters + '-._'
+        element_name = ''.join([
+            x if x in valid_chars else '_'
+            for x in self.normal_name
+        ])
+
+        # Note that project names are not allowed to contain slashes. Element names containing
+        # a '/' will have this replaced with a '-' upon Element object instantiation.
+        return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
     def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
         """Stage this element's output artifact in the sandbox

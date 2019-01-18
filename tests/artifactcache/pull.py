@@ -211,7 +211,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         assert artifactcache.contains(element, element_key)
 
         # Retrieve the Directory object from the cached artifact
-        artifact_ref = artifactcache.get_artifact_fullname(element, element_key)
+        artifact_ref = element.get_artifact_name(element_key)
         artifact_digest = cas.resolve_ref(artifact_ref)
 
         queue = multiprocessing.Queue()
