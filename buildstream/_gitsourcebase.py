@@ -112,7 +112,8 @@ class GitMirror(SourceFetcher):
         else:
             remote_name = "origin"
 
-        self.source.call([self.source.host_git, 'fetch', remote_name, '--prune', '--force', '--tags'],
+        self.source.call([self.source.host_git, 'fetch', remote_name, '--prune',
+                          '+refs/heads/*:refs/heads/*', '+refs/tags/*:refs/tags/*'],
                          fail="Failed to fetch from remote git repository: {}".format(url),
                          fail_temporarily=True,
                          cwd=self.mirror)
