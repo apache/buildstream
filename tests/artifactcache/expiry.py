@@ -382,6 +382,7 @@ def test_extract_expiry(cli, datafiles, tmpdir):
     res = cli.run(project=project, args=['checkout', 'target.bst', os.path.join(str(tmpdir), 'checkout')])
     res.assert_success()
 
+    # Get a snapshot of the extracts in advance
     extractdir = os.path.join(project, 'cache', 'artifacts', 'extract', 'test', 'target')
     extracts = os.listdir(extractdir)
     assert(len(extracts) == 1)
@@ -395,3 +396,16 @@ def test_extract_expiry(cli, datafiles, tmpdir):
 
     # Now the extract should be removed.
     assert not os.path.exists(extract)
+
+    # As an added bonus, let's ensure that no directories have been left behind
+    #
+    # Now we should have a directory for the cached target2.bst, which
+    # replaced target.bst in the cache, we should not have a directory
+    # for the target.bst
+    refsdir = os.path.join(project, 'cache', 'artifacts', 'cas', 'refs', 'heads')
+    refsdirtest = os.path.join(refsdir, 'test')
+    refsdirtarget = os.path.join(refsdirtest, 'target')
+    refsdirtarget2 = os.path.join(refsdirtest, 'target2')
+
+    assert os.path.isdir(refsdirtarget2)
+    assert not os.path.exists(refsdirtarget)
