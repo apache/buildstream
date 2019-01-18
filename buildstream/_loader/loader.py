@@ -557,7 +557,7 @@ class Loader():
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
                     source._fetch(sources[0:idx])
                 else:
-                    detail = "Try fetching the project with `bst fetch {}`".format(filename)
+                    detail = "Try fetching the project with `bst source fetch {}`".format(filename)
                     raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
                                     "Subproject fetch needed for junction: {}".format(filename),
                                     detail=detail)

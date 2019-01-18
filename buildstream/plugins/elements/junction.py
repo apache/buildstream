@@ -93,7 +93,7 @@ cached yet. However, they can be fetched explicitly:
 
 .. code::
 
-   bst fetch junction.bst
+   bst source fetch junction.bst
 
 Other commands such as ``bst build`` implicitly fetch junction sources.
 
@@ -146,7 +146,7 @@ class JunctionElement(Element):
 
     def get_unique_key(self):
         # Junctions do not produce artifacts. get_unique_key() implementation
-        # is still required for `bst fetch`.
+        # is still required for `bst source fetch`.
         return 1
 
     def configure_sandbox(self, sandbox):
