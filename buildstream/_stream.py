@@ -29,7 +29,8 @@ import tempfile
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
-from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
+from ._artifactelement import verify_artifact_ref
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, set_last_task_error
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
@@ -1335,44 +1336,49 @@ class Stream():
 
     # _classify_artifacts()
     #
-    # Split up a list of tagets into element names and artifact refs
+    # Split up a list of targets into element names and artifact refs
     #
     # Args:
-    #    names (list): A list of targets
-    #    cas (CASCache): The CASCache object
-    #    project_directory (str): Absolute path to the project
+    #    targets (list): A list of targets
+    #    cached (list): A list of locally cached refs
+    #    project_element_path (str): Absolute path to where the elements exist in the project
     #
     # Returns:
     #    (list): element names present in the targets
     #    (list): artifact refs present in the targets
     #
-    def _classify_artifacts(names, cas, project_directory):
+    def _classify_artifacts(self, targets, cached, project_element_path):
         element_targets = []
         artifact_refs = []
         element_globs = []
         artifact_globs = []
 
-        for name in names:
-            if name.endswith('.bst'):
-                if any(c in "*?[" for c in name):
-                    element_globs.append(name)
+        for target in targets:
+            if target.endswith('.bst'):
+                if any(c in "*?[" for c in target):
+                    element_globs.append(target)
                 else:
-                    element_targets.append(name)
+                    element_targets.append(target)
             else:
-                if any(c in "*?[" for c in name):
-                    artifact_globs.append(name)
+                if any(c in "*?[" for c in target):
+                    artifact_globs.append(target)
                 else:
-                    artifact_refs.append(name)
+                    try:
+                        verify_artifact_ref(target)
+                    except ArtifactElementError:
+                        element_targets.append(target)
+                        continue
+                    artifact_refs.append(target)
 
         if element_globs:
-            for dirpath, _, filenames in os.walk(project_directory):
+            for dirpath, _, filenames in os.walk(project_element_path):
                 for filename in filenames:
-                    element_path = os.path.join(dirpath, filename).lstrip(project_directory).lstrip('/')
+                    element_path = os.path.join(dirpath, filename).lstrip(project_element_path).lstrip('/')
                     if any(fnmatch(element_path, glob) for glob in element_globs):
                         element_targets.append(element_path)
 
         if artifact_globs:
-            artifact_refs.extend(ref for ref in cas.list_refs()
+            artifact_refs.extend(ref for ref in cached
                                  if any(fnmatch(ref, glob) for glob in artifact_globs))
 
         return element_targets, artifact_refs
