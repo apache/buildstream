@@ -1111,53 +1111,24 @@ def artifact_push(app, elements, deps, remote):
 @click.pass_obj
 def artifact_log(app, artifacts):
     """Show logs of all artifacts"""
-    from .._exceptions import CASError
-    from .._message import MessageType
-    from .._pipeline import PipelineSelection
-    from ..storage._casbaseddirectory import CasBasedDirectory
+    with app.initialized():
+        logsdirs = app.stream.artifact_log(artifacts)
 
-    with ExitStack() as stack:
-        stack.enter_context(app.initialized())
-        cache = app.context.artifactcache
+        with ExitStack() as stack:
+            extractdirs = []
+            for logsdir in logsdirs:
+                # NOTE: If reading the logs feels unresponsive, here would be a good place
+                # to provide progress information.
+                td = stack.enter_context(TemporaryDirectory())
+                logsdir.export_files(td, can_link=True)
+                extractdirs.append(td)
 
-        elements, artifacts = _classify_artifacts(artifacts, cache.cas,
-                                                  app.project.directory)
-
-        vdirs = []
-        extractdirs = []
-        if artifacts:
-            for ref in artifacts:
-                try:
-                    cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
-                    vdir = CasBasedDirectory(cache.cas, cache_id)
-                    vdirs.append(vdir)
-                except CASError as e:
-                    app._message(MessageType.WARN, "Artifact {} is not cached".format(ref), detail=str(e))
-                    continue
-        if elements:
-            elements = app.stream.load_selection(elements, selection=PipelineSelection.NONE)
-            for element in elements:
-                if not element._cached():
-                    app._message(MessageType.WARN, "Element {} is not cached".format(element))
-                    continue
-                ref = cache.get_artifact_fullname(element, element._get_cache_key())
-                cache_id = cache.cas.resolve_ref(ref, update_mtime=True)
-                vdir = CasBasedDirectory(cache.cas, cache_id)
-                vdirs.append(vdir)
-
-        for vdir in vdirs:
-            # NOTE: If reading the logs feels unresponsive, here would be a good place to provide progress information.
-            logsdir = vdir.descend(["logs"])
-            td = stack.enter_context(TemporaryDirectory())
-            logsdir.export_files(td, can_link=True)
-            extractdirs.append(td)
-
-        for extractdir in extractdirs:
-            for log in (os.path.join(extractdir, log) for log in os.listdir(extractdir)):
-                # NOTE: Should click gain the ability to pass files to the pager this can be optimised.
-                with open(log) as f:
-                    data = f.read()
-                    click.echo_via_pager(data)
+            for extractdir in extractdirs:
+                for log in (os.path.join(extractdir, log) for log in os.listdir(extractdir)):
+                    # NOTE: Should click gain the ability to pass files to the pager this can be optimised.
+                    with open(log) as f:
+                        data = f.read()
+                        click.echo_via_pager(data)
 
 
 ##################################################################

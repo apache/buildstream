@@ -495,6 +495,31 @@ class Stream():
             raise StreamError("Error while staging dependencies into a sandbox"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
+    # artifact_log()
+    #
+    # Show the full log of an artifact
+    #
+    # Args:
+    #    targets (str): Targets to view the logs of
+    #
+    # Returns:
+    #    logsdir (list): A list of CasBasedDirectory objects containing artifact logs
+    #
+    def artifact_log(self, targets):
+        # Return list of Element and/or ArtifactElement objects
+        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+
+        logsdirs = []
+        for obj in target_objects:
+            ref = obj.get_artifact_name()
+            if not obj._cached():
+                self._message(MessageType.WARN, "{} is not cached".format(ref))
+                continue
+
+            logsdirs.append(self._artifacts.get_artifact_logs(ref))
+
+        return logsdirs
+
     # source_checkout()
     #
     # Checkout sources of the target element to the specified location
