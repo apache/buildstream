@@ -21,7 +21,7 @@ import hashlib
 import itertools
 import os
 import stat
-import tempfile
+import errno
 import uuid
 import contextlib
 
@@ -129,7 +129,7 @@ class CASCache():
             else:
                 return dest
 
-        with tempfile.TemporaryDirectory(prefix='tmp', dir=self.tmpdir) as tmpdir:
+        with utils._tempdir(prefix='tmp', dir=self.tmpdir) as tmpdir:
             checkoutdir = os.path.join(tmpdir, ref)
             self._checkout(checkoutdir, tree)
 
@@ -374,7 +374,7 @@ class CASCache():
                     for chunk in iter(lambda: tmp.read(4096), b""):
                         h.update(chunk)
                 else:
-                    tmp = stack.enter_context(tempfile.NamedTemporaryFile(dir=self.tmpdir))
+                    tmp = stack.enter_context(utils._tempnamedfile(dir=self.tmpdir))
                     # Set mode bits to 0644
                     os.chmod(tmp.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
@@ -545,11 +545,7 @@ class CASCache():
     def remove(self, ref, *, defer_prune=False):
 
         # Remove cache ref
-        refpath = self._refpath(ref)
-        if not os.path.exists(refpath):
-            raise CASCacheError("Could not find ref '{}'".format(ref))
-
-        os.unlink(refpath)
+        self._remove_ref(ref)
 
         if not defer_prune:
             pruned = self.prune()
@@ -625,6 +621,55 @@ class CASCache():
 
     def _refpath(self, ref):
         return os.path.join(self.casdir, 'refs', 'heads', ref)
+
+    # _remove_ref()
+    #
+    # Removes a ref.
+    #
+    # This also takes care of pruning away directories which can
+    # be removed after having removed the given ref.
+    #
+    # Args:
+    #    ref (str): The ref to remove
+    #
+    # Raises:
+    #    (CASCacheError): If the ref didnt exist, or a system error
+    #                     occurred while removing it
+    #
+    def _remove_ref(self, ref):
+
+        # Remove the ref itself
+        refpath = self._refpath(ref)
+        try:
+            os.unlink(refpath)
+        except FileNotFoundError as e:
+            raise CASCacheError("Could not find ref '{}'".format(ref)) from e
+
+        # Now remove any leading directories
+        basedir = os.path.join(self.casdir, 'refs', 'heads')
+        components = list(os.path.split(ref))
+        while components:
+            components.pop()
+            refdir = os.path.join(basedir, *components)
+
+            # Break out once we reach the base
+            if refdir == basedir:
+                break
+
+            try:
+                os.rmdir(refdir)
+            except FileNotFoundError:
+                # The parent directory did not exist, but it's
+                # parent directory might still be ready to prune
+                pass
+            except OSError as e:
+                if e.errno == errno.ENOTEMPTY:
+                    # The parent directory was not empty, so we
+                    # cannot prune directories beyond this point
+                    break
+
+                # Something went wrong here
+                raise CASCacheError("System error while removing ref '{}': {}".format(ref, e)) from e
 
     # _commit_directory():
     #
@@ -797,7 +842,7 @@ class CASCache():
             # already in local repository
             return objpath
 
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
+        with utils._tempnamedfile(dir=self.tmpdir) as f:
             remote._fetch_blob(digest, f)
 
             added_digest = self.add_object(path=f.name, link_directly=True)
@@ -807,7 +852,7 @@ class CASCache():
 
     def _batch_download_complete(self, batch):
         for digest, data in batch.send():
-            with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
+            with utils._tempnamedfile(dir=self.tmpdir) as f:
                 f.write(data)
                 f.flush()
 
@@ -904,7 +949,7 @@ class CASCache():
 
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as out:
+        with utils._tempnamedfile(dir=self.tmpdir) as out:
             remote._fetch_blob(digest, out)
 
             tree = remote_execution_pb2.Tree()

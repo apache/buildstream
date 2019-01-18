@@ -1032,6 +1032,36 @@ def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-bu
         cleanup_tempdir()
 
 
+# _tempnamedfile()
+#
+# A context manager for doing work on an open temporary file
+# which is guaranteed to be named and have an entry in the filesystem.
+#
+# Args:
+#    dir (str): A path to a parent directory for the temporary file
+#    suffix (str): A suffix for the temproary file name
+#    prefix (str): A prefix for the temporary file name
+#
+# Yields:
+#    (str): The temporary file handle
+#
+# Do not use tempfile.NamedTemporaryFile() directly, as this will
+# leak files on the filesystem when BuildStream exits a process
+# on SIGTERM.
+#
+@contextmanager
+def _tempnamedfile(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-builtin
+    temp = None
+
+    def close_tempfile():
+        if temp is not None:
+            temp.close()
+
+    with _signals.terminator(close_tempfile), \
+        tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=dir) as temp:
+        yield temp
+
+
 # _kill_process_tree()
 #
 # Brutally murder a process and all of its children
