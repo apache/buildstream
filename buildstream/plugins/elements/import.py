@@ -28,17 +28,14 @@ some configuration data.
 The empty configuration is as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/import.yaml
      :language: yaml
-
-See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
-details on common configuration options for build elements.
 """
 
 import os
-from buildstream import Element, BuildElement, ElementError
+from buildstream import Element, ElementError
 
 
 # Element implementation for the 'import' kind.
-class ImportElement(BuildElement):
+class ImportElement(Element):
     # pylint: disable=attribute-defined-outside-init
 
     # This plugin has been modified to avoid the use of Sandbox.get_directory
@@ -92,10 +89,6 @@ class ImportElement(BuildElement):
 
         # And we're done
         return '/output'
-
-    def prepare(self, sandbox):
-        # We inherit a non-default prepare from BuildElement.
-        Element.prepare(self, sandbox)
 
     def generate_script(self):
         build_root = self.get_variable('build-root')
