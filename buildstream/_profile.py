@@ -62,15 +62,24 @@ class Profile():
     def end(self):
         self.profiler.disable()
 
+        dt = datetime.datetime.fromtimestamp(self.start)
+        timestamp = dt.strftime('%Y%m%dT%H%M%S')
+
         filename = self.key.replace('/', '-')
         filename = filename.replace('.', '-')
-        filename = os.path.join(os.getcwd(), 'profile-' + filename + '.log')
+        filename = os.path.join(os.getcwd(), 'profile-' + timestamp + '-' + filename)
 
+        time_ = dt.strftime('%Y-%m-%d %H:%M:%S')  # Human friendly format
+        self.__write_log(filename + '.log', time_)
+
+        self.__write_binary(filename + '.cprofile')
+
+    ########################################
+    #            Private Methods           #
+    ########################################
+
+    def __write_log(self, filename, time_):
         with open(filename, "a", encoding="utf-8") as f:
-
-            dt = datetime.datetime.fromtimestamp(self.start)
-            time_ = dt.strftime('%Y-%m-%d %H:%M:%S')
-
             heading = '================================================================\n'
             heading += 'Profile for key: {}\n'.format(self.key)
             heading += 'Started at: {}\n'.format(time_)
@@ -80,6 +89,9 @@ class Profile():
             f.write(heading)
             ps = pstats.Stats(self.profiler, stream=f).sort_stats('cumulative')
             ps.print_stats()
+
+    def __write_binary(self, filename):
+        self.profiler.dump_stats(filename)
 
 
 # profile_start()
