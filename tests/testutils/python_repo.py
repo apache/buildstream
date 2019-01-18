@@ -1,8 +1,8 @@
-from setuptools.sandbox import run_setup
 import os
 import pytest
 import re
 import shutil
+import subprocess
 
 
 SETUP_TEMPLATE = '''\
@@ -88,7 +88,9 @@ def generate_pip_package(tmpdir, pypi, name, version='0.1'):
         f.write(INIT_TEMPLATE.format(name=name))
     os.chmod(main_file, 0o644)
 
-    run_setup(setup_file, ['sdist'])
+    # Run sdist with a fresh process
+    p = subprocess.run(['python3', 'setup.py', 'sdist'], cwd=tmpdir)
+    assert p.returncode == 0
 
     # create directory for this package in pypi resulting in a directory
     # tree resembling the following structure:
