@@ -245,8 +245,14 @@ class Cli():
 
     def remove_artifact_from_cache(self, project, element_name,
                                    *, cache_dir=None):
+        # Read configuration to figure out where artifacts are stored
         if not cache_dir:
-            cache_dir = os.path.join(project, 'cache', 'artifacts')
+            default = os.path.join(project, 'cache', 'artifacts')
+
+            if self.config is not None:
+                cache_dir = self.config.get('artifactdir', default)
+            else:
+                cache_dir = default
 
         cache_dir = os.path.join(cache_dir, 'cas', 'refs', 'heads')
 
