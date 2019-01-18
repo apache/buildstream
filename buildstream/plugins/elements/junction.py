@@ -79,7 +79,7 @@ depend on a junction element itself.
 
    Therefore, if you require the most up-to-date version of a subproject,
    you must explicitly track the junction element by invoking:
-   `bst track JUNCTION_ELEMENT`.
+   `bst source track JUNCTION_ELEMENT`.
 
    Furthermore, elements within the subproject are also not tracked by default.
    For this, we must specify the `--track-cross-junctions` option. This option

@@ -605,7 +605,7 @@ class _GitSourceBase(Source):
                 detail = "The ref provided for the element does not exist locally " + \
                          "in the provided track branch / tag '{}'.\n".format(self.tracking) + \
                          "You may wish to track the element to update the ref from '{}' ".format(self.tracking) + \
-                         "with `bst track`,\n" + \
+                         "with `bst source track`,\n" + \
                          "or examine the upstream at '{}' for the specific ref.".format(self.mirror.url)
 
                 self.warn("{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n"

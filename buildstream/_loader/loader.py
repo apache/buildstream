@@ -565,7 +565,7 @@ class Loader():
             # Handle the case where a subproject has no ref
             #
             elif source.get_consistency() == Consistency.INCONSISTENT:
-                detail = "Try tracking the junction element with `bst track {}`".format(filename)
+                detail = "Try tracking the junction element with `bst source track {}`".format(filename)
                 raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
                                 "Subproject has no ref for junction: {}".format(filename),
                                 detail=detail)

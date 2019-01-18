@@ -373,7 +373,7 @@ class Pipeline():
                     if source._get_consistency() == Consistency.INCONSISTENT:
                         detail += "    {} is missing ref\n".format(source)
                 detail += '\n'
-            detail += "Try tracking these elements first with `bst track`\n"
+            detail += "Try tracking these elements first with `bst source track`\n"
 
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 

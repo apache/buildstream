@@ -34,7 +34,7 @@ deb - stage files from .deb packages
    kind: deb
 
    # Specify the deb url. Using an alias defined in your project
-   # configuration is encouraged. 'bst track' will update the
+   # configuration is encouraged. 'bst source track' will update the
    # sha256sum in 'ref' to the downloaded file's sha256sum.
    url: upstream:foo.deb
 
