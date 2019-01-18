@@ -185,6 +185,9 @@ docs:
   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
+  artifacts:
+    paths:
+    - "${HOME}/.cache/buildstream/logs"
   only:
   - schedules
 
