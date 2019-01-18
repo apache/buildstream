@@ -46,6 +46,7 @@ class Topics():
     LOAD_CONTEXT = 'load-context'
     LOAD_PROJECT = 'load-project'
     LOAD_PIPELINE = 'load-pipeline'
+    LOAD_SELECTION = 'load-selection'
     SCHEDULER = 'scheduler'
     SHOW = 'show'
     ARTIFACT_RECEIVE = 'artifact-receive'
