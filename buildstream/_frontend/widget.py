@@ -175,29 +175,22 @@ class TypeName(Widget):
 # A widget for displaying the Element name
 class ElementName(Widget):
 
-    def __init__(self, context, content_profile, format_profile):
-        super(ElementName, self).__init__(context, content_profile, format_profile)
-
-        # Pre initialization format string, before we know the length of
-        # element names in the pipeline
-        self._fmt_string = '{: <30}'
-
     def render(self, message):
-        element_id = message.task_id or message.unique_id
-        if element_id is None:
-            return ""
-
-        plugin = _plugin_lookup(element_id)
-        name = plugin._get_full_name()
-
-        # Sneak the action name in with the element name
         action_name = message.action_name
+        element_id = message.task_id or message.unique_id
+        if element_id is not None:
+            plugin = _plugin_lookup(element_id)
+            name = plugin._get_full_name()
+            name = '{: <30}'.format(name)
+        else:
+            name = 'core activity'
+            name = '{: <30}'.format(name)
+
         if not action_name:
             action_name = "Main"
 
         return self.content_profile.fmt("{: >5}".format(action_name.lower())) + \
-            self.format_profile.fmt(':') + \
-            self.content_profile.fmt(self._fmt_string.format(name))
+            self.format_profile.fmt(':') + self.content_profile.fmt(name)
 
 
 # A widget for displaying the primary message text
@@ -219,8 +212,11 @@ class CacheKey(Widget):
     def render(self, message):
 
         element_id = message.task_id or message.unique_id
-        if element_id is None or not self._key_length:
+        if not self._key_length:
             return ""
+
+        if element_id is None:
+            return ' ' * self._key_length
 
         missing = False
         key = ' ' * self._key_length

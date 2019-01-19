@@ -40,8 +40,8 @@ class SchedStatus():
 
 # Some action names for the internal jobs we launch
 #
-_ACTION_NAME_CLEANUP = 'cleanup'
-_ACTION_NAME_CACHE_SIZE = 'cache_size'
+_ACTION_NAME_CLEANUP = 'clean'
+_ACTION_NAME_CACHE_SIZE = 'size'
 
 
 # Scheduler()
