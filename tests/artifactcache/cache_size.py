@@ -1,5 +1,6 @@
 import os
 import pytest
+from unittest import mock
 
 from buildstream import _yaml
 from buildstream._artifactcache import CACHE_SIZE_FILE
@@ -60,3 +61,30 @@ def test_cache_size_write(cli, tmpdir):
     with open(sizefile, "r") as f:
         size_data = f.read()
     size = int(size_data)
+
+
+def test_quota_over_1024T(cli, tmpdir):
+    KiB = 1024
+    MiB = (KiB * 1024)
+    GiB = (MiB * 1024)
+    TiB = (GiB * 1024)
+
+    cli.configure({
+        'cache': {
+            'quota': 2048 * TiB
+        }
+    })
+    project = tmpdir.join("main")
+    os.makedirs(str(project))
+    _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
+
+    volume_space_patch = mock.patch(
+        "buildstream._artifactcache.ArtifactCache._get_volume_space_info_for",
+        autospec=True,
+        return_value=(1025 * TiB, 1025 * TiB)
+    )
+
+    with volume_space_patch:
+        result = cli.run(project, args=["build", "file.bst"])
+        failure_msg = 'Your system does not have enough available space to support the cache quota specified.'
+        assert failure_msg in result.stderr
