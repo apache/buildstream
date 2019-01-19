@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from unittest import mock
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -282,18 +283,28 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
 
 # Ensure that only valid cache quotas make it through the loading
 # process.
-@pytest.mark.parametrize("quota,success", [
-    ("1", True),
-    ("1K", True),
-    ("50%", True),
-    ("infinity", True),
-    ("0", True),
-    ("-1", False),
-    ("pony", False),
-    ("200%", False)
+#
+# This test virtualizes the condition to assume a storage volume
+# has 10K total disk space, and 6K of it is already in use (not
+# including any space used by the artifact cache).
+#
+@pytest.mark.parametrize("quota,err_domain,err_reason", [
+    # Valid configurations
+    ("1", 'success', None),
+    ("1K", 'success', None),
+    ("50%", 'success', None),
+    ("infinity", 'success', None),
+    ("0", 'success', None),
+    # Invalid configurations
+    ("-1", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
+    ("pony", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
+    ("200%", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
+    # Not enough space for these caches
+    ("7K", ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota'),
+    ("70%", ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota')
 ])
 @pytest.mark.datafiles(DATA_DIR)
-def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, success):
+def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reason):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     os.makedirs(os.path.join(project, 'elements'))
 
@@ -335,7 +346,7 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, success):
     if err_domain == 'success':
         res.assert_success()
     else:
-        res.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+        res.assert_main_error(err_domain, err_reason)
 
 
 @pytest.mark.datafiles(DATA_DIR)

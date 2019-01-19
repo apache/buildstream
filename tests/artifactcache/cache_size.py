@@ -1,8 +1,10 @@
 import os
 import pytest
+from unittest import mock
 
 from buildstream import _yaml
 from buildstream._artifactcache import CACHE_SIZE_FILE
+from buildstream._exceptions import ErrorDomain
 
 from tests.testutils import cli, create_element_size
 

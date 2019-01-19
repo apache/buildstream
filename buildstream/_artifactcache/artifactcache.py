@@ -699,15 +699,22 @@ class ArtifactCache():
                             "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
                             "BuildStream requires a minimum cache quota of 2G.")
         elif cache_quota > cache_size + available_space:  # Check maximum
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            ("Your system does not have enough available " +
-                             "space to support the cache quota specified.\n" +
-                             "You currently have:\n" +
-                             "- {used} of cache in use at {local_cache_path}\n" +
-                             "- {available} of available system storage").format(
-                                 used=utils._pretty_size(cache_size),
-                                 local_cache_path=self.context.artifactdir,
-                                 available=utils._pretty_size(available_space)))
+            if '%' in self.context.config_cache_quota:
+                available = (available_space / total_size) * 100
+                available = '{}% of total disk space'.format(round(available, 1))
+            else:
+                available = utils._pretty_size(available_space)
+
+            raise ArtifactError("Your system does not have enough available " +
+                                "space to support the cache quota specified.",
+                                detail=("You have specified a quota of {quota} total disk space.\n" +
+                                        "The filesystem containing {local_cache_path} only " +
+                                        "has {available_size} available.")
+                                .format(
+                                    quota=self.context.config_cache_quota,
+                                    local_cache_path=self.context.artifactdir,
+                                    available_size=available),
+                                reason='insufficient-storage-for-quota')
 
         # Place a slight headroom (2e9 (2GB) on the cache_quota) into
         # cache_quota to try and avoid exceptions.
