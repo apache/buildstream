@@ -4,6 +4,7 @@ from unittest import mock
 
 from buildstream import _yaml
 from buildstream._artifactcache import CACHE_SIZE_FILE
+from buildstream._exceptions import ErrorDomain
 
 from tests.testutils import cli, create_element_size
 
@@ -86,5 +87,4 @@ def test_quota_over_1024T(cli, tmpdir):
 
     with volume_space_patch:
         result = cli.run(project, args=["build", "file.bst"])
-        failure_msg = 'Your system does not have enough available space to support the cache quota specified.'
-        assert failure_msg in result.stderr
+        result.assert_main_error(ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota')
