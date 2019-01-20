@@ -83,6 +83,39 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push server_cert cl
 ArtifactCacheSpec.__new__.__defaults__ = (None, None, None)
 
 
+# ArtifactCacheUsage
+#
+# A simple object to report the current artifact cache
+# usage details.
+#
+# Note that this uses the user configured cache quota
+# rather than the internal quota with protective headroom
+# removed, to provide a more sensible value to display to
+# the user.
+#
+# Args:
+#    artifacts (ArtifactCache): The artifact cache to get the status of
+#
+class ArtifactCacheUsage():
+
+    def __init__(self, artifacts):
+        context = artifacts.context
+        self.quota_config = context.config_cache_quota       # Configured quota
+        self.quota_size = artifacts._cache_quota_original    # Resolved cache quota in bytes
+        self.used_size = artifacts.get_cache_size()          # Size used by artifacts in bytes
+        self.used_percent = 0                                # Percentage of the quota used
+        if self.quota_size is not None:
+            self.used_percent = int(self.used_size * 100 / self.quota_size)
+
+    # Formattable into a human readable string
+    #
+    def __str__(self):
+        return "{} / {} ({}%)" \
+            .format(utils._pretty_size(self.used_size, dec_places=1),
+                    self.quota_config,
+                    self.used_percent)
+
+
 # An ArtifactCache manages artifacts.
 #
 # Args:
@@ -100,6 +133,7 @@ class ArtifactCache():
         self._required_elements = set()       # The elements required for this session
         self._cache_size = None               # The current cache size, sometimes it's an estimate
         self._cache_quota = None              # The cache quota
+        self._cache_quota_original = None     # The cache quota as specified by the user, in bytes
         self._cache_lower_threshold = None    # The target cache size for a cleanup
 
         os.makedirs(self.extractdir, exist_ok=True)
@@ -723,6 +757,7 @@ class ArtifactCache():
         # if we end up writing more than 2G, but hey, this stuff is
         # already really fuzzy.
         #
+        self._cache_quota_original = cache_quota
         self._cache_quota = cache_quota - headroom
         self._cache_lower_threshold = self._cache_quota / 2
 
