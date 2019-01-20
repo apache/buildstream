@@ -307,7 +307,7 @@ class ArtifactCache():
     # it is greater than the actual cache size.
     #
     # Returns:
-    #     (int) An approximation of the artifact cache size.
+    #     (int) An approximation of the artifact cache size, in bytes.
     #
     def get_cache_size(self):
 
@@ -848,19 +848,16 @@ class ArtifactCache():
         else:
             headroom = 2e9
 
-        artifactdir_volume = self.context.artifactdir
-        while not os.path.exists(artifactdir_volume):
-            artifactdir_volume = os.path.dirname(artifactdir_volume)
-
         try:
-            cache_quota = utils._parse_size(self.context.config_cache_quota, artifactdir_volume)
+            cache_quota = utils._parse_size(self.context.config_cache_quota,
+                                            self.context.artifactdir)
         except utils.UtilError as e:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
                             "\nValid values are, for example: 800M 10G 1T 50%\n"
                             .format(str(e))) from e
 
-        available_space, total_size = self._get_volume_space_info_for(artifactdir_volume)
+        total_size, available_space = self._get_cache_volume_size()
         cache_size = self.get_cache_size()
 
         # Ensure system has enough storage for the cache_quota
@@ -903,19 +900,21 @@ class ArtifactCache():
         self._cache_quota = cache_quota - headroom
         self._cache_lower_threshold = self._cache_quota / 2
 
-    # _get_volume_space_info_for
+    # _get_cache_volume_size()
     #
-    # Get the available space and total space for the given volume
-    #
-    # Args:
-    #     volume: volume for which to get the size
+    # Get the available space and total space for the volume on
+    # which the artifact cache is located.
     #
     # Returns:
-    #     A tuple containing first the availabe number of bytes on the requested
-    #     volume, then the total number of bytes of the volume.
-    def _get_volume_space_info_for(self, volume):
-        stat = os.statvfs(volume)
-        return stat.f_bsize * stat.f_bavail, stat.f_bsize * stat.f_blocks
+    #    (int): The total number of bytes on the volume
+    #    (int): The number of available bytes on the volume
+    #
+    # NOTE: We use this stub to allow the test cases
+    #       to override what an artifact cache thinks
+    #       about it's disk size and available bytes.
+    #
+    def _get_cache_volume_size(self):
+        return utils._get_volume_size(self.context.artifactdir)
 
 
 # _configured_remote_artifact_cache_specs():
