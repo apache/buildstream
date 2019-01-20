@@ -303,8 +303,36 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, success):
         }
     })
 
-    res = cli.run(project=project, args=['workspace', 'list'])
-    if success:
+    # We patch how we get space information
+    # Ideally we would instead create a FUSE device on which we control
+    # everything.
+    # If the value is a percentage, we fix the current values to take into
+    # account the block size, since this is important in how we compute the size
+
+    if quota.endswith("%"):  # We set the used space at 60% of total space
+        stats = os.statvfs(".")
+        free_space = 0.6 * stats.f_bsize * stats.f_blocks
+        total_space = stats.f_bsize * stats.f_blocks
+    else:
+        free_space = 6000
+        total_space = 10000
+
+    volume_space_patch = mock.patch(
+        "buildstream._artifactcache.ArtifactCache._get_cache_volume_size",
+        autospec=True,
+        return_value=(total_space, free_space),
+    )
+
+    cache_size_patch = mock.patch(
+        "buildstream._artifactcache.ArtifactCache.get_cache_size",
+        autospec=True,
+        return_value=0,
+    )
+
+    with volume_space_patch, cache_size_patch:
+        res = cli.run(project=project, args=['workspace', 'list'])
+
+    if err_domain == 'success':
         res.assert_success()
     else:
         res.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
