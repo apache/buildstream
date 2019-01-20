@@ -353,13 +353,17 @@ class _StatusHeader():
     def render(self, line_length, elapsed):
         project = self._context.get_toplevel_project()
         line_length = max(line_length, 80)
-        size = 0
-        text = ''
 
+        #
+        # Line 1: Session time, project name, session / total elements
+        #
+        #  ========= 00:00:00 project-name (143/387) =========
+        #
         session = str(len(self._stream.session_elements))
         total = str(len(self._stream.total_elements))
 
-        # Format and calculate size for target and overall time code
+        size = 0
+        text = ''
         size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
         size += 8  # Size of time code
         size += len(project.name) + 1
@@ -372,6 +376,12 @@ class _StatusHeader():
                 self._format_profile.fmt(')')
 
         line1 = self._centered(text, size, line_length, '=')
+
+        #
+        # Line 2: Dynamic list of queue status reports
+        #
+        #  (Fetched:0 117 0)→ (Built:4 0 0)
+        #
         size = 0
         text = ''
 
@@ -389,10 +399,28 @@ class _StatusHeader():
 
         line2 = self._centered(text, size, line_length, ' ')
 
-        size = 24
-        text = self._format_profile.fmt("~~~~~ ") + \
-            self._content_profile.fmt('Active Tasks') + \
-            self._format_profile.fmt(" ~~~~~")
+        #
+        # Line 3: Cache usage percentage report
+        #
+        #  ~~~~~~ cache: 69% ~~~~~~
+        #
+        usage = self._context.get_artifact_cache_usage()
+        usage_percent = '{}%'.format(usage.used_percent)
+
+        size = 21
+        size += len(usage_percent)
+        if usage.used_percent >= 95:
+            formatted_usage_percent = self._error_profile.fmt(usage_percent)
+        elif usage.used_percent >= 80:
+            formatted_usage_percent = self._content_profile.fmt(usage_percent)
+        else:
+            formatted_usage_percent = self._success_profile.fmt(usage_percent)
+
+        text = self._format_profile.fmt("~~~~~~ ") + \
+            self._content_profile.fmt('cache') + \
+            self._format_profile.fmt(': ') + \
+            formatted_usage_percent + \
+            self._format_profile.fmt(' ~~~~~~')
         line3 = self._centered(text, size, line_length, ' ')
 
         return line1 + '\n' + line2 + '\n' + line3
