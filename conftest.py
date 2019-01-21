@@ -54,6 +54,7 @@ class IntegrationCache():
 
     def __init__(self, cache):
         cache = os.path.abspath(cache)
+        os.makedirs(cache, exist_ok=True)
 
         # Use the same sources every time
         self.sources = os.path.join(cache, 'sources')
