@@ -342,7 +342,15 @@ def init(app, project_name, format_version, element_path, force):
                 type=click.Path(readable=False))
 @click.pass_obj
 def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions):
-    """Build elements in a pipeline"""
+    """Build elements in a pipeline
+
+    Specifying no elements will result in building the default targets
+    of the project. If no default targets are configured, all project
+    elements will be built.
+
+    When this command is executed from a workspace directory, the default
+    is to build the workspace element.
+    """
 
     if (track_except or track_cross_junctions) and not (track_ or track_all):
         click.echo("ERROR: The --track-except and --track-cross-junctions options "
@@ -354,9 +362,7 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 
     with app.initialized(session_name="Build"):
         if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
+            elements = app.project.get_default_targets()
 
         if track_all:
             track_ = elements
@@ -389,6 +395,13 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 @click.pass_obj
 def show(app, elements, deps, except_, order, format_):
     """Show elements in the pipeline
+
+    Specifying no elements will result in showing the default targets
+    of the project. If no default targets are configured, all project
+    elements will be shown.
+
+    When this command is executed from a workspace directory, the default
+    is to show the workspace element.
 
     By default this will show all of the dependencies of the
     specified target element.
@@ -436,9 +449,7 @@ def show(app, elements, deps, except_, order, format_):
     """
     with app.initialized():
         if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
+            elements = app.project.get_default_targets()
 
         dependencies = app.stream.load_selection(elements,
                                                  selection=deps,
@@ -478,6 +489,9 @@ def show(app, elements, deps, except_, order, format_):
 def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command):
     """Run a command in the target element's sandbox environment
 
+    When this command is executed from a workspace directory, the default
+    is to shell into the workspace element.
+
     This will stage a temporary sysroot for running the target
     element, assuming it has already been built and all required
     artifacts are in the local cache.
@@ -511,7 +525,7 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
 
     with app.initialized():
         if not element:
-            element = app.context.guess_element()
+            element = app.project.get_default_target()
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
@@ -581,6 +595,13 @@ def source():
 def source_fetch(app, elements, deps, track_, except_, track_cross_junctions):
     """Fetch sources required to build the pipeline
 
+    Specifying no elements will result in fetching the default targets
+    of the project. If no default targets are configured, all project
+    elements will be fetched.
+
+    When this command is executed from a workspace directory, the default
+    is to fetch the workspace element.
+
     By default this will only try to fetch sources which are
     required for the build plan of the specified target element,
     omitting sources for any elements which are already built
@@ -606,9 +627,7 @@ def source_fetch(app, elements, deps, track_, except_, track_cross_junctions):
 
     with app.initialized(session_name="Fetch"):
         if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
+            elements = app.project.get_default_targets()
 
         app.stream.fetch(elements,
                          selection=deps,
@@ -636,6 +655,15 @@ def source_track(app, elements, deps, except_, cross_junctions):
     """Consults the specified tracking branches for new versions available
     to build and updates the project with any newly available references.
 
+    Specifying no elements will result in tracking the default targets
+    of the project. If no default targets are configured, all project
+    elements will be tracked.
+
+    When this command is executed from a workspace directory, the default
+    is to track the workspace element.
+
+    If no default is declared, all elements in the project will be tracked
+
     By default this will track just the specified element, but you can also
     update a whole tree of dependencies in one go.
 
@@ -647,9 +675,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
     """
     with app.initialized(session_name="Track"):
         if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
+            elements = app.project.get_default_targets()
 
         # Substitute 'none' for 'redirect' so that element redirections
         # will be done
@@ -685,6 +711,9 @@ def source_track(app, elements, deps, except_, cross_junctions):
 def source_checkout(app, element, location, force, deps, fetch_, except_,
                     tar, build_scripts):
     """Checkout sources of an element to the specified location
+
+    When this command is executed from a workspace directory, the default
+    is to checkout the sources of the workspace element.
     """
     if not element and not location:
         click.echo("ERROR: LOCATION is not specified", err=True)
@@ -697,7 +726,7 @@ def source_checkout(app, element, location, force, deps, fetch_, except_,
 
     with app.initialized():
         if not element:
-            element = app.context.guess_element()
+            element = app.project.get_default_target()
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
@@ -763,7 +792,7 @@ def workspace_close(app, remove_dir, all_, elements):
         if not (all_ or elements):
             # NOTE: I may need to revisit this when implementing multiple projects
             # opening one workspace.
-            element = app.context.guess_element()
+            element = app.project.get_default_target()
             if element:
                 elements = (element,)
             else:
@@ -824,7 +853,7 @@ def workspace_reset(app, soft, track_, all_, elements):
     with app.initialized():
 
         if not (all_ or elements):
-            element = app.context.guess_element()
+            element = app.project.get_default_target()
             if element:
                 elements = (element,)
             else:
@@ -921,7 +950,11 @@ def artifact():
                 type=click.Path(readable=False))
 @click.pass_obj
 def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, element):
-    """Checkout contents of an artifact"""
+    """Checkout contents of an artifact
+
+    When this command is executed from a workspace directory, the default
+    is to checkout the artifact of the workspace element.
+    """
     from ..element import Scope
 
     if hardlinks and tar is not None:
@@ -952,7 +985,7 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, el
 
     with app.initialized():
         if not element:
-            element = app.context.guess_element()
+            element = app.project.get_default_target()
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
@@ -980,6 +1013,13 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, el
 def artifact_pull(app, elements, deps, remote):
     """Pull a built artifact from the configured remote artifact cache.
 
+    Specifying no elements will result in pulling the default targets
+    of the project. If no default targets are configured, all project
+    elements will be pulled.
+
+    When this command is executed from a workspace directory, the default
+    is to pull the workspace element.
+
     By default the artifact will be pulled one of the configured caches
     if possible, following the usual priority order. If the `--remote` flag
     is given, only the specified cache will be queried.
@@ -993,9 +1033,7 @@ def artifact_pull(app, elements, deps, remote):
 
     with app.initialized(session_name="Pull"):
         if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
+            elements = app.project.get_default_targets()
 
         app.stream.pull(elements, selection=deps, remote=remote)
 
@@ -1015,6 +1053,13 @@ def artifact_pull(app, elements, deps, remote):
 def artifact_push(app, elements, deps, remote):
     """Push a built artifact to a remote artifact cache.
 
+    Specifying no elements will result in pushing the default targets
+    of the project. If no default targets are configured, all project
+    elements will be pushed.
+
+    When this command is executed from a workspace directory, the default
+    is to push the workspace element.
+
     The default destination is the highest priority configured cache. You can
     override this by passing a different cache URL with the `--remote` flag.
 
@@ -1030,9 +1075,7 @@ def artifact_push(app, elements, deps, remote):
     """
     with app.initialized(session_name="Push"):
         if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
+            elements = app.project.get_default_targets()
 
         app.stream.push(elements, selection=deps, remote=remote)
 
