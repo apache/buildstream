@@ -30,7 +30,7 @@ from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
 
 from tests.testutils import cli, create_repo
-from tests.testutils.site import HAVE_GIT
+from tests.testutils.site import HAVE_GIT, HAVE_OLD_GIT
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -664,6 +664,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.skipif(HAVE_OLD_GIT, reason="old git rm does not update .gitmodules")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
@@ -772,6 +773,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.skipif(HAVE_OLD_GIT, reason="old git describe lacks --first-parent")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("tag_type", [('annotated'), ('lightweight')])

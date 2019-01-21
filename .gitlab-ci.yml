@@ -31,6 +31,7 @@ variables:
   - df -h
 
   script:
+  - mkdir -p "${INTEGRATION_CACHE}"
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
 
@@ -69,6 +70,10 @@ tests-python-3.7-stretch:
     # image has both 3.6 and 3.7 versions. python3.6 cannot be removed because
     # some of our base dependencies declare it as their runtime dependency.
     TOXENV: py37
+
+tests-centos-7.6:
+  <<: *tests
+  image: buildstream/testsuite-centos:7.6-5da27168-32c47d1c
 
 overnight-fedora-28-aarch64:
   image: buildstream/testsuite-fedora:aarch64-28-5da27168-32c47d1c

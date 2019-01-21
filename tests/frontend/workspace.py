@@ -204,6 +204,7 @@ def test_open_multi(cli, tmpdir, datafiles):
             assert not ('.bzr' in workspace_lsdir)
 
 
+@pytest.mark.skipif(os.geteuid() == 0, reason="root may have CAP_DAC_OVERRIDE and ignore permissions")
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi_unwritable(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
