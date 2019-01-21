@@ -281,6 +281,25 @@ class ArtifactCache():
     #
     def clean(self):
         artifacts = self.list_artifacts()
+        context = self.context
+
+        # Some accumulative statistics
+        removed_ref_count = 0
+        space_saved = 0
+
+        # Start off with an announcement with as much info as possible
+        volume_size, volume_avail = self._get_cache_volume_size()
+        self._message(MessageType.STATUS, "Starting cache cleanup",
+                      detail=("Elements required by the current build plan: {}\n" +
+                              "User specified quota: {} ({})\n" +
+                              "Cache usage: {}\n" +
+                              "Cache volume: {} total, {} available")
+                      .format(len(self._required_elements),
+                              context.config_cache_quota,
+                              utils._pretty_size(self._cache_quota_original, dec_places=2),
+                              utils._pretty_size(self.get_cache_size(), dec_places=2),
+                              utils._pretty_size(volume_size, dec_places=2),
+                              utils._pretty_size(volume_avail, dec_places=2)))
 
         # Build a set of the cache keys which are required
         # based on the required elements at cleanup time
@@ -305,11 +324,18 @@ class ArtifactCache():
                 # can't remove them, we have to abort the build.
                 #
                 # FIXME: Asking the user what to do may be neater
+                #
                 default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
                                             'buildstream.conf')
-                detail = ("There is not enough space to complete the build.\n"
-                          "Please increase the cache-quota in {}."
-                          .format(self.context.config_origin or default_conf))
+                detail = ("Aborted after removing {} refs and saving {} disk space.\n"
+                          "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
+                          "There is not enough space to complete the build.\n"
+                          "Please increase the cache-quota in {} and/or make more disk space."
+                          .format(removed_ref_count,
+                                  utils._pretty_size(space_saved, dec_places=2),
+                                  utils._pretty_size(self.get_cache_size(), dec_places=2),
+                                  len(self._required_elements),
+                                  (context.config_origin or default_conf)))
 
                 if self.has_quota_exceeded():
                     raise ArtifactError("Cache too full. Aborting.",
@@ -324,10 +350,25 @@ class ArtifactCache():
                 # Remove the actual artifact, if it's not required.
                 size = self.remove(to_remove)
 
+                removed_ref_count += 1
+                space_saved += size
+
+                self._message(MessageType.STATUS,
+                              "Freed {: <7} {}".format(
+                                  utils._pretty_size(size, dec_places=2),
+                                  to_remove))
+
                 # Remove the size from the removed size
                 self.set_cache_size(self._cache_size - size)
 
-        # This should be O(1) if implemented correctly
+        # Informational message about the side effects of the cleanup
+        self._message(MessageType.INFO, "Cleanup completed",
+                      detail=("Removed {} refs and saving {} disk space.\n" +
+                              "Cache usage is now: {}")
+                      .format(removed_ref_count,
+                              utils._pretty_size(space_saved, dec_places=2),
+                              utils._pretty_size(self.get_cache_size(), dec_places=2)))
+
         return self.get_cache_size()
 
     # compute_cache_size()
@@ -339,7 +380,14 @@ class ArtifactCache():
     #    (int): The size of the artifact cache.
     #
     def compute_cache_size(self):
-        self._cache_size = self.calculate_cache_size()
+        old_cache_size = self._cache_size
+        new_cache_size = self.calculate_cache_size()
+
+        if old_cache_size != new_cache_size:
+            self._cache_size = new_cache_size
+
+            usage = ArtifactCacheUsage(self)
+            self._message(MessageType.STATUS, "Cache usage recomputed: {}".format(usage))
 
         return self._cache_size
 
