@@ -1782,7 +1782,7 @@ creating a tarball which contains everything we want it to include::
 Updating BuildStream's Python dependencies
 ------------------------------------------
 BuildStream's Python dependencies are listed in multiple
-`requirements files <https://pip.readthedocs.io/en/latest/reference/pip_install/#requirements-file-format>`
+`requirements files <https://pip.readthedocs.io/en/latest/reference/pip_install/#requirements-file-format>`_
 present in the ``requirements`` directory.
 
 All ``.txt`` files in this directory are generated from the corresponding
