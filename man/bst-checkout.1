@@ -1,18 +1,15 @@
-.TH "BST CHECKOUT" "1" "29-Nov-2018" "" "bst checkout Manual"
+.TH "BST CHECKOUT" "1" "22-Jan-2019" "" "bst checkout Manual"
 .SH NAME
 bst\-checkout \- Checkout a built artifact
 .SH SYNOPSIS
 .B bst checkout
-[OPTIONS] ELEMENT LOCATION
-.SH DESCRIPTION
-Checkout a built artifact to the specified location
-    
+[OPTIONS] [ELEMENT] [LOCATION]
 .SH OPTIONS
 .TP
 \fB\-f,\fP \-\-force
 Allow files to be overwritten
 .TP
-\fB\-d,\fP \-\-deps [run|none]
+\fB\-d,\fP \-\-deps [run|build|none]
 The dependencies to checkout (default: run)
 .TP
 \fB\-\-integrate\fP / \-\-no\-integrate

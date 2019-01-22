@@ -1,15 +1,21 @@
-.TH "BST SHELL" "1" "29-Nov-2018" "" "bst shell Manual"
+.TH "BST SHELL" "1" "22-Jan-2019" "" "bst shell Manual"
 .SH NAME
 bst\-shell \- Shell into an element's sandbox environment
 .SH SYNOPSIS
 .B bst shell
-[OPTIONS] ELEMENT [COMMAND]...
+[OPTIONS] [ELEMENT] [COMMAND]...
 .SH DESCRIPTION
 Run a command in the target element's sandbox environment
 .PP
 This will stage a temporary sysroot for running the target
 element, assuming it has already been built and all required
 artifacts are in the local cache.
+.PP
+Use '--' to separate a command from the options to bst,
+otherwise bst may respond to them instead. e.g.
+.PP
+
+    bst shell example.bst -- df -h
 .PP
 Use the --build option to create a temporary sysroot for
 building the element instead.
@@ -33,3 +39,6 @@ Mount a file or directory into the sandbox
 .TP
 \fB\-\-isolate\fP
 Create an isolated build sandbox
+.TP
+\fB\-t,\fP \-\-use\-buildtree [ask|try|always|never]
+Defaults to ask but if set to always the function will fail if a build tree is not available

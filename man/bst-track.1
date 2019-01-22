@@ -1,21 +1,9 @@
-.TH "BST TRACK" "1" "29-Nov-2018" "" "bst track Manual"
+.TH "BST TRACK" "1" "22-Jan-2019" "" "bst track Manual"
 .SH NAME
 bst\-track \- Track new source references
 .SH SYNOPSIS
 .B bst track
 [OPTIONS] [ELEMENTS]...
-.SH DESCRIPTION
-Consults the specified tracking branches for new versions available
-to build and updates the project with any newly available references.
-.PP
-By default this will track just the specified element, but you can also
-update a whole tree of dependencies in one go.
-.PP
-Specify `--deps` to control which sources to track:
-.PP
-
-    none:  No dependencies, just the specified elements
-    all:   All dependencies of all specified elements
 .SH OPTIONS
 .TP
 \fB\-\-except\fP PATH

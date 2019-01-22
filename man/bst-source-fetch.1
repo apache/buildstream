@@ -1,0 +1,33 @@
+.TH "BST SOURCE FETCH" "1" "22-Jan-2019" "" "bst source fetch Manual"
+.SH NAME
+bst\-source\-fetch \- Fetch sources in a pipeline
+.SH SYNOPSIS
+.B bst source fetch
+[OPTIONS] [ELEMENTS]...
+.SH DESCRIPTION
+Fetch sources required to build the pipeline
+.PP
+By default this will only try to fetch sources which are
+required for the build plan of the specified target element,
+omitting sources for any elements which are already built
+and available in the artifact cache.
+.PP
+Specify `--deps` to control which sources to fetch:
+.PP
+
+    none:  No dependencies, just the element itself
+    plan:  Only dependencies required for the build plan
+    all:   All dependencies
+.SH OPTIONS
+.TP
+\fB\-\-except\fP PATH
+Except certain dependencies from fetching
+.TP
+\fB\-d,\fP \-\-deps [none|plan|all]
+The dependencies to fetch (default: plan)
+.TP
+\fB\-\-track\fP
+Track new source references before fetching
+.TP
+\fB\-J,\fP \-\-track\-cross\-junctions
+Allow tracking to cross junction boundaries
