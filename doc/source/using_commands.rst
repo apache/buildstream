@@ -82,6 +82,13 @@ Artifact subcommands
 
 ----
 
+.. _invoking_artifact_log:
+
+.. click:: buildstream._frontend.cli:artifact_log
+   :prog: bst artifact log
+
+----
+
 .. _invoking_artifact_pull:
 
 .. click:: buildstream._frontend.cli:artifact_pull
