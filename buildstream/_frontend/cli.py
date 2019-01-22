@@ -361,8 +361,12 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
         click.echo("WARNING: --track-save is deprecated, saving is now unconditional", err=True)
 
     with app.initialized(session_name="Build"):
+        ignore_junction_targets = False
+
         if not elements:
             elements = app.project.get_default_targets()
+            # Junction elements cannot be built, exclude them from default targets
+            ignore_junction_targets = True
 
         if track_all:
             track_ = elements
@@ -371,6 +375,7 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
                          track_targets=track_,
                          track_except=track_except,
                          track_cross_junctions=track_cross_junctions,
+                         ignore_junction_targets=ignore_junction_targets,
                          build_all=all_)
 
 
@@ -1032,10 +1037,15 @@ def artifact_pull(app, elements, deps, remote):
     """
 
     with app.initialized(session_name="Pull"):
+        ignore_junction_targets = False
+
         if not elements:
             elements = app.project.get_default_targets()
+            # Junction elements cannot be pulled, exclude them from default targets
+            ignore_junction_targets = True
 
-        app.stream.pull(elements, selection=deps, remote=remote)
+        app.stream.pull(elements, selection=deps, remote=remote,
+                        ignore_junction_targets=ignore_junction_targets)
 
 
 ##################################################################
@@ -1074,10 +1084,15 @@ def artifact_push(app, elements, deps, remote):
         all:   All dependencies
     """
     with app.initialized(session_name="Push"):
+        ignore_junction_targets = False
+
         if not elements:
             elements = app.project.get_default_targets()
+            # Junction elements cannot be pushed, exclude them from default targets
+            ignore_junction_targets = True
 
-        app.stream.push(elements, selection=deps, remote=remote)
+        app.stream.push(elements, selection=deps, remote=remote,
+                        ignore_junction_targets=ignore_junction_targets)
 
 
 ################################################################
