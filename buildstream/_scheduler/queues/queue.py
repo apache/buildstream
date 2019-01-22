@@ -305,7 +305,7 @@ class Queue():
             self._done_queue.append(element)
 
             # These lists are for bookkeeping purposes for the UI and logging.
-            if status == JobStatus.SKIPPED:
+            if status == JobStatus.SKIPPED or job.get_terminated():
                 self.skipped_elements.append(element)
             elif status == JobStatus.OK:
                 self.processed_elements.append(element)

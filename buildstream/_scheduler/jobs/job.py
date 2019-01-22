@@ -184,6 +184,16 @@ class Job():
 
         self._terminated = True
 
+    # get_terminated()
+    #
+    # Check if a job has been terminated.
+    #
+    # Returns:
+    #     (bool): True in the main process if Job.terminate() was called.
+    #
+    def get_terminated(self):
+        return self._terminated
+
     # terminate_wait()
     #
     # Wait for terminated jobs to complete
