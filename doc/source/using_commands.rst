@@ -9,7 +9,8 @@ invoked on the command line, where, in most cases, this will be from the
 project's main directory.
 
 
-----
+Top-level commands
+------------------
 
 .. The bst options e.g. bst --version, or bst --verbose etc.
 .. _invoking_bst:
@@ -34,20 +35,6 @@ project's main directory.
 
 .. click:: buildstream._frontend.cli:build
    :prog: bst build
-
-----
-
-.. _invoking_fetch:
-
-.. click:: buildstream._frontend.cli:fetch
-   :prog: bst fetch
-
-----
-
-.. _invoking_track:
-
-.. click:: buildstream._frontend.cli:track
-   :prog: bst track
 
 ----
 
@@ -79,6 +66,13 @@ project's main directory.
 
 ----
 
+.. _invoking_source:
+
+.. click:: buildstream._frontend.cli:source
+   :prog: bst source
+
+----
+
 .. _invoking_checkout:
 
 .. click:: buildstream._frontend.cli:checkout
@@ -91,7 +85,25 @@ project's main directory.
 .. click:: buildstream._frontend.cli:workspace
    :prog: bst workspace
 
+
+Source subcommands
+------------------
+
+.. _invoking_source_fetch:
+
+.. click:: buildstream._frontend.cli:source_fetch
+   :prog: bst source fetch
+
 ----
+
+.. _invoking_source_track:
+
+.. click:: buildstream._frontend.cli:source_track
+   :prog: bst source track
+
+
+Workspace subcommands
+---------------------
 
 .. _invoking_workspace_open:
 
