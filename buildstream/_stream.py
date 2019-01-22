@@ -161,6 +161,7 @@ class Stream():
     #    track_targets (list of str): Specified targets for tracking
     #    track_except (list of str): Specified targets to except from tracking
     #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
+    #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    build_all (bool): Whether to build all elements, or only those
     #                      which are required to build the target.
     #
@@ -168,6 +169,7 @@ class Stream():
               track_targets=None,
               track_except=None,
               track_cross_junctions=False,
+              ignore_junction_targets=False,
               build_all=False):
 
         if build_all:
@@ -180,6 +182,7 @@ class Stream():
                        selection=selection, track_selection=PipelineSelection.ALL,
                        track_except_targets=track_except,
                        track_cross_junctions=track_cross_junctions,
+                       ignore_junction_targets=ignore_junction_targets,
                        use_artifact_config=True,
                        fetch_subprojects=True,
                        dynamic_plan=True)
@@ -291,6 +294,7 @@ class Stream():
     # Args:
     #    targets (list of str): Targets to pull
     #    selection (PipelineSelection): The selection mode for the specified targets
+    #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    remote (str): The URL of a specific remote server to pull from, or None
     #
     # If `remote` specified as None, then regular configuration will be used
@@ -298,6 +302,7 @@ class Stream():
     #
     def pull(self, targets, *,
              selection=PipelineSelection.NONE,
+             ignore_junction_targets=False,
              remote=None):
 
         use_config = True
@@ -306,6 +311,7 @@ class Stream():
 
         elements, _ = self._load(targets, (),
                                  selection=selection,
+                                 ignore_junction_targets=ignore_junction_targets,
                                  use_artifact_config=use_config,
                                  artifact_remote_url=remote,
                                  fetch_subprojects=True)
@@ -325,6 +331,7 @@ class Stream():
     # Args:
     #    targets (list of str): Targets to push
     #    selection (PipelineSelection): The selection mode for the specified targets
+    #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    remote (str): The URL of a specific remote server to push to, or None
     #
     # If `remote` specified as None, then regular configuration will be used
@@ -336,6 +343,7 @@ class Stream():
     #
     def push(self, targets, *,
              selection=PipelineSelection.NONE,
+             ignore_junction_targets=False,
              remote=None):
 
         use_config = True
@@ -344,6 +352,7 @@ class Stream():
 
         elements, _ = self._load(targets, (),
                                  selection=selection,
+                                 ignore_junction_targets=ignore_junction_targets,
                                  use_artifact_config=use_config,
                                  artifact_remote_url=remote,
                                  fetch_subprojects=True)
@@ -851,6 +860,7 @@ class Stream():
     #    except_targets (list of str): Specified targets to except from fetching
     #    track_except_targets (list of str): Specified targets to except from fetching
     #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
+    #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    use_artifact_config (bool): Whether to initialize artifacts with the config
     #    artifact_remote_url (bool): A remote url for initializing the artifacts
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
@@ -865,6 +875,7 @@ class Stream():
               except_targets=(),
               track_except_targets=(),
               track_cross_junctions=False,
+              ignore_junction_targets=False,
               use_artifact_config=False,
               artifact_remote_url=None,
               fetch_subprojects=False,
@@ -880,6 +891,10 @@ class Stream():
             self._pipeline.load([targets, except_targets, track_targets, track_except_targets],
                                 rewritable=rewritable,
                                 fetch_subprojects=fetch_subprojects)
+
+        # Optionally filter out junction elements
+        if ignore_junction_targets:
+            elements = [e for e in elements if e.get_kind() != 'junction']
 
         # Hold on to the targets
         self.targets = elements
