@@ -49,6 +49,41 @@ def test_fetch(cli, tmpdir, datafiles, kind):
     assert cli.get_element_state(project, element_name) == 'buildable'
 
 
+@pytest.mark.datafiles(os.path.join(TOP_DIR, 'project_world'))
+def test_fetch_default_targets(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = os.path.join(project, 'elements')
+    element_name = 'fetch-test.bst'
+
+    # Create our repo object of the given source type with
+    # the bin files, and then collect the initial ref.
+    #
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(project)
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            repo.source_config(ref=ref)
+        ]
+    }
+    _yaml.dump(element,
+               os.path.join(element_path,
+                            element_name))
+
+    # Assert that a fetch is needed
+    assert cli.get_element_state(project, element_name) == 'fetch needed'
+
+    # Now try to fetch it, using the default target feature
+    result = cli.run(project=project, args=['source', 'fetch'])
+    result.assert_success()
+
+    # Assert that we are now buildable because the source is
+    # now cached.
+    assert cli.get_element_state(project, element_name) == 'buildable'
+
+
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
 def test_fetch_consistency_error(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
