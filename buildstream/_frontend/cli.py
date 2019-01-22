@@ -1106,7 +1106,7 @@ def artifact_log(app, artifacts):
 ##################################################################
 #                          Fetch Command                         #
 ##################################################################
-@cli.command(short_help="Fetch sources in a pipeline", hidden=True)
+@cli.command(short_help="COMMAND OBSOLETE - Fetch sources in a pipeline", hidden=True)
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies from fetching")
@@ -1128,7 +1128,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 ##################################################################
 #                          Track Command                         #
 ##################################################################
-@cli.command(short_help="Track new source references", hidden=True)
+@cli.command(short_help="COMMAND OBSOLETE - Track new source references", hidden=True)
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies from tracking")
@@ -1148,7 +1148,7 @@ def track(app, elements, deps, except_, cross_junctions):
 ##################################################################
 #                        Checkout Command                        #
 ##################################################################
-@cli.command(short_help="Checkout a built artifact", hidden=True)
+@cli.command(short_help="COMMAND OBSOLETE - Checkout a built artifact", hidden=True)
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--deps', '-d', default='run',
@@ -1175,7 +1175,7 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 ################################################################
 #                          Pull Command                        #
 ################################################################
-@cli.command(short_help="Pull a built artifact", hidden=True)
+@cli.command(short_help="COMMAND OBSOLETE - Pull a built artifact", hidden=True)
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependency artifacts to pull (default: none)')
@@ -1192,7 +1192,7 @@ def pull(app, elements, deps, remote):
 ##################################################################
 #                           Push Command                         #
 ##################################################################
-@cli.command(short_help="Push a built artifact", hidden=True)
+@cli.command(short_help="COMMAND OBSOLETE - Push a built artifact", hidden=True)
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependencies to push (default: none)')
