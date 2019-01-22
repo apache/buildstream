@@ -398,13 +398,12 @@ class Cli():
     #
     # Returns a dictionary with the element names as keys
     #
-    def get_element_states(self, project, target, deps='all'):
+    def get_element_states(self, project, targets, deps='all'):
         result = self.run(project=project, silent=True, args=[
             'show',
             '--deps', deps,
             '--format', '%{name}||%{state}',
-            target
-        ])
+        ] + targets)
         result.assert_success()
         lines = result.output.splitlines()
         states = {}

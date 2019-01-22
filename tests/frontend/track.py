@@ -123,7 +123,7 @@ def test_track_recurse(cli, tmpdir, datafiles, kind, amount):
         last_element_name = element_name
 
     # Assert that a fetch is needed
-    states = cli.get_element_states(project, last_element_name)
+    states = cli.get_element_states(project, [last_element_name])
     for element_name in element_names:
         assert states[element_name] == 'no reference'
 
@@ -143,7 +143,7 @@ def test_track_recurse(cli, tmpdir, datafiles, kind, amount):
     result.assert_success()
 
     # Assert that the base is buildable and the rest are waiting
-    states = cli.get_element_states(project, last_element_name)
+    states = cli.get_element_states(project, [last_element_name])
     for element_name in element_names:
         if element_name == element_names[0]:
             assert states[element_name] == 'buildable'
