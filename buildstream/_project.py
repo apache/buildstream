@@ -26,6 +26,7 @@ from . import utils
 from . import _cachekey
 from . import _site
 from . import _yaml
+from ._artifactelement import ArtifactElement
 from ._profile import Topics, profile_start, profile_end
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
@@ -254,6 +255,19 @@ class Project():
             return self.first_pass_config.element_factory.create(self._context, self, meta)
         else:
             return self.config.element_factory.create(self._context, self, meta)
+
+    # create_artifact_element()
+    #
+    # Instantiate and return an ArtifactElement
+    #
+    # Args:
+    #    ref (str): A string of the artifact ref
+    #
+    # Returns:
+    #    (ArtifactElement): A newly created ArtifactElement object of the appropriate kind
+    #
+    def create_artifact_element(self, ref):
+        return ArtifactElement(self._context, ref)
 
     # create_source()
     #
