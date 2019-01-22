@@ -314,10 +314,10 @@ class Scheduler():
     #    job (Job): The job to spawn
     #
     def _spawn_job(self, job):
-        job.spawn()
         self._active_jobs.append(job)
         if self._job_start_callback:
             self._job_start_callback(job)
+        job.spawn()
 
     # Callback for the cache size job
     def _cache_size_job_complete(self, status, cache_size):
