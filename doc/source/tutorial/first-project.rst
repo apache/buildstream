@@ -108,7 +108,7 @@ as ``buildable`` in the :ref:`bst build <invoking_build>` command above, has now
 Observe the output
 ------------------
 Now that we've finished building, we can checkout the output of the
-artifact we've created using :ref:`bst checkout <invoking_checkout>`
+artifact we've created using :ref:`bst artifact checkout <invoking_artifact_checkout>`
 
 .. raw:: html
    :file: ../sessions/first-project-checkout.html

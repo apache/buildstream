@@ -22,6 +22,13 @@ Top-level commands
 
 ----
 
+.. _invoking_artifact:
+
+.. click:: buildstream._frontend.cli:artifact
+   :prog: bst artifact
+
+----
+
 .. the `bst init` command
 .. _invoking_init:
 
@@ -35,20 +42,6 @@ Top-level commands
 
 .. click:: buildstream._frontend.cli:build
    :prog: bst build
-
-----
-
-.. _invoking_pull:
-
-.. click:: buildstream._frontend.cli:pull
-   :prog: bst pull
-
-----
-
-.. _invoking_push:
-
-.. click:: buildstream._frontend.cli:push
-   :prog: bst push
 
 ----
 
@@ -73,17 +66,33 @@ Top-level commands
 
 ----
 
-.. _invoking_checkout:
-
-.. click:: buildstream._frontend.cli:checkout
-   :prog: bst checkout
-
-----
-
 .. _invoking_workspace:
 
 .. click:: buildstream._frontend.cli:workspace
    :prog: bst workspace
+
+
+Artifact subcommands
+--------------------
+
+.. _invoking_artifact_checkout:
+
+.. click:: buildstream._frontend.cli:artifact_checkout
+   :prog: bst artifact checkout
+
+----
+
+.. _invoking_artifact_pull:
+
+.. click:: buildstream._frontend.cli:artifact_pull
+   :prog: bst artifact pull
+
+----
+
+.. _invoking_artifact_push:
+
+.. click:: buildstream._frontend.cli:artifact_push
+   :prog: bst artifact push
 
 
 Source subcommands

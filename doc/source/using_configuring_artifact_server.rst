@@ -40,7 +40,7 @@ them in a specific order:
 
 When an artifact is built locally, BuildStream will try to push it to all the
 caches which have the ``push: true`` flag set. You can also manually push
-artifacts to a specific cache using the :ref:`bst push command <invoking_push>`.
+artifacts to a specific cache using the :ref:`bst artifact push command <invoking_artifact_push>`.
 
 Artifacts are identified using the element's :ref:`cache key <cachekeys>` so
 the builds provided by a cache should be interchangable with those provided
