@@ -25,7 +25,7 @@ After a successful build, BuildStream will push the completed artifact to the re
 
 Use of sandboxes outside builds
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Because staging requires *integration-commands* to be run, a sandbox is necessary for the *bst checkout* command to run.
+Because staging requires *integration-commands* to be run, a sandbox is necessary for the *bst artifact checkout* command to run.
 
 A sandbox is also required for the *bst shell* command. Because the REAPI does not provide any mechanism for interactive use, *bst shell* will always use a local sandbox.
 
