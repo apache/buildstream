@@ -353,7 +353,7 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
         click.echo("WARNING: --track-save is deprecated, saving is now unconditional", err=True)
 
     with app.initialized(session_name="Build"):
-        if not all_ and not elements:
+        if not elements:
             guessed_target = app.context.guess_element()
             if guessed_target:
                 elements = (guessed_target,)
