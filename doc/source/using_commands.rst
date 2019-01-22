@@ -101,6 +101,13 @@ Source subcommands
 .. click:: buildstream._frontend.cli:source_track
    :prog: bst source track
 
+----
+
+.. _invoking_source_checkout:
+
+.. click:: buildstream._frontend.cli:source_checkout
+   :prog: bst source checkout
+
 
 Workspace subcommands
 ---------------------
