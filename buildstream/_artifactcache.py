@@ -126,7 +126,7 @@ class ArtifactCache():
         self._remotes_setup = True
 
         # Initialize remote artifact caches. We allow the commandline to override
-        # the user config in some cases (for example `bst push --remote=...`).
+        # the user config in some cases (for example `bst artifact push --remote=...`).
         has_remote_caches = False
         if remote_url:
             self._set_remotes([ArtifactCacheSpec(remote_url, push=True)])

@@ -396,7 +396,7 @@ class Source(Plugin):
 
         If the backend in question supports resolving references from
         a symbolic tracking branch or tag, then this should be implemented
-        to perform this task on behalf of :ref:`bst track <invoking_track>`
+        to perform this task on behalf of :ref:`bst source track <invoking_source_track>`
         commands.
 
         This usually requires fetching new content from a remote origin

@@ -1,0 +1,28 @@
+.TH "BST ARTIFACT PUSH" "1" "22-Jan-2019" "" "bst artifact push Manual"
+.SH NAME
+bst\-artifact\-push \- Push a built artifact
+.SH SYNOPSIS
+.B bst artifact push
+[OPTIONS] [ELEMENTS]...
+.SH DESCRIPTION
+Push a built artifact to a remote artifact cache.
+.PP
+The default destination is the highest priority configured cache. You can
+override this by passing a different cache URL with the `--remote` flag.
+.PP
+If bst has been configured to include build trees on artifact pulls,
+an attempt will be made to pull any required build trees to avoid the
+skipping of partial artifacts being pushed.
+.PP
+Specify `--deps` to control which artifacts to push:
+.PP
+
+    none:  No dependencies, just the element itself
+    all:   All dependencies
+.SH OPTIONS
+.TP
+\fB\-d,\fP \-\-deps [none|all]
+The dependencies to push (default: none)
+.TP
+\fB\-r,\fP \-\-remote TEXT
+The URL of the remote cache (defaults to the first configured cache)

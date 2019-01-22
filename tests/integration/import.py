@@ -53,7 +53,7 @@ def test_import(cli, tmpdir, datafiles, source, target, path, expected):
     res = cli.run(project=project, args=['build', element_name])
     assert res.exit_code == 0
 
-    cli.run(project=project, args=['checkout', element_name, checkout])
+    cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert res.exit_code == 0
 
     assert set(walk_dir(checkout)) == set(expected)

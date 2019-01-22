@@ -95,7 +95,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Assert we checked out both files at their expected location
@@ -134,7 +134,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Assert we checked out both files at their expected location
@@ -173,7 +173,7 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Assert we checked out both files at their expected location
@@ -212,7 +212,7 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Assert we checked out both files at their expected location
@@ -256,7 +256,7 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Assert we checked out files at their expected location
@@ -301,7 +301,7 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Assert we checked out files at their expected location
@@ -341,7 +341,7 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Assert we checked out both files at their expected location
@@ -860,7 +860,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkout])
     result.assert_success()
 
     if tag_type == 'annotated':
@@ -970,7 +970,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkout])
     result.assert_success()
 
     if tag_type == 'annotated':
@@ -1061,7 +1061,7 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkout])
     result.assert_success()
 
     describe = subprocess.check_output(['git', 'describe'],

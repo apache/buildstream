@@ -25,7 +25,7 @@ def test_cmake_build(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello'])
@@ -41,7 +41,7 @@ def test_cmake_confroot_build(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
 
-    result = cli.run(project=project, args=['checkout', element_name, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/usr', '/usr/bin', '/usr/bin/hello'])

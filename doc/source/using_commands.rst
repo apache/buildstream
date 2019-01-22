@@ -9,7 +9,8 @@ invoked on the command line, where, in most cases, this will be from the
 project's main directory.
 
 
-----
+Top-level commands
+------------------
 
 .. The bst options e.g. bst --version, or bst --verbose etc.
 .. _invoking_bst:
@@ -18,6 +19,13 @@ project's main directory.
    :prog: bst
 
 .. Further description of the command goes here
+
+----
+
+.. _invoking_artifact:
+
+.. click:: buildstream._frontend.cli:artifact
+   :prog: bst artifact
 
 ----
 
@@ -37,34 +45,6 @@ project's main directory.
 
 ----
 
-.. _invoking_fetch:
-
-.. click:: buildstream._frontend.cli:fetch
-   :prog: bst fetch
-
-----
-
-.. _invoking_track:
-
-.. click:: buildstream._frontend.cli:track
-   :prog: bst track
-
-----
-
-.. _invoking_pull:
-
-.. click:: buildstream._frontend.cli:pull
-   :prog: bst pull
-
-----
-
-.. _invoking_push:
-
-.. click:: buildstream._frontend.cli:push
-   :prog: bst push
-
-----
-
 .. _invoking_show:
 
 .. click:: buildstream._frontend.cli:show
@@ -79,10 +59,10 @@ project's main directory.
 
 ----
 
-.. _invoking_checkout:
+.. _invoking_source:
 
-.. click:: buildstream._frontend.cli:checkout
-   :prog: bst checkout
+.. click:: buildstream._frontend.cli:source
+   :prog: bst source
 
 ----
 
@@ -91,7 +71,62 @@ project's main directory.
 .. click:: buildstream._frontend.cli:workspace
    :prog: bst workspace
 
+
+Artifact subcommands
+--------------------
+
+.. _invoking_artifact_checkout:
+
+.. click:: buildstream._frontend.cli:artifact_checkout
+   :prog: bst artifact checkout
+
 ----
+
+.. _invoking_artifact_log:
+
+.. click:: buildstream._frontend.cli:artifact_log
+   :prog: bst artifact log
+
+----
+
+.. _invoking_artifact_pull:
+
+.. click:: buildstream._frontend.cli:artifact_pull
+   :prog: bst artifact pull
+
+----
+
+.. _invoking_artifact_push:
+
+.. click:: buildstream._frontend.cli:artifact_push
+   :prog: bst artifact push
+
+
+Source subcommands
+------------------
+
+.. _invoking_source_fetch:
+
+.. click:: buildstream._frontend.cli:source_fetch
+   :prog: bst source fetch
+
+----
+
+.. _invoking_source_track:
+
+.. click:: buildstream._frontend.cli:source_track
+   :prog: bst source track
+
+----
+
+.. _invoking_source_checkout:
+
+.. click:: buildstream._frontend.cli:source_checkout
+   :prog: bst source checkout
+
+
+Workspace subcommands
+---------------------
 
 .. _invoking_workspace_open:
 

@@ -70,7 +70,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
             assert cli.get_element_state(project, element_name) != 'cached'
 
         # Now try bst pull
-        result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
+        result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
         result.assert_success()
 
         # And assert that it's again in the local cache, without having built
@@ -111,7 +111,7 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, 'target.bst') != 'cached'
 
         # Now try bst pull
-        result = cli.run(project=project, args=['pull', 'target.bst'])
+        result = cli.run(project=project, args=['artifact', 'pull', 'target.bst'])
         result.assert_success()
 
         # And assert that it's again in the local cache, without having built,
@@ -146,7 +146,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
 
         # Now try `bst push` to the good_share.
         result = cli.run(project=project, args=[
-            'push', 'target.bst', '--remote', good_share.repo
+            'artifact', 'push', 'target.bst', '--remote', good_share.repo
         ])
         result.assert_success()
 
@@ -161,7 +161,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         artifacts = os.path.join(cli.directory, 'artifacts')
         shutil.rmtree(artifacts)
 
-        result = cli.run(project=project, args=['pull', 'target.bst', '--remote',
+        result = cli.run(project=project, args=['artifact', 'pull', 'target.bst', '--remote',
                                                 good_share.repo])
         result.assert_success()
 
@@ -216,7 +216,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, 'target.bst') == 'waiting'
 
         # Now try bst pull
-        result = cli.run(project=project, args=['pull', '--deps', 'all', 'target.bst'])
+        result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
         result.assert_success()
 
         # And assert that the target is again in the local cache, without having built
@@ -291,7 +291,7 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'buildable'
 
         # Now try bst pull
-        result = cli.run(project=project, args=['pull', 'junction.bst:import-etc.bst'])
+        result = cli.run(project=project, args=['artifact', 'pull', 'junction.bst:import-etc.bst'])
         result.assert_success()
 
         # And assert that it's again in the local cache, without having built

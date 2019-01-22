@@ -132,7 +132,7 @@ def test_expiry_order(cli, datafiles, tmpdir):
     wait_for_cache_granularity()
 
     # Now extract dep.bst
-    res = cli.run(project=project, args=['checkout', 'dep.bst', checkout])
+    res = cli.run(project=project, args=['artifact', 'checkout', 'dep.bst', '--directory', checkout])
     res.assert_success()
 
     # Finally, build something that will cause the cache to overflow
@@ -379,7 +379,8 @@ def test_extract_expiry(cli, datafiles, tmpdir):
     assert cli.get_element_state(project, 'target.bst') == 'cached'
 
     # Force creating extract
-    res = cli.run(project=project, args=['checkout', 'target.bst', os.path.join(str(tmpdir), 'checkout')])
+    res = cli.run(project=project, args=['artifact', 'checkout', 'target.bst',
+                                         '--directory', os.path.join(str(tmpdir), 'checkout')])
     res.assert_success()
 
     # Get a snapshot of the extracts in advance

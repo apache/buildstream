@@ -369,78 +369,6 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 
 
 ##################################################################
-#                           Pull Command                         #
-##################################################################
-@cli.command(short_help="Pull a built artifact")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'all']),
-              help='The dependency artifacts to pull (default: none)')
-@click.option('--remote', '-r',
-              help="The URL of the remote cache (defaults to the first configured cache)")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
-@click.pass_obj
-def pull(app, elements, deps, remote):
-    """Pull a built artifact from the configured remote artifact cache.
-
-    By default the artifact will be pulled one of the configured caches
-    if possible, following the usual priority order. If the `--remote` flag
-    is given, only the specified cache will be queried.
-
-    Specify `--deps` to control which artifacts to pull:
-
-    \b
-        none:  No dependencies, just the element itself
-        all:   All dependencies
-    """
-
-    with app.initialized(session_name="Pull"):
-        if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
-
-        app.stream.pull(elements, selection=deps, remote=remote)
-
-
-##################################################################
-#                           Push Command                         #
-##################################################################
-@cli.command(short_help="Push a built artifact")
-@click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'all']),
-              help='The dependencies to push (default: none)')
-@click.option('--remote', '-r', default=None,
-              help="The URL of the remote cache (defaults to the first configured cache)")
-@click.argument('elements', nargs=-1,
-                type=click.Path(readable=False))
-@click.pass_obj
-def push(app, elements, deps, remote):
-    """Push a built artifact to a remote artifact cache.
-
-    The default destination is the highest priority configured cache. You can
-    override this by passing a different cache URL with the `--remote` flag.
-
-    If bst has been configured to include build trees on artifact pulls,
-    an attempt will be made to pull any required build trees to avoid the
-    skipping of partial artifacts being pushed.
-
-    Specify `--deps` to control which artifacts to push:
-
-    \b
-        none:  No dependencies, just the element itself
-        all:   All dependencies
-    """
-    with app.initialized(session_name="Push"):
-        if not elements:
-            guessed_target = app.context.guess_element()
-            if guessed_target:
-                elements = (guessed_target,)
-
-        app.stream.push(elements, selection=deps, remote=remote)
-
-
-##################################################################
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
@@ -623,67 +551,6 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
 
     # If there were no errors, we return the shell's exit code here.
     sys.exit(exitcode)
-
-
-##################################################################
-#                        Checkout Command                        #
-##################################################################
-@cli.command(short_help="Checkout a built artifact")
-@click.option('--force', '-f', default=False, is_flag=True,
-              help="Allow files to be overwritten")
-@click.option('--deps', '-d', default='run',
-              type=click.Choice(['run', 'build', 'none']),
-              help='The dependencies to checkout (default: run)')
-@click.option('--integrate/--no-integrate', default=True, is_flag=True,
-              help="Whether to run integration commands")
-@click.option('--hardlinks', default=False, is_flag=True,
-              help="Checkout hardlinks instead of copies (handle with care)")
-@click.option('--tar', default=False, is_flag=True,
-              help="Create a tarball from the artifact contents instead "
-                   "of a file tree. If LOCATION is '-', the tarball "
-                   "will be dumped to the standard output.")
-@click.argument('element', required=False,
-                type=click.Path(readable=False))
-@click.argument('location', type=click.Path(), required=False)
-@click.pass_obj
-def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
-    """Checkout a built artifact to the specified location
-    """
-    from ..element import Scope
-
-    if not element and not location:
-        click.echo("ERROR: LOCATION is not specified", err=True)
-        sys.exit(-1)
-
-    if element and not location:
-        # Nasty hack to get around click's optional args
-        location = element
-        element = None
-
-    if hardlinks and tar:
-        click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
-        sys.exit(-1)
-
-    if deps == "run":
-        scope = Scope.RUN
-    elif deps == "build":
-        scope = Scope.BUILD
-    elif deps == "none":
-        scope = Scope.NONE
-
-    with app.initialized():
-        if not element:
-            element = app.context.guess_element()
-            if not element:
-                raise AppError('Missing argument "ELEMENT".')
-
-        app.stream.checkout(element,
-                            location=location,
-                            force=force,
-                            scope=scope,
-                            integrate=integrate,
-                            hardlinks=hardlinks,
-                            tar=tar)
 
 
 ##################################################################
@@ -1029,6 +896,147 @@ def artifact():
     """Manipulate cached artifacts"""
 
 
+#####################################################################
+#                     Artifact Checkout Command                     #
+#####################################################################
+@artifact.command(name='checkout', short_help="Checkout contents of an artifact")
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Allow files to be overwritten")
+@click.option('--deps', '-d', default=None,
+              type=click.Choice(['run', 'build', 'none']),
+              help='The dependencies to checkout (default: run)')
+@click.option('--integrate/--no-integrate', default=None, is_flag=True,
+              help="Whether to run integration commands")
+@click.option('--hardlinks', default=False, is_flag=True,
+              help="Checkout hardlinks instead of copying if possible")
+@click.option('--tar', default=None, metavar='LOCATION',
+              type=click.Path(),
+              help="Create a tarball from the artifact contents instead "
+                   "of a file tree. If LOCATION is '-', the tarball "
+                   "will be dumped to the standard output.")
+@click.option('--directory', default=None,
+              type=click.Path(file_okay=False),
+              help="The directory to checkout the artifact to")
+@click.argument('element', required=False,
+                type=click.Path(readable=False))
+@click.pass_obj
+def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, element):
+    """Checkout contents of an artifact"""
+    from ..element import Scope
+
+    if hardlinks and tar is not None:
+        click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
+        sys.exit(-1)
+
+    if tar is None and directory is None:
+        click.echo("ERROR: One of --directory or --tar must be provided", err=True)
+        sys.exit(-1)
+
+    if tar is not None and directory is not None:
+        click.echo("ERROR: options --directory and --tar conflict", err=True)
+        sys.exit(-1)
+
+    if tar is not None:
+        location = tar
+        tar = True
+    else:
+        location = os.getcwd() if directory is None else directory
+        tar = False
+
+    if deps == "build":
+        scope = Scope.BUILD
+    elif deps == "none":
+        scope = Scope.NONE
+    else:
+        scope = Scope.RUN
+
+    with app.initialized():
+        if not element:
+            element = app.context.guess_element()
+            if not element:
+                raise AppError('Missing argument "ELEMENT".')
+
+        app.stream.checkout(element,
+                            location=location,
+                            force=force,
+                            scope=scope,
+                            integrate=True if integrate is None else integrate,
+                            hardlinks=hardlinks,
+                            tar=tar)
+
+
+################################################################
+#                     Artifact Pull Command                    #
+################################################################
+@artifact.command(name="pull", short_help="Pull a built artifact")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependency artifacts to pull (default: none)')
+@click.option('--remote', '-r',
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def artifact_pull(app, elements, deps, remote):
+    """Pull a built artifact from the configured remote artifact cache.
+
+    By default the artifact will be pulled one of the configured caches
+    if possible, following the usual priority order. If the `--remote` flag
+    is given, only the specified cache will be queried.
+
+    Specify `--deps` to control which artifacts to pull:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
+    """
+
+    with app.initialized(session_name="Pull"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
+        app.stream.pull(elements, selection=deps, remote=remote)
+
+
+##################################################################
+#                     Artifact Push Command                      #
+##################################################################
+@artifact.command(name="push", short_help="Push a built artifact")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to push (default: none)')
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def artifact_push(app, elements, deps, remote):
+    """Push a built artifact to a remote artifact cache.
+
+    The default destination is the highest priority configured cache. You can
+    override this by passing a different cache URL with the `--remote` flag.
+
+    If bst has been configured to include build trees on artifact pulls,
+    an attempt will be made to pull any required build trees to avoid the
+    skipping of partial artifacts being pushed.
+
+    Specify `--deps` to control which artifacts to push:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
+    """
+    with app.initialized(session_name="Push"):
+        if not elements:
+            guessed_target = app.context.guess_element()
+            if guessed_target:
+                elements = (guessed_target,)
+
+        app.stream.push(elements, selection=deps, remote=remote)
+
+
 ################################################################
 #                     Artifact Log Command                     #
 ################################################################
@@ -1134,4 +1142,65 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 @click.pass_obj
 def track(app, elements, deps, except_, cross_junctions):
     click.echo("This command is now obsolete. Use `bst source track` instead.", err=True)
+    sys.exit(1)
+
+
+##################################################################
+#                        Checkout Command                        #
+##################################################################
+@cli.command(short_help="Checkout a built artifact", hidden=True)
+@click.option('--force', '-f', default=False, is_flag=True,
+              help="Allow files to be overwritten")
+@click.option('--deps', '-d', default='run',
+              type=click.Choice(['run', 'build', 'none']),
+              help='The dependencies to checkout (default: run)')
+@click.option('--integrate/--no-integrate', default=True, is_flag=True,
+              help="Whether to run integration commands")
+@click.option('--hardlinks', default=False, is_flag=True,
+              help="Checkout hardlinks instead of copies (handle with care)")
+@click.option('--tar', default=False, is_flag=True,
+              help="Create a tarball from the artifact contents instead "
+                   "of a file tree. If LOCATION is '-', the tarball "
+                   "will be dumped to the standard output.")
+@click.argument('element', required=False,
+                type=click.Path(readable=False))
+@click.argument('location', type=click.Path(), required=False)
+@click.pass_obj
+def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
+    click.echo("This command is now obsolete. Use `bst artifact checkout` instead " +
+               "and use the --directory option to specify LOCATION", err=True)
+    sys.exit(1)
+
+
+################################################################
+#                          Pull Command                        #
+################################################################
+@cli.command(short_help="Pull a built artifact", hidden=True)
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependency artifacts to pull (default: none)')
+@click.option('--remote', '-r',
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def pull(app, elements, deps, remote):
+    click.echo("This command is now obsolete. Use `bst artifact pull` instead.", err=True)
+    sys.exit(1)
+
+
+##################################################################
+#                           Push Command                         #
+##################################################################
+@cli.command(short_help="Push a built artifact", hidden=True)
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to push (default: none)')
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def push(app, elements, deps, remote):
+    click.echo("This command is now obsolete. Use `bst artifact push` instead.", err=True)
     sys.exit(1)

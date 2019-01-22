@@ -44,10 +44,10 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
     assert not os.listdir(builddir)
 
     # Prepare checkout args
-    checkout_args = strict_args(['checkout'], strict)
+    checkout_args = strict_args(['artifact', 'checkout'], strict)
     if hardlinks == "hardlinks":
         checkout_args += ['--hardlinks']
-    checkout_args += ['target.bst', checkout]
+    checkout_args += ['target.bst', '--directory', checkout]
 
     # Now check it out
     result = cli.run(project=project, args=checkout_args)
@@ -138,7 +138,8 @@ def test_build_checkout_deps(datafiles, cli, deps):
     assert not os.listdir(builddir)
 
     # Now check it out
-    result = cli.run(project=project, args=['checkout', element_name, '--deps', deps, checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name,
+                                            '--deps', deps, '--directory', checkout])
     result.assert_success()
 
     # Verify output of this element
@@ -169,7 +170,7 @@ def test_build_checkout_unbuilt(datafiles, cli):
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Check that checking out an unbuilt element fails nicely
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkout])
     result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
 
 
@@ -185,7 +186,7 @@ def test_build_checkout_tarball(datafiles, cli):
     assert os.path.isdir(builddir)
     assert not os.listdir(builddir)
 
-    checkout_args = ['checkout', '--tar', 'target.bst', checkout]
+    checkout_args = ['artifact', 'checkout', '--tar', checkout, 'target.bst']
 
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
@@ -207,7 +208,7 @@ def test_build_checkout_tarball_stdout(datafiles, cli):
     assert os.path.isdir(builddir)
     assert not os.listdir(builddir)
 
-    checkout_args = ['checkout', '--tar', 'target.bst', '-']
+    checkout_args = ['artifact', 'checkout', '--tar', '-', 'target.bst']
 
     result = cli.run(project=project, args=checkout_args, binary_capture=True)
     result.assert_success()
@@ -233,13 +234,13 @@ def test_build_checkout_tarball_is_deterministic(datafiles, cli):
     assert os.path.isdir(builddir)
     assert not os.listdir(builddir)
 
-    checkout_args = ['checkout', '--force', '--tar', 'target.bst']
+    checkout_args = ['artifact', 'checkout', '--force', 'target.bst']
 
-    checkout_args1 = checkout_args + [tarball1]
+    checkout_args1 = checkout_args + ['--tar', tarball1]
     result = cli.run(project=project, args=checkout_args1)
     result.assert_success()
 
-    checkout_args2 = checkout_args + [tarball2]
+    checkout_args2 = checkout_args + ['--tar', tarball2]
     result = cli.run(project=project, args=checkout_args2)
     result.assert_success()
 
@@ -276,10 +277,10 @@ def test_build_checkout_nonempty(datafiles, cli, hardlinks):
         f.write("Hello")
 
     # Prepare checkout args
-    checkout_args = ['checkout']
+    checkout_args = ['artifact', 'checkout']
     if hardlinks == "hardlinks":
         checkout_args += ['--hardlinks']
-    checkout_args += ['target.bst', checkout]
+    checkout_args += ['target.bst', '--directory', checkout]
 
     # Now check it out
     result = cli.run(project=project, args=checkout_args)
@@ -308,10 +309,10 @@ def test_build_checkout_force(datafiles, cli, hardlinks):
         f.write("Hello")
 
     # Prepare checkout args
-    checkout_args = ['checkout', '--force']
+    checkout_args = ['artifact', 'checkout', '--force']
     if hardlinks == "hardlinks":
         checkout_args += ['--hardlinks']
-    checkout_args += ['target.bst', checkout]
+    checkout_args += ['target.bst', '--directory', checkout]
 
     # Now check it out
     result = cli.run(project=project, args=checkout_args)
@@ -345,7 +346,7 @@ def test_build_checkout_force_tarball(datafiles, cli):
     with open(tarball, "w") as f:
         f.write("Hello")
 
-    checkout_args = ['checkout', '--force', '--tar', 'target.bst', tarball]
+    checkout_args = ['artifact', 'checkout', '--force', '--tar', tarball, 'target.bst']
 
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
@@ -393,7 +394,7 @@ def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
 
     # Now check it out
     result = cli.run(project=project, args=strict_args([
-        'checkout', element_name, checkout
+        'artifact', 'checkout', element_name, '--directory', checkout
     ], strict))
     result.assert_success()
 
@@ -537,7 +538,7 @@ def test_build_checkout_junction(cli, tmpdir, datafiles):
 
     # Now check it out
     result = cli.run(project=project, args=[
-        'checkout', 'junction-dep.bst', checkout
+        'artifact', 'checkout', 'junction-dep.bst', '--directory', checkout
     ])
     result.assert_success()
 
@@ -600,7 +601,7 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
 
     # Now check it out
     result = cli.run(project=project, args=[
-        'checkout', 'junction-dep.bst', checkout
+        'artifact', 'checkout', 'junction-dep.bst', '--directory', checkout
     ])
     result.assert_success()
 
@@ -624,7 +625,8 @@ def test_build_checkout_cross_junction(datafiles, cli, tmpdir):
     result = cli.run(project=project, args=['build', 'junction.bst:import-etc.bst'])
     result.assert_success()
 
-    result = cli.run(project=project, args=['checkout', 'junction.bst:import-etc.bst', checkout])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'junction.bst:import-etc.bst',
+                                            '--directory', checkout])
     result.assert_success()
 
     filename = os.path.join(checkout, 'etc', 'animal.conf')

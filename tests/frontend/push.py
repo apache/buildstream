@@ -82,7 +82,7 @@ def test_push(cli, tmpdir, datafiles):
         with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as share2:
 
             # Try pushing with no remotes configured. This should fail.
-            result = cli.run(project=project, args=['push', 'target.bst'])
+            result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
             result.assert_main_error(ErrorDomain.STREAM, None)
 
             # Configure bst to pull but not push from a cache and run `bst push`.
@@ -90,7 +90,7 @@ def test_push(cli, tmpdir, datafiles):
             cli.configure({
                 'artifacts': {'url': share1.repo, 'push': False},
             })
-            result = cli.run(project=project, args=['push', 'target.bst'])
+            result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
             result.assert_main_error(ErrorDomain.STREAM, None)
 
             # Configure bst to push to one of the caches and run `bst push`. This works.
@@ -100,7 +100,7 @@ def test_push(cli, tmpdir, datafiles):
                     {'url': share2.repo, 'push': True},
                 ]
             })
-            result = cli.run(project=project, args=['push', 'target.bst'])
+            result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
 
             assert_not_shared(cli, share1, project, 'target.bst')
             assert_shared(cli, share2, project, 'target.bst')
@@ -114,7 +114,7 @@ def test_push(cli, tmpdir, datafiles):
                     {'url': share2.repo, 'push': True},
                 ]
             })
-            result = cli.run(project=project, args=['push', 'target.bst'])
+            result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
 
             assert_shared(cli, share1, project, 'target.bst')
             assert_shared(cli, share2, project, 'target.bst')
@@ -156,7 +156,7 @@ def test_push_all(cli, tmpdir, datafiles):
 
         # Now try bst push all the deps
         result = cli.run(project=project, args=[
-            'push', 'target.bst',
+            'artifact', 'push', 'target.bst',
             '--deps', 'all'
         ])
         result.assert_success()
@@ -346,7 +346,7 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         assert cli.get_element_state(project, 'element1.bst') != 'cached'
 
         # Pull the element1 from the remote cache (this should update its mtime)
-        result = cli.run(project=project, args=['pull', 'element1.bst', '--remote',
+        result = cli.run(project=project, args=['artifact', 'pull', 'element1.bst', '--remote',
                                                 share.repo])
         result.assert_success()
 
@@ -386,7 +386,7 @@ def test_push_cross_junction(cli, tmpdir, datafiles):
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True},
         })
-        result = cli.run(project=project, args=['push', 'junction.bst:import-etc.bst'])
+        result = cli.run(project=project, args=['artifact', 'push', 'junction.bst:import-etc.bst'])
 
         cache_key = cli.get_element_key(project, 'junction.bst:import-etc.bst')
         assert share.has_artifact('subtest', 'import-etc.bst', cache_key)
@@ -407,7 +407,7 @@ def test_push_already_cached(caplog, cli, tmpdir, datafiles):
         result.assert_success()
         assert "SKIPPED Push" not in result.stderr
 
-        result = cli.run(project=project, args=['push', 'target.bst'])
+        result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
 
         result.assert_success()
         assert not result.get_pushed_elements(), "No elements should have been pushed since the cache was populated"

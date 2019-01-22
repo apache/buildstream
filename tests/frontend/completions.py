@@ -11,11 +11,8 @@ DATA_DIR = os.path.join(
 MAIN_COMMANDS = [
     'artifact ',
     'build ',
-    'checkout ',
     'help ',
     'init ',
-    'pull ',
-    'push ',
     'shell ',
     'show ',
     'source ',
@@ -57,6 +54,13 @@ SOURCE_COMMANDS = [
     'track ',
 ]
 
+ARTIFACT_COMMANDS = [
+    'checkout ',
+    'push ',
+    'pull ',
+    'log ',
+]
+
 WORKSPACE_COMMANDS = [
     'close ',
     'list ',
@@ -82,7 +86,7 @@ MIXED_ELEMENTS = PROJECT_ELEMENTS + INVALID_ELEMENTS
 
 
 def assert_completion(cli, cmd, word_idx, expected, cwd=None):
-    result = cli.run(cwd=cwd, env={
+    result = cli.run(project='.', cwd=cwd, env={
         '_BST_COMPLETION': 'complete',
         'COMP_WORDS': cmd,
         'COMP_CWORD': str(word_idx)
@@ -120,8 +124,7 @@ def assert_completion_failed(cli, cmd, word_idx, expected, cwd=None):
 @pytest.mark.parametrize("cmd,word_idx,expected", [
     ('bst', 0, []),
     ('bst ', 1, MAIN_COMMANDS),
-    ('bst pu', 1, ['pull ', 'push ']),
-    ('bst pul', 1, ['pull ']),
+    ('bst artifact ', 2, ARTIFACT_COMMANDS),
     ('bst source ', 2, SOURCE_COMMANDS),
     ('bst w ', 1, ['workspace ']),
     ('bst workspace ', 2, WORKSPACE_COMMANDS),
@@ -221,8 +224,9 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
      ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], 'files'),
 
     # Also try multi arguments together
-    ('project', 'bst --directory ../ checkout t ', 4, ['target.bst '], 'files'),
-    ('project', 'bst --directory ../ checkout target.bst ', 5, ['bin-files/', 'dev-files/'], 'files'),
+    ('project', 'bst --directory ../ artifact checkout t ', 5, ['target.bst '], 'files'),
+    ('project', 'bst --directory ../ artifact checkout --directory ', 6,
+     ['bin-files/', 'dev-files/'], 'files'),
 
     # When running in the project directory
     ('no-element-path', 'bst show ', 2,
@@ -245,8 +249,9 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
      ['compose-all.bst ', 'compose-include-bin.bst ', 'compose-exclude-dev.bst '], 'files'),
 
     # Also try multi arguments together
-    ('no-element-path', 'bst --directory ../ checkout t ', 4, ['target.bst '], 'files'),
-    ('no-element-path', 'bst --directory ../ checkout target.bst ', 5, ['bin-files/', 'dev-files/'], 'files'),
+    ('no-element-path', 'bst --directory ../ artifact checkout t ', 5, ['target.bst '], 'files'),
+    ('no-element-path', 'bst --directory ../ artifact checkout --directory ', 6,
+     ['bin-files/', 'dev-files/'], 'files'),
 
     # When element-path have sub-folders
     ('sub-folders', 'bst show base', 2, ['base/wanted.bst '], None),
@@ -275,10 +280,10 @@ def test_argument_element_invalid(datafiles, cli, project, cmd, word_idx, expect
 @pytest.mark.parametrize("cmd,word_idx,expected", [
     ('bst he', 1, ['help ']),
     ('bst help ', 2, MAIN_COMMANDS),
+    ('bst help artifact ', 3, ARTIFACT_COMMANDS),
     ('bst help in', 2, ['init ']),
-    ('bst help p', 2, ['pull ', 'push ']),
-    ('bst help p', 2, ['pull ', 'push ']),
     ('bst help source ', 3, SOURCE_COMMANDS),
+    ('bst help artifact ', 3, ARTIFACT_COMMANDS),
     ('bst help w', 2, ['workspace ']),
     ('bst help workspace ', 3, WORKSPACE_COMMANDS),
 ])

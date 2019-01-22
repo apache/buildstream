@@ -1334,11 +1334,11 @@ class Element(Plugin):
     # _prepare_sandbox():
     #
     # This stages things for either _shell() (below) or also
-    # is used to stage things by the `bst checkout` codepath
+    # is used to stage things by the `bst artifact checkout` codepath
     #
     @contextmanager
     def _prepare_sandbox(self, scope, directory, shell=False, integrate=True, usebuildtree=False):
-        # bst shell and bst checkout require a local sandbox.
+        # bst shell and bst artifact checkout require a local sandbox.
         bare_directory = bool(directory)
         with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False,
                             bare_directory=bare_directory) as sandbox:

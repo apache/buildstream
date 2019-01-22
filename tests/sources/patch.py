@@ -75,7 +75,7 @@ def test_stage_and_patch(cli, tmpdir, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Test the file.txt was patched and changed
@@ -113,7 +113,7 @@ def test_stage_separate_patch_dir(cli, tmpdir, datafiles):
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Test the file.txt was patched and changed
@@ -129,7 +129,7 @@ def test_stage_multiple_patches(cli, tmpdir, datafiles):
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Test the file.txt was patched and changed
@@ -145,7 +145,7 @@ def test_patch_strip_level(cli, tmpdir, datafiles):
     # Track, fetch, build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
-    result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
     # Test the file.txt was patched and changed

@@ -1,0 +1,27 @@
+.TH "BST ARTIFACT CHECKOUT" "1" "22-Jan-2019" "" "bst artifact checkout Manual"
+.SH NAME
+bst\-artifact\-checkout \- Checkout contents of an artifact
+.SH SYNOPSIS
+.B bst artifact checkout
+[OPTIONS] [ELEMENT]
+.SH DESCRIPTION
+Checkout contents of an artifact
+.SH OPTIONS
+.TP
+\fB\-f,\fP \-\-force
+Allow files to be overwritten
+.TP
+\fB\-d,\fP \-\-deps [run|build|none]
+The dependencies to checkout (default: run)
+.TP
+\fB\-\-integrate\fP / \-\-no\-integrate
+Whether to run integration commands
+.TP
+\fB\-\-hardlinks\fP
+Checkout hardlinks instead of copying if possible
+.TP
+\fB\-\-tar\fP LOCATION
+Create a tarball from the artifact contents instead of a file tree. If LOCATION is '-', the tarball will be dumped to the standard output.
+.TP
+\fB\-\-directory\fP DIRECTORY
+The directory to checkout the artifact to

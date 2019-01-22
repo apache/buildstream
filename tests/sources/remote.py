@@ -89,7 +89,7 @@ def test_simple_file_build(cli, tmpdir, datafiles):
     result.assert_success()
 
     result = cli.run(project=project, args=[
-        'checkout', 'target.bst', checkoutdir
+        'artifact', 'checkout', 'target.bst', '--directory', checkoutdir
     ])
     result.assert_success()
     # Note that the url of the file in target.bst is actually /dir/file
@@ -122,7 +122,7 @@ def test_simple_file_custom_name_build(cli, tmpdir, datafiles):
     result.assert_success()
 
     result = cli.run(project=project, args=[
-        'checkout', 'target.bst', checkoutdir
+        'artifact', 'checkout', 'target.bst', '--directory', checkoutdir
     ])
     result.assert_success()
     assert(not os.path.exists(os.path.join(checkoutdir, 'file')))
@@ -169,7 +169,7 @@ def test_executable(cli, tmpdir, datafiles):
     ])
 
     result = cli.run(project=project, args=[
-        'checkout', 'target-custom-executable.bst', checkoutdir
+        'artifact', 'checkout', 'target-custom-executable.bst', '--directory', checkoutdir
     ])
     mode = os.stat(os.path.join(checkoutdir, 'some-custom-file')).st_mode
     assert (mode & stat.S_IEXEC)
@@ -202,7 +202,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
         result.assert_success()
         result = cli.run(project=project, args=['build', 'target.bst'])
         result.assert_success()
-        result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+        result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
         result.assert_success()
 
         checkout_file = os.path.join(checkoutdir, 'file')
