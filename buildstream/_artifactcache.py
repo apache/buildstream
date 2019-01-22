@@ -250,10 +250,13 @@ class ArtifactCache():
     #
     # Clean the artifact cache as much as possible.
     #
+    # Args:
+    #    progress (callable): A callback to call when a ref is removed
+    #
     # Returns:
     #    (int): The size of the cache after having cleaned up
     #
-    def clean(self):
+    def clean(self, progress=None):
         artifacts = self.list_artifacts()
         context = self.context
 
@@ -334,6 +337,14 @@ class ArtifactCache():
 
                 # Remove the size from the removed size
                 self.set_cache_size(self._cache_size - size)
+
+                # User callback
+                #
+                # Currently this process is fairly slow, but we should
+                # think about throttling this progress() callback if this
+                # becomes too intense.
+                if progress:
+                    progress()
 
         # Informational message about the side effects of the cleanup
         self._message(MessageType.INFO, "Cleanup completed",
