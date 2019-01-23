@@ -552,8 +552,7 @@ class ArtifactCache():
     #                          `ArtifactCache.get_artifact_fullname`)
     #
     # Returns:
-    #    (int|None) The amount of space pruned from the repository in
-    #               Bytes, or None if defer_prune is True
+    #    (int): The amount of space recovered in the cache, in bytes
     #
     def remove(self, ref):
 
