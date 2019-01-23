@@ -324,7 +324,7 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             blob_response.digest.size_bytes = digest.size_bytes
 
             if len(blob_request.data) != digest.size_bytes:
-                blob_response.status.code = grpc.StatusCode.FAILED_PRECONDITION
+                blob_response.status.code = code_pb2.FAILED_PRECONDITION
                 continue
 
             try:
@@ -335,10 +335,10 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
                     out.flush()
                     server_digest = self.cas.add_object(path=out.name)
                     if server_digest.hash != digest.hash:
-                        blob_response.status.code = grpc.StatusCode.FAILED_PRECONDITION
+                        blob_response.status.code = code_pb2.FAILED_PRECONDITION
 
             except ArtifactTooLargeException:
-                blob_response.status.code = grpc.StatusCode.RESOURCE_EXHAUSTED
+                blob_response.status.code = code_pb2.RESOURCE_EXHAUSTED
 
         return response
 
