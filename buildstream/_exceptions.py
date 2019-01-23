@@ -344,3 +344,12 @@ class AppError(BstError):
 #
 class SkipJob(Exception):
     pass
+
+
+# ArtifactElementError
+#
+# Raised when errors are encountered by artifact elements
+#
+class ArtifactElementError(BstError):
+    def __init__(self, message, *, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason)
