@@ -57,7 +57,7 @@ def test_pull(cli, tmpdir, datafiles):
     # Set up an artifact cache.
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # Configure artifact share
-        artifact_dir = os.path.join(str(tmpdir), 'cache', 'artifacts')
+        cache_dir = os.path.join(str(tmpdir), 'cache')
         user_config_file = str(tmpdir.join('buildstream.conf'))
         user_config = {
             'scheduler': {
@@ -66,7 +66,8 @@ def test_pull(cli, tmpdir, datafiles):
             'artifacts': {
                 'url': share.repo,
                 'push': True,
-            }
+            },
+            'cachedir': cache_dir
         }
 
         # Write down the user configuration file
@@ -93,7 +94,6 @@ def test_pull(cli, tmpdir, datafiles):
         # Fake minimal context
         context = Context()
         context.load(config=user_config_file)
-        context.artifactdir = os.path.join(str(tmpdir), 'cache', 'artifacts')
         context.set_message_handler(message_handler)
 
         # Load the project and CAS cache
@@ -111,7 +111,7 @@ def test_pull(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_pull, queue, user_config_file, project_dir,
-                                                artifact_dir, 'target.bst', element_key))
+                                                cache_dir, 'target.bst', element_key))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -128,12 +128,14 @@ def test_pull(cli, tmpdir, datafiles):
         assert cas.contains(element, element_key)
 
 
-def _test_pull(user_config_file, project_dir, artifact_dir,
+def _test_pull(user_config_file, project_dir, cache_dir,
                element_name, element_key, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.artifactdir = artifact_dir
+    context.cachedir = cache_dir
+    context.casdir = os.path.join(cache_dir, 'cas')
+    context.tmpdir = os.path.join(cache_dir, 'tmp')
     context.set_message_handler(message_handler)
 
     # Load the project manually
@@ -166,7 +168,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
     # Set up an artifact cache.
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # Configure artifact share
-        artifact_dir = os.path.join(str(tmpdir), 'cache', 'artifacts')
+        rootcache_dir = os.path.join(str(tmpdir), 'cache')
         user_config_file = str(tmpdir.join('buildstream.conf'))
         user_config = {
             'scheduler': {
@@ -175,7 +177,8 @@ def test_pull_tree(cli, tmpdir, datafiles):
             'artifacts': {
                 'url': share.repo,
                 'push': True,
-            }
+            },
+            'cachedir': rootcache_dir
         }
 
         # Write down the user configuration file
@@ -196,7 +199,6 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Fake minimal context
         context = Context()
         context.load(config=user_config_file)
-        context.artifactdir = os.path.join(str(tmpdir), 'cache', 'artifacts')
         context.set_message_handler(message_handler)
 
         # Load the project and CAS cache
@@ -219,7 +221,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push_tree, queue, user_config_file, project_dir,
-                                                artifact_dir, artifact_digest))
+                                                artifact_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -247,7 +249,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_pull_tree, queue, user_config_file, project_dir,
-                                                artifact_dir, tree_digest))
+                                                tree_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -269,11 +271,10 @@ def test_pull_tree(cli, tmpdir, datafiles):
         assert os.path.exists(cas.objpath(directory_digest))
 
 
-def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest, queue):
+def _test_push_tree(user_config_file, project_dir, artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
 
     # Load the project manually
@@ -305,11 +306,10 @@ def _test_push_tree(user_config_file, project_dir, artifact_dir, artifact_digest
         queue.put("No remote configured")
 
 
-def _test_pull_tree(user_config_file, project_dir, artifact_dir, artifact_digest, queue):
+def _test_pull_tree(user_config_file, project_dir, artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
 
     # Load the project manually

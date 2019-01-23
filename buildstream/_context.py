@@ -58,11 +58,20 @@ class Context():
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
 
+        # The directory under which other directories are based
+        self.cachedir = None
+
         # The directory where various sources are stored
         self.sourcedir = None
 
         # The directory where build sandboxes will be created
         self.builddir = None
+
+        # The directory for CAS
+        self.casdir = None
+
+        # The directory for temporary files
+        self.tmpdir = None
 
         # Default root location for workspaces
         self.workspacedir = None
@@ -179,13 +188,24 @@ class Context():
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config)
 
+        # Give obsoletion warnings
+        if defaults.get('builddir'):
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "builddir is obsolete, use cachedir")
+
+        if defaults.get('artifactdir'):
+            print("artifactdir is deprecated, use cachedir")
+        else:
+            defaults['artifactdir'] = os.path.join(defaults['cachedir'], 'artifacts')
+
         _yaml.node_validate(defaults, [
-            'sourcedir', 'builddir', 'artifactdir', 'logdir',
+            'cachedir', 'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt', 'workspacedir', 'remote-execution'
+            'cache', 'prompt', 'workspacedir', 'remote-execution',
         ])
 
-        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
+        for directory in ['cachedir', 'sourcedir', 'artifactdir', 'logdir',
+                          'workspacedir']:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #
@@ -194,6 +214,11 @@ class Context():
             path = os.path.expandvars(path)
             path = os.path.normpath(path)
             setattr(self, directory, path)
+
+        # add directories not set by users
+        self.tmpdir = os.path.join(self.cachedir, 'tmp')
+        self.casdir = os.path.join(self.cachedir, 'cas')
+        self.builddir = os.path.join(self.cachedir, 'build')
 
         # Load quota configuration
         # We need to find the first existing directory in the path of
@@ -640,7 +665,7 @@ class Context():
 
     def get_cascache(self):
         if self._cascache is None:
-            self._cascache = CASCache(self.artifactdir)
+            self._cascache = CASCache(self.cachedir)
         return self._cascache
 
 

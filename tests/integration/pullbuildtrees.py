@@ -22,9 +22,10 @@ DATA_DIR = os.path.join(
 # cleared as just forcefully removing the refpath leaves dangling objects.
 def default_state(cli, tmpdir, share):
     shutil.rmtree(os.path.join(str(tmpdir), 'artifacts'))
+    shutil.rmtree(os.path.join(str(tmpdir), 'cas'))
     cli.configure({
         'artifacts': {'url': share.repo, 'push': False},
-        'artifactdir': os.path.join(str(tmpdir), 'artifacts'),
+        'cachedir': str(tmpdir),
         'cache': {'pull-buildtrees': False},
     })
 
@@ -45,7 +46,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         create_artifact_share(os.path.join(str(tmpdir), 'share3')) as share3:
         cli2.configure({
             'artifacts': {'url': share1.repo, 'push': True},
-            'artifactdir': os.path.join(str(tmpdir), 'artifacts')
+            'cachedir': str(tmpdir),
         })
 
         # Build autotools element, checked pushed, delete local

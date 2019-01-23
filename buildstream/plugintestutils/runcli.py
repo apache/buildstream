@@ -277,10 +277,10 @@ class Cli():
                                    *, cache_dir=None):
         # Read configuration to figure out where artifacts are stored
         if not cache_dir:
-            default = os.path.join(project, 'cache', 'artifacts')
+            default = os.path.join(project, 'cache')
 
             if self.config is not None:
-                cache_dir = self.config.get('artifactdir', default)
+                cache_dir = self.config.get('cachedir', default)
             else:
                 cache_dir = default
 
@@ -582,11 +582,21 @@ def cli_integration(tmpdir, integration_cache):
     # We want to cache sources for integration tests more permanently,
     # to avoid downloading the huge base-sdk repeatedly
     fixture.configure({
+        'cachedir': integration_cache.cachedir,
         'sourcedir': integration_cache.sources,
-        'artifactdir': integration_cache.artifacts
     })
 
-    return fixture
+    yield fixture
+
+    # remove following folders if necessary
+    try:
+        shutil.rmtree(os.path.join(integration_cache.cachedir, 'build'))
+    except FileNotFoundError:
+        pass
+    try:
+        shutil.rmtree(os.path.join(integration_cache.cachedir, 'tmp'))
+    except FileNotFoundError:
+        pass
 
 
 @contextmanager
@@ -626,10 +636,8 @@ def configured(directory, config=None):
 
     if not config.get('sourcedir', False):
         config['sourcedir'] = os.path.join(directory, 'sources')
-    if not config.get('builddir', False):
-        config['builddir'] = os.path.join(directory, 'build')
-    if not config.get('artifactdir', False):
-        config['artifactdir'] = os.path.join(directory, 'artifacts')
+    if not config.get('cachedir', False):
+        config['cachedir'] = directory
     if not config.get('logdir', False):
         config['logdir'] = os.path.join(directory, 'logs')
 

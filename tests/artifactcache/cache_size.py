@@ -51,7 +51,8 @@ def test_cache_size_write(cli, tmpdir):
 
     # Artifact cache must be in a known place
     artifactdir = os.path.join(project_dir, "artifacts")
-    cli.configure({"artifactdir": artifactdir})
+    casdir = os.path.join(project_dir, "cas")
+    cli.configure({"cachedir": project_dir})
 
     # Build, to populate the cache
     res = cli.run(project=project_dir, args=["build", "test.bst"])

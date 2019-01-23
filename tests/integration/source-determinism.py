@@ -31,7 +31,7 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS] + ['local'])
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_cache):
+def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
     project = str(datafiles)
     element_name = 'list.bst'
     element_path = os.path.join(project, 'elements', element_name)
@@ -94,9 +94,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_ca
                 return f.read()
         finally:
             os.umask(old_umask)
-            cache_dir = integration_cache.artifacts
-            cli.remove_artifact_from_cache(project, element_name,
-                                           cache_dir=cache_dir)
+            cli.remove_artifact_from_cache(project, element_name)
 
     assert get_value_for_umask(0o022) == get_value_for_umask(0o077)
 
@@ -104,7 +102,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind, integration_ca
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_deterministic_source_local(cli, tmpdir, datafiles, integration_cache):
+def test_deterministic_source_local(cli, tmpdir, datafiles):
     """Only user rights should be considered for local source.
     """
     project = str(datafiles)
@@ -156,8 +154,6 @@ def test_deterministic_source_local(cli, tmpdir, datafiles, integration_cache):
             with open(os.path.join(checkoutdir, 'ls-l'), 'r') as f:
                 return f.read()
         finally:
-            cache_dir = integration_cache.artifacts
-            cli.remove_artifact_from_cache(project, element_name,
-                                           cache_dir=cache_dir)
+            cli.remove_artifact_from_cache(project, element_name)
 
     assert get_value_for_mask(0o7777) == get_value_for_mask(0o0700)

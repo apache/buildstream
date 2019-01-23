@@ -436,7 +436,7 @@ def test_extract_expiry(cli, datafiles, tmpdir):
     # Now we should have a directory for the cached target2.bst, which
     # replaced target.bst in the cache, we should not have a directory
     # for the target.bst
-    refsdir = os.path.join(project, 'cache', 'artifacts', 'cas', 'refs', 'heads')
+    refsdir = os.path.join(project, 'cache', 'cas', 'refs', 'heads')
     refsdirtest = os.path.join(refsdir, 'test')
     refsdirtarget = os.path.join(refsdirtest, 'target')
     refsdirtarget2 = os.path.join(refsdirtest, 'target2')

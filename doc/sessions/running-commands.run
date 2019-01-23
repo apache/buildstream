@@ -2,7 +2,7 @@
 commands:
 # Make it fetch first
 - directory: ../examples/running-commands
-  command: fetch hello.bst
+  command: source fetch hello.bst
 
 # Capture a show output
 - directory: ../examples/running-commands

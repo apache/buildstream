@@ -231,10 +231,8 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         assert share.has_artifact('test', element_name, cli.get_element_key(project, element_name))
 
         # Discard the cache
-        cli.configure({
-            'artifacts': {'url': share.repo, 'push': True},
-            'artifactdir': os.path.join(cli.directory, 'artifacts2')
-        })
+        shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'artifacts')))
+        shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'cas')))
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Pull from cache, but do not include buildtrees.
@@ -274,7 +272,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         ])
         assert 'Attempting to fetch missing artifact buildtree' in res.stderr
         assert 'Hi' in res.output
-        shutil.rmtree(os.path.join(os.path.join(cli.directory, 'artifacts2')))
+        shutil.rmtree(os.path.join(os.path.join(str(tmpdir), 'cache', 'cas')))
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Check it's not loading the shell at all with always set for the buildtree, when the
