@@ -1,7 +1,6 @@
 import os
 import sys
 from contextlib import ExitStack
-from fnmatch import fnmatch
 from functools import partial
 from tempfile import TemporaryDirectory
 
@@ -901,38 +900,6 @@ def workspace_list(app):
 #############################################################
 #                     Artifact Commands                     #
 #############################################################
-def _classify_artifacts(names, cas, project_directory):
-    element_targets = []
-    artifact_refs = []
-    element_globs = []
-    artifact_globs = []
-
-    for name in names:
-        if name.endswith('.bst'):
-            if any(c in "*?[" for c in name):
-                element_globs.append(name)
-            else:
-                element_targets.append(name)
-        else:
-            if any(c in "*?[" for c in name):
-                artifact_globs.append(name)
-            else:
-                artifact_refs.append(name)
-
-    if element_globs:
-        for dirpath, _, filenames in os.walk(project_directory):
-            for filename in filenames:
-                element_path = os.path.join(dirpath, filename).lstrip(project_directory).lstrip('/')
-                if any(fnmatch(element_path, glob) for glob in element_globs):
-                    element_targets.append(element_path)
-
-    if artifact_globs:
-        artifact_refs.extend(ref for ref in cas.list_refs()
-                             if any(fnmatch(ref, glob) for glob in artifact_globs))
-
-    return element_targets, artifact_refs
-
-
 @cli.group(short_help="Manipulate cached artifacts")
 def artifact():
     """Manipulate cached artifacts"""
