@@ -1,4 +1,4 @@
-.TH "BST ARTIFACT PULL" "1" "22-Jan-2019" "" "bst artifact pull Manual"
+.TH "BST ARTIFACT PULL" "1" "24-Jan-2019" "" "bst artifact pull Manual"
 .SH NAME
 bst\-artifact\-pull \- Pull a built artifact
 .SH SYNOPSIS
@@ -6,6 +6,13 @@ bst\-artifact\-pull \- Pull a built artifact
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Pull a built artifact from the configured remote artifact cache.
+.PP
+Specifying no elements will result in pulling the default targets
+of the project. If no default targets are configured, all project
+elements will be pulled.
+.PP
+When this command is executed from a workspace directory, the default
+is to pull the workspace element.
 .PP
 By default the artifact will be pulled one of the configured caches
 if possible, following the usual priority order. If the `--remote` flag

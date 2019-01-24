@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "22-Jan-2019" "" "bst show Manual"
+.TH "BST SHOW" "1" "24-Jan-2019" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -6,6 +6,13 @@ bst\-show \- Show elements in the pipeline
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Show elements in the pipeline
+.PP
+Specifying no elements will result in showing the default targets
+of the project. If no default targets are configured, all project
+elements will be shown.
+.PP
+When this command is executed from a workspace directory, the default
+is to show the workspace element.
 .PP
 By default this will show all of the dependencies of the
 specified target element.

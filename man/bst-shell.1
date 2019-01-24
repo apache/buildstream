@@ -1,4 +1,4 @@
-.TH "BST SHELL" "1" "22-Jan-2019" "" "bst shell Manual"
+.TH "BST SHELL" "1" "24-Jan-2019" "" "bst shell Manual"
 .SH NAME
 bst\-shell \- Shell into an element's sandbox environment
 .SH SYNOPSIS
@@ -6,6 +6,9 @@ bst\-shell \- Shell into an element's sandbox environment
 [OPTIONS] [ELEMENT] [COMMAND]...
 .SH DESCRIPTION
 Run a command in the target element's sandbox environment
+.PP
+When this command is executed from a workspace directory, the default
+is to shell into the workspace element.
 .PP
 This will stage a temporary sysroot for running the target
 element, assuming it has already been built and all required
