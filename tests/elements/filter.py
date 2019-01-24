@@ -389,8 +389,9 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
     _yaml.dump(filter2_config, filter2_file)
 
     # Assert that a fetch is needed
-    assert cli.get_element_state(project, input_name) == 'no reference'
-    assert cli.get_element_state(project, input2_name) == 'no reference'
+    states = cli.get_element_states(project, [input_name, input2_name])
+    assert states[input_name] == 'no reference'
+    assert states[input2_name] == 'no reference'
 
     # Now try to track it
     result = cli.run(project=project, args=["source", "track", "filter1.bst", "filter2.bst"])
@@ -450,8 +451,9 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
     _yaml.dump(filter2_config, filter2_file)
 
     # Assert that a fetch is needed
-    assert cli.get_element_state(project, input_name) == 'no reference'
-    assert cli.get_element_state(project, input2_name) == 'no reference'
+    states = cli.get_element_states(project, [input_name, input2_name])
+    assert states[input_name] == 'no reference'
+    assert states[input2_name] == 'no reference'
 
     # Now try to track it
     result = cli.run(project=project, args=["source", "track", "filter1.bst", "filter2.bst", "--except", input_name])
