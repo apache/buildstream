@@ -250,9 +250,10 @@ def test_artifact_expires(cli, datafiles, tmpdir):
         result.assert_success()
 
         # check that element's 1 and 2 are cached both locally and remotely
-        assert cli.get_element_state(project, 'element1.bst') == 'cached'
+        states = cli.get_element_states(project, ['element1.bst', 'element2.bst'])
+        assert states['element1.bst'] == 'cached'
+        assert states['element2.bst'] == 'cached'
         assert_shared(cli, share, project, 'element1.bst')
-        assert cli.get_element_state(project, 'element2.bst') == 'cached'
         assert_shared(cli, share, project, 'element2.bst')
 
         # Create and build another element of 5 MB (This will exceed the free disk space available)
@@ -298,11 +299,12 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
         result.assert_success()
 
         # Ensure that the small artifact is still in the share
-        assert cli.get_element_state(project, 'small_element.bst') == 'cached'
+        states = cli.get_element_states(project, ['small_element.bst', 'large_element.bst'])
+        states['small_element.bst'] == 'cached'
         assert_shared(cli, share, project, 'small_element.bst')
 
         # Ensure that the artifact is cached locally but NOT remotely
-        assert cli.get_element_state(project, 'large_element.bst') == 'cached'
+        states['large_element.bst'] == 'cached'
         assert_not_shared(cli, share, project, 'large_element.bst')
 
 
@@ -334,8 +336,9 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         result.assert_success()
 
         # Ensure they are cached locally
-        assert cli.get_element_state(project, 'element1.bst') == 'cached'
-        assert cli.get_element_state(project, 'element2.bst') == 'cached'
+        states = cli.get_element_states(project, ['element1.bst', 'element2.bst'])
+        assert states['element1.bst'] == 'cached'
+        assert states['element2.bst'] == 'cached'
 
         # Ensure that they have  been pushed to the cache
         assert_shared(cli, share, project, 'element1.bst')

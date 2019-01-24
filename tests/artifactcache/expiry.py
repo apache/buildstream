@@ -66,8 +66,9 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     res.assert_success()
 
     # Check that the correct element remains in the cache
-    assert cli.get_element_state(project, 'target.bst') != 'cached'
-    assert cli.get_element_state(project, 'target2.bst') == 'cached'
+    states = cli.get_element_states(project, ['target.bst', 'target2.bst'])
+    assert states['target.bst'] != 'cached'
+    assert states['target2.bst'] == 'cached'
 
 
 # Ensure that we don't end up deleting the whole cache (or worse) if
@@ -144,9 +145,11 @@ def test_expiry_order(cli, datafiles, tmpdir):
     # have been removed.
     # Note that buildstream will reduce the cache to 50% of the
     # original size - we therefore remove multiple elements.
-
-    assert (tuple(cli.get_element_state(project, element) for element in
-                  ('unrelated.bst', 'target.bst', 'target2.bst', 'dep.bst', 'expire.bst')) ==
+    check_elements = [
+        'unrelated.bst', 'target.bst', 'target2.bst', 'dep.bst', 'expire.bst'
+    ]
+    states = cli.get_element_states(project, check_elements)
+    assert (tuple(states[element] for element in check_elements) ==
             ('buildable', 'buildable', 'buildable', 'cached', 'cached', ))
 
 
@@ -176,8 +179,9 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
     res.assert_success()
 
     # Check that the correct element remains in the cache
-    assert cli.get_element_state(project, 'dependency.bst') == 'cached'
-    assert cli.get_element_state(project, 'unrelated.bst') == 'cached'
+    states = cli.get_element_states(project, ['dependency.bst', 'unrelated.bst'])
+    assert states['dependency.bst'] == 'cached'
+    assert states['unrelated.bst'] == 'cached'
 
     # We try to build an element which depends on the LRU artifact,
     # and could therefore fail if we didn't make sure dependencies
@@ -192,9 +196,10 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_success()
 
-    assert cli.get_element_state(project, 'unrelated.bst') != 'cached'
-    assert cli.get_element_state(project, 'dependency.bst') == 'cached'
-    assert cli.get_element_state(project, 'target.bst') == 'cached'
+    states = cli.get_element_states(project, ['target.bst', 'unrelated.bst'])
+    assert states['target.bst'] == 'cached'
+    assert states['dependency.bst'] == 'cached'
+    assert states['unrelated.bst'] != 'cached'
 
 
 # Assert that we never delete a dependency required for a build tree
@@ -239,11 +244,11 @@ def test_never_delete_required(cli, datafiles, tmpdir):
     # life there may potentially be N-builders cached artifacts
     # which exceed the quota
     #
-    assert cli.get_element_state(project, 'dep1.bst') == 'cached'
-    assert cli.get_element_state(project, 'dep2.bst') == 'cached'
-
-    assert cli.get_element_state(project, 'dep3.bst') != 'cached'
-    assert cli.get_element_state(project, 'target.bst') != 'cached'
+    states = cli.get_element_states(project, ['target.bst'])
+    assert states['dep1.bst'] == 'cached'
+    assert states['dep2.bst'] == 'cached'
+    assert states['dep3.bst'] != 'cached'
+    assert states['target.bst'] != 'cached'
 
 
 # Assert that we never delete a dependency required for a build tree,
@@ -275,10 +280,11 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
     res.assert_success()
 
     # They should all be cached
-    assert cli.get_element_state(project, 'dep1.bst') == 'cached'
-    assert cli.get_element_state(project, 'dep2.bst') == 'cached'
-    assert cli.get_element_state(project, 'dep3.bst') == 'cached'
-    assert cli.get_element_state(project, 'target.bst') == 'cached'
+    states = cli.get_element_states(project, ['target.bst'])
+    assert states['dep1.bst'] == 'cached'
+    assert states['dep2.bst'] == 'cached'
+    assert states['dep3.bst'] == 'cached'
+    assert states['target.bst'] == 'cached'
 
     # Now increase the size of all the elements
     #
@@ -296,10 +302,11 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
 
     # Expect the same result that we did in test_never_delete_required()
     #
-    assert cli.get_element_state(project, 'dep1.bst') == 'cached'
-    assert cli.get_element_state(project, 'dep2.bst') == 'cached'
-    assert cli.get_element_state(project, 'dep3.bst') != 'cached'
-    assert cli.get_element_state(project, 'target.bst') != 'cached'
+    states = cli.get_element_states(project, ['target.bst'])
+    assert states['dep1.bst'] == 'cached'
+    assert states['dep2.bst'] == 'cached'
+    assert states['dep3.bst'] != 'cached'
+    assert states['target.bst'] != 'cached'
 
 
 # Ensure that only valid cache quotas make it through the loading
