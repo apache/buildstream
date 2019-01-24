@@ -676,21 +676,20 @@ def test_track_junction_included(cli, tmpdir, datafiles, ref_storage, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
-def test_track_error_cannot_write_file(cli, tmpdir, datafiles, kind):
+def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
     if os.geteuid() == 0:
         pytest.skip("This is not testable with root permissions")
 
     project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
-    element_name = 'track-test-{}.bst'.format(kind)
+    element_name = 'track-test.bst'
 
     configure_project(project, {
         'ref-storage': 'inline'
     })
 
-    repo = create_repo(kind, str(tmpdir))
+    repo = create_repo('git', str(tmpdir))
     ref = repo.create(dev_files_path)
 
     element_full_path = os.path.join(element_path, element_name)
