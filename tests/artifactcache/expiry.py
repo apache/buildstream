@@ -18,6 +18,7 @@
 #
 
 import os
+import re
 from unittest import mock
 
 import pytest
@@ -425,3 +426,66 @@ def test_extract_expiry(cli, datafiles, tmpdir):
 
     assert os.path.isdir(refsdirtarget2)
     assert not os.path.exists(refsdirtarget)
+
+
+# Ensures that when launching BuildStream with a full artifact cache,
+# the cache size and cleanup jobs are run before any other jobs.
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_cleanup_first(cli, datafiles, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_path = 'elements'
+    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
+    checkout = os.path.join(project, 'checkout')
+
+    cli.configure({
+        'cache': {
+            'quota': 10000000,
+        }
+    })
+
+    # Create an element that uses almost the entire cache (an empty
+    # ostree cache starts at about ~10KiB, so we need a bit of a
+    # buffer)
+    create_element_size('target.bst', project, element_path, [], 8000000)
+    res = cli.run(project=project, args=['build', 'target.bst'])
+    res.assert_success()
+
+    assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+    # Now configure with a smaller quota, create a situation
+    # where the cache must be cleaned up before building anything else.
+    #
+    # Fix the fetchers and builders just to ensure a predictable
+    # sequence of events (although it does not effect this test)
+    cli.configure({
+        'cache': {
+            'quota': 5000000,
+        },
+        'scheduler': {
+            'fetchers': 1,
+            'builders': 1
+        }
+    })
+
+    # Our cache is now more than full, BuildStream
+    create_element_size('target2.bst', project, element_path, [], 4000000)
+    res = cli.run(project=project, args=['build', 'target2.bst'])
+    res.assert_success()
+
+    # Find all of the activity (like push, pull, fetch) lines
+    results = re.findall(r'\[.*\]\[.*\]\[\s*(\S+):.*\]\s*START\s*.*\.log', res.stderr)
+
+    # Don't bother checking the order of 'fetch', it is allowed to start
+    # before or after the initial cache size job, runs in parallel, and does
+    # not require ResourceType.CACHE.
+    results.remove('fetch')
+    print(results)
+
+    # Assert the expected sequence of events
+    assert results == ['size', 'clean', 'build']
+
+    # Check that the correct element remains in the cache
+    states = cli.get_element_states(project, ['target.bst', 'target2.bst'])
+    assert states['target.bst'] != 'cached'
+    assert states['target2.bst'] == 'cached'

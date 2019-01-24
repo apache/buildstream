@@ -163,4 +163,4 @@ class Resources():
     def unregister_exclusive_interest(self, resources, source):
 
         for resource in resources:
-            self._exclusive_resources[resource].remove(source)
+            self._exclusive_resources[resource].discard(source)

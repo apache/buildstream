@@ -41,7 +41,7 @@ def test_default_logging(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['source', 'fetch', element_name])
     result.assert_success()
 
-    m = re.search(r"\[\d\d:\d\d:\d\d\]\[\]\[\] SUCCESS Checking sources", result.stderr)
+    m = re.search(r"\[\d\d:\d\d:\d\d\]\[\s*\]\[.*\] SUCCESS Checking sources", result.stderr)
     assert(m is not None)
 
 
@@ -77,7 +77,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['source', 'fetch', element_name])
     result.assert_success()
 
-    m = re.search(r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,,,SUCCESS,Checking sources", result.stderr)
+    m = re.search(r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,\s*,.*,SUCCESS,Checking sources", result.stderr)
     assert(m is not None)
 
 
