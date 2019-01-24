@@ -3,7 +3,7 @@ import pytest
 import itertools
 import os
 
-from buildstream._artifactcache import ArtifactCacheSpec, _configured_remote_artifact_cache_specs
+from buildstream._artifactcache import ArtifactCacheSpec, ArtifactCache
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream.utils import _deduplicate
@@ -104,7 +104,7 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     project.ensure_fully_loaded()
 
     # Use the helper from the artifactcache module to parse our configuration.
-    parsed_cache_specs = _configured_remote_artifact_cache_specs(context, project)
+    parsed_cache_specs = ArtifactCache._configured_remote_cache_specs(context, project)
 
     # Verify that it was correctly read.
     expected_cache_specs = list(_deduplicate(itertools.chain(override_caches, project_caches, user_caches)))
