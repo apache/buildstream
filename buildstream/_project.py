@@ -104,6 +104,9 @@ class Project():
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
 
+        # Default target elements
+        self._default_targets = None
+
         # ProjectRefs for the main refs and also for junctions
         self.refs = ProjectRefs(self.directory, 'project.refs')
         self.junction_refs = ProjectRefs(self.directory, 'junction.refs')
@@ -228,7 +231,7 @@ class Project():
             'element-path', 'variables',
             'environment', 'environment-nocache',
             'split-rules', 'elements', 'plugins',
-            'aliases', 'name',
+            'aliases', 'name', 'defaults',
             'artifacts', 'options',
             'fail-on-overlap', 'shell', 'fatal-warnings',
             'ref-storage', 'sandbox', 'mirrors', 'remote-execution',
@@ -391,6 +394,44 @@ class Project():
         # Reset the element loader state
         Element._reset_load_state()
 
+    # get_default_target()
+    #
+    # Attempts to interpret which element the user intended to run a command on.
+    # This is for commands that only accept a single target element and thus,
+    # this only uses the workspace element (if invoked from workspace directory)
+    # and does not use the project default targets.
+    #
+    def get_default_target(self):
+        return self._invoked_from_workspace_element
+
+    # get_default_targets()
+    #
+    # Attempts to interpret which elements the user intended to run a command on.
+    # This is for commands that accept multiple target elements.
+    #
+    def get_default_targets(self):
+
+        # If _invoked_from_workspace_element has a value,
+        # a workspace element was found before a project config
+        # Therefore the workspace does not contain a project
+        if self._invoked_from_workspace_element:
+            return (self._invoked_from_workspace_element,)
+
+        # Default targets from project configuration
+        if self._default_targets:
+            return tuple(self._default_targets)
+
+        # If default targets are not configured, default to all project elements
+        default_targets = []
+        for root, _, files in os.walk(self.element_path):
+            for file in files:
+                if file.endswith(".bst"):
+                    rel_dir = os.path.relpath(root, self.element_path)
+                    rel_file = os.path.join(rel_dir, file).lstrip("./")
+                    default_targets.append(rel_file)
+
+        return tuple(default_targets)
+
     # _load():
     #
     # Loads the project configuration file in the project
@@ -455,6 +496,10 @@ class Project():
 
         self.config.options = OptionPool(self.element_path)
         self.first_pass_config.options = OptionPool(self.element_path)
+
+        defaults = _yaml.node_get(pre_config_node, Mapping, 'defaults')
+        _yaml.node_validate(defaults, ['targets'])
+        self._default_targets = _yaml.node_get(defaults, list, "targets")
 
         # Fatal warnings
         self._fatal_warnings = _yaml.node_get(pre_config_node, list, 'fatal-warnings', default_value=[])

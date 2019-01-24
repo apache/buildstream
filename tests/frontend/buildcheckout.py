@@ -2,6 +2,7 @@ import os
 import tarfile
 import hashlib
 import pytest
+import subprocess
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
 from tests.testutils.site import IS_WINDOWS
 
@@ -59,6 +60,35 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
     filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
     assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR + "_world")
+def test_build_default_all(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=['build'])
+
+    result.assert_success()
+    target_dir = os.path.join(cli.directory, DATA_DIR + "_world", "elements")
+    output_dir = os.path.join(cli.directory, "logs", "test")
+
+    expected = subprocess.Popen(('ls', target_dir), stdout=subprocess.PIPE)
+    expected = subprocess.check_output(("wc", "-w"), stdin=expected.stdout)
+
+    results = subprocess.Popen(('ls', output_dir), stdout=subprocess.PIPE)
+    results = subprocess.check_output(("wc", "-w"), stdin=results.stdout)
+
+    assert results == expected
+
+
+@pytest.mark.datafiles(DATA_DIR + "_default")
+def test_build_default(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, silent=True, args=['build'])
+
+    result.assert_success()
+    results = cli.get_element_state(project, "target2.bst")
+    expected = "cached"
+    assert results == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -531,6 +561,53 @@ def test_build_checkout_junction(cli, tmpdir, datafiles):
     # Now try to build it, this should automatically result in fetching
     # the junction itself at load time.
     result = cli.run(project=project, args=['build', 'junction-dep.bst'])
+    result.assert_success()
+
+    # Assert that it's cached now
+    assert cli.get_element_state(project, 'junction-dep.bst') == 'cached'
+
+    # Now check it out
+    result = cli.run(project=project, args=[
+        'artifact', 'checkout', 'junction-dep.bst', '--directory', checkout
+    ])
+    result.assert_success()
+
+    # Assert the content of /etc/animal.conf
+    filename = os.path.join(checkout, 'etc', 'animal.conf')
+    assert os.path.exists(filename)
+    with open(filename, 'r') as f:
+        contents = f.read()
+    assert contents == 'animal=Pony\n'
+
+
+# Test that default targets work with projects with junctions
+@pytest.mark.datafiles(DATA_DIR + "_world")
+def test_build_checkout_junction_default_targets(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Create a stack element to depend on a cross junction element
+    #
+    element = {
+        'kind': 'stack',
+        'depends': [
+            {
+                'junction': 'junction.bst',
+                'filename': 'import-etc.bst'
+            }
+        ]
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to build it, this should automatically result in fetching
+    # the junction itself at load time.
+    result = cli.run(project=project, args=['build'])
     result.assert_success()
 
     # Assert that it's cached now

@@ -167,3 +167,11 @@ shell:
   # Command to run when `bst shell` does not provide a command
   #
   command: [ 'sh', '-i' ]
+
+# Defaults for bst commands
+#
+defaults:
+
+  # Set default target elements to use when none are passed on the command line.
+  # If none are configured in the project, default to all project elements.
+  targets: []

@@ -80,6 +80,56 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 
 # Tests that:
 #
+#  * `bst push` (default targets) pushes all built elements to configured 'push' cache
+#  * `bst pull` (default targets) downloads everything from cache after local deletion
+#
+@pytest.mark.datafiles(DATA_DIR + '_world')
+def test_push_pull_default_targets(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        # First build the target elements
+        cli.configure({
+            'artifacts': {'url': share.repo}
+        })
+        result = cli.run(project=project, args=['build'])
+        result.assert_success()
+        assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+        # Push all elements
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+        result = cli.run(project=project, args=['artifact', 'push'])
+        result.assert_success()
+
+        # Assert that everything is now cached in the remote.
+        all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
+        for element_name in all_elements:
+            assert_shared(cli, share, project, element_name)
+
+        # Now we've pushed, delete the user's local artifact cache
+        # directory and try to redownload it from the share
+        #
+        artifacts = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifacts)
+
+        # Assert that nothing is cached locally anymore
+        states = cli.get_element_states(project, all_elements)
+        assert not any(states[e] == 'cached' for e in all_elements)
+
+        # Now try bst pull
+        result = cli.run(project=project, args=['artifact', 'pull'])
+        result.assert_success()
+
+        # And assert that it's again in the local cache, without having built
+        states = cli.get_element_states(project, all_elements)
+        assert not any(states[e] != 'cached' for e in all_elements)
+
+
+# Tests that:
+#
 #  * `bst build` pushes all build elements ONLY to configured 'push' cache
 #  * `bst pull` finds artifacts that are available only in the secondary cache
 #
