@@ -28,6 +28,7 @@ from . import utils
 from . import _yaml
 
 from ._cas import CASRemote, CASRemoteSpec
+from .storage._casbaseddirectory import CasBasedDirectory
 
 
 CACHE_SIZE_FILE = "cache_size"
@@ -820,6 +821,22 @@ class ArtifactCache():
         newref = element.get_artifact_name(newkey)
 
         self.cas.link_ref(oldref, newref)
+
+    # get_artifact_logs():
+    #
+    # Get the logs of an existing artifact
+    #
+    # Args:
+    #     ref (str): The ref of the artifact
+    #
+    # Returns:
+    #     logsdir (CasBasedDirectory): A CasBasedDirectory containing the artifact's logs
+    #
+    def get_artifact_logs(self, ref):
+        descend = ["logs"]
+        cache_id = self.cas.resolve_ref(ref, update_mtime=True)
+        vdir = CasBasedDirectory(self.cas, cache_id).descend(descend)
+        return vdir
 
     ################################################
     #               Local Private Methods          #
