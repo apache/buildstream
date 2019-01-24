@@ -136,18 +136,25 @@ def test_unique_key(cli, tmpdir, datafiles):
     '''
     project = os.path.join(datafiles.dirname, datafiles.basename)
     generate_project(project, tmpdir)
-    assert cli.get_element_state(project, 'target.bst') == "fetch needed"
-    assert cli.get_element_state(project, 'target-custom.bst') == "fetch needed"
-    assert cli.get_element_state(project, 'target-custom-executable.bst') == "fetch needed"
+    states = cli.get_element_states(project, [
+        'target.bst', 'target-custom.bst', 'target-custom-executable.bst'
+    ])
+    assert states['target.bst'] == "fetch needed"
+    assert states['target-custom.bst'] == "fetch needed"
+    assert states['target-custom-executable.bst'] == "fetch needed"
+
     # Try to fetch it
     result = cli.run(project=project, args=[
         'source', 'fetch', 'target.bst'
     ])
 
     # We should download the file only once
-    assert cli.get_element_state(project, 'target.bst') == 'buildable'
-    assert cli.get_element_state(project, 'target-custom.bst') == 'buildable'
-    assert cli.get_element_state(project, 'target-custom-executable.bst') == 'buildable'
+    states = cli.get_element_states(project, [
+        'target.bst', 'target-custom.bst', 'target-custom-executable.bst'
+    ])
+    assert states['target.bst'] == 'buildable'
+    assert states['target-custom.bst'] == 'buildable'
+    assert states['target-custom-executable.bst'] == 'buildable'
 
     # But the cache key is different because the 'filename' is different.
     assert cli.get_element_key(project, 'target.bst') != \
