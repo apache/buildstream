@@ -1259,14 +1259,9 @@ into the ``setup.py``, as such, whenever the frontend command line
 interface changes, the static man pages should be regenerated and
 committed with that.
 
-To do this, first ensure you have ``click_man`` installed, possibly
-with::
+To do this, run the following from the the toplevel directory of BuildStream::
 
-  pip3 install --user click_man
-
-Then, in the toplevel directory of buildstream, run the following::
-
-  python3 setup.py --command-packages=click_man.commands man_pages
+  tox -e man
 
 And commit the result, ensuring that you have added anything in
 the ``man/`` subdirectory, which will be automatically included
