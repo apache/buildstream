@@ -171,8 +171,9 @@ def test_track_single(cli, tmpdir, datafiles):
                      dep_name=element_dep_name)
 
     # Assert that tracking is needed for both elements
-    assert cli.get_element_state(project, element_dep_name) == 'no reference'
-    assert cli.get_element_state(project, element_target_name) == 'no reference'
+    states = cli.get_element_states(project, [element_target_name])
+    assert states[element_dep_name] == 'no reference'
+    assert states[element_target_name] == 'no reference'
 
     # Now first try to track only one element
     result = cli.run(project=project, args=[
@@ -187,8 +188,9 @@ def test_track_single(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Assert that the dependency is waiting and the target has still never been tracked
-    assert cli.get_element_state(project, element_dep_name) == 'no reference'
-    assert cli.get_element_state(project, element_target_name) == 'waiting'
+    states = cli.get_element_states(project, [element_target_name])
+    assert states[element_dep_name] == 'no reference'
+    assert states[element_target_name] == 'waiting'
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -212,8 +214,9 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
                      dep_name=element_dep_name)
 
     # Assert that a fetch is needed
-    assert cli.get_element_state(project, element_dep_name) == 'no reference'
-    assert cli.get_element_state(project, element_target_name) == 'no reference'
+    states = cli.get_element_states(project, [element_target_name])
+    assert states[element_dep_name] == 'no reference'
+    assert states[element_target_name] == 'no reference'
 
     # Now first try to track it
     result = cli.run(project=project, args=[
@@ -231,8 +234,9 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     result.assert_success()
 
     # Assert that the dependency is buildable and the target is waiting
-    assert cli.get_element_state(project, element_dep_name) == 'no reference'
-    assert cli.get_element_state(project, element_target_name) == 'waiting'
+    states = cli.get_element_states(project, [element_target_name])
+    assert states[element_dep_name] == 'no reference'
+    assert states[element_target_name] == 'waiting'
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR))
