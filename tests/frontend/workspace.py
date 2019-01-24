@@ -107,14 +107,16 @@ class WorkspaceCreater():
             element_name, element_path, workspace_dir = \
                 self.create_workspace_element(kind, track, suffix, workspace_dir_usr,
                                               element_attrs)
-
-            # Assert that there is no reference, a track & fetch is needed
-            state = self.cli.get_element_state(self.project_path, element_name)
-            if track:
-                assert state == 'no reference'
-            else:
-                assert state == 'fetch needed'
             element_tuples.append((element_name, workspace_dir))
+
+        # Assert that there is no reference, a track & fetch is needed
+        states = self.cli.get_element_states(self.project_path, [
+            e for e, _ in element_tuples
+        ])
+        if track:
+            assert not any(states[e] != 'no reference' for e, _ in element_tuples)
+        else:
+            assert not any(states[e] != 'fetch needed' for e, _ in element_tuples)
 
         return element_tuples
 
@@ -140,12 +142,14 @@ class WorkspaceCreater():
 
         result.assert_success()
 
-        for element_name, workspace_dir in element_tuples:
-            # Assert that we are now buildable because the source is
-            # now cached.
-            assert self.cli.get_element_state(self.project_path, element_name) == 'buildable'
+        # Assert that we are now buildable because the source is now cached.
+        states = self.cli.get_element_states(self.project_path, [
+            e for e, _ in element_tuples
+        ])
+        assert not any(states[e] != 'buildable' for e, _ in element_tuples)
 
-            # Check that the executable hello file is found in the workspace
+        # Check that the executable hello file is found in each workspace
+        for element_name, workspace_dir in element_tuples:
             filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
             assert os.path.exists(filename)
 
