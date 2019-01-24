@@ -24,6 +24,7 @@ import stat
 import errno
 import uuid
 import contextlib
+from fnmatch import fnmatch
 
 import grpc
 
@@ -472,22 +473,35 @@ class CASCache():
     #
     # List refs in Least Recently Modified (LRM) order.
     #
+    # Args:
+    #     glob (str) - An optional glob expression to be used to list refs satisfying the glob
+    #
     # Returns:
     #     (list) - A list of refs in LRM order
     #
-    def list_refs(self):
+    def list_refs(self, *, glob=None):
         # string of: /path/to/repo/refs/heads
         ref_heads = os.path.join(self.casdir, 'refs', 'heads')
+        path = ref_heads
+
+        if glob is not None:
+            globdir = os.path.dirname(glob)
+            if not any(c in "*?[" for c in globdir):
+                # path prefix contains no globbing characters so
+                # append the glob to optimise the os.walk()
+                path = os.path.join(ref_heads, globdir)
 
         refs = []
         mtimes = []
 
-        for root, _, files in os.walk(ref_heads):
+        for root, _, files in os.walk(path):
             for filename in files:
                 ref_path = os.path.join(root, filename)
-                refs.append(os.path.relpath(ref_path, ref_heads))
-                # Obtain the mtime (the time a file was last modified)
-                mtimes.append(os.path.getmtime(ref_path))
+                relative_path = os.path.relpath(ref_path, ref_heads)  # Relative to refs head
+                if not glob or fnmatch(relative_path, glob):
+                    refs.append(relative_path)
+                    # Obtain the mtime (the time a file was last modified)
+                    mtimes.append(os.path.getmtime(ref_path))
 
         # NOTE: Sorted will sort from earliest to latest, thus the
         # first ref of this list will be the file modified earliest.

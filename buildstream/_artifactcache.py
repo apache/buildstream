@@ -514,11 +514,14 @@ class ArtifactCache():
     #
     # List artifacts in this cache in LRU order.
     #
+    # Args:
+    #     glob (str): An option glob expression to be used to list artifacts satisfying the glob
+    #
     # Returns:
     #     ([str]) - A list of artifact names as generated in LRU order
     #
-    def list_artifacts(self):
-        return self.cas.list_refs()
+    def list_artifacts(self, *, glob=None):
+        return self.cas.list_refs(glob=glob)
 
     # remove():
     #
