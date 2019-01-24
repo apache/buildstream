@@ -882,16 +882,16 @@ class ArtifactCache():
             else:
                 available = utils._pretty_size(available_space)
 
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            ("Your system does not have enough available " +
-                             "space to support the cache quota specified.\n" +
-                             "\nYou have specified a quota of {quota} total disk space.\n" +
-                             "- The filesystem containing {local_cache_path} only " +
-                             "has: {available_size} available.")
-                            .format(
-                                quota=self.context.config_cache_quota,
-                                local_cache_path=self.context.artifactdir,
-                                available_size=available))
+            raise ArtifactError("Your system does not have enough available " +
+                                "space to support the cache quota specified.",
+                                detail=("You have specified a quota of {quota} total disk space.\n" +
+                                        "The filesystem containing {local_cache_path} only " +
+                                        "has {available_size} available.")
+                                .format(
+                                    quota=self.context.config_cache_quota,
+                                    local_cache_path=self.context.artifactdir,
+                                    available_size=available),
+                                reason='insufficient-storage-for-quota')
 
         # Place a slight headroom (2e9 (2GB) on the cache_quota) into
         # cache_quota to try and avoid exceptions.
