@@ -31,7 +31,7 @@ import shutil
 import subprocess
 from ruamel.yaml.comments import CommentedSet
 from tests.testutils import cli, create_repo, ALL_REPO_KINDS, wait_for_cache_granularity
-from tests.testutils import create_artifact_share
+from tests.testutils import create_artifact_share, create_element_size
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
@@ -121,7 +121,7 @@ class WorkspaceCreater():
         return element_tuples
 
     def open_workspaces(self, kinds, track, suffixs=None, workspace_dir=None,
-                        element_attrs=None):
+                        element_attrs=None, no_checkout=False):
 
         element_tuples = self.create_workspace_elements(kinds, track, suffixs, workspace_dir,
                                                         element_attrs)
@@ -132,6 +132,8 @@ class WorkspaceCreater():
         args = ['workspace', 'open']
         if track:
             args.append('--track')
+        if no_checkout:
+            args.append('--no-checkout')
         if workspace_dir is not None:
             assert len(element_tuples) == 1, "test logic error"
             _, workspace_dir = element_tuples[0]
@@ -142,25 +144,26 @@ class WorkspaceCreater():
 
         result.assert_success()
 
-        # Assert that we are now buildable because the source is now cached.
-        states = self.cli.get_element_states(self.project_path, [
-            e for e, _ in element_tuples
-        ])
-        assert not any(states[e] != 'buildable' for e, _ in element_tuples)
+        if not no_checkout:
+            # Assert that we are now buildable because the source is now cached.
+            states = self.cli.get_element_states(self.project_path, [
+                e for e, _ in element_tuples
+            ])
+            assert not any(states[e] != 'buildable' for e, _ in element_tuples)
 
-        # Check that the executable hello file is found in each workspace
-        for element_name, workspace_dir in element_tuples:
-            filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
-            assert os.path.exists(filename)
+            # Check that the executable hello file is found in each workspace
+            for element_name, workspace_dir in element_tuples:
+                filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
+                assert os.path.exists(filename)
 
         return element_tuples
 
 
 def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None,
-                   project_path=None, element_attrs=None):
+                   project_path=None, element_attrs=None, no_checkout=False):
     workspace_object = WorkspaceCreater(cli, tmpdir, datafiles, project_path)
     workspaces = workspace_object.open_workspaces((kind, ), track, (suffix, ), workspace_dir,
-                                                  element_attrs)
+                                                  element_attrs, no_checkout)
     assert len(workspaces) == 1
     element_name, workspace = workspaces[0]
     return element_name, workspace_object.project_path, workspace
@@ -1073,25 +1076,35 @@ def test_multiple_failed_builds(cli, tmpdir, datafiles):
 @pytest.mark.parametrize('subdir', [True, False], ids=["subdir", "no-subdir"])
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
-    # Fetching from a workspace outside a project doesn't fail horribly
+    # An element with an open workspace can't be fetched, but we still expect fetches
+    # to fetch any dependencies
     tmpdir = tmpdir_factory.mktemp('')
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+    depend_element = 'fetchable.bst'
+
+    # Create an element to fetch (local sources do not need to fetch)
+    create_element_size(depend_element, str(datafiles), 'elements', [], 1024)
+
+    element_name, project, workspace = open_workspace(
+        cli, tmpdir, datafiles, "git", False, no_checkout=True,
+        element_attrs={'depends': [depend_element]}
+    )
     arg_elm = [element_name] if not guess_element else []
 
     if subdir:
         call_dir = os.path.join(workspace, 'usr')
+        os.makedirs(call_dir, exist_ok=True)
     else:
         call_dir = workspace
 
+    # Assert that the depended element is not fetched yet
+    assert cli.get_element_state(str(datafiles), depend_element) == 'fetch needed'
+
+    # Fetch the workspaced element
     result = cli.run(project=project, args=['-C', call_dir, 'source', 'fetch'] + arg_elm)
     result.assert_success()
 
-    # We already fetched it by opening the workspace, but we're also checking
-    # `bst show` works here
-    result = cli.run(project=project,
-                     args=['-C', call_dir, 'show', '--deps', 'none', '--format', '%{state}'] + arg_elm)
-    result.assert_success()
-    assert result.output.strip() == 'buildable'
+    # Assert that the depended element has now been fetched
+    assert cli.get_element_state(str(datafiles), depend_element) == 'buildable'
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -1120,15 +1133,23 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
-    # Tracking does not get horribly confused
     tmpdir = tmpdir_factory.mktemp('')
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", True)
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+    element_file = os.path.join(str(datafiles), 'elements', element_name)
     arg_elm = [element_name] if not guess_element else []
 
-    # The workspace is necessarily already tracked, so we only care that
-    # there's no weird errors.
+    # Delete the ref from the source so that we can detect if the
+    # element has been tracked
+    element_contents = _yaml.load(element_file)
+    del element_contents['sources'][0]['ref']
+    _yaml.dump(_yaml.node_sanitize(element_contents), element_file)
+
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track'] + arg_elm)
     result.assert_success()
+
+    # Element is tracked now
+    element_contents = _yaml.load(element_file)
+    assert 'ref' in element_contents['sources'][0]
 
 
 @pytest.mark.datafiles(DATA_DIR)
