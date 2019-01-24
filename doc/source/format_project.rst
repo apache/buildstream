@@ -945,6 +945,44 @@ Host side environment variable expansion is also supported:
      - '${XDG_RUNTIME_DIR}/pulse/native'
 
 
+.. _project_default_targets:
+
+Default targets
+---------------
+When running BuildStream commands from a project directory or subdirectory
+without specifying any target elements on the command line, the default targets
+of the project will be used.  The default targets can be configured in the
+``defaults`` section as follows:
+
+.. code:: yaml
+
+   defaults:
+
+     # List of default target elements
+     targets:
+     - app.bst
+
+If no default targets are configured in ``project.conf``, BuildStream commands
+will default to all ``.bst`` files in the configured element path.
+
+Commands that cannot support junctions as target elements (``bst build``,
+``bst artifact push``, and ``bst artifact pull``) ignore junctions in the list
+of default targets.
+
+When running BuildStream commands from a workspace directory (that is not a
+BuildStream project directory), project default targets are not used and the
+workspace element will be used as the default target instead.
+
+``bst artifact checkout``, ``bst source checkout``, and ``bst shell`` are
+currently limited to a single target element and due to this, they currently
+do not use project default targets.  However, they still use the workspace
+element as default target when run from a workspace directory.
+
+.. note::
+
+   The ``targets`` configuration is available since :ref:`format version 21 <project_format_version>`
+
+
 .. _project_builtin_defaults:
 
 Builtin defaults
