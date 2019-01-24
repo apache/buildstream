@@ -954,13 +954,8 @@ class Stream():
               dynamic_plan=False,
               load_refs=False):
 
-        # Obtain cached refs and project element path needed to classify artifacts
-        cas = self._artifacts.cas
-        cached_refs = cas.list_refs()
-        project_element_path = self._project.element_path
-
         # Classify element and artifact strings
-        target_elements, target_artifacts = self._classify_artifacts(targets, cached_refs, project_element_path)
+        target_elements, target_artifacts = self._classify_artifacts(targets)
 
         if target_artifacts and not load_refs:
             detail = '\n'.join(target_artifacts)
@@ -1383,14 +1378,12 @@ class Stream():
     #
     # Args:
     #    targets (list): A list of targets
-    #    cached (list): A list of locally cached refs
-    #    project_element_path (str): Absolute path to where the elements exist in the project
     #
     # Returns:
     #    (list): element names present in the targets
     #    (list): artifact refs present in the targets
     #
-    def _classify_artifacts(self, targets, cached, project_element_path):
+    def _classify_artifacts(self, targets):
         element_targets = []
         artifact_refs = []
         element_globs = []
@@ -1414,14 +1407,19 @@ class Stream():
                     artifact_refs.append(target)
 
         if element_globs:
-            for dirpath, _, filenames in os.walk(project_element_path):
+            for dirpath, _, filenames in os.walk(self._project.element_path):
                 for filename in filenames:
-                    element_path = os.path.join(dirpath, filename).lstrip(project_element_path).lstrip('/')
+                    element_path = os.path.join(dirpath, filename)
+                    length = len(self._project.element_path) + 1
+                    element_path = element_path[length:]  # Strip out the element_path
+
                     if any(fnmatch(element_path, glob) for glob in element_globs):
                         element_targets.append(element_path)
 
         if artifact_globs:
-            artifact_refs.extend(ref for ref in cached
-                                 if any(fnmatch(ref, glob) for glob in artifact_globs))
+            for glob in artifact_globs:
+                artifact_refs.extend(self._artifacts.list_artifacts(glob=glob))
+            if not artifact_refs:
+                self._message(MessageType.WARN, "No artifacts found for globs: {}".format(', '.join(artifact_globs)))
 
         return element_targets, artifact_refs
