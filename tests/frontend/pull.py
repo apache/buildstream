@@ -66,16 +66,16 @@ def test_push_pull_all(cli, tmpdir, datafiles):
         shutil.rmtree(artifacts)
 
         # Assert that nothing is cached locally anymore
-        for element_name in all_elements:
-            assert cli.get_element_state(project, element_name) != 'cached'
+        states = cli.get_element_states(project, all_elements)
+        assert not any(states[e] == 'cached' for e in all_elements)
 
         # Now try bst pull
         result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
         result.assert_success()
 
         # And assert that it's again in the local cache, without having built
-        for element_name in all_elements:
-            assert cli.get_element_state(project, element_name) == 'cached'
+        states = cli.get_element_states(project, all_elements)
+        assert not any(states[e] != 'cached' for e in all_elements)
 
 
 # Tests that:
