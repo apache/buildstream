@@ -30,7 +30,7 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
-from ._artifactcache import ArtifactCache
+from ._artifactcache import ArtifactCache, ArtifactCacheUsage
 from ._cas import CASCache
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .plugin import _plugin_lookup
@@ -288,6 +288,16 @@ class Context():
             self._artifactcache = ArtifactCache(self)
 
         return self._artifactcache
+
+    # get_artifact_cache_usage()
+    #
+    # Fetches the current usage of the artifact cache
+    #
+    # Returns:
+    #     (ArtifactCacheUsage): The current status
+    #
+    def get_artifact_cache_usage(self):
+        return ArtifactCacheUsage(self.artifactcache)
 
     # add_project():
     #

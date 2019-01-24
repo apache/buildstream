@@ -80,7 +80,7 @@ def test_quota_over_1024T(cli, tmpdir):
     _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
 
     volume_space_patch = mock.patch(
-        "buildstream._artifactcache.ArtifactCache._get_volume_space_info_for",
+        "buildstream._artifactcache.ArtifactCache._get_cache_volume_size",
         autospec=True,
         return_value=(1025 * TiB, 1025 * TiB)
     )
