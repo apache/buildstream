@@ -29,6 +29,7 @@ variables:
   # Diagnostics
   - mount
   - df -h
+  - ls -l "${INTEGRATION_CACHE}"
 
   script:
   - mkdir -p "${INTEGRATION_CACHE}"
@@ -39,6 +40,9 @@ variables:
   - su buildstream -c "${TEST_COMMAND}"
 
   after_script:
+  # Diagnostics
+  - ls -l "${INTEGRATION_CACHE}"
+
   except:
   - schedules
   artifacts:
