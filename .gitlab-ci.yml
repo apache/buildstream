@@ -43,6 +43,10 @@ variables:
   # Diagnostics
   - ls -l "${INTEGRATION_CACHE}"
 
+  # Make sure we're not leaking artifacts into the gitlab cache
+  #
+  - rm -rf "${INTEGRATION_CACHE}/artifacts"
+
   except:
   - schedules
   artifacts:
