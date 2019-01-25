@@ -29,6 +29,7 @@ from contextlib import contextmanager
 # Local imports
 from .resources import Resources, ResourceType
 from .jobs import JobStatus, CacheSizeJob, CleanupJob
+from .._profile import Topics, profile_start, profile_end
 
 
 # A decent return code for Scheduler.run()
@@ -154,10 +155,15 @@ class Scheduler():
         # Check if we need to start with some cache maintenance
         self._check_cache_management()
 
+        # Start the profiler
+        profile_start(Topics.SCHEDULER, "_".join(queue.action_name for queue in self.queues))
+
         # Run the queues
         self._sched()
         self.loop.run_forever()
         self.loop.close()
+
+        profile_end(Topics.SCHEDULER, "_".join(queue.action_name for queue in self.queues))
 
         # Stop handling unix signals
         self._disconnect_signals()
