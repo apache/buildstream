@@ -30,8 +30,8 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
-from ._artifactcache import ArtifactCache, ArtifactCacheUsage
-from ._cas import CASCache
+from ._artifactcache import ArtifactCache
+from ._cas import CASCache, CASQuota, CASCacheUsage
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .plugin import _plugin_lookup
 from .sandbox import SandboxRemote
@@ -127,6 +127,9 @@ class Context():
         # Size of the artifact cache in bytes
         self.config_cache_quota = None
 
+        # User specified cache quota, used for display messages
+        self.config_cache_quota_string = None
+
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
@@ -151,6 +154,7 @@ class Context():
         self._log_handle = None
         self._log_filename = None
         self._cascache = None
+        self._casquota = None
         self._directory = directory
 
     # load()
@@ -232,7 +236,15 @@ class Context():
         cache = _yaml.node_get(defaults, Mapping, 'cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
-        self.config_cache_quota = _yaml.node_get(cache, str, 'quota')
+        self.config_cache_quota_string = _yaml.node_get(cache, str, 'quota')
+        try:
+            self.config_cache_quota = utils._parse_size(self.config_cache_quota_string,
+                                                        self.casdir)
+        except utils.UtilError as e:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
+                            "\nValid values are, for example: 800M 10G 1T 50%\n"
+                            .format(str(e))) from e
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
@@ -292,15 +304,15 @@ class Context():
 
         return self._artifactcache
 
-    # get_artifact_cache_usage()
+    # get_cache_usage()
     #
     # Fetches the current usage of the artifact cache
     #
     # Returns:
-    #     (ArtifactCacheUsage): The current status
+    #     (CASCacheUsage): The current status
     #
-    def get_artifact_cache_usage(self):
-        return ArtifactCacheUsage(self.artifactcache)
+    def get_cache_usage(self):
+        return CASCacheUsage(self.get_casquota())
 
     # add_project():
     #
@@ -672,6 +684,11 @@ class Context():
         if self._cascache is None:
             self._cascache = CASCache(self.cachedir)
         return self._cascache
+
+    def get_casquota(self):
+        if self._casquota is None:
+            self._casquota = CASQuota(self)
+        return self._casquota
 
 
 # _node_get_option_str()

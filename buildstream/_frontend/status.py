@@ -404,7 +404,7 @@ class _StatusHeader():
         #
         #  ~~~~~~ cache: 69% ~~~~~~
         #
-        usage = self._context.get_artifact_cache_usage()
+        usage = self._context.get_cache_usage()
         usage_percent = '{}%'.format(usage.used_percent)
 
         size = 21

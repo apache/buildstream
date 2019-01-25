@@ -25,27 +25,27 @@ class CleanupJob(Job):
         self._complete_cb = complete_cb
 
         context = self._scheduler.context
+        self._casquota = context.get_casquota()
         self._artifacts = context.artifactcache
 
     def child_process(self):
         def progress():
             self.send_message('update-cache-size',
-                              self._artifacts.get_cache_size())
+                              self._casquota.get_cache_size())
         return self._artifacts.clean(progress)
 
     def handle_message(self, message_type, message):
-
         # Update the cache size in the main process as we go,
         # this provides better feedback in the UI.
         if message_type == 'update-cache-size':
-            self._artifacts.set_cache_size(message)
+            self._casquota.set_cache_size(message)
             return True
 
         return False
 
     def parent_complete(self, status, result):
         if status == JobStatus.OK:
-            self._artifacts.set_cache_size(result)
+            self._casquota.set_cache_size(result)
 
         if self._complete_cb:
             self._complete_cb(status, result)

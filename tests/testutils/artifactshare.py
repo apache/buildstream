@@ -46,7 +46,6 @@ class ArtifactShare():
         # in tests as a remote artifact push/pull configuration
         #
         self.repodir = os.path.join(self.directory, 'repo')
-
         os.makedirs(self.repodir)
 
         self.cas = CASCache(self.repodir)

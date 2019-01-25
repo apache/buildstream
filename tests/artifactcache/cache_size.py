@@ -81,11 +81,11 @@ def test_quota_over_1024T(cli, tmpdir):
     _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
 
     volume_space_patch = mock.patch(
-        "buildstream._artifactcache.ArtifactCache._get_cache_volume_size",
+        "buildstream._cas.CASQuota._get_cache_volume_size",
         autospec=True,
         return_value=(1025 * TiB, 1025 * TiB)
     )
 
     with volume_space_patch:
         result = cli.run(project, args=["build", "file.bst"])
-        result.assert_main_error(ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota')
+        result.assert_main_error(ErrorDomain.CAS, 'insufficient-storage-for-quota')
