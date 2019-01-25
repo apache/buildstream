@@ -98,6 +98,7 @@ class ArtifactCache():
         self._cache_size = None               # The current cache size, sometimes it's an estimate
         self._cache_quota = None              # The cache quota
         self._cache_quota_original = None     # The cache quota as specified by the user, in bytes
+        self._cache_quota_headroom = None     # The headroom in bytes before reaching the quota or full disk
         self._cache_lower_threshold = None    # The target cache size for a cleanup
         self._remotes_setup = False           # Check to prevent double-setup of remotes
 
@@ -314,7 +315,7 @@ class ArtifactCache():
                                   len(self._required_elements),
                                   (context.config_origin or default_conf)))
 
-                if self.has_quota_exceeded():
+                if self.full():
                     raise ArtifactError("Cache too full. Aborting.",
                                         detail=detail,
                                         reason="cache-too-full")
@@ -431,15 +432,25 @@ class ArtifactCache():
         self._cache_size = cache_size
         self._write_cache_size(self._cache_size)
 
-    # has_quota_exceeded()
+    # full()
     #
-    # Checks if the current artifact cache size exceeds the quota.
+    # Checks if the artifact cache is full, either
+    # because the user configured quota has been exceeded
+    # or because the underlying disk is almost full.
     #
     # Returns:
-    #    (bool): True of the quota is exceeded
+    #    (bool): True if the artifact cache is full
     #
-    def has_quota_exceeded(self):
-        return self.get_cache_size() > self._cache_quota
+    def full(self):
+
+        if self.get_cache_size() > self._cache_quota:
+            return True
+
+        _, volume_avail = self._get_cache_volume_size()
+        if volume_avail < self._cache_quota_headroom:
+            return True
+
+        return False
 
     # preflight():
     #
@@ -936,9 +947,9 @@ class ArtifactCache():
         # is taken from the user requested cache_quota.
         #
         if 'BST_TEST_SUITE' in os.environ:
-            headroom = 0
+            self._cache_quota_headroom = 0
         else:
-            headroom = 2e9
+            self._cache_quota_headroom = 2e9
 
         try:
             cache_quota = utils._parse_size(self.context.config_cache_quota,
@@ -960,27 +971,39 @@ class ArtifactCache():
         #
         if cache_quota is None:  # Infinity, set to max system storage
             cache_quota = cache_size + available_space
-        if cache_quota < headroom:  # Check minimum
+        if cache_quota < self._cache_quota_headroom:  # Check minimum
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
                             "BuildStream requires a minimum cache quota of 2G.")
-        elif cache_quota > cache_size + available_space:  # Check maximum
+        elif cache_quota > total_size:
+            # A quota greater than the total disk size is certianly an error
+            raise ArtifactError("Your system does not have enough available " +
+                                "space to support the cache quota specified.",
+                                detail=("You have specified a quota of {quota} total disk space.\n" +
+                                        "The filesystem containing {local_cache_path} only " +
+                                        "has {total_size} total disk space.")
+                                .format(
+                                    quota=self.context.config_cache_quota,
+                                    local_cache_path=self.context.artifactdir,
+                                    total_size=utils._pretty_size(total_size)),
+                                reason='insufficient-storage-for-quota')
+        elif cache_quota > cache_size + available_space:
+            # The quota does not fit in the available space, this is a warning
             if '%' in self.context.config_cache_quota:
                 available = (available_space / total_size) * 100
                 available = '{}% of total disk space'.format(round(available, 1))
             else:
                 available = utils._pretty_size(available_space)
 
-            raise ArtifactError("Your system does not have enough available " +
-                                "space to support the cache quota specified.",
-                                detail=("You have specified a quota of {quota} total disk space.\n" +
-                                        "The filesystem containing {local_cache_path} only " +
-                                        "has {available_size} available.")
-                                .format(
-                                    quota=self.context.config_cache_quota,
-                                    local_cache_path=self.context.artifactdir,
-                                    available_size=available),
-                                reason='insufficient-storage-for-quota')
+            self._message(MessageType.WARN,
+                          "Your system does not have enough available " +
+                          "space to support the cache quota specified.",
+                          detail=("You have specified a quota of {quota} total disk space.\n" +
+                                  "The filesystem containing {local_cache_path} only " +
+                                  "has {available_size} available.")
+                          .format(quota=self.context.config_cache_quota,
+                                  local_cache_path=self.context.artifactdir,
+                                  available_size=available))
 
         # Place a slight headroom (2e9 (2GB) on the cache_quota) into
         # cache_quota to try and avoid exceptions.
@@ -990,7 +1013,7 @@ class ArtifactCache():
         # already really fuzzy.
         #
         self._cache_quota_original = cache_quota
-        self._cache_quota = cache_quota - headroom
+        self._cache_quota = cache_quota - self._cache_quota_headroom
         self._cache_lower_threshold = self._cache_quota / 2
 
     # _get_cache_volume_size()

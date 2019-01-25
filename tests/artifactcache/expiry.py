@@ -317,6 +317,16 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
 # has 10K total disk space, and 6K of it is already in use (not
 # including any space used by the artifact cache).
 #
+# Parameters:
+#    quota (str): A quota size configuration for the config file
+#    err_domain (str): An ErrorDomain, or 'success' or 'warning'
+#    err_reason (str): A reson to compare with an error domain
+#
+# If err_domain is 'success', then err_reason is unused.
+#
+# If err_domain is 'warning', then err_reason is asserted to
+# be in the stderr.
+#
 @pytest.mark.parametrize("quota,err_domain,err_reason", [
     # Valid configurations
     ("1", 'success', None),
@@ -328,9 +338,13 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
     ("-1", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
     ("pony", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
     ("200%", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
+
+    # Not enough space on disk even if you cleaned up
+    ("11K", ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota'),
+
     # Not enough space for these caches
-    ("7K", ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota'),
-    ("70%", ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota')
+    ("7K", 'warning', 'Your system does not have enough available'),
+    ("70%", 'warning', 'Your system does not have enough available')
 ])
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reason):
@@ -374,6 +388,8 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reas
 
     if err_domain == 'success':
         res.assert_success()
+    elif err_domain == 'warning':
+        assert err_reason in res.stderr
     else:
         res.assert_main_error(err_domain, err_reason)
 

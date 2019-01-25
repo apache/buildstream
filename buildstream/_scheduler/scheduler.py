@@ -303,7 +303,7 @@ class Scheduler():
         # starts while we are checking the cache.
         #
         artifacts = self.context.artifactcache
-        if artifacts.has_quota_exceeded():
+        if artifacts.full():
             self._sched_cache_size_job(exclusive=True)
 
     # _spawn_job()
@@ -338,7 +338,7 @@ class Scheduler():
         context = self.context
         artifacts = context.artifactcache
 
-        if artifacts.has_quota_exceeded():
+        if artifacts.full():
             self._cleanup_scheduled = True
 
     # Callback for the cleanup job
