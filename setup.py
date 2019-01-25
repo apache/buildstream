@@ -109,8 +109,12 @@ def check_for_bwrap():
 def list_man_pages():
     bst_dir = os.path.dirname(os.path.abspath(__file__))
     man_dir = os.path.join(bst_dir, 'man')
-    man_pages = os.listdir(man_dir)
-    return [os.path.join('man', page) for page in man_pages]
+    try:
+        man_pages = os.listdir(man_dir)
+        return [os.path.join('man', page) for page in man_pages]
+    except FileNotFoundError:
+        # Do not error out when 'man' directory does not exist
+        return []
 
 
 #####################################################
