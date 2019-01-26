@@ -1,4 +1,4 @@
-.TH "BST SOURCE TRACK" "1" "22-Jan-2019" "" "bst source track Manual"
+.TH "BST SOURCE TRACK" "1" "24-Jan-2019" "" "bst source track Manual"
 .SH NAME
 bst\-source\-track \- Track new source references
 .SH SYNOPSIS
@@ -7,6 +7,15 @@ bst\-source\-track \- Track new source references
 .SH DESCRIPTION
 Consults the specified tracking branches for new versions available
 to build and updates the project with any newly available references.
+.PP
+Specifying no elements will result in tracking the default targets
+of the project. If no default targets are configured, all project
+elements will be tracked.
+.PP
+When this command is executed from a workspace directory, the default
+is to track the workspace element.
+.PP
+If no default is declared, all elements in the project will be tracked
 .PP
 By default this will track just the specified element, but you can also
 update a whole tree of dependencies in one go.

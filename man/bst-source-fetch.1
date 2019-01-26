@@ -1,4 +1,4 @@
-.TH "BST SOURCE FETCH" "1" "22-Jan-2019" "" "bst source fetch Manual"
+.TH "BST SOURCE FETCH" "1" "24-Jan-2019" "" "bst source fetch Manual"
 .SH NAME
 bst\-source\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
@@ -6,6 +6,13 @@ bst\-source\-fetch \- Fetch sources in a pipeline
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Fetch sources required to build the pipeline
+.PP
+Specifying no elements will result in fetching the default targets
+of the project. If no default targets are configured, all project
+elements will be fetched.
+.PP
+When this command is executed from a workspace directory, the default
+is to fetch the workspace element.
 .PP
 By default this will only try to fetch sources which are
 required for the build plan of the specified target element,

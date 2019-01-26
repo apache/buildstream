@@ -1,4 +1,4 @@
-.TH "BST BUILD" "1" "22-Jan-2019" "" "bst build Manual"
+.TH "BST BUILD" "1" "24-Jan-2019" "" "bst build Manual"
 .SH NAME
 bst\-build \- Build elements in a pipeline
 .SH SYNOPSIS
@@ -6,6 +6,13 @@ bst\-build \- Build elements in a pipeline
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Build elements in a pipeline
+.PP
+Specifying no elements will result in building the default targets
+of the project. If no default targets are configured, all project
+elements will be built.
+.PP
+When this command is executed from a workspace directory, the default
+is to build the workspace element.
 .SH OPTIONS
 .TP
 \fB\-\-all\fP

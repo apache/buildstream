@@ -100,18 +100,21 @@ def check_for_bwrap():
 # Man pages are automatically generated however it was too difficult
 # to integrate with setuptools as a step of the build (FIXME !).
 #
-# To update the man pages in tree before a release, you need to
-# ensure you have the 'click_man' package installed, and run:
+# To update the man pages in tree before a release, run:
 #
-# python3 setup.py --command-packages=click_man.commands man_pages
+#     tox -e man
 #
 # Then commit the result.
 #
 def list_man_pages():
     bst_dir = os.path.dirname(os.path.abspath(__file__))
     man_dir = os.path.join(bst_dir, 'man')
-    man_pages = os.listdir(man_dir)
-    return [os.path.join('man', page) for page in man_pages]
+    try:
+        man_pages = os.listdir(man_dir)
+        return [os.path.join('man', page) for page in man_pages]
+    except FileNotFoundError:
+        # Do not error out when 'man' directory does not exist
+        return []
 
 
 #####################################################

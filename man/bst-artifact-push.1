@@ -1,4 +1,4 @@
-.TH "BST ARTIFACT PUSH" "1" "22-Jan-2019" "" "bst artifact push Manual"
+.TH "BST ARTIFACT PUSH" "1" "24-Jan-2019" "" "bst artifact push Manual"
 .SH NAME
 bst\-artifact\-push \- Push a built artifact
 .SH SYNOPSIS
@@ -6,6 +6,13 @@ bst\-artifact\-push \- Push a built artifact
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Push a built artifact to a remote artifact cache.
+.PP
+Specifying no elements will result in pushing the default targets
+of the project. If no default targets are configured, all project
+elements will be pushed.
+.PP
+When this command is executed from a workspace directory, the default
+is to push the workspace element.
 .PP
 The default destination is the highest priority configured cache. You can
 override this by passing a different cache URL with the `--remote` flag.
