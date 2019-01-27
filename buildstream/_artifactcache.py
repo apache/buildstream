@@ -467,7 +467,7 @@ class ArtifactCache():
     #     on_failure (callable): Called if we fail to contact one of the caches.
     #
     def initialize_remotes(self, *, on_failure=None):
-        remote_specs = self.global_remote_specs
+        remote_specs = list(self.global_remote_specs)
 
         for project in self.project_remote_specs:
             remote_specs += self.project_remote_specs[project]
