@@ -21,9 +21,9 @@ When a ``project.refs`` file is in use, any source references found
 in the :ref:`inline source declarations <format_sources>` are considered
 invalid and will be ignored, and a warning will be emitted for them.
 
-When ``bst track`` is run for your project, the ``project.refs`` file
+When ``bst source track`` is run for your project, the ``project.refs`` file
 will be updated instead of the inline source declarations. In the absence
-of a ``project.refs`` file, ``bst track`` will create one automatically
+of a ``project.refs`` file, ``bst source track`` will create one automatically
 with the tracking results.
 
 An interesting property of ``project.refs`` is that it allows for

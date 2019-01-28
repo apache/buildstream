@@ -20,7 +20,7 @@ buildstream 1.3.1
     an element's sources and generated build scripts you can do the command
     `bst source-checkout --include-build-scripts --tar foo.bst some-file.tar`
 
-  o BREAKING CHANGE: `bst track` and `bst fetch` commands are now osbolete.
+  o BREAKING CHANGE: `bst track` and `bst fetch` commands are now obsolete.
     Their functionality is provided by `bst source track` and
     `bst source fetch` respectively.
 

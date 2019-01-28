@@ -557,7 +557,7 @@ class Loader():
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
                     source._fetch(sources[0:idx])
                 else:
-                    detail = "Try fetching the project with `bst fetch {}`".format(filename)
+                    detail = "Try fetching the project with `bst source fetch {}`".format(filename)
                     raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
                                     "Subproject fetch needed for junction: {}".format(filename),
                                     detail=detail)
@@ -565,7 +565,7 @@ class Loader():
             # Handle the case where a subproject has no ref
             #
             elif source.get_consistency() == Consistency.INCONSISTENT:
-                detail = "Try tracking the junction element with `bst track {}`".format(filename)
+                detail = "Try tracking the junction element with `bst source track {}`".format(filename)
                 raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
                                 "Subproject has no ref for junction: {}".format(filename),
                                 detail=detail)

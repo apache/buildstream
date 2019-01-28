@@ -112,7 +112,7 @@ git - stage files from a git repository
    #     o Enable `track-tags` feature
    #     o Set the `track` parameter to the desired commit sha which
    #       the current `ref` points to
-   #     o Run `bst track` for these elements, this will result in
+   #     o Run `bst source track` for these elements, this will result in
    #       populating the `tags` portion of the refs without changing
    #       the refs
    #     o Restore the `track` parameter to the branches which you have

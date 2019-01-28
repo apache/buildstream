@@ -373,7 +373,7 @@ class Pipeline():
                     if source._get_consistency() == Consistency.INCONSISTENT:
                         detail += "    {} is missing ref\n".format(source)
                 detail += '\n'
-            detail += "Try tracking these elements first with `bst track`\n"
+            detail += "Try tracking these elements first with `bst source track`\n"
 
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 
@@ -406,7 +406,7 @@ class Pipeline():
                     if source._get_consistency() != Consistency.CACHED:
                         detail += "    {}\n".format(source)
                 detail += '\n'
-            detail += "Try fetching these elements first with `bst fetch`,\n" + \
+            detail += "Try fetching these elements first with `bst source fetch`,\n" + \
                       "or run this command with `--fetch` option\n"
 
             raise PipelineError("Uncached sources", detail=detail, reason="uncached-sources")

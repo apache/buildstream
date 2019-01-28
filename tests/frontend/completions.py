@@ -160,7 +160,7 @@ def test_options(cli, cmd, word_idx, expected):
     ('bst show --deps b', 3, ['build ']),
     ('bst show --deps=b', 2, ['build ']),
     ('bst show --deps r', 3, ['run ']),
-    ('bst track --deps ', 3, ['all ', 'none ']),
+    ('bst source track --deps ', 4, ['all ', 'none ']),
 ])
 def test_option_choice(cli, cmd, word_idx, expected):
     assert_completion(cli, cmd, word_idx, expected)

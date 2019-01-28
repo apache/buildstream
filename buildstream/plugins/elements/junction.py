@@ -79,7 +79,7 @@ depend on a junction element itself.
 
    Therefore, if you require the most up-to-date version of a subproject,
    you must explicitly track the junction element by invoking:
-   `bst track JUNCTION_ELEMENT`.
+   `bst source track JUNCTION_ELEMENT`.
 
    Furthermore, elements within the subproject are also not tracked by default.
    For this, we must specify the `--track-cross-junctions` option. This option
@@ -93,7 +93,7 @@ cached yet. However, they can be fetched explicitly:
 
 .. code::
 
-   bst fetch junction.bst
+   bst source fetch junction.bst
 
 Other commands such as ``bst build`` implicitly fetch junction sources.
 
@@ -146,7 +146,7 @@ class JunctionElement(Element):
 
     def get_unique_key(self):
         # Junctions do not produce artifacts. get_unique_key() implementation
-        # is still required for `bst fetch`.
+        # is still required for `bst source fetch`.
         return 1
 
     def configure_sandbox(self, sandbox):

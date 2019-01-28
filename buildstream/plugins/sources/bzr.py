@@ -46,7 +46,7 @@ bzr - stage files from a bazaar repository
    # but revisions on a branch are of the form
    # <revision-branched-from>.<branch-number>.<revision-since-branching>
    # e.g. 6622.1.6.
-   # The ref must be specified to build, and 'bst track' will update the
+   # The ref must be specified to build, and 'bst source track' will update the
    # revision number to the one on the tip of the branch specified in 'track'.
    ref: 6622
 
