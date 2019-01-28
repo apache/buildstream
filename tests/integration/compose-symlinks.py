@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(
 )
 
 
-# Test that staging a file inside a directory symlink works as expected.
+# Test that staging a file inside a directory symlink fails.
 #
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/270
 @pytest.mark.datafiles(DATA_DIR)
@@ -34,11 +34,6 @@ def test_compose_symlinks(cli, tmpdir, datafiles):
     os.symlink(os.path.join('usr', 'sbin'), symlink_file, target_is_directory=True)
 
     result = cli.run(project=project, args=['build', 'compose-symlinks/compose.bst'])
-    result.assert_success()
 
-    result = cli.run(project=project, args=['artifact', 'checkout', 'compose-symlinks/compose.bst',
-                                            '--directory', checkout])
-    result.assert_success()
-
-    assert set(walk_dir(checkout)) == set(['/sbin', '/usr', '/usr/sbin',
-                                           '/usr/sbin/init', '/usr/sbin/dummy'])
+    assert result.exit_code == -1
+    assert 'Destination is a symlink, not a directory: /sbin' in result.stderr
