@@ -7,7 +7,7 @@ from buildstream._exceptions import ErrorDomain
 from conftest import clean_platform_cache
 
 from tests.testutils import cli_integration as cli, create_artifact_share
-from tests.testutils.site import HAVE_BWRAP, IS_LINUX
+from tests.testutils.site import HAVE_BWRAP, IS_LINUX, HAVE_SANDBOX
 
 
 pytestmark = pytest.mark.integration
@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements', 'element.bst')
@@ -64,7 +64,7 @@ def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dep_path = os.path.join(project, 'elements', 'dep.bst')
@@ -123,7 +123,7 @@ def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, 'target.bst') == 'waiting'
 
 
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("on_error", ("continue", "quit"))
 def test_push_cached_fail(cli, tmpdir, datafiles, on_error):

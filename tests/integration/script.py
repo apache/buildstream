@@ -4,7 +4,7 @@ import pytest
 from buildstream import _yaml
 
 from tests.testutils import cli_integration as cli
-from tests.testutils.site import HAVE_BWRAP, IS_LINUX
+from tests.testutils.site import HAVE_SANDBOX
 
 
 pytestmark = pytest.mark.integration
@@ -31,7 +31,7 @@ def create_script_element(name, path, config={}, variables={}):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -59,7 +59,7 @@ def test_script(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_root(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -91,7 +91,7 @@ def test_script_root(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_no_root(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')
@@ -114,7 +114,7 @@ def test_script_no_root(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_cwd(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -145,7 +145,7 @@ def test_script_cwd(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_layout(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -164,7 +164,7 @@ def test_script_layout(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_regression_cache_corruption(cli, tmpdir, datafiles):
     project = str(datafiles)
     checkout_original = os.path.join(cli.directory, 'checkout-original')
@@ -194,7 +194,7 @@ def test_regression_cache_corruption(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_regression_tmpdir(cli, tmpdir, datafiles):
     project = str(datafiles)
     element_name = 'script/tmpdir.bst'
@@ -204,7 +204,7 @@ def test_regression_tmpdir(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_regression_cache_corruption_2(cli, tmpdir, datafiles):
     project = str(datafiles)
     checkout_original = os.path.join(cli.directory, 'checkout-original')

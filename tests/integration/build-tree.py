@@ -3,7 +3,7 @@ import pytest
 import shutil
 
 from tests.testutils import cli, cli_integration, create_artifact_share
-from tests.testutils.site import HAVE_BWRAP, IS_LINUX
+from tests.testutils.site import HAVE_SANDBOX
 from buildstream._exceptions import ErrorDomain
 
 
@@ -17,7 +17,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_staged(cli_integration, tmpdir, datafiles):
     # We can only test the non interacitve case
     # The non interactive case defaults to not using buildtrees
@@ -35,7 +35,7 @@ def test_buildtree_staged(cli_integration, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_staged_forced_true(cli_integration, tmpdir, datafiles):
     # Test that if we ask for a build tree it is there.
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -52,7 +52,7 @@ def test_buildtree_staged_forced_true(cli_integration, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_staged_if_available(cli_integration, tmpdir, datafiles):
     # Test that a build tree can be correctly detected.
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -69,7 +69,7 @@ def test_buildtree_staged_if_available(cli_integration, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_staged_forced_false(cli_integration, tmpdir, datafiles):
     # Test that if we ask not to have a build tree it is not there
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -87,7 +87,7 @@ def test_buildtree_staged_forced_false(cli_integration, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_from_failure(cli_integration, tmpdir, datafiles):
     # Test that we can use a build tree after a failure
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -108,7 +108,7 @@ def test_buildtree_from_failure(cli_integration, tmpdir, datafiles):
 # Check that build shells work when pulled from a remote cache
 # This is to roughly simulate remote execution
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_pulled(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
@@ -143,7 +143,7 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
 
 # This test checks for correct behaviour if a buildtree is not present in the local cache.
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_options(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
