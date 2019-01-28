@@ -1,8 +1,8 @@
-Click
+Click >= 7.0
 grpcio >= 1.10
 Jinja2 >= 2.10
 pluginbase
-protobuf >= 3.5
+protobuf >= 3.6
 psutil
 # According to ruamel.yaml's PyPI page, we are suppose to use
 # "<=0.15" in production until 0.15 becomes API stable.
