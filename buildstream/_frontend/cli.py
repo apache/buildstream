@@ -526,7 +526,7 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
     else:
         scope = Scope.RUN
 
-    use_buildtree = False
+    use_buildtree = None
 
     with app.initialized():
         if not element:
@@ -534,7 +534,8 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
-        dependencies = app.stream.load_selection((element,), selection=PipelineSelection.NONE)
+        dependencies = app.stream.load_selection((element,), selection=PipelineSelection.NONE,
+                                                 use_artifact_config=True)
         element = dependencies[0]
         prompt = app.shell_prompt(element)
         mounts = [
@@ -543,20 +544,31 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
         ]
 
         cached = element._cached_buildtree()
-        if cli_buildtree == "always":
-            if cached:
-                use_buildtree = True
-            else:
-                raise AppError("No buildtree is cached but the use buildtree option was specified")
-        elif cli_buildtree == "never":
-            pass
-        elif cli_buildtree == "try":
-            use_buildtree = cached
+        if cli_buildtree in ("always", "try"):
+            use_buildtree = cli_buildtree
+            if not cached and use_buildtree == "always":
+                click.echo("WARNING: buildtree is not cached locally, will attempt to pull from available remotes",
+                           err=True)
         else:
-            if app.interactive and cached:
-                use_buildtree = bool(click.confirm('Do you want to use the cached buildtree?'))
+            # If the value has defaulted to ask and in non interactive mode, don't consider the buildtree, this
+            # being the default behaviour of the command
+            if app.interactive and cli_buildtree == "ask":
+                if cached and bool(click.confirm('Do you want to use the cached buildtree?')):
+                    use_buildtree = "always"
+                elif not cached:
+                    try:
+                        choice = click.prompt("Do you want to pull & use a cached buildtree?",
+                                              type=click.Choice(['try', 'always', 'never']),
+                                              err=True, show_choices=True)
+                    except click.Abort:
+                        click.echo('Aborting', err=True)
+                        sys.exit(-1)
+
+                    if choice != "never":
+                        use_buildtree = choice
+
         if use_buildtree and not element._cached_success():
-            click.echo("Warning: using a buildtree from a failed build.")
+            click.echo("WARNING: using a buildtree from a failed build.", err=True)
 
         try:
             exitcode = app.stream.shell(element, scope, prompt,
