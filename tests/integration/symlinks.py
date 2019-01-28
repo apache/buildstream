@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_absolute_symlinks_made_relative(cli, tmpdir, datafiles):
+def test_absolute_symlinks(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'symlinks/dangling-symlink.bst'
@@ -34,12 +34,9 @@ def test_absolute_symlinks_made_relative(cli, tmpdir, datafiles):
     symlink = os.path.join(checkout, 'opt', 'orgname')
     assert os.path.islink(symlink)
 
-    # The symlink is created to point to /usr/orgs/orgname, but BuildStream
-    # should make all symlink target relative when assembling the artifact.
-    # This is done so that nothing points outside the sandbox and so that
-    # staging artifacts in locations other than / doesn't cause the links to
-    # all break.
-    assert os.readlink(symlink) == '../usr/orgs/orgname'
+    # The symlink is created to point to /usr/orgs/orgname and BuildStream
+    # should not mangle symlinks.
+    assert os.readlink(symlink) == '/usr/orgs/orgname'
 
 
 @pytest.mark.datafiles(DATA_DIR)

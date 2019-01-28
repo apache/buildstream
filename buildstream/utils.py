@@ -34,7 +34,6 @@ import string
 import subprocess
 import tempfile
 import itertools
-import functools
 from contextlib import contextmanager
 
 import psutil
@@ -767,11 +766,6 @@ def _copy_directories(srcdir, destdir, target):
                                 'directory expected: {}'.format(old_dir))
 
 
-@functools.lru_cache(maxsize=64)
-def _resolve_symlinks(path):
-    return os.path.realpath(path)
-
-
 # _ensure_real_directory()
 #
 # Ensure `path` is a real directory and there are no symlink components.
@@ -872,7 +866,6 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
                 continue
 
             target = os.readlink(srcpath)
-            target = _relative_symlink_target(destdir, destpath, target)
             os.symlink(target, destpath)
 
         elif stat.S_ISREG(mode):
@@ -908,51 +901,6 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
     # Write directory permissions now that all files have been written
     for d, perms in permissions:
         os.chmod(d, perms)
-
-
-# _relative_symlink_target()
-#
-# Fetches a relative path for symlink with an absolute target
-#
-# @root:    The staging area root location
-# @symlink: Location of the symlink in staging area (including the root path)
-# @target:  The symbolic link target, which may be an absolute path
-#
-# If @target is an absolute path, a relative path from the symbolic link
-# location will be returned, otherwise if @target is a relative path, it will
-# be returned unchanged.
-#
-# Using relative symlinks helps to keep the target self contained when staging
-# files onto the target.
-#
-def _relative_symlink_target(root, symlink, target):
-
-    if os.path.isabs(target):
-        # First fix the input a little, the symlink itself must not have a
-        # trailing slash, otherwise we fail to remove the symlink filename
-        # from its directory components in os.path.split()
-        #
-        # The absolute target filename must have its leading separator
-        # removed, otherwise os.path.join() will discard the prefix
-        symlink = symlink.rstrip(os.path.sep)
-        target = target.lstrip(os.path.sep)
-
-        # We want a relative path from the directory in which symlink
-        # is located, not from the symlink itself.
-        symlinkdir, _ = os.path.split(_resolve_symlinks(symlink))
-
-        # Create a full path to the target, including the leading staging
-        # directory
-        fulltarget = os.path.join(_resolve_symlinks(root), target)
-
-        # now get the relative path from the directory where the symlink
-        # is located within the staging root, to the target within the same
-        # staging root
-        newtarget = os.path.relpath(fulltarget, symlinkdir)
-
-        return newtarget
-    else:
-        return target
 
 
 # _set_deterministic_user()
