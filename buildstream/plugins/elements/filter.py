@@ -36,9 +36,111 @@ When workspaces are opened, closed or reset on a filter element, or this
 element is tracked, the filter element will transparently pass on the command
 to its parent element (the sole build-dependency).
 
-The default configuration and possible options are as such:
-  .. literalinclude:: ../../../buildstream/plugins/elements/filter.yaml
-     :language: yaml
+Example
+-------
+Consider a simple import element, ``import.bst`` which imports the local files
+'foo', 'bar' and 'baz' (each stored in ``files/``, relative to the project's root):
+
+.. code:: yaml
+
+   kind: import
+
+   # Specify sources to import
+   sources:
+   - kind: local
+     path: files
+
+   # Specify public domain data, visible to other elements
+   public:
+     bst:
+       split-rules:
+         foo:
+         - /foo
+         bar:
+         - /bar
+
+.. note::
+
+   We can make an element's metadata visible to all reverse dependencies by making use
+   of the ``public:`` field. See the :ref:`public data documentation <format_public>`
+   for more information.
+
+In this example, ``import.bst`` will serve as the 'parent' of the filter element, thus
+its output will be filtered. It is important to understand that the artifact of the
+above element will contain the files: 'foo', 'bar' and 'baz'.
+
+Now, to produce an element whose artifact contains the file 'foo', and exlusively 'foo',
+we can define the following filter, ``filter-foo.bst``:
+
+.. code:: yaml
+
+   kind: filter
+
+   # Declare the sole build-dependency of the filter element
+   depends:
+   - filename: import.bst
+     type: build
+
+   # Declare a list of domains to include in the filter's artifact
+   config:
+     include:
+     - foo
+
+.. note::
+
+   We can also specify build-dependencies with a 'build-depends' field which has been
+   available since :ref:`format version 14 <project_format_version>`. See the
+   :ref:`Build-Depends documentation <format_build_depends>` for more detail.
+
+It should be noted that an 'empty' ``include:`` list would, by default, include all
+split-rules specified in the parent element, which, in this example, would be the
+files 'foo' and 'bar' (the file 'baz' was not covered by any split rules).
+
+Equally, we can use the ``exclude:`` statement to create the same artifact (which
+only contains the file 'foo') by declaring the following element, ``exclude-bar.bst``:
+
+.. code:: yaml
+
+   kind: filter
+
+   # Declare the sole build-dependency of the filter element
+   depends:
+   - filename: import.bst
+     type: build
+
+   # Declare a list of domains to exclude in the filter's artifact
+   config:
+     exclude:
+     - bar
+
+In addition to the ``include:`` and ``exclude:`` fields, there exists an ``include-orphans:``
+(Boolean) field, which defaults to ``False``. This will determine whether to include files
+which are not present in the 'split-rules'. For example, if we wanted to filter out all files
+which are not included as split rules we can define the following element, ``filter-misc.bst``:
+
+.. code:: yaml
+
+   kind: filter
+
+   # Declare the sole build-dependency of the filter element
+   depends:
+   - filename: import.bst
+     type: build
+
+   # Filter out all files which are not declared as split rules
+   config:
+     exclude:
+     - foo
+     - bar
+     include-orphans: True
+
+The artifact of ``filter-misc.bst`` will only contain the file 'baz'.
+
+Below is more information regarding the the default configurations and possible options
+of the filter element:
+
+.. literalinclude:: ../../../buildstream/plugins/elements/filter.yaml
+   :language: yaml
 """
 
 from buildstream import Element, ElementError, Scope
