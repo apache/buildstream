@@ -20,21 +20,21 @@
 """
 filter - Extract a subset of files from another element
 =======================================================
-This filters another element by producing an output that is a subset of
-the filtered element.
+Filter another element by producing an output that is a subset of
+the parent element's output. Subsets are defined by the parent element's
+:ref:`split rules <public_split_rules>`.
 
-To specify the element to filter, specify it as the one and only build
-dependency to filter. See :ref:`Dependencies <format_dependencies>`
-for what dependencies are and how to specify them.
+Overview
+--------
+A filter element must have exactly one *build* dependency, where said
+dependency is the 'parent' element which we would like to filter.
+Runtime dependencies may also be specified, which can be useful to propagate
+forward from this filter element onto its reverse dependencies.
+See :ref:`Dependencies <format_dependencies>` to see how we specify dependencies.
 
-Dependencies aside from the filtered element may be specified, but
-they must be runtime dependencies only. This can be useful to propagate
-runtime dependencies forward from this filter element onto its reverse
-dependencies.
-
-When workspaces are opened, closed or reset on this element, or this
-element is tracked, instead of erroring due to a lack of sources, this
-element will transparently pass on the command to its sole build-dependency.
+When workspaces are opened, closed or reset on a filter element, or this
+element is tracked, the filter element will transparently pass on the command
+to its parent element (the sole build-dependency).
 
 The default configuration and possible options are as such:
   .. literalinclude:: ../../../buildstream/plugins/elements/filter.yaml
