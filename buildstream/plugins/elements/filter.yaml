@@ -6,9 +6,8 @@ config:
   # they were defined as public data in the parent
   # element's 'split-rules'.
   #
-  # Since domains can be added, it is not an error to
-  # specify domains which may not exist for all of the
-  # elements in this composition.
+  # If a domain is specified that does not exist, the
+  # filter element will fail to build.
   #
   # The default empty list indicates that all domains
   # of the parent's artifact should be included.

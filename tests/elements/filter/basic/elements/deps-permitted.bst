@@ -1,6 +1,6 @@
 kind: filter
 depends:
-- filename: output-include.bst
+- filename: input.bst
   type: build
 - filename: output-exclude.bst
   type: runtime

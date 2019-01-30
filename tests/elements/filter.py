@@ -484,3 +484,14 @@ def test_filter_include_with_indirect_deps(datafiles, cli, tmpdir):
     # indirect dependencies shouldn't be staged and filtered
     assert not os.path.exists(os.path.join(checkout, "foo"))
     assert not os.path.exists(os.path.join(checkout, "bar"))
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_filter_fails_for_nonexisting_domain(datafiles, cli, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=['build', 'output-include-nonexistent-domain.bst'])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+
+    error = "Unknown domains were used in output-include-nonexistent-domain.bst [line 7 column 2]"
+    assert error in result.stderr
+    assert '- unknown_file' in result.stderr
