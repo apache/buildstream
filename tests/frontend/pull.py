@@ -408,3 +408,56 @@ def test_pull_missing_notifies_user(caplog, cli, tmpdir, datafiles):
 
         assert "INFO    Remote ({}) does not have".format(share.repo) in result.stderr
         assert "SKIPPED Pull" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_remote_option(caplog, cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    caplog.set_level(1)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as shareuser,\
+        create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as shareproject,\
+        create_artifact_share(os.path.join(str(tmpdir), 'artifactshare3')) as sharecli:
+
+        # Add shareproject repo url to project.conf
+        with open(os.path.join(project, "project.conf"), "a") as projconf:
+            projconf.write("artifacts:\n  url: {}\n  push: True".format(shareproject.repo))
+
+        # Configure shareuser remote in user conf
+        cli.configure({
+            'artifacts': {'url': shareuser.repo, 'push': True}
+        })
+
+        # Push the artifacts to the shareuser and shareproject remotes.
+        # Assert that shareuser and shareproject have the artfifacts cached,
+        # but sharecli doesn't, then delete locally cached elements
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+        all_elements = ['target.bst', 'import-bin.bst', 'compose-all.bst']
+        for element_name in all_elements:
+            assert element_name in result.get_pushed_elements()
+            assert_not_shared(cli, sharecli, project, element_name)
+            assert_shared(cli, shareuser, project, element_name)
+            assert_shared(cli, shareproject, project, element_name)
+            cli.remove_artifact_from_cache(project, element_name)
+
+        # Now check that a build with cli set as sharecli results in nothing being pulled,
+        # as it doesn't have them cached and shareuser/shareproject should be ignored. This
+        # will however result in the artifacts being built and pushed to it
+        result = cli.run(project=project, args=['build', '--remote', sharecli.repo, 'target.bst'])
+        result.assert_success()
+        for element_name in all_elements:
+            assert element_name not in result.get_pulled_elements()
+            assert_shared(cli, sharecli, project, element_name)
+            cli.remove_artifact_from_cache(project, element_name)
+
+        # Now check that a clean build with cli set as sharecli should result in artifacts only
+        # being pulled from it, as that was provided via the cli and is populated
+        result = cli.run(project=project, args=['build', '--remote', sharecli.repo, 'target.bst'])
+        result.assert_success()
+        for element_name in all_elements:
+            assert cli.get_element_state(project, element_name) == 'cached'
+            assert element_name in result.get_pulled_elements()
+        assert shareproject.repo not in result.stderr
+        assert shareuser.repo not in result.stderr
+        assert sharecli.repo in result.stderr

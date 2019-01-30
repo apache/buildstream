@@ -141,7 +141,8 @@ def test_commands(cli, cmd, word_idx, expected):
     ('bst --no-colors build -', 3, ['--all ', '--track ', '--track-all ',
                                     '--track-except ',
                                     '--track-cross-junctions ', '-J ',
-                                    '--track-save ']),
+                                    '--track-save ',
+                                    '--remote ', '-r ']),
 
     # Test the behavior of completing after an option that has a
     # parameter that cannot be completed, vs an option that has

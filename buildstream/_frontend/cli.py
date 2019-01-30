@@ -338,10 +338,12 @@ def init(app, project_name, format_version, element_path, force):
               help="Allow tracking to cross junction boundaries")
 @click.option('--track-save', default=False, is_flag=True,
               help="Deprecated: This is ignored")
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions):
+def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions, remote):
     """Build elements in a pipeline
 
     Specifying no elements will result in building the default targets
@@ -376,7 +378,8 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
                          track_except=track_except,
                          track_cross_junctions=track_cross_junctions,
                          ignore_junction_targets=ignore_junction_targets,
-                         build_all=all_)
+                         build_all=all_,
+                         remote=remote)
 
 
 ##################################################################
@@ -1012,7 +1015,7 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, el
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['none', 'all']),
               help='The dependency artifacts to pull (default: none)')
-@click.option('--remote', '-r',
+@click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
