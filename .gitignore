@@ -2,6 +2,9 @@
 buildstream/**/*.pyc
 tests/**/*.pyc
 
+# Build output directory
+build
+
 # Setuptools distribution folder.
 /dist/
 
