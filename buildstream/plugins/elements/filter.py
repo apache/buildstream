@@ -47,6 +47,8 @@ from buildstream import Element, ElementError, Scope
 class FilterElement(Element):
     # pylint: disable=attribute-defined-outside-init
 
+    BST_ARTIFACT_VERSION = 1
+
     # The filter element's output is its dependencies, so
     # we must rebuild if the dependencies change even when
     # not in strict build plans.
@@ -102,7 +104,7 @@ class FilterElement(Element):
 
     def assemble(self, sandbox):
         with self.timed_activity("Staging artifact", silent_nested=True):
-            for dep in self.dependencies(Scope.BUILD):
+            for dep in self.dependencies(Scope.BUILD, recurse=False):
                 dep.stage_artifact(sandbox, include=self.include,
                                    exclude=self.exclude, orphans=self.include_orphans)
         return ""

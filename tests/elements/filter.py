@@ -464,3 +464,23 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
     assert "ref" not in new_input["sources"][0]
     new_input2 = _yaml.load(input2_file)
     assert new_input2["sources"][0]["ref"] == ref
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_filter_include_with_indirect_deps(datafiles, cli, tmpdir):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    result = cli.run(project=project, args=[
+        'build', 'output-include-with-indirect-deps.bst'])
+    result.assert_success()
+
+    checkout = os.path.join(tmpdir.dirname, tmpdir.basename, 'checkout')
+    result = cli.run(project=project, args=[
+        'artifact', 'checkout', 'output-include-with-indirect-deps.bst', '--directory', checkout])
+    result.assert_success()
+
+    # direct dependencies should be staged and filtered
+    assert os.path.exists(os.path.join(checkout, "baz"))
+
+    # indirect dependencies shouldn't be staged and filtered
+    assert not os.path.exists(os.path.join(checkout, "foo"))
+    assert not os.path.exists(os.path.join(checkout, "bar"))
