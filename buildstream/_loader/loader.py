@@ -19,7 +19,6 @@
 
 import os
 from functools import cmp_to_key
-from collections import namedtuple
 from collections.abc import Mapping
 import tempfile
 import shutil
@@ -32,8 +31,8 @@ from .._profile import Topics, profile_start, profile_end
 from .._includes import Includes
 from .._yamlcache import YamlCache
 
-from .types import Symbol, Dependency
-from .loadelement import LoadElement
+from .types import Symbol
+from .loadelement import LoadElement, _extract_depends_from_node
 from . import MetaElement
 from . import MetaSource
 from ..types import CoreWarnings
@@ -112,7 +111,7 @@ class Loader():
 
         # First pass, recursively load files and populate our table of LoadElements
         #
-        deps = []
+        target_elements = []
 
         # XXX This will need to be changed to the context's top-level project if this method
         # is ever used for subprojects
@@ -122,10 +121,10 @@ class Loader():
         with YamlCache.open(self._context, cache_file) as yaml_cache:
             for target in targets:
                 profile_start(Topics.LOAD_PROJECT, target)
-                junction, name, loader = self._parse_name(target, rewritable, ticker,
-                                                          fetch_subprojects=fetch_subprojects)
-                loader._load_file(name, rewritable, ticker, fetch_subprojects, yaml_cache)
-                deps.append(Dependency(name, junction=junction))
+                _junction, name, loader = self._parse_name(target, rewritable, ticker,
+                                                           fetch_subprojects=fetch_subprojects)
+                element = loader._load_file(name, rewritable, ticker, fetch_subprojects, yaml_cache)
+                target_elements.append(element)
                 profile_end(Topics.LOAD_PROJECT, target)
 
         #
@@ -134,29 +133,30 @@ class Loader():
 
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
-        DummyTarget = namedtuple('DummyTarget', ['name', 'full_name', 'deps'])
-
-        dummy = DummyTarget(name='', full_name='', deps=deps)
-        self._elements[''] = dummy
+        dummy_target = LoadElement("", "", self)
+        dummy_target.dependencies.extend(
+            LoadElement.Dependency(element, Symbol.RUNTIME)
+            for element in target_elements
+        )
 
         profile_key = "_".join(t for t in targets)
         profile_start(Topics.CIRCULAR_CHECK, profile_key)
-        self._check_circular_deps('')
+        self._check_circular_deps(dummy_target)
         profile_end(Topics.CIRCULAR_CHECK, profile_key)
 
         ret = []
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
-        for target in targets:
-            profile_start(Topics.SORT_DEPENDENCIES, target)
-            junction, name, loader = self._parse_name(target, rewritable, ticker,
-                                                      fetch_subprojects=fetch_subprojects)
-            loader._sort_dependencies(name)
-            profile_end(Topics.SORT_DEPENDENCIES, target)
+        for element in target_elements:
+            loader = element._loader
+            profile_start(Topics.SORT_DEPENDENCIES, element.name)
+            loader._sort_dependencies(element)
+            profile_end(Topics.SORT_DEPENDENCIES, element.name)
             # Finally, wrap what we have into LoadElements and return the target
             #
-            ret.append(loader._collect_element(name))
+            # TODO: we could pass element directly
+            ret.append(loader._collect_element(element.name))
 
         return ret
 
@@ -183,22 +183,6 @@ class Loader():
         if self._tempdir.startswith(self._context.builddir + os.sep):
             if os.path.exists(self._tempdir):
                 shutil.rmtree(self._tempdir)
-
-    # get_element_for_dep():
-    #
-    # Gets a cached LoadElement by Dependency object
-    #
-    # This is used by LoadElement
-    #
-    # Args:
-    #    dep (Dependency): The dependency to search for
-    #
-    # Returns:
-    #    (LoadElement): The cached LoadElement
-    #
-    def get_element_for_dep(self, dep):
-        loader = self._get_loader_for_dep(dep)
-        return loader._elements[dep.name]
 
     ###########################################
     #            Private Methods              #
@@ -272,8 +256,10 @@ class Loader():
 
         self._elements[filename] = element
 
+        dependencies = _extract_depends_from_node(node)
+
         # Load all dependency files for the new LoadElement
-        for dep in element.deps:
+        for dep in dependencies:
             if dep.junction:
                 self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
@@ -288,7 +274,9 @@ class Loader():
                                 "{}: Cannot depend on junction"
                                 .format(dep.provenance))
 
-        deps_names = [dep.name for dep in element.deps]
+            element.dependencies.append(LoadElement.Dependency(dep_element, dep.dep_type))
+
+        deps_names = [dep.name for dep in dependencies]
         self._warn_invalid_elements(deps_names)
 
         return element
@@ -299,12 +287,12 @@ class Loader():
     # dependencies already resolved.
     #
     # Args:
-    #    element_name (str): The element-path relative element name to check
+    #    element (str): The element to check
     #
     # Raises:
     #    (LoadError): In case there was a circular dependency error
     #
-    def _check_circular_deps(self, element_name, check_elements=None, validated=None, sequence=None):
+    def _check_circular_deps(self, element, check_elements=None, validated=None, sequence=None):
 
         if check_elements is None:
             check_elements = {}
@@ -313,38 +301,31 @@ class Loader():
         if sequence is None:
             sequence = []
 
-        element = self._elements[element_name]
-
-        # element name must be unique across projects
-        # to be usable as key for the check_elements and validated dicts
-        element_name = element.full_name
-
         # Skip already validated branches
-        if validated.get(element_name) is not None:
+        if validated.get(element) is not None:
             return
 
-        if check_elements.get(element_name) is not None:
+        if check_elements.get(element) is not None:
             # Create `chain`, the loop of element dependencies from this
             # element back to itself, by trimming everything before this
             # element from the sequence under consideration.
-            chain = sequence[sequence.index(element_name):]
-            chain.append(element_name)
+            chain = sequence[sequence.index(element.full_name):]
+            chain.append(element.full_name)
             raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
                             ("Circular dependency detected at element: {}\n" +
                              "Dependency chain: {}")
-                            .format(element.name, " -> ".join(chain)))
+                            .format(element.full_name, " -> ".join(chain)))
 
         # Push / Check each dependency / Pop
-        check_elements[element_name] = True
-        sequence.append(element_name)
-        for dep in element.deps:
-            loader = self._get_loader_for_dep(dep)
-            loader._check_circular_deps(dep.name, check_elements, validated, sequence)
-        del check_elements[element_name]
+        check_elements[element] = True
+        sequence.append(element.full_name)
+        for dep in element.dependencies:
+            dep.element._loader._check_circular_deps(dep.element, check_elements, validated, sequence)
+        del check_elements[element]
         sequence.pop()
 
         # Eliminate duplicate paths
-        validated[element_name] = True
+        validated[element] = True
 
     # _sort_dependencies():
     #
@@ -357,28 +338,21 @@ class Loader():
     # sorts throughout the build process.
     #
     # Args:
-    #    element_name (str): The element-path relative element name to sort
+    #    element (LoadElement): The element to sort
     #
-    def _sort_dependencies(self, element_name, visited=None):
+    def _sort_dependencies(self, element, visited=None):
         if visited is None:
-            visited = {}
+            visited = set()
 
-        element = self._elements[element_name]
-
-        # element name must be unique across projects
-        # to be usable as key for the visited dict
-        element_name = element.full_name
-
-        if visited.get(element_name) is not None:
+        if element in visited:
             return
 
-        for dep in element.deps:
-            loader = self._get_loader_for_dep(dep)
-            loader._sort_dependencies(dep.name, visited=visited)
+        for dep in element.dependencies:
+            dep.element._loader._sort_dependencies(dep.element, visited=visited)
 
         def dependency_cmp(dep_a, dep_b):
-            element_a = self.get_element_for_dep(dep_a)
-            element_b = self.get_element_for_dep(dep_b)
+            element_a = dep_a.element
+            element_b = dep_b.element
 
             # Sort on inter element dependency first
             if element_a.depends(element_b):
@@ -395,21 +369,21 @@ class Loader():
                     return -1
 
             # All things being equal, string comparison.
-            if dep_a.name > dep_b.name:
+            if element_a.name > element_b.name:
                 return 1
-            elif dep_a.name < dep_b.name:
+            elif element_a.name < element_b.name:
                 return -1
 
             # Sort local elements before junction elements
             # and use string comparison between junction elements
-            if dep_a.junction and dep_b.junction:
-                if dep_a.junction > dep_b.junction:
+            if element_a.junction and element_b.junction:
+                if element_a.junction > element_b.junction:
                     return 1
-                elif dep_a.junction < dep_b.junction:
+                elif element_a.junction < element_b.junction:
                     return -1
-            elif dep_a.junction:
+            elif element_a.junction:
                 return -1
-            elif dep_b.junction:
+            elif element_b.junction:
                 return 1
 
             # This wont ever happen
@@ -418,9 +392,9 @@ class Loader():
         # Now dependency sort, we ensure that if any direct dependency
         # directly or indirectly depends on another direct dependency,
         # it is found later in the list.
-        element.deps.sort(key=cmp_to_key(dependency_cmp))
+        element.dependencies.sort(key=cmp_to_key(dependency_cmp))
 
-        visited[element_name] = True
+        visited.add(element)
 
     # _collect_element()
     #
@@ -478,9 +452,9 @@ class Loader():
         self._meta_elements[element_name] = meta_element
 
         # Descend
-        for dep in element.deps:
-            loader = self._get_loader_for_dep(dep)
-            meta_dep = loader._collect_element(dep.name)
+        for dep in element.dependencies:
+            loader = dep.element._loader
+            meta_dep = loader._collect_element(dep.element.name)
             if dep.dep_type != 'runtime':
                 meta_element.build_dependencies.append(meta_dep)
             if dep.dep_type != 'build':
@@ -600,23 +574,6 @@ class Loader():
         self._loaders[filename] = loader
 
         return loader
-
-    # _get_loader_for_dep():
-    #
-    # Gets the appropriate Loader for a Dependency object
-    #
-    # Args:
-    #    dep (Dependency): A Dependency object
-    #
-    # Returns:
-    #    (Loader): The Loader object to use for this Dependency
-    #
-    def _get_loader_for_dep(self, dep):
-        if dep.junction:
-            # junction dependency, delegate to appropriate loader
-            return self._loaders[dep.junction]
-        else:
-            return self
 
     # _parse_name():
     #
