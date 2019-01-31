@@ -400,3 +400,28 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
         assert result.exit_code == -1
 
     shutil.rmtree(project_path)
+
+
+###############################################################
+#                   Testing format symbols                    #
+###############################################################
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
+@pytest.mark.parametrize("dep_kind, expected_deps", [
+    ('%{deps}', '[import-dev.bst, import-bin.bst]'),
+    ('%{build-deps}', '[import-dev.bst]'),
+    ('%{runtime-deps}', '[import-bin.bst]')
+])
+def test_format_deps(cli, datafiles, dep_kind, expected_deps):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    target = 'checkout-deps.bst'
+    result = cli.run(project=project, silent=True, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{name}: ' + dep_kind,
+        target])
+    result.assert_success()
+
+    expected = '{name}: {deps}'.format(name=target, deps=expected_deps)
+    if result.output.strip() != expected:
+        raise AssertionError("Expected output:\n{}\nInstead received output:\n{}"
+                             .format(expected, result.output))
