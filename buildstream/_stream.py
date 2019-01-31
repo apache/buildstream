@@ -110,19 +110,21 @@ class Stream():
     def load_selection(self, targets, *,
                        selection=PipelineSelection.NONE,
                        except_targets=(),
-                       use_artifact_config=False):
+                       use_artifact_config=False,
+                       load_refs=False):
 
         profile_start(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        elements, _ = self._load(targets, (),
-                                 selection=selection,
-                                 except_targets=except_targets,
-                                 fetch_subprojects=False,
-                                 use_artifact_config=use_artifact_config)
+        target_objects, _ = self._load(targets, (),
+                                       selection=selection,
+                                       except_targets=except_targets,
+                                       fetch_subprojects=False,
+                                       use_artifact_config=use_artifact_config,
+                                       load_refs=load_refs)
 
         profile_end(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        return elements
+        return target_objects
 
     # shell()
     #
@@ -924,25 +926,41 @@ class Stream():
               use_artifact_config=False,
               artifact_remote_url=None,
               fetch_subprojects=False,
-              dynamic_plan=False):
+              dynamic_plan=False,
+              load_refs=False):
+
+        # Obtain cached refs and project element path needed to classify artifacts
+        cas = self._artifacts.cas
+        cached_refs = cas.list_refs()
+        project_element_path = self._project.element_path
+
+        # Classify element and artifact strings
+        target_elements, target_artifacts = self._classify_artifacts(targets, cached_refs, project_element_path)
+
+        if target_artifacts and not load_refs:
+            detail = '\n'.join(target_artifacts)
+            raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
 
         # Load rewritable if we have any tracking selection to make
         rewritable = False
         if track_targets:
             rewritable = True
 
-        # Load all targets
+        # Load all target elements
         elements, except_elements, track_elements, track_except_elements = \
-            self._pipeline.load([targets, except_targets, track_targets, track_except_targets],
+            self._pipeline.load([target_elements, except_targets, track_targets, track_except_targets],
                                 rewritable=rewritable,
                                 fetch_subprojects=fetch_subprojects)
+
+        # Obtain the ArtifactElement objects
+        artifacts = [self._project.create_artifact_element(ref) for ref in target_artifacts]
 
         # Optionally filter out junction elements
         if ignore_junction_targets:
             elements = [e for e in elements if e.get_kind() != 'junction']
 
         # Hold on to the targets
-        self.targets = elements
+        self.targets = elements + artifacts
 
         # Here we should raise an error if the track_elements targets
         # are not dependencies of the primary targets, this is not
@@ -999,9 +1017,9 @@ class Stream():
 
         # Now move on to loading primary selection.
         #
-        self._pipeline.resolve_elements(elements)
-        selected = self._pipeline.get_selection(elements, selection, silent=False)
-        selected = self._pipeline.except_elements(elements,
+        self._pipeline.resolve_elements(self.targets)
+        selected = self._pipeline.get_selection(self.targets, selection, silent=False)
+        selected = self._pipeline.except_elements(self.targets,
                                                   selected,
                                                   except_elements)
 
