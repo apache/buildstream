@@ -2329,6 +2329,8 @@ class Element(Plugin):
         defaults['public'] = element_public
 
     def __init_defaults(self, plugin_conf):
+        if plugin_conf is None:
+            return
 
         # Defaults are loaded once per class and then reused
         #
