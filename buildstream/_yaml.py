@@ -24,10 +24,12 @@ from copy import deepcopy
 from contextlib import ExitStack
 from pathlib import Path
 
-from ruamel import yaml
+# from ruamel import yaml as ryaml
 from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
 from ruamel.yaml.constructor import RoundTripConstructor
 from ._exceptions import LoadError, LoadErrorReason
+
+import yaml
 
 # This overrides the ruamel constructor to treat everything as a string
 RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:int', RoundTripConstructor.construct_yaml_str)
@@ -222,7 +224,8 @@ def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=
 def load_data(data, file=None, copy_tree=False):
 
     try:
-        contents = yaml.load(data, yaml.loader.RoundTripLoader, preserve_quotes=True)
+        # contents = ryaml.load(data, ryaml.loader.RoundTripLoader, preserve_quotes=True)
+        contents = yaml.load(data, Loader=yaml.CLoader)
     except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark)) from e
@@ -236,7 +239,8 @@ def load_data(data, file=None, copy_tree=False):
                             "YAML file has content of type '{}' instead of expected type 'dict': {}"
                             .format(type(contents).__name__, file.name))
 
-    return node_decorated_copy(file, contents, copy_tree=copy_tree)
+    # return node_decorated_copy(file, contents, copy_tree=copy_tree)
+    return contents
 
 
 # Dumps a previously loaded YAML node to a file
@@ -273,7 +277,7 @@ def node_decorated_copy(filename, toplevel, copy_tree=False):
     else:
         result = toplevel
 
-    node_decorate_dict(filename, result, toplevel, toplevel)
+    # node_decorate_dict(filename, result, toplevel, toplevel)
 
     return result
 
@@ -554,8 +558,8 @@ def is_ruamel_str(value):
 
     if isinstance(value, str):
         return True
-    elif isinstance(value, yaml.scalarstring.ScalarString):
-        return True
+    #elif isinstance(value, yaml.scalarstring.ScalarString):
+    #    return True
 
     return False
 
@@ -830,8 +834,8 @@ def composite_list(target_node, source_node, key):
 # configurations.
 #
 def composite_dict(target, source, path=None):
-    target_provenance = ensure_provenance(target)
-    source_provenance = ensure_provenance(source)
+    # target_provenance = ensure_provenance(target)
+    # source_provenance = ensure_provenance(source)
 
     for key, source_value in node_items(source):
 
@@ -860,7 +864,7 @@ def composite_dict(target, source, path=None):
                     target_value[PROVENANCE_KEY] = value_provenance.clone()
 
                 # Add a new provenance member element to the containing dict
-                target_provenance.members[key] = source_provenance.members[key]
+                # target_provenance.members[key] = source_provenance.members[key]
 
             if not isinstance(target_value, collections.abc.Mapping):
                 raise CompositeTypeError(thispath, type(target_value), type(source_value))
@@ -879,7 +883,7 @@ def composite_dict(target, source, path=None):
                     raise CompositeTypeError(thispath, type(target_value), type(source_value))
 
             # Overwrite simple values, lists and mappings have already been handled
-            target_provenance.members[key] = source_provenance.members[key].clone()
+            # target_provenance.members[key] = source_provenance.members[key].clone()
             target[key] = source_value
 
 
