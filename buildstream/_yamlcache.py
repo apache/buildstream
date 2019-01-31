@@ -127,15 +127,14 @@ class YamlCache():
     # Args:
     #    project (Project) or None: The project this file is in, if it exists.
     #    filepath (str): The absolute path to the file.
-    #    contents (str): The contents of the file to be cached
     #    copy_tree (bool): Whether the data should make a copy when it's being generated
     #                      (i.e. exactly as when called in yaml)
     #
     # Returns:
     #    (decorated dict): The parsed yaml from the cache, or None if the file isn't in the cache.
     #    (str):            The key used to look up the parsed yaml in the cache
-    def get(self, project, filepath, contents, copy_tree):
-        key = self._calculate_key(contents, copy_tree)
+    def get(self, project, filepath, copy_tree):
+        key = self._calculate_key(project, filepath, copy_tree)
         data = self._get(project, filepath, key)
         return data, key
 
@@ -146,12 +145,11 @@ class YamlCache():
     # Args:
     #    project (Project): The project this file is in.
     #    filepath (str): The path to the file.
-    #    contents (str): The contents of the file that has been cached
     #    copy_tree (bool): Whether the data should make a copy when it's being generated
     #                      (i.e. exactly as when called in yaml)
     #    value (decorated dict): The data to put into the cache.
-    def put(self, project, filepath, contents, copy_tree, value):
-        key = self._calculate_key(contents, copy_tree)
+    def put(self, project, filepath, copy_tree, value):
+        key = self._calculate_key(project, filepath, copy_tree)
         self.put_from_key(project, filepath, key, value)
 
     # put_from_key():
@@ -213,13 +211,23 @@ class YamlCache():
     # Calculates a key for putting into the cache.
     #
     # Args:
-    #    (basic object)... : Any number of strictly-ordered basic objects
+    #    project (Project) or None: The project this file is in.
+    #    filepath (str): The path to the file.
+    #    copy_tree (bool): Whether the data should make a copy when it's being generated
+    #                      (i.e. exactly as when called in yaml)
     #
     # Returns:
     #   (str): A key made out of every arg passed in
     @staticmethod
-    def _calculate_key(*args):
-        string = pickle.dumps(args)
+    def _calculate_key(project, filepath, copy_tree):
+        if project and project.junction:
+            # files in a junction only change if the junction element changes
+            # NOTE: This may change when junction workspaces are revisited/fixed
+            content_key = project.junction._get_cache_key()
+        else:
+            stat = os.stat(filepath)
+            content_key = stat.st_mtime
+        string = pickle.dumps(content_key, copy_tree)
         return hashlib.sha1(string).hexdigest()
 
     # _get():

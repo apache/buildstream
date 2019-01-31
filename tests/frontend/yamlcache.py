@@ -14,10 +14,10 @@ from contextlib import contextmanager
 
 
 def generate_project(tmpdir, ref_storage, with_junction, name="test"):
-    if with_junction == 'junction':
+    if with_junction:
         subproject_dir = generate_project(
             tmpdir, ref_storage,
-            'no-junction', name='test-subproject'
+            False, name='test-subproject'
         )
 
     project_dir = os.path.join(tmpdir, name)
@@ -33,7 +33,7 @@ def generate_project(tmpdir, ref_storage, with_junction, name="test"):
     _yaml.dump(project_conf, project_conf_path)
 
     # elements
-    if with_junction == 'junction':
+    if with_junction:
         junction_name = 'junction.bst'
         junction_dir = os.path.join(project_dir, elements_path)
         junction_path = os.path.join(project_dir, elements_path, junction_name)
@@ -58,12 +58,6 @@ def with_yamlcache(project_dir):
         yield yamlcache, project
 
 
-def yamlcache_key(yamlcache, in_file, copy_tree=False):
-    with open(in_file) as f:
-        key = yamlcache._calculate_key(f.read(), copy_tree)
-    return key
-
-
 def modified_file(input_file, tmpdir):
     with open(input_file) as f:
         data = f.read()
@@ -77,12 +71,13 @@ def modified_file(input_file, tmpdir):
 
 
 @pytest.mark.parametrize('ref_storage', ['inline', 'project.refs'])
-@pytest.mark.parametrize('with_junction', ['no-junction', 'junction'])
-@pytest.mark.parametrize('move_project', ['move', 'no-move'])
-def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction, move_project):
+@pytest.mark.parametrize('with_junction', [True, False], ids=['junction', 'no-junction'])
+def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction):
     # Generate the project
     project = generate_project(str(tmpdir), ref_storage, with_junction)
-    if with_junction == 'junction':
+    element_path = os.path.join(project, 'elements', 'test.bst')
+    element_mtime = 0
+    if with_junction:
         result = cli.run(project=project, args=['source', 'fetch', '--track', 'junction.bst'])
         result.assert_success()
 
@@ -90,17 +85,14 @@ def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction, move_project):
     result = cli.run(project=project, args=['show', 'test.bst'])
     result.assert_success()
 
-    element_path = os.path.join(project, 'elements', 'test.bst')
     with with_yamlcache(project) as (yc, prj):
         # Check that it's in the cache
         assert yc.is_cached(prj, element_path)
 
-        # *Absolutely* horrible cache corruption to check it's being used
-        # Modifying the data from the cache is fraught with danger,
-        # so instead I'll load a modified version of the original file
+        # Modify files in the yaml cache to test whether it's being used
         temppath = modified_file(element_path, str(tmpdir))
         contents = _yaml.load(temppath, copy_tree=False, project=prj)
-        key = yamlcache_key(yc, element_path)
+        key = yc._calculate_key(prj, element_path, copy_tree=False)
         yc.put_from_key(prj, element_path, key, contents)
 
     # Show that a variable has been added
@@ -112,13 +104,13 @@ def test_yamlcache_used(cli, tmpdir, ref_storage, with_junction, move_project):
 
 
 @pytest.mark.parametrize('ref_storage', ['inline', 'project.refs'])
-@pytest.mark.parametrize('with_junction', ['junction', 'no-junction'])
+@pytest.mark.parametrize('with_junction', [True, False], ids=['junction', 'no-junction'])
 def test_yamlcache_changed_file(cli, tmpdir, ref_storage, with_junction):
     # i.e. a file is cached, the file is changed, loading the file (with cache) returns new data
     # inline and junction can only be changed by opening a workspace
     # Generate the project
     project = generate_project(str(tmpdir), ref_storage, with_junction)
-    if with_junction == 'junction':
+    if with_junction:
         result = cli.run(project=project, args=['source', 'fetch', '--track', 'junction.bst'])
         result.assert_success()
 

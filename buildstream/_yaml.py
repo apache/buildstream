@@ -197,12 +197,12 @@ def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=
 
     try:
         data = None
-        with open(filename) as f:
-            contents = f.read()
-        if yaml_cache:
-            data, key = yaml_cache.get(project, filename, contents, copy_tree)
 
+        if yaml_cache:
+            data, key = yaml_cache.get(project, filename, copy_tree)
         if not data:
+            with open(filename) as f:
+                contents = f.read()
             data = load_data(contents, file, copy_tree=copy_tree)
             if yaml_cache:
                 yaml_cache.put_from_key(project, filename, key, data)
