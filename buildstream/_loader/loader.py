@@ -155,8 +155,7 @@ class Loader():
             profile_end(Topics.SORT_DEPENDENCIES, element.name)
             # Finally, wrap what we have into LoadElements and return the target
             #
-            # TODO: we could pass element directly
-            ret.append(loader._collect_element(element.name))
+            ret.append(loader._collect_element(element))
 
         return ret
 
@@ -401,17 +400,14 @@ class Loader():
     # Collect the toplevel elements we have
     #
     # Args:
-    #    element_name (str): The element-path relative element name to sort
+    #    element (LoadElement): The element for which to load a MetaElement
     #
     # Returns:
     #    (MetaElement): A recursively loaded MetaElement
     #
-    def _collect_element(self, element_name):
-
-        element = self._elements[element_name]
-
+    def _collect_element(self, element):
         # Return the already built one, if we already built it
-        meta_element = self._meta_elements.get(element_name)
+        meta_element = self._meta_elements.get(element.name)
         if meta_element:
             return meta_element
 
@@ -435,10 +431,10 @@ class Loader():
                 del source[Symbol.DIRECTORY]
 
             index = sources.index(source)
-            meta_source = MetaSource(element_name, index, element_kind, kind, source, directory)
+            meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
             meta_sources.append(meta_source)
 
-        meta_element = MetaElement(self.project, element_name, element_kind,
+        meta_element = MetaElement(self.project, element.name, element_kind,
                                    elt_provenance, meta_sources,
                                    _yaml.node_get(node, Mapping, Symbol.CONFIG, default_value={}),
                                    _yaml.node_get(node, Mapping, Symbol.VARIABLES, default_value={}),
@@ -449,12 +445,12 @@ class Loader():
                                    element_kind == 'junction')
 
         # Cache it now, make sure it's already there before recursing
-        self._meta_elements[element_name] = meta_element
+        self._meta_elements[element.name] = meta_element
 
         # Descend
         for dep in element.dependencies:
             loader = dep.element._loader
-            meta_dep = loader._collect_element(dep.element.name)
+            meta_dep = loader._collect_element(dep.element)
             if dep.dep_type != 'runtime':
                 meta_element.build_dependencies.append(meta_dep)
             if dep.dep_type != 'build':
@@ -513,7 +509,7 @@ class Loader():
                 return None
 
         # meta junction element
-        meta_element = self._collect_element(filename)
+        meta_element = self._collect_element(self._elements[filename])
         if meta_element.kind != 'junction':
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
