@@ -39,6 +39,20 @@ from .types import Symbol, Dependency
 #    loader (Loader): The Loader object for this element
 #
 class LoadElement():
+    # Dependency():
+    #
+    # A link from a LoadElement to its dependencies.
+    #
+    # Keeps a link to one of the current Element's dependencies, together with
+    # its dependency type.
+    #
+    # Args:
+    #    element (LoadElement): a LoadElement on which there is a dependency
+    #    dep_type (str): the type of dependency this dependency link is
+    class Dependency:
+        def __init__(self, element, dep_type):
+            self.element = element
+            self.dep_type = dep_type
 
     def __init__(self, node, filename, loader):
 
@@ -74,8 +88,11 @@ class LoadElement():
             'build-depends', 'runtime-depends',
         ])
 
-        # Extract the Dependencies
-        self.deps = _extract_depends_from_node(self.node)
+        self.dependencies = []
+
+    @property
+    def junction(self):
+        return self._loader.project.junction
 
     # depends():
     #
@@ -101,8 +118,8 @@ class LoadElement():
             return
 
         self._dep_cache = {}
-        for dep in self.deps:
-            elt = self._loader.get_element_for_dep(dep)
+        for dep in self.dependencies:
+            elt = dep.element
 
             # Ensure the cache of the element we depend on
             elt._ensure_depends_cache()
