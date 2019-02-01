@@ -97,7 +97,7 @@ class LocalSource(Source):
         with self.timed_activity("Staging local files at {}".format(self.path)):
 
             if os.path.isdir(self.fullpath):
-                files = list(utils.list_relative_paths(self.fullpath, list_dirs=True))
+                files = list(utils.list_relative_paths(self.fullpath))
                 utils.copy_files(self.fullpath, directory, files=files)
             else:
                 destfile = os.path.join(directory, os.path.basename(self.path))
