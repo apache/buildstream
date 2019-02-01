@@ -33,4 +33,4 @@ BST_FORMAT_VERSION = 21
 # or if buildstream was changed in a way which can cause
 # the same cache key to produce something that is no longer
 # the same.
-BST_CORE_ARTIFACT_VERSION = 7
+BST_CORE_ARTIFACT_VERSION = 8
