@@ -800,11 +800,11 @@ class CasBasedDirectory(Directory):
         directory_list = filter(lambda i: isinstance(i[1].buildstream_object, CasBasedDirectory),
                                 self.index.items())
 
-        if file_list == [] and relpath != "":
+        if relpath != "":
             yield relpath
-        else:
-            for (k, v) in sorted(file_list):
-                yield os.path.join(relpath, k)
+
+        for (k, v) in sorted(file_list):
+            yield os.path.join(relpath, k)
 
         for (k, v) in sorted(directory_list):
             yield from v.buildstream_object.list_relative_paths(relpath=os.path.join(relpath, k))
