@@ -131,6 +131,20 @@ def list_relative_paths(directory):
     """
     for (dirpath, dirnames, filenames) in os.walk(directory):
 
+        # os.walk does not decend into symlink directories, which
+        # makes sense because otherwise we might have redundant
+        # directories, or end up descending into directories outside
+        # of the walk() directory.
+        #
+        # But symlinks to directories are still identified as
+        # subdirectories in the walked `dirpath`, so we extract
+        # these symlinks from `dirnames` and add them to `filenames`.
+        #
+        for d in dirnames:
+            fullpath = os.path.join(dirpath, d)
+            if os.path.islink(fullpath):
+                filenames.append(d)
+
         # Modifying the dirnames directly ensures that the os.walk() generator
         # allows us to specify the order in which they will be iterated.
         dirnames.sort()
@@ -141,20 +155,6 @@ def list_relative_paths(directory):
         # We don't want "./" pre-pended to all the entries in the root of
         # `directory`, prefer to have no prefix in that case.
         basepath = relpath if relpath != '.' and dirpath != directory else ''
-
-        # os.walk does not decend into symlink directories, which
-        # makes sense because otherwise we might have redundant
-        # directories, or end up descending into directories outside
-        # of the walk() directory.
-        #
-        # But symlinks to directories are still identified as
-        # subdirectories in the walked `dirpath`, so we extract
-        # these symlinks from `dirnames`
-        #
-        for d in dirnames:
-            fullpath = os.path.join(dirpath, d)
-            if os.path.islink(fullpath):
-                yield os.path.join(basepath, d)
 
         # We've decended into an empty directory, in this case we
         # want to include the directory itself, but not in any other
