@@ -214,3 +214,41 @@ def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, 
     second_keys = run_get_cache_key("second", second_warnings)
 
     assert compare_cache_keys(first_keys, second_keys) == identical_keys
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_keys_stable_over_targets(cli, datafiles):
+    root_element = 'elements/key-stability/top-level.bst'
+    target1 = 'elements/key-stability/t1.bst'
+    target2 = 'elements/key-stability/t2.bst'
+
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    full_graph_result = cli.run(project=project, args=[
+        'show',
+        '--format', '%{name}::%{full-key}',
+        root_element
+    ])
+    full_graph_result.assert_success()
+    all_cache_keys = parse_output_keys(full_graph_result.output)
+
+    ordering1_result = cli.run(project=project, args=[
+        'show',
+        '--format', '%{name}::%{full-key}',
+        target1,
+        target2
+    ])
+    ordering1_result.assert_success()
+    ordering1_cache_keys = parse_output_keys(ordering1_result.output)
+
+    ordering2_result = cli.run(project=project, args=[
+        'show',
+        '--format', '%{name}::%{full-key}',
+        target2,
+        target1
+    ])
+    ordering2_result.assert_success()
+    ordering2_cache_keys = parse_output_keys(ordering2_result.output)
+
+    for element in ordering1_cache_keys:
+        assert ordering1_cache_keys[element] == ordering2_cache_keys[element]
+        assert ordering1_cache_keys[element] == all_cache_keys[element]
