@@ -795,23 +795,10 @@ class CasBasedDirectory(Directory):
         Return value: List(str) - list of all paths
         """
 
-        symlink_list = filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.SymlinkNode),
-                              self.index.items())
-        file_list = list(filter(lambda i: isinstance(i[1].pb_object, remote_execution_pb2.FileNode),
+        file_list = list(filter(lambda i: not isinstance(i[1].buildstream_object, CasBasedDirectory),
                                 self.index.items()))
         directory_list = filter(lambda i: isinstance(i[1].buildstream_object, CasBasedDirectory),
                                 self.index.items())
-
-        # We need to mimic the behaviour of os.walk, in which symlinks
-        # to directories count as directories and symlinks to file or
-        # broken symlinks count as files. os.walk doesn't follow
-        # symlinks, so we don't recurse.
-        for (k, v) in sorted(symlink_list):
-            target = self._resolve(k, absolute_symlinks_resolve=True)
-            if isinstance(target, CasBasedDirectory):
-                yield os.path.join(relpath, k)
-            else:
-                file_list.append((k, v))
 
         if file_list == [] and relpath != "":
             yield relpath
