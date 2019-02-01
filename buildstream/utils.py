@@ -117,9 +117,6 @@ def list_relative_paths(directory):
     This generator is useful for checking the full manifest of
     a directory.
 
-    Note that directories will be yielded only if they are
-    empty.
-
     Symbolic links will not be followed, but will be included
     in the manifest.
 
@@ -156,11 +153,9 @@ def list_relative_paths(directory):
         # `directory`, prefer to have no prefix in that case.
         basepath = relpath if relpath != '.' and dirpath != directory else ''
 
-        # We've decended into an empty directory, in this case we
-        # want to include the directory itself, but not in any other
-        # case.
-        if not filenames:
-            yield relpath
+        # First yield the walked directory itself, except for the root
+        if basepath != '':
+            yield basepath
 
         # List the filenames in the walked directory
         for f in filenames:
