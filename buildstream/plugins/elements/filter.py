@@ -168,6 +168,8 @@ class FilterElement(Element):
         self.include = self.node_get_member(node, list, 'include')
         self.exclude = self.node_get_member(node, list, 'exclude')
         self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
+        self.include_provenance = self.node_provenance(node, member_name='include')
+        self.exclude_provenance = self.node_provenance(node, member_name='exclude')
 
     def preflight(self):
         # Exactly one build-depend is permitted
@@ -207,6 +209,31 @@ class FilterElement(Element):
     def assemble(self, sandbox):
         with self.timed_activity("Staging artifact", silent_nested=True):
             for dep in self.dependencies(Scope.BUILD, recurse=False):
+                # Check that all the included/excluded domains exist
+                pub_data = dep.get_public_data('bst')
+                split_rules = pub_data.get('split-rules', {})
+                unfound_includes = []
+                for domain in self.include:
+                    if domain not in split_rules:
+                        unfound_includes.append(domain)
+                unfound_excludes = []
+                for domain in self.exclude:
+                    if domain not in split_rules:
+                        unfound_excludes.append(domain)
+
+                detail = []
+                if unfound_includes:
+                    detail.append("Unknown domains were used in {}".format(self.include_provenance))
+                    detail.extend([' - {}'.format(domain) for domain in unfound_includes])
+
+                if unfound_excludes:
+                    detail.append("Unknown domains were used in {}".format(self.exclude_provenance))
+                    detail.extend([' - {}'.format(domain) for domain in unfound_excludes])
+
+                if detail:
+                    detail = '\n'.join(detail)
+                    raise ElementError("Unknown domains declared.", detail=detail)
+
                 dep.stage_artifact(sandbox, include=self.include,
                                    exclude=self.exclude, orphans=self.include_orphans)
         return ""
