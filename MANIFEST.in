@@ -23,4 +23,12 @@ recursive-include tests *.expected
 recursive-include buildstream/_protos *.proto
 
 # Requirements files
-include dev-requirements.txt
+include requirements/requirements.in
+include requirements/requirements.txt
+include requirements/dev-requirements.in
+include requirements/dev-requirements.txt
+include requirements/plugin-requirements.in
+include requirements/plugin-requirements.txt
+
+# Versioneer
+include versioneer.py

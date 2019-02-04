@@ -30,7 +30,7 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    if item.get_marker('integration') and not item.config.getvalue('integration'):
+    if item.get_closest_marker('integration') and not item.config.getvalue('integration'):
         pytest.skip('skipping integration test')
 
 

@@ -1,4 +1,4 @@
-image: buildstream/testsuite-debian:9-master-114-4cab18e3
+image: buildstream/testsuite-debian:9-5da27168-32c47d1c
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -6,49 +6,13 @@ cache:
     - cache/
 
 stages:
-  - prepare
   - test
   - post
 
-#####################################################
-#                  Prepare stage                    #
-#####################################################
-
-# Create a source distribution
-#
-source_dist:
-  stage: prepare
-  script:
-
-  # Generate the source distribution tarball
-  #
-  - python3 setup.py sdist
-  - tar -ztf dist/*
-  - tarball=$(cd dist && echo $(ls *))
-
-  # Create an installer script
-  - |
-    cat > dist/install.sh << EOF
-    #!/bin/sh
-    tar -zxf ${tarball}
-    cd ${tarball%.tar.gz}
-    pip3 install --no-index .
-    EOF
-
-  # unpack tarball as `dist/buildstream` directory
-  - |
-    cat > dist/unpack.sh << EOF
-    #!/bin/sh
-    tar -zxf ${tarball}
-    mv ${tarball%.tar.gz} buildstream
-    EOF
-
-  # Make our helpers executable
-  - chmod +x dist/install.sh
-  - chmod +x dist/unpack.sh
-  artifacts:
-    paths:
-    - dist/
+variables:
+  INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
+  TEST_COMMAND: "tox -- --color=yes --integration"
+  COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
 #####################################################
@@ -57,66 +21,53 @@ source_dist:
 
 # Run premerge commits
 #
-.linux-tests-template: &linux-tests
+.tests-template: &tests
   stage: test
-  variables:
-    PYTEST_ADDOPTS: "--color=yes"
-  script:
+
+  before_script:
   # Diagnostics
   - mount
   - df -h
 
+  script:
+  - mkdir -p "${INTEGRATION_CACHE}"
   - useradd -Um buildstream
   - chown -R buildstream:buildstream .
 
-  - export INTEGRATION_CACHE="$(pwd)/cache/integration-cache"
+  # Run the tests as a simple user to test for permission issues
+  - su buildstream -c "${TEST_COMMAND}"
 
-  # Unpack and get into dist/buildstream
-  - cd dist && ./unpack.sh
-  - chown -R buildstream:buildstream buildstream
-  - cd buildstream
-
-  # Run the tests from the source distribution, We run as a simple
-  # user to test for permission issues
-  - su buildstream -c 'python3 setup.py test --index-url invalid://uri --addopts --integration'
-
-  # Go back to the toplevel and collect our reports
-  - cd ../..
-  - mkdir -p coverage-linux/
-  - cp dist/buildstream/.coverage.* coverage-linux/coverage."${CI_JOB_NAME}"
   except:
   - schedules
   artifacts:
     paths:
-    - coverage-linux/
+    - .coverage-reports
 
 tests-debian-9:
-  image: buildstream/testsuite-debian:9-master-117-aa3a33b3
-  <<: *linux-tests
+  image: buildstream/testsuite-debian:9-5da27168-32c47d1c
+  <<: *tests
 
 tests-fedora-27:
-  image: buildstream/testsuite-fedora:27-master-117-aa3a33b3
-  <<: *linux-tests
+  image: buildstream/testsuite-fedora:27-5da27168-32c47d1c
+  <<: *tests
 
 tests-fedora-28:
-  image: buildstream/testsuite-fedora:28-master-117-aa3a33b3
-  <<: *linux-tests
+  image: buildstream/testsuite-fedora:28-5da27168-32c47d1c
+  <<: *tests
 
 tests-ubuntu-18.04:
-  image: buildstream/testsuite-ubuntu:18.04-master-117-aa3a33b3
-  <<: *linux-tests
+  image: buildstream/testsuite-ubuntu:18.04-5da27168-32c47d1c
+  <<: *tests
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: buildstream/testsuite-fedora:27-master-117-aa3a33b3
-  stage: test
+  image: buildstream/testsuite-fedora:27-5da27168-32c47d1c
+  <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
-    PYTEST_ADDOPTS: "--color=yes"
-  script:
 
-    - export INTEGRATION_CACHE="$(pwd)/cache/integration-cache"
+  script:
 
     # We remove the Bubblewrap and OSTree packages here so that we catch any
     # codepaths that try to use them. Removing OSTree causes fuse-libs to
@@ -124,39 +75,19 @@ tests-unix:
     - dnf mark install fuse-libs
     - dnf erase -y bubblewrap ostree
 
-    # Unpack and get into dist/buildstream
-    - cd dist && ./unpack.sh && cd buildstream
-
     # Since the unix platform is required to run as root, no user change required
-    - python3 setup.py test --index-url invalid://uri --addopts --integration
-
-    # Go back to the toplevel and collect our reports
-    - cd ../..
-    - mkdir -p coverage-unix/
-    - cp dist/buildstream/.coverage.* coverage-unix/coverage.unix
-  except:
-  - schedules
-  artifacts:
-    paths:
-    - coverage-unix/
-    - logs-unix/
+    - ${TEST_COMMAND}
 
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
-# Note: We still do not enforce a consistent installation of python3-sphinx,
-#       as it will significantly grow the backing image.
 docs:
   stage: test
+  variables:
+    BST_FORCE_SESSION_REBUILD: 1
   script:
-  - export BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources"
-  - pip3 install sphinx
-  - pip3 install sphinx-click
-  - pip3 install sphinx_rtd_theme
-  - cd dist && ./unpack.sh && cd buildstream
-  - make BST_FORCE_SESSION_REBUILD=1 -C doc
-  - cd ../..
-  - mv dist/buildstream/doc/build/html public
+  - env BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources" tox -e docs
+  - mv doc/build/html public
   except:
   - schedules
   artifacts:
@@ -170,7 +101,8 @@ docs:
     bst_ext_ref: 1d6ab71151b93c8cbc0a91a36ffe9270f3b835f1 # 0.5.1
     fd_sdk_ref: 88d7c22c2281b987faa02edd57df80d430eecf1f # 18.08.12
   before_script:
-  - (cd dist && ./unpack.sh && cd buildstream && pip3 install .)
+  - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
+  - pip3 install --no-index .
   - pip3 install --user -e ${bst_ext_url}@${bst_ext_ref}#egg=bst_ext
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${fd_sdk_ref}
@@ -253,21 +185,15 @@ coverage:
   stage: post
   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
   script:
-    - cd dist && ./unpack.sh && cd buildstream
-    - pip3 install --no-index .
-    - mkdir report
-    - cd report
-    - cp ../../../coverage-unix/coverage.unix .
-    - cp ../../../coverage-linux/coverage.* .
-    - ls coverage.*
-    - coverage combine --rcfile=../.coveragerc -a coverage.*
-    - coverage report --rcfile=../.coveragerc -m
+    - cp -a .coverage-reports/ ./coverage-sources
+    - tox -e coverage
+    - cp -a .coverage-reports/ ./coverage-report
   dependencies:
   - tests-debian-9
   - tests-fedora-27
   - tests-fedora-28
+  - tests-ubuntu-18.04
   - tests-unix
-  - source_dist
   except:
   - schedules
 
@@ -276,7 +202,6 @@ coverage:
 pages:
   stage: post
   dependencies:
-  - source_dist
   - docs
   script:
   - find public/

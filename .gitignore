@@ -13,9 +13,12 @@ tests/**/*.pyc
 integration-cache/
 tmp
 .coverage
+.coverage-reports/
 .coverage.*
 .cache
+.pytest_cache/
 *.bst/
+.tox/
 
 # Pycache, in case buildstream is ran directly from within the source
 # tree

@@ -1,0 +1,27 @@
+coverage==4.4
+pep8==1.7.1
+pylint==2.1.1
+pytest==4.1.1
+pytest-cov==2.6.1
+pytest-datafiles==2.0
+pytest-env==0.6.2
+pytest-pep8==1.0.6
+pytest-pylint==0.14.0
+pytest-xdist==1.26.0
+pytest-timeout==1.3.3
+## The following requirements were added by pip freeze:
+apipkg==1.5
+astroid==2.1.0
+atomicwrites==1.2.1
+attrs==18.2.0
+execnet==1.5.0
+isort==4.3.4
+lazy-object-proxy==1.3.1
+mccabe==0.6.1
+more-itertools==5.0.0
+pluggy==0.8.1
+py==1.7.0
+pytest-cache==1.0
+pytest-forked==1.0.1
+six==1.12.0
+wrapt==1.11.0
