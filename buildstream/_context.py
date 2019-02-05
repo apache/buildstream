@@ -124,10 +124,6 @@ class Context():
         # Whether or not to cache build trees on artifact creation
         self.cache_buildtrees = None
 
-        # Boolean, whether we double-check with the user that they meant to
-        # close the workspace when they're using it to access the project.
-        self.prompt_workspace_close_project_inaccessible = None
-
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -247,22 +243,6 @@ class Context():
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
-
-        # Load prompt preferences
-        #
-        # We convert string options to booleans here, so we can be both user
-        # and coder-friendly. The string options are worded to match the
-        # responses the user would give at the cli, for least surprise. The
-        # booleans are converted here because it's easiest to eyeball that the
-        # strings are right.
-        #
-        prompt = _yaml.node_get(
-            defaults, Mapping, 'prompt')
-        _yaml.node_validate(prompt, [
-            'really-workspace-close-project-inaccessible',
-        ])
-        self.prompt_workspace_close_project_inaccessible = _node_get_option_str(
-            prompt, 'really-workspace-close-project-inaccessible', ['ask', 'yes']) == 'ask'
 
         # Load per-projects overrides
         self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
