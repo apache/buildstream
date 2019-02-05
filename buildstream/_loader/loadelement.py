@@ -19,6 +19,9 @@
 
 # System imports
 from collections.abc import Mapping
+from itertools import count
+
+from roaringbitmap import RoaringBitmap, ImmutableRoaringBitmap  # pylint: disable=no-name-in-module
 
 # BuildStream toplevel imports
 from .._exceptions import LoadError, LoadErrorReason
@@ -54,6 +57,8 @@ class LoadElement():
             self.element = element
             self.dep_type = dep_type
 
+    _counter = count()
+
     def __init__(self, node, filename, loader):
 
         #
@@ -63,6 +68,7 @@ class LoadElement():
         self.name = filename   # The element name
         self.full_name = None  # The element full name (with associated junction)
         self.deps = None       # The list of Dependency objects
+        self.node_id = next(self._counter)
 
         #
         # Private members
@@ -107,7 +113,7 @@ class LoadElement():
     #
     def depends(self, other):
         self._ensure_depends_cache()
-        return self._dep_cache.get(other.full_name) is not None
+        return other.node_id in self._dep_cache
 
     ###########################################
     #            Private Methods              #
@@ -117,7 +123,8 @@ class LoadElement():
         if self._dep_cache:
             return
 
-        self._dep_cache = {}
+        self._dep_cache = RoaringBitmap()
+
         for dep in self.dependencies:
             elt = dep.element
 
@@ -125,10 +132,12 @@ class LoadElement():
             elt._ensure_depends_cache()
 
             # We depend on this element
-            self._dep_cache[elt.full_name] = True
+            self._dep_cache.add(elt.node_id)
 
             # And we depend on everything this element depends on
             self._dep_cache.update(elt._dep_cache)
+
+        self._dep_cache = ImmutableRoaringBitmap(self._dep_cache)
 
 
 # _extract_depends_from_node():
