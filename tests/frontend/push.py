@@ -416,3 +416,33 @@ def test_push_already_cached(caplog, cli, tmpdir, datafiles):
         assert not result.get_pushed_elements(), "No elements should have been pushed since the cache was populated"
         assert "INFO    Remote ({}) already has ".format(share.repo) in result.stderr
         assert "SKIPPED Push" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_remote_option(caplog, cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    caplog.set_level(1)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as shareuser,\
+        create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as shareproject,\
+        create_artifact_share(os.path.join(str(tmpdir), 'artifactshare3')) as sharecli:
+
+        # Add shareproject repo url to project.conf
+        with open(os.path.join(project, "project.conf"), "a") as projconf:
+            projconf.write("artifacts:\n  url: {}\n  push: True".format(shareproject.repo))
+
+        # Configure shareuser remote in user conf
+        cli.configure({
+            'artifacts': {'url': shareuser.repo, 'push': True}
+        })
+
+        result = cli.run(project=project, args=['build', '--remote', sharecli.repo, 'target.bst'])
+
+        # Artifacts should have only been pushed to sharecli, as that was provided via the cli
+        result.assert_success()
+        all_elements = ['target.bst', 'import-bin.bst', 'compose-all.bst']
+        for element_name in all_elements:
+            assert element_name in result.get_pushed_elements()
+            assert_shared(cli, sharecli, project, element_name)
+            assert_not_shared(cli, shareuser, project, element_name)
+            assert_not_shared(cli, shareproject, project, element_name)

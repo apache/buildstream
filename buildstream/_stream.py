@@ -197,18 +197,27 @@ class Stream():
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    build_all (bool): Whether to build all elements, or only those
     #                      which are required to build the target.
+    #    remote (str): The URL of a specific remote server to push to, or None
+    #
+    # If `remote` specified as None, then regular configuration will be used
+    # to determine where to push artifacts to.
     #
     def build(self, targets, *,
               track_targets=None,
               track_except=None,
               track_cross_junctions=False,
               ignore_junction_targets=False,
-              build_all=False):
+              build_all=False,
+              remote=None):
 
         if build_all:
             selection = PipelineSelection.ALL
         else:
             selection = PipelineSelection.PLAN
+
+        use_config = True
+        if remote:
+            use_config = False
 
         elements, track_elements = \
             self._load(targets, track_targets,
@@ -216,7 +225,8 @@ class Stream():
                        track_except_targets=track_except,
                        track_cross_junctions=track_cross_junctions,
                        ignore_junction_targets=ignore_junction_targets,
-                       use_artifact_config=True,
+                       use_artifact_config=use_config,
+                       artifact_remote_url=remote,
                        fetch_subprojects=True,
                        dynamic_plan=True)
 
