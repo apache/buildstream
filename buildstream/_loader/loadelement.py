@@ -21,7 +21,7 @@
 from collections.abc import Mapping
 from itertools import count
 
-from roaringbitmap import RoaringBitmap, ImmutableRoaringBitmap  # pylint: disable=no-name-in-module
+from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
 # BuildStream toplevel imports
 from .._exceptions import LoadError, LoadErrorReason
@@ -123,7 +123,7 @@ class LoadElement():
         if self._dep_cache:
             return
 
-        self._dep_cache = RoaringBitmap()
+        self._dep_cache = BitMap()
 
         for dep in self.dependencies:
             elt = dep.element
@@ -137,7 +137,7 @@ class LoadElement():
             # And we depend on everything this element depends on
             self._dep_cache.update(elt._dep_cache)
 
-        self._dep_cache = ImmutableRoaringBitmap(self._dep_cache)
+        self._dep_cache = FrozenBitMap(self._dep_cache)
 
 
 # _extract_depends_from_node():
