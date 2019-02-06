@@ -157,6 +157,20 @@ lint:
   except:
   - schedules
 
+tests-wsl:
+  stage: test
+  variables:
+    LC_ALL: C.UTF-8
+    LANG: C.UTF-8
+  tags:
+  - wsl
+  before_script:
+  - mount
+  - df -h
+
+  script:
+  - "${TEST_COMMAND}"
+
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
 docs:

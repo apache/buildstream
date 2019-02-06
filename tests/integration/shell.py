@@ -5,7 +5,7 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 
 from tests.testutils import cli_integration as cli
-from tests.testutils.site import HAVE_BWRAP, IS_LINUX
+from tests.testutils.site import HAVE_SANDBOX
 
 
 pytestmark = pytest.mark.integration
@@ -49,7 +49,7 @@ def execute_shell(cli, project, command, *, config=None, mount=None, element='ba
 # Test running something through a shell, allowing it to find the
 # executable
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_shell(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
@@ -60,7 +60,7 @@ def test_shell(cli, tmpdir, datafiles):
 
 # Test running an executable directly
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_executable(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
@@ -72,7 +72,7 @@ def test_executable(cli, tmpdir, datafiles):
 # Test shell environment variable explicit assignments
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_env_assign(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     expected = animal + '\n'
@@ -92,7 +92,7 @@ def test_env_assign(cli, tmpdir, datafiles, animal):
 # Test shell environment variable explicit assignments with host env var expansion
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_env_assign_expand_host_environ(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     expected = 'The animal is: {}\n'.format(animal)
@@ -115,7 +115,7 @@ def test_env_assign_expand_host_environ(cli, tmpdir, datafiles, animal):
 # when running an isolated shell
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_env_assign_isolated(cli, tmpdir, datafiles, animal):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], isolate=True, config={
@@ -133,7 +133,7 @@ def test_env_assign_isolated(cli, tmpdir, datafiles, animal):
 # Test running an executable in a runtime with no shell (i.e., no
 # /bin/sh)
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_no_shell(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')
@@ -166,7 +166,7 @@ def test_no_shell(cli, tmpdir, datafiles):
 # Test that bind mounts defined in project.conf work
 @pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_host_files(cli, tmpdir, datafiles, path):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
@@ -187,7 +187,7 @@ def test_host_files(cli, tmpdir, datafiles, path):
 # Test that bind mounts defined in project.conf work
 @pytest.mark.parametrize("path", [("/etc"), ("/usr/share/pony")])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_host_files_expand_environ(cli, tmpdir, datafiles, path):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     hostpath = os.path.join(project, 'files', 'shell-mount')
@@ -233,7 +233,7 @@ def test_isolated_no_mount(cli, tmpdir, datafiles, path):
 # declared as optional, and that there is no warning if it is optional
 @pytest.mark.parametrize("optional", [("mandatory"), ("optional")])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_host_files_missing(cli, tmpdir, datafiles, optional):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'horsy.txt')
@@ -269,7 +269,7 @@ def test_host_files_missing(cli, tmpdir, datafiles, optional):
 # Test that bind mounts defined in project.conf work
 @pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_cli_mount(cli, tmpdir, datafiles, path):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
@@ -282,7 +282,7 @@ def test_cli_mount(cli, tmpdir, datafiles, path):
 # Test that we can see the workspace files in a shell
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_visible(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -316,7 +316,7 @@ def test_workspace_visible(cli, tmpdir, datafiles):
 
 # Test that '--sysroot' works
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_sysroot(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     base_element = "base/base-alpine.bst"
@@ -346,7 +346,7 @@ def test_sysroot(cli, tmpdir, datafiles):
 
 # Test system integration commands can access devices in /dev
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_integration_devices(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'integration.bst'
@@ -359,7 +359,7 @@ def test_integration_devices(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("build_shell", [("build"), ("nobuild")])
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_shell, guess_element):
     tmpdir = tmpdir_factory.mktemp("")
     project = os.path.join(datafiles.dirname, datafiles.basename)

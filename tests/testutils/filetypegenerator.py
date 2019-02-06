@@ -56,7 +56,14 @@ def generate_file_types(path):
     yield
     clean()
 
+    # Change directory because the full path may be longer than the ~100
+    # characters permitted for a unix socket
+    old_dir = os.getcwd()
+    parent, child = os.path.split(path)
+    os.chdir(parent)
+
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.bind(path)
+    s.bind(child)
+    os.chdir(old_dir)
     yield
     clean()

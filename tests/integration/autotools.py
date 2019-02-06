@@ -3,7 +3,7 @@ import pytest
 
 from tests.testutils import cli_integration as cli
 from tests.testutils.integration import assert_contains
-from tests.testutils.site import HAVE_BWRAP, IS_LINUX
+from tests.testutils.site import HAVE_SANDBOX
 
 
 pytestmark = pytest.mark.integration
@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(
 # amhello project for this.
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_autotools_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -42,7 +42,7 @@ def test_autotools_build(cli, tmpdir, datafiles):
 # amhello project for this.
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_autotools_confroot_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -63,7 +63,7 @@ def test_autotools_confroot_build(cli, tmpdir, datafiles):
 
 # Test running an executable built with autotools
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(IS_LINUX and not HAVE_BWRAP, reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_autotools_run(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'autotools/amhello.bst'
