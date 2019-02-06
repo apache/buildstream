@@ -13,9 +13,6 @@ psutil==5.4.8
 # See issues #571 and #790.
 ruamel.yaml==0.15.51
 setuptools==39.0.1
-# (Potentially) short-term need for roaring bitmaps for the
-# loader dependency sorting
-roaringbitmap==0.6
 ## The following requirements were added by pip freeze:
 MarkupSafe==1.1.0
 six==1.12.0
