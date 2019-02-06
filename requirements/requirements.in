@@ -13,6 +13,4 @@ psutil
 # See issues #571 and #790.
 ruamel.yaml >= 0.15.41, < 0.15.52
 setuptools
-# (Potentially) short-term need for roaring bitmaps for the
-# loader dependency sorting
-roaringbitmap
+pyroaring
