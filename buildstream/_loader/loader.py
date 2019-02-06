@@ -546,10 +546,13 @@ class Loader():
             tempdir = None
         else:
             # Stage sources
-            os.makedirs(self._context.builddir, exist_ok=True)
-            basedir = tempfile.mkdtemp(prefix="{}-".format(element.normal_name), dir=self._context.builddir)
-            element._stage_sources_at(basedir, mount_workspaces=False)
-            tempdir = basedir
+            element._update_state()
+            basedir = os.path.join(self.project.directory, ".bst", "staged-junctions",
+                                   filename, element._get_cache_key())
+            if not os.path.exists(basedir):
+                os.makedirs(basedir, exist_ok=True)
+                element._stage_sources_at(basedir, mount_workspaces=False)
+            tempdir = None
 
         # Load the project
         project_dir = os.path.join(basedir, element.path)
