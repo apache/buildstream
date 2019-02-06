@@ -88,7 +88,7 @@ def test_include_junction_file(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_junction_options(cli, tmpdir, datafiles):
+def test_include_junction_options(cli, datafiles):
     project = os.path.join(str(datafiles), 'options')
 
     result = cli.run(project=project, args=[
@@ -169,7 +169,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_element_overrides(cli, tmpdir, datafiles):
+def test_include_element_overrides(cli, datafiles):
     project = os.path.join(str(datafiles), 'overrides')
 
     result = cli.run(project=project, args=[
@@ -184,7 +184,7 @@ def test_include_element_overrides(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_element_overrides_composition(cli, tmpdir, datafiles):
+def test_include_element_overrides_composition(cli, datafiles):
     project = os.path.join(str(datafiles), 'overrides')
 
     result = cli.run(project=project, args=[
@@ -199,7 +199,7 @@ def test_include_element_overrides_composition(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_element_overrides_sub_include(cli, tmpdir, datafiles):
+def test_include_element_overrides_sub_include(cli, datafiles):
     project = os.path.join(str(datafiles), 'sub-include')
 
     result = cli.run(project=project, args=[
@@ -233,7 +233,7 @@ def test_junction_do_not_use_included_overrides(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_conditional_in_fragment(cli, tmpdir, datafiles):
+def test_conditional_in_fragment(cli, datafiles):
     project = os.path.join(str(datafiles), 'conditional')
 
     result = cli.run(project=project, args=[
@@ -263,7 +263,7 @@ def test_inner(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_recursive_include(cli, tmpdir, datafiles):
+def test_recursive_include(cli, datafiles):
     project = os.path.join(str(datafiles), 'recursive')
 
     result = cli.run(project=project, args=[
