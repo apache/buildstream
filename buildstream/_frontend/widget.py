@@ -94,12 +94,24 @@ class FixedText(Widget):
 
 # Used to add the wallclock time this message was created at
 class WallclockTime(Widget):
+    def __init__(self, context, content_profile, format_profile, output_format=False):
+        self._output_format = output_format
+        super(WallclockTime, self).__init__(context, content_profile, format_profile)
+
     def render(self, message):
+
         fields = [self.content_profile.fmt("{:02d}".format(x)) for x in
                   [message.creation_time.hour,
                    message.creation_time.minute,
-                   message.creation_time.second]]
-        return self.format_profile.fmt(":").join(fields)
+                   message.creation_time.second,
+                   ]
+                  ]
+        text = self.format_profile.fmt(":").join(fields)
+
+        if self._output_format == 'us':
+            text += self.content_profile.fmt(".{:06d}".format(message.creation_time.microsecond))
+
+        return text
 
 
 # A widget for rendering the debugging column
@@ -326,6 +338,7 @@ class LogLine(Widget):
             "elapsed": TimeCode(context, content_profile, format_profile, microseconds=False),
             "elapsed-us": TimeCode(context, content_profile, format_profile, microseconds=True),
             "wallclock": WallclockTime(context, content_profile, format_profile),
+            "wallclock-us": WallclockTime(context, content_profile, format_profile, output_format='us'),
             "key": CacheKey(context, content_profile, format_profile, err_profile),
             "element": ElementName(context, content_profile, format_profile),
             "action": TypeName(context, content_profile, format_profile),
