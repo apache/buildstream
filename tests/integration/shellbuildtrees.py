@@ -54,6 +54,29 @@ def test_buildtree_staged_forced_true(cli_integration, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
+    # Test that if we stage a cached and empty buildtree, we warn the user.
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'build-shell/buildtree.bst'
+
+    # Switch to a temp artifact cache dir to ensure the artifact is rebuilt,
+    # caching an empty buildtree
+    cli_integration.configure({
+        'artifactdir': os.path.join(os.path.join(str(tmpdir), 'artifacts'))
+    })
+
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'never', 'build', element_name])
+    res.assert_success()
+
+    res = cli_integration.run(project=project, args=[
+        'shell', '--build', '--use-buildtree', 'always', element_name, '--', 'cat', 'test'
+    ])
+    res.assert_shell_error()
+    assert "Artifact contains an empty buildtree" in res.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_buildtree_staged_if_available(cli_integration, tmpdir, datafiles):
     # Test that a build tree can be correctly detected.
     project = os.path.join(datafiles.dirname, datafiles.basename)
@@ -98,6 +121,54 @@ def test_buildtree_from_failure(cli_integration, tmpdir, datafiles):
     res.assert_main_error(ErrorDomain.STREAM, None)
 
     # Assert that file has expected contents
+    res = cli_integration.run(project=project, args=[
+        'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
+    ])
+    res.assert_success()
+    assert "WARNING: using a buildtree from a failed build" in res.stderr
+    assert 'Hi' in res.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles):
+
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'build-shell/buildtree-fail.bst'
+
+    # Switch to a temp artifact cache dir to ensure the artifact is rebuilt,
+    # caching an empty buildtree
+    cli_integration.configure({
+        'artifactdir': os.path.join(os.path.join(str(tmpdir), 'artifacts'))
+    })
+
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'never', 'build', element_name])
+    res.assert_main_error(ErrorDomain.STREAM, None)
+
+    res = cli_integration.run(project=project, args=[
+        'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
+    ])
+    res.assert_shell_error()
+    assert "Artifact contains an empty buildtree" in res.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+def test_buildtree_from_failure_option_failure(cli_integration, tmpdir, datafiles):
+
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    element_name = 'build-shell/buildtree-fail.bst'
+
+    # build with  --cache-buildtrees set to 'failure', behaviour should match
+    # default behaviour (which is always) as the buildtree will explicitly have been
+    # cached with content.
+    cli_integration.configure({
+        'artifactdir': os.path.join(os.path.join(str(tmpdir), 'artifacts'))
+    })
+
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'failure', 'build', element_name])
+    res.assert_main_error(ErrorDomain.STREAM, None)
+
     res = cli_integration.run(project=project, args=[
         'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
     ])

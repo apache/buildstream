@@ -1457,6 +1457,9 @@ class Element(Plugin):
             elif usebuildtree:
                 artifact_base, _ = self.__extract()
                 import_dir = os.path.join(artifact_base, 'buildtree')
+                if not os.listdir(import_dir):
+                    detail = "Element type either does not expect a buildtree or it was explictily cached without one."
+                    self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
             else:
                 # No workspace or cached buildtree, stage source directly
                 for source in self.sources():
@@ -1663,6 +1666,8 @@ class Element(Plugin):
                 # No collect directory existed
                 collectvdir = None
 
+        context = self._get_context()
+
         # Create artifact directory structure
         assembledir = os.path.join(rootdir, 'artifact')
         filesdir = os.path.join(assembledir, 'files')
@@ -1680,20 +1685,30 @@ class Element(Plugin):
         if collect is not None and collectvdir is not None:
             collectvdir.export_files(filesdir, can_link=True)
 
-        try:
-            sandbox_vroot = sandbox.get_virtual_directory()
-            sandbox_build_dir = sandbox_vroot.descend(
-                self.get_variable('build-root').lstrip(os.sep).split(os.sep))
-            # Hard link files from build-root dir to buildtreedir directory
-            sandbox_build_dir.export_files(buildtreedir)
-        except VirtualDirectoryError:
-            # Directory could not be found. Pre-virtual
-            # directory behaviour was to continue silently
-            # if the directory could not be found.
-            pass
+        cache_buildtrees = context.cache_buildtrees
+        build_success = self.__build_result[0]
+
+        # cache_buildtrees defaults to 'always', as such the
+        # default behaviour is to attempt to cache them. If only
+        # caching failed artifact buildtrees, then query the build
+        # result. Element types without a build-root dir will be cached
+        # with an empty buildtreedir regardless of this configuration.
+
+        if cache_buildtrees == 'always' or (cache_buildtrees == 'failure' and not build_success):
+            try:
+                sandbox_vroot = sandbox.get_virtual_directory()
+                sandbox_build_dir = sandbox_vroot.descend(
+                    self.get_variable('build-root').lstrip(os.sep).split(os.sep))
+                # Hard link files from build-root dir to buildtreedir directory
+                sandbox_build_dir.export_files(buildtreedir)
+            except VirtualDirectoryError:
+                # Directory could not be found. Pre-virtual
+                # directory behaviour was to continue silently
+                # if the directory could not be found.
+                pass
 
         # Copy build log
-        log_filename = self._get_context().get_log_filename()
+        log_filename = context.get_log_filename()
         self._build_log_path = os.path.join(logsdir, 'build.log')
         if log_filename:
             shutil.copyfile(log_filename, self._build_log_path)
@@ -1834,7 +1849,7 @@ class Element(Plugin):
             return True
 
         # Do not push elements that aren't cached, or that are cached with a dangling buildtree
-        # artifact unless element type is expected to have an an empty buildtree directory
+        # ref unless element type is expected to have an an empty buildtree directory
         if not self._cached_buildtree():
             return True
 
@@ -2036,6 +2051,8 @@ class Element(Plugin):
     # Returns:
     #     (bool): True if artifact cached with buildtree, False if
     #             element not cached or missing expected buildtree.
+    #             Note this only confirms if a buildtree is present,
+    #             not its contents.
     #
     def _cached_buildtree(self):
         context = self._get_context()
