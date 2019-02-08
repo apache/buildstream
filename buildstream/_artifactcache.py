@@ -467,7 +467,7 @@ class ArtifactCache():
     #     on_failure (callable): Called if we fail to contact one of the caches.
     #
     def initialize_remotes(self, *, on_failure=None):
-        remote_specs = self.global_remote_specs
+        remote_specs = list(self.global_remote_specs)
 
         for project in self.project_remote_specs:
             remote_specs += self.project_remote_specs[project]
@@ -1046,8 +1046,5 @@ class ArtifactCache():
 #   A list of ArtifactCacheSpec instances describing the remote artifact caches.
 #
 def _configured_remote_artifact_cache_specs(context, project):
-    project_overrides = context.get_overrides(project.name)
-    project_extra_specs = ArtifactCache.specs_from_config_node(project_overrides)
-
     return list(utils._deduplicate(
-        project_extra_specs + project.artifact_cache_specs + context.artifact_cache_specs))
+        project.artifact_cache_specs + context.artifact_cache_specs))
