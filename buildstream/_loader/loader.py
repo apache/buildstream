@@ -20,8 +20,6 @@
 import os
 from functools import cmp_to_key
 from collections.abc import Mapping
-import tempfile
-import shutil
 
 from .._exceptions import LoadError, LoadErrorReason
 from .. import Consistency
@@ -49,12 +47,10 @@ from .._message import Message, MessageType
 #    context (Context): The Context object
 #    project (Project): The toplevel Project object
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
-#    tempdir (str): A directory to cleanup with the Loader, given to the loader by a parent
-#                   loader in the case that this loader is a subproject loader.
 #
 class Loader():
 
-    def __init__(self, context, project, *, parent=None, tempdir=None):
+    def __init__(self, context, project, *, parent=None):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
@@ -73,7 +69,6 @@ class Loader():
         self._options = project.options      # Project options (OptionPool)
         self._basedir = basedir              # Base project directory
         self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
-        self._tempdir = tempdir              # A directory to cleanup
         self._parent = parent                # The parent loader
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
@@ -158,30 +153,6 @@ class Loader():
             ret.append(loader._collect_element(element))
 
         return ret
-
-    # cleanup():
-    #
-    # Remove temporary checkout directories of subprojects
-    #
-    def cleanup(self):
-        if self._parent and not self._tempdir:
-            # already done
-            return
-
-        # recurse
-        for loader in self._loaders.values():
-            # value may be None with nested junctions without overrides
-            if loader is not None:
-                loader.cleanup()
-
-        if not self._parent:
-            # basedir of top-level loader is never a temporary directory
-            return
-
-        # safe guard to not accidentally delete directories outside builddir
-        if self._tempdir.startswith(self._context.builddir + os.sep):
-            if os.path.exists(self._tempdir):
-                shutil.rmtree(self._tempdir)
 
     ###########################################
     #            Private Methods              #
@@ -544,11 +515,9 @@ class Loader():
         if workspace:
             # If a workspace is open, load it from there instead
             basedir = workspace.get_absolute_path()
-            tempdir = None
         elif len(sources) == 1 and sources[0]._get_local_path():
             # Optimization for junctions with a single local source
             basedir = sources[0]._get_local_path()
-            tempdir = None
         else:
             # Stage sources
             element._update_state()
@@ -557,14 +526,13 @@ class Loader():
             if not os.path.exists(basedir):
                 os.makedirs(basedir, exist_ok=True)
                 element._stage_sources_at(basedir, mount_workspaces=False)
-            tempdir = None
 
         # Load the project
         project_dir = os.path.join(basedir, element.path)
         try:
             from .._project import Project
             project = Project(project_dir, self._context, junction=element,
-                              parent_loader=self, tempdir=tempdir)
+                              parent_loader=self)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 raise LoadError(reason=LoadErrorReason.INVALID_JUNCTION,
