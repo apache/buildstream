@@ -540,7 +540,12 @@ class Loader():
                                 "Subproject has no ref for junction: {}".format(filename),
                                 detail=detail)
 
-        if len(sources) == 1 and sources[0]._get_local_path():
+        workspace = element._get_workspace()
+        if workspace:
+            # If a workspace is open, load it from there instead
+            basedir = workspace.get_absolute_path()
+            tempdir = None
+        elif len(sources) == 1 and sources[0]._get_local_path():
             # Optimization for junctions with a single local source
             basedir = sources[0]._get_local_path()
             tempdir = None
