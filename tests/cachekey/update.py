@@ -13,7 +13,7 @@
 #
 import os
 import tempfile
-from tests.testutils.runcli import Cli
+from buildstream.plugintestutils.runcli import Cli
 
 # This weird try / except is needed, because this will be imported differently
 # when pytest runner imports them vs when you run the updater directly from

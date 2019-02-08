@@ -8,7 +8,7 @@ import shutil
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from tempfile import TemporaryFile
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 from tests.testutils.site import HAVE_ARPY
 from . import list_dir_contents
 

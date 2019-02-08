@@ -3,9 +3,10 @@ import tarfile
 import hashlib
 import pytest
 import subprocess
-from tests.testutils import cli, create_repo, ALL_REPO_KINDS, generate_junction
 from tests.testutils.site import IS_WINDOWS
+from tests.testutils import create_repo, ALL_REPO_KINDS, generate_junction
 
+from buildstream.plugintestutils import cli
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 

@@ -3,7 +3,7 @@ import pytest
 from contextlib import contextmanager
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from tests.testutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))

@@ -1,6 +1,6 @@
 import os
 import pytest
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 
 from buildstream import _yaml
 from buildstream._frontend.app import App

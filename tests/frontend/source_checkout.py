@@ -3,7 +3,7 @@ import pytest
 import tarfile
 from pathlib import Path
 
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 
 from buildstream import utils, _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason

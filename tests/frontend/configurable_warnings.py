@@ -4,7 +4,7 @@ import os
 from buildstream.plugin import CoreWarnings
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
-from tests.testutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli
 
 TOP_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

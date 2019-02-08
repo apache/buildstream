@@ -2,9 +2,12 @@ import os
 import shutil
 import pytest
 
-from tests.testutils import cli, cli_integration as cli2, create_artifact_share
-from tests.testutils.integration import assert_contains
+from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
+
+from buildstream.plugintestutils.integration import assert_contains
+from buildstream.plugintestutils import cli, cli_integration as cli2
+from buildstream.plugintestutils.integration import assert_contains
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 

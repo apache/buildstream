@@ -9,8 +9,9 @@ from buildstream import _yaml, _signals, utils
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from buildstream.plugintestutils import cli
 
-from tests.testutils import cli, create_artifact_share
+from tests.testutils import create_artifact_share
 
 
 # Project directory

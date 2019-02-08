@@ -3,7 +3,8 @@ import pytest
 
 from buildstream import _yaml
 
-from tests.testutils import cli, create_repo
+from buildstream.plugintestutils import cli
+from tests.testutils import create_repo
 from tests.testutils.site import HAVE_GIT
 
 DATA_DIR = os.path.join(

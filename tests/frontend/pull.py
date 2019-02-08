@@ -1,7 +1,8 @@
 import os
 import shutil
 import pytest
-from tests.testutils import cli, create_artifact_share, generate_junction
+from buildstream.plugintestutils import cli
+from tests.testutils import create_artifact_share, generate_junction
 
 
 # Project directory

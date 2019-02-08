@@ -22,8 +22,9 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
+from buildstream.plugintestutils import cli
 
-from tests.testutils import cli, create_repo
+from tests.testutils import create_repo
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

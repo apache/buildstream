@@ -4,7 +4,7 @@ import pytest
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugins.sources.pip import _match_package_name
-from tests.testutils import cli
+from buildstream.plugintestutils import cli
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

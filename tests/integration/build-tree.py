@@ -2,8 +2,9 @@ import os
 import pytest
 import shutil
 
-from tests.testutils import cli, cli_integration, create_artifact_share
+from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
+from buildstream.plugintestutils import cli, cli_integration
 from buildstream._exceptions import ErrorDomain
 
 

@@ -1,3 +1,34 @@
+#
+#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2018 Bloomberg Finance LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+"""
+runcli - Test fixtures used for running BuildStream commands
+============================================================
+
+:function:'cli' Use result = cli.run([arg1, arg2]) to run buildstream commands
+
+:function:'cli_integration' A variant of the main fixture that keeps persistent
+                            artifact and source caches. It also does not use
+                            the click test runner to avoid deadlock issues when
+                            running `bst shell`, but unfortunately cannot produce
+                            nice stacktraces.
+
+"""
+
+
 import os
 import re
 import sys
@@ -5,7 +36,6 @@ import shutil
 import tempfile
 import itertools
 import traceback
-import subprocess
 from contextlib import contextmanager, ExitStack
 from ruamel import yaml
 import pytest
@@ -333,7 +363,7 @@ class Cli():
 
         return result
 
-    def invoke(self, cli, args=None, color=False, binary_capture=False, **extra):
+    def invoke(self, cli_object, args=None, color=False, binary_capture=False, **extra):
         exc_info = None
         exception = None
         exit_code = 0
@@ -348,7 +378,7 @@ class Cli():
             capture.start_capturing()
 
             try:
-                cli.main(args=args or (), prog_name=cli.name, **extra)
+                cli_object.main(args=args or (), prog_name=cli_object.name, **extra)
             except SystemExit as e:
                 if e.code != 0:
                     exception = e
@@ -361,7 +391,7 @@ class Cli():
                     sys.stdout.write(str(exit_code))
                     sys.stdout.write('\n')
                     exit_code = 1
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 exception = e
                 exit_code = -1
                 exc_info = sys.exc_info()

@@ -5,8 +5,9 @@ from unittest import mock
 from buildstream import _yaml
 from buildstream._artifactcache import CACHE_SIZE_FILE
 from buildstream._exceptions import ErrorDomain
+from buildstream.plugintestutils import cli
 
-from tests.testutils import cli, create_element_size
+from tests.testutils import create_element_size
 
 # XXX: Currently lacking:
 #      * A way to check whether it's faster to read cache size on

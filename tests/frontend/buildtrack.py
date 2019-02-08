@@ -4,9 +4,11 @@ import shutil
 import itertools
 
 import pytest
-from tests.testutils import cli, create_repo
+
+from tests.testutils import create_repo
 
 from buildstream import _yaml
+from buildstream.plugintestutils import cli
 from buildstream._exceptions import ErrorDomain
 
 from . import configure_project

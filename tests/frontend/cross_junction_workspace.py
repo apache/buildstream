@@ -1,6 +1,8 @@
 import os
-from tests.testutils import cli, create_repo
+from buildstream.plugintestutils import cli
 from buildstream import _yaml
+
+from tests.testutils import create_repo
 
 
 def prepare_junction_project(cli, tmpdir):

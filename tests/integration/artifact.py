@@ -21,7 +21,7 @@
 import os
 import pytest
 
-from tests.testutils import cli_integration as cli
+from buildstream.plugintestutils import cli_integration as cli
 
 
 pytestmark = pytest.mark.integration

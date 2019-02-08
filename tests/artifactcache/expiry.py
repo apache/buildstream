@@ -25,8 +25,9 @@ import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream.plugintestutils import cli
 
-from tests.testutils import cli, create_element_size, update_element_size, wait_for_cache_granularity
+from tests.testutils import create_element_size, update_element_size, wait_for_cache_granularity
 
 
 DATA_DIR = os.path.join(
