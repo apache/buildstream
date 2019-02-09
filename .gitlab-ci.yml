@@ -49,10 +49,6 @@ tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
   <<: *tests
 
-tests-fedora-27:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:27-master-46405991
-  <<: *tests
-
 tests-fedora-28:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
   <<: *tests
@@ -95,7 +91,7 @@ overnight-fedora-28-aarch64:
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:27-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
   <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
@@ -291,7 +287,6 @@ coverage:
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
   - tests-debian-9
-  - tests-fedora-27
   - tests-fedora-28
   - tests-fedora-missing-deps
   - tests-ubuntu-18.04
