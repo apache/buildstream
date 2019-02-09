@@ -28,12 +28,12 @@ root_filesets = [
     [('a/b/c/textfile1', 'F', 'This is textfile 1\n')],
     [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
     [('a/b/d', 'D', '')],
-    [('a/b/c', 'S', '/a/b/d')],
-    [('a/b/d', 'S', '/a/b/c')],
-    [('a/b/d', 'D', ''), ('a/b/c', 'S', '/a/b/d')],
-    [('a/b/c', 'D', ''), ('a/b/d', 'S', '/a/b/c')],
-    [('a/b', 'F', 'This is textfile 1\n')],
-    [('a/b/c', 'F', 'This is textfile 1\n')],
+    [('a/b/e', 'S', '/a/b/d')],
+    [('a/b/f', 'S', '/a/b/c')],
+    [('a/b/d', 'D', ''), ('a/b/e', 'S', '/a/b/d')],
+    [('a/b/c', 'D', ''), ('a/b/f', 'S', '/a/b/c')],
+    [('a/c', 'F', 'This is textfile 1\n')],
+    [('a/b/e', 'F', 'This is textfile 1\n')],
     [('a/b/c', 'D', '')]
 ]
 
@@ -77,6 +77,8 @@ def generate_random_root(rootno, directory):
         location = random.choice(locations)
         thingname = "node{}".format(i)
         thing = random.choice(['dir', 'link', 'file'])
+        if thing == 'dir':
+            thingname = "dir" + thingname
         target = os.path.join(rootdir, location, thingname)
         if thing == 'dir':
             os.makedirs(target)

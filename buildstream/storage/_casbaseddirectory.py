@@ -79,151 +79,6 @@ class UnexpectedFileException(ResolutionException):
         super().__init__(message)
 
 
-class _Resolver():
-    """A class for resolving symlinks inside CAS-based directories. As
-    well as providing a namespace for some functions, this also
-    contains two flags which are constant throughout one resolution
-    operation and the 'seen_objects' list used to detect infinite
-    symlink loops.
-
-    """
-
-    def __init__(self, absolute_symlinks_resolve=True, force_create=False):
-        self.absolute_symlinks_resolve = absolute_symlinks_resolve
-        self.force_create = force_create
-        self.seen_objects = []
-
-    def resolve(self, name, directory):
-        """Resolves any name to an object. If the name points to a symlink in
-        the directory, it returns the thing it points to,
-        recursively.
-
-        Returns a CasBasedDirectory, FileNode or None. None indicates
-        either that 'target' does not exist in this directory, or is a
-        symlink chain which points to a nonexistent name (broken
-        symlink).
-
-        Raises:
-
-        - InfiniteSymlinkException if 'name' points to an infinite
-          symlink loop.
-        - AbsoluteSymlinkException if 'name' points to an absolute
-          symlink and absolute_symlinks_resolve is False.
-        - UnexpectedFileException if at any point during resolution we
-          find a file which we expected to be a directory or symlink.
-
-        If force_create is set, this will attempt to create
-        directories to make symlinks and directories resolve.  Files
-        present in symlink target paths will also be removed and
-        replaced with directories.  If force_create is off, this will
-        never alter 'directory'.
-
-        """
-
-        # First check for nonexistent things or 'normal' objects and return them
-        if name not in directory.index:
-            return None
-        index_entry = directory.index[name]
-        if isinstance(index_entry.buildstream_object, Directory):
-            return index_entry.buildstream_object
-        elif isinstance(index_entry.pb_object, remote_execution_pb2.FileNode):
-            return index_entry.pb_object
-
-        # Now we must be dealing with a symlink.
-        assert isinstance(index_entry.pb_object, remote_execution_pb2.SymlinkNode)
-
-        symlink_object = index_entry.pb_object
-        if symlink_object in self.seen_objects:
-            # Infinite symlink loop detected
-            message = ("Infinite symlink loop found during resolution. " +
-                       "First repeated element is {}".format(name))
-            raise InfiniteSymlinkException(message=message)
-
-        self.seen_objects.append(symlink_object)
-
-        components = symlink_object.target.split(CasBasedDirectory._pb2_path_sep)
-        absolute = symlink_object.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
-
-        if absolute:
-            if self.absolute_symlinks_resolve:
-                directory = directory.find_root()
-                # Discard the first empty element
-                components.pop(0)
-            else:
-                # Unresolvable absolute symlink
-                message = "{} is an absolute symlink, which was disallowed during resolution".format(name)
-                raise AbsoluteSymlinkException(message=message)
-
-        resolution = directory
-        while components and isinstance(resolution, CasBasedDirectory):
-            c = components.pop(0)
-            directory = resolution
-
-            try:
-                resolution = self._resolve_path_component(c, directory, components)
-            except UnexpectedFileException as original:
-                errormsg = ("Reached a file called {} while trying to resolve a symlink; " +
-                            "cannot proceed. The remaining path components are {}.")
-                raise UnexpectedFileException(errormsg.format(c, components)) from original
-
-        return resolution
-
-    def _resolve_path_component(self, c, directory, components_remaining):
-        if c == ".":
-            resolution = directory
-        elif c == "..":
-            if directory.parent is not None:
-                resolution = directory.parent
-            else:
-                # If directory.parent *is* None, this is an attempt to
-                # access '..' from the root, which is valid under
-                # POSIX; it just returns the root.
-                resolution = directory
-        elif c in directory.index:
-            try:
-                resolution = self._resolve_through_files(c, directory, components_remaining)
-            except UnexpectedFileException as original:
-                errormsg = ("Reached a file called {} while trying to resolve a symlink; " +
-                            "cannot proceed. The remaining path components are {}.")
-                raise UnexpectedFileException(errormsg.format(c, components_remaining)) from original
-        else:
-            # c is not in our index
-            if self.force_create:
-                resolution = directory.descend(c, create=True)
-            else:
-                resolution = None
-        return resolution
-
-    def _resolve_through_files(self, c, directory, require_traversable):
-        """A wrapper to resolve() which deals with files being found
-        in the middle of paths, for example trying to resolve a symlink
-        which points to /usr/lib64/libfoo when 'lib64' is a file.
-
-        require_traversable: If this is True, never return a file
-        node.  Instead, if force_create is set, destroy the file node,
-        then create and return a normal directory in its place. If
-        force_create is off, throws ResolutionException.
-
-        """
-        resolved_thing = self.resolve(c, directory)
-
-        if isinstance(resolved_thing, remote_execution_pb2.FileNode):
-            if require_traversable:
-                # We have components still to resolve, but one of the path components
-                # is a file.
-                if self.force_create:
-                    directory.delete_entry(c)
-                    resolved_thing = directory.descend(c, create=True)
-                else:
-                    # This is a signal that we hit a file, but don't
-                    # have the data to give a proper message, so the
-                    # caller should reraise this with a proper
-                    # description.
-                    raise UnexpectedFileException()
-
-        return resolved_thing
-
-
 # CasBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
 # pylint: disable=super-init-not-called
@@ -407,10 +262,6 @@ class CasBasedDirectory(Directory):
             if isinstance(entry, CasBasedDirectory):
                 return entry.descend(subdirectory_spec[1:], create)
             else:
-                # May be a symlink
-                target = self._resolve(subdirectory_spec[0], force_create=create)
-                if isinstance(target, CasBasedDirectory):
-                    return target
                 error = "Cannot descend into {}, which is a '{}' in the directory {}"
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0],
                                                          type(self.index[subdirectory_spec[0]].pb_object).__name__,
@@ -433,10 +284,6 @@ class CasBasedDirectory(Directory):
             return self.parent.find_root()
         else:
             return self
-
-    def _resolve(self, name, absolute_symlinks_resolve=True, force_create=False):
-        resolver = _Resolver(absolute_symlinks_resolve, force_create)
-        return resolver.resolve(name, self)
 
     def _check_replacement(self, name, path_prefix, fileListResult):
         """ Checks whether 'name' exists, and if so, whether we can overwrite it.
@@ -468,36 +315,13 @@ class CasBasedDirectory(Directory):
                        .format(name, type(existing_entry)))
         return False  # In case asserts are disabled
 
-    def _replace_anything_with_dir(self, name, path_prefix, overwritten_files_list):
-        self.delete_entry(name)
-        subdir = self._add_directory(name)
-        overwritten_files_list.append(os.path.join(path_prefix, name))
-        return subdir
-
     def _import_files_from_directory(self, source_directory, files, path_prefix=""):
         """ Imports files from a traditional directory. """
-
-        def _ensure_followable(name, path_prefix):
-            """ Makes sure 'name' is a directory or symlink to a directory which can be descended into. """
-            if isinstance(self.index[name].buildstream_object, Directory):
-                return self.descend(name)
-            try:
-                target = self._resolve(name, force_create=True)
-            except InfiniteSymlinkException:
-                return self._replace_anything_with_dir(name, path_prefix, result.overwritten)
-            if isinstance(target, CasBasedDirectory):
-                return target
-            elif isinstance(target, remote_execution_pb2.FileNode):
-                return self._replace_anything_with_dir(name, path_prefix, result.overwritten)
-            return target
 
         def _import_directory_recursively(directory_name, source_directory, remaining_path, path_prefix):
             """ _import_directory_recursively and _import_files_from_directory will be called alternately
             as a directory tree is descended. """
-            if directory_name in self.index:
-                subdir = _ensure_followable(directory_name, path_prefix)
-            else:
-                subdir = self._add_directory(directory_name)
+            subdir = self.descend(directory_name, create=True)
             new_path_prefix = os.path.join(path_prefix, directory_name)
             subdir_result = subdir._import_files_from_directory(os.path.join(source_directory, directory_name),
                                                                 [os.path.sep.join(remaining_path)],
@@ -566,15 +390,8 @@ class CasBasedDirectory(Directory):
                 if dirname not in processed_directories:
                     # Now strip off the first directory name and import files recursively.
                     subcomponents = CasBasedDirectory._files_in_subdir(files, dirname)
-                    # We will fail at this point if there is a file or symlink to file called 'dirname'.
-                    if dirname in self.index:
-                        resolved_component = self._resolve(dirname, force_create=True)
-                        if isinstance(resolved_component, remote_execution_pb2.FileNode):
-                            dest_subdir = self._replace_anything_with_dir(dirname, path_prefix, result.overwritten)
-                        else:
-                            dest_subdir = resolved_component
-                    else:
-                        dest_subdir = self.descend(dirname, create=True)
+                    # We will fail at this point if there is a file or symlink called 'dirname'.
+                    dest_subdir = self.descend(dirname, create=True)
                     src_subdir = source_directory.descend(dirname)
                     import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
                                                                              path_prefix=fullname,
