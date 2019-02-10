@@ -42,6 +42,10 @@ class ImportElement(Element):
     BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
+        self.node_validate(node, [
+            'source', 'target'
+        ])
+
         self.source = self.node_subst_member(node, 'source')
         self.target = self.node_subst_member(node, 'target')
 
