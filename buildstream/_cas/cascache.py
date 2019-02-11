@@ -374,9 +374,7 @@ class CASCache():
                     for chunk in iter(lambda: tmp.read(4096), b""):
                         h.update(chunk)
                 else:
-                    tmp = stack.enter_context(utils._tempnamedfile(dir=self.tmpdir))
-                    # Set mode bits to 0644
-                    os.chmod(tmp.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+                    tmp = stack.enter_context(self._temporary_object())
 
                     if path:
                         with open(path, 'rb') as f:
@@ -825,6 +823,19 @@ class CASCache():
         for dirnode in directory.directories:
             yield from self._required_blobs(dirnode.digest)
 
+    # _temporary_object():
+    #
+    # Returns:
+    #     (file): A file object to a named temporary file.
+    #
+    # Create a named temporary file with 0o0644 access rights.
+    @contextlib.contextmanager
+    def _temporary_object(self):
+        with utils._tempnamedfile(dir=self.tmpdir) as f:
+            os.chmod(f.name,
+                     stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+            yield f
+
     # _ensure_blob():
     #
     # Fetch and add blob if it's not already local.
@@ -842,7 +853,7 @@ class CASCache():
             # already in local repository
             return objpath
 
-        with utils._tempnamedfile(dir=self.tmpdir) as f:
+        with self._temporary_object() as f:
             remote._fetch_blob(digest, f)
 
             added_digest = self.add_object(path=f.name, link_directly=True)
@@ -852,7 +863,7 @@ class CASCache():
 
     def _batch_download_complete(self, batch):
         for digest, data in batch.send():
-            with utils._tempnamedfile(dir=self.tmpdir) as f:
+            with self._temporary_object() as f:
                 f.write(data)
                 f.flush()
 
