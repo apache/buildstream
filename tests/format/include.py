@@ -1,4 +1,5 @@
 import os
+import textwrap
 import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -27,6 +28,46 @@ def test_include_project_file(cli, datafiles):
     assert loaded['included'] == 'True'
 
 
+def test_include_missing_file(cli, tmpdir):
+    tmpdir.join('project.conf').write('{"name": "test"}')
+    element = tmpdir.join('include_missing_file.bst')
+
+    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # we want to be sure of a stable line and column number.
+    element.write(textwrap.dedent("""
+        kind: manual
+
+        "(@)":
+          - nosuch.yaml
+    """).strip())
+
+    result = cli.run(project=str(tmpdir), args=['show', str(element.basename)])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+    # Make sure the root cause provenance is in the output.
+    assert 'line 4 column 2' in result.stderr
+
+
+def test_include_dir(cli, tmpdir):
+    tmpdir.join('project.conf').write('{"name": "test"}')
+    tmpdir.mkdir('subdir')
+    element = tmpdir.join('include_dir.bst')
+
+    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # we want to be sure of a stable line and column number.
+    element.write(textwrap.dedent("""
+        kind: manual
+
+        "(@)":
+          - subdir/
+    """).strip())
+
+    result = cli.run(project=str(tmpdir), args=['show', str(element.basename)])
+    result.assert_main_error(
+        ErrorDomain.LOAD, LoadErrorReason.LOADING_DIRECTORY)
+    # Make sure the root cause provenance is in the output.
+    assert 'line 4 column 2' in result.stderr
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_include_junction_file(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), 'junction')
@@ -47,7 +88,7 @@ def test_include_junction_file(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_junction_options(cli, tmpdir, datafiles):
+def test_include_junction_options(cli, datafiles):
     project = os.path.join(str(datafiles), 'options')
 
     result = cli.run(project=project, args=[
@@ -128,7 +169,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_element_overrides(cli, tmpdir, datafiles):
+def test_include_element_overrides(cli, datafiles):
     project = os.path.join(str(datafiles), 'overrides')
 
     result = cli.run(project=project, args=[
@@ -143,7 +184,7 @@ def test_include_element_overrides(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_element_overrides_composition(cli, tmpdir, datafiles):
+def test_include_element_overrides_composition(cli, datafiles):
     project = os.path.join(str(datafiles), 'overrides')
 
     result = cli.run(project=project, args=[
@@ -158,7 +199,7 @@ def test_include_element_overrides_composition(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_include_element_overrides_sub_include(cli, tmpdir, datafiles):
+def test_include_element_overrides_sub_include(cli, datafiles):
     project = os.path.join(str(datafiles), 'sub-include')
 
     result = cli.run(project=project, args=[
@@ -192,7 +233,7 @@ def test_junction_do_not_use_included_overrides(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_conditional_in_fragment(cli, tmpdir, datafiles):
+def test_conditional_in_fragment(cli, datafiles):
     project = os.path.join(str(datafiles), 'conditional')
 
     result = cli.run(project=project, args=[
@@ -222,7 +263,7 @@ def test_inner(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_recusive_include(cli, tmpdir, datafiles):
+def test_recursive_include(cli, datafiles):
     project = os.path.join(str(datafiles), 'recursive')
 
     result = cli.run(project=project, args=[
@@ -231,6 +272,7 @@ def test_recusive_include(cli, tmpdir, datafiles):
         '--format', '%{vars}',
         'element.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_INCLUDE)
+    assert 'line 2 column 2' in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)

@@ -40,19 +40,34 @@ class Includes:
             includes = [_yaml.node_get(node, str, '(@)')]
         else:
             includes = _yaml.node_get(node, list, '(@)', default_value=None)
+
+        include_provenance = None
         if '(@)' in node:
+            include_provenance = _yaml.node_get_provenance(node, key='(@)')
             del node['(@)']
 
         if includes:
             for include in reversed(includes):
                 if only_local and ':' in include:
                     continue
-                include_node, file_path, sub_loader = self._include_file(include,
-                                                                         current_loader)
+                try:
+                    include_node, file_path, sub_loader = self._include_file(include,
+                                                                             current_loader)
+                except LoadError as e:
+                    if e.reason == LoadErrorReason.MISSING_FILE:
+                        message = "{}: Include block references a file that could not be found: '{}'.".format(
+                            include_provenance, include)
+                        raise LoadError(LoadErrorReason.MISSING_FILE, message) from e
+                    elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
+                        message = "{}: Include block references a directory instead of a file: '{}'.".format(
+                            include_provenance, include)
+                        raise LoadError(LoadErrorReason.LOADING_DIRECTORY, message) from e
+                    else:
+                        raise
+
                 if file_path in included:
-                    provenance = _yaml.node_get_provenance(node)
                     raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
-                                    "{}: trying to recursively include {}". format(provenance,
+                                    "{}: trying to recursively include {}". format(include_provenance,
                                                                                    file_path))
                 # Because the included node will be modified, we need
                 # to copy it so that we do not modify the toplevel
@@ -101,7 +116,7 @@ class Includes:
         file_path = os.path.join(directory, include)
         key = (current_loader, file_path)
         if key not in self._loaded:
-            self._loaded[key] = _yaml.load(os.path.join(directory, include),
+            self._loaded[key] = _yaml.load(file_path,
                                            shortname=shortname,
                                            project=project,
                                            copy_tree=self._copy_tree)
