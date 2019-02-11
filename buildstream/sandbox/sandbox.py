@@ -525,11 +525,11 @@ class Sandbox():
     #         (bool): Whether a command exists inside the sandbox.
     def _has_command(self, command, env=None):
         if os.path.isabs(command):
-            return os.path.exists(os.path.join(
+            return os.path.lexists(os.path.join(
                 self._root, command.lstrip(os.sep)))
 
         for path in env.get('PATH').split(':'):
-            if os.path.exists(os.path.join(
+            if os.path.lexists(os.path.join(
                     self._root, path.lstrip(os.sep), command)):
                 return True
 

@@ -97,7 +97,7 @@ class LocalSource(Source):
         with self.timed_activity("Staging local files at {}".format(self.path)):
 
             if os.path.isdir(self.fullpath):
-                files = list(utils.list_relative_paths(self.fullpath, list_dirs=True))
+                files = list(utils.list_relative_paths(self.fullpath))
                 utils.copy_files(self.fullpath, directory, files=files)
             else:
                 destfile = os.path.join(directory, os.path.basename(self.path))
@@ -133,11 +133,11 @@ def unique_key(filename):
 
     # Return some hard coded things for files which
     # have no content to calculate a key for
-    if os.path.isdir(filename):
-        return "0"
-    elif os.path.islink(filename):
+    if os.path.islink(filename):
         # For a symbolic link, use the link target as its unique identifier
         return os.readlink(filename)
+    elif os.path.isdir(filename):
+        return "0"
 
     return utils.sha256sum(filename)
 
