@@ -70,14 +70,14 @@ class Context():
         # The directory for CAS
         self.casdir = None
 
+        # Extract directory
+        self.extractdir = None
+
         # The directory for temporary files
         self.tmpdir = None
 
         # Default root location for workspaces
         self.workspacedir = None
-
-        # The local binary artifact cache directory
-        self.artifactdir = None
 
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = None
@@ -194,18 +194,16 @@ class Context():
                             "builddir is obsolete, use cachedir")
 
         if defaults.get('artifactdir'):
-            print("artifactdir is deprecated, use cachedir")
-        else:
-            defaults['artifactdir'] = os.path.join(defaults['cachedir'], 'artifacts')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "artifactdir is obsolete")
 
         _yaml.node_validate(defaults, [
-            'cachedir', 'sourcedir', 'builddir', 'artifactdir', 'logdir',
-            'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt', 'workspacedir', 'remote-execution',
+            'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler',
+            'artifacts', 'logging', 'projects', 'cache', 'prompt',
+            'workspacedir', 'remote-execution',
         ])
 
-        for directory in ['cachedir', 'sourcedir', 'artifactdir', 'logdir',
-                          'workspacedir']:
+        for directory in ['cachedir', 'sourcedir', 'logdir', 'workspacedir']:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #
@@ -216,14 +214,21 @@ class Context():
             setattr(self, directory, path)
 
         # add directories not set by users
+        self.extractdir = os.path.join(self.cachedir, 'extract')
         self.tmpdir = os.path.join(self.cachedir, 'tmp')
         self.casdir = os.path.join(self.cachedir, 'cas')
         self.builddir = os.path.join(self.cachedir, 'build')
 
+        # Move old artifact cas to cas if it exists and create symlink
+        old_casdir = os.path.join(self.cachedir, 'artifacts', 'cas')
+        if (os.path.exists(old_casdir) and not os.path.islink(old_casdir) and
+                not os.path.exists(self.casdir)):
+            os.rename(old_casdir, self.casdir)
+            os.symlink(self.casdir, old_casdir)
+
         # Load quota configuration
-        # We need to find the first existing directory in the path of
-        # our artifactdir - the artifactdir may not have been created
-        # yet.
+        # We need to find the first existing directory in the path of our
+        # cachedir - the cachedir may not have been created yet.
         cache = _yaml.node_get(defaults, Mapping, 'cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 

@@ -50,7 +50,6 @@ def test_cache_size_write(cli, tmpdir):
     create_project(project_dir)
 
     # Artifact cache must be in a known place
-    artifactdir = os.path.join(project_dir, "artifacts")
     casdir = os.path.join(project_dir, "cas")
     cli.configure({"cachedir": project_dir})
 
@@ -59,7 +58,7 @@ def test_cache_size_write(cli, tmpdir):
     res.assert_success()
 
     # Inspect the artifact cache
-    sizefile = os.path.join(artifactdir, CACHE_SIZE_FILE)
+    sizefile = os.path.join(casdir, CACHE_SIZE_FILE)
     assert os.path.isfile(sizefile)
     with open(sizefile, "r") as f:
         size_data = f.read()

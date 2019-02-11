@@ -417,7 +417,7 @@ def test_extract_expiry(cli, datafiles, tmpdir):
     res.assert_success()
 
     # Get a snapshot of the extracts in advance
-    extractdir = os.path.join(project, 'cache', 'artifacts', 'extract', 'test', 'target')
+    extractdir = os.path.join(project, 'cache', 'extract', 'test', 'target')
     extracts = os.listdir(extractdir)
     assert(len(extracts) == 1)
     extract = os.path.join(extractdir, extracts[0])

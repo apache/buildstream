@@ -495,10 +495,10 @@ class LogLine(Widget):
         values = OrderedDict()
         values["Configuration File"] = \
             "Default Configuration" if not context.config_origin else context.config_origin
+        values["Cache Directory"] = context.cachedir
         values["Log Files"] = context.logdir
         values["Source Mirrors"] = context.sourcedir
         values["Build Area"] = context.builddir
-        values["Artifact Cache"] = context.artifactdir
         values["Strict Build Plan"] = "Yes" if context.get_strict() else "No"
         values["Maximum Fetch Tasks"] = context.sched_fetchers
         values["Maximum Build Tasks"] = context.sched_builders

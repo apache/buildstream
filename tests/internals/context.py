@@ -43,7 +43,7 @@ def test_context_load(context_fixture):
     context.load(config=os.devnull)
     assert(context.sourcedir == os.path.join(cache_home, 'buildstream', 'sources'))
     assert(context.builddir == os.path.join(cache_home, 'buildstream', 'build'))
-    assert(context.artifactdir == os.path.join(cache_home, 'buildstream', 'artifacts'))
+    assert(context.cachedir == os.path.join(cache_home, 'buildstream'))
     assert(context.logdir == os.path.join(cache_home, 'buildstream', 'logs'))
 
 
@@ -57,7 +57,7 @@ def test_context_load_envvar(context_fixture):
     context.load(config=os.devnull)
     assert(context.sourcedir == os.path.join('/', 'some', 'path', 'buildstream', 'sources'))
     assert(context.builddir == os.path.join('/', 'some', 'path', 'buildstream', 'build'))
-    assert(context.artifactdir == os.path.join('/', 'some', 'path', 'buildstream', 'artifacts'))
+    assert(context.cachedir == os.path.join('/', 'some', 'path', 'buildstream'))
     assert(context.logdir == os.path.join('/', 'some', 'path', 'buildstream', 'logs'))
 
     # Reset the environment variable
@@ -79,7 +79,7 @@ def test_context_load_user_config(context_fixture, datafiles):
 
     assert(context.sourcedir == os.path.expanduser('~/pony'))
     assert(context.builddir == os.path.join(cache_home, 'buildstream', 'build'))
-    assert(context.artifactdir == os.path.join(cache_home, 'buildstream', 'artifacts'))
+    assert(context.cachedir == os.path.join(cache_home, 'buildstream'))
     assert(context.logdir == os.path.join(cache_home, 'buildstream', 'logs'))
 
 

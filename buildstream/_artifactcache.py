@@ -87,7 +87,7 @@ class ArtifactCacheUsage():
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
-        self.extractdir = os.path.join(context.artifactdir, 'extract')
+        self.extractdir = context.extractdir
 
         self.cas = context.get_cascache()
 
@@ -894,7 +894,7 @@ class ArtifactCache():
     #
     def _write_cache_size(self, size):
         assert isinstance(size, int)
-        size_file_path = os.path.join(self.context.artifactdir, CACHE_SIZE_FILE)
+        size_file_path = os.path.join(self.context.casdir, CACHE_SIZE_FILE)
         with utils.save_file_atomic(size_file_path, "w") as f:
             f.write(str(size))
 
@@ -907,7 +907,7 @@ class ArtifactCache():
     #    (int): The size of the artifact cache, as recorded in the file
     #
     def _read_cache_size(self):
-        size_file_path = os.path.join(self.context.artifactdir, CACHE_SIZE_FILE)
+        size_file_path = os.path.join(self.context.casdir, CACHE_SIZE_FILE)
 
         if not os.path.exists(size_file_path):
             return None
@@ -942,7 +942,7 @@ class ArtifactCache():
 
         try:
             cache_quota = utils._parse_size(self.context.config_cache_quota,
-                                            self.context.artifactdir)
+                                            self.context.casdir)
         except utils.UtilError as e:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
@@ -973,7 +973,7 @@ class ArtifactCache():
                                         "has {total_size} total disk space.")
                                 .format(
                                     quota=self.context.config_cache_quota,
-                                    local_cache_path=self.context.artifactdir,
+                                    local_cache_path=self.context.casdir,
                                     total_size=utils._pretty_size(total_size)),
                                 reason='insufficient-storage-for-quota')
         elif cache_quota > cache_size + available_space:
@@ -991,7 +991,7 @@ class ArtifactCache():
                                   "The filesystem containing {local_cache_path} only " +
                                   "has {available_size} available.")
                           .format(quota=self.context.config_cache_quota,
-                                  local_cache_path=self.context.artifactdir,
+                                  local_cache_path=self.context.casdir,
                                   available_size=available))
 
         # Place a slight headroom (2e9 (2GB) on the cache_quota) into
@@ -1019,7 +1019,7 @@ class ArtifactCache():
     #       about it's disk size and available bytes.
     #
     def _get_cache_volume_size(self):
-        return utils._get_volume_size(self.context.artifactdir)
+        return utils._get_volume_size(self.context.casdir)
 
 
 # _configured_remote_artifact_cache_specs():

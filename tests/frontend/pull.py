@@ -510,8 +510,8 @@ def test_pull_access_rights(caplog, cli, tmpdir, datafiles):
 
         shutil.rmtree(checkout)
 
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
 
         result = cli.run(project=project, args=['artifact', 'pull', 'compose-all.bst'])
         result.assert_success()

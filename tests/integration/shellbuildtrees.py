@@ -62,7 +62,7 @@ def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
     # Switch to a temp artifact cache dir to ensure the artifact is rebuilt,
     # caching an empty buildtree
     cli_integration.configure({
-        'artifactdir': os.path.join(os.path.join(str(tmpdir), 'artifacts'))
+        'cachedir': str(tmpdir)
     })
 
     res = cli_integration.run(project=project, args=['--cache-buildtrees', 'never', 'build', element_name])
@@ -139,7 +139,7 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
     # Switch to a temp artifact cache dir to ensure the artifact is rebuilt,
     # caching an empty buildtree
     cli_integration.configure({
-        'artifactdir': os.path.join(os.path.join(str(tmpdir), 'artifacts'))
+        'cachedir': str(tmpdir)
     })
 
     res = cli_integration.run(project=project, args=['--cache-buildtrees', 'never', 'build', element_name])
@@ -163,7 +163,7 @@ def test_buildtree_from_failure_option_failure(cli_integration, tmpdir, datafile
     # default behaviour (which is always) as the buildtree will explicitly have been
     # cached with content.
     cli_integration.configure({
-        'artifactdir': os.path.join(os.path.join(str(tmpdir), 'artifacts'))
+        'cachedir': str(tmpdir)
     })
 
     res = cli_integration.run(project=project, args=['--cache-buildtrees', 'failure', 'build', element_name])
@@ -195,10 +195,7 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, element_name) == 'cached'
 
         # Discard the cache
-        cli.configure({
-            'artifacts': {'url': share.repo, 'push': True},
-            'artifactdir': os.path.join(cli.directory, 'artifacts2')
-        })
+        shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'cas')))
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Pull from cache, ensuring cli options is set to pull the buildtree
@@ -231,7 +228,6 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         assert share.has_artifact('test', element_name, cli.get_element_key(project, element_name))
 
         # Discard the cache
-        shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'artifacts')))
         shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'cas')))
         assert cli.get_element_state(project, element_name) != 'cached'
 
