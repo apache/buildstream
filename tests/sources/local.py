@@ -136,3 +136,23 @@ def test_stage_file_exists(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, 'ensure-stage-dir-fail')
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'directory'))
+def test_stage_directory_symlink(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    symlink = os.path.join(project, 'files', 'symlink-to-subdir')
+    os.symlink('subdir', symlink)
+
+    # Build, checkout
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected directory and directory symlink
+    assert(os.path.exists(os.path.join(checkoutdir, 'subdir', 'anotherfile.txt')))
+    assert(os.path.exists(os.path.join(checkoutdir, 'symlink-to-subdir', 'anotherfile.txt')))
+    assert(os.path.islink(os.path.join(checkoutdir, 'symlink-to-subdir')))
