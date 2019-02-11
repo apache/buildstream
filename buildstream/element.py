@@ -966,6 +966,21 @@ class Element(Plugin):
 
         return element
 
+    # _clear_meta_elements_cache()
+    #
+    # Clear the internal meta elements cache.
+    #
+    # When loading elements from meta, we cache already instantiated elements
+    # in order to not have to load the same elements twice.
+    # This clears the cache.
+    #
+    # It should be called whenever we are done loading all elements in order
+    # to save memory.
+    #
+    @classmethod
+    def _clear_meta_elements_cache(cls):
+        cls.__instantiated_elements = {}
+
     # _get_redundant_source_refs()
     #
     # Fetches a list of (Source, ref) tuples of all the Sources

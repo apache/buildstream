@@ -358,6 +358,8 @@ class Project():
                 for meta in meta_elements
             ]
 
+        Element._clear_meta_elements_cache()
+
         # Now warn about any redundant source references which may have
         # been discovered in the resolve() phase.
         redundant_refs = Element._get_redundant_source_refs()
