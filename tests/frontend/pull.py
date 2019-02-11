@@ -1,5 +1,6 @@
 import os
 import shutil
+import stat
 import pytest
 from buildstream.plugintestutils import cli
 from tests.testutils import create_artifact_share, generate_junction
@@ -462,3 +463,74 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
         assert shareproject.repo not in result.stderr
         assert shareuser.repo not in result.stderr
         assert sharecli.repo in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_access_rights(caplog, cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(str(tmpdir), 'checkout')
+
+    # Work-around datafiles not preserving mode
+    os.chmod(os.path.join(project, 'files/bin-files/usr/bin/hello'), 0o0755)
+
+    # We need a big file that does not go into a batch to test a different
+    # code path
+    os.makedirs(os.path.join(project, 'files/dev-files/usr/share'), exist_ok=True)
+    with open(os.path.join(project, 'files/dev-files/usr/share/big-file'), 'w') as f:
+        buf = ' ' * 4096
+        for _ in range(1024):
+            f.write(buf)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+        result = cli.run(project=project, args=['build', 'compose-all.bst'])
+        result.assert_success()
+
+        result = cli.run(project=project,
+                         args=['artifact', 'checkout',
+                               '--hardlinks', '--no-integrate',
+                               'compose-all.bst',
+                               '--directory', checkout])
+        result.assert_success()
+
+        st = os.lstat(os.path.join(checkout, 'usr/include/pony.h'))
+        assert stat.S_ISREG(st.st_mode)
+        assert stat.S_IMODE(st.st_mode) == 0o0644
+
+        st = os.lstat(os.path.join(checkout, 'usr/bin/hello'))
+        assert stat.S_ISREG(st.st_mode)
+        assert stat.S_IMODE(st.st_mode) == 0o0755
+
+        st = os.lstat(os.path.join(checkout, 'usr/share/big-file'))
+        assert stat.S_ISREG(st.st_mode)
+        assert stat.S_IMODE(st.st_mode) == 0o0644
+
+        shutil.rmtree(checkout)
+
+        artifacts = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifacts)
+
+        result = cli.run(project=project, args=['artifact', 'pull', 'compose-all.bst'])
+        result.assert_success()
+
+        result = cli.run(project=project,
+                         args=['artifact', 'checkout',
+                               '--hardlinks', '--no-integrate',
+                               'compose-all.bst',
+                               '--directory', checkout])
+        result.assert_success()
+
+        st = os.lstat(os.path.join(checkout, 'usr/include/pony.h'))
+        assert stat.S_ISREG(st.st_mode)
+        assert stat.S_IMODE(st.st_mode) == 0o0644
+
+        st = os.lstat(os.path.join(checkout, 'usr/bin/hello'))
+        assert stat.S_ISREG(st.st_mode)
+        assert stat.S_IMODE(st.st_mode) == 0o0755
+
+        st = os.lstat(os.path.join(checkout, 'usr/share/big-file'))
+        assert stat.S_ISREG(st.st_mode)
+        assert stat.S_IMODE(st.st_mode) == 0o0644
