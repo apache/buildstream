@@ -187,7 +187,7 @@ class OptionPool():
         # and process any indirectly nested conditionals.
         #
         for _, value in _yaml.node_items(node):
-            if isinstance(value, Mapping):
+            if isinstance(value, _yaml.BstNode):
                 self.process_node(value)
             elif isinstance(value, list):
                 self._process_list(value)
@@ -238,7 +238,7 @@ class OptionPool():
     #
     def _process_list(self, values):
         for value in values:
-            if isinstance(value, Mapping):
+            if isinstance(value, _yaml.BstNode):
                 self.process_node(value)
             elif isinstance(value, list):
                 self._process_list(value)

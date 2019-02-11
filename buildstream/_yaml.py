@@ -178,6 +178,30 @@ class CompositeTypeError(CompositeError):
         self.actual_type = actual_type
 
 
+class BstNode(collections.abc.Mapping):
+    __slots__ = ('bst_filename', 'yaml_node', 'path')
+
+    def __init__(self, bst_filename, yaml_node, path):
+        self.yaml_node = yaml_node
+        self.bst_filename = bst_filename
+        self.path = path
+
+    def __getitem__(self, key):
+        return self.yaml_node.__getitem__(key)
+
+    def __setitem__(self, k, v):
+        self.yaml_node.__setitem__(k,v)
+
+    def __iter__(self):
+        return self.yaml_node.__iter__()
+
+    def __len__(self):
+        return self.yaml_node.__len__()
+
+    def __str__(self):
+        return str((self.yaml_node, self.bst_filename, self.path))
+
+
 # Loads a dictionary from some YAML
 #
 # Args:
@@ -240,7 +264,8 @@ def load_data(data, file=None, copy_tree=False):
                             .format(type(contents).__name__, file.name))
 
     # return node_decorated_copy(file, contents, copy_tree=copy_tree)
-    return contents
+    # return contents
+    return BstNode(file.name, contents, tuple())
 
 
 # Dumps a previously loaded YAML node to a file
@@ -329,14 +354,15 @@ def node_decorate_list(filename, target, source, toplevel):
 #
 def node_get_provenance(node, key=None, indices=None):
 
-    provenance = node.get(PROVENANCE_KEY)
-    if provenance and key:
-        provenance = provenance.members.get(key)
-        if provenance and indices is not None:
-            for index in indices:
-                provenance = provenance.elements[index]
+    # provenance = node.get(PROVENANCE_KEY)
+    # print(node, key, indices)
+    # if provenance and key:
+    #     provenance = provenance.members.get(key)
+    #     if provenance and indices is not None:
+    #         for index in indices:
+    #             provenance = provenance.elements[index]
 
-    return provenance
+    return node.bst_filename, node.path
 
 
 # A sentinel to be used as a default argument for functions that need
@@ -367,17 +393,18 @@ _sentinel = object()
 # Note:
 #    Returned strings are stripped of leading and trailing whitespace
 #
-def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
+def node_get(bst_node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
+    node = bst_node.yaml_node
     value = node.get(key, default_value)
-    provenance = node_get_provenance(node)
     if value is _sentinel:
+        provenance = node_get_provenance(bst_node)
         raise LoadError(LoadErrorReason.INVALID_DATA,
                         "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 
     path = key
     if indices is not None:
         # Implied type check of the element itself
-        value = node_get(node, list, key)
+        value = node_get(bst_node, list, key)
         for index in indices:
             value = value[index]
             path += '[{:d}]'.format(index)
@@ -406,7 +433,7 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
             else:
                 raise ValueError()
         except (ValueError, TypeError):
-            provenance = node_get_provenance(node, key=key, indices=indices)
+            provenance = node_get_provenance(bst_node, key=key, indices=indices)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, expected_type.__name__))
@@ -415,6 +442,8 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
     if isinstance(value, str):
         value = value.strip()
 
+    if expected_type == collections.abc.Mapping:
+        return BstNode(bst_node.bst_filename, value, bst_node.path + (key,))
     return value
 
 
@@ -530,7 +559,10 @@ def node_items(node):
     for key, value in node.items():
         if key == PROVENANCE_KEY:
             continue
-        yield (key, value)
+        if isinstance(value, collections.abc.Mapping):
+            yield (key, BstNode(node.bst_filename, value, node.path + (key,)))
+        else:
+            yield (key, value)
 
 
 # Gives a node a dummy provenance, in case of compositing dictionaries
@@ -732,21 +764,19 @@ def composite_list(target_node, source_node, key):
     target_value = target_node.get(key)
     source_value = source_node[key]
 
-    target_key_provenance = node_get_provenance(target_node, key)
-    source_key_provenance = node_get_provenance(source_node, key)
-
     # Whenever a literal list is encountered in the source, it
     # overwrites the target values and provenance completely.
     #
     if isinstance(source_value, list):
 
-        source_provenance = node_get_provenance(source_node)
-        target_provenance = node_get_provenance(target_node)
+
 
         # Assert target type
         if not (target_value is None or
                 isinstance(target_value, list) or
                 is_composite_list(target_value)):
+            target_key_provenance = node_get_provenance(target_node, key)
+            source_key_provenance = node_get_provenance(source_node, key)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: List cannot overwrite value at: {}"
                             .format(source_key_provenance, target_key_provenance))
@@ -837,6 +867,9 @@ def composite_dict(target, source, path=None):
     # target_provenance = ensure_provenance(target)
     # source_provenance = ensure_provenance(source)
 
+    #source = bstnode_source.yaml_node
+    #target = bstnode_target.yaml_node
+
     for key, source_value in node_items(source):
 
         # Track the full path of keys, only for raising CompositeError
@@ -859,9 +892,9 @@ def composite_dict(target, source, path=None):
                 target[key] = target_value
 
                 # Give the new dict provenance
-                value_provenance = source_value.get(PROVENANCE_KEY)
-                if value_provenance:
-                    target_value[PROVENANCE_KEY] = value_provenance.clone()
+                # value_provenance = source_value.get(PROVENANCE_KEY)
+                # if value_provenance:
+                #    target_value[PROVENANCE_KEY] = value_provenance.clone()
 
                 # Add a new provenance member element to the containing dict
                 # target_provenance.members[key] = source_provenance.members[key]
@@ -890,13 +923,17 @@ def composite_dict(target, source, path=None):
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
 def composite(target, source):
+    print(f"Merging\n\t{source.bst_filename} into\n\t{target.bst_filename}\n")
     assert hasattr(source, 'get')
 
-    source_provenance = node_get_provenance(source)
     try:
         composite_dict(target, source)
+        src = source.bst_filename if isinstance(source.bst_filename, tuple) else (source.bst_filename,)
+        trg = target.bst_filename if isinstance(target.bst_filename, tuple) else (target.bst_filename,)
+        target.bst_filename = trg + src
     except CompositeTypeError as e:
         error_prefix = ""
+        source_provenance = node_get_provenance(source)
         if source_provenance:
             error_prefix = "{}: ".format(source_provenance)
         raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
@@ -926,13 +963,15 @@ RoundTripRepresenter.add_representer(SanitizedDict,
 # Only dicts are ordered, list elements are left in order.
 #
 def node_sanitize(node):
+    if isinstance(node, BstNode):
+        node = node.yaml_node
 
     if isinstance(node, collections.abc.Mapping):
 
         result = SanitizedDict()
 
-        key_list = [key for key, _ in node_items(node)]
-        for key in sorted(key_list):
+        # key_list = [key for key, _ in node_items(node)]
+        for key in sorted(node.keys()):
             result[key] = node_sanitize(node[key])
 
         return result
@@ -957,11 +996,12 @@ def node_sanitize(node):
 #    LoadError: In the case that the specified node contained
 #               one or more invalid keys
 #
-def node_validate(node, valid_keys):
+def node_validate(bst_node, valid_keys):
+    node = bst_node.yaml_node
 
     # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
     valid_keys = set(valid_keys)
-    valid_keys.add(PROVENANCE_KEY)
+    # valid_keys.add(PROVENANCE_KEY)
     invalid = next((key for key in node if key not in valid_keys), None)
 
     if invalid:
@@ -1069,6 +1109,9 @@ class ChainMap(collections.ChainMap):
 
 
 def node_chain_copy(source):
+    return BstNode(
+        source.bst_filename, deepcopy(source.yaml_node), source.path
+    )
     copy = ChainMap({}, source)
     for key, value in source.items():
         if isinstance(value, collections.abc.Mapping):
@@ -1096,7 +1139,10 @@ def list_chain_copy(source):
     return copy
 
 
-def node_copy(source):
+def node_copy(bst_node):
+    return BstNode(
+        bst_node.bst_filename, deepcopy(bst_node.yaml_node), bst_node.path
+    )
     copy = {}
     for key, value in source.items():
         if isinstance(value, collections.abc.Mapping):

@@ -453,12 +453,12 @@ class Loader():
         for i in range(len(sources)):
             source = _yaml.node_get(node, Mapping, Symbol.SOURCES, indices=[i])
             kind = _yaml.node_get(source, str, Symbol.KIND)
-            del source[Symbol.KIND]
+            del source.yaml_node[Symbol.KIND]
 
             # Directory is optional
             directory = _yaml.node_get(source, str, Symbol.DIRECTORY, default_value=None)
             if directory:
-                del source[Symbol.DIRECTORY]
+                del source.yaml_node[Symbol.DIRECTORY]
 
             index = sources.index(source)
             meta_source = MetaSource(element_name, index, element_kind, kind, source, directory)

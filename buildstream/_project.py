@@ -268,8 +268,10 @@ class Project():
     #
     def create_source(self, meta, *, first_pass=False):
         if first_pass:
+            print("FIRST PASS", meta.config)
             return self.first_pass_config.source_factory.create(self._context, self, meta)
         else:
+            print("SECOND", meta.config)
             return self.config.source_factory.create(self._context, self, meta)
 
     # get_alias_uri()
@@ -456,6 +458,8 @@ class Project():
                 raise
 
         pre_config_node = _yaml.node_copy(self._default_config_node)
+        print(pre_config_node.bst_filename)
+        print(self._project_conf.bst_filename)
         _yaml.composite(pre_config_node, self._project_conf)
 
         # Assert project's format version early, before validating toplevel keys
@@ -642,8 +646,8 @@ class Project():
         # assertion after.
         output.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
         output.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
-        config.pop('elements', None)
-        config.pop('sources', None)
+        config.yaml_node.pop('elements', None)
+        config.yaml_node.pop('sources', None)
         _yaml.node_final_assertions(config)
 
         self._load_plugin_factories(config, output)

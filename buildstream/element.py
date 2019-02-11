@@ -2303,7 +2303,7 @@ class Element(Plugin):
         if not self.__defaults_set:
 
             # Load the plugin's accompanying .yaml file if one was provided
-            defaults = {}
+            defaults = _yaml.BstNode('', {}, tuple())
             try:
                 defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
             except LoadError as e:
@@ -2389,8 +2389,9 @@ class Element(Plugin):
         _yaml.node_final_assertions(variables)
 
         for var in ('project-name', 'element-name', 'max-jobs'):
-            provenance = _yaml.node_get_provenance(variables, var)
-            if provenance and provenance.filename != '':
+            #if provenance and provenance.filename != '':
+            if var in meta.variables.yaml_node:
+                provenance = _yaml.node_get_provenance(variables, var)
                 raise LoadError(LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
                                 "{}: invalid redefinition of protected variable '{}'"
                                 .format(provenance, var))

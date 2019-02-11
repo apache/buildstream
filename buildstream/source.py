@@ -254,7 +254,7 @@ class Source(Plugin):
     All Sources derive from this class, this interface defines how
     the core will be interacting with Sources.
     """
-    __defaults = {}          # The defaults from the project
+    __defaults = _yaml.BstNode('', {}, tuple())          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
 
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
@@ -1117,7 +1117,7 @@ class Source(Plugin):
                 sources = project.first_pass_config.source_overrides
             else:
                 sources = project.source_overrides
-            type(self).__defaults = sources.get(self.get_kind(), {})
+            type(self).__defaults = sources.get(self.get_kind(), _yaml.BstNode('', {}, tuple()))
             type(self).__defaults_set = True
 
     # This will resolve the final configuration to be handed
@@ -1127,6 +1127,8 @@ class Source(Plugin):
         config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
         config = _yaml.node_chain_copy(config)
 
+        print("copied config:", config)
+        print("meta config:", meta.config)
         _yaml.composite(config, meta.config)
         _yaml.node_final_assertions(config)
 

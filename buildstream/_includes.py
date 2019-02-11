@@ -120,7 +120,7 @@ class Includes:
                        included=set(),
                        current_loader=None,
                        only_local=False):
-        if isinstance(value, Mapping):
+        if isinstance(value, _yaml.BstNode):
             self.process(value,
                          included=included,
                          current_loader=current_loader,

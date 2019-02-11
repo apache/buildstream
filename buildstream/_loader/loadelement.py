@@ -184,6 +184,6 @@ def _extract_depends_from_node(node, *, key=None):
 
     # Now delete the field, we dont want it anymore
     if key in node:
-        del node[key]
+        del node.yaml_node[key]
 
     return output_deps

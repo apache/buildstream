@@ -43,7 +43,6 @@ _VARIABLE_MATCH = r'\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}'
 class Variables():
 
     def __init__(self, node):
-
         self.original = node
         self.variables = self._resolve(node)
 
@@ -147,8 +146,8 @@ class Variables():
                 unmatched += item_unmatched
 
             # Carry over provenance
-            resolved[_yaml.PROVENANCE_KEY] = variables[_yaml.PROVENANCE_KEY]
-            return (resolved, unmatched)
+            # resolved[_yaml.PROVENANCE_KEY] = variables[_yaml.PROVENANCE_KEY]
+            return (_yaml.BstNode(variables.bst_filename, resolved, variables.path), unmatched)
 
         # Resolve it until it's resolved or broken
         #

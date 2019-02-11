@@ -195,10 +195,13 @@ class ArtifactCache():
 
         artifacts = config_node.get('artifacts', [])
         if isinstance(artifacts, Mapping):
-            cache_specs.append(ArtifactCacheSpec._new_from_config_node(artifacts, basedir))
+            cache_specs.append(ArtifactCacheSpec._new_from_config_node(
+                _yaml.BstNode(config_node.bst_filename, artifacts, config_node.path + ('artifacts',)), basedir)
+            )
         elif isinstance(artifacts, list):
             for spec_node in artifacts:
-                cache_specs.append(ArtifactCacheSpec._new_from_config_node(spec_node, basedir))
+                cache_specs.append(ArtifactCacheSpec._new_from_config_node(
+                    _yaml.BstNode(config_node.bst_filename, spec_node, config_node.path + ('artifacts',)), basedir))
         else:
             provenance = _yaml.node_get_provenance(config_node, key='artifacts')
             raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
