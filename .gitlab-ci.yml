@@ -166,6 +166,7 @@ tests-wsl:
 
   script:
   - "${TEST_COMMAND}"
+  when: manual
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
