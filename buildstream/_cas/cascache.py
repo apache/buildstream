@@ -35,6 +35,8 @@ from .._exceptions import CASCacheError
 
 from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
 
+_BUFFER_SIZE = 65536
+
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
 #
@@ -371,7 +373,7 @@ class CASCache():
             with contextlib.ExitStack() as stack:
                 if path is not None and link_directly:
                     tmp = stack.enter_context(open(path, 'rb'))
-                    for chunk in iter(lambda: tmp.read(4096), b""):
+                    for chunk in iter(lambda: tmp.read(_BUFFER_SIZE), b""):
                         h.update(chunk)
                 else:
                     tmp = stack.enter_context(utils._tempnamedfile(dir=self.tmpdir))
@@ -380,7 +382,7 @@ class CASCache():
 
                     if path:
                         with open(path, 'rb') as f:
-                            for chunk in iter(lambda: f.read(4096), b""):
+                            for chunk in iter(lambda: f.read(_BUFFER_SIZE), b""):
                                 h.update(chunk)
                                 tmp.write(chunk)
                     else:
