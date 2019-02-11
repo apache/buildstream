@@ -1707,26 +1707,13 @@ You can then analyze the results interactively using the 'pstats' module:
 For more detailed documentation of cProfile and 'pstats', see:
 https://docs.python.org/3/library/profile.html.
 
-For a richer visualisation of the callstack you can try `Pyflame
-<https://github.com/uber/pyflame>`_. Once you have followed the instructions in
-Pyflame's README to install the tool, you can profile `bst` commands as in the
-following example:
+For a richer and interactive visualisation of the `.cprofile` files, you can
+try `snakeviz <http://jiffyclub.github.io/snakeviz/#interpreting-results>`_.
+You can install it with `pip install snakeviz`. Here is an example invocation:
 
-    pyflame --output bst.flame --trace bst --help
+    snakeviz bst.cprofile
 
-You may see an `Unexpected ptrace(2) exception:` error. Note that the `bst`
-operation will continue running in the background in this case, you will need
-to wait for it to complete or kill it. Once this is done, rerun the above
-command which appears to fix the issue.
-
-Once you have output from pyflame, you can use the ``flamegraph.pl`` script
-from the `Flamegraph project <https://github.com/brendangregg/FlameGraph>`_
-to generate an .svg image:
-
-    ./flamegraph.pl bst.flame > bst-flamegraph.svg
-
-The generated SVG file can then be viewed in your preferred web browser.
-
+It will then start a webserver and launch a browser to the relevant page.
 
 Profiling specific parts of BuildStream with BST_PROFILE
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
