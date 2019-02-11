@@ -53,6 +53,10 @@ tests-fedora-28:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
   <<: *tests
 
+tests-fedora-29:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
+  <<: *tests
+
 tests-ubuntu-18.04:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-46405991
   <<: *tests
@@ -289,6 +293,7 @@ coverage:
   dependencies:
   - tests-debian-9
   - tests-fedora-28
+  - tests-fedora-29
   - tests-fedora-missing-deps
   - tests-ubuntu-18.04
   - tests-unix
