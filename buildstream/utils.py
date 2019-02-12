@@ -235,7 +235,7 @@ def sha256sum(filename):
     try:
         h = hashlib.sha256()
         with open(filename, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
+            for chunk in iter(lambda: f.read(65536), b""):
                 h.update(chunk)
 
     except OSError as e:
