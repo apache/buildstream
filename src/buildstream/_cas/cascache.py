@@ -81,9 +81,10 @@ class CASCacheUsage():
 #
 class CASCache():
 
-    def __init__(self, path):
+    def __init__(self, path, *, disable_exec=False):
         self.casdir = os.path.join(path, 'cas')
         self.tmpdir = os.path.join(path, 'tmp')
+        self._disable_exec = disable_exec
         os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
@@ -136,7 +137,7 @@ class CASCache():
             # Optionally check presence of files
             if with_files:
                 for filenode in directory.files:
-                    if not os.path.exists(self.objpath(filenode.digest)):
+                    if not os.path.exists(self.objpath(filenode.digest, is_exec=filenode.is_executable)):
                         return False
 
             # Check subdirectories
@@ -169,13 +170,9 @@ class CASCache():
             # regular file, create hardlink
             fullpath = os.path.join(dest, filenode.name)
             if can_link:
-                utils.safe_link(self.objpath(filenode.digest), fullpath)
+                utils.safe_link(self.objpath(filenode.digest, is_exec=filenode.is_executable), fullpath)
             else:
-                utils.safe_copy(self.objpath(filenode.digest), fullpath)
-
-            if filenode.is_executable:
-                os.chmod(fullpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
-                         stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                utils.safe_copy(self.objpath(filenode.digest, is_exec=filenode.is_executable), fullpath)
 
         for dirnode in directory.directories:
             fullpath = os.path.join(dest, dirnode.name)
@@ -332,8 +329,12 @@ class CASCache():
     # Returns:
     #     (str): The path of the object
     #
-    def objpath(self, digest):
-        return os.path.join(self.casdir, 'objects', digest.hash[:2], digest.hash[2:])
+    def objpath(self, digest, *, is_exec=False):
+        if is_exec and not self._disable_exec:
+            filename = '{}.exec'.format(digest.hash[2:])
+        else:
+            filename = digest.hash[2:]
+        return os.path.join(self.casdir, 'objects', digest.hash[:2], filename)
 
     # add_object():
     #
@@ -350,7 +351,7 @@ class CASCache():
     #
     # Either `path` or `buffer` must be passed, but not both.
     #
-    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False):
+    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False, is_exec=False):
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
 
@@ -369,8 +370,7 @@ class CASCache():
                     for chunk in iter(lambda: tmp.read(_BUFFER_SIZE), b""):
                         h.update(chunk)
                 else:
-                    tmp = stack.enter_context(self._temporary_object())
-
+                    tmp = stack.enter_context(self._temporary_object(is_exec=is_exec))
                     if path:
                         with open(path, 'rb') as f:
                             for chunk in iter(lambda: f.read(_BUFFER_SIZE), b""):
@@ -386,7 +386,7 @@ class CASCache():
                 digest.size_bytes = os.fstat(tmp.fileno()).st_size
 
                 # Place file at final location
-                objpath = self.objpath(digest)
+                objpath = self.objpath(digest, is_exec=is_exec)
                 os.makedirs(os.path.dirname(objpath), exist_ok=True)
                 os.link(tmp.name, objpath)
 
@@ -592,19 +592,25 @@ class CASCache():
     #
     def remote_missing_blobs(self, remote, blobs):
         missing_blobs = dict()
+        executable = {}
+
         # Limit size of FindMissingBlobs request
         for required_blobs_group in _grouper(iter(blobs), 512):
             request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
 
-            for required_digest in required_blobs_group:
+            for is_exec, required_digest in required_blobs_group:
                 d = request.blob_digests.add()
                 d.CopyFrom(required_digest)
+                if required_digest.hash not in executable:
+                    executable[required_digest.hash] = set()
+                executable[required_digest.hash].add(is_exec)
 
             response = remote.cas.FindMissingBlobs(request)
             for missing_digest in response.missing_blob_digests:
                 d = remote_execution_pb2.Digest()
                 d.CopyFrom(missing_digest)
-                missing_blobs[d.hash] = d
+                for is_exec in executable[missing_digest.hash]:
+                    missing_blobs[(is_exec, d.hash)] = (is_exec, d)
 
         return missing_blobs.values()
 
@@ -619,10 +625,10 @@ class CASCache():
     #
     def local_missing_blobs(self, digests):
         missing_blobs = []
-        for digest in digests:
-            objpath = self.objpath(digest)
+        for is_exec, digest in digests:
+            objpath = self.objpath(digest, is_exec=is_exec)
             if not os.path.exists(objpath):
-                missing_blobs.append(digest)
+                missing_blobs.append((is_exec, digest))
         return missing_blobs
 
     # required_blobs_for_directory():
@@ -636,7 +642,7 @@ class CASCache():
 
         # parse directory, and recursively add blobs
 
-        yield directory_digest
+        yield False, directory_digest
 
         directory = remote_execution_pb2.Directory()
 
@@ -644,7 +650,7 @@ class CASCache():
             directory.ParseFromString(f.read())
 
         for filenode in directory.files:
-            yield filenode.digest
+            yield filenode.is_executable, filenode.digest
 
         for dirnode in directory.directories:
             if dirnode.name not in excluded_subdirs:
@@ -797,9 +803,9 @@ class CASCache():
 
         for filenode in directory.files:
             if update_mtime:
-                os.utime(self.objpath(filenode.digest))
+                os.utime(self.objpath(filenode.digest, is_exec=filenode.is_executable))
             if check_exists:
-                if not os.path.exists(self.objpath(filenode.digest)):
+                if not os.path.exists(self.objpath(filenode.digest, is_exec=filenode.is_executable)):
                     raise FileNotFoundError
             reachable.add(filenode.digest.hash)
 
@@ -813,10 +819,12 @@ class CASCache():
     #
     # Create a named temporary file with 0o0644 access rights.
     @contextlib.contextmanager
-    def _temporary_object(self):
+    def _temporary_object(self, *, is_exec=False):
         with utils._tempnamedfile(dir=self.tmpdir) as f:
-            os.chmod(f.name,
-                     stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+            access = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+            if is_exec and not self._disable_exec:
+                access |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            os.chmod(f.name, access)
             yield f
 
     # _ensure_blob():
@@ -830,27 +838,27 @@ class CASCache():
     # Returns:
     #     (str): The path of the object
     #
-    def _ensure_blob(self, remote, digest):
-        objpath = self.objpath(digest)
+    def _ensure_blob(self, remote, digest, is_exec=False):
+        objpath = self.objpath(digest, is_exec=is_exec)
         if os.path.exists(objpath):
             # already in local repository
             return objpath
 
-        with self._temporary_object() as f:
+        with self._temporary_object(is_exec=is_exec) as f:
             remote._fetch_blob(digest, f)
 
-            added_digest = self.add_object(path=f.name, link_directly=True)
+            added_digest = self.add_object(path=f.name, link_directly=True, is_exec=is_exec)
             assert added_digest.hash == digest.hash
 
         return objpath
 
     def _batch_download_complete(self, batch, *, missing_blobs=None):
-        for digest, data in batch.send(missing_blobs=missing_blobs):
-            with self._temporary_object() as f:
+        for digest, data, is_exec in batch.send(missing_blobs=missing_blobs):
+            with self._temporary_object(is_exec=is_exec) as f:
                 f.write(data)
                 f.flush()
 
-                added_digest = self.add_object(path=f.name, link_directly=True)
+                added_digest = self.add_object(path=f.name, link_directly=True, is_exec=is_exec)
                 assert added_digest.hash == digest.hash
 
     # Helper function for _fetch_directory().
@@ -864,8 +872,9 @@ class CASCache():
         return _CASBatchRead(remote)
 
     # Helper function for _fetch_directory().
-    def _fetch_directory_node(self, remote, digest, batch, fetch_queue, fetch_next_queue, *, recursive=False):
-        in_local_cache = os.path.exists(self.objpath(digest))
+    def _fetch_directory_node(self, remote, digest, batch, fetch_queue, fetch_next_queue,
+                              *, recursive=False, is_exec=False):
+        in_local_cache = os.path.exists(self.objpath(digest, is_exec=is_exec))
 
         if in_local_cache:
             # Skip download, already in local cache.
@@ -873,14 +882,14 @@ class CASCache():
         elif (digest.size_bytes >= remote.max_batch_total_size_bytes or
               not remote.batch_read_supported):
             # Too large for batch request, download in independent request.
-            self._ensure_blob(remote, digest)
+            self._ensure_blob(remote, digest, is_exec=is_exec)
             in_local_cache = True
         else:
-            if not batch.add(digest):
+            if not batch.add(digest, is_exec=is_exec):
                 # Not enough space left in batch request.
                 # Complete pending batch first.
                 batch = self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-                batch.add(digest)
+                batch.add(digest, is_exec=is_exec)
 
         if recursive:
             if in_local_cache:
@@ -963,25 +972,31 @@ class CASCache():
 
         batch = _CASBatchRead(remote)
 
-        for digest in digests:
+        for d in digests:
+            try:
+                is_exec, digest = d
+            except TypeError:
+                digest = d
+                is_exec = False
+
             if (digest.size_bytes >= remote.max_batch_total_size_bytes or
                     not remote.batch_read_supported):
                 # Too large for batch request, download in independent request.
                 try:
-                    self._ensure_blob(remote, digest)
+                    self._ensure_blob(remote, digest, is_exec=is_exec)
                 except grpc.RpcError as e:
                     if e.code() == grpc.StatusCode.NOT_FOUND:
                         missing_blobs.append(digest)
                     else:
                         raise CASCacheError("Failed to fetch blob: {}".format(e)) from e
             else:
-                if not batch.add(digest):
+                if not batch.add(digest, is_exec=is_exec):
                     # Not enough space left in batch request.
                     # Complete pending batch first.
                     self._batch_download_complete(batch, missing_blobs=missing_blobs)
 
                     batch = _CASBatchRead(remote)
-                    batch.add(digest)
+                    batch.add(digest, is_exec=is_exec)
 
         # Complete last pending batch
         self._batch_download_complete(batch, missing_blobs=missing_blobs)
@@ -999,8 +1014,14 @@ class CASCache():
     def send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
         batch = _CASBatchUpdate(remote)
 
-        for digest in digests:
-            with open(self.objpath(digest), 'rb') as f:
+        for d in digests:
+            try:
+                is_exec, digest = d
+            except TypeError:
+                digest = d
+                is_exec = False
+
+            with open(self.objpath(digest, is_exec=is_exec), 'rb') as f:
                 assert os.fstat(f.fileno()).st_size == digest.size_bytes
 
                 if (digest.size_bytes >= remote.max_batch_total_size_bytes or

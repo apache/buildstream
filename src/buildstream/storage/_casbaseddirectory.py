@@ -136,8 +136,8 @@ class CasBasedDirectory(Directory):
         entry = IndexEntry(filename, _FileType.REGULAR_FILE,
                            modified=modified or filename in self.index)
         path = os.path.join(basename, filename)
-        entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         entry.is_executable = os.access(path, os.X_OK)
+        entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link, is_exec=entry.is_executable)
         self.index[filename] = entry
 
         self.__invalidate_digest()

@@ -64,7 +64,7 @@ class ArtifactTooLargeException(Exception):
 def create_server(repo, *, enable_push,
                   max_head_size=int(10e9),
                   min_head_size=int(2e9)):
-    cas = CASCache(os.path.abspath(repo))
+    cas = CASCache(os.path.abspath(repo), disable_exec=True)
     artifactdir = os.path.join(os.path.abspath(repo), 'artifacts', 'refs')
     sourcedir = os.path.join(os.path.abspath(repo), 'source_protos')
 

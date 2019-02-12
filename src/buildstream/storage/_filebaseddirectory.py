@@ -272,11 +272,8 @@ class FileBasedDirectory(Directory):
                         continue
 
                 if entry.type == _FileType.REGULAR_FILE:
-                    src_path = source_directory.cas_cache.objpath(entry.digest)
+                    src_path = source_directory.cas_cache.objpath(entry.digest, is_exec=entry.is_executable)
                     actionfunc(src_path, dest_path, result=result)
-                    if entry.is_executable:
-                        os.chmod(dest_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
-                                 stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
                 else:
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)

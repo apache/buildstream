@@ -46,7 +46,7 @@ class ArtifactShare():
         self.artifactdir = os.path.join(self.repodir, 'artifacts', 'refs')
         os.makedirs(self.artifactdir)
 
-        self.cas = CASCache(self.repodir)
+        self.cas = CASCache(self.repodir, disable_exec=True)
 
         self.total_space = total_space
         self.free_space = free_space

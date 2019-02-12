@@ -4,6 +4,8 @@
 import os
 import tarfile
 import hashlib
+import shutil
+import stat
 import subprocess
 import re
 
@@ -885,3 +887,34 @@ def test_partial_checkout_fail(tmpdir, datafiles, cli):
             checkout_dir])
         res.assert_main_error(ErrorDomain.STREAM, 'uncached-checkout-attempt')
         assert re.findall(r'Remote \((\S+)\) does not have artifact (\S+) cached', res.stderr)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_access_rights(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    shutil.copyfile(os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello'),
+                    os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello-2'))
+    os.chmod(os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello'),
+             0o0755)
+    os.chmod(os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello-2'),
+             0o0644)
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', 'target.bst',
+                     '--directory', checkout]
+
+    # Now check it out
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    st = os.lstat(os.path.join(checkout, 'usr', 'bin', 'hello'))
+    assert stat.S_ISREG(st.st_mode)
+    assert stat.S_IMODE(st.st_mode) == 0o0755
+
+    st = os.lstat(os.path.join(checkout, 'usr', 'bin', 'hello-2'))
+    assert stat.S_ISREG(st.st_mode)
+    assert stat.S_IMODE(st.st_mode) == 0o0644

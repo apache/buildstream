@@ -430,7 +430,7 @@ def test_integration_partial_artifact(cli, datafiles, tmpdir, integration_cache)
 
         # Remove the binary from the CAS
         cachedir = cli.config['cachedir']
-        objpath = os.path.join(cachedir, 'cas', 'objects', digest[:2], digest[2:])
+        objpath = os.path.join(cachedir, 'cas', 'objects', digest[:2], '{}.exec'.format(digest[2:]))
         os.unlink(objpath)
 
         # check shell doesn't work
