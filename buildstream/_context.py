@@ -361,14 +361,17 @@ class Context():
     #    (bool): Whether or not to use strict build plan
     #
     def get_strict(self):
+        if self._strict_build_plan is None:
+            # Either we're not overridden or we've never worked it out before
+            # so work out if we should be strict, and then cache the result
+            toplevel = self.get_toplevel_project()
+            overrides = self.get_overrides(toplevel.name)
+            self._strict_build_plan = _yaml.node_get(overrides, bool, 'strict', default_value=True)
 
         # If it was set by the CLI, it overrides any config
-        if self._strict_build_plan is not None:
-            return self._strict_build_plan
-
-        toplevel = self.get_toplevel_project()
-        overrides = self.get_overrides(toplevel.name)
-        return _yaml.node_get(overrides, bool, 'strict', default_value=True)
+        # Ditto if we've already computed this, then we return the computed
+        # value which we cache here too.
+        return self._strict_build_plan
 
     # get_cache_key():
     #
