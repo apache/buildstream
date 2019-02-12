@@ -1109,6 +1109,10 @@ __LIST_TYPES = (list, yaml.comments.CommentedSeq)
 # copying tactic.
 __PROVENANCE_TYPES = (Provenance, DictProvenance, MemberProvenance, ElementProvenance)
 
+# These are the directives used to compose lists, we need this because it's
+# slightly faster during the node_final_assertions checks
+__NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
+
 
 def node_chain_copy(source):
     copy = ChainMap({}, source)
@@ -1202,22 +1206,26 @@ def node_final_assertions(node):
         # indicates that the user intended to override a list which
         # never existed in the underlying data
         #
-        if key in ['(>)', '(<)', '(=)']:
+        if key in __NODE_ASSERT_COMPOSITION_DIRECTIVES:
             provenance = node_get_provenance(node, key)
             raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
                             "{}: Attempt to override non-existing list".format(provenance))
 
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+
+        if value_type in __DICT_TYPES:
             node_final_assertions(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             list_final_assertions(value)
 
 
 def list_final_assertions(values):
     for value in values:
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+
+        if value_type in __DICT_TYPES:
             node_final_assertions(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             list_final_assertions(value)
 
 
