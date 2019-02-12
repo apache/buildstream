@@ -109,6 +109,8 @@ Junctions can configure options of the linked project. Options are never
 implicitly inherited across junctions, however, variables can be used to
 explicitly assign the same value to a subproject option.
 
+.. _core_junction_nested:
+
 Nested Junctions
 ----------------
 Junctions can be nested. That is, subprojects are allowed to have junctions on
