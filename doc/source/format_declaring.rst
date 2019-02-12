@@ -401,6 +401,41 @@ Attributes:
      The ``junction`` attribute is available since :ref:`format version 1 <project_format_version>`
 
 
+Cross-junction dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+As mentioned above, cross-junction dependencies can be specified using the
+``junction`` attribute. They can also be expressed as simple strings as a
+convenience shorthand. You can refer to cross-junction elements using the
+syntax ``{junction-name}:{element-name}``.
+
+For example, the following is logically same as the example above:
+
+.. code:: yaml
+
+   build-depends:
+     - baseproject.bst:foo.bst
+
+Similarly, you can also refer to cross-junction elements via the ``filename``
+attribute, like so:
+
+.. code:: yaml
+
+   depends:
+     - filename: baseproject.bst:foo.bst
+       type: build
+
+.. note::
+
+   BuildStream does not allow recursice lookups for junction elements. If a
+   filename contains more than one ``:`` (colon) character, an error will be
+   raised. See :ref:`nested junctions <core_junction_nested>` for more details
+   on nested junctions.
+
+.. note::
+
+   This shorthand is available since :ref:`format version 23 <project_format_version>`
+
+
 .. _format_dependencies_types:
 
 Dependency types
