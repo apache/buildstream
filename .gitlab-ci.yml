@@ -53,26 +53,20 @@ tests-fedora-28:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
   <<: *tests
 
+tests-fedora-29:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
+  <<: *tests
+
 tests-ubuntu-18.04:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-46405991
   <<: *tests
-
-tests-python-3.7-stretch:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.7-stretch-master-46405991
-  <<: *tests
-
-  variables:
-    # Note that we explicitly specify TOXENV in this case because this
-    # image has both 3.6 and 3.7 versions. python3.6 cannot be removed because
-    # some of our base dependencies declare it as their runtime dependency.
-    TOXENV: py37
 
 tests-centos-7.6:
   <<: *tests
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-46405991
 
-overnight-fedora-28-aarch64:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-28-master-46405991
+overnight-fedora-29-aarch64:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-29-master-47052095
   tags:
     - aarch64
   <<: *tests
@@ -91,7 +85,7 @@ overnight-fedora-28-aarch64:
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
   <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
@@ -109,7 +103,7 @@ tests-unix:
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
   <<: *tests
 
   script:
@@ -128,7 +122,7 @@ tests-fedora-update-deps:
   # Check if the tests pass after updating requirements to their latest
   # allowed version.
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
   <<: *tests
 
   script:
@@ -289,6 +283,7 @@ coverage:
   dependencies:
   - tests-debian-9
   - tests-fedora-28
+  - tests-fedora-29
   - tests-fedora-missing-deps
   - tests-ubuntu-18.04
   - tests-unix
