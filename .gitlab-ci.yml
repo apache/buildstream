@@ -61,16 +61,6 @@ tests-ubuntu-18.04:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-46405991
   <<: *tests
 
-tests-python-3.7-stretch:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.7-stretch-master-46405991
-  <<: *tests
-
-  variables:
-    # Note that we explicitly specify TOXENV in this case because this
-    # image has both 3.6 and 3.7 versions. python3.6 cannot be removed because
-    # some of our base dependencies declare it as their runtime dependency.
-    TOXENV: py37
-
 tests-centos-7.6:
   <<: *tests
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-46405991
