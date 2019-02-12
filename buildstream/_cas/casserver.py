@@ -61,7 +61,7 @@ class ArtifactTooLargeException(Exception):
 def create_server(repo, *, enable_push,
                   max_head_size=int(10e9),
                   min_head_size=int(2e9)):
-    cas = CASCache(os.path.abspath(repo))
+    cas = CASCache(os.path.abspath(repo), disable_exec=True)
 
     # Use max_workers default from Python 3.5+
     max_workers = (os.cpu_count() or 1) * 5

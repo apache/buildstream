@@ -2,6 +2,8 @@ import os
 import tarfile
 import hashlib
 import pytest
+import shutil
+import stat
 import subprocess
 from tests.testutils.site import IS_WINDOWS
 from tests.testutils import create_repo, ALL_REPO_KINDS, generate_junction
@@ -709,3 +711,34 @@ def test_build_checkout_cross_junction(datafiles, cli, tmpdir):
 
     filename = os.path.join(checkout, 'etc', 'animal.conf')
     assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_access_rights(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    shutil.copyfile(os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello'),
+                    os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello-2'))
+    os.chmod(os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello'),
+             0o0755)
+    os.chmod(os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello-2'),
+             0o0644)
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', 'target.bst',
+                     '--directory', checkout]
+
+    # Now check it out
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    st = os.lstat(os.path.join(checkout, 'usr', 'bin', 'hello'))
+    assert stat.S_ISREG(st.st_mode)
+    assert stat.S_IMODE(st.st_mode) == 0o0755
+
+    st = os.lstat(os.path.join(checkout, 'usr', 'bin', 'hello-2'))
+    assert stat.S_ISREG(st.st_mode)
+    assert stat.S_IMODE(st.st_mode) == 0o0644

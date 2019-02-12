@@ -306,8 +306,9 @@ class _CASBatchRead():
         self._request = remote_execution_pb2.BatchReadBlobsRequest()
         self._size = 0
         self._sent = False
+        self._is_exec = {}
 
-    def add(self, digest):
+    def add(self, digest, *, is_exec=False):
         assert not self._sent
 
         new_batch_size = self._size + digest.size_bytes
@@ -319,6 +320,9 @@ class _CASBatchRead():
         request_digest.hash = digest.hash
         request_digest.size_bytes = digest.size_bytes
         self._size = new_batch_size
+        if digest.hash not in self._is_exec:
+            self._is_exec[digest.hash] = set()
+        self._is_exec[digest.hash].add(is_exec)
         return True
 
     def send(self):
@@ -341,7 +345,8 @@ class _CASBatchRead():
                 raise CASRemoteError("Failed to download blob {}: expected {} bytes, received {} bytes".format(
                     response.digest.hash, response.digest.size_bytes, len(response.data)))
 
-            yield (response.digest, response.data)
+            for is_exec in self._is_exec[response.digest.hash]:
+                yield (response.digest, response.data, is_exec)
 
 
 # Represents a batch of blobs queued for upload.

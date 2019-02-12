@@ -49,7 +49,7 @@ class ArtifactShare():
 
         os.makedirs(self.repodir)
 
-        self.cas = CASCache(self.repodir)
+        self.cas = CASCache(self.repodir, disable_exec=True)
 
         self.total_space = total_space
         self.free_space = free_space
