@@ -91,7 +91,7 @@ class ProjectConfig:
 class Project():
 
     def __init__(self, directory, context, *, junction=None, cli_options=None,
-                 default_mirror=None, parent_loader=None, tempdir=None):
+                 default_mirror=None, parent_loader=None):
 
         # The project name
         self.name = None
@@ -147,7 +147,7 @@ class Project():
         self._project_includes = None
 
         profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
-        self._load(parent_loader=parent_loader, tempdir=tempdir)
+        self._load(parent_loader=parent_loader)
         profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
 
         self._partially_loaded = True
@@ -389,8 +389,6 @@ class Project():
     # Cleans up resources used loading elements
     #
     def cleanup(self):
-        self.loader.cleanup()
-
         # Reset the element loader state
         Element._reset_load_state()
 
@@ -439,7 +437,7 @@ class Project():
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, parent_loader=None, tempdir=None):
+    def _load(self, parent_loader=None):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
@@ -505,8 +503,7 @@ class Project():
         self._fatal_warnings = _yaml.node_get(pre_config_node, list, 'fatal-warnings', default_value=[])
 
         self.loader = Loader(self._context, self,
-                             parent=parent_loader,
-                             tempdir=tempdir)
+                             parent=parent_loader)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 
