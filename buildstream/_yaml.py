@@ -365,8 +365,8 @@ _sentinel = object()
 #
 def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
     value = node.get(key, default_value)
-    provenance = node_get_provenance(node)
     if value is _sentinel:
+        provenance = node_get_provenance(node)
         raise LoadError(LoadErrorReason.INVALID_DATA,
                         "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 
@@ -914,6 +914,10 @@ RoundTripRepresenter.add_representer(SanitizedDict,
                                      SafeRepresenter.represent_dict)
 
 
+# Types we can short-circuit in node_sanitize for speed.
+__SANITIZE_SHORT_CIRCUIT_TYPES = (int, float, str, bool, tuple)
+
+
 # node_sanitize()
 #
 # Returnes an alphabetically ordered recursive copy
@@ -922,9 +926,21 @@ RoundTripRepresenter.add_representer(SanitizedDict,
 # Only dicts are ordered, list elements are left in order.
 #
 def node_sanitize(node):
+    # Short-circuit None which occurs ca. twice per element
+    if node is None:
+        return node
 
-    if isinstance(node, collections.abc.Mapping):
+    node_type = type(node)
+    # Next short-circuit integers, floats, strings, booleans, and tuples
+    if node_type in __SANITIZE_SHORT_CIRCUIT_TYPES:
+        return node
+    # Now short-circuit lists.  Note this is only for the raw list
+    # type, CommentedSeq and others get caught later.
+    elif node_type is list:
+        return [node_sanitize(elt) for elt in node]
 
+    # Finally ChainMap and dict, and other Mappings need special handling
+    if node_type in (dict, ChainMap) or isinstance(node, collections.Mapping):
         result = SanitizedDict()
 
         key_list = [key for key, _ in node_items(node)]
@@ -932,10 +948,12 @@ def node_sanitize(node):
             result[key] = node_sanitize(node[key])
 
         return result
-
+    # Catch the case of CommentedSeq and friends.  This is more rare and so
+    # we keep complexity down by still using isinstance here.
     elif isinstance(node, list):
         return [node_sanitize(elt) for elt in node]
 
+    # Everything else (such as commented scalars) just gets returned as-is.
     return node
 
 
@@ -1064,15 +1082,52 @@ class ChainMap(collections.ChainMap):
             return default
 
 
+# Node copying
+#
+# Unfortunately we copy nodes a *lot* and `isinstance()` is super-slow when
+# things from collections.abc get involved.  The result is the following
+# intricate but substantially faster group of tuples and the use of `in`.
+#
+# If any of the {node,list}_{chain_,}_copy routines raise a ValueError
+# then it's likely additional types need adding to these tuples.
+
+# When chaining a copy, these types are skipped since the ChainMap will
+# retrieve them from the source node when needed.  Other copiers might copy
+# them, so we call them __QUICK_TYPES.
+__QUICK_TYPES = (str, bool,
+                 yaml.scalarstring.PreservedScalarString,
+                 yaml.scalarstring.SingleQuotedScalarString,
+                 yaml.scalarstring.DoubleQuotedScalarString)
+
+# These types have to be iterated like a dictionary
+__DICT_TYPES = (dict, ChainMap, yaml.comments.CommentedMap)
+
+# These types have to be iterated like a list
+__LIST_TYPES = (list, yaml.comments.CommentedSeq)
+
+# These are the provenance types, which have to be cloned rather than any other
+# copying tactic.
+__PROVENANCE_TYPES = (Provenance, DictProvenance, MemberProvenance, ElementProvenance)
+
+# These are the directives used to compose lists, we need this because it's
+# slightly faster during the node_final_assertions checks
+__NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
+
+
 def node_chain_copy(source):
     copy = ChainMap({}, source)
     for key, value in source.items():
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+        if value_type in __DICT_TYPES:
             copy[key] = node_chain_copy(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             copy[key] = list_chain_copy(value)
-        elif isinstance(value, Provenance):
+        elif value_type in __PROVENANCE_TYPES:
             copy[key] = value.clone()
+        elif value_type in __QUICK_TYPES:
+            pass  # No need to copy these, the chainmap deals with it
+        else:
+            raise ValueError("Unable to be quick about node_chain_copy of {}".format(value_type))
 
     return copy
 
@@ -1080,14 +1135,17 @@ def node_chain_copy(source):
 def list_chain_copy(source):
     copy = []
     for item in source:
-        if isinstance(item, collections.abc.Mapping):
+        item_type = type(item)
+        if item_type in __DICT_TYPES:
             copy.append(node_chain_copy(item))
-        elif isinstance(item, list):
+        elif item_type in __LIST_TYPES:
             copy.append(list_chain_copy(item))
-        elif isinstance(item, Provenance):
+        elif item_type in __PROVENANCE_TYPES:
             copy.append(item.clone())
-        else:
+        elif item_type in __QUICK_TYPES:
             copy.append(item)
+        else:  # Fallback
+            raise ValueError("Unable to be quick about list_chain_copy of {}".format(item_type))
 
     return copy
 
@@ -1095,14 +1153,17 @@ def list_chain_copy(source):
 def node_copy(source):
     copy = {}
     for key, value in source.items():
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+        if value_type in __DICT_TYPES:
             copy[key] = node_copy(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             copy[key] = list_copy(value)
-        elif isinstance(value, Provenance):
+        elif value_type in __PROVENANCE_TYPES:
             copy[key] = value.clone()
-        else:
+        elif value_type in __QUICK_TYPES:
             copy[key] = value
+        else:
+            raise ValueError("Unable to be quick about node_copy of {}".format(value_type))
 
     ensure_provenance(copy)
 
@@ -1112,14 +1173,17 @@ def node_copy(source):
 def list_copy(source):
     copy = []
     for item in source:
-        if isinstance(item, collections.abc.Mapping):
+        item_type = type(item)
+        if item_type in __DICT_TYPES:
             copy.append(node_copy(item))
-        elif isinstance(item, list):
+        elif item_type in __LIST_TYPES:
             copy.append(list_copy(item))
-        elif isinstance(item, Provenance):
+        elif item_type in __PROVENANCE_TYPES:
             copy.append(item.clone())
-        else:
+        elif item_type in __QUICK_TYPES:
             copy.append(item)
+        else:
+            raise ValueError("Unable to be quick about list_copy of {}".format(item_type))
 
     return copy
 
@@ -1142,22 +1206,26 @@ def node_final_assertions(node):
         # indicates that the user intended to override a list which
         # never existed in the underlying data
         #
-        if key in ['(>)', '(<)', '(=)']:
+        if key in __NODE_ASSERT_COMPOSITION_DIRECTIVES:
             provenance = node_get_provenance(node, key)
             raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
                             "{}: Attempt to override non-existing list".format(provenance))
 
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+
+        if value_type in __DICT_TYPES:
             node_final_assertions(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             list_final_assertions(value)
 
 
 def list_final_assertions(values):
     for value in values:
-        if isinstance(value, collections.abc.Mapping):
+        value_type = type(value)
+
+        if value_type in __DICT_TYPES:
             node_final_assertions(value)
-        elif isinstance(value, list):
+        elif value_type in __LIST_TYPES:
             list_final_assertions(value)
 
 
