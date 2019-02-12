@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "24-Jan-2019" "" "bst show Manual"
+.TH "BST SHOW" "1" "12-Feb-2019" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -43,6 +43,9 @@ the following symbols can be used in the format string:
     %{public}         Public domain data
     %{workspaced}     If the element is workspaced
     %{workspace-dirs} A list of workspace directories
+    %{deps}           A list of all dependencies
+    %{build-deps}     A list of build dependencies
+    %{runtime-deps}   A list of runtime dependencies
 .PP
 The value of the %{symbol} without the leading '%' character is understood
 as a pythonic formatting string, so python formatting features apply,

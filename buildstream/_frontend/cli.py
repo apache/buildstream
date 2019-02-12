@@ -440,6 +440,9 @@ def show(app, elements, deps, except_, order, format_):
         %{public}         Public domain data
         %{workspaced}     If the element is workspaced
         %{workspace-dirs} A list of workspace directories
+        %{deps}           A list of all dependencies
+        %{build-deps}     A list of build dependencies
+        %{runtime-deps}   A list of runtime dependencies
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
