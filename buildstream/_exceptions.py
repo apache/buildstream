@@ -19,6 +19,7 @@
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 from enum import Enum
+import os
 
 # Disable pylint warnings for whole file here:
 # pylint: disable=global-statement
@@ -50,6 +51,9 @@ def get_last_exception():
 # Used by regression tests
 #
 def get_last_task_error():
+    if 'BST_TEST_SUITE' not in os.environ:
+        raise BstError("Getting the last task error is only supported when running tests")
+
     global _last_task_error_domain
     global _last_task_error_reason
 
@@ -67,11 +71,12 @@ def get_last_task_error():
 # tests about how things failed in a machine readable way
 #
 def set_last_task_error(domain, reason):
-    global _last_task_error_domain
-    global _last_task_error_reason
+    if 'BST_TEST_SUITE' in os.environ:
+        global _last_task_error_domain
+        global _last_task_error_reason
 
-    _last_task_error_domain = domain
-    _last_task_error_reason = reason
+        _last_task_error_domain = domain
+        _last_task_error_reason = reason
 
 
 class ErrorDomain(Enum):
@@ -126,7 +131,8 @@ class BstError(Exception):
         self.reason = reason
 
         # Hold on to the last raised exception for testing purposes
-        _last_exception = self
+        if 'BST_TEST_SUITE' in os.environ:
+            _last_exception = self
 
 
 # PluginError
