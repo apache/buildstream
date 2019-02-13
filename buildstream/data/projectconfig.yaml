@@ -91,9 +91,15 @@ split-rules:
   # and shared libraries by default.
   runtime:
   - |
+    %{bindir}
+  - |
     %{bindir}/*
   - |
+    %{sbindir}
+  - |
     %{sbindir}/*
+  - |
+    %{libexecdir}
   - |
     %{libexecdir}/*
   - |
