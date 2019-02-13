@@ -575,7 +575,8 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
                     if choice != "never":
                         use_buildtree = choice
 
-        if use_buildtree and not element._cached_success():
+        # Raise warning if the element is cached in a failed state
+        if use_buildtree and element._cached_failure():
             click.echo("WARNING: using a buildtree from a failed build.", err=True)
 
         try:
