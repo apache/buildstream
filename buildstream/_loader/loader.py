@@ -152,7 +152,26 @@ class Loader():
             #
             ret.append(loader._collect_element(element))
 
+        self._clean_caches()
+
         return ret
+
+    # clean_caches()
+    #
+    # Clean internal loader caches, recursively
+    #
+    # When loading the elements, the loaders use caches in order to not load the
+    # same element twice. These are kept after loading and prevent garbage
+    # collection. Cleaning them explicitely is required.
+    #
+    def _clean_caches(self):
+        for loader in self._loaders.values():
+            # value may be None with nested junctions without overrides
+            if loader is not None:
+                loader._clean_caches()
+
+        self._meta_elements = {}
+        self._elements = {}
 
     ###########################################
     #            Private Methods              #
