@@ -251,6 +251,9 @@ def print_version(ctx, param, value):
               help="The mirror to fetch from first, before attempting other mirrors")
 @click.option('--pull-buildtrees', is_flag=True, default=None,
               help="Include an element's build tree when pulling remote element artifacts")
+@click.option('--cache-buildtrees', default=None,
+              type=click.Choice(['always', 'failure', 'never']),
+              help="Cache artifact build tree content on creation")
 @click.pass_context
 def cli(context, **kwargs):
     """Build and manipulate BuildStream projects
@@ -572,7 +575,8 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
                     if choice != "never":
                         use_buildtree = choice
 
-        if use_buildtree and not element._cached_success():
+        # Raise warning if the element is cached in a failed state
+        if use_buildtree and element._cached_failure():
             click.echo("WARNING: using a buildtree from a failed build.", err=True)
 
         try:

@@ -121,6 +121,9 @@ class Context():
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
+        # Whether or not to cache build trees on artifact creation
+        self.cache_buildtrees = None
+
         # Boolean, whether we double-check with the user that they meant to
         # close the workspace when they're using it to access the project.
         self.prompt_workspace_close_project_inaccessible = None
@@ -201,7 +204,7 @@ class Context():
         # our artifactdir - the artifactdir may not have been created
         # yet.
         cache = _yaml.node_get(defaults, Mapping, 'cache')
-        _yaml.node_validate(cache, ['quota', 'pull-buildtrees'])
+        _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
         self.config_cache_quota = _yaml.node_get(cache, str, 'quota')
 
@@ -212,6 +215,10 @@ class Context():
 
         # Load pull build trees configuration
         self.pull_buildtrees = _yaml.node_get(cache, bool, 'pull-buildtrees')
+
+        # Load cache build trees configuration
+        self.cache_buildtrees = _node_get_option_str(
+            cache, 'cache-buildtrees', ['always', 'failure', 'never'])
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

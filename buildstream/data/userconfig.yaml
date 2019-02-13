@@ -41,6 +41,15 @@ cache:
   # Whether to pull build trees when downloading element artifacts
   pull-buildtrees: False
 
+  # Whether to cache build trees on artifact creation:
+  #
+  #  always - Always cache artifact build tree content
+  #  failure - Only cache build trees of failed builds
+  #  never - Don't cache artifact build tree content
+  #
+  cache-buildtrees: always
+
+
 #
 #    Scheduler
 #
