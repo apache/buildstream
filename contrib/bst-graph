@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+'''Print dependency graph of given element(s) in DOT format.
+
+This script must be run from the same directory where you would normally
+run `bst` commands.
+
+When `--format` option is specified, the output will also be rendered in the
+given format. A file with name `bst-graph.{format}` will be created in the same
+directory. To use this option, you must have the `graphviz` command line tool
+installed.
+'''
+
+import argparse
+import subprocess
+
+from graphviz import Digraph
+
+
+def parse_args():
+    '''Handle parsing of command line arguments.
+
+    Returns:
+       A argparse.Namespace object
+    '''
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        'ELEMENT', nargs='*',
+        help='Name of the element'
+    )
+    parser.add_argument(
+        '--format',
+        help='Redner the graph in given format (`pdf`, `png`, `svg` etc)'
+    )
+    parser.add_argument(
+        '--view', action='store_true',
+        help='Open the rendered graph with the default application'
+    )
+    return parser.parse_args()
+
+
+def parse_graph(lines):
+    '''Return nodes and edges of the parsed grpah.
+
+    Args:
+       lines: List of lines in format 'NAME|BUILD-DEPS|RUNTIME-DEPS'
+
+    Returns:
+       Tuple of format (nodes,build_deps,runtime_deps)
+       Each member of build_deps and runtime_deps is also a tuple.
+    '''
+    nodes = set()
+    build_deps = set()
+    runtime_deps = set()
+    for line in lines:
+        # It is safe to split on '|' as it is not a valid character for
+        # element names.
+        name, build_dep, runtime_dep = line.split('|')
+        build_dep = build_dep.lstrip('[').rstrip(']').split(',')
+        runtime_dep = runtime_dep.lstrip('[').rstrip(']').split(',')
+        nodes.add(name)
+        [build_deps.add((name, dep)) for dep in build_dep if dep]
+        [runtime_deps.add((name, dep)) for dep in runtime_dep if dep]
+
+    return nodes, build_deps, runtime_deps
+
+
+def generate_graph(nodes, build_deps, runtime_deps):
+    '''Generate graph from given nodes and edges.
+
+    Args:
+       nodes: set of nodes
+       build_deps: set of tuples of build depdencies
+       runtime_deps: set of tuples of runtime depdencies
+
+    Returns:
+       A graphviz.Digraph object
+    '''
+    graph = Digraph()
+    for node in nodes:
+        graph.node(node)
+    for source, target in build_deps:
+        graph.edge(source, target, label='build-dep')
+    for source, target in runtime_deps:
+        graph.edge(source, target, label='runtime-dep')
+    return graph
+
+
+def main():
+    args = parse_args()
+    cmd = ['bst', 'show', '--format', '%{name}|%{build-deps}|%{runtime-deps}']
+    if 'element' in args:
+        cmd += args.element
+    graph_lines = subprocess.check_output(cmd, universal_newlines=True)
+    # NOTE: We generate nodes and edges before giving them to graphviz as
+    # the library does not de-deuplicate them.
+    nodes, build_deps, runtime_deps = parse_graph(graph_lines.splitlines())
+    graph = generate_graph(nodes, build_deps, runtime_deps)
+    print(graph.source)
+    if args.format:
+        graph.render(cleanup=True,
+                     filename='bst-graph',
+                     format=args.format,
+                     view=args.view)
+
+
+if __name__ == '__main__':
+    main()
