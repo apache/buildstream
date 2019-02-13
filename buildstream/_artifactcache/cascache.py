@@ -395,9 +395,7 @@ class CASCache(ArtifactCache):
                     for chunk in iter(lambda: tmp.read(4096), b""):
                         h.update(chunk)
                 else:
-                    tmp = stack.enter_context(tempfile.NamedTemporaryFile(dir=self.tmpdir))
-                    # Set mode bits to 0644
-                    os.chmod(tmp.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+                    tmp = stack.enter_context(self._temporary_object())
 
                     if path:
                         with open(path, 'rb') as f:
@@ -834,6 +832,19 @@ class CASCache(ArtifactCache):
 
         assert digest.size_bytes == os.fstat(stream.fileno()).st_size
 
+    # _temporary_object():
+    #
+    # Returns:
+    #     (file): A file object to a named temporary file.
+    #
+    # Create a named temporary file with 0o0644 access rights.
+    @contextlib.contextmanager
+    def _temporary_object(self):
+        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
+            os.chmod(f.name,
+                     stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+            yield f
+
     # _ensure_blob():
     #
     # Fetch and add blob if it's not already local.
@@ -851,7 +862,7 @@ class CASCache(ArtifactCache):
             # already in local repository
             return objpath
 
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
+        with self._temporary_object() as f:
             self._fetch_blob(remote, digest, f)
 
             added_digest = self.add_object(path=f.name, link_directly=True)
@@ -861,7 +872,7 @@ class CASCache(ArtifactCache):
 
     def _batch_download_complete(self, batch):
         for digest, data in batch.send():
-            with tempfile.NamedTemporaryFile(dir=self.tmpdir) as f:
+            with self._temporary_object() as f:
                 f.write(data)
                 f.flush()
 
