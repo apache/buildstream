@@ -27,8 +27,10 @@ import shutil
 import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
+from fnmatch import fnmatch
 
-from ._exceptions import StreamError, ImplError, BstError, set_last_task_error
+from ._artifactelement import verify_artifact_ref
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, set_last_task_error
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
@@ -108,19 +110,21 @@ class Stream():
     def load_selection(self, targets, *,
                        selection=PipelineSelection.NONE,
                        except_targets=(),
-                       use_artifact_config=False):
+                       use_artifact_config=False,
+                       load_refs=False):
 
         profile_start(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        elements, _ = self._load(targets, (),
-                                 selection=selection,
-                                 except_targets=except_targets,
-                                 fetch_subprojects=False,
-                                 use_artifact_config=use_artifact_config)
+        target_objects, _ = self._load(targets, (),
+                                       selection=selection,
+                                       except_targets=except_targets,
+                                       fetch_subprojects=False,
+                                       use_artifact_config=use_artifact_config,
+                                       load_refs=load_refs)
 
         profile_end(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
 
-        return elements
+        return target_objects
 
     # shell()
     #
@@ -490,6 +494,31 @@ class Stream():
         except BstError as e:
             raise StreamError("Error while staging dependencies into a sandbox"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
+
+    # artifact_log()
+    #
+    # Show the full log of an artifact
+    #
+    # Args:
+    #    targets (str): Targets to view the logs of
+    #
+    # Returns:
+    #    logsdir (list): A list of CasBasedDirectory objects containing artifact logs
+    #
+    def artifact_log(self, targets):
+        # Return list of Element and/or ArtifactElement objects
+        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+
+        logsdirs = []
+        for obj in target_objects:
+            ref = obj.get_artifact_name()
+            if not obj._cached():
+                self._message(MessageType.WARN, "{} is not cached".format(ref))
+                continue
+
+            logsdirs.append(self._artifacts.get_artifact_logs(ref))
+
+        return logsdirs
 
     # source_checkout()
     #
@@ -922,25 +951,36 @@ class Stream():
               use_artifact_config=False,
               artifact_remote_url=None,
               fetch_subprojects=False,
-              dynamic_plan=False):
+              dynamic_plan=False,
+              load_refs=False):
+
+        # Classify element and artifact strings
+        target_elements, target_artifacts = self._classify_artifacts(targets)
+
+        if target_artifacts and not load_refs:
+            detail = '\n'.join(target_artifacts)
+            raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
 
         # Load rewritable if we have any tracking selection to make
         rewritable = False
         if track_targets:
             rewritable = True
 
-        # Load all targets
+        # Load all target elements
         elements, except_elements, track_elements, track_except_elements = \
-            self._pipeline.load([targets, except_targets, track_targets, track_except_targets],
+            self._pipeline.load([target_elements, except_targets, track_targets, track_except_targets],
                                 rewritable=rewritable,
                                 fetch_subprojects=fetch_subprojects)
+
+        # Obtain the ArtifactElement objects
+        artifacts = [self._project.create_artifact_element(ref) for ref in target_artifacts]
 
         # Optionally filter out junction elements
         if ignore_junction_targets:
             elements = [e for e in elements if e.get_kind() != 'junction']
 
         # Hold on to the targets
-        self.targets = elements
+        self.targets = elements + artifacts
 
         # Here we should raise an error if the track_elements targets
         # are not dependencies of the primary targets, this is not
@@ -997,9 +1037,9 @@ class Stream():
 
         # Now move on to loading primary selection.
         #
-        self._pipeline.resolve_elements(elements)
-        selected = self._pipeline.get_selection(elements, selection, silent=False)
-        selected = self._pipeline.except_elements(elements,
+        self._pipeline.resolve_elements(self.targets)
+        selected = self._pipeline.get_selection(self.targets, selection, silent=False)
+        selected = self._pipeline.except_elements(self.targets,
                                                   selected,
                                                   except_elements)
 
@@ -1331,3 +1371,55 @@ class Stream():
                 required_list.append(element)
 
         return required_list
+
+    # _classify_artifacts()
+    #
+    # Split up a list of targets into element names and artifact refs
+    #
+    # Args:
+    #    targets (list): A list of targets
+    #
+    # Returns:
+    #    (list): element names present in the targets
+    #    (list): artifact refs present in the targets
+    #
+    def _classify_artifacts(self, targets):
+        element_targets = []
+        artifact_refs = []
+        element_globs = []
+        artifact_globs = []
+
+        for target in targets:
+            if target.endswith('.bst'):
+                if any(c in "*?[" for c in target):
+                    element_globs.append(target)
+                else:
+                    element_targets.append(target)
+            else:
+                if any(c in "*?[" for c in target):
+                    artifact_globs.append(target)
+                else:
+                    try:
+                        verify_artifact_ref(target)
+                    except ArtifactElementError:
+                        element_targets.append(target)
+                        continue
+                    artifact_refs.append(target)
+
+        if element_globs:
+            for dirpath, _, filenames in os.walk(self._project.element_path):
+                for filename in filenames:
+                    element_path = os.path.join(dirpath, filename)
+                    length = len(self._project.element_path) + 1
+                    element_path = element_path[length:]  # Strip out the element_path
+
+                    if any(fnmatch(element_path, glob) for glob in element_globs):
+                        element_targets.append(element_path)
+
+        if artifact_globs:
+            for glob in artifact_globs:
+                artifact_refs.extend(self._artifacts.list_artifacts(glob=glob))
+            if not artifact_refs:
+                self._message(MessageType.WARN, "No artifacts found for globs: {}".format(', '.join(artifact_globs)))
+
+        return element_targets, artifact_refs

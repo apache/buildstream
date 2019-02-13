@@ -82,6 +82,7 @@ import contextlib
 from contextlib import contextmanager
 import tempfile
 import shutil
+import string
 
 from . import _yaml
 from ._variables import Variables
@@ -576,6 +577,38 @@ class Element(Plugin):
         """
         self.__assert_cached()
         return self.__compute_splits(include, exclude, orphans)
+
+    def get_artifact_name(self, key=None):
+        """Compute and return this element's full artifact name
+
+        Generate a full name for an artifact, including the project
+        namespace, element name and cache key.
+
+        This can also be used as a relative path safely, and
+        will normalize parts of the element name such that only
+        digits, letters and some select characters are allowed.
+
+        Args:
+           key (str): The element's cache key. Defaults to None
+
+        Returns:
+           (str): The relative path for the artifact
+        """
+        project = self._get_project()
+        if key is None:
+            key = self._get_cache_key()
+
+        assert key is not None
+
+        valid_chars = string.digits + string.ascii_letters + '-._'
+        element_name = ''.join([
+            x if x in valid_chars else '_'
+            for x in self.normal_name
+        ])
+
+        # Note that project names are not allowed to contain slashes. Element names containing
+        # a '/' will have this replaced with a '-' upon Element object instantiation.
+        return '{0}/{1}/{2}'.format(project.name, element_name, key)
 
     def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
         """Stage this element's output artifact in the sandbox
@@ -1118,7 +1151,7 @@ class Element(Plugin):
                     e.name for e in self.dependencies(Scope.BUILD, recurse=False)
                 ]
 
-            self.__weak_cache_key = self.__calculate_cache_key(dependencies)
+            self.__weak_cache_key = self._calculate_cache_key(dependencies)
 
             if self.__weak_cache_key is None:
                 # Weak cache key could not be calculated yet
@@ -1147,8 +1180,7 @@ class Element(Plugin):
             dependencies = [
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
             ]
-            self.__strict_cache_key = self.__calculate_cache_key(dependencies)
-
+            self.__strict_cache_key = self._calculate_cache_key(dependencies)
             if self.__strict_cache_key is None:
                 # Strict cache key could not be calculated yet
                 return
@@ -1190,7 +1222,7 @@ class Element(Plugin):
                 dependencies = [
                     e._get_cache_key() for e in self.dependencies(Scope.BUILD)
                 ]
-                self.__cache_key = self.__calculate_cache_key(dependencies)
+                self.__cache_key = self._calculate_cache_key(dependencies)
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
@@ -2032,41 +2064,7 @@ class Element(Plugin):
                 source._fetch(previous_sources)
             previous_sources.append(source)
 
-    #############################################################
-    #                   Private Local Methods                   #
-    #############################################################
-
-    # __update_source_state()
-    #
-    # Updates source consistency state
-    #
-    def __update_source_state(self):
-
-        # Cannot resolve source state until tracked
-        if self.__tracking_scheduled:
-            return
-
-        self.__consistency = Consistency.CACHED
-        workspace = self._get_workspace()
-
-        # Special case for workspaces
-        if workspace:
-
-            # A workspace is considered inconsistent in the case
-            # that its directory went missing
-            #
-            fullpath = workspace.get_absolute_path()
-            if not os.path.exists(fullpath):
-                self.__consistency = Consistency.INCONSISTENT
-        else:
-
-            # Determine overall consistency of the element
-            for source in self.__sources:
-                source._update_state()
-                source_consistency = source._get_consistency()
-                self.__consistency = min(self.__consistency, source_consistency)
-
-    # __calculate_cache_key():
+    # _calculate_cache_key():
     #
     # Calculates the cache key
     #
@@ -2075,7 +2073,7 @@ class Element(Plugin):
     #
     # None is returned if information for the cache key is missing.
     #
-    def __calculate_cache_key(self, dependencies):
+    def _calculate_cache_key(self, dependencies):
         # No cache keys for dependencies which have no cache keys
         if None in dependencies:
             return None
@@ -2113,6 +2111,40 @@ class Element(Plugin):
         cache_key_dict['dependencies'] = dependencies
 
         return _cachekey.generate_key(cache_key_dict)
+
+    #############################################################
+    #                   Private Local Methods                   #
+    #############################################################
+
+    # __update_source_state()
+    #
+    # Updates source consistency state
+    #
+    def __update_source_state(self):
+
+        # Cannot resolve source state until tracked
+        if self.__tracking_scheduled:
+            return
+
+        self.__consistency = Consistency.CACHED
+        workspace = self._get_workspace()
+
+        # Special case for workspaces
+        if workspace:
+
+            # A workspace is considered inconsistent in the case
+            # that its directory went missing
+            #
+            fullpath = workspace.get_absolute_path()
+            if not os.path.exists(fullpath):
+                self.__consistency = Consistency.INCONSISTENT
+        else:
+
+            # Determine overall consistency of the element
+            for source in self.__sources:
+                source._update_state()
+                source_consistency = source._get_consistency()
+                self.__consistency = min(self.__consistency, source_consistency)
 
     # __can_build_incrementally()
     #
@@ -2297,6 +2329,8 @@ class Element(Plugin):
         defaults['public'] = element_public
 
     def __init_defaults(self, plugin_conf):
+        if plugin_conf is None:
+            return
 
         # Defaults are loaded once per class and then reused
         #

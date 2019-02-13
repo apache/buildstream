@@ -38,20 +38,20 @@ class MetaElement():
     #    sandbox: Configuration specific to the sandbox environment
     #    first_pass: The element is to be loaded with first pass configuration (junction)
     #
-    def __init__(self, project, name, kind, provenance, sources, config,
-                 variables, environment, env_nocache, public, sandbox,
-                 first_pass):
+    def __init__(self, project, name, kind=None, provenance=None, sources=None, config=None,
+                 variables=None, environment=None, env_nocache=None, public=None,
+                 sandbox=None, first_pass=False):
         self.project = project
         self.name = name
         self.kind = kind
         self.provenance = provenance
         self.sources = sources
-        self.config = config
-        self.variables = variables
-        self.environment = environment
-        self.env_nocache = env_nocache
-        self.public = public
-        self.sandbox = sandbox
+        self.config = config or {}
+        self.variables = variables or {}
+        self.environment = environment or {}
+        self.env_nocache = env_nocache or []
+        self.public = public or {}
+        self.sandbox = sandbox or {}
         self.build_dependencies = []
         self.dependencies = []
         self.first_pass = first_pass
