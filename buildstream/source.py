@@ -168,6 +168,7 @@ from contextlib import contextmanager
 from . import Plugin, Consistency
 from . import _yaml, utils
 from ._exceptions import BstError, ImplError, ErrorDomain
+from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
 
 
@@ -298,9 +299,6 @@ class Source(Plugin):
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
         self.__expected_alias = None                    # The primary alias
         self.__marked_urls = set()                      # Set of marked download URLs
-
-        # FIXME: Reconstruct a MetaSource from a Source instead of storing it.
-        self.__meta = meta                              # MetaSource stored so we can copy this source later.
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -984,7 +982,19 @@ class Source(Plugin):
         alias = self._get_alias()
         source_kind = type(self)
 
-        clone = source_kind(context, project, self.__meta, alias_override=(alias, uri))
+        # Rebuild a MetaSource from the current element
+        meta = MetaSource(
+            self.__element_name,
+            self.__element_index,
+            self.__element_kind,
+            self.get_kind(),
+            self.__config,
+            self.__directory,
+        )
+
+        meta.first_pass = self.__first_pass
+
+        clone = source_kind(context, project, meta, alias_override=(alias, uri))
 
         # Do the necessary post instantiation routines here
         #
