@@ -1,4 +1,20 @@
 =================
+buildstream 1.2.4
+=================
+
+  o Migration of scripts to use tox
+
+  o Force updating tags when fetching from git repos (#812)
+
+  o Avoid downloading unused submodules (#804)
+
+  o Fixed cleanup of cache server with disk is full (#609)
+
+  o Fixed possible artifact cache corruption (#749)
+
+  o Fixed `bst checkout --deps none` behavior (#670)
+
+=================
 buildstream 1.2.3
 =================
 
