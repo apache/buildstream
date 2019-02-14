@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_absolute_symlinks_made_relative(cli, tmpdir, datafiles):
+def test_absolute_symlinks(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'symlinks/dangling-symlink.bst'
@@ -34,17 +34,14 @@ def test_absolute_symlinks_made_relative(cli, tmpdir, datafiles):
     symlink = os.path.join(checkout, 'opt', 'orgname')
     assert os.path.islink(symlink)
 
-    # The symlink is created to point to /usr/orgs/orgname, but BuildStream
-    # should make all symlink target relative when assembling the artifact.
-    # This is done so that nothing points outside the sandbox and so that
-    # staging artifacts in locations other than / doesn't cause the links to
-    # all break.
-    assert os.readlink(symlink) == '../usr/orgs/orgname'
+    # The symlink is created to point to /usr/orgs/orgname and BuildStream
+    # should not mangle symlinks.
+    assert os.readlink(symlink) == '/usr/orgs/orgname'
 
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_allow_overlaps_inside_symlink_with_dangling_target(cli, tmpdir, datafiles):
+def test_disallow_overlaps_inside_symlink_with_dangling_target(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'symlinks/dangling-symlink-overlap.bst'
@@ -53,10 +50,8 @@ def test_allow_overlaps_inside_symlink_with_dangling_target(cli, tmpdir, datafil
     assert result.exit_code == 0
 
     result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
-    assert result.exit_code == 0
-
-    # See the dangling-symlink*.bst elements for details on what we are testing.
-    assert_contains(checkout, ['/usr/orgs/orgname/etc/org.conf'])
+    assert result.exit_code == -1
+    assert 'Destination is a symlink, not a directory: /opt/orgname' in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -75,4 +70,4 @@ def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, tmpdir, datafiles
     # tries to actually write there.
     result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == -1
-    assert "Destination path resolves to a path outside of the staging area" in result.stderr
+    assert 'Destination is a symlink, not a directory: /opt/escape-hatch' in result.stderr
