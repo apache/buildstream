@@ -14,3 +14,4 @@ psutil
 ruamel.yaml >= 0.15.41, < 0.15.52
 setuptools
 pyroaring
+ujson
