@@ -46,7 +46,7 @@ EOF
     exit "$1"
 }
 
-bst_here_image="${BST_HERE_IMAGE:-buildstream/buildstream-fedora:latest}"
+bst_here_image="${BST_HERE_IMAGE:-buildstream/buildstream:latest}"
 
 is_tty=
 update=false
