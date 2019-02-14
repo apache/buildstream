@@ -34,4 +34,4 @@ BST_FORMAT_VERSION = 17
 # the same cache key to produce something that is no longer
 # the same.
 
-BST_CORE_ARTIFACT_VERSION = ('bst-1.2', 4)
+BST_CORE_ARTIFACT_VERSION = ('bst-1.2', 5)
