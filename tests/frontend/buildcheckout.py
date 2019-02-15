@@ -253,6 +253,26 @@ def test_build_checkout_tarball_stdout(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tarball_mtime_nonzero(datafiles, cli):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    tarpath = os.path.join(cli.directory, 'mtime_tar.tar')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', '--tar', tarpath, 'target.bst']
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    tar = tarfile.TarFile(tarpath)
+    for tarinfo in tar.getmembers():
+        # An mtime of zero can be confusing to other software,
+        # e.g. ninja build and template toolkit have both taken zero mtime to
+        # mean 'file does not exist'.
+        assert tarinfo.mtime > 0
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball_is_deterministic(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     tarball1 = os.path.join(cli.directory, 'tarball1.tar')

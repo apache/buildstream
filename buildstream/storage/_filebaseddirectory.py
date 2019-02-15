@@ -157,7 +157,7 @@ class FileBasedDirectory(Directory):
     # First, it sorts the results of os.listdir() to ensure the ordering of
     # the files in the archive is the same.  Second, it sets a fixed
     # timestamp for each entry. See also https://bugs.python.org/issue24465.
-    def export_to_tar(self, tf, dir_arcname, mtime=0):
+    def export_to_tar(self, tf, dir_arcname, mtime=_magic_timestamp):
         # We need directories here, including non-empty ones,
         # so list_relative_paths is not used.
         for filename in sorted(os.listdir(self.external_directory)):

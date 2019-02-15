@@ -32,6 +32,7 @@ See also: :ref:`sandboxing`.
 """
 
 from .._exceptions import BstError, ErrorDomain
+from ..utils import _magic_timestamp
 
 
 class VirtualDirectoryError(BstError):
@@ -114,7 +115,7 @@ class Directory():
 
         raise NotImplementedError()
 
-    def export_to_tar(self, tarfile, destination_dir, mtime=0):
+    def export_to_tar(self, tarfile, destination_dir, mtime=_magic_timestamp):
         """ Exports this directory into the given tar file.
 
         Args:

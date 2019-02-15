@@ -36,7 +36,7 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .._exceptions import BstError
 from .directory import Directory, VirtualDirectoryError
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, safe_copy, list_relative_paths
+from ..utils import FileListResult, safe_copy, list_relative_paths, _magic_timestamp
 
 
 class IndexEntry():
@@ -535,7 +535,7 @@ class CasBasedDirectory(Directory):
                                 " The original error was: {}").
                                format(src_name, entry.target, e))
 
-    def export_to_tar(self, tarfile, destination_dir, mtime=0):
+    def export_to_tar(self, tarfile, destination_dir, mtime=_magic_timestamp):
         raise NotImplementedError()
 
     def mark_changed(self):
