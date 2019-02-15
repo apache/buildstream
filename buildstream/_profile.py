@@ -26,7 +26,7 @@ import datetime
 import time
 
 # Track what profile topics are active
-active_topics = {}
+active_topics = set()
 active_profiles = {}
 initialized = False
 
@@ -144,14 +144,10 @@ def profile_init():
         if setting:
             topics = setting.split(':')
             for topic in topics:
-                active_topics[topic] = True
+                active_topics.add(topic)
         initialized = True
 
 
 def profile_enabled(topic):
     profile_init()
-    if active_topics.get(topic):
-        return True
-    if active_topics.get(Topics.ALL):
-        return True
-    return False
+    return topic in active_topics or Topics.ALL in active_topics

@@ -154,7 +154,7 @@ class TarSource(DownloadableFileSource):
     # directory paths for the archived files.
     def _list_tar_paths(self, tar):
 
-        visited = {}
+        visited = set()
         for member in tar.getmembers():
 
             # Remove any possible leading './', offer more consistent behavior
@@ -170,7 +170,7 @@ class TarSource(DownloadableFileSource):
                 for i in range(len(components) - 1):
                     dir_component = '/'.join([components[j] for j in range(i + 1)])
                     if dir_component not in visited:
-                        visited[dir_component] = True
+                        visited.add(dir_component)
                         try:
                             # Dont yield directory members which actually do
                             # exist in the archive

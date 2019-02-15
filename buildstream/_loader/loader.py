@@ -284,17 +284,17 @@ class Loader():
     def _check_circular_deps(self, element, check_elements=None, validated=None, sequence=None):
 
         if check_elements is None:
-            check_elements = {}
+            check_elements = set()
         if validated is None:
-            validated = {}
+            validated = set()
         if sequence is None:
             sequence = []
 
         # Skip already validated branches
-        if validated.get(element) is not None:
+        if element in validated:
             return
 
-        if check_elements.get(element) is not None:
+        if element in check_elements:
             # Create `chain`, the loop of element dependencies from this
             # element back to itself, by trimming everything before this
             # element from the sequence under consideration.
@@ -306,15 +306,15 @@ class Loader():
                             .format(element.full_name, " -> ".join(chain)))
 
         # Push / Check each dependency / Pop
-        check_elements[element] = True
+        check_elements.add(element)
         sequence.append(element.full_name)
         for dep in element.dependencies:
             dep.element._loader._check_circular_deps(dep.element, check_elements, validated, sequence)
-        del check_elements[element]
+        check_elements.remove(element)
         sequence.pop()
 
         # Eliminate duplicate paths
-        validated[element] = True
+        validated.add(element)
 
     # _sort_dependencies():
     #
