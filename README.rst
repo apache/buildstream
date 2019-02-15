@@ -100,3 +100,9 @@ We also recommend exploring some existing BuildStream projects:
 * https://gitlab.com/baserock/definitions
 
 If you have any questions please ask on our `#buildstream <irc://irc.gnome.org/buildstream>`_ channel in `irc.gnome.org <irc://irc.gnome.org>`_
+
+
+Availability in distros
+=======================
+.. image:: https://repology.org/badge/vertical-allrepos/buildstream.svg
+   :target: https://repology.org/metapackage/buildstream/versions
