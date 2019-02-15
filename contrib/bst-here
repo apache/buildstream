@@ -25,16 +25,22 @@
 usage() {
     cat <<EOF
 
-USAGE: $(basename "$0") [-i BST_HERE_IMAGE] [-p] [-t] [-T] [-v VOLUME ...] [-h] [COMMAND [ARG..]]
+USAGE: $(basename "$0") [-i BST_HERE_IMAGE] [-j TAG] [-p] [-t] [-T] [-v VOLUME ...] [-h] [COMMAND [ARG..]]
 
 Run a bst command in a new BuildStream container.
 
 If no command is specified, an interactive shell is launched
 using "/bin/bash -i".
 
+See https://hub.docker.com/r/buildstream/buildstream for details on image
+variants.
+
 OPTIONS:
     -i IMAGE      Specify Docker image to use; can also be specified by setting
                   BST_HERE_IMAGE environment variable.
+                  (default: buildstream/buildstream)
+    -j TAG        Specify the tag of the Docker image to use.
+                  (default: latest)
     -p            Pull the latest buildstream image before running.
     -t            Force pseudo-terminal allocation.
     -T            Disable pseudo-terminal allocation.
@@ -46,7 +52,8 @@ EOF
     exit "$1"
 }
 
-bst_here_image="${BST_HERE_IMAGE:-buildstream/buildstream:latest}"
+bst_here_image="${BST_HERE_IMAGE:-buildstream/buildstream}"
+bst_here_tag=
 
 is_tty=
 update=false
@@ -57,11 +64,14 @@ then
     is_tty=y
 fi
 
-while getopts i:ptTv:h arg
+while getopts i:j:ptTv:h arg
 do
     case $arg in
     i)
         bst_here_image="$OPTARG"
+        ;;
+    j)
+        bst_here_tag="$OPTARG"
         ;;
     p)
         update=true
@@ -82,6 +92,10 @@ do
         usage 1
     esac
 done
+
+if [ -n "$bst_here_tag" ]; then
+    bst_here_image="$bst_here_image:$bst_here_tag"
+fi
 
 test "$OPTIND" -gt 1 &&
     shift $(( OPTIND - 1 ))
