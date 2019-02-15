@@ -398,7 +398,7 @@ class LogLine(Widget):
 
             # Variables
             if "%{vars" in format_:
-                variables = _yaml.node_sanitize(element._Element__variables.variables)
+                variables = _yaml.node_sanitize(element._Element__variables.flat)
                 line = p.fmt_subst(
                     line, 'vars',
                     yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))

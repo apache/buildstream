@@ -894,10 +894,7 @@ class Element(Plugin):
            (str): The resolved value for *varname*, or None if no
            variable was declared with the given name.
         """
-        if varname in self.__variables.variables:
-            return self.__variables.variables[varname]
-
-        return None
+        return self.__variables.flat.get(varname)
 
     def batch_prepare_assemble(self, flags, *, collect=None):
         """ Configure command batching across prepare() and assemble()
