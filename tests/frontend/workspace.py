@@ -1184,6 +1184,7 @@ def test_external_close_other(cli, datafiles, tmpdir_factory):
 
     result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close', beta_element])
     result.assert_success()
+    assert 'you can no longer run BuildStream' not in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -1199,6 +1200,7 @@ def test_external_close_self(cli, datafiles, tmpdir_factory, guess_element):
 
     result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close'] + arg_elm)
     result.assert_success()
+    assert 'you can no longer run BuildStream' in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
