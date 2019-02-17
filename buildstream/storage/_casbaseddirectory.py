@@ -277,14 +277,6 @@ class CasBasedDirectory(Directory):
                                                          directory_list))
         return None
 
-    def find_root(self):
-        """ Finds the root of this directory tree by following 'parent' until there is
-        no parent. """
-        if self.parent:
-            return self.parent.find_root()
-        else:
-            return self
-
     def _check_replacement(self, name, path_prefix, fileListResult):
         """ Checks whether 'name' exists, and if so, whether we can overwrite it.
         If we can, add the name to 'overwritten_files' and delete the existing entry.
