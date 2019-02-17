@@ -657,3 +657,15 @@ class CasBasedDirectory(Directory):
         throw an exception. """
         raise VirtualDirectoryError("_get_underlying_directory was called on a CAS-backed directory," +
                                     " which has no underlying directory.")
+
+    # _get_digest():
+    #
+    # Return the Digest for this directory.
+    #
+    # Returns:
+    #   (Digest): The Digest protobuf object for the Directory protobuf
+    #
+    def _get_digest(self):
+        if not self.ref:
+            self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+        return self.ref
