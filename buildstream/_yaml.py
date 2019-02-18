@@ -940,7 +940,7 @@ def node_sanitize(node):
         return [node_sanitize(elt) for elt in node]
 
     # Finally ChainMap and dict, and other Mappings need special handling
-    if node_type in (dict, ChainMap) or isinstance(node, collections.Mapping):
+    if node_type in (dict, ChainMap) or isinstance(node, collections.abc.Mapping):
         result = SanitizedDict()
 
         key_list = [key for key, _ in node_items(node)]
