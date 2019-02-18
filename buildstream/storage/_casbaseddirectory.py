@@ -136,10 +136,10 @@ class CasBasedDirectory(Directory):
         the parent).
 
         """
-        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         if caller:
             old_dir = self._find_pb2_entry(caller.filename)
             self.cas_cache.add_object(digest=old_dir.digest, buffer=caller.pb2_directory.SerializeToString())
+        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         if self.parent:
             self.parent._recalculate_recursing_up(self)
 
@@ -276,14 +276,6 @@ class CasBasedDirectory(Directory):
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0], str(self),
                                                          directory_list))
         return None
-
-    def find_root(self):
-        """ Finds the root of this directory tree by following 'parent' until there is
-        no parent. """
-        if self.parent:
-            return self.parent.find_root()
-        else:
-            return self
 
     def _check_replacement(self, name, path_prefix, fileListResult):
         """ Checks whether 'name' exists, and if so, whether we can overwrite it.
@@ -451,7 +443,7 @@ class CasBasedDirectory(Directory):
                 files = external_pathspec.list_relative_paths()
 
         if isinstance(external_pathspec, FileBasedDirectory):
-            source_directory = external_pathspec.get_underlying_directory()
+            source_directory = external_pathspec._get_underlying_directory()
             result = self._import_files_from_directory(source_directory, files=files)
         elif isinstance(external_pathspec, str):
             source_directory = external_pathspec
@@ -635,6 +627,18 @@ class CasBasedDirectory(Directory):
         self._recalculate_recursing_up()
         self._recalculate_recursing_down()
 
+    def get_size(self):
+        total = len(self.pb2_directory.SerializeToString())
+        for i in self.index.values():
+            if isinstance(i.buildstream_object, CasBasedDirectory):
+                total += i.buildstream_object.get_size()
+            elif isinstance(i.pb_object, remote_execution_pb2.FileNode):
+                src_name = self.cas_cache.objpath(i.pb_object.digest)
+                filesize = os.stat(src_name).st_size
+                total += filesize
+            # Symlink nodes are encoded as part of the directory serialization.
+        return total
+
     def _get_identifier(self):
         path = ""
         if self.parent:
@@ -653,3 +657,15 @@ class CasBasedDirectory(Directory):
         throw an exception. """
         raise VirtualDirectoryError("_get_underlying_directory was called on a CAS-backed directory," +
                                     " which has no underlying directory.")
+
+    # _get_digest():
+    #
+    # Return the Digest for this directory.
+    #
+    # Returns:
+    #   (Digest): The Digest protobuf object for the Directory protobuf
+    #
+    def _get_digest(self):
+        if not self.ref:
+            self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+        return self.ref

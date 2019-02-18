@@ -588,13 +588,16 @@ class ArtifactCache():
     #
     # Args:
     #     element (Element): The Element commit an artifact for
-    #     content (str): The element's content directory
+    #     content (Directory): The element's content directory
     #     keys (list): The cache keys to use
     #
     def commit(self, element, content, keys):
         refs = [element.get_artifact_name(key) for key in keys]
 
-        self.cas.commit(refs, content)
+        tree = content._get_digest()
+
+        for ref in refs:
+            self.cas.set_ref(ref, tree)
 
     # diff():
     #
