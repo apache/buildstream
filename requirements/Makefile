@@ -17,5 +17,5 @@ all: $(REQUIREMENTS_TXT)
 	$(eval VENVDIR := $(shell mktemp -d $(CURDIR)/.bst-venv.XXXXXX))
 	$(VENV) $(VENVDIR)
 	$(VENV_PIP) install -r $^
-	$(VENV_PIP) freeze -r $^ > $@
+	$(VENV_PIP) freeze -r $^ | grep -v pkg-resources > $@
 	rm -rf $(VENVDIR)
