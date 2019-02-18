@@ -281,10 +281,12 @@ coverage:
     - tox -e coverage
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
+  - tests-centos-7.6
   - tests-debian-9
   - tests-fedora-28
   - tests-fedora-29
   - tests-fedora-missing-deps
+  - tests-fedora-update-deps
   - tests-ubuntu-18.04
   - tests-unix
   except:
