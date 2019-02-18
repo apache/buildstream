@@ -136,10 +136,10 @@ class CasBasedDirectory(Directory):
         the parent).
 
         """
-        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         if caller:
             old_dir = self._find_pb2_entry(caller.filename)
             self.cas_cache.add_object(digest=old_dir.digest, buffer=caller.pb2_directory.SerializeToString())
+        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         if self.parent:
             self.parent._recalculate_recursing_up(self)
 
