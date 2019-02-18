@@ -1,4 +1,4 @@
-coverage == 4.4.0
+coverage >= 4.4.0
 pylint
 pycodestyle
 pytest >= 3.9
