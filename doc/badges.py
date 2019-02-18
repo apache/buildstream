@@ -96,7 +96,7 @@ def parse_tag(tag):
 def guess_version(release):
     try:
         tags_output = subprocess.check_output(['git', 'tag'])
-    except CalledProcessError:
+    except subprocess.CalledProcessError:
         return (0, 0, 0)
 
     # Parse the `git tag` output into a list of integer tuples
