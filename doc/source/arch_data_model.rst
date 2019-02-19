@@ -72,9 +72,10 @@ deal of configurations understood by the *Element* is also understood by the cor
 has default configurations built into BuildStream and configurable with the project
 configuration. These include values such as *variables*, *environment*, *sandbox*, etc.
 
-As shown above, composition is performed in two stages, as we only need to composite
-the data from the toplevel element declaration against the composition of previous
-stages every time we instantiate an element.
+As shown above, composition is performed in two stages for each element. First
+we compose everything below the line, this happens just once per 'kind' of
+element - the result is re-used. Secondly, we compose the element declaration
+on top.
 
 
 Source
