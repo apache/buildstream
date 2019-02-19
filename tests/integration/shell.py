@@ -227,6 +227,8 @@ def test_isolated_no_mount(cli, tmpdir, datafiles, path):
         }
     })
     assert result.exit_code != 0
+    assert path in result.stderr
+    assert 'No such file or directory' in result.stderr
 
 
 # Test that we warn about non-existing files on the host if the mount is not
