@@ -33,4 +33,6 @@
 * BuildStream version affected: /milestone %BuildStream_v1.x
 
 ----
+[//]: # (To review information about possible relevant labels for this issue please view the list of labels: https://gitlab.com/BuildStream/buildstream/labels)
+
 /label ~bug
