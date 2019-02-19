@@ -73,7 +73,7 @@ The Queue implementations are:
 
   The pull queue tries to obtain a built artifact from a remote artifact server,
   it should be placed in advance of the fetch queue if used, since we can safely
-  avoid fetching if fetching is not imerative, and we already have a cached
+  avoid fetching if fetching is not imperative, and we already have a cached
   artifact.
 
 * **Fetch**
