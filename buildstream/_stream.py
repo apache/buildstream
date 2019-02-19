@@ -941,6 +941,7 @@ class Stream():
     #    (list of Element): The primary element selection
     #    (list of Element): The tracking element selection
     #
+    @utils._with_gc_disabled
     def _load(self, targets, track_targets, *,
               selection=PipelineSelection.NONE,
               track_selection=PipelineSelection.NONE,
