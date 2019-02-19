@@ -27,17 +27,17 @@ are the loaded representation of the ``.bst`` files loaded from the :ref:`projec
 The *Element* is an abstract base class which cannot do anything on its own, its
 concrete class is defined by *plugins* which are either included in the BuildStream
 :ref:`core set of plugins <plugins>` or loaded from external sources :ref:`defined by the project
-<project_plugins>`
+<project_plugins>`.
 
 The responsibilities of an element include:
 
-* Loading the element's configuration from the core provided dictionary
+* Loading the element's configuration from the core provided dictionary.
 * Providing a unique key for any element specific configuration which might
-  affect the output produced by the element
-* Configuring the sandbox
+  affect the output produced by the element.
+* Configuring the sandbox.
 * Staging the data into the sandbox, which might include Sources and
-  the outputs of previous elements
-* Assembling the output *artifact*
+  the outputs of previous elements.
+* Assembling the output *artifact*.
 
 
 Element data structure
@@ -95,12 +95,12 @@ This is to say that:
 
 The responsibilities of a source include:
 
-* Loading the source's configuration from the core provided dictionary
+* Loading the source's configuration from the core provided dictionary.
 * Providing a unique key for any source specific configuration which might
-  affect the staged source
-* Implement discovery of new versions of the source upstream (referred to as *"tracking"*)
-* Staging the unpacked source to a given directory
-* Preparing workspaces
+  affect the staged source.
+* Implement discovery of new versions of the source upstream (referred to as *"tracking"*).
+* Staging the unpacked source to a given directory.
+* Preparing workspaces.
 
 
 Source data structure
