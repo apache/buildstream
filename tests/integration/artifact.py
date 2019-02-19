@@ -37,40 +37,6 @@ DATA_DIR = os.path.join(
 )
 
 
-@pytest.mark.integration
-@pytest.mark.datafiles(DATA_DIR)
-def test_artifact_log(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-
-    # Get the cache key of our test element
-    result = cli.run(project=project, silent=True, args=[
-        '--no-colors',
-        'show', '--deps', 'none', '--format', '%{full-key}',
-        'base.bst'
-    ])
-    key = result.output.strip()
-
-    # Ensure we have an artifact to read
-    result = cli.run(project=project, args=['build', 'base.bst'])
-    assert result.exit_code == 0
-
-    # Read the log via the element name
-    result = cli.run(project=project, args=['artifact', 'log', 'base.bst'])
-    assert result.exit_code == 0
-    log = result.output
-
-    # Read the log via the key
-    result = cli.run(project=project, args=['artifact', 'log', 'test/base/' + key])
-    assert result.exit_code == 0
-    assert log == result.output
-
-    # Read the log via glob
-    result = cli.run(project=project, args=['artifact', 'log', 'test/base/*'])
-    assert result.exit_code == 0
-    # The artifact is cached under both a strong key and a weak key
-    assert (log + log) == result.output
-
-
 # A test to capture the integration of the cachebuildtrees
 # behaviour, which by default is to include the buildtree
 # content of an element on caching.
