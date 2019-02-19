@@ -33,7 +33,7 @@ The responsibilities of an element include:
 
 * Loading the element's configuration from the core provided dictionary
 * Providing a unique key for any element specific configuration which might
-  effect the output produced by the element
+  affect the output produced by the element
 * Configuring the sandbox
 * Staging the data into the sandbox, which might include Sources and
   the outputs of previous elements
@@ -87,7 +87,7 @@ of the host or build environment.
 This is to say that:
 
 * User configuration on the host, or filesystem outside of BuildStream designated
-  directories, must never be modified as a side effect of running BuildStream.
+  directories, must never be modified as a side-effect of running BuildStream.
 
 * When the Source uses host tools, host side configurations must never result in
   deviations of what is staged to a build directory. The Source must behave exactly
@@ -97,7 +97,7 @@ The responsibilities of a source include:
 
 * Loading the source's configuration from the core provided dictionary
 * Providing a unique key for any source specific configuration which might
-  effect the staged source
+  affect the staged source
 * Implement discovery of new versions of the source upstream (referred to as *"tracking"*)
 * Staging the unpacked source to a given directory
 * Preparing workspaces
