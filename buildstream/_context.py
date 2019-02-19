@@ -30,8 +30,8 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
-from ._artifactcache import ArtifactCache, ArtifactCacheUsage
-from ._cas import CASCache
+from ._artifactcache import ArtifactCache
+from ._cas import CASCache, CASQuota, CASCacheUsage
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .plugin import _plugin_lookup
 from .sandbox import SandboxRemote
@@ -58,17 +58,26 @@ class Context():
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
 
+        # The directory under which other directories are based
+        self.cachedir = None
+
         # The directory where various sources are stored
         self.sourcedir = None
 
         # The directory where build sandboxes will be created
         self.builddir = None
 
+        # The directory for CAS
+        self.casdir = None
+
+        # Extract directory
+        self.extractdir = None
+
+        # The directory for temporary files
+        self.tmpdir = None
+
         # Default root location for workspaces
         self.workspacedir = None
-
-        # The local binary artifact cache directory
-        self.artifactdir = None
 
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = None
@@ -118,6 +127,9 @@ class Context():
         # Size of the artifact cache in bytes
         self.config_cache_quota = None
 
+        # User specified cache quota, used for display messages
+        self.config_cache_quota_string = None
+
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
@@ -142,6 +154,7 @@ class Context():
         self._log_handle = None
         self._log_filename = None
         self._cascache = None
+        self._casquota = None
         self._directory = directory
 
     # load()
@@ -179,13 +192,22 @@ class Context():
             user_config = _yaml.load(config)
             _yaml.composite(defaults, user_config)
 
+        # Give obsoletion warnings
+        if defaults.get('builddir'):
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "builddir is obsolete, use cachedir")
+
+        if defaults.get('artifactdir'):
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "artifactdir is obsolete")
+
         _yaml.node_validate(defaults, [
-            'sourcedir', 'builddir', 'artifactdir', 'logdir',
-            'scheduler', 'artifacts', 'logging', 'projects',
-            'cache', 'prompt', 'workspacedir', 'remote-execution'
+            'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler',
+            'artifacts', 'logging', 'projects', 'cache', 'prompt',
+            'workspacedir', 'remote-execution',
         ])
 
-        for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir', 'workspacedir']:
+        for directory in ['cachedir', 'sourcedir', 'logdir', 'workspacedir']:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #
@@ -195,14 +217,34 @@ class Context():
             path = os.path.normpath(path)
             setattr(self, directory, path)
 
+        # add directories not set by users
+        self.extractdir = os.path.join(self.cachedir, 'extract')
+        self.tmpdir = os.path.join(self.cachedir, 'tmp')
+        self.casdir = os.path.join(self.cachedir, 'cas')
+        self.builddir = os.path.join(self.cachedir, 'build')
+
+        # Move old artifact cas to cas if it exists and create symlink
+        old_casdir = os.path.join(self.cachedir, 'artifacts', 'cas')
+        if (os.path.exists(old_casdir) and not os.path.islink(old_casdir) and
+                not os.path.exists(self.casdir)):
+            os.rename(old_casdir, self.casdir)
+            os.symlink(self.casdir, old_casdir)
+
         # Load quota configuration
-        # We need to find the first existing directory in the path of
-        # our artifactdir - the artifactdir may not have been created
-        # yet.
+        # We need to find the first existing directory in the path of our
+        # cachedir - the cachedir may not have been created yet.
         cache = _yaml.node_get(defaults, Mapping, 'cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
-        self.config_cache_quota = _yaml.node_get(cache, str, 'quota')
+        self.config_cache_quota_string = _yaml.node_get(cache, str, 'quota')
+        try:
+            self.config_cache_quota = utils._parse_size(self.config_cache_quota_string,
+                                                        self.casdir)
+        except utils.UtilError as e:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
+                            "\nValid values are, for example: 800M 10G 1T 50%\n"
+                            .format(str(e))) from e
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
@@ -262,15 +304,15 @@ class Context():
 
         return self._artifactcache
 
-    # get_artifact_cache_usage()
+    # get_cache_usage()
     #
     # Fetches the current usage of the artifact cache
     #
     # Returns:
-    #     (ArtifactCacheUsage): The current status
+    #     (CASCacheUsage): The current status
     #
-    def get_artifact_cache_usage(self):
-        return ArtifactCacheUsage(self.artifactcache)
+    def get_cache_usage(self):
+        return CASCacheUsage(self.get_casquota())
 
     # add_project():
     #
@@ -640,8 +682,13 @@ class Context():
 
     def get_cascache(self):
         if self._cascache is None:
-            self._cascache = CASCache(self.artifactdir)
+            self._cascache = CASCache(self.cachedir)
         return self._cascache
+
+    def get_casquota(self):
+        if self._casquota is None:
+            self._casquota = CASQuota(self)
+        return self._casquota
 
 
 # _node_get_option_str()

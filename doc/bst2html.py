@@ -194,10 +194,9 @@ def workdir(source_cache=None):
 
         bst_config_file = os.path.join(tempdir, 'buildstream.conf')
         config = {
+            'cachedir': tempdir,
             'sourcedir': source_cache,
-            'artifactdir': os.path.join(tempdir, 'artifacts'),
             'logdir': os.path.join(tempdir, 'logs'),
-            'builddir': os.path.join(tempdir, 'build'),
         }
         _yaml.dump(config, bst_config_file)
 
@@ -411,12 +410,10 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
         # Encode and save the output if that was asked for
         output = _yaml.node_get(command, str, 'output', default_value=None)
         if output is not None:
-
             # Convert / Generate a nice <div>
             converted = generate_html(command_out, directory, config_file,
                                       source_cache, tempdir, palette,
                                       command_str, command_fake_output is not None)
-
             # Save it
             filename = os.path.join(desc_dir, output)
             filename = os.path.realpath(filename)

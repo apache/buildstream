@@ -70,8 +70,8 @@ def test_push_pull(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        cas = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(cas)
 
         # Assert that nothing is cached locally anymore
         state = cli.get_element_state(project, 'target.bst')

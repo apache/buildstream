@@ -50,15 +50,15 @@ def test_cache_size_write(cli, tmpdir):
     create_project(project_dir)
 
     # Artifact cache must be in a known place
-    artifactdir = os.path.join(project_dir, "artifacts")
-    cli.configure({"artifactdir": artifactdir})
+    casdir = os.path.join(project_dir, "cas")
+    cli.configure({"cachedir": project_dir})
 
     # Build, to populate the cache
     res = cli.run(project=project_dir, args=["build", "test.bst"])
     res.assert_success()
 
     # Inspect the artifact cache
-    sizefile = os.path.join(artifactdir, CACHE_SIZE_FILE)
+    sizefile = os.path.join(casdir, CACHE_SIZE_FILE)
     assert os.path.isfile(sizefile)
     with open(sizefile, "r") as f:
         size_data = f.read()
@@ -81,11 +81,11 @@ def test_quota_over_1024T(cli, tmpdir):
     _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
 
     volume_space_patch = mock.patch(
-        "buildstream._artifactcache.ArtifactCache._get_cache_volume_size",
+        "buildstream._cas.CASQuota._get_cache_volume_size",
         autospec=True,
         return_value=(1025 * TiB, 1025 * TiB)
     )
 
     with volume_space_patch:
         result = cli.run(project, args=["build", "file.bst"])
-        result.assert_main_error(ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota')
+        result.assert_main_error(ErrorDomain.CAS, 'insufficient-storage-for-quota')

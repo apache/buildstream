@@ -486,7 +486,7 @@ class LogLine(Widget):
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)
         values["Targets"] = ", ".join([t.name for t in stream.targets])
-        values["Cache Usage"] = "{}".format(context.get_artifact_cache_usage())
+        values["Cache Usage"] = "{}".format(context.get_cache_usage())
         text += self._format_values(values)
 
         # User configurations
@@ -495,10 +495,10 @@ class LogLine(Widget):
         values = OrderedDict()
         values["Configuration File"] = \
             "Default Configuration" if not context.config_origin else context.config_origin
+        values["Cache Directory"] = context.cachedir
         values["Log Files"] = context.logdir
         values["Source Mirrors"] = context.sourcedir
         values["Build Area"] = context.builddir
-        values["Artifact Cache"] = context.artifactdir
         values["Strict Build Plan"] = "Yes" if context.get_strict() else "No"
         values["Maximum Fetch Tasks"] = context.sched_fetchers
         values["Maximum Build Tasks"] = context.sched_builders

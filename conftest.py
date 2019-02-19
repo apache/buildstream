@@ -53,16 +53,16 @@ def pytest_runtest_setup(item):
 class IntegrationCache():
 
     def __init__(self, cache):
-        cache = os.path.abspath(cache)
+        self.root = os.path.abspath(cache)
         os.makedirs(cache, exist_ok=True)
 
         # Use the same sources every time
-        self.sources = os.path.join(cache, 'sources')
+        self.sources = os.path.join(self.root, 'sources')
 
         # Create a temp directory for the duration of the test for
         # the artifacts directory
         try:
-            self.artifacts = tempfile.mkdtemp(dir=cache, prefix='artifacts-')
+            self.cachedir = tempfile.mkdtemp(dir=self.root, prefix='cache-')
         except OSError as e:
             raise AssertionError("Unable to create test directory !") from e
 
@@ -84,7 +84,11 @@ def integration_cache(request):
     # Clean up the artifacts after each test run - we only want to
     # cache sources between runs
     try:
-        shutil.rmtree(cache.artifacts)
+        shutil.rmtree(cache.cachedir)
+    except FileNotFoundError:
+        pass
+    try:
+        shutil.rmtree(os.path.join(cache.root, 'cas'))
     except FileNotFoundError:
         pass
 

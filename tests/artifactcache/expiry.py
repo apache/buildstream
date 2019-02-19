@@ -341,7 +341,7 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
     ("200%", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
 
     # Not enough space on disk even if you cleaned up
-    ("11K", ErrorDomain.ARTIFACT, 'insufficient-storage-for-quota'),
+    ("11K", ErrorDomain.CAS, 'insufficient-storage-for-quota'),
 
     # Not enough space for these caches
     ("7K", 'warning', 'Your system does not have enough available'),
@@ -355,7 +355,7 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reas
     cli.configure({
         'cache': {
             'quota': quota,
-        }
+        },
     })
 
     # We patch how we get space information
@@ -373,13 +373,13 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reas
         total_space = 10000
 
     volume_space_patch = mock.patch(
-        "buildstream._artifactcache.ArtifactCache._get_cache_volume_size",
+        "buildstream.utils._get_volume_size",
         autospec=True,
         return_value=(total_space, free_space),
     )
 
     cache_size_patch = mock.patch(
-        "buildstream._artifactcache.ArtifactCache.get_cache_size",
+        "buildstream._cas.CASQuota.get_cache_size",
         autospec=True,
         return_value=0,
     )
@@ -417,7 +417,7 @@ def test_extract_expiry(cli, datafiles, tmpdir):
     res.assert_success()
 
     # Get a snapshot of the extracts in advance
-    extractdir = os.path.join(project, 'cache', 'artifacts', 'extract', 'test', 'target')
+    extractdir = os.path.join(project, 'cache', 'extract', 'test', 'target')
     extracts = os.listdir(extractdir)
     assert(len(extracts) == 1)
     extract = os.path.join(extractdir, extracts[0])
@@ -436,7 +436,7 @@ def test_extract_expiry(cli, datafiles, tmpdir):
     # Now we should have a directory for the cached target2.bst, which
     # replaced target.bst in the cache, we should not have a directory
     # for the target.bst
-    refsdir = os.path.join(project, 'cache', 'artifacts', 'cas', 'refs', 'heads')
+    refsdir = os.path.join(project, 'cache', 'cas', 'refs', 'heads')
     refsdirtest = os.path.join(refsdir, 'test')
     refsdirtarget = os.path.join(refsdirtest, 'target')
     refsdirtarget2 = os.path.join(refsdirtest, 'target2')

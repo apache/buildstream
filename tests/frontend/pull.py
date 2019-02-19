@@ -64,8 +64,8 @@ def test_push_pull_all(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        cas = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(cas)
 
         # Assert that nothing is cached locally anymore
         states = cli.get_element_states(project, all_elements)
@@ -114,7 +114,7 @@ def test_push_pull_default_targets(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        artifacts = os.path.join(cli.directory, 'artifacts')
+        artifacts = os.path.join(cli.directory, 'cas')
         shutil.rmtree(artifacts)
 
         # Assert that nothing is cached locally anymore
@@ -156,8 +156,8 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
         assert_shared(cli, share2, project, 'target.bst')
 
         # Delete the user's local artifact cache.
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        cas = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(cas)
 
         # Assert that the element is not cached anymore.
         assert cli.get_element_state(project, 'target.bst') != 'cached'
@@ -210,8 +210,8 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the good_share.
         #
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        cas = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(cas)
 
         result = cli.run(project=project, args=['artifact', 'pull', 'target.bst', '--remote',
                                                 good_share.repo])
@@ -251,8 +251,8 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        cas = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(cas)
 
         # Assert that nothing is cached locally anymore
         for element_name in all_elements:
@@ -301,8 +301,8 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        cas = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(cas)
 
         # Assert that nothing is cached locally anymore
         for element_name in all_elements:
@@ -337,7 +337,7 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
         result.assert_success()
         assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'cached'
 
-        cache_dir = os.path.join(project, 'cache', 'artifacts')
+        cache_dir = os.path.join(project, 'cache', 'cas')
         shutil.rmtree(cache_dir)
 
         assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'buildable'
@@ -372,8 +372,8 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        cas = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(cas)
 
         # Assert that nothing is cached locally anymore
         for element_name in all_elements:
@@ -510,8 +510,8 @@ def test_pull_access_rights(caplog, cli, tmpdir, datafiles):
 
         shutil.rmtree(checkout)
 
-        artifacts = os.path.join(cli.directory, 'artifacts')
-        shutil.rmtree(artifacts)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
 
         result = cli.run(project=project, args=['artifact', 'pull', 'compose-all.bst'])
         result.assert_success()

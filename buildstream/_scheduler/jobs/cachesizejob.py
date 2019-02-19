@@ -25,14 +25,14 @@ class CacheSizeJob(Job):
         self._complete_cb = complete_cb
 
         context = self._scheduler.context
-        self._artifacts = context.artifactcache
+        self._casquota = context.get_casquota()
 
     def child_process(self):
-        return self._artifacts.compute_cache_size()
+        return self._casquota.compute_cache_size()
 
     def parent_complete(self, status, result):
         if status == JobStatus.OK:
-            self._artifacts.set_cache_size(result)
+            self._casquota.set_cache_size(result)
 
         if self._complete_cb:
             self._complete_cb(status, result)

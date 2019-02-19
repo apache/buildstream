@@ -13,11 +13,8 @@
 # Location to store sources
 sourcedir: ${XDG_CACHE_HOME}/buildstream/sources
 
-# Location to perform builds
-builddir: ${XDG_CACHE_HOME}/buildstream/build
-
-# Location to store local binary artifacts
-artifactdir: ${XDG_CACHE_HOME}/buildstream/artifacts
+# Root location for other directories in the cache
+cachedir: ${XDG_CACHE_HOME}/buildstream
 
 # Location to store build logs
 logdir: ${XDG_CACHE_HOME}/buildstream/logs

@@ -51,7 +51,7 @@ def test_push(cli, tmpdir, datafiles):
     # Set up an artifact cache.
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # Configure artifact share
-        artifact_dir = os.path.join(str(tmpdir), 'cache', 'artifacts')
+        rootcache_dir = os.path.join(str(tmpdir), 'cache')
         user_config_file = str(tmpdir.join('buildstream.conf'))
         user_config = {
             'scheduler': {
@@ -60,7 +60,8 @@ def test_push(cli, tmpdir, datafiles):
             'artifacts': {
                 'url': share.repo,
                 'push': True,
-            }
+            },
+            'cachedir': rootcache_dir
         }
 
         # Write down the user configuration file
@@ -69,7 +70,6 @@ def test_push(cli, tmpdir, datafiles):
         # Fake minimal context
         context = Context()
         context.load(config=user_config_file)
-        context.artifactdir = artifact_dir
         context.set_message_handler(message_handler)
 
         # Load the project manually
@@ -89,7 +89,7 @@ def test_push(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push, queue, user_config_file, project_dir,
-                                                artifact_dir, 'target.bst', element_key))
+                                                'target.bst', element_key))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -106,12 +106,10 @@ def test_push(cli, tmpdir, datafiles):
         assert share.has_artifact('test', 'target.bst', element_key)
 
 
-def _test_push(user_config_file, project_dir, artifact_dir,
-               element_name, element_key, queue):
+def _test_push(user_config_file, project_dir, element_name, element_key, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
 
     # Load the project manually
@@ -152,7 +150,7 @@ def test_push_directory(cli, tmpdir, datafiles):
     # Set up an artifact cache.
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # Configure artifact share
-        artifact_dir = os.path.join(str(tmpdir), 'cache', 'artifacts')
+        rootcache_dir = os.path.join(str(tmpdir), 'cache')
         user_config_file = str(tmpdir.join('buildstream.conf'))
         user_config = {
             'scheduler': {
@@ -161,7 +159,8 @@ def test_push_directory(cli, tmpdir, datafiles):
             'artifacts': {
                 'url': share.repo,
                 'push': True,
-            }
+            },
+            'cachedir': rootcache_dir
         }
 
         # Write down the user configuration file
@@ -170,7 +169,6 @@ def test_push_directory(cli, tmpdir, datafiles):
         # Fake minimal context
         context = Context()
         context.load(config=user_config_file)
-        context.artifactdir = os.path.join(str(tmpdir), 'cache', 'artifacts')
         context.set_message_handler(message_handler)
 
         # Load the project and CAS cache
@@ -198,7 +196,7 @@ def test_push_directory(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push_directory, queue, user_config_file,
-                                                project_dir, artifact_dir, artifact_digest))
+                                                project_dir, artifact_digest))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -216,11 +214,10 @@ def test_push_directory(cli, tmpdir, datafiles):
         assert share.has_object(artifact_digest)
 
 
-def _test_push_directory(user_config_file, project_dir, artifact_dir, artifact_digest, queue):
+def _test_push_directory(user_config_file, project_dir, artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
 
     # Load the project manually
@@ -254,6 +251,7 @@ def test_push_message(cli, tmpdir, datafiles):
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # Configure artifact share
         artifact_dir = os.path.join(str(tmpdir), 'cache', 'artifacts')
+        rootcache_dir = os.path.join(str(tmpdir), 'cache')
         user_config_file = str(tmpdir.join('buildstream.conf'))
         user_config = {
             'scheduler': {
@@ -262,7 +260,8 @@ def test_push_message(cli, tmpdir, datafiles):
             'artifacts': {
                 'url': share.repo,
                 'push': True,
-            }
+            },
+            'cachedir': rootcache_dir
         }
 
         # Write down the user configuration file
@@ -273,7 +272,7 @@ def test_push_message(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push_message, queue, user_config_file,
-                                                project_dir, artifact_dir))
+                                                project_dir))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -292,11 +291,10 @@ def test_push_message(cli, tmpdir, datafiles):
         assert share.has_object(message_digest)
 
 
-def _test_push_message(user_config_file, project_dir, artifact_dir, queue):
+def _test_push_message(user_config_file, project_dir, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.artifactdir = artifact_dir
     context.set_message_handler(message_handler)
 
     # Load the project manually

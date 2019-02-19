@@ -16,7 +16,7 @@ def create_pipeline(tmpdir, basedir, target):
     context = Context()
     context.load(config=os.devnull)
     context.deploydir = os.path.join(str(tmpdir), 'deploy')
-    context.artifactdir = os.path.join(str(tmpdir), 'artifact')
+    context.casdir = os.path.join(str(tmpdir), 'cas')
     project = Project(basedir, context)
 
     def dummy_handler(message, context):
