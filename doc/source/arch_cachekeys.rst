@@ -10,7 +10,7 @@ for the purpose of reusing artifacts in a well-defined, predictable way.
 
 Structure
 ---------
-Cache keys are SHA256 hash values generated from a pickled Python dict that
+Cache keys are SHA256 hash values generated from a UTF-8 JSON document that
 includes:
 
 * Environment (e.g., project configuration and variables)
