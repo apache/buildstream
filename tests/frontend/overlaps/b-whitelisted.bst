@@ -8,9 +8,9 @@ sources:
 - kind: local
   path: "b"
 variables:
-  FILE: file
+  FILE: /file
 public:
   bst:
     overlap-whitelist:
-    - file2
+    - /file2
     - "%{FILE}3"

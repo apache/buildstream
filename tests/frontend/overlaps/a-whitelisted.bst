@@ -10,4 +10,4 @@ sources:
 public:
   bst:
     overlap-whitelist:
-    - "file*"
+    - "/file*"
