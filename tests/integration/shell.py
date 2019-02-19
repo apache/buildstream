@@ -212,6 +212,7 @@ def test_host_files_expand_environ(cli, tmpdir, datafiles, path):
 # Test that bind mounts defined in project.conf dont mount in isolation
 @pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_isolated_no_mount(cli, tmpdir, datafiles, path):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
