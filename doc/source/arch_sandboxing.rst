@@ -51,7 +51,7 @@ well.
 Filesystem access
 ~~~~~~~~~~~~~~~~~
 
-The filesystem inside sandboxes should be read only during element assembly,
+The filesystem inside sandboxes should be read-only during element assembly,
 except for certain directories which element plugins can mark as being
 read/write. Most elements plugins derive from :mod:`BuildElement
 <buildstream.buildelement>`, which marks ``%{build-root}`` and
