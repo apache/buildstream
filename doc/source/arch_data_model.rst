@@ -27,17 +27,17 @@ are the loaded representation of the ``.bst`` files loaded from the :ref:`projec
 The *Element* is an abstract base class which cannot do anything on its own, its
 concrete class is defined by *plugins* which are either included in the BuildStream
 :ref:`core set of plugins <plugins>` or loaded from external sources :ref:`defined by the project
-<project_plugins>`
+<project_plugins>`.
 
 The responsibilities of an element include:
 
-* Loading the element's configuration from the core provided dictionary
+* Loading the element's configuration from the core provided dictionary.
 * Providing a unique key for any element specific configuration which might
-  effect the output produced by the element
-* Configuring the sandbox
+  affect the output produced by the element.
+* Configuring the sandbox.
 * Staging the data into the sandbox, which might include Sources and
-  the outputs of previous elements
-* Assembling the output *artifact*
+  the outputs of previous elements.
+* Assembling the output *artifact*.
 
 
 Element data structure
@@ -72,9 +72,10 @@ deal of configurations understood by the *Element* is also understood by the cor
 has default configurations built into BuildStream and configurable with the project
 configuration. These include values such as *variables*, *environment*, *sandbox*, etc.
 
-As shown above, composition is performed in two stages, as we only need to composite
-the data from the toplevel element declaration against the composition of previous
-stages every time we instantiate an element.
+As shown above, composition is performed in two stages for each element. First
+we compose everything below the line, this happens just once per 'kind' of
+element - the result is re-used. Secondly, we compose the element declaration
+on top.
 
 
 Source
@@ -87,7 +88,7 @@ of the host or build environment.
 This is to say that:
 
 * User configuration on the host, or filesystem outside of BuildStream designated
-  directories, must never be modified as a side effect of running BuildStream.
+  directories, must never be modified as a side-effect of running BuildStream.
 
 * When the Source uses host tools, host side configurations must never result in
   deviations of what is staged to a build directory. The Source must behave exactly
@@ -95,12 +96,12 @@ This is to say that:
 
 The responsibilities of a source include:
 
-* Loading the source's configuration from the core provided dictionary
+* Loading the source's configuration from the core provided dictionary.
 * Providing a unique key for any source specific configuration which might
-  effect the staged source
-* Implement discovery of new versions of the source upstream (referred to as *"tracking"*)
-* Staging the unpacked source to a given directory
-* Preparing workspaces
+  affect the staged source.
+* Implement discovery of new versions of the source upstream (referred to as *"tracking"*).
+* Staging the unpacked source to a given directory.
+* Preparing workspaces.
 
 
 Source data structure
