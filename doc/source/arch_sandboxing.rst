@@ -158,7 +158,7 @@ and will refuse to push any artifacts built on such a system to a remote cache.
 For more information, see `issue #92
 <https://gitlab.com/BuildStream/buildstream/issues/92>`_.
 
-The Linux platform can operate as a standard user provided user namespace
+The Linux platform can operate as a standard user, if user namespace
 support is available. If user namespace support is not available you have the
 option of installing bubblewrap as a setuid binary to avoid needing to run the
 entire ``bst`` process as the ``root`` user.
