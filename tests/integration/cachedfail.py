@@ -127,10 +127,11 @@ def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("on_error", ("continue", "quit"))
 def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
+    if on_error == 'quit':
+        pytest.xfail('https://gitlab.com/BuildStream/buildstream/issues/534')
+
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements', 'element.bst')
-    workspace = os.path.join(cli.directory, 'workspace')
-    checkout = os.path.join(cli.directory, 'checkout')
 
     # Write out our test target
     element = {
@@ -144,6 +145,8 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
         'config': {
             'commands': [
                 'false',
+                # Ensure unique cache key for different test variants
+                'TEST="{}"'.format(os.environ.get('PYTEST_CURRENT_TEST')),
             ],
         },
     }
