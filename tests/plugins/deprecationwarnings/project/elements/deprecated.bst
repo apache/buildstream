@@ -1,0 +1,1 @@
+kind: deprecated_plugin
