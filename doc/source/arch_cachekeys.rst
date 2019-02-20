@@ -13,11 +13,11 @@ Structure
 Cache keys are SHA256 hash values generated from a UTF-8 JSON document that
 includes:
 
-* Environment (e.g., project configuration and variables)
-* Element configuration (details depend on element kind, ``Element.get_unique_key()``)
-* Sources (``Source.get_unique_key()``)
-* Dependencies (depending on cache key type, see below)
-* Public data
+* Environment (e.g., project configuration and variables).
+* Element configuration (details depend on element kind, ``Element.get_unique_key()``).
+* Sources (``Source.get_unique_key()``).
+* Dependencies (depending on cache key type, see below).
+* Public data.
 
 Cache key types
 ---------------
