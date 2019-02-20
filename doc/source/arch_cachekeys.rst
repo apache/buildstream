@@ -42,6 +42,9 @@ or the environment changes but it will not change when a dependency is updated.
 For elements without build dependencies the ``strong`` cache key is identical
 to the ``weak`` cache key.
 
+Note that dependencies which are not required at build time do not affect
+either kind of key.
+
 Strict build plan
 -----------------
 This is the default build plan that exclusively uses ``strong`` cache keys
