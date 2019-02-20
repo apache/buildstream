@@ -1589,6 +1589,15 @@ can run ``tox`` with ``-r`` or  ``--recreate`` option.
 
      ./setup.py test --addopts 'tests/frontend/buildtrack.py::test_build_track'
 
+.. tip::
+
+   We also have an environment called 'venv' which takes any arguments
+   you give it and runs them inside the same virtualenv we use for our
+   tests::
+
+     tox -e venv -- <your command(s) here>
+     
+   Any commands after ``--`` will be run a virtualenv managed by tox.
 
 Observing coverage
 ~~~~~~~~~~~~~~~~~~
