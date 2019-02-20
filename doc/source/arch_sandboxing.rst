@@ -51,7 +51,7 @@ well.
 Filesystem access
 ~~~~~~~~~~~~~~~~~
 
-The filesystem inside sandboxes should be read only during element assembly,
+The filesystem inside sandboxes should be read-only during element assembly,
 except for certain directories which element plugins can mark as being
 read/write. Most elements plugins derive from :mod:`BuildElement
 <buildstream.buildelement>`, which marks ``%{build-root}`` and
@@ -158,17 +158,17 @@ and will refuse to push any artifacts built on such a system to a remote cache.
 For more information, see `issue #92
 <https://gitlab.com/BuildStream/buildstream/issues/92>`_.
 
-The Linux platform can operate as a standard user provided user namespace
+The Linux platform can operate as a standard user, if user namespace
 support is available. If user namespace support is not available you have the
 option of installing bubblewrap as a setuid binary to avoid needing to run the
 entire ``bst`` process as the ``root`` user.
 
-The artifact cache on Linux systems is implemented using `OSTree
-<https://github.com/ostreedev/ostree>`_, which can allow us to stage artifacts
-using hardlinks instead of copying them. To avoid cache corruption it is
-vital that hardlinked files cannot be overwritten. In cases where the root
-filesystem inside the sandbox needs to be writable, a custom FUSE filesystem
-named SafeHardlinks is used which provides a copy-on-write layer.
+The artifact cache on Linux systems is implemented using a content-addressable
+hardlink farm, which can allow us to stage artifacts using hardlinks instead of
+copying them. To avoid cache corruption it is vital that hardlinked files
+cannot be overwritten. In cases where the root filesystem inside the sandbox
+needs to be writable, a custom FUSE filesystem named SafeHardlinks is used
+which provides a copy-on-write layer.
 
 Some of the operations on filesystem metadata listed above are not prohibited
 by the sandbox, but will instead be silently dropped when an artifact is

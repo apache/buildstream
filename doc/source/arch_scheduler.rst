@@ -19,9 +19,9 @@ The Job class has the following responsibilities:
 * Offering an abstract method for subclasses to handle the outcome of
   a job when it completes.
 
-* Forcefully terminating it's subprocess.
+* Forcefully terminating its subprocess.
 
-* Suspending and resuming it's subprocess.
+* Suspending and resuming its subprocess.
 
 * Declaring the types of resources it will require, and which resources
   it will require exclusively.
@@ -73,7 +73,7 @@ The Queue implementations are:
 
   The pull queue tries to obtain a built artifact from a remote artifact server,
   it should be placed in advance of the fetch queue if used, since we can safely
-  avoid fetching if fetching is not imerative, and we already have a cached
+  avoid fetching if fetching is not imperative, and we already have a cached
   artifact.
 
 * **Fetch**
@@ -84,7 +84,7 @@ The Queue implementations are:
 
 * **Build**
 
-  The build queue attempts to build the element if it's artifact is not locally
+  The build queue attempts to build the element if its artifact is not locally
   present.
 
 * **Push**

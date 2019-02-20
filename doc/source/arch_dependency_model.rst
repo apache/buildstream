@@ -42,7 +42,8 @@ Scope
 * **Scope.RUN**
 
   In the :func:`Scope.RUN <buildstream.types.Scope.RUN>` scope, only elements
-  which are required to run are considered, including the element itself.
+  which are required to run are considered, including the element itself. Note
+  that these are transitive - the service also requires the base runtime.
 
   This is used when for example, launching a ``bst shell`` environment
   for the purpose of running, or in any case we need to consider which
@@ -60,7 +61,7 @@ Scope
   .. image:: images/arch-dependency-model-build.svg
      :align: center
 
-  Note that build type dependencies are not transient, which is why the
+  Note that build type dependencies are not transitive, which is why the
   *Bootstrap* element is not selected when pulling in the *Compiler* to
   build the *Application*.
 
