@@ -17,15 +17,11 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import os
-
 from ._basecache import BaseCache
 from .types import _KeyStrength
 from ._exceptions import ArtifactError, CASError
-from ._message import MessageType
-from . import utils
 
-from ._cas import CASRemoteSpec, CASCacheUsage
+from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
 
 
@@ -60,6 +56,9 @@ class ArtifactCache(BaseCache):
         super().__init__(context)
 
         self._required_elements = set()       # The elements required for this session
+
+        self.casquota.add_ref_callbacks(self.required_artifacts())
+        self.casquota.add_remove_callbacks((lambda x: not x.startswith('sources/'), self.remove))
 
     # mark_required_elements():
     #
@@ -102,117 +101,15 @@ class ArtifactCache(BaseCache):
                     except CASError:
                         pass
 
-    # clean():
-    #
-    # Clean the artifact cache as much as possible.
-    #
-    # Args:
-    #    progress (callable): A callback to call when a ref is removed
-    #
-    # Returns:
-    #    (int): The size of the cache after having cleaned up
-    #
-    def clean(self, progress=None):
-        artifacts = self.list_artifacts()
-        context = self.context
-
-        # Some accumulative statistics
-        removed_ref_count = 0
-        space_saved = 0
-
-        # Start off with an announcement with as much info as possible
-        volume_size, volume_avail = self.casquota._get_cache_volume_size()
-        self._message(MessageType.STATUS, "Starting cache cleanup",
-                      detail=("Elements required by the current build plan: {}\n" +
-                              "User specified quota: {} ({})\n" +
-                              "Cache usage: {}\n" +
-                              "Cache volume: {} total, {} available")
-                      .format(len(self._required_elements),
-                              context.config_cache_quota,
-                              utils._pretty_size(self.casquota._cache_quota, dec_places=2),
-                              utils._pretty_size(self.casquota.get_cache_size(), dec_places=2),
-                              utils._pretty_size(volume_size, dec_places=2),
-                              utils._pretty_size(volume_avail, dec_places=2)))
-
+    def required_artifacts(self):
         # Build a set of the cache keys which are required
         # based on the required elements at cleanup time
         #
         # We lock both strong and weak keys - deleting one but not the
         # other won't save space, but would be a user inconvenience.
-        required_artifacts = set()
         for element in self._required_elements:
-            required_artifacts.update([
-                element._get_cache_key(strength=_KeyStrength.STRONG),
-                element._get_cache_key(strength=_KeyStrength.WEAK)
-            ])
-
-        # Do a real computation of the cache size once, just in case
-        self.casquota.compute_cache_size()
-        usage = CASCacheUsage(self.casquota)
-        self._message(MessageType.STATUS, "Cache usage recomputed: {}".format(usage))
-
-        while self.casquota.get_cache_size() >= self.casquota._cache_lower_threshold:
-            try:
-                to_remove = artifacts.pop(0)
-            except IndexError:
-                # If too many artifacts are required, and we therefore
-                # can't remove them, we have to abort the build.
-                #
-                # FIXME: Asking the user what to do may be neater
-                #
-                default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                            'buildstream.conf')
-                detail = ("Aborted after removing {} refs and saving {} disk space.\n"
-                          "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
-                          "There is not enough space to complete the build.\n"
-                          "Please increase the cache-quota in {} and/or make more disk space."
-                          .format(removed_ref_count,
-                                  utils._pretty_size(space_saved, dec_places=2),
-                                  utils._pretty_size(self.casquota.get_cache_size(), dec_places=2),
-                                  len(self._required_elements),
-                                  (context.config_origin or default_conf)))
-
-                if self.full():
-                    raise ArtifactError("Cache too full. Aborting.",
-                                        detail=detail,
-                                        reason="cache-too-full")
-                else:
-                    break
-
-            key = to_remove.rpartition('/')[2]
-            if key not in required_artifacts:
-
-                # Remove the actual artifact, if it's not required.
-                size = self.remove(to_remove)
-
-                removed_ref_count += 1
-                space_saved += size
-
-                self._message(MessageType.STATUS,
-                              "Freed {: <7} {}".format(
-                                  utils._pretty_size(size, dec_places=2),
-                                  to_remove))
-
-                # Remove the size from the removed size
-                self.casquota.set_cache_size(self.casquota._cache_size - size)
-
-                # User callback
-                #
-                # Currently this process is fairly slow, but we should
-                # think about throttling this progress() callback if this
-                # becomes too intense.
-                if progress:
-                    progress()
-
-        # Informational message about the side effects of the cleanup
-        self._message(MessageType.INFO, "Cleanup completed",
-                      detail=("Removed {} refs and saving {} disk space.\n" +
-                              "Cache usage is now: {}")
-                      .format(removed_ref_count,
-                              utils._pretty_size(space_saved, dec_places=2),
-                              utils._pretty_size(self.casquota.get_cache_size(), dec_places=2)))
-
-        return self.casquota.get_cache_size()
+            yield element._get_cache_key(strength=_KeyStrength.STRONG)
+            yield element._get_cache_key(strength=_KeyStrength.WEAK)
 
     def full(self):
         return self.casquota.full()

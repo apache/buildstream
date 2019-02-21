@@ -1041,6 +1041,7 @@ class CASCache():
 
 class CASQuota:
     def __init__(self, context):
+        self.context = context
         self.cas = context.get_cascache()
         self.casdir = self.cas.casdir
         self._config_cache_quota = context.config_cache_quota
@@ -1053,6 +1054,9 @@ class CASQuota:
         self.available_space = None
 
         self._message = context.message
+
+        self._ref_callbacks = []   # Call backs to get required refs
+        self._remove_callbacks = []   # Call backs to remove refs
 
         self._calculate_cache_quota()
 
@@ -1282,6 +1286,138 @@ class CASQuota:
         self._cache_quota_original = cache_quota
         self._cache_quota = cache_quota - self._cache_quota_headroom
         self._cache_lower_threshold = self._cache_quota / 2
+
+    # clean():
+    #
+    # Clean the artifact cache as much as possible.
+    #
+    # Args:
+    #    progress (callable): A callback to call when a ref is removed
+    #
+    # Returns:
+    #    (int): The size of the cache after having cleaned up
+    #
+    def clean(self, progress=None):
+        context = self.context
+
+        # Some accumulative statistics
+        removed_ref_count = 0
+        space_saved = 0
+
+        # get required refs
+        refs = self.cas.list_refs()
+        required_refs = set(itertools.chain.from_iterable(self._ref_callbacks))
+
+        # Start off with an announcement with as much info as possible
+        volume_size, volume_avail = self._get_cache_volume_size()
+        self._message(Message(
+            None, MessageType.STATUS, "Starting cache cleanup",
+            detail=("Elements required by the current build plan: {}\n" +
+                    "User specified quota: {} ({})\n" +
+                    "Cache usage: {}\n" +
+                    "Cache volume: {} total, {} available")
+            .format(len(required_refs),
+                    context.config_cache_quota,
+                    utils._pretty_size(self._cache_quota, dec_places=2),
+                    utils._pretty_size(self.get_cache_size(), dec_places=2),
+                    utils._pretty_size(volume_size, dec_places=2),
+                    utils._pretty_size(volume_avail, dec_places=2))))
+
+        # Do a real computation of the cache size once, just in case
+        self.compute_cache_size()
+        usage = CASCacheUsage(self)
+        self._message(Message(None, MessageType.STATUS,
+                              "Cache usage recomputed: {}".format(usage)))
+
+        while self.get_cache_size() >= self._cache_lower_threshold:
+            try:
+                to_remove = refs.pop(0)
+            except IndexError:
+                # If too many artifacts are required, and we therefore
+                # can't remove them, we have to abort the build.
+                #
+                # FIXME: Asking the user what to do may be neater
+                #
+                default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
+                                            'buildstream.conf')
+                detail = ("Aborted after removing {} refs and saving {} disk space.\n"
+                          "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
+                          "There is not enough space to complete the build.\n"
+                          "Please increase the cache-quota in {} and/or make more disk space."
+                          .format(removed_ref_count,
+                                  utils._pretty_size(space_saved, dec_places=2),
+                                  utils._pretty_size(self.get_cache_size(), dec_places=2),
+                                  len(required_refs),
+                                  (context.config_origin or default_conf)))
+
+                if self.full():
+                    raise CASCacheError("Cache too full. Aborting.",
+                                        detail=detail,
+                                        reason="cache-too-full")
+                else:
+                    break
+
+            key = to_remove.rpartition('/')[2]
+            if key not in required_refs:
+
+                # Remove the actual artifact, if it's not required.
+                size = 0
+                removed_ref = False
+                for (pred, remove) in self._remove_callbacks:
+                    if pred(to_remove):
+                        size = remove(to_remove)
+                        removed_ref = True
+                        break
+
+                if not removed_ref:
+                    continue
+
+                removed_ref_count += 1
+                space_saved += size
+
+                self._message(Message(
+                    None, MessageType.STATUS,
+                    "Freed {: <7} {}".format(
+                        utils._pretty_size(size, dec_places=2),
+                        to_remove)))
+
+                # Remove the size from the removed size
+                self.set_cache_size(self._cache_size - size)
+
+                # User callback
+                #
+                # Currently this process is fairly slow, but we should
+                # think about throttling this progress() callback if this
+                # becomes too intense.
+                if progress:
+                    progress()
+
+        # Informational message about the side effects of the cleanup
+        self._message(Message(
+            None, MessageType.INFO, "Cleanup completed",
+            detail=("Removed {} refs and saving {} disk space.\n" +
+                    "Cache usage is now: {}")
+            .format(removed_ref_count,
+                    utils._pretty_size(space_saved, dec_places=2),
+                    utils._pretty_size(self.get_cache_size(), dec_places=2))))
+
+        return self.get_cache_size()
+
+    # add_ref_callbacks()
+    #
+    # Args:
+    #     callback (Iterator): function that gives list of required refs
+    def add_ref_callbacks(self, callback):
+        self._ref_callbacks.append(callback)
+
+    # add_remove_callbacks()
+    #
+    # Args:
+    #    callback (predicate, callback): The predicate says whether this is the
+    #        correct type to remove given a ref and the callback does actual
+    #        removing.
+    def add_remove_callbacks(self, callback):
+        self._remove_callbacks.append(callback)
 
 
 def _grouper(iterable, n):
