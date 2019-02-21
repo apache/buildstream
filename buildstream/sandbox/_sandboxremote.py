@@ -81,15 +81,17 @@ class SandboxRemote(Sandbox):
 
         if config.action_service:
             self.action_url = config.action_service['url']
+            self.action_instance = config.action_service.get('instance', None)
             self.action_credentials = grpc.ssl_channel_credentials(
                 root_certificates=action_certs.get('server-cert'),
                 private_key=action_certs.get('client-key'),
                 certificate_chain=action_certs.get('client-cert'))
         else:
             self.action_url = None
+            self.action_instance = None
             self.action_credentials = None
 
-        self.server_instance = config.exec_service.get('instance', None)
+        self.exec_instance = config.exec_service.get('instance', None)
         self.storage_instance = config.storage_service.get('instance', None)
 
         self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
@@ -134,7 +136,7 @@ class SandboxRemote(Sandbox):
         _yaml.node_validate(remote_exec_service_config, ['url', 'instance'] + tls_keys)
         _yaml.node_validate(remote_exec_storage_config, ['url', 'instance'] + tls_keys)
         if remote_exec_action_config:
-            _yaml.node_validate(remote_exec_action_config, ['url'] + tls_keys)
+            _yaml.node_validate(remote_exec_action_config, ['url', 'instance'] + tls_keys)
         else:
             remote_config['action-service'] = None
 
@@ -182,7 +184,7 @@ class SandboxRemote(Sandbox):
 
         # Try to create a communication channel to the BuildGrid server.
         stub = remote_execution_pb2_grpc.ExecutionStub(channel)
-        request = remote_execution_pb2.ExecuteRequest(instance_name=self.server_instance,
+        request = remote_execution_pb2.ExecuteRequest(instance_name=self.exec_instance,
                                                       action_digest=action_digest,
                                                       skip_cache_lookup=False)
 
@@ -394,7 +396,8 @@ class SandboxRemote(Sandbox):
         elif url.scheme == 'https':
             channel = grpc.secure_channel('{}:{}'.format(url.hostname, url.port), self.action_credentials)
 
-        request = remote_execution_pb2.GetActionResultRequest(action_digest=action_digest)
+        request = remote_execution_pb2.GetActionResultRequest(instance_name=self.action_instance,
+                                                              action_digest=action_digest)
         stub = remote_execution_pb2_grpc.ActionCacheStub(channel)
         try:
             result = stub.GetActionResult(request)
