@@ -243,6 +243,7 @@ using the `remote-execution` option:
       instance-name: development-emea-1
     action-cache-service:
       url: http://bar.action.com:50052
+      instance-name: development-emea-1
 
 storage-service specifies a remote CAS store and the parameters are the
 same as those used to specify an :ref:`artifact server <artifacts>`.

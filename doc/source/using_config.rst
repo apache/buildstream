@@ -122,13 +122,14 @@ configuration will be used as fallback.
       url: http://execution.fallback.example.com:50051
       instance-name: main
     storage-service:
-      url: https://storage.fallback.example.com:11002/
+      url: https://storage.fallback.example.com:11002
       server-cert: /keys/server.crt
       client-cert: /keys/client.crt
       client-key: /keys/client.key
       instance-name: main
     action-cache-service:
-      url: http://action.flalback.example.com:50052
+      url: http://cache.flalback.example.com:50052
+      instance-name: main
 
 2. Project override:
 
@@ -141,13 +142,14 @@ configuration will be used as fallback.
           url: http://execution.some_project.example.com:50051
           instance-name: main
         storage-service:
-          url: https://storage.some_project.example.com:11002/
+          url: https://storage.some_project.example.com:11002
           server-cert: /some_project_keys/server.crt
           client-cert: /some_project_keys/client.crt
           client-key: /some_project_keys/client.key
           instance-name: main
         action-cache-service:
-          url: http://action.some_project.example.com:50052
+          url: http://cache.some_project.example.com:50052
+          instance-name: main
 
 
 Strict build plan
