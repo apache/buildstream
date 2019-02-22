@@ -685,6 +685,7 @@ class Element(Plugin):
         files_written = {}
         old_dep_keys = {}
         workspace = self._get_workspace()
+        project = self._get_project()
 
         if self.__can_build_incrementally() and workspace.last_successful:
             old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
@@ -746,9 +747,8 @@ class Element(Plugin):
                 overlapping_elements = elements[1:]
                 for elm in overlapping_elements:
                     element = self.search(scope, elm)
-                    element_project = element._get_project()
                     if not element.__file_is_whitelisted(f):
-                        if element_project.fail_on_overlap:
+                        if project.fail_on_overlap:
                             overlap_error_elements.append(elm)
                             overlap_error = True
                         else:
