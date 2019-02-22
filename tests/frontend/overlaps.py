@@ -4,6 +4,7 @@ from buildstream.plugintestutils.runcli import cli
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
+from tests.testutils import generate_junction
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -11,14 +12,11 @@ DATA_DIR = os.path.join(
     "overlaps"
 )
 
-project_template = {
-    "name": "test",
-    "element-path": "."
-}
 
-
-def gen_project(project_dir, fail_on_overlap, use_fatal_warnings=True):
-    template = dict(project_template)
+def gen_project(project_dir, fail_on_overlap, use_fatal_warnings=True, project_name="test"):
+    template = {
+        "name": project_name
+    }
     if use_fatal_warnings:
         template["fatal-warnings"] = [CoreWarnings.OVERLAPS] if fail_on_overlap else []
     else:
@@ -89,3 +87,30 @@ def test_overlaps_script(cli, datafiles, use_fatal_warnings):
     result = cli.run(project=project_dir, silent=True, args=[
         'build', 'script.bst'])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("project_policy", [('fail'), ('warn')])
+@pytest.mark.parametrize("subproject_policy", [('fail'), ('warn')])
+def test_overlap_subproject(cli, tmpdir, datafiles, project_policy, subproject_policy):
+    project_dir = str(datafiles)
+    subproject_dir = os.path.join(project_dir, 'sub-project')
+    junction_path = os.path.join(project_dir, 'sub-project.bst')
+
+    gen_project(project_dir, bool(project_policy == 'fail'), project_name='test')
+    gen_project(subproject_dir, bool(subproject_policy == 'fail'), project_name='subtest')
+    generate_junction(tmpdir, subproject_dir, junction_path)
+
+    # Here we have a dependency chain where the project element
+    # always overlaps with the subproject element.
+    #
+    # Test that overlap error vs warning policy for this overlap
+    # is always controlled by the project and not the subproject.
+    #
+    result = cli.run(project=project_dir, silent=True, args=['build', 'sub-collect.bst'])
+    if project_policy == 'fail':
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    else:
+        result.assert_success()
+        assert "WARNING [overlaps]" in result.stderr
