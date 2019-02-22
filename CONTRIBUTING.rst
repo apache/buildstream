@@ -105,6 +105,15 @@ Consider marking a merge request as WIP again if you are taking a while to
 address a review point. This signals that the next action is on you, and it
 won't appear in a reviewer's search for non-WIP merge requests to review.
 
+As a general rule of thumb, after a month of no activity from the submitter of 
+a non-WIP MR, we'll put it back into WIP with a polite note. Then after another 
+month with no activity we'll close the MR off entirely with another note. 
+In this way we are trying to ensure all of the MRs in our backlog are relevant
+and up to date. We have some `boilerplate text
+<https://gitlab.com/BuildStream/buildstream/blob/master/.gitlab/merge_request_templates/stale_MR_message.md>`_,
+to help us when writing these notes.
+
+
 
 Organized commits
 ~~~~~~~~~~~~~~~~~
