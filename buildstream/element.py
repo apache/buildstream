@@ -80,6 +80,7 @@ from collections import OrderedDict
 from collections.abc import Mapping
 import contextlib
 from contextlib import contextmanager
+from functools import partial
 import tempfile
 import shutil
 import string
@@ -2594,15 +2595,24 @@ class Element(Plugin):
 
         return include_file and not exclude_file
 
-    def __compute_splits(self, include=None, exclude=None, orphans=True):
-        artifact_base, _ = self.__extract()
-        basedir = os.path.join(artifact_base, 'files')
-
-        # No splitting requested, just report complete artifact
+    # __split_filter_func():
+    #
+    # Returns callable split filter function for use with `copy_files()`,
+    # `link_files()` or `Directory.import_files()`.
+    #
+    # Args:
+    #    include (list): An optional list of domains to include files from
+    #    exclude (list): An optional list of domains to exclude files from
+    #    orphans (bool): Whether to include files not spoken for by split domains
+    #
+    # Returns:
+    #    (callable): Filter callback that returns True if the file is included
+    #                in the specified split domains.
+    #
+    def __split_filter_func(self, include=None, exclude=None, orphans=True):
+        # No splitting requested, no filter needed
         if orphans and not (include or exclude):
-            for filename in utils.list_relative_paths(basedir):
-                yield filename
-            return
+            return None
 
         if not self.__splits:
             self.__init_splits()
@@ -2618,15 +2628,30 @@ class Element(Plugin):
         include = [domain for domain in include if domain in element_domains]
         exclude = [domain for domain in exclude if domain in element_domains]
 
+        # The arguments element_domains, include, exclude, and orphans are
+        # the same for all files. Use `partial` to create a function with
+        # the required callback signature: a single `path` parameter.
+        return partial(self.__split_filter, element_domains, include, exclude, orphans)
+
+    def __compute_splits(self, include=None, exclude=None, orphans=True):
+        filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
+
+        artifact_base, _ = self.__extract()
+        basedir = os.path.join(artifact_base, 'files')
+
         # FIXME: Instead of listing the paths in an extracted artifact,
         #        we should be using a manifest loaded from the artifact
         #        metadata.
         #
         element_files = utils.list_relative_paths(basedir)
 
-        for filename in element_files:
-            if self.__split_filter(element_domains, include, exclude, orphans, filename):
-                yield filename
+        if not filter_func:
+            # No splitting requested, just report complete artifact
+            yield from element_files
+        else:
+            for filename in element_files:
+                if filter_func(filename):
+                    yield filename
 
     def __file_is_whitelisted(self, path):
         # Considered storing the whitelist regex for re-use, but public data
