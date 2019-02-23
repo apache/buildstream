@@ -605,6 +605,7 @@ class CasBasedDirectory(Directory):
         return result
 
     def import_files(self, external_pathspec, *, files=None,
+                     filter_callback=None,
                      report_written=True, update_mtime=False,
                      can_link=False):
         """Imports some or all files from external_path into this directory.
@@ -632,6 +633,9 @@ class CasBasedDirectory(Directory):
             else:
                 assert isinstance(external_pathspec, Directory)
                 files = external_pathspec.list_relative_paths()
+
+        if filter_callback:
+            files = [path for path in files if filter_callback(path)]
 
         if isinstance(external_pathspec, FileBasedDirectory):
             source_directory = external_pathspec._get_underlying_directory()
