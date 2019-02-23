@@ -673,20 +673,29 @@ class Element(Plugin):
                 if path is None \
                 else vbasedir.descend(path.lstrip(os.sep).split(os.sep))
 
-            files = list(self.__compute_splits(include, exclude, orphans))
+            split_filter = self.__split_filter_func(include, exclude, orphans)
 
             # We must not hardlink files whose mtimes we want to update
             if update_mtimes:
-                link_files = [f for f in files if f not in update_mtimes]
-                copy_files = [f for f in files if f in update_mtimes]
+                def link_filter(path):
+                    return ((split_filter is None or split_filter(path)) and
+                            path not in update_mtimes)
+
+                def copy_filter(path):
+                    return ((split_filter is None or split_filter(path)) and
+                            path in update_mtimes)
             else:
-                link_files = files
-                copy_files = []
+                link_filter = split_filter
 
-            link_result = vstagedir.import_files(artifact, files=link_files, report_written=True, can_link=True)
-            copy_result = vstagedir.import_files(artifact, files=copy_files, report_written=True, update_mtime=True)
+            result = vstagedir.import_files(artifact, filter_callback=link_filter,
+                                            report_written=True, can_link=True)
 
-        return link_result.combine(copy_result)
+            if update_mtimes:
+                copy_result = vstagedir.import_files(artifact, filter_callback=copy_filter,
+                                                     report_written=True, update_mtime=True)
+                result = result.combine(copy_result)
+
+            return result
 
     def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
                                    include=None, exclude=None, orphans=True):
