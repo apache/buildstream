@@ -9,6 +9,7 @@ from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
+import fcntl
 
 
 ##################################################################
@@ -169,6 +170,13 @@ def override_completions(orig_args, cmd, cmd_param, args, incomplete):
 
 def override_main(self, args=None, prog_name=None, complete_var=None,
                   standalone_mode=True, **extra):
+
+    # Clear file status flags, if stdout/stderr is open in non-blocking
+    # mode for some reason then this can cause BlockingIOError errors
+    # when trying to write to the file.
+    #
+    fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, 0)
+    fcntl.fcntl(sys.stderr.fileno(), fcntl.F_SETFL, 0)
 
     # Hook for the Bash completion.  This only activates if the Bash
     # completion is actually enabled, otherwise this is quite a fast
