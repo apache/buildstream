@@ -178,9 +178,12 @@ class ComposeElement(Element):
 
         detail = "\n".join(lines)
 
+        def import_filter(path):
+            return path in manifest
+
         with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
             self.info("Composing {} files".format(len(manifest)))
-            installdir.import_files(vbasedir, files=manifest, can_link=True)
+            installdir.import_files(vbasedir, filter_callback=import_filter, can_link=True)
 
         # And we're done
         return os.path.join(os.sep, 'buildstream', 'install')
