@@ -98,7 +98,7 @@ class LocalSource(Source):
 
             if os.path.isdir(self.fullpath):
                 files = list(utils.list_relative_paths(self.fullpath))
-                utils.copy_files(self.fullpath, directory, files=files)
+                utils.copy_files(self.fullpath, directory)
             else:
                 destfile = os.path.join(directory, os.path.basename(self.path))
                 files = [os.path.basename(self.path)]
