@@ -74,6 +74,7 @@ class Directory():
 
     # Import and export of files and links
     def import_files(self, external_pathspec, *, files=None,
+                     filter_callback=None,
                      report_written=True, update_mtime=False,
                      can_link=False):
         """Imports some or all files from external_path into this directory.
@@ -84,6 +85,10 @@ class Directory():
           files (list of str): A list of all the files relative to
             the external_pathspec to copy. If 'None' is supplied, all
             files are copied.
+          filter_callback (callable): Optional filter callback. Called with the
+            relative path as argument for every file in the source directory.
+            The file is imported only if the callable returns True.
+            If no filter callback is specified, all files will be imported.
           report_written (bool): Return the full list of files
             written. Defaults to true. If false, only a list of
             overwritten files is returned.
