@@ -409,6 +409,7 @@ class CasBasedDirectory(Directory):
                     else:
                         assert isinstance(item, remote_execution_pb2.SymlinkNode)
                         self._add_new_link_direct(name=f, target=item.target)
+                    result.files_written.append(os.path.join(path_prefix, f))
                 else:
                     result.ignored.append(os.path.join(path_prefix, f))
         return result
