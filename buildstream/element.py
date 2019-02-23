@@ -2557,6 +2557,43 @@ class Element(Plugin):
             for domain, rules in self.node_items(splits)
         }
 
+    # __split_filter():
+    #
+    # Returns True if the file with the specified `path` is included in the
+    # specified split domains. This is used by `__split_filter_func()` to create
+    # a filter callback.
+    #
+    # Args:
+    #    element_domains (list): All domains for this element
+    #    include (list): A list of domains to include files from
+    #    exclude (list): A list of domains to exclude files from
+    #    orphans (bool): Whether to include files not spoken for by split domains
+    #    path (str): The relative path of the file
+    #
+    # Returns:
+    #    (bool): Whether to include the specified file
+    #
+    def __split_filter(self, element_domains, include, exclude, orphans, path):
+        # Absolute path is required for matching
+        filename = os.path.join(os.sep, path)
+
+        include_file = False
+        exclude_file = False
+        claimed_file = False
+
+        for domain in element_domains:
+            if self.__splits[domain].match(filename):
+                claimed_file = True
+                if domain in include:
+                    include_file = True
+                if domain in exclude:
+                    exclude_file = True
+
+        if orphans and not claimed_file:
+            include_file = True
+
+        return include_file and not exclude_file
+
     def __compute_splits(self, include=None, exclude=None, orphans=True):
         artifact_base, _ = self.__extract()
         basedir = os.path.join(artifact_base, 'files')
@@ -2585,29 +2622,11 @@ class Element(Plugin):
         #        we should be using a manifest loaded from the artifact
         #        metadata.
         #
-        element_files = [
-            os.path.join(os.sep, filename)
-            for filename in utils.list_relative_paths(basedir)
-        ]
+        element_files = utils.list_relative_paths(basedir)
 
         for filename in element_files:
-            include_file = False
-            exclude_file = False
-            claimed_file = False
-
-            for domain in element_domains:
-                if self.__splits[domain].match(filename):
-                    claimed_file = True
-                    if domain in include:
-                        include_file = True
-                    if domain in exclude:
-                        exclude_file = True
-
-            if orphans and not claimed_file:
-                include_file = True
-
-            if include_file and not exclude_file:
-                yield filename.lstrip(os.sep)
+            if self.__split_filter(element_domains, include, exclude, orphans, filename):
+                yield filename
 
     def __file_is_whitelisted(self, path):
         # Considered storing the whitelist regex for re-use, but public data
