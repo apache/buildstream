@@ -782,3 +782,45 @@ def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, strict):
 
     # Check that the original /usr/bin/hello is not in the checkout
     assert not os.path.exists(os.path.join(checkout, 'usr', 'bin', 'hello'))
+
+
+# This strange test tests against a regression raised in issue #919,
+# where opening a workspace on a runtime dependency of a build only
+# dependency causes `bst build` to not build the specified target
+# but just successfully builds the workspaced element and happily
+# exits without completing the build.
+#
+BUILD_ALL_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "workspaced-build-dep",
+)
+
+
+@pytest.mark.datafiles(BUILD_ALL_DIR)
+@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
+def test_build_all(cli, tmpdir, datafiles, strict):
+    project = str(datafiles)
+    workspace = os.path.join(str(tmpdir), 'workspace')
+
+    # Configure strict mode
+    strict_mode = True
+    if strict != 'strict':
+        strict_mode = False
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict_mode
+            }
+        }
+    })
+
+    # First open the workspace
+    result = cli.run(project=project, args=['workspace', 'open', 'elem1.bst', workspace])
+    result.assert_success()
+
+    # Now build the target elem3.bst
+    result = cli.run(project=project, args=['build', 'elem3.bst'])
+    result.assert_success()
+
+    # Assert that the target is built
+    assert cli.get_element_state(project, 'elem3.bst') == 'cached'
