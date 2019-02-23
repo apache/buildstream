@@ -414,7 +414,7 @@ class CasBasedDirectory(Directory):
         return result
 
     def import_files(self, external_pathspec, *, files=None,
-                     report_written=True, update_utimes=False,
+                     report_written=True, update_mtime=False,
                      can_link=False):
         """Imports some or all files from external_path into this directory.
 
@@ -430,7 +430,7 @@ class CasBasedDirectory(Directory):
         written. Defaults to true. If false, only a list of
         overwritten files is returned.
 
-        update_utimes (bool): Currently ignored, since CAS does not store utimes.
+        update_mtime (bool): Currently ignored, since CAS does not store mtimes.
 
         can_link (bool): Ignored, since hard links do not have any meaning within CAS.
         """
@@ -452,7 +452,7 @@ class CasBasedDirectory(Directory):
             assert isinstance(external_pathspec, CasBasedDirectory)
             result = self._partial_import_cas_into_cas(external_pathspec, files=list(files))
 
-        # TODO: No notice is taken of report_written, update_utimes or can_link.
+        # TODO: No notice is taken of report_written, update_mtime or can_link.
         # Current behaviour is to fully populate the report, which is inefficient,
         # but still correct.
 

@@ -683,7 +683,7 @@ class Element(Plugin):
                 copy_files = []
 
             link_result = vstagedir.import_files(artifact, files=link_files, report_written=True, can_link=True)
-            copy_result = vstagedir.import_files(artifact, files=copy_files, report_written=True, update_utimes=True)
+            copy_result = vstagedir.import_files(artifact, files=copy_files, report_written=True, update_mtime=True)
 
         return link_result.combine(copy_result)
 

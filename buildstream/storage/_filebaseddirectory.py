@@ -103,7 +103,7 @@ class FileBasedDirectory(Directory):
                 raise VirtualDirectoryError(error.format(subdirectory_spec[0], self.external_directory))
 
     def import_files(self, external_pathspec, *, files=None,
-                     report_written=True, update_utimes=False,
+                     report_written=True, update_mtime=False,
                      can_link=False):
         """ See superclass Directory for arguments """
 
@@ -112,13 +112,13 @@ class FileBasedDirectory(Directory):
         else:
             source_directory = external_pathspec
 
-        if can_link and not update_utimes:
+        if can_link and not update_mtime:
             import_result = link_files(source_directory, self.external_directory, files=files,
                                        ignore_missing=False, report_written=report_written)
         else:
             import_result = copy_files(source_directory, self.external_directory, files=files,
                                        ignore_missing=False, report_written=report_written)
-        if update_utimes:
+        if update_mtime:
             cur_time = time.time()
 
             for f in import_result.files_written:

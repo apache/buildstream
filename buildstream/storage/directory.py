@@ -72,7 +72,7 @@ class Directory():
 
     # Import and export of files and links
     def import_files(self, external_pathspec, *, files=None,
-                     report_written=True, update_utimes=False,
+                     report_written=True, update_mtime=False,
                      can_link=False):
         """Imports some or all files from external_path into this directory.
 
@@ -85,13 +85,13 @@ class Directory():
           report_written (bool): Return the full list of files
             written. Defaults to true. If false, only a list of
             overwritten files is returned.
-          update_utimes (bool): Update the access and modification time
+          update_mtime (bool): Update the access and modification time
             of each file copied to the current time.
           can_link (bool): Whether it's OK to create a hard link to the
             original content, meaning the stored copy will change when the
             original files change. Setting this doesn't guarantee hard
             links will be made. can_link will never be used if
-            update_utimes is set.
+            update_mtime is set.
 
         Yields:
           (FileListResult) - A report of files imported and overwritten.
