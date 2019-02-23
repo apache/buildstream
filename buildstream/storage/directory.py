@@ -73,7 +73,7 @@ class Directory():
         raise NotImplementedError()
 
     # Import and export of files and links
-    def import_files(self, external_pathspec, *, files=None,
+    def import_files(self, external_pathspec, *,
                      filter_callback=None,
                      report_written=True, update_mtime=False,
                      can_link=False):
@@ -82,9 +82,6 @@ class Directory():
         Args:
           external_pathspec: Either a string containing a pathname, or a
             Directory object, to use as the source.
-          files (list of str): A list of all the files relative to
-            the external_pathspec to copy. If 'None' is supplied, all
-            files are copied.
           filter_callback (callable): Optional filter callback. Called with the
             relative path as argument for every file in the source directory.
             The file is imported only if the callable returns True.

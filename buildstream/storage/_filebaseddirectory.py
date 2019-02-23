@@ -74,7 +74,7 @@ class FileBasedDirectory(Directory):
 
         return FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
 
-    def import_files(self, external_pathspec, *, files=None,
+    def import_files(self, external_pathspec, *,
                      filter_callback=None,
                      report_written=True, update_mtime=False,
                      can_link=False):
@@ -86,11 +86,11 @@ class FileBasedDirectory(Directory):
             source_directory = external_pathspec
 
         if can_link and not update_mtime:
-            import_result = link_files(source_directory, self.external_directory, files=files,
+            import_result = link_files(source_directory, self.external_directory,
                                        filter_callback=filter_callback,
                                        ignore_missing=False, report_written=report_written)
         else:
-            import_result = copy_files(source_directory, self.external_directory, files=files,
+            import_result = copy_files(source_directory, self.external_directory,
                                        filter_callback=filter_callback,
                                        ignore_missing=False, report_written=report_written)
         if update_mtime:

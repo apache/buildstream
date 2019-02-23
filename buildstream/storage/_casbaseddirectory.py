@@ -410,7 +410,7 @@ class CasBasedDirectory(Directory):
                     result.ignored.append(os.path.join(path_prefix, f))
         return result
 
-    def import_files(self, external_pathspec, *, files=None,
+    def import_files(self, external_pathspec, *,
                      filter_callback=None,
                      report_written=True, update_mtime=False,
                      can_link=False):
@@ -419,10 +419,6 @@ class CasBasedDirectory(Directory):
         Keyword arguments: external_pathspec: Either a string
         containing a pathname, or a Directory object, to use as the
         source.
-
-        files (list of strings): A list of all the files relative to
-        the external_pathspec to copy. If 'None' is supplied, all
-        files are copied.
 
         report_written (bool): Return the full list of files
         written. Defaults to true. If false, only a list of
@@ -433,12 +429,11 @@ class CasBasedDirectory(Directory):
         can_link (bool): Ignored, since hard links do not have any meaning within CAS.
         """
 
-        if files is None:
-            if isinstance(external_pathspec, str):
-                files = list_relative_paths(external_pathspec)
-            else:
-                assert isinstance(external_pathspec, Directory)
-                files = external_pathspec.list_relative_paths()
+        if isinstance(external_pathspec, str):
+            files = list_relative_paths(external_pathspec)
+        else:
+            assert isinstance(external_pathspec, Directory)
+            files = external_pathspec.list_relative_paths()
 
         if filter_callback:
             files = [path for path in files if filter_callback(path)]
