@@ -175,17 +175,10 @@ class CasBasedDirectory(Directory):
         return None
 
     def _add_directory(self, name):
-        if name in self.index:
-            newdir = self.index[name].buildstream_object
-            if not isinstance(newdir, CasBasedDirectory):
-                # TODO: This may not be an actual error; it may actually overwrite it
-                raise VirtualDirectoryError("New directory {} in {} would overwrite existing non-directory of type {}"
-                                            .format(name, str(self), type(newdir)))
-            dirnode = self._find_pb2_entry(name)
-        else:
-            newdir = CasBasedDirectory(self.cas_cache, parent=self, filename=name)
-            dirnode = self.pb2_directory.directories.add()
+        assert name not in self.index
 
+        newdir = CasBasedDirectory(self.cas_cache, parent=self, filename=name)
+        dirnode = self.pb2_directory.directories.add()
         dirnode.name = name
 
         # Calculate the hash for an empty directory
