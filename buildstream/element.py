@@ -2676,6 +2676,25 @@ class Element(Plugin):
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
 
+    # __get_extract_key():
+    #
+    # Get the key used to extract the artifact
+    #
+    # Returns:
+    #    (str): The key
+    #
+    def __get_extract_key(self):
+
+        context = self._get_context()
+        key = self.__strict_cache_key
+
+        # Use weak cache key, if artifact is missing for strong cache key
+        # and the context allows use of weak cache keys
+        if not context.get_strict() and not self.__artifacts.contains(self, key):
+            key = self._get_cache_key(strength=_KeyStrength.WEAK)
+
+        return key
+
     # __extract():
     #
     # Extract an artifact and return the directory
@@ -2691,13 +2710,7 @@ class Element(Plugin):
     def __extract(self, key=None):
 
         if key is None:
-            context = self._get_context()
-            key = self.__strict_cache_key
-
-            # Use weak cache key, if artifact is missing for strong cache key
-            # and the context allows use of weak cache keys
-            if not context.get_strict() and not self.__artifacts.contains(self, key):
-                key = self._get_cache_key(strength=_KeyStrength.WEAK)
+            key = self.__get_extract_key()
 
         return (self.__artifacts.extract(self, key), key)
 
