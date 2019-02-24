@@ -211,11 +211,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
     # Now do the same thing with filebaseddirectories and check the contents match
 
-    files = list(utils.list_relative_paths(roundtrip_dir))
-    duplicate_cas._import_files_from_directory(roundtrip_dir, files=files)
-    duplicate_cas._recalculate_recursing_down()
-    if duplicate_cas.parent:
-        duplicate_cas.parent._recalculate_recursing_up(duplicate_cas)
+    duplicate_cas.import_files(roundtrip_dir)
 
     assert duplicate_cas.ref.hash == d.ref.hash
 
