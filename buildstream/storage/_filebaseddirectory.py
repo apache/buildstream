@@ -189,3 +189,19 @@ class FileBasedDirectory(Directory):
         """ Returns the underlying (real) file system directory this
         object refers to. """
         return self.external_directory
+
+    def _get_filetype(self, name=None):
+        path = self.external_directory
+
+        if name:
+            path = os.path.join(path, name)
+
+        st = os.lstat(path)
+        if stat.S_ISDIR(st.st_mode):
+            return _FileType.DIRECTORY
+        elif stat.S_ISLNK(st.st_mode):
+            return _FileType.SYMLINK
+        elif stat.S_ISREG(st.st_mode):
+            return _FileType.REGULAR_FILE
+        else:
+            return _FileType.SPECIAL_FILE
