@@ -1190,6 +1190,18 @@ class Element(Plugin):
                     return
 
         if self.__strict_cache_key is None:
+
+            # We cannot make the assumption that dependency cache keys
+            # have already been resolved if possible.
+            #
+            # If a cache key was recently discovered, we need to be sure
+            # that the interemediate dependencies get their cache keys
+            # resolved before calculating this element's cache key.
+            #
+            for e in self.dependencies(Scope.BUILD):
+                if e.__strict_cache_key is None:
+                    e._update_state()
+
             dependencies = [
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
             ]
