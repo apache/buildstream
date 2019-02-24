@@ -32,7 +32,7 @@ import stat
 
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .._exceptions import BstError
-from .directory import Directory, VirtualDirectoryError
+from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
 from ..utils import FileListResult, safe_copy, list_relative_paths, _magic_timestamp
 
@@ -42,8 +42,9 @@ class IndexEntry():
     for directory entries. Because we need both the remote_execution_pb2 object
     and our own Directory object for directory entries, we store both. For files
     and symlinks, only pb_object is used. """
-    def __init__(self, pb_object, buildstream_object=None, modified=False):
+    def __init__(self, pb_object, entrytype, buildstream_object=None, modified=False):
         self.pb_object = pb_object  # Short for 'protocol buffer object')
+        self.type = entrytype
         self.buildstream_object = buildstream_object
         self.modified = modified
 
@@ -120,11 +121,12 @@ class CasBasedDirectory(Directory):
         for entry in self.pb2_directory.directories:
             buildStreamDirectory = CasBasedDirectory(self.cas_cache, ref=entry.digest,
                                                      parent=self, filename=entry.name)
-            self.index[entry.name] = IndexEntry(entry, buildstream_object=buildStreamDirectory)
+            self.index[entry.name] = IndexEntry(entry, _FileType.DIRECTORY,
+                                                buildstream_object=buildStreamDirectory)
         for entry in self.pb2_directory.files:
-            self.index[entry.name] = IndexEntry(entry)
+            self.index[entry.name] = IndexEntry(entry, _FileType.REGULAR_FILE)
         for entry in self.pb2_directory.symlinks:
-            self.index[entry.name] = IndexEntry(entry)
+            self.index[entry.name] = IndexEntry(entry, _FileType.SYMLINK)
         self._directory_read = True
 
     def _recalculate_recursing_up(self, caller=None):
@@ -182,7 +184,7 @@ class CasBasedDirectory(Directory):
         # Calculate the hash for an empty directory
         new_directory = remote_execution_pb2.Directory()
         self.cas_cache.add_object(digest=dirnode.digest, buffer=new_directory.SerializeToString())
-        self.index[name] = IndexEntry(dirnode, buildstream_object=newdir)
+        self.index[name] = IndexEntry(dirnode, _FileType.DIRECTORY, buildstream_object=newdir)
         return newdir
 
     def _add_file(self, basename, filename, modified=False):
@@ -191,7 +193,8 @@ class CasBasedDirectory(Directory):
         self.cas_cache.add_object(digest=filenode.digest, path=os.path.join(basename, filename))
         is_executable = os.access(os.path.join(basename, filename), os.X_OK)
         filenode.is_executable = is_executable
-        self.index[filename] = IndexEntry(filenode, modified=modified or filename in self.index)
+        self.index[filename] = IndexEntry(filenode, _FileType.REGULAR_FILE,
+                                          modified=modified or filename in self.index)
 
     def _copy_link_from_filesystem(self, basename, filename):
         self._add_new_link_direct(filename, os.readlink(os.path.join(basename, filename)))
@@ -206,7 +209,7 @@ class CasBasedDirectory(Directory):
         symlinknode.name = name
         # A symlink node has no digest.
         symlinknode.target = target
-        self.index[name] = IndexEntry(symlinknode, modified=(existing_link is not None))
+        self.index[name] = IndexEntry(symlinknode, _FileType.SYMLINK, modified=(existing_link is not None))
 
     def delete_entry(self, name):
         for collection in [self.pb2_directory.files, self.pb2_directory.symlinks, self.pb2_directory.directories]:
@@ -396,7 +399,7 @@ class CasBasedDirectory(Directory):
                     if isinstance(item, remote_execution_pb2.FileNode):
                         filenode = self.pb2_directory.files.add(digest=item.digest, name=f,
                                                                 is_executable=item.is_executable)
-                        self.index[f] = IndexEntry(filenode, modified=True)
+                        self.index[f] = IndexEntry(filenode, _FileType.REGULAR_FILE, modified=True)
                     else:
                         assert isinstance(item, remote_execution_pb2.SymlinkNode)
                         self._add_new_link_direct(name=f, target=item.target)
