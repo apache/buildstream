@@ -662,9 +662,8 @@ class Element(Plugin):
         self.__assert_cached()
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
-            # Get the extracted artifact
-            artifact_base, _ = self.__extract()
-            artifact = os.path.join(artifact_base, 'files')
+            artifact_vdir, _ = self.__get_artifact_directory()
+            files_vdir = artifact_vdir.descend(['files'])
 
             # Hard link it into the staging area
             #
@@ -687,11 +686,11 @@ class Element(Plugin):
             else:
                 link_filter = split_filter
 
-            result = vstagedir.import_files(artifact, filter_callback=link_filter,
+            result = vstagedir.import_files(files_vdir, filter_callback=link_filter,
                                             report_written=True, can_link=True)
 
             if update_mtimes:
-                copy_result = vstagedir.import_files(artifact, filter_callback=copy_filter,
+                copy_result = vstagedir.import_files(files_vdir, filter_callback=copy_filter,
                                                      report_written=True, update_mtime=True)
                 result = result.combine(copy_result)
 
