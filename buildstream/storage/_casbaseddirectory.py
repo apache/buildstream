@@ -48,6 +48,13 @@ class IndexEntry():
         self.buildstream_object = buildstream_object
         self.modified = modified
 
+    def get_directory(self, parent):
+        if not self.buildstream_object:
+            self.buildstream_object = CasBasedDirectory(parent.cas_cache, ref=self.pb_object.digest,
+                                                        parent=parent, filename=self.pb_object.name)
+
+        return self.buildstream_object
+
 
 class ResolutionException(VirtualDirectoryError):
     """ Superclass of all exceptions that can be raised by
@@ -119,10 +126,7 @@ class CasBasedDirectory(Directory):
         if self._directory_read:
             return
         for entry in self.pb2_directory.directories:
-            buildStreamDirectory = CasBasedDirectory(self.cas_cache, ref=entry.digest,
-                                                     parent=self, filename=entry.name)
-            self.index[entry.name] = IndexEntry(entry, _FileType.DIRECTORY,
-                                                buildstream_object=buildStreamDirectory)
+            self.index[entry.name] = IndexEntry(entry, _FileType.DIRECTORY)
         for entry in self.pb2_directory.files:
             self.index[entry.name] = IndexEntry(entry, _FileType.REGULAR_FILE)
         for entry in self.pb2_directory.symlinks:
@@ -152,7 +156,9 @@ class CasBasedDirectory(Directory):
 
         """
         for entry in self.pb2_directory.directories:
-            self.index[entry.name].buildstream_object._recalculate_recursing_down(entry)
+            subdir = self.index[entry.name].buildstream_object
+            if subdir:
+                subdir._recalculate_recursing_down(entry)
 
         if parent:
             self.ref = self.cas_cache.add_object(digest=parent.digest, buffer=self.pb2_directory.SerializeToString())
@@ -253,7 +259,7 @@ class CasBasedDirectory(Directory):
         if subdirectory_spec[0] in self.index:
             entry = self.index[subdirectory_spec[0]]
             if entry.type == _FileType.DIRECTORY:
-                subdir = entry.buildstream_object
+                subdir = entry.get_directory(self)
                 return subdir.descend(subdirectory_spec[1:], create)
             else:
                 error = "Cannot descend into {}, which is a '{}' in the directory {}"
@@ -284,7 +290,8 @@ class CasBasedDirectory(Directory):
         elif existing_entry.type == _FileType.DIRECTORY:
             # If 'name' maps to a DirectoryNode, then there must be an entry in index
             # pointing to another Directory.
-            if self.index[name].buildstream_object.is_empty():
+            subdir = existing_entry.get_directory(self)
+            if subdir.is_empty():
                 self.delete_entry(name)
                 fileListResult.overwritten.append(relative_pathname)
                 return True
@@ -536,7 +543,7 @@ class CasBasedDirectory(Directory):
         # Marks all entries in this directory and all child directories as unmodified.
         for i in self.index.values():
             i.modified = False
-            if i.type == _FileType.DIRECTORY:
+            if i.type == _FileType.DIRECTORY and i.buildstream_object:
                 i.buildstream_object._mark_directory_unmodified()
 
     def _mark_entry_unmodified(self, name):
@@ -573,7 +580,7 @@ class CasBasedDirectory(Directory):
             if component not in directory.index:
                 return None
             if directory.index[component].type == _FileType.DIRECTORY:
-                directory = directory.index[component].buildstream_object
+                directory = directory.index[component].get_directory(self)
             else:
                 return None
         return directory.index.get(path_components[-1], None)
@@ -608,7 +615,8 @@ class CasBasedDirectory(Directory):
             yield os.path.join(relpath, k)
 
         for (k, v) in sorted(directory_list):
-            yield from v.buildstream_object.list_relative_paths(relpath=os.path.join(relpath, k))
+            subdir = v.get_directory(self)
+            yield from subdir.list_relative_paths(relpath=os.path.join(relpath, k))
 
     def recalculate_hash(self):
         """ Recalcuates the hash for this directory and store the results in
@@ -623,7 +631,8 @@ class CasBasedDirectory(Directory):
         total = len(self.pb2_directory.SerializeToString())
         for i in self.index.values():
             if i.type == _FileType.DIRECTORY:
-                total += i.buildstream_object.get_size()
+                subdir = i.get_directory(self)
+                total += subdir.get_size()
             elif i.type == _FileType.REGULAR_FILE:
                 src_name = self.cas_cache.objpath(i.pb_object.digest)
                 filesize = os.stat(src_name).st_size
