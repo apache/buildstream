@@ -30,6 +30,7 @@ from . import utils
 from . import _yaml
 
 from ._cas import CASCache, CASRemote
+from .storage._casbaseddirectory import CasBasedDirectory
 
 
 CACHE_SIZE_FILE = "cache_size"
@@ -575,6 +576,27 @@ class ArtifactCache():
                 utils._force_rmtree(extract)
 
         return self.cas.remove(ref)
+
+    # get_artifact_directory():
+    #
+    # Get virtual directory for cached artifact of the specified Element.
+    #
+    # Assumes artifact has previously been fetched or committed.
+    #
+    # Args:
+    #     element (Element): The Element to extract
+    #     key (str): The cache key to use
+    #
+    # Raises:
+    #     ArtifactError: In cases there was an OSError, or if the artifact
+    #                    did not exist.
+    #
+    # Returns: virtual directory object
+    #
+    def get_artifact_directory(self, element, key):
+        ref = element.get_artifact_name(key)
+        digest = self.cas.resolve_ref(ref, update_mtime=True)
+        return CasBasedDirectory(self.cas, digest)
 
     # extract():
     #
