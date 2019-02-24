@@ -2695,6 +2695,25 @@ class Element(Plugin):
 
         return key
 
+    # __get_artifact_directory():
+    #
+    # Get a virtual directory for the artifact contents
+    #
+    # Args:
+    #    key (str): The key for the artifact to extract,
+    #               or None for the default key
+    #
+    # Returns:
+    #    (Directory): The virtual directory object
+    #    (str): The chosen key
+    #
+    def __get_artifact_directory(self, key=None):
+
+        if key is None:
+            key = self.__get_extract_key()
+
+        return (self.__artifacts.get_artifact_directory(self, key), key)
+
     # __extract():
     #
     # Extract an artifact and return the directory
