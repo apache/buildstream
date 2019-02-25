@@ -729,3 +729,139 @@ def test_build_checkout_cross_junction(datafiles, cli, tmpdir):
 
     filename = os.path.join(checkout, 'etc', 'animal.conf')
     assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_junction_short_notation(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+    workspace = os.path.join(cli.directory, 'workspace')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Create a stack element to depend on a cross junction element, using
+    # colon (:) as the separator
+    element = {
+        'kind': 'stack',
+        'depends': ['junction.bst:import-etc.bst']
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to build it, this should automatically result in fetching
+    # the junction itself at load time.
+    result = cli.run(project=project, args=['build', 'junction-dep.bst'])
+    result.assert_success()
+
+    # Assert that it's cached now
+    assert cli.get_element_state(project, 'junction-dep.bst') == 'cached'
+
+    # Now check it out
+    result = cli.run(project=project, args=[
+        'artifact', 'checkout', 'junction-dep.bst', '--directory', checkout
+    ])
+    result.assert_success()
+
+    # Assert the content of /etc/animal.conf
+    filename = os.path.join(checkout, 'etc', 'animal.conf')
+    assert os.path.exists(filename)
+    with open(filename, 'r') as f:
+        contents = f.read()
+    assert contents == 'animal=Pony\n'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_junction_short_notation_filename(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Create a stack element to depend on a cross junction element, using
+    # colon (:) as the separator
+    element = {
+        'kind': 'stack',
+        'depends': [{'filename': 'junction.bst:import-etc.bst'}]
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to build it, this should automatically result in fetching
+    # the junction itself at load time.
+    result = cli.run(project=project, args=['build', 'junction-dep.bst'])
+    result.assert_success()
+
+    # Assert that it's cached now
+    assert cli.get_element_state(project, 'junction-dep.bst') == 'cached'
+
+    # Now check it out
+    result = cli.run(project=project, args=[
+        'artifact', 'checkout', 'junction-dep.bst', '--directory', checkout
+    ])
+    result.assert_success()
+
+    # Assert the content of /etc/animal.conf
+    filename = os.path.join(checkout, 'etc', 'animal.conf')
+    assert os.path.exists(filename)
+    with open(filename, 'r') as f:
+        contents = f.read()
+    assert contents == 'animal=Pony\n'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Create a stack element to depend on a cross junction element, using
+    # colon (:) as the separator
+    element = {
+        'kind': 'stack',
+        'depends': [{
+            'filename': 'junction.bst:import-etc.bst',
+            'junction': 'junction.bst',
+        }]
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to build it, this should fail as filenames should not contain
+    # `:` when junction is explicity specified
+    result = cli.run(project=project, args=['build', 'junction-dep.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    ref = generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Create a stack element to depend on a cross junction element, using
+    # colon (:) as the separator
+    element = {
+        'kind': 'stack',
+        'depends': ['junction.bst:import-etc.bst:foo.bst']
+    }
+    _yaml.dump(element, element_path)
+
+    # Now try to build it, this should fail as recursive lookups for
+    # cross-junction elements is not allowed.
+    result = cli.run(project=project, args=['build', 'junction-dep.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

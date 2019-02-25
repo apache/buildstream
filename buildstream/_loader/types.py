@@ -17,6 +17,11 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from collections.abc import Mapping
+
+from .._exceptions import LoadError, LoadErrorReason
+from .. import _yaml
+
 
 # Symbol():
 #
@@ -56,9 +61,54 @@ class Symbol():
 #                             dependency was declared
 #
 class Dependency():
-    def __init__(self, name,
-                 dep_type=None, junction=None, provenance=None):
-        self.name = name
-        self.dep_type = dep_type
-        self.junction = junction
+    def __init__(self, dep, provenance, default_dep_type=None):
         self.provenance = provenance
+
+        if isinstance(dep, str):
+            self.name = dep
+            self.dep_type = default_dep_type
+            self.junction = None
+
+        elif isinstance(dep, Mapping):
+            if default_dep_type:
+                _yaml.node_validate(dep, ['filename', 'junction'])
+                dep_type = default_dep_type
+            else:
+                _yaml.node_validate(dep, ['filename', 'type', 'junction'])
+
+                # Make type optional, for this we set it to None
+                dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
+                if dep_type is None or dep_type == Symbol.ALL:
+                    dep_type = None
+                elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
+                    provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
+                    raise LoadError(LoadErrorReason.INVALID_DATA,
+                                    "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
+                                    .format(provenance, dep_type))
+
+            self.name = _yaml.node_get(dep, str, Symbol.FILENAME)
+            self.dep_type = dep_type
+            self.junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
+
+        else:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Dependency is not specified as a string or a dictionary".format(provenance))
+
+        # `:` characters are not allowed in filename if a junction was
+        # explicitly specified
+        if self.junction and ':' in self.name:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Dependency {} contains `:` in its name. "
+                            "`:` characters are not allowed in filename when "
+                            "junction attribute is specified.".format(self.provenance, self.name))
+
+        # Name of the element should never contain more than one `:` characters
+        if self.name.count(':') > 1:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Dependency {} contains multiple `:` in its name. "
+                            "Recursive lookups for cross-junction elements is not "
+                            "allowed.".format(self.provenance, self.name))
+
+        # Attempt to split name if no junction was specified explicitly
+        if not self.junction and self.name.count(':') == 1:
+            self.junction, self.name = self.name.split(':')
