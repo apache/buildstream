@@ -591,3 +591,8 @@ class CasBasedDirectory(Directory):
         if not self.ref:
             self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         return self.ref
+
+    def _objpath(self, path):
+        subdir = self.descend(path[:-1])
+        entry = subdir.index[path[-1]]
+        return self.cas_cache.objpath(entry.pb_object.digest)
