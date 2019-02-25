@@ -598,30 +598,6 @@ class ArtifactCache():
         digest = self.cas.resolve_ref(ref, update_mtime=True)
         return CasBasedDirectory(self.cas, digest)
 
-    # extract():
-    #
-    # Extract cached artifact for the specified Element if it hasn't
-    # already been extracted.
-    #
-    # Assumes artifact has previously been fetched or committed.
-    #
-    # Args:
-    #     element (Element): The Element to extract
-    #     key (str): The cache key to use
-    #
-    # Raises:
-    #     ArtifactError: In cases there was an OSError, or if the artifact
-    #                    did not exist.
-    #
-    # Returns: path to extracted artifact
-    #
-    def extract(self, element, key):
-        ref = element.get_artifact_name(key)
-
-        path = os.path.join(self.extractdir, element._get_project().name, element.normal_name)
-
-        return self.cas.extract(ref, path)
-
     # commit():
     #
     # Commit built artifact to cache.
