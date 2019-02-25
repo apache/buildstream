@@ -2644,14 +2644,10 @@ class Element(Plugin):
     def __compute_splits(self, include=None, exclude=None, orphans=True):
         filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
 
-        artifact_base, _ = self.__extract()
-        basedir = os.path.join(artifact_base, 'files')
+        artifact_vdir, _ = self.__get_artifact_directory()
+        files_vdir = artifact_vdir.descend(['files'])
 
-        # FIXME: Instead of listing the paths in an extracted artifact,
-        #        we should be using a manifest loaded from the artifact
-        #        metadata.
-        #
-        element_files = utils.list_relative_paths(basedir)
+        element_files = files_vdir.list_relative_paths()
 
         if not filter_func:
             # No splitting requested, just report complete artifact
