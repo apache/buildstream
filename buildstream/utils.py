@@ -352,7 +352,7 @@ def safe_remove(path):
                         .format(path, e))
 
 
-def copy_files(src, dest, *, filter_callback=None, files=None, ignore_missing=False, report_written=False):
+def copy_files(src, dest, *, filter_callback=None, ignore_missing=False, report_written=False):
     """Copy files from source to destination.
 
     Args:
@@ -362,7 +362,6 @@ def copy_files(src, dest, *, filter_callback=None, files=None, ignore_missing=Fa
                                    argument for every file in the source directory. The file is
                                    copied only if the callable returns True. If no filter callback
                                    is specified, all files will be copied.
-       files (list): Optional list of files in `src` to copy
        ignore_missing (bool): Dont raise any error if a source file is missing
        report_written (bool): Add to the result object the full list of files written
 
@@ -380,10 +379,8 @@ def copy_files(src, dest, *, filter_callback=None, files=None, ignore_missing=Fa
 
        UNIX domain socket files from `src` are ignored.
     """
-    presorted = False
-    if files is None:
-        files = list_relative_paths(src)
-        presorted = True
+    files = list_relative_paths(src)
+    presorted = True
 
     result = FileListResult()
     try:
@@ -397,7 +394,7 @@ def copy_files(src, dest, *, filter_callback=None, files=None, ignore_missing=Fa
     return result
 
 
-def link_files(src, dest, *, filter_callback=None, files=None, ignore_missing=False, report_written=False):
+def link_files(src, dest, *, filter_callback=None, ignore_missing=False, report_written=False):
     """Hardlink files from source to destination.
 
     Args:
@@ -407,7 +404,6 @@ def link_files(src, dest, *, filter_callback=None, files=None, ignore_missing=Fa
                                    argument for every file in the source directory. The file is
                                    hardlinked only if the callable returns True. If no filter
                                    callback is specified, all files will be hardlinked.
-       files (list): Optional list of files in `src` to link
        ignore_missing (bool): Dont raise any error if a source file is missing
        report_written (bool): Add to the result object the full list of files written
 
@@ -430,10 +426,8 @@ def link_files(src, dest, *, filter_callback=None, files=None, ignore_missing=Fa
 
        UNIX domain socket files from `src` are ignored.
     """
-    presorted = False
-    if files is None:
-        files = list_relative_paths(src)
-        presorted = True
+    files = list_relative_paths(src)
+    presorted = True
 
     result = FileListResult()
     try:
