@@ -465,31 +465,6 @@ class ArtifactCache():
         digest = self.cas.resolve_ref(ref, update_mtime=True)
         return CasBasedDirectory(self.cas, digest)
 
-    # extract():
-    #
-    # Extract cached artifact for the specified Element if it hasn't
-    # already been extracted.
-    #
-    # Assumes artifact has previously been fetched or committed.
-    #
-    # Args:
-    #     element (Element): The Element to extract
-    #     key (str): The cache key to use
-    #     subdir (str): Optional specific subdir to extract
-    #
-    # Raises:
-    #     ArtifactError: In cases there was an OSError, or if the artifact
-    #                    did not exist.
-    #
-    # Returns: path to extracted artifact
-    #
-    def extract(self, element, key, subdir=None):
-        ref = element.get_artifact_name(key)
-
-        path = os.path.join(self.extractdir, element._get_project().name, element.normal_name)
-
-        return self.cas.extract(ref, path, subdir=subdir)
-
     # commit():
     #
     # Commit built artifact to cache.
@@ -630,11 +605,6 @@ class ArtifactCache():
 
                 if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
                     element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
-                    if subdir:
-                        # Attempt to extract subdir into artifact extract dir if it already exists
-                        # without containing the subdir. If the respective artifact extract dir does not
-                        # exist a complete extraction will complete.
-                        self.extract(element, key, subdir)
                     # no need to pull from additional remotes
                     return True
                 else:
