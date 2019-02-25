@@ -302,20 +302,19 @@ class CasBasedDirectory(Directory):
             fileListResult.overwritten.append(relative_pathname)
             return True
 
-    def _import_files_from_directory(self, source_directory, files, path_prefix=""):
+    def _import_files_from_directory(self, source_directory, files, *, path_prefix="", result):
         """ Imports files from a traditional directory. """
 
-        def _import_directory_recursively(directory_name, source_directory, remaining_path, path_prefix):
+        def _import_directory_recursively(directory_name, source_directory, remaining_path, path_prefix, result):
             """ _import_directory_recursively and _import_files_from_directory will be called alternately
             as a directory tree is descended. """
             subdir = self.descend(directory_name, create=True)
             new_path_prefix = os.path.join(path_prefix, directory_name)
-            subdir_result = subdir._import_files_from_directory(os.path.join(source_directory, directory_name),
-                                                                [os.path.sep.join(remaining_path)],
-                                                                path_prefix=new_path_prefix)
-            return subdir_result
+            subdir._import_files_from_directory(os.path.join(source_directory, directory_name),
+                                                [os.path.sep.join(remaining_path)],
+                                                path_prefix=new_path_prefix,
+                                                result=result)
 
-        result = FileListResult()
         for entry in files:
             split_path = entry.split(os.path.sep)
             # The actual file on the FS we're importing
@@ -330,9 +329,8 @@ class CasBasedDirectory(Directory):
                 # directory_name. However, we can't do it out of
                 # order, since importing symlinks affects the results
                 # of other imports.
-                subdir_result = _import_directory_recursively(directory_name, source_directory,
-                                                              split_path[1:], path_prefix)
-                result.combine(subdir_result)
+                _import_directory_recursively(directory_name, source_directory,
+                                              split_path[1:], path_prefix, result)
             elif os.path.islink(import_file):
                 if self._check_replacement(entry, path_prefix, result):
                     self._copy_link_from_filesystem(source_directory, entry)
@@ -345,7 +343,6 @@ class CasBasedDirectory(Directory):
                 if self._check_replacement(entry, path_prefix, result):
                     self._add_file(source_directory, entry, modified=relative_pathname in result.overwritten)
                     result.files_written.append(relative_pathname)
-        return result
 
     @staticmethod
     def _files_in_subdir(sorted_files, dirname):
@@ -357,7 +354,8 @@ class CasBasedDirectory(Directory):
             dirname += os.path.sep
         return [f[len(dirname):] for f in sorted_files if f.startswith(dirname)]
 
-    def _partial_import_cas_into_cas(self, source_directory, files, path_prefix="", file_list_required=True):
+    def _partial_import_cas_into_cas(self, source_directory, files, *,
+                                     path_prefix="", file_list_required=True, result):
         """ Import only the files and symlinks listed in 'files' from source_directory to this one.
         Args:
            source_directory (:class:`.CasBasedDirectory`): The directory to import from
@@ -365,7 +363,6 @@ class CasBasedDirectory(Directory):
            path_prefix (str): Prefix used to add entries to the file list result.
            file_list_required: Whether to update the file list while processing.
         """
-        result = FileListResult()
         processed_directories = set()
         for f in files:
             fullname = os.path.join(path_prefix, f)
@@ -380,10 +377,10 @@ class CasBasedDirectory(Directory):
                     # We will fail at this point if there is a file or symlink called 'dirname'.
                     dest_subdir = self.descend(dirname, create=True)
                     src_subdir = source_directory.descend(dirname)
-                    import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
-                                                                             path_prefix=fullname,
-                                                                             file_list_required=file_list_required)
-                    result.combine(import_result)
+                    dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
+                                                             path_prefix=fullname,
+                                                             file_list_required=file_list_required,
+                                                             result=result)
                 processed_directories.add(dirname)
             elif source_directory.index[f].type == _FileType.DIRECTORY:
                 # The thing in the input file list is a directory on
@@ -408,7 +405,6 @@ class CasBasedDirectory(Directory):
                     result.files_written.append(os.path.join(path_prefix, f))
                 else:
                     result.ignored.append(os.path.join(path_prefix, f))
-        return result
 
     def import_files(self, external_pathspec, *,
                      filter_callback=None,
@@ -425,15 +421,17 @@ class CasBasedDirectory(Directory):
         if filter_callback:
             files = [path for path in files if filter_callback(path)]
 
+        result = FileListResult()
+
         if isinstance(external_pathspec, FileBasedDirectory):
             source_directory = external_pathspec._get_underlying_directory()
-            result = self._import_files_from_directory(source_directory, files=files)
+            self._import_files_from_directory(source_directory, files=files, result=result)
         elif isinstance(external_pathspec, str):
             source_directory = external_pathspec
-            result = self._import_files_from_directory(source_directory, files=files)
+            self._import_files_from_directory(source_directory, files=files, result=result)
         else:
             assert isinstance(external_pathspec, CasBasedDirectory)
-            result = self._partial_import_cas_into_cas(external_pathspec, files=list(files))
+            self._partial_import_cas_into_cas(external_pathspec, files=list(files), result=result)
 
         # TODO: No notice is taken of report_written, update_mtime or can_link.
         # Current behaviour is to fully populate the report, which is inefficient,
