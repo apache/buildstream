@@ -1477,9 +1477,9 @@ class Element(Plugin):
 
             # Check if we have a cached buildtree to use
             elif usebuildtree:
-                artifact_base, _ = self.__extract()
-                import_dir = os.path.join(artifact_base, 'buildtree')
-                if not os.listdir(import_dir):
+                artifact_vdir, _ = self.__get_artifact_directory()
+                import_dir = artifact_vdir.descend(['buildtree'])
+                if import_dir.is_empty():
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
             else:
