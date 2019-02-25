@@ -380,14 +380,13 @@ def copy_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
        UNIX domain socket files from `src` are ignored.
     """
     files = list_relative_paths(src)
-    presorted = True
 
     result = FileListResult()
     try:
         _process_list(src, dest, files, safe_copy, result,
                       filter_callback=filter_callback,
                       ignore_missing=ignore_missing,
-                      report_written=report_written, presorted=presorted)
+                      report_written=report_written)
     except OSError as e:
         raise UtilError("Failed to copy '{} -> {}': {}"
                         .format(src, dest, e))
@@ -427,14 +426,13 @@ def link_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
        UNIX domain socket files from `src` are ignored.
     """
     files = list_relative_paths(src)
-    presorted = True
 
     result = FileListResult()
     try:
         _process_list(src, dest, files, safe_link, result,
                       filter_callback=filter_callback,
                       ignore_missing=ignore_missing,
-                      report_written=report_written, presorted=presorted)
+                      report_written=report_written)
     except OSError as e:
         raise UtilError("Failed to link '{} -> {}': {}"
                         .format(src, dest, e))
@@ -818,13 +816,11 @@ def _ensure_real_directory(root, path):
 #    result: The FileListResult
 #    filter_callback: Optional callback to invoke for every directory entry
 #    ignore_missing: Dont raise any error if a source file is missing
-#    presorted: Whether the passed list is known to be presorted
 #
 #
 def _process_list(srcdir, destdir, filelist, actionfunc, result,
                   filter_callback=None,
-                  ignore_missing=False, report_written=False,
-                  presorted=False):
+                  ignore_missing=False, report_written=False):
 
     # Keep track of directory permissions, since these need to be set
     # *after* files have been written.
@@ -832,12 +828,6 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
 
     if filter_callback:
         filelist = [path for path in filelist if filter_callback(path)]
-
-    # Sorting the list of files is necessary to ensure that we processes
-    # symbolic links which lead to directories before processing files inside
-    # those directories.
-    if not presorted:
-        filelist = sorted(filelist)
 
     # Now walk the list
     for path in filelist:
