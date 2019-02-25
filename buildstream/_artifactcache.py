@@ -54,7 +54,6 @@ class ArtifactCacheSpec(CASRemoteSpec):
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
-        self.extractdir = context.extractdir
 
         self.cas = context.get_cascache()
         self.casquota = context.get_casquota()
@@ -72,8 +71,6 @@ class ArtifactCache():
 
         self._has_fetch_remotes = False
         self._has_push_remotes = False
-
-        os.makedirs(self.extractdir, exist_ok=True)
 
     # setup_remotes():
     #
