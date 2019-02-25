@@ -423,25 +423,6 @@ class ArtifactCache():
     #    (int): The amount of space recovered in the cache, in bytes
     #
     def remove(self, ref):
-
-        # Remove extract if not used by other ref
-        tree = self.cas.resolve_ref(ref)
-        ref_name, ref_hash = os.path.split(ref)
-        extract = os.path.join(self.extractdir, ref_name, tree.hash)
-        keys_file = os.path.join(extract, 'meta', 'keys.yaml')
-        if os.path.exists(keys_file):
-            keys_meta = _yaml.load(keys_file)
-            keys = [keys_meta['strong'], keys_meta['weak']]
-            remove_extract = True
-            for other_hash in keys:
-                if other_hash == ref_hash:
-                    continue
-                remove_extract = False
-                break
-
-            if remove_extract:
-                utils._force_rmtree(extract)
-
         return self.cas.remove(ref)
 
     # get_artifact_directory():
