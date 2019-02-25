@@ -379,11 +379,9 @@ def copy_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
 
        UNIX domain socket files from `src` are ignored.
     """
-    files = list_relative_paths(src)
-
     result = FileListResult()
     try:
-        _process_list(src, dest, files, safe_copy, result,
+        _process_list(src, dest, safe_copy, result,
                       filter_callback=filter_callback,
                       ignore_missing=ignore_missing,
                       report_written=report_written)
@@ -425,11 +423,9 @@ def link_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
 
        UNIX domain socket files from `src` are ignored.
     """
-    files = list_relative_paths(src)
-
     result = FileListResult()
     try:
-        _process_list(src, dest, files, safe_link, result,
+        _process_list(src, dest, safe_link, result,
                       filter_callback=filter_callback,
                       ignore_missing=ignore_missing,
                       report_written=report_written)
@@ -811,20 +807,21 @@ def _ensure_real_directory(root, path):
 # Args:
 #    srcdir: The source base directory
 #    destdir: The destination base directory
-#    filelist: List of relative file paths
 #    actionfunc: The function to call for regular files
 #    result: The FileListResult
 #    filter_callback: Optional callback to invoke for every directory entry
 #    ignore_missing: Dont raise any error if a source file is missing
 #
 #
-def _process_list(srcdir, destdir, filelist, actionfunc, result,
+def _process_list(srcdir, destdir, actionfunc, result,
                   filter_callback=None,
                   ignore_missing=False, report_written=False):
 
     # Keep track of directory permissions, since these need to be set
     # *after* files have been written.
     permissions = []
+
+    filelist = list_relative_paths(srcdir)
 
     if filter_callback:
         filelist = [path for path in filelist if filter_callback(path)]
