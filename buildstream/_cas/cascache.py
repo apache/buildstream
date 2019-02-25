@@ -170,7 +170,7 @@ class CASCache():
 
         with utils._tempdir(prefix='tmp', dir=self.tmpdir) as tmpdir:
             checkoutdir = os.path.join(tmpdir, ref)
-            self.checkout(checkoutdir, tree)
+            self.checkout(checkoutdir, tree, can_link=True)
 
             try:
                 utils.move_atomic(checkoutdir, dest)
@@ -189,8 +189,9 @@ class CASCache():
     # Args:
     #     dest (str): The destination path
     #     tree (Digest): The directory digest to extract
+    #     can_link (bool): Whether we can create hard links in the destination
     #
-    def checkout(self, dest, tree):
+    def checkout(self, dest, tree, *, can_link=False):
         os.makedirs(dest, exist_ok=True)
 
         directory = remote_execution_pb2.Directory()
@@ -201,7 +202,10 @@ class CASCache():
         for filenode in directory.files:
             # regular file, create hardlink
             fullpath = os.path.join(dest, filenode.name)
-            os.link(self.objpath(filenode.digest), fullpath)
+            if can_link:
+                utils.safe_link(self.objpath(filenode.digest), fullpath)
+            else:
+                utils.safe_copy(self.objpath(filenode.digest), fullpath)
 
             if filenode.is_executable:
                 os.chmod(fullpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
@@ -211,7 +215,7 @@ class CASCache():
             # Don't try to checkout a dangling ref
             if os.path.exists(self.objpath(dirnode.digest)):
                 fullpath = os.path.join(dest, dirnode.name)
-                self.checkout(fullpath, dirnode.digest)
+                self.checkout(fullpath, dirnode.digest, can_link=can_link)
 
         for symlinknode in directory.symlinks:
             # symlink
