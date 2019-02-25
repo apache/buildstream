@@ -2709,25 +2709,6 @@ class Element(Plugin):
 
         return (self.__artifacts.get_artifact_directory(self, key), key)
 
-    # __extract():
-    #
-    # Extract an artifact and return the directory
-    #
-    # Args:
-    #    key (str): The key for the artifact to extract,
-    #               or None for the default key
-    #
-    # Returns:
-    #    (str): The path to the extracted artifact
-    #    (str): The chosen key
-    #
-    def __extract(self, key=None):
-
-        if key is None:
-            key = self.__get_extract_key()
-
-        return (self.__artifacts.extract(self, key), key)
-
     # __get_artifact_metadata_keys():
     #
     # Retrieve the strong and weak keys from the given artifact.
