@@ -28,13 +28,11 @@ See also: :ref:`sandboxing`.
 """
 
 import os
-import stat
 
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from .._exceptions import BstError
 from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, safe_copy, list_relative_paths, _magic_timestamp
+from ..utils import FileListResult, list_relative_paths, _magic_timestamp
 
 
 class IndexEntry():
@@ -493,38 +491,7 @@ class CasBasedDirectory(Directory):
 
         """
 
-        if not os.path.exists(to_directory):
-            os.mkdir(to_directory)
-
-        for entry in self.pb2_directory.directories:
-            if entry.name not in self.index:
-                raise VirtualDirectoryError("CasDir {} contained {} in directories but not in the index"
-                                            .format(str(self), entry.name))
-            if not self._directory_read:
-                raise VirtualDirectoryError("CasDir {} has not been indexed yet".format(str(self)))
-            dest_dir = os.path.join(to_directory, entry.name)
-            if not os.path.exists(dest_dir):
-                os.mkdir(dest_dir)
-            target = self.descend([entry.name])
-            target.export_files(dest_dir)
-        for entry in self.pb2_directory.files:
-            # Extract the entry to a single file
-            dest_name = os.path.join(to_directory, entry.name)
-            src_name = self.cas_cache.objpath(entry.digest)
-            safe_copy(src_name, dest_name)
-            if entry.is_executable:
-                os.chmod(dest_name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
-                         stat.S_IRGRP | stat.S_IXGRP |
-                         stat.S_IROTH | stat.S_IXOTH)
-        for entry in self.pb2_directory.symlinks:
-            src_name = os.path.join(to_directory, entry.name)
-            target_name = entry.target
-            try:
-                os.symlink(target_name, src_name)
-            except FileExistsError as e:
-                raise BstError(("Cannot create a symlink named {} pointing to {}." +
-                                " The original error was: {}").
-                               format(src_name, entry.target, e))
+        self.cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
 
     def export_to_tar(self, tarfile, destination_dir, mtime=_magic_timestamp):
         raise NotImplementedError()
