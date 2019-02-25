@@ -70,9 +70,6 @@ class Context():
         # The directory for CAS
         self.casdir = None
 
-        # Extract directory
-        self.extractdir = None
-
         # The directory for temporary files
         self.tmpdir = None
 
@@ -218,7 +215,6 @@ class Context():
             setattr(self, directory, path)
 
         # add directories not set by users
-        self.extractdir = os.path.join(self.cachedir, 'extract')
         self.tmpdir = os.path.join(self.cachedir, 'tmp')
         self.casdir = os.path.join(self.cachedir, 'cas')
         self.builddir = os.path.join(self.cachedir, 'build')
