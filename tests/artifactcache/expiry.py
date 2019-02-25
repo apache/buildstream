@@ -348,38 +348,3 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reas
         res.assert_success()
     else:
         res.assert_main_error(err_domain, err_reason)
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_extract_expiry(cli, datafiles, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = 'elements'
-
-    cli.configure({
-        'cache': {
-            'quota': 10000000,
-        }
-    })
-
-    create_element_size('target.bst', project, element_path, [], 6000000)
-    res = cli.run(project=project, args=['build', 'target.bst'])
-    res.assert_success()
-    assert cli.get_element_state(project, 'target.bst') == 'cached'
-
-    # Force creating extract
-    res = cli.run(project=project, args=['checkout', 'target.bst', os.path.join(str(tmpdir), 'checkout')])
-    res.assert_success()
-
-    extractdir = os.path.join(project, 'cache', 'artifacts', 'extract', 'test', 'target')
-    extracts = os.listdir(extractdir)
-    assert(len(extracts) == 1)
-    extract = os.path.join(extractdir, extracts[0])
-
-    # Remove target.bst from artifact cache
-    create_element_size('target2.bst', project, element_path, [], 6000000)
-    res = cli.run(project=project, args=['build', 'target2.bst'])
-    res.assert_success()
-    assert cli.get_element_state(project, 'target.bst') != 'cached'
-
-    # Now the extract should be removed.
-    assert not os.path.exists(extract)
