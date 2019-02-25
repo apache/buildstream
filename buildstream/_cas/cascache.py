@@ -170,7 +170,7 @@ class CASCache():
 
         with utils._tempdir(prefix='tmp', dir=self.tmpdir) as tmpdir:
             checkoutdir = os.path.join(tmpdir, ref)
-            self._checkout(checkoutdir, tree)
+            self.checkout(checkoutdir, tree)
 
             try:
                 utils.move_atomic(checkoutdir, dest)
@@ -181,6 +181,42 @@ class CASCache():
                 raise CASCacheError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
 
         return originaldest
+
+    # checkout():
+    #
+    # Checkout the specified directory digest.
+    #
+    # Args:
+    #     dest (str): The destination path
+    #     tree (Digest): The directory digest to extract
+    #
+    def checkout(self, dest, tree):
+        os.makedirs(dest, exist_ok=True)
+
+        directory = remote_execution_pb2.Directory()
+
+        with open(self.objpath(tree), 'rb') as f:
+            directory.ParseFromString(f.read())
+
+        for filenode in directory.files:
+            # regular file, create hardlink
+            fullpath = os.path.join(dest, filenode.name)
+            os.link(self.objpath(filenode.digest), fullpath)
+
+            if filenode.is_executable:
+                os.chmod(fullpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                         stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+
+        for dirnode in directory.directories:
+            # Don't try to checkout a dangling ref
+            if os.path.exists(self.objpath(dirnode.digest)):
+                fullpath = os.path.join(dest, dirnode.name)
+                self.checkout(fullpath, dirnode.digest)
+
+        for symlinknode in directory.symlinks:
+            # symlink
+            fullpath = os.path.join(dest, symlinknode.name)
+            os.symlink(symlinknode.target, fullpath)
 
     # commit():
     #
@@ -630,34 +666,6 @@ class CASCache():
     ################################################
     #             Local Private Methods            #
     ################################################
-
-    def _checkout(self, dest, tree):
-        os.makedirs(dest, exist_ok=True)
-
-        directory = remote_execution_pb2.Directory()
-
-        with open(self.objpath(tree), 'rb') as f:
-            directory.ParseFromString(f.read())
-
-        for filenode in directory.files:
-            # regular file, create hardlink
-            fullpath = os.path.join(dest, filenode.name)
-            os.link(self.objpath(filenode.digest), fullpath)
-
-            if filenode.is_executable:
-                os.chmod(fullpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
-                         stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-
-        for dirnode in directory.directories:
-            # Don't try to checkout a dangling ref
-            if os.path.exists(self.objpath(dirnode.digest)):
-                fullpath = os.path.join(dest, dirnode.name)
-                self._checkout(fullpath, dirnode.digest)
-
-        for symlinknode in directory.symlinks:
-            # symlink
-            fullpath = os.path.join(dest, symlinknode.name)
-            os.symlink(symlinknode.target, fullpath)
 
     def _refpath(self, ref):
         return os.path.join(self.casdir, 'refs', 'heads', ref)
