@@ -395,56 +395,6 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reas
         res.assert_main_error(err_domain, err_reason)
 
 
-@pytest.mark.datafiles(DATA_DIR)
-def test_extract_expiry(cli, datafiles, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-    element_path = 'elements'
-
-    cli.configure({
-        'cache': {
-            'quota': 10000000,
-        }
-    })
-
-    create_element_size('target.bst', project, element_path, [], 6000000)
-    res = cli.run(project=project, args=['build', 'target.bst'])
-    res.assert_success()
-    assert cli.get_element_state(project, 'target.bst') == 'cached'
-
-    # Force creating extract
-    res = cli.run(project=project, args=['artifact', 'checkout', 'target.bst',
-                                         '--directory', os.path.join(str(tmpdir), 'checkout')])
-    res.assert_success()
-
-    # Get a snapshot of the extracts in advance
-    extractdir = os.path.join(project, 'cache', 'extract', 'test', 'target')
-    extracts = os.listdir(extractdir)
-    assert(len(extracts) == 1)
-    extract = os.path.join(extractdir, extracts[0])
-
-    # Remove target.bst from artifact cache
-    create_element_size('target2.bst', project, element_path, [], 6000000)
-    res = cli.run(project=project, args=['build', 'target2.bst'])
-    res.assert_success()
-    assert cli.get_element_state(project, 'target.bst') != 'cached'
-
-    # Now the extract should be removed.
-    assert not os.path.exists(extract)
-
-    # As an added bonus, let's ensure that no directories have been left behind
-    #
-    # Now we should have a directory for the cached target2.bst, which
-    # replaced target.bst in the cache, we should not have a directory
-    # for the target.bst
-    refsdir = os.path.join(project, 'cache', 'cas', 'refs', 'heads')
-    refsdirtest = os.path.join(refsdir, 'test')
-    refsdirtarget = os.path.join(refsdirtest, 'target')
-    refsdirtarget2 = os.path.join(refsdirtest, 'target2')
-
-    assert os.path.isdir(refsdirtarget2)
-    assert not os.path.exists(refsdirtarget)
-
-
 # Ensures that when launching BuildStream with a full artifact cache,
 # the cache size and cleanup jobs are run before any other jobs.
 #
