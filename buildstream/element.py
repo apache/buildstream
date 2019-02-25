@@ -1491,7 +1491,8 @@ class Element(Plugin):
                 for source in self.sources():
                     source._stage(import_dir)
 
-            vdirectory.import_files(import_dir)
+            with utils._deterministic_umask():
+                vdirectory.import_files(import_dir)
 
         # Ensure deterministic mtime of sources at build time
         vdirectory.set_deterministic_mtime()
