@@ -31,6 +31,8 @@ See also: :ref:`sandboxing`.
 
 """
 
+from enum import Enum
+
 from .._exceptions import BstError, ErrorDomain
 from ..utils import _magic_timestamp
 
@@ -183,3 +185,26 @@ class Directory():
         and all files and subdirectories in it. Storage space varies by implementation
         and effective space used may be lower than this number due to deduplication. """
         raise NotImplementedError()
+
+
+# FileType:
+#
+# Type of file or directory entry.
+#
+class _FileType(Enum):
+
+    # Directory
+    DIRECTORY = 1
+
+    # Regular file
+    REGULAR_FILE = 2
+
+    # Symbolic link
+    SYMLINK = 3
+
+    # Special file (FIFO, character device, block device, or socket)
+    SPECIAL_FILE = 4
+
+    def __str__(self):
+        # https://github.com/PyCQA/pylint/issues/2062
+        return self.name.lower().replace('_', ' ')  # pylint: disable=no-member
