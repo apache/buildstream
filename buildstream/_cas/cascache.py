@@ -133,46 +133,6 @@ class CASCache():
         # This assumes that the repository doesn't have any dangling pointers
         return os.path.exists(refpath)
 
-    # extract():
-    #
-    # Extract cached directory for the specified ref if it hasn't
-    # already been extracted.
-    #
-    # Args:
-    #     ref (str): The ref whose directory to extract
-    #     path (str): The destination path
-    #
-    # Raises:
-    #     CASError: In cases there was an OSError, or if the ref did not exist.
-    #
-    # Returns: path to extracted directory
-    #
-    def extract(self, ref, path):
-        tree = self.resolve_ref(ref, update_mtime=True)
-
-        dest = os.path.join(path, tree.hash)
-        if os.path.isdir(dest):
-            # directory has already been extracted
-            return dest
-
-        with tempfile.TemporaryDirectory(prefix='tmp', dir=self.tmpdir) as tmpdir:
-            checkoutdir = os.path.join(tmpdir, ref)
-            self.checkout(checkoutdir, tree, can_link=True)
-
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            try:
-                os.rename(checkoutdir, dest)
-            except OSError as e:
-                # With rename it's possible to get either ENOTEMPTY or EEXIST
-                # in the case that the destination path is a not empty directory.
-                #
-                # If rename fails with these errors, another process beat
-                # us to it so just ignore.
-                if e.errno not in [errno.ENOTEMPTY, errno.EEXIST]:
-                    raise CASError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
-
-        return dest
-
     # checkout():
     #
     # Checkout the specified directory digest.
