@@ -129,7 +129,6 @@ class ArtifactCacheUsage():
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
-        self.extractdir = os.path.join(context.artifactdir, 'extract')
 
         self.cas = CASCache(context.artifactdir)
 
@@ -147,8 +146,6 @@ class ArtifactCache():
 
         self._has_fetch_remotes = False
         self._has_push_remotes = False
-
-        os.makedirs(self.extractdir, exist_ok=True)
 
         self._calculate_cache_quota()
 
