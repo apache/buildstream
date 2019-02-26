@@ -27,8 +27,6 @@ addressable storage system.
 See also: :ref:`sandboxing`.
 """
 
-from collections import OrderedDict
-
 import os
 import stat
 
@@ -111,7 +109,7 @@ class CasBasedDirectory(Directory):
                 self.pb2_directory.ParseFromString(f.read())
 
         self.ref = ref
-        self.index = OrderedDict()
+        self.index = {}
         self.parent = parent
         self._directory_read = False
         self._populate_index()
