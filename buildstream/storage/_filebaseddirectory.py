@@ -28,6 +28,7 @@ See also: :ref:`sandboxing`.
 """
 
 import os
+import stat
 import time
 from .directory import Directory, VirtualDirectoryError
 from .. import utils
@@ -39,32 +40,9 @@ from ..utils import _set_deterministic_user, _set_deterministic_mtime
 # pylint: disable=super-init-not-called
 
 
-class _FileObject():
-    """A description of a file in a virtual directory. The contents of
-    this class are never used, but there needs to be something present
-    for files so is_empty() works correctly.
-
-    """
-    def __init__(self, virtual_directory: Directory, filename: str):
-        self.directory = virtual_directory
-        self.filename = filename
-
-
 class FileBasedDirectory(Directory):
     def __init__(self, external_directory=None):
         self.external_directory = external_directory
-        self.index = {}
-        self._directory_read = False
-
-    def _populate_index(self):
-        if self._directory_read:
-            return
-        for entry in os.listdir(self.external_directory):
-            if os.path.isdir(os.path.join(self.external_directory, entry)):
-                self.index[entry] = FileBasedDirectory(os.path.join(self.external_directory, entry))
-            else:
-                self.index[entry] = _FileObject(self, entry)
-        self._directory_read = True
 
     def descend(self, subdirectory_spec, create=False):
         """ See superclass Directory for arguments """
@@ -81,29 +59,23 @@ class FileBasedDirectory(Directory):
         if not subdirectory_spec:
             return self
 
-        self._populate_index()
-        if subdirectory_spec[0] in self.index:
-            entry = self.index[subdirectory_spec[0]]
-            if isinstance(entry, FileBasedDirectory):
-                new_path = os.path.join(self.external_directory, subdirectory_spec[0])
-                return FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
-            else:
-                error = "Cannot descend into {}, which is a '{}' in the directory {}"
-                raise VirtualDirectoryError(error.format(subdirectory_spec[0],
-                                                         type(entry).__name__,
-                                                         self.external_directory))
-        else:
+        new_path = os.path.join(self.external_directory, subdirectory_spec[0])
+        try:
+            st = os.lstat(new_path)
+            if not stat.S_ISDIR(st.st_mode):
+                raise VirtualDirectoryError("Cannot descend into '{}': '{}' is not a directory"
+                                            .format(subdirectory_spec[0], new_path))
+        except FileNotFoundError:
             if create:
-                new_path = os.path.join(self.external_directory, subdirectory_spec[0])
-                os.makedirs(new_path, exist_ok=True)
-                self.index[subdirectory_spec[0]] = FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
-                return self.index[subdirectory_spec[0]]
+                os.mkdir(new_path)
             else:
-                error = "No entry called '{}' found in the directory rooted at {}"
-                raise VirtualDirectoryError(error.format(subdirectory_spec[0], self.external_directory))
+                raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist"
+                                            .format(subdirectory_spec[0], new_path))
+
+        return FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
 
     def import_files(self, external_pathspec, *, files=None,
-                     report_written=True, update_utimes=False,
+                     report_written=True, update_mtime=False,
                      can_link=False):
         """ See superclass Directory for arguments """
 
@@ -112,22 +84,21 @@ class FileBasedDirectory(Directory):
         else:
             source_directory = external_pathspec
 
-        if can_link and not update_utimes:
+        if can_link and not update_mtime:
             import_result = link_files(source_directory, self.external_directory, files=files,
                                        ignore_missing=False, report_written=report_written)
         else:
             import_result = copy_files(source_directory, self.external_directory, files=files,
                                        ignore_missing=False, report_written=report_written)
-        if update_utimes:
+        if update_mtime:
             cur_time = time.time()
 
             for f in import_result.files_written:
                 os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
-        self._mark_changed()
         return import_result
 
     def _mark_changed(self):
-        self._directory_read = False
+        pass
 
     def set_deterministic_mtime(self):
         _set_deterministic_mtime(self.external_directory)
@@ -177,8 +148,8 @@ class FileBasedDirectory(Directory):
                 tf.addfile(tarinfo)
 
     def is_empty(self):
-        self._populate_index()
-        return len(self.index) == 0
+        it = os.scandir(self.external_directory)
+        return next(it, None) is None
 
     def mark_unmodified(self):
         """ Marks all files in this directory (recursively) as unmodified.

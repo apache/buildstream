@@ -31,6 +31,8 @@ See also: :ref:`sandboxing`.
 
 """
 
+from enum import Enum
+
 from .._exceptions import BstError, ErrorDomain
 from ..utils import _magic_timestamp
 
@@ -72,7 +74,7 @@ class Directory():
 
     # Import and export of files and links
     def import_files(self, external_pathspec, *, files=None,
-                     report_written=True, update_utimes=False,
+                     report_written=True, update_mtime=False,
                      can_link=False):
         """Imports some or all files from external_path into this directory.
 
@@ -85,13 +87,13 @@ class Directory():
           report_written (bool): Return the full list of files
             written. Defaults to true. If false, only a list of
             overwritten files is returned.
-          update_utimes (bool): Update the access and modification time
+          update_mtime (bool): Update the access and modification time
             of each file copied to the current time.
           can_link (bool): Whether it's OK to create a hard link to the
             original content, meaning the stored copy will change when the
             original files change. Setting this doesn't guarantee hard
             links will be made. can_link will never be used if
-            update_utimes is set.
+            update_mtime is set.
 
         Yields:
           (FileListResult) - A report of files imported and overwritten.
@@ -183,3 +185,26 @@ class Directory():
         and all files and subdirectories in it. Storage space varies by implementation
         and effective space used may be lower than this number due to deduplication. """
         raise NotImplementedError()
+
+
+# FileType:
+#
+# Type of file or directory entry.
+#
+class _FileType(Enum):
+
+    # Directory
+    DIRECTORY = 1
+
+    # Regular file
+    REGULAR_FILE = 2
+
+    # Symbolic link
+    SYMLINK = 3
+
+    # Special file (FIFO, character device, block device, or socket)
+    SPECIAL_FILE = 4
+
+    def __str__(self):
+        # https://github.com/PyCQA/pylint/issues/2062
+        return self.name.lower().replace('_', ' ')  # pylint: disable=no-member
