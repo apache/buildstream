@@ -80,6 +80,7 @@ from collections import OrderedDict
 from collections.abc import Mapping
 import contextlib
 from contextlib import contextmanager
+from functools import partial
 import tempfile
 import shutil
 import string
@@ -672,20 +673,29 @@ class Element(Plugin):
                 if path is None \
                 else vbasedir.descend(path.lstrip(os.sep).split(os.sep))
 
-            files = list(self.__compute_splits(include, exclude, orphans))
+            split_filter = self.__split_filter_func(include, exclude, orphans)
 
             # We must not hardlink files whose mtimes we want to update
             if update_mtimes:
-                link_files = [f for f in files if f not in update_mtimes]
-                copy_files = [f for f in files if f in update_mtimes]
+                def link_filter(path):
+                    return ((split_filter is None or split_filter(path)) and
+                            path not in update_mtimes)
+
+                def copy_filter(path):
+                    return ((split_filter is None or split_filter(path)) and
+                            path in update_mtimes)
             else:
-                link_files = files
-                copy_files = []
+                link_filter = split_filter
 
-            link_result = vstagedir.import_files(artifact, files=link_files, report_written=True, can_link=True)
-            copy_result = vstagedir.import_files(artifact, files=copy_files, report_written=True, update_mtime=True)
+            result = vstagedir.import_files(artifact, filter_callback=link_filter,
+                                            report_written=True, can_link=True)
 
-        return link_result.combine(copy_result)
+            if update_mtimes:
+                copy_result = vstagedir.import_files(artifact, filter_callback=copy_filter,
+                                                     report_written=True, update_mtime=True)
+                result = result.combine(copy_result)
+
+            return result
 
     def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
                                    include=None, exclude=None, orphans=True):
@@ -2557,15 +2567,61 @@ class Element(Plugin):
             for domain, rules in self.node_items(splits)
         }
 
-    def __compute_splits(self, include=None, exclude=None, orphans=True):
-        artifact_base, _ = self.__extract()
-        basedir = os.path.join(artifact_base, 'files')
+    # __split_filter():
+    #
+    # Returns True if the file with the specified `path` is included in the
+    # specified split domains. This is used by `__split_filter_func()` to create
+    # a filter callback.
+    #
+    # Args:
+    #    element_domains (list): All domains for this element
+    #    include (list): A list of domains to include files from
+    #    exclude (list): A list of domains to exclude files from
+    #    orphans (bool): Whether to include files not spoken for by split domains
+    #    path (str): The relative path of the file
+    #
+    # Returns:
+    #    (bool): Whether to include the specified file
+    #
+    def __split_filter(self, element_domains, include, exclude, orphans, path):
+        # Absolute path is required for matching
+        filename = os.path.join(os.sep, path)
 
-        # No splitting requested, just report complete artifact
+        include_file = False
+        exclude_file = False
+        claimed_file = False
+
+        for domain in element_domains:
+            if self.__splits[domain].match(filename):
+                claimed_file = True
+                if domain in include:
+                    include_file = True
+                if domain in exclude:
+                    exclude_file = True
+
+        if orphans and not claimed_file:
+            include_file = True
+
+        return include_file and not exclude_file
+
+    # __split_filter_func():
+    #
+    # Returns callable split filter function for use with `copy_files()`,
+    # `link_files()` or `Directory.import_files()`.
+    #
+    # Args:
+    #    include (list): An optional list of domains to include files from
+    #    exclude (list): An optional list of domains to exclude files from
+    #    orphans (bool): Whether to include files not spoken for by split domains
+    #
+    # Returns:
+    #    (callable): Filter callback that returns True if the file is included
+    #                in the specified split domains.
+    #
+    def __split_filter_func(self, include=None, exclude=None, orphans=True):
+        # No splitting requested, no filter needed
         if orphans and not (include or exclude):
-            for filename in utils.list_relative_paths(basedir):
-                yield filename
-            return
+            return None
 
         if not self.__splits:
             self.__init_splits()
@@ -2581,33 +2637,30 @@ class Element(Plugin):
         include = [domain for domain in include if domain in element_domains]
         exclude = [domain for domain in exclude if domain in element_domains]
 
+        # The arguments element_domains, include, exclude, and orphans are
+        # the same for all files. Use `partial` to create a function with
+        # the required callback signature: a single `path` parameter.
+        return partial(self.__split_filter, element_domains, include, exclude, orphans)
+
+    def __compute_splits(self, include=None, exclude=None, orphans=True):
+        filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
+
+        artifact_base, _ = self.__extract()
+        basedir = os.path.join(artifact_base, 'files')
+
         # FIXME: Instead of listing the paths in an extracted artifact,
         #        we should be using a manifest loaded from the artifact
         #        metadata.
         #
-        element_files = [
-            os.path.join(os.sep, filename)
-            for filename in utils.list_relative_paths(basedir)
-        ]
+        element_files = utils.list_relative_paths(basedir)
 
-        for filename in element_files:
-            include_file = False
-            exclude_file = False
-            claimed_file = False
-
-            for domain in element_domains:
-                if self.__splits[domain].match(filename):
-                    claimed_file = True
-                    if domain in include:
-                        include_file = True
-                    if domain in exclude:
-                        exclude_file = True
-
-            if orphans and not claimed_file:
-                include_file = True
-
-            if include_file and not exclude_file:
-                yield filename.lstrip(os.sep)
+        if not filter_func:
+            # No splitting requested, just report complete artifact
+            yield from element_files
+        else:
+            for filename in element_files:
+                if filter_func(filename):
+                    yield filename
 
     def __file_is_whitelisted(self, path):
         # Considered storing the whitelist regex for re-use, but public data

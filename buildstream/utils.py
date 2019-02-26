@@ -352,13 +352,16 @@ def safe_remove(path):
                         .format(path, e))
 
 
-def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=False):
+def copy_files(src, dest, *, filter_callback=None, ignore_missing=False, report_written=False):
     """Copy files from source to destination.
 
     Args:
        src (str): The source file or directory
        dest (str): The destination directory
-       files (list): Optional list of files in `src` to copy
+       filter_callback (callable): Optional filter callback. Called with the relative path as
+                                   argument for every file in the source directory. The file is
+                                   copied only if the callable returns True. If no filter callback
+                                   is specified, all files will be copied.
        ignore_missing (bool): Dont raise any error if a source file is missing
        report_written (bool): Add to the result object the full list of files written
 
@@ -376,28 +379,28 @@ def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
 
        UNIX domain socket files from `src` are ignored.
     """
-    presorted = False
-    if files is None:
-        files = list_relative_paths(src)
-        presorted = True
-
     result = FileListResult()
     try:
-        _process_list(src, dest, files, safe_copy, result, ignore_missing=ignore_missing,
-                      report_written=report_written, presorted=presorted)
+        _process_list(src, dest, safe_copy, result,
+                      filter_callback=filter_callback,
+                      ignore_missing=ignore_missing,
+                      report_written=report_written)
     except OSError as e:
         raise UtilError("Failed to copy '{} -> {}': {}"
                         .format(src, dest, e))
     return result
 
 
-def link_files(src, dest, *, files=None, ignore_missing=False, report_written=False):
+def link_files(src, dest, *, filter_callback=None, ignore_missing=False, report_written=False):
     """Hardlink files from source to destination.
 
     Args:
        src (str): The source file or directory
        dest (str): The destination directory
-       files (list): Optional list of files in `src` to link
+       filter_callback (callable): Optional filter callback. Called with the relative path as
+                                   argument for every file in the source directory. The file is
+                                   hardlinked only if the callable returns True. If no filter
+                                   callback is specified, all files will be hardlinked.
        ignore_missing (bool): Dont raise any error if a source file is missing
        report_written (bool): Add to the result object the full list of files written
 
@@ -420,15 +423,12 @@ def link_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
 
        UNIX domain socket files from `src` are ignored.
     """
-    presorted = False
-    if files is None:
-        files = list_relative_paths(src)
-        presorted = True
-
     result = FileListResult()
     try:
-        _process_list(src, dest, files, safe_link, result, ignore_missing=ignore_missing,
-                      report_written=report_written, presorted=presorted)
+        _process_list(src, dest, safe_link, result,
+                      filter_callback=filter_callback,
+                      ignore_missing=ignore_missing,
+                      report_written=report_written)
     except OSError as e:
         raise UtilError("Failed to link '{} -> {}': {}"
                         .format(src, dest, e))
@@ -807,26 +807,24 @@ def _ensure_real_directory(root, path):
 # Args:
 #    srcdir: The source base directory
 #    destdir: The destination base directory
-#    filelist: List of relative file paths
 #    actionfunc: The function to call for regular files
 #    result: The FileListResult
+#    filter_callback: Optional callback to invoke for every directory entry
 #    ignore_missing: Dont raise any error if a source file is missing
-#    presorted: Whether the passed list is known to be presorted
 #
 #
-def _process_list(srcdir, destdir, filelist, actionfunc, result,
-                  ignore_missing=False, report_written=False,
-                  presorted=False):
+def _process_list(srcdir, destdir, actionfunc, result,
+                  filter_callback=None,
+                  ignore_missing=False, report_written=False):
 
     # Keep track of directory permissions, since these need to be set
     # *after* files have been written.
     permissions = []
 
-    # Sorting the list of files is necessary to ensure that we processes
-    # symbolic links which lead to directories before processing files inside
-    # those directories.
-    if not presorted:
-        filelist = sorted(filelist)
+    filelist = list_relative_paths(srcdir)
+
+    if filter_callback:
+        filelist = [path for path in filelist if filter_callback(path)]
 
     # Now walk the list
     for path in filelist:
