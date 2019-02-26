@@ -11,6 +11,9 @@ buildstream 1.3.1
     to this, `--tar` is no longer a flag, it is a mutually incompatible option
     to `--directory`. For example, `bst artifact checkout foo.bst --tar foo.tar.gz`.
 
+  o The core artifact version was increased, due to switching the format of
+    artifact metadata from YAML to JSON. This was for greatly improved loading
+    speed.
 
   o Added `bst artifact log` subcommand for viewing build logs.
 

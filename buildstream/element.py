@@ -85,6 +85,8 @@ import tempfile
 import shutil
 import string
 
+import ujson
+
 from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
@@ -1738,7 +1740,8 @@ class Element(Plugin):
                 shutil.copyfile(log_filename, self._build_log_path)
 
             # Store public data
-            _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+            with open(os.path.join(metadir, 'public.json'), 'w') as datafile:
+                ujson.dump(_yaml.node_sanitize(self.__dynamic_public), datafile)
 
             # Store result
             build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
@@ -2834,7 +2837,8 @@ class Element(Plugin):
         # Load the public data from the artifact
         artifact_base, _ = self.__extract()
         metadir = os.path.join(artifact_base, 'meta')
-        self.__dynamic_public = _yaml.load(os.path.join(metadir, 'public.yaml'))
+        with open(os.path.join(metadir, 'public.json')) as datafile:
+            self.__dynamic_public = ujson.load(datafile)
 
     def __load_build_result(self, keystrength):
         self.__assert_cached(keystrength=keystrength)
