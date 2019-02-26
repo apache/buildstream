@@ -75,14 +75,14 @@ class ImportElement(Element):
         self._stage_sources_in_sandbox(sandbox, 'input', mount_workspaces=False)
 
         rootdir = sandbox.get_virtual_directory()
-        inputdir = rootdir.descend(['input'])
-        outputdir = rootdir.descend(['output'], create=True)
+        inputdir = rootdir.descend('input')
+        outputdir = rootdir.descend('output', create=True)
 
         # The directory to grab
-        inputdir = inputdir.descend(self.source.strip(os.sep).split(os.sep))
+        inputdir = inputdir.descend(*self.source.strip(os.sep).split(os.sep))
 
         # The output target directory
-        outputdir = outputdir.descend(self.target.strip(os.sep).split(os.sep), create=True)
+        outputdir = outputdir.descend(*self.target.strip(os.sep).split(os.sep), create=True)
 
         if inputdir.is_empty():
             raise ElementError("{}: No files were found inside directory '{}'"

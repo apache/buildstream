@@ -181,13 +181,12 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def descend(self, subdirectory_spec, create=False):
+    def descend(self, *paths, create=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
         Arguments:
-        * subdirectory_spec (list of strings): A list of strings which are all directory
-          names.
+        * *paths (str): A list of strings which are all directory names.
         * create (boolean): If this is true, the directories will be created if
           they don't already exist.
 
@@ -199,38 +198,30 @@ class CasBasedDirectory(Directory):
 
         """
 
-        # It's very common to send a directory name instead of a list and this causes
-        # bizarre errors, so check for it here
-        if not isinstance(subdirectory_spec, list):
-            subdirectory_spec = [subdirectory_spec]
+        current_dir = self
 
-        # Because of the way split works, it's common to get a list which begins with
-        # an empty string. Detect these and remove them.
-        while subdirectory_spec and subdirectory_spec[0] == "":
-            subdirectory_spec.pop(0)
+        for path in paths:
+            # Skip empty path segments
+            if not path:
+                continue
 
-        # Descending into [] returns the same directory.
-        if not subdirectory_spec:
-            return self
-
-        if subdirectory_spec[0] in self.index:
-            entry = self.index[subdirectory_spec[0]]
-            if entry.type == _FileType.DIRECTORY:
-                subdir = entry.get_directory(self)
-                return subdir.descend(subdirectory_spec[1:], create)
+            entry = current_dir.index.get(path)
+            if entry:
+                if entry.type == _FileType.DIRECTORY:
+                    current_dir = entry.get_directory(current_dir)
+                else:
+                    error = "Cannot descend into {}, which is a '{}' in the directory {}"
+                    raise VirtualDirectoryError(error.format(path,
+                                                             current_dir.index[path].type,
+                                                             current_dir))
             else:
-                error = "Cannot descend into {}, which is a '{}' in the directory {}"
-                raise VirtualDirectoryError(error.format(subdirectory_spec[0],
-                                                         self.index[subdirectory_spec[0]].type,
-                                                         self))
-        else:
-            if create:
-                newdir = self._add_directory(subdirectory_spec[0])
-                return newdir.descend(subdirectory_spec[1:], create)
-            else:
-                error = "'{}' not found in {}"
-                raise VirtualDirectoryError(error.format(subdirectory_spec[0], str(self)))
-        return None
+                if create:
+                    current_dir = current_dir._add_directory(path)
+                else:
+                    error = "'{}' not found in {}"
+                    raise VirtualDirectoryError(error.format(path, str(current_dir)))
+
+        return current_dir
 
     def _check_replacement(self, name, path_prefix, fileListResult):
         """ Checks whether 'name' exists, and if so, whether we can overwrite it.
@@ -587,13 +578,13 @@ class CasBasedDirectory(Directory):
         return self.__digest
 
     def _objpath(self, path):
-        subdir = self.descend(path[:-1])
+        subdir = self.descend(*path[:-1])
         entry = subdir.index[path[-1]]
         return self.cas_cache.objpath(entry.digest)
 
     def _exists(self, path):
         try:
-            subdir = self.descend(path[:-1])
+            subdir = self.descend(*path[:-1])
             return path[-1] in subdir.index
         except VirtualDirectoryError:
             return False

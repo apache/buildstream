@@ -692,9 +692,8 @@ class ArtifactCache():
     #     logsdir (CasBasedDirectory): A CasBasedDirectory containing the artifact's logs
     #
     def get_artifact_logs(self, ref):
-        descend = ["logs"]
         cache_id = self.cas.resolve_ref(ref, update_mtime=True)
-        vdir = CasBasedDirectory(self.cas, digest=cache_id).descend(descend)
+        vdir = CasBasedDirectory(self.cas, digest=cache_id).descend('logs')
         return vdir
 
     ################################################

@@ -663,14 +663,14 @@ class Element(Plugin):
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
             artifact_vdir, _ = self.__get_artifact_directory()
-            files_vdir = artifact_vdir.descend(['files'])
+            files_vdir = artifact_vdir.descend('files')
 
             # Hard link it into the staging area
             #
             vbasedir = sandbox.get_virtual_directory()
             vstagedir = vbasedir \
                 if path is None \
-                else vbasedir.descend(path.lstrip(os.sep).split(os.sep))
+                else vbasedir.descend(*path.lstrip(os.sep).split(os.sep))
 
             split_filter = self.__split_filter_func(include, exclude, orphans)
 
@@ -1439,7 +1439,7 @@ class Element(Plugin):
 
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
-        host_vdirectory = sandbox_vroot.descend(directory.lstrip(os.sep).split(os.sep), create=True)
+        host_vdirectory = sandbox_vroot.descend(*directory.lstrip(os.sep).split(os.sep), create=True)
         self._stage_sources_at(host_vdirectory, mount_workspaces=mount_workspaces, usebuildtree=sandbox._usebuildtree)
 
     # _stage_sources_at():
@@ -1478,7 +1478,7 @@ class Element(Plugin):
             # Check if we have a cached buildtree to use
             elif usebuildtree:
                 artifact_vdir, _ = self.__get_artifact_directory()
-                import_dir = artifact_vdir.descend(['buildtree'])
+                import_dir = artifact_vdir.descend('buildtree')
                 if import_dir.is_empty():
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
@@ -1663,7 +1663,7 @@ class Element(Plugin):
                     if workspace and self.__staged_sources_directory:
                         sandbox_vroot = sandbox.get_virtual_directory()
                         path_components = self.__staged_sources_directory.lstrip(os.sep).split(os.sep)
-                        sandbox_vpath = sandbox_vroot.descend(path_components)
+                        sandbox_vpath = sandbox_vroot.descend(*path_components)
                         try:
                             sandbox_vpath.import_files(workspace.get_absolute_path())
                         except UtilError as e2:
@@ -1684,7 +1684,7 @@ class Element(Plugin):
             if collect is not None:
                 try:
                     sandbox_vroot = sandbox.get_virtual_directory()
-                    collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
+                    collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
                 except VirtualDirectoryError:
                     # No collect directory existed
                     collectvdir = None
@@ -1721,7 +1721,7 @@ class Element(Plugin):
                 sandbox_vroot = sandbox.get_virtual_directory()
                 try:
                     sandbox_build_dir = sandbox_vroot.descend(
-                        self.get_variable('build-root').lstrip(os.sep).split(os.sep))
+                        *self.get_variable('build-root').lstrip(os.sep).split(os.sep))
                     buildtreevdir.import_files(sandbox_build_dir)
                 except VirtualDirectoryError:
                     # Directory could not be found. Pre-virtual
@@ -2645,7 +2645,7 @@ class Element(Plugin):
         filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
 
         artifact_vdir, _ = self.__get_artifact_directory()
-        files_vdir = artifact_vdir.descend(['files'])
+        files_vdir = artifact_vdir.descend('files')
 
         element_files = files_vdir.list_relative_paths()
 
