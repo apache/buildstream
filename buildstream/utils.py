@@ -280,7 +280,7 @@ def safe_copy(src, dest, *, result=None):
                         .format(src, dest, e)) from e
 
 
-def safe_link(src, dest, *, result=None):
+def safe_link(src, dest, *, result=None, _unlink=False):
     """Try to create a hardlink, but resort to copying in the case of cross device links.
 
     Args:
@@ -292,19 +292,23 @@ def safe_link(src, dest, *, result=None):
        UtilError: In the case of unexpected system call failures
     """
 
-    # First unlink the target if it exists
-    try:
-        os.unlink(dest)
-    except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise UtilError("Failed to remove destination file '{}': {}"
-                            .format(dest, e)) from e
+    if _unlink:
+        # First unlink the target if it exists
+        try:
+            os.unlink(dest)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise UtilError("Failed to remove destination file '{}': {}"
+                                .format(dest, e)) from e
 
     # If we can't link it due to cross-device hardlink, copy
     try:
         os.link(src, dest)
     except OSError as e:
-        if e.errno == errno.EXDEV:
+        if e.errno == errno.EEXIST and not _unlink:
+            # Target exists already, unlink and try again
+            safe_link(src, dest, result=result, _unlink=True)
+        elif e.errno == errno.EXDEV:
             safe_copy(src, dest)
         else:
             raise UtilError("Failed to link '{} -> {}': {}"
