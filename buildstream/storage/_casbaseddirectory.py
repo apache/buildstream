@@ -55,6 +55,12 @@ class IndexEntry():
 
         return self.buildstream_object
 
+    def get_digest(self):
+        if self.digest:
+            return self.digest
+        else:
+            return self.buildstream_object._get_digest()
+
 
 class ResolutionException(VirtualDirectoryError):
     """ Superclass of all exceptions that can be raised by
@@ -303,18 +309,43 @@ class CasBasedDirectory(Directory):
             is_dir = entry.type == _FileType.DIRECTORY
 
             if is_dir:
-                src_subdir = source_directory.descend(name)
+                create_subdir = name not in self.index
 
-                try:
-                    create_subdir = name not in self.index
-                    dest_subdir = self.descend(name, create=create_subdir)
-                except VirtualDirectoryError:
-                    filetype = self.index[name].type
-                    raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
-                                                .format(filetype, relative_pathname))
+                if create_subdir and not filter_callback:
+                    # If subdirectory does not exist yet and there is no filter,
+                    # we can import the whole source directory by digest instead
+                    # of importing each directory entry individually.
+                    subdir_digest = entry.get_digest()
+                    dest_entry = IndexEntry(name, _FileType.DIRECTORY, digest=subdir_digest)
+                    self.index[name] = dest_entry
+                    self.__invalidate_digest()
 
-                dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
-                                                         path_prefix=relative_pathname, result=result)
+                    # However, we still need to iterate over the directory entries
+                    # to fill in `result.files_written`.
+
+                    # Use source subdirectory object if it already exists,
+                    # otherwise create object for destination subdirectory.
+                    # This is based on the assumption that the destination
+                    # subdirectory is more likely to be modified later on
+                    # (e.g., by further import_files() calls).
+                    if entry.buildstream_object:
+                        subdir = entry.buildstream_object
+                    else:
+                        subdir = dest_entry.get_directory(self)
+
+                    subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
+                else:
+                    src_subdir = source_directory.descend(name)
+
+                    try:
+                        dest_subdir = self.descend(name, create=create_subdir)
+                    except VirtualDirectoryError:
+                        filetype = self.index[name].type
+                        raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
+                                                    .format(filetype, relative_pathname))
+
+                    dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
+                                                             path_prefix=relative_pathname, result=result)
 
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
@@ -572,3 +603,14 @@ class CasBasedDirectory(Directory):
             self.__digest = None
             if self.parent:
                 self.parent.__invalidate_digest()
+
+    def __add_files_to_result(self, *, path_prefix="", result):
+        for name, entry in self.index.items():
+            # The destination filename, relative to the root where the import started
+            relative_pathname = os.path.join(path_prefix, name)
+
+            if entry.type == _FileType.DIRECTORY:
+                subdir = self.descend(name)
+                subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
+            else:
+                result.files_written.append(relative_pathname)
