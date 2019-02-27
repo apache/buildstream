@@ -636,9 +636,6 @@ class ArtifactCache():
             raise ArtifactError("push_directory was called, but no remote artifact " +
                                 "servers are configured as push remotes.")
 
-        if directory.ref is None:
-            return
-
         for remote in push_remotes:
             self.cas.push_directory(remote, directory)
 
