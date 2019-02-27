@@ -414,20 +414,7 @@ class CasBasedDirectory(Directory):
                      filter_callback=None,
                      report_written=True, update_mtime=False,
                      can_link=False):
-        """Imports some or all files from external_path into this directory.
-
-        Keyword arguments: external_pathspec: Either a string
-        containing a pathname, or a Directory object, to use as the
-        source.
-
-        report_written (bool): Return the full list of files
-        written. Defaults to true. If false, only a list of
-        overwritten files is returned.
-
-        update_mtime (bool): Currently ignored, since CAS does not store mtimes.
-
-        can_link (bool): Ignored, since hard links do not have any meaning within CAS.
-        """
+        """ See superclass Directory for arguments """
 
         if isinstance(external_pathspec, str):
             files = list_relative_paths(external_pathspec)
