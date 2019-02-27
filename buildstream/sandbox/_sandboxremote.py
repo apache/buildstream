@@ -30,7 +30,6 @@ from .. import utils
 from .._message import Message, MessageType
 from . import Sandbox, SandboxCommandError
 from .sandbox import _SandboxBatch
-from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
@@ -306,10 +305,6 @@ class SandboxRemote(Sandbox):
         # set up virtual dircetory
         upload_vdir = self.get_virtual_directory()
         cascache = self._get_context().get_cascache()
-        if isinstance(upload_vdir, FileBasedDirectory):
-            # Make a new temporary directory to put source in
-            upload_vdir = CasBasedDirectory(cascache)
-            upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
