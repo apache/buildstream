@@ -299,7 +299,7 @@ class SandboxRemote(Sandbox):
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
 
-        new_dir = CasBasedDirectory(context.artifactcache.cas, ref=dir_digest)
+        new_dir = CasBasedDirectory(context.artifactcache.cas, digest=dir_digest)
         self._set_virtual_directory(new_dir)
 
     def _run(self, command, flags, *, cwd, env):

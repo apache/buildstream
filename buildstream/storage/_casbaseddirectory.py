@@ -48,7 +48,7 @@ class IndexEntry():
 
     def get_directory(self, parent):
         if not self.buildstream_object:
-            self.buildstream_object = CasBasedDirectory(parent.cas_cache, ref=self.pb_object.digest,
+            self.buildstream_object = CasBasedDirectory(parent.cas_cache, digest=self.pb_object.digest,
                                                         parent=parent, filename=self.pb_object.name)
 
         return self.buildstream_object
@@ -105,16 +105,16 @@ class CasBasedDirectory(Directory):
     _pb2_path_sep = "/"
     _pb2_absolute_path_prefix = "/"
 
-    def __init__(self, cas_cache, ref=None, parent=None, common_name="untitled", filename=None):
+    def __init__(self, cas_cache, *, digest=None, parent=None, common_name="untitled", filename=None):
         self.filename = filename
         self.common_name = common_name
         self.pb2_directory = remote_execution_pb2.Directory()
         self.cas_cache = cas_cache
-        if ref:
-            with open(self.cas_cache.objpath(ref), 'rb') as f:
+        if digest:
+            with open(self.cas_cache.objpath(digest), 'rb') as f:
                 self.pb2_directory.ParseFromString(f.read())
 
-        self.ref = ref
+        self.ref = digest
         self.index = {}
         self.parent = parent
         self._directory_read = False
