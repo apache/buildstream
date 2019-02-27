@@ -308,7 +308,7 @@ class SandboxRemote(Sandbox):
         cascache = self._get_context().get_cascache()
         if isinstance(upload_vdir, FileBasedDirectory):
             # Make a new temporary directory to put source in
-            upload_vdir = CasBasedDirectory(cascache, ref=None)
+            upload_vdir = CasBasedDirectory(cascache)
             upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
         upload_vdir.recalculate_hash()

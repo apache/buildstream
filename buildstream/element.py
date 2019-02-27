@@ -1691,7 +1691,7 @@ class Element(Plugin):
 
             context = self._get_context()
 
-            assemblevdir = CasBasedDirectory(cas_cache=context.artifactcache.cas, ref=None)
+            assemblevdir = CasBasedDirectory(cas_cache=context.artifactcache.cas)
             logsvdir = assemblevdir.descend("logs", create=True)
             metavdir = assemblevdir.descend("meta", create=True)
             buildtreevdir = assemblevdir.descend("buildtree", create=True)

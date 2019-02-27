@@ -191,7 +191,7 @@ class Sandbox():
         """
         if self._vdir is None or self._never_cache_vdirs:
             if 'BST_CAS_DIRECTORIES' in os.environ:
-                self._vdir = CasBasedDirectory(self.__context.artifactcache.cas, ref=None)
+                self._vdir = CasBasedDirectory(self.__context.artifactcache.cas)
             else:
                 self._vdir = FileBasedDirectory(self._root)
         return self._vdir
