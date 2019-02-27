@@ -114,7 +114,7 @@ class CasBasedDirectory(Directory):
             with open(self.cas_cache.objpath(digest), 'rb') as f:
                 self.pb2_directory.ParseFromString(f.read())
 
-        self.ref = digest
+        self.__digest = digest
         self.index = {}
         self.parent = parent
         self._directory_read = False
@@ -141,7 +141,7 @@ class CasBasedDirectory(Directory):
         if caller:
             old_dir = self._find_pb2_entry(caller.filename)
             self.cas_cache.add_object(digest=old_dir.digest, buffer=caller.pb2_directory.SerializeToString())
-        self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+        self.__digest = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         if self.parent:
             self.parent._recalculate_recursing_up(self)
 
@@ -159,9 +159,9 @@ class CasBasedDirectory(Directory):
                 subdir._recalculate_recursing_down(entry)
 
         if parent:
-            self.ref = self.cas_cache.add_object(digest=parent.digest, buffer=self.pb2_directory.SerializeToString())
+            self.__digest = self.cas_cache.add_object(digest=parent.digest, buffer=self.pb2_directory.SerializeToString())
         else:
-            self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+            self.__digest = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         # We don't need to do anything more than that; files were already added ealier, and symlinks are
         # part of the directory structure.
 
@@ -588,9 +588,9 @@ class CasBasedDirectory(Directory):
     #   (Digest): The Digest protobuf object for the Directory protobuf
     #
     def _get_digest(self):
-        if not self.ref:
-            self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
-        return self.ref
+        if not self.__digest:
+            self.__digest = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+        return self.__digest
 
     def _objpath(self, path):
         subdir = self.descend(path[:-1])
