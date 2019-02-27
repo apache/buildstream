@@ -24,7 +24,8 @@ from copy import deepcopy
 from contextlib import ExitStack
 from pathlib import Path
 
-from ruamel import yaml
+import yaml  # this is pyyaml
+from ruamel import yaml as ruamelyaml
 from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
 from ruamel.yaml.constructor import RoundTripConstructor
 from ._exceptions import LoadError, LoadErrorReason
@@ -184,12 +185,13 @@ class CompositeTypeError(CompositeError):
 #    copy_tree (bool): Whether to make a copy, preserving the original toplevels
 #                      for later serialization
 #    yaml_cache (YamlCache): A yaml cache to consult rather than parsing
+#    fast_load (bool): whether to load the YAML with pyyaml (instead of ruamel.yaml)
 #
 # Returns (dict): A loaded copy of the YAML file with provenance information
 #
 # Raises: LoadError
 #
-def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=None):
+def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=None, fast_load=False):
     if not shortname:
         shortname = filename
 
@@ -203,7 +205,7 @@ def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=
             data, key = yaml_cache.get(project, filename, contents, copy_tree)
 
         if not data:
-            data = load_data(contents, file, copy_tree=copy_tree)
+            data = load_data(contents, file, copy_tree=copy_tree, fast_load=fast_load)
             if yaml_cache:
                 yaml_cache.put_from_key(project, filename, key, data)
 
@@ -219,13 +221,22 @@ def load(filename, shortname=None, copy_tree=False, *, project=None, yaml_cache=
 
 # Like load(), but doesnt require the data to be in a file
 #
-def load_data(data, file=None, copy_tree=False):
+def load_data(data, file=None, copy_tree=False, fast_load=True):
 
-    try:
-        contents = yaml.load(data, yaml.loader.RoundTripLoader, preserve_quotes=True)
-    except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark)) from e
+    if fast_load:
+        try:
+            contents = yaml.load(data, Loader=yaml.BaseLoader)  # BaseLoader returns strings... There is also a CBaseLoader for speed
+        except yaml.YAMLError as e:
+            mark = e.problem_mark
+            raise LoadError(LoadErrorReason.INVALID_YAML,
+                            "{}:\nMalformed YAML: Line {}, Column: {}".format(file.name, mark.line+1, mark.column+1))
+
+    else:
+        try:
+            contents = ruamelyaml.load(data, ruamelyaml.loader.RoundTripLoader, preserve_quotes=True)
+        except (ruamelyaml.scanner.ScannerError, ruamelyaml.composer.ComposerError, ruamelyaml.parser.ParserError) as e:
+            raise LoadError(LoadErrorReason.INVALID_YAML,
+                            "Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark)) from e
 
     if not isinstance(contents, dict):
         # Special case allowance for None, when the loaded file has only comments in it.
@@ -236,7 +247,10 @@ def load_data(data, file=None, copy_tree=False):
                             "YAML file has content of type '{}' instead of expected type 'dict': {}"
                             .format(type(contents).__name__, file.name))
 
-    return node_decorated_copy(file, contents, copy_tree=copy_tree)
+    if fast_load:
+        return contents
+    else:
+        return node_decorated_copy(file, contents, copy_tree=copy_tree)
 
 
 # Dumps a previously loaded YAML node to a file
@@ -252,7 +266,7 @@ def dump(node, filename=None):
             f = stack.enter_context(utils.save_file_atomic(filename, 'w'))
         else:
             f = sys.stdout
-        yaml.round_trip_dump(node, f)
+        ruamelyaml.round_trip_dump(node, f)
 
 
 # node_decorated_copy()
@@ -554,7 +568,7 @@ def is_ruamel_str(value):
 
     if isinstance(value, str):
         return True
-    elif isinstance(value, yaml.scalarstring.ScalarString):
+    elif isinstance(value, ruamelyaml.scalarstring.ScalarString):
         return True
 
     return False
@@ -829,9 +843,10 @@ def composite_list(target_node, source_node, key):
 # This is useful for overriding configuration files and element
 # configurations.
 #
-def composite_dict(target, source, path=None):
-    target_provenance = ensure_provenance(target)
-    source_provenance = ensure_provenance(source)
+def composite_dict(target, source, path=None, skip_provenance=False):
+    if not skip_provenance:
+        target_provenance = ensure_provenance(target)
+        source_provenance = ensure_provenance(source)
 
     for key, source_value in node_items(source):
 
@@ -854,19 +869,20 @@ def composite_dict(target, source, path=None):
                 target_value = {}
                 target[key] = target_value
 
-                # Give the new dict provenance
-                value_provenance = source_value.get(PROVENANCE_KEY)
-                if value_provenance:
-                    target_value[PROVENANCE_KEY] = value_provenance.clone()
+                if not skip_provenance:
+                    # Give the new dict provenance
+                    value_provenance = source_value.get(PROVENANCE_KEY)
+                    if value_provenance:
+                        target_value[PROVENANCE_KEY] = value_provenance.clone()
 
-                # Add a new provenance member element to the containing dict
-                target_provenance.members[key] = source_provenance.members[key]
+                        # Add a new provenance member element to the containing dict
+                        target_provenance.members[key] = source_provenance.members[key]
 
             if not isinstance(target_value, collections.abc.Mapping):
                 raise CompositeTypeError(thispath, type(target_value), type(source_value))
 
             # Recurse into matching dictionary
-            composite_dict(target_value, source_value, path=thispath)
+            composite_dict(target_value, source_value, path=thispath, skip_provenance=skip_provenance)
 
         else:
 
@@ -879,7 +895,8 @@ def composite_dict(target, source, path=None):
                     raise CompositeTypeError(thispath, type(target_value), type(source_value))
 
             # Overwrite simple values, lists and mappings have already been handled
-            target_provenance.members[key] = source_provenance.members[key].clone()
+            if not skip_provenance:
+                target_provenance.members[key] = source_provenance.members[key].clone()
             target[key] = source_value
 
 
@@ -890,7 +907,7 @@ def composite(target, source):
 
     source_provenance = node_get_provenance(source)
     try:
-        composite_dict(target, source)
+        composite_dict(target, source, skip_provenance=source_provenance is None)
     except CompositeTypeError as e:
         error_prefix = ""
         if source_provenance:
@@ -1095,15 +1112,15 @@ class ChainMap(collections.ChainMap):
 # retrieve them from the source node when needed.  Other copiers might copy
 # them, so we call them __QUICK_TYPES.
 __QUICK_TYPES = (str, bool,
-                 yaml.scalarstring.PreservedScalarString,
-                 yaml.scalarstring.SingleQuotedScalarString,
-                 yaml.scalarstring.DoubleQuotedScalarString)
+                 ruamelyaml.scalarstring.PreservedScalarString,
+                 ruamelyaml.scalarstring.SingleQuotedScalarString,
+                 ruamelyaml.scalarstring.DoubleQuotedScalarString)
 
 # These types have to be iterated like a dictionary
-__DICT_TYPES = (dict, ChainMap, yaml.comments.CommentedMap)
+__DICT_TYPES = (dict, ChainMap, ruamelyaml.comments.CommentedMap)
 
 # These types have to be iterated like a list
-__LIST_TYPES = (list, yaml.comments.CommentedSeq)
+__LIST_TYPES = (list, ruamelyaml.comments.CommentedSeq)
 
 # These are the provenance types, which have to be cloned rather than any other
 # copying tactic.
@@ -1165,7 +1182,8 @@ def node_copy(source):
         else:
             raise ValueError("Unable to be quick about node_copy of {}".format(value_type))
 
-    ensure_provenance(copy)
+    #ensure_provenance(source)
+    # Let's not ensure that...
 
     return copy
 

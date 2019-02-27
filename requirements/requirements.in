@@ -12,6 +12,7 @@ psutil
 #
 # See issues #571 and #790.
 ruamel.yaml >= 0.15.41, < 0.15.52
+pyyaml
 setuptools
 pyroaring
 ujson
