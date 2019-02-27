@@ -360,7 +360,8 @@ class CASCache():
     def push_directory(self, remote, directory):
         remote.init()
 
-        self._send_directory(remote, directory.ref)
+        digest = directory._get_digest()
+        self._send_directory(remote, digest)
 
     # objpath():
     #
