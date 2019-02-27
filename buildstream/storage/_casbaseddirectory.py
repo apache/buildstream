@@ -223,14 +223,13 @@ class CasBasedDirectory(Directory):
 
         return current_dir
 
-    def _check_replacement(self, name, path_prefix, fileListResult):
+    def _check_replacement(self, name, relative_pathname, fileListResult):
         """ Checks whether 'name' exists, and if so, whether we can overwrite it.
         If we can, add the name to 'overwritten_files' and delete the existing entry.
         Returns 'True' if the import should go ahead.
         fileListResult.overwritten and fileListResult.ignore are updated depending
         on the result. """
         existing_entry = self.index.get(name)
-        relative_pathname = os.path.join(path_prefix, name)
         if existing_entry is None:
             return True
         elif existing_entry.type == _FileType.DIRECTORY:
@@ -282,11 +281,11 @@ class CasBasedDirectory(Directory):
                 continue
 
             if direntry.is_file(follow_symlinks=False):
-                if self._check_replacement(direntry.name, path_prefix, result):
+                if self._check_replacement(direntry.name, relative_pathname, result):
                     self._add_file(source_directory, direntry.name, modified=relative_pathname in result.overwritten)
                     result.files_written.append(relative_pathname)
             elif direntry.is_symlink():
-                if self._check_replacement(direntry.name, path_prefix, result):
+                if self._check_replacement(direntry.name, relative_pathname, result):
                     self._copy_link_from_filesystem(source_directory, direntry.name)
                     result.files_written.append(relative_pathname)
 
@@ -347,7 +346,7 @@ class CasBasedDirectory(Directory):
                 continue
 
             if not is_dir:
-                if self._check_replacement(name, path_prefix, result):
+                if self._check_replacement(name, relative_pathname, result):
                     if entry.type == _FileType.REGULAR_FILE:
                         self.index[name] = IndexEntry(name, _FileType.REGULAR_FILE,
                                                       digest=entry.digest,
