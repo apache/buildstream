@@ -264,14 +264,13 @@ class FileBasedDirectory(Directory):
                         result.ignored.append(relative_pathname)
                         continue
 
-                item = entry.pb_object
                 if entry.type == _FileType.REGULAR_FILE:
-                    src_path = source_directory.cas_cache.objpath(item.digest)
+                    src_path = source_directory.cas_cache.objpath(entry.digest)
                     actionfunc(src_path, dest_path, result=result)
-                    if item.is_executable:
+                    if entry.is_executable:
                         os.chmod(dest_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
                                  stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
                 else:
                     assert entry.type == _FileType.SYMLINK
-                    os.symlink(item.target, dest_path)
+                    os.symlink(entry.target, dest_path)
                 result.files_written.append(relative_pathname)
