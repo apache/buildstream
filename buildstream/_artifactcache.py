@@ -574,7 +574,7 @@ class ArtifactCache():
     def get_artifact_directory(self, element, key):
         ref = element.get_artifact_name(key)
         digest = self.cas.resolve_ref(ref, update_mtime=True)
-        return CasBasedDirectory(self.cas, digest)
+        return CasBasedDirectory(self.cas, digest=digest)
 
     # commit():
     #
