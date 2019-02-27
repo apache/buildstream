@@ -256,7 +256,7 @@ class CasBasedDirectory(Directory):
     def _import_files_from_directory(self, source_directory, filter_callback, *, path_prefix="", result):
         """ Import files from a traditional directory. """
 
-        for direntry in sorted(os.scandir(source_directory), key=lambda e: e.name):
+        for direntry in os.scandir(source_directory):
             # The destination filename, relative to the root where the import started
             relative_pathname = os.path.join(path_prefix, direntry.name)
 
@@ -296,7 +296,7 @@ class CasBasedDirectory(Directory):
     def _partial_import_cas_into_cas(self, source_directory, filter_callback, *, path_prefix="", result):
         """ Import files from a CAS-based directory. """
 
-        for name, entry in sorted(source_directory.index.items()):
+        for name, entry in source_directory.index.items():
             # The destination filename, relative to the root where the import started
             relative_pathname = os.path.join(path_prefix, name)
 
