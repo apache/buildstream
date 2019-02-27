@@ -131,45 +131,6 @@ class CasBasedDirectory(Directory):
             self.index[entry.name] = IndexEntry(entry, _FileType.SYMLINK)
         self._directory_read = True
 
-    def _recalculate_recursing_up(self, caller=None):
-        """Recalcuate the hash for this directory and store the results in
-        the cache.  If this directory has a parent, tell it to
-        recalculate (since changing this directory changes an entry in
-        the parent).
-
-        """
-        if caller:
-            old_dir = self._find_pb2_entry(caller.filename)
-            self.cas_cache.add_object(digest=old_dir.digest, buffer=caller.pb2_directory.SerializeToString())
-        self.__digest = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
-        if self.parent:
-            self.parent._recalculate_recursing_up(self)
-
-    def _recalculate_recursing_down(self, parent=None):
-        """Recalcuate the hash for this directory and any
-        subdirectories. Hashes for subdirectories should be calculated
-        and stored after a significant operation (e.g. an
-        import_files() call) but not after adding each file, as that
-        is extremely wasteful.
-
-        """
-        for entry in self.pb2_directory.directories:
-            subdir = self.index[entry.name].buildstream_object
-            if subdir:
-                subdir._recalculate_recursing_down(entry)
-
-        if parent:
-            self.__digest = self.cas_cache.add_object(digest=parent.digest, buffer=self.pb2_directory.SerializeToString())
-        else:
-            self.__digest = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
-        # We don't need to do anything more than that; files were already added ealier, and symlinks are
-        # part of the directory structure.
-
-    def _find_pb2_entry(self, name):
-        if name in self.index:
-            return self.index[name].pb_object
-        return None
-
     def _find_self_in_parent(self):
         assert self.parent is not None
         parent = self.parent
@@ -185,10 +146,10 @@ class CasBasedDirectory(Directory):
         dirnode = self.pb2_directory.directories.add()
         dirnode.name = name
 
-        # Calculate the hash for an empty directory
-        new_directory = remote_execution_pb2.Directory()
-        self.cas_cache.add_object(digest=dirnode.digest, buffer=new_directory.SerializeToString())
         self.index[name] = IndexEntry(dirnode, _FileType.DIRECTORY, buildstream_object=newdir)
+
+        self.__invalidate_digest()
+
         return newdir
 
     def _add_file(self, basename, filename, modified=False):
@@ -199,6 +160,8 @@ class CasBasedDirectory(Directory):
         filenode.is_executable = is_executable
         self.index[filename] = IndexEntry(filenode, _FileType.REGULAR_FILE,
                                           modified=modified or filename in self.index)
+
+        self.__invalidate_digest()
 
     def _copy_link_from_filesystem(self, basename, filename):
         self._add_new_link_direct(filename, os.readlink(os.path.join(basename, filename)))
@@ -214,6 +177,8 @@ class CasBasedDirectory(Directory):
         symlinknode.target = target
         self.index[name] = IndexEntry(symlinknode, _FileType.SYMLINK, modified=(entry is not None))
 
+        self.__invalidate_digest()
+
     def delete_entry(self, name):
         for collection in [self.pb2_directory.files, self.pb2_directory.symlinks, self.pb2_directory.directories]:
             for thing in collection:
@@ -221,6 +186,8 @@ class CasBasedDirectory(Directory):
                     collection.remove(thing)
         if name in self.index:
             del self.index[name]
+
+        self.__invalidate_digest()
 
     def descend(self, subdirectory_spec, create=False):
         """Descend one or more levels of directory hierarchy and return a new
@@ -380,6 +347,7 @@ class CasBasedDirectory(Directory):
                         filenode = self.pb2_directory.files.add(digest=item.digest, name=name,
                                                                 is_executable=item.is_executable)
                         self.index[name] = IndexEntry(filenode, _FileType.REGULAR_FILE, modified=True)
+                        self.__invalidate_digest()
                     else:
                         assert entry.type == _FileType.SYMLINK
                         self._add_new_link_direct(name=name, target=item.target)
@@ -407,14 +375,6 @@ class CasBasedDirectory(Directory):
         # Current behaviour is to fully populate the report, which is inefficient,
         # but still correct.
 
-        # We need to recalculate and store the hashes of all directories both
-        # up and down the tree; we have changed our directory by importing files
-        # which changes our hash and all our parents' hashes of us. The trees
-        # lower down need to be stored in the CAS as they are not automatically
-        # added during construction.
-        self._recalculate_recursing_down()
-        if self.parent:
-            self.parent._recalculate_recursing_up(self)
         return result
 
     def set_deterministic_mtime(self):
@@ -539,15 +499,6 @@ class CasBasedDirectory(Directory):
             subdir = v.get_directory(self)
             yield from subdir.list_relative_paths(relpath=os.path.join(relpath, k))
 
-    def recalculate_hash(self):
-        """ Recalcuates the hash for this directory and store the results in
-        the cache. If this directory has a parent, tell it to
-        recalculate (since changing this directory changes an entry in
-        the parent). Hashes for subdirectories also get recalculated.
-        """
-        self._recalculate_recursing_up()
-        self._recalculate_recursing_down()
-
     def get_size(self):
         total = len(self.pb2_directory.SerializeToString())
         for i in self.index.values():
@@ -589,7 +540,17 @@ class CasBasedDirectory(Directory):
     #
     def _get_digest(self):
         if not self.__digest:
+            # Update digests for subdirectories in DirectoryNodes
+            for name, entry in self.index.items():
+                if entry.type == _FileType.DIRECTORY:
+                    # No need to call entry.get_directory().
+                    # If it hasn't been instantiated, digest must be up-to-date.
+                    subdir = entry.buildstream_object
+                    if subdir:
+                        entry.pb_object.digest.CopyFrom(subdir._get_digest())
+
             self.__digest = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+
         return self.__digest
 
     def _objpath(self, path):
@@ -603,3 +564,9 @@ class CasBasedDirectory(Directory):
             return path[-1] in subdir.index
         except VirtualDirectoryError:
             return False
+
+    def __invalidate_digest(self):
+        if self.__digest:
+            self.__digest = None
+            if self.parent:
+                self.parent.__invalidate_digest()

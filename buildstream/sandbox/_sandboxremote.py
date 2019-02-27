@@ -311,8 +311,6 @@ class SandboxRemote(Sandbox):
             upload_vdir = CasBasedDirectory(cascache)
             upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
-        upload_vdir.recalculate_hash()
-
         # Generate action_digest first
         input_root_digest = upload_vdir._get_digest()
         command_proto = self._create_command(command, cwd, env)
