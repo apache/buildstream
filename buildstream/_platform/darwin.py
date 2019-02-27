@@ -29,8 +29,8 @@ class Darwin(Platform):
 
     def create_sandbox(self, *args, **kwargs):
         kwargs['dummy_reason'] = \
-            "OSXFUSE is not supported and there are no supported sandbox" + \
-            "technologies for OSX at this time"
+            "OSXFUSE is not supported and there are no supported sandbox " + \
+            "technologies for MacOS at this time"
         return SandboxDummy(*args, **kwargs)
 
     def check_sandbox_config(self, config):
