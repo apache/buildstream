@@ -18,6 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
+import gc
 import os
 from collections import OrderedDict
 from collections.abc import Mapping
@@ -351,6 +352,9 @@ class Project():
             meta_elements = self.loader.load(targets, rewritable=rewritable,
                                              ticker=None,
                                              fetch_subprojects=fetch_subprojects)
+
+        # Loading elements generates a lot of garbage, clear it now
+        gc.collect()
 
         with self._context.timed_activity("Resolving elements"):
             elements = [

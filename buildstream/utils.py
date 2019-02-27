@@ -23,6 +23,8 @@ Utilities
 
 import calendar
 import errno
+import functools
+import gc
 import hashlib
 import os
 import re
@@ -1280,3 +1282,32 @@ def _search_upward_for_files(directory, filenames):
             # i.e. we've reached the root of the filesystem
             return None, None
         directory = parent_dir
+
+
+# _with_gc_disabled()
+#
+# Decorate a function to disable the garbage collector across its execution.
+#
+# In general, disabling the garbage collector should be considered to be an
+# extreme action.  Only use this in carefully selected subsets of the code
+# where we generally create a lot more objects than we throw away.  For example
+# in loading the stream.
+#
+# Args:
+#    func (callable): The callable to disable the GC for
+#
+# Returns:
+#    (callable): The decorated callable
+#
+def _with_gc_disabled(func):
+    @functools.wraps(func)
+    def _gc_disabled(*args, **kwargs):
+        try:
+            gc.disable()
+            return func(*args, **kwargs)
+        finally:
+            gc.enable()
+            # Clean up to ensure we don't grow any more, freeing up room to be
+            # used by other objects during the course of running BuildStream.
+            gc.collect()
+    return _gc_disabled
