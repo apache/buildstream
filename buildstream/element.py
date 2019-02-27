@@ -81,8 +81,11 @@ from collections.abc import Mapping
 import contextlib
 from contextlib import contextmanager
 from functools import partial
+from itertools import chain
 import tempfile
 import string
+
+from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
 from . import _yaml
 from ._variables import Variables
@@ -388,7 +391,7 @@ class Element(Plugin):
         for source in self.__sources:
             yield source
 
-    def dependencies(self, scope, *, recurse=True, visited=None, recursed=False):
+    def dependencies(self, scope, *, recurse=True, visited=None):
         """dependencies(scope, *, recurse=True)
 
         A generator function which yields the dependencies of the given element.
@@ -406,47 +409,54 @@ class Element(Plugin):
         Yields:
            (:class:`.Element`): The dependencies in `scope`, in deterministic staging order
         """
-        if visited is None:
-            visited = {}
-
-        full_name = self._get_full_name()
-
-        scope_set = set((Scope.BUILD, Scope.RUN)) if scope == Scope.ALL else set((scope,))
-
-        if full_name in visited and scope_set.issubset(visited[full_name]):
-            return
-
-        should_yield = False
-        if full_name not in visited:
-            visited[full_name] = scope_set
-            should_yield = True
+        # The format of visited is (BitMap(), BitMap()), with the first BitMap
+        # containing element that have been visited for the `Scope.BUILD` case
+        # and the second one relating to the `Scope.RUN` case.
+        if not recurse:
+            if scope in (Scope.BUILD, Scope.ALL):
+                yield from self.__build_dependencies
+            if scope in (Scope.RUN, Scope.ALL):
+                yield from self.__runtime_dependencies
         else:
-            visited[full_name] |= scope_set
+            def visit(element, scope, visited):
+                if scope == Scope.ALL:
+                    visited[0].add(element._unique_id)
+                    visited[1].add(element._unique_id)
 
-        if recurse or not recursed:
-            if scope == Scope.ALL:
-                for dep in self.__build_dependencies:
-                    yield from dep.dependencies(Scope.ALL, recurse=recurse,
-                                                visited=visited, recursed=True)
+                    for dep in chain(element.__build_dependencies, element.__runtime_dependencies):
+                        if dep._unique_id not in visited[0] and dep._unique_id not in visited[1]:
+                            yield from visit(dep, Scope.ALL, visited)
 
-                for dep in self.__runtime_dependencies:
-                    if dep not in self.__build_dependencies:
-                        yield from dep.dependencies(Scope.ALL, recurse=recurse,
-                                                    visited=visited, recursed=True)
+                    yield element
+                elif scope == Scope.BUILD:
+                    visited[0].add(element._unique_id)
 
-            elif scope == Scope.BUILD:
-                for dep in self.__build_dependencies:
-                    yield from dep.dependencies(Scope.RUN, recurse=recurse,
-                                                visited=visited, recursed=True)
+                    for dep in element.__build_dependencies:
+                        if dep._unique_id not in visited[1]:
+                            yield from visit(dep, Scope.RUN, visited)
 
-            elif scope == Scope.RUN:
-                for dep in self.__runtime_dependencies:
-                    yield from dep.dependencies(Scope.RUN, recurse=recurse,
-                                                visited=visited, recursed=True)
+                elif scope == Scope.RUN:
+                    visited[1].add(element._unique_id)
 
-        # Yeild self only at the end, after anything needed has been traversed
-        if should_yield and (recurse or recursed) and scope != Scope.BUILD:
-            yield self
+                    for dep in element.__runtime_dependencies:
+                        if dep._unique_id not in visited[1]:
+                            yield from visit(dep, Scope.RUN, visited)
+
+                    yield element
+                else:
+                    yield element
+
+            if visited is None:
+                # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
+                visited = (BitMap(), BitMap())
+            else:
+                # We have already a visited set passed. we might be able to short-circuit
+                if scope in (Scope.BUILD, Scope.ALL) and self._unique_id in visited[0]:
+                    return
+                if scope in (Scope.RUN, Scope.ALL) and self._unique_id in visited[1]:
+                    return
+
+            yield from visit(self, scope, visited)
 
     def search(self, scope, name):
         """Search for a dependency by name

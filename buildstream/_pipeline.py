@@ -24,6 +24,8 @@ import itertools
 from operator import itemgetter
 from collections import OrderedDict
 
+from pyroaring import BitMap  # pylint: disable=no-name-in-module
+
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
@@ -152,7 +154,7 @@ class Pipeline():
     def dependencies(self, targets, scope, *, recurse=True):
         # Keep track of 'visited' in this scope, so that all targets
         # share the same context.
-        visited = {}
+        visited = (BitMap(), BitMap())
 
         for target in targets:
             for element in target.dependencies(scope, recurse=recurse, visited=visited):
