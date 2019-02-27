@@ -32,7 +32,7 @@ import os
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, list_relative_paths, _magic_timestamp
+from ..utils import FileListResult, _magic_timestamp
 
 
 class IndexEntry():
@@ -302,151 +302,106 @@ class CasBasedDirectory(Directory):
             fileListResult.overwritten.append(relative_pathname)
             return True
 
-    def _import_files_from_directory(self, source_directory, files, path_prefix=""):
-        """ Imports files from a traditional directory. """
+    def _import_files_from_directory(self, source_directory, filter_callback, *, path_prefix="", result):
+        """ Import files from a traditional directory. """
 
-        def _import_directory_recursively(directory_name, source_directory, remaining_path, path_prefix):
-            """ _import_directory_recursively and _import_files_from_directory will be called alternately
-            as a directory tree is descended. """
-            subdir = self.descend(directory_name, create=True)
-            new_path_prefix = os.path.join(path_prefix, directory_name)
-            subdir_result = subdir._import_files_from_directory(os.path.join(source_directory, directory_name),
-                                                                [os.path.sep.join(remaining_path)],
-                                                                path_prefix=new_path_prefix)
-            return subdir_result
-
-        result = FileListResult()
-        for entry in files:
-            split_path = entry.split(os.path.sep)
-            # The actual file on the FS we're importing
-            import_file = os.path.join(source_directory, entry)
+        for direntry in sorted(os.scandir(source_directory), key=lambda e: e.name):
             # The destination filename, relative to the root where the import started
-            relative_pathname = os.path.join(path_prefix, entry)
-            if len(split_path) > 1:
-                directory_name = split_path[0]
-                # Hand this off to the importer for that subdir.
+            relative_pathname = os.path.join(path_prefix, direntry.name)
 
-                # It would be advantageous to batch these together by
-                # directory_name. However, we can't do it out of
-                # order, since importing symlinks affects the results
-                # of other imports.
-                subdir_result = _import_directory_recursively(directory_name, source_directory,
-                                                              split_path[1:], path_prefix)
-                result.combine(subdir_result)
-            elif os.path.islink(import_file):
-                if self._check_replacement(entry, path_prefix, result):
-                    self._copy_link_from_filesystem(source_directory, entry)
+            is_dir = direntry.is_dir(follow_symlinks=False)
+
+            if is_dir:
+                src_subdir = os.path.join(source_directory, direntry.name)
+
+                try:
+                    create_subdir = direntry.name not in self.index
+                    dest_subdir = self.descend(direntry.name, create=create_subdir)
+                except VirtualDirectoryError:
+                    filetype = self.index[direntry.name].type
+                    raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
+                                                .format(filetype, relative_pathname))
+
+                dest_subdir._import_files_from_directory(src_subdir, filter_callback,
+                                                         path_prefix=relative_pathname, result=result)
+
+            if filter_callback and not filter_callback(relative_pathname):
+                if is_dir and create_subdir and dest_subdir.is_empty():
+                    # Complete subdirectory has been filtered out, remove it
+                    self.delete_entry(direntry.name)
+
+                # Entry filtered out, move to next
+                continue
+
+            if direntry.is_file(follow_symlinks=False):
+                if self._check_replacement(direntry.name, path_prefix, result):
+                    self._add_file(source_directory, direntry.name, modified=relative_pathname in result.overwritten)
                     result.files_written.append(relative_pathname)
-            elif os.path.isdir(import_file):
-                # A plain directory which already exists isn't a problem; just ignore it.
-                if entry not in self.index:
-                    self._add_directory(entry)
-            elif os.path.isfile(import_file):
-                if self._check_replacement(entry, path_prefix, result):
-                    self._add_file(source_directory, entry, modified=relative_pathname in result.overwritten)
+            elif direntry.is_symlink():
+                if self._check_replacement(direntry.name, path_prefix, result):
+                    self._copy_link_from_filesystem(source_directory, direntry.name)
                     result.files_written.append(relative_pathname)
-        return result
 
-    @staticmethod
-    def _files_in_subdir(sorted_files, dirname):
-        """Filters sorted_files and returns only the ones which have
-           'dirname' as a prefix, with that prefix removed.
+    def _partial_import_cas_into_cas(self, source_directory, filter_callback, *, path_prefix="", result):
+        """ Import files from a CAS-based directory. """
 
-        """
-        if not dirname.endswith(os.path.sep):
-            dirname += os.path.sep
-        return [f[len(dirname):] for f in sorted_files if f.startswith(dirname)]
+        for name, entry in sorted(source_directory.index.items()):
+            # The destination filename, relative to the root where the import started
+            relative_pathname = os.path.join(path_prefix, name)
 
-    def _partial_import_cas_into_cas(self, source_directory, files, path_prefix="", file_list_required=True):
-        """ Import only the files and symlinks listed in 'files' from source_directory to this one.
-        Args:
-           source_directory (:class:`.CasBasedDirectory`): The directory to import from
-           files ([str]): List of pathnames to import. Must be a list, not a generator.
-           path_prefix (str): Prefix used to add entries to the file list result.
-           file_list_required: Whether to update the file list while processing.
-        """
-        result = FileListResult()
-        processed_directories = set()
-        for f in files:
-            fullname = os.path.join(path_prefix, f)
-            components = f.split(os.path.sep)
-            if len(components) > 1:
-                # We are importing a thing which is in a subdirectory. We may have already seen this dirname
-                # for a previous file.
-                dirname = components[0]
-                if dirname not in processed_directories:
-                    # Now strip off the first directory name and import files recursively.
-                    subcomponents = CasBasedDirectory._files_in_subdir(files, dirname)
-                    # We will fail at this point if there is a file or symlink called 'dirname'.
-                    dest_subdir = self.descend(dirname, create=True)
-                    src_subdir = source_directory.descend(dirname)
-                    import_result = dest_subdir._partial_import_cas_into_cas(src_subdir, subcomponents,
-                                                                             path_prefix=fullname,
-                                                                             file_list_required=file_list_required)
-                    result.combine(import_result)
-                processed_directories.add(dirname)
-            elif source_directory.index[f].type == _FileType.DIRECTORY:
-                # The thing in the input file list is a directory on
-                # its own. We don't need to do anything other than create it if it doesn't exist.
-                # If we already have an entry with the same name that isn't a directory, that
-                # will be dealt with when importing files in this directory.
-                if f not in self.index:
-                    self.descend(f, create=True)
-            else:
-                # We're importing a file or symlink - replace anything with the same name.
-                importable = self._check_replacement(f, path_prefix, result)
-                if importable:
-                    entry = source_directory.index[f]
+            is_dir = entry.type == _FileType.DIRECTORY
+
+            if is_dir:
+                src_subdir = source_directory.descend(name)
+
+                try:
+                    create_subdir = name not in self.index
+                    dest_subdir = self.descend(name, create=create_subdir)
+                except VirtualDirectoryError:
+                    filetype = self.index[name].type
+                    raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
+                                                .format(filetype, relative_pathname))
+
+                dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
+                                                         path_prefix=relative_pathname, result=result)
+
+            if filter_callback and not filter_callback(relative_pathname):
+                if is_dir and create_subdir and dest_subdir.is_empty():
+                    # Complete subdirectory has been filtered out, remove it
+                    self.delete_entry(name)
+
+                # Entry filtered out, move to next
+                continue
+
+            if not is_dir:
+                if self._check_replacement(name, path_prefix, result):
                     item = entry.pb_object
                     if entry.type == _FileType.REGULAR_FILE:
-                        filenode = self.pb2_directory.files.add(digest=item.digest, name=f,
+                        filenode = self.pb2_directory.files.add(digest=item.digest, name=name,
                                                                 is_executable=item.is_executable)
-                        self.index[f] = IndexEntry(filenode, _FileType.REGULAR_FILE, modified=True)
+                        self.index[name] = IndexEntry(filenode, _FileType.REGULAR_FILE, modified=True)
                     else:
                         assert entry.type == _FileType.SYMLINK
-                        self._add_new_link_direct(name=f, target=item.target)
-                    result.files_written.append(os.path.join(path_prefix, f))
-                else:
-                    result.ignored.append(os.path.join(path_prefix, f))
-        return result
+                        self._add_new_link_direct(name=name, target=item.target)
+                    result.files_written.append(relative_pathname)
 
     def import_files(self, external_pathspec, *,
                      filter_callback=None,
                      report_written=True, update_mtime=False,
                      can_link=False):
-        """Imports some or all files from external_path into this directory.
+        """ See superclass Directory for arguments """
 
-        Keyword arguments: external_pathspec: Either a string
-        containing a pathname, or a Directory object, to use as the
-        source.
-
-        report_written (bool): Return the full list of files
-        written. Defaults to true. If false, only a list of
-        overwritten files is returned.
-
-        update_mtime (bool): Currently ignored, since CAS does not store mtimes.
-
-        can_link (bool): Ignored, since hard links do not have any meaning within CAS.
-        """
-
-        if isinstance(external_pathspec, str):
-            files = list_relative_paths(external_pathspec)
-        else:
-            assert isinstance(external_pathspec, Directory)
-            files = external_pathspec.list_relative_paths()
-
-        if filter_callback:
-            files = [path for path in files if filter_callback(path)]
+        result = FileListResult()
 
         if isinstance(external_pathspec, FileBasedDirectory):
             source_directory = external_pathspec._get_underlying_directory()
-            result = self._import_files_from_directory(source_directory, files=files)
+            self._import_files_from_directory(source_directory, filter_callback, result=result)
         elif isinstance(external_pathspec, str):
             source_directory = external_pathspec
-            result = self._import_files_from_directory(source_directory, files=files)
+            self._import_files_from_directory(source_directory, filter_callback, result=result)
         else:
             assert isinstance(external_pathspec, CasBasedDirectory)
-            result = self._partial_import_cas_into_cas(external_pathspec, files=list(files))
+            self._partial_import_cas_into_cas(external_pathspec, filter_callback, result=result)
 
         # TODO: No notice is taken of report_written, update_mtime or can_link.
         # Current behaviour is to fully populate the report, which is inefficient,

@@ -30,10 +30,12 @@ See also: :ref:`sandboxing`.
 import os
 import stat
 import time
-from .directory import Directory, VirtualDirectoryError
+
+from .directory import Directory, VirtualDirectoryError, _FileType
 from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, _magic_timestamp
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
+from ..utils import FileListResult
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
@@ -80,19 +82,31 @@ class FileBasedDirectory(Directory):
                      can_link=False):
         """ See superclass Directory for arguments """
 
-        if isinstance(external_pathspec, Directory):
-            source_directory = external_pathspec.external_directory
-        else:
-            source_directory = external_pathspec
+        from ._casbaseddirectory import CasBasedDirectory
 
-        if can_link and not update_mtime:
-            import_result = link_files(source_directory, self.external_directory,
-                                       filter_callback=filter_callback,
-                                       ignore_missing=False, report_written=report_written)
+        if isinstance(external_pathspec, CasBasedDirectory):
+            if can_link and not update_mtime:
+                actionfunc = utils.safe_link
+            else:
+                actionfunc = utils.safe_copy
+
+            import_result = FileListResult()
+            self._import_files_from_cas(external_pathspec, actionfunc, filter_callback, result=import_result)
         else:
-            import_result = copy_files(source_directory, self.external_directory,
-                                       filter_callback=filter_callback,
-                                       ignore_missing=False, report_written=report_written)
+            if isinstance(external_pathspec, Directory):
+                source_directory = external_pathspec.external_directory
+            else:
+                source_directory = external_pathspec
+
+            if can_link and not update_mtime:
+                import_result = link_files(source_directory, self.external_directory,
+                                           filter_callback=filter_callback,
+                                           ignore_missing=False, report_written=report_written)
+            else:
+                import_result = copy_files(source_directory, self.external_directory,
+                                           filter_callback=filter_callback,
+                                           ignore_missing=False, report_written=report_written)
+
         if update_mtime:
             cur_time = time.time()
 
@@ -189,3 +203,75 @@ class FileBasedDirectory(Directory):
         """ Returns the underlying (real) file system directory this
         object refers to. """
         return self.external_directory
+
+    def _get_filetype(self, name=None):
+        path = self.external_directory
+
+        if name:
+            path = os.path.join(path, name)
+
+        st = os.lstat(path)
+        if stat.S_ISDIR(st.st_mode):
+            return _FileType.DIRECTORY
+        elif stat.S_ISLNK(st.st_mode):
+            return _FileType.SYMLINK
+        elif stat.S_ISREG(st.st_mode):
+            return _FileType.REGULAR_FILE
+        else:
+            return _FileType.SPECIAL_FILE
+
+    def _import_files_from_cas(self, source_directory, actionfunc, filter_callback, *, path_prefix="", result):
+        """ Import files from a CAS-based directory. """
+
+        for name, entry in source_directory.index.items():
+            # The destination filename, relative to the root where the import started
+            relative_pathname = os.path.join(path_prefix, name)
+
+            # The full destination path
+            dest_path = os.path.join(self.external_directory, name)
+
+            is_dir = entry.type == _FileType.DIRECTORY
+
+            if is_dir:
+                src_subdir = source_directory.descend(name)
+
+                try:
+                    create_subdir = not os.path.lexists(dest_path)
+                    dest_subdir = self.descend(name, create=create_subdir)
+                except VirtualDirectoryError:
+                    filetype = self._get_filetype(name)
+                    raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
+                                                .format(filetype, relative_pathname))
+
+                dest_subdir._import_files_from_cas(src_subdir, actionfunc, filter_callback,
+                                                   path_prefix=relative_pathname, result=result)
+
+            if filter_callback and not filter_callback(relative_pathname):
+                if is_dir and create_subdir and dest_subdir.is_empty():
+                    # Complete subdirectory has been filtered out, remove it
+                    os.rmdir(dest_subdir.external_directory)
+
+                # Entry filtered out, move to next
+                continue
+
+            if not is_dir:
+                if os.path.lexists(dest_path):
+                    # Collect overlaps
+                    if not os.path.isdir(dest_path):
+                        result.overwritten.append(relative_pathname)
+
+                    if not utils.safe_remove(dest_path):
+                        result.ignored.append(relative_pathname)
+                        continue
+
+                item = entry.pb_object
+                if entry.type == _FileType.REGULAR_FILE:
+                    src_path = source_directory.cas_cache.objpath(item.digest)
+                    actionfunc(src_path, dest_path, result=result)
+                    if item.is_executable:
+                        os.chmod(dest_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                                 stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                else:
+                    assert entry.type == _FileType.SYMLINK
+                    os.symlink(item.target, dest_path)
+                result.files_written.append(relative_pathname)
