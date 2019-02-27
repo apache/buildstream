@@ -314,7 +314,7 @@ class SandboxRemote(Sandbox):
         upload_vdir.recalculate_hash()
 
         # Generate action_digest first
-        input_root_digest = upload_vdir.ref
+        input_root_digest = upload_vdir._get_digest()
         command_proto = self._create_command(command, cwd, env)
         command_digest = utils._message_digest(command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest,
@@ -346,7 +346,7 @@ class SandboxRemote(Sandbox):
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
 
-            if not casremote.verify_digest_on_remote(upload_vdir.ref):
+            if not casremote.verify_digest_on_remote(upload_vdir._get_digest()):
                 raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
 
             # Push command and action
