@@ -18,6 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import shutil
 import datetime
 from collections import deque, Mapping
 from contextlib import contextmanager
@@ -180,6 +181,11 @@ class Context():
             path = os.path.expandvars(path)
             path = os.path.normpath(path)
             setattr(self, directory, path)
+
+        # Cleanup old extract directory
+        old_extractdir = os.path.join(self.artifactdir, 'extract')
+        if os.path.isdir(old_extractdir):
+            shutil.rmtree(old_extractdir, ignore_errors=True)
 
         # Load quota configuration
         # We need to find the first existing directory in the path of
