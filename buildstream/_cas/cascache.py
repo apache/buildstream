@@ -1228,9 +1228,11 @@ class CASQuota:
         if cache_quota is None:  # Infinity, set to max system storage
             cache_quota = cache_size + available_space
         if cache_quota < self._cache_quota_headroom:  # Check minimum
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
-                            "BuildStream requires a minimum cache quota of 2G.")
+            raise LoadError(
+                LoadErrorReason.INVALID_DATA,
+                "Invalid cache quota ({}): BuildStream requires a minimum cache quota of {}.".format(
+                    utils._pretty_size(cache_quota),
+                    utils._pretty_size(self._cache_quota_headroom)))
         elif cache_quota > total_size:
             # A quota greater than the total disk size is certianly an error
             raise CASCacheError("Your system does not have enough available " +
