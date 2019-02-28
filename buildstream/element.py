@@ -101,6 +101,7 @@ from ._platform import Platform
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
 from .types import _KeyStrength, CoreWarnings
+from ._artifact import Artifact
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
@@ -225,6 +226,7 @@ class Element(Plugin):
         self.__required = False                 # Whether the artifact is required in the current session
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None            # The path of the build log for this Element
+        self.__artifact = Artifact(self, context)  # Artifact class for direct artifact composite interaction
 
         self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
@@ -668,8 +670,7 @@ class Element(Plugin):
         self.__assert_cached()
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
-            artifact_vdir, _ = self.__get_artifact_directory()
-            files_vdir = artifact_vdir.descend('files')
+            files_vdir, _ = self.__artifact.get_files()
 
             # Hard link it into the staging area
             #
@@ -1479,19 +1480,18 @@ class Element(Plugin):
                 if not (mount_workspaces and self.__can_build_incrementally()):
                     with self.timed_activity("Staging local files at {}"
                                              .format(workspace.get_absolute_path())):
-                        workspace.stage(temp_staging_directory)
+                        workspace.stage(import_dir)
 
             # Check if we have a cached buildtree to use
             elif usebuildtree:
-                artifact_vdir, _ = self.__get_artifact_directory()
-                import_dir = artifact_vdir.descend('buildtree')
+                import_dir, _ = self.__artifact.get_buildtree()
                 if import_dir.is_empty():
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
             else:
                 # No workspace or cached buildtree, stage source directly
                 for source in self.sources():
-                    source._stage(temp_staging_directory)
+                    source._stage(import_dir)
 
             vdirectory.import_files(import_dir)
 
@@ -2657,8 +2657,7 @@ class Element(Plugin):
     def __compute_splits(self, include=None, exclude=None, orphans=True):
         filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
 
-        artifact_vdir, _ = self.__get_artifact_directory()
-        files_vdir = artifact_vdir.descend('files')
+        files_vdir, _ = self.__artifact.get_files()
 
         element_files = files_vdir.list_relative_paths()
 
@@ -2693,13 +2692,7 @@ class Element(Plugin):
     #
     def __get_extract_key(self):
 
-        context = self._get_context()
-        key = self.__strict_cache_key
-
-        # Use weak cache key, if artifact is missing for strong cache key
-        # and the context allows use of weak cache keys
-        if not context.get_strict() and not self.__artifacts.contains(self, key):
-            key = self._get_cache_key(strength=_KeyStrength.WEAK)
+        key = self.__artifact.get_extract_key()
 
         return key
 
@@ -2717,10 +2710,9 @@ class Element(Plugin):
     #
     def __get_artifact_directory(self, key=None):
 
-        if key is None:
-            key = self.__get_extract_key()
+        artifact_vdir, key = self.__artifact._get_directory(key)
 
-        return (self.__artifacts.get_artifact_directory(self, key), key)
+        return (artifact_vdir, key)
 
     # __get_artifact_metadata_keys():
     #
