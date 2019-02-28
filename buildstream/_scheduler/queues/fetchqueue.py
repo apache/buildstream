@@ -35,13 +35,14 @@ class FetchQueue(Queue):
     complete_name = "Fetched"
     resources = [ResourceType.DOWNLOAD]
 
-    def __init__(self, scheduler, skip_cached=False):
+    def __init__(self, scheduler, skip_cached=False, fetch_original=False):
         super().__init__(scheduler)
 
         self._skip_cached = skip_cached
+        self._fetch_original = fetch_original
 
     def process(self, element):
-        element._fetch()
+        element._fetch(fetch_original=self._fetch_original)
 
     def status(self, element):
         # state of dependencies may have changed, recalculate element state
@@ -62,7 +63,8 @@ class FetchQueue(Queue):
 
         # This will automatically skip elements which
         # have no sources.
-        if element._get_consistency() == Consistency.CACHED:
+
+        if not element._should_fetch(self._fetch_original):
             return QueueStatus.SKIP
 
         return QueueStatus.READY

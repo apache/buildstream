@@ -9,6 +9,9 @@ class FooSource(Source):
     def configure(self, node):
         pass
 
+    def get_unique_key(self):
+        pass
+
     def get_consistency(self):
         return Consistency.INCONSISTENT
 

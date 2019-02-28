@@ -58,7 +58,7 @@ class ArtifactCache(BaseCache):
         self._required_elements = set()       # The elements required for this session
 
         self.casquota.add_ref_callbacks(self.required_artifacts())
-        self.casquota.add_remove_callbacks((lambda x: not x.startswith('sources/'), self.remove))
+        self.casquota.add_remove_callbacks((lambda x: not x.startswith('@'), self.remove))
 
     # mark_required_elements():
     #
@@ -178,7 +178,9 @@ class ArtifactCache(BaseCache):
     #     ([str]) - A list of artifact names as generated in LRU order
     #
     def list_artifacts(self, *, glob=None):
-        return self.cas.list_refs(glob=glob)
+        return list(filter(
+            lambda x: not x.startswith('@'),
+            self.cas.list_refs(glob=glob)))
 
     # remove():
     #

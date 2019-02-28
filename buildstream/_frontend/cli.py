@@ -137,7 +137,7 @@ def complete_artifact(orig_args, args, incomplete):
 
     # element targets are valid artifact names
     complete_list = complete_target(args, incomplete)
-    complete_list.extend(ref for ref in ctx.artifactcache.cas.list_refs() if ref.startswith(incomplete))
+    complete_list.extend(ref for ref in ctx.artifactcache.list_artifacts() if ref.startswith(incomplete))
 
     return complete_list
 

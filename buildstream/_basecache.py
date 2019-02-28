@@ -78,7 +78,7 @@ class BaseCache():
             for spec_node in artifacts:
                 cache_specs.append(cls.spec_class._new_from_config_node(spec_node, basedir))
         else:
-            provenance = _yaml.node_get_provenance(config_node, key='artifacts')
+            provenance = _yaml.node_get_provenance(config_node, key=cls.config_node_name)
             raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                   "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
                                   (str(provenance)))

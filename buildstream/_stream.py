@@ -19,6 +19,8 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import itertools
+import functools
 import os
 import sys
 import stat
@@ -587,9 +589,9 @@ class Stream():
                                  except_targets=except_targets,
                                  fetch_subprojects=True)
 
-        # Assert all sources are cached
+        # Assert all sources are cached in the source dir
         if fetch:
-            self._fetch(elements)
+            self._fetch(elements, fetch_original=True)
         self._pipeline.assert_sources_cached(elements)
 
         # Stage all sources determined by scope
@@ -636,7 +638,7 @@ class Stream():
             track_elements = []
             if track_first:
                 track_elements = elements
-            self._fetch(elements, track_elements=track_elements)
+            self._fetch(elements, track_elements=track_elements, fetch_original=True)
 
         expanded_directories = []
         #  To try to be more atomic, loop through the elements and raise any errors we can early
@@ -656,7 +658,9 @@ class Stream():
                 raise StreamError("Element '{}' already has workspace defined at: {}"
                                   .format(target.name, workspace.get_absolute_path()))
 
-            if not no_checkout and target._get_consistency() != Consistency.CACHED:
+            target_consistency = target._get_consistency()
+            if not no_checkout and target_consistency < Consistency.CACHED and \
+                    target_consistency._source_cached():
                 raise StreamError("Could not stage uncached source. For {} ".format(target.name) +
                                   "Use `--track` to track and " +
                                   "fetch the latest version of the " +
@@ -771,7 +775,7 @@ class Stream():
 
         # Do the tracking first
         if track_first:
-            self._fetch(elements, track_elements=track_elements)
+            self._fetch(elements, track_elements=track_elements, fetch_original=True)
 
         workspaces = self._context.get_workspaces()
 
@@ -1090,7 +1094,13 @@ class Stream():
         # It must include all the artifacts which are required by the
         # final product. Note that this is a superset of the build plan.
         #
-        self._artifacts.mark_required_elements(self._pipeline.dependencies(elements, Scope.ALL))
+        # use partial as we send this to both Artifact and Source caches
+        required_elements = functools.partial(self._pipeline.dependencies, elements, Scope.ALL)
+        self._artifacts.mark_required_elements(required_elements())
+
+        self._context.sourcecache.mark_required_sources(
+            itertools.chain.from_iterable(
+                [element.sources() for element in required_elements()]))
 
         if selection == PipelineSelection.PLAN and dynamic_plan:
             # We use a dynamic build plan, only request artifacts of top-level targets,
@@ -1181,8 +1191,9 @@ class Stream():
     # Args:
     #    elements (list of Element): Elements to fetch
     #    track_elements (list of Element): Elements to track
+    #    fetch_original (Bool): Whether to fetch original unstaged
     #
-    def _fetch(self, elements, *, track_elements=None):
+    def _fetch(self, elements, *, track_elements=None, fetch_original=False):
 
         if track_elements is None:
             track_elements = []
@@ -1195,7 +1206,8 @@ class Stream():
 
         # Filter out elements with cached sources, only from the fetch plan
         # let the track plan resolve new refs.
-        cached = [elt for elt in fetch_plan if elt._get_consistency() == Consistency.CACHED]
+        cached = [elt for elt in fetch_plan
+                  if not elt._should_fetch(fetch_original)]
         fetch_plan = self._pipeline.subtract_elements(fetch_plan, cached)
 
         # Construct queues, enqueue and run
@@ -1204,7 +1216,7 @@ class Stream():
         if track_elements:
             track_queue = TrackQueue(self._scheduler)
             self._add_queue(track_queue, track=True)
-        self._add_queue(FetchQueue(self._scheduler))
+        self._add_queue(FetchQueue(self._scheduler, fetch_original=fetch_original))
 
         if track_elements:
             self._enqueue_plan(track_elements, queue=track_queue)

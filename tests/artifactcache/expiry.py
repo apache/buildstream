@@ -297,11 +297,13 @@ def test_never_delete_required_track(cli, datafiles):
     res.assert_main_error(ErrorDomain.STREAM, None)
     res.assert_task_error(ErrorDomain.CAS, 'cache-too-full')
 
-    # Expect the same result that we did in test_never_delete_required()
+    # Expect the almost the same result that we did in test_never_delete_required()
+    # As the source will be downloaded first, we will be over the limit once
+    # the source for dep2.bst is downloaded
     #
     states = cli.get_element_states(project, ['target.bst'])
     assert states['dep1.bst'] == 'cached'
-    assert states['dep2.bst'] == 'cached'
+    assert states['dep2.bst'] == 'buildable'
     assert states['dep3.bst'] != 'cached'
     assert states['target.bst'] != 'cached'
 

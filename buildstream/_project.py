@@ -34,6 +34,7 @@ from ._profile import Topics, profile_start, profile_end
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
+from ._sourcecache import SourceCache
 from .sandbox import SandboxRemote
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
@@ -140,6 +141,7 @@ class Project():
         self._shell_host_files = []   # A list of HostMount objects
 
         self.artifact_cache_specs = None
+        self.source_cache_specs = None
         self.remote_execution_specs = None
         self._sandbox = None
         self._splits = None
@@ -333,7 +335,7 @@ class Project():
             'artifacts', 'options',
             'fail-on-overlap', 'shell', 'fatal-warnings',
             'ref-storage', 'sandbox', 'mirrors', 'remote-execution',
-            'sources', '(@)'
+            'sources', 'source-caches', '(@)'
         ])
 
     # create_element()
@@ -671,6 +673,9 @@ class Project():
         if self.junction:
             parent = self.junction._get_project()
             self.artifact_cache_specs = parent.artifact_cache_specs + self.artifact_cache_specs
+
+        # Load source caches with pull/push config
+        self.source_cache_specs = SourceCache.specs_from_config_node(config, self.directory)
 
         # Load remote-execution configuration for this project
         project_specs = SandboxRemote.specs_from_config_node(config, self.directory)

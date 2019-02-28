@@ -1341,7 +1341,7 @@ class CASQuota:
                 default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
                                             'buildstream.conf')
                 detail = ("Aborted after removing {} refs and saving {} disk space.\n"
-                          "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
+                          "The remaining {} in the cache is required by the {} references in your build plan\n\n"
                           "There is not enough space to complete the build.\n"
                           "Please increase the cache-quota in {} and/or make more disk space."
                           .format(removed_ref_count,

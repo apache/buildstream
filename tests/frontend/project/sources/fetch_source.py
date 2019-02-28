@@ -62,6 +62,9 @@ class FetchSource(Source):
         if not os.path.exists(output_dir):
             raise SourceError("Directory '{}' does not exist".format(output_dir))
 
+    def stage(self, directory):
+        pass
+
     def fetch(self):
         for fetcher in self.fetchers:
             fetcher.fetch()

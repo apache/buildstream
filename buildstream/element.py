@@ -88,7 +88,7 @@ from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
-    ErrorDomain
+    ErrorDomain, SourceCacheError
 from .utils import UtilError
 from . import Plugin, Consistency, Scope
 from . import SandboxFlags, SandboxCommandError
@@ -956,11 +956,16 @@ class Element(Plugin):
         element = meta.project.create_element(meta, first_pass=meta.first_pass)
         cls.__instantiated_elements[meta] = element
 
-        # Instantiate sources
+        # Instantiate sources and generate their keys
+        previous_sources = []
         for meta_source in meta.sources:
             meta_source.first_pass = meta.kind == "junction"
             source = meta.project.create_source(meta_source,
                                                 first_pass=meta.first_pass)
+
+            source._generate_key(previous_sources)
+            previous_sources.append(source)
+
             redundant_ref = source._load_ref()
             element.__sources.append(source)
 
@@ -1080,7 +1085,8 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._get_consistency() != Consistency.CACHED:
+        if self._get_consistency() < Consistency.CACHED and \
+                not self._source_cached():
             return False
 
         for dependency in self.dependencies(Scope.BUILD):
@@ -1363,6 +1369,12 @@ class Element(Plugin):
         self.__tracking_scheduled = False
         self.__tracking_done = True
 
+        # update keys
+        sources = list(self.sources())
+        if sources:
+            source = sources.pop()
+            source._generate_key(sources)
+
         self._update_state()
 
     # _track():
@@ -1457,6 +1469,7 @@ class Element(Plugin):
     #     usebuildtree (bool): use a the elements build tree as its source.
     #
     def _stage_sources_at(self, vdirectory, mount_workspaces=True, usebuildtree=False):
+
         context = self._get_context()
 
         # It's advantageous to have this temporary directory on
@@ -1486,10 +1499,20 @@ class Element(Plugin):
                 if import_dir.is_empty():
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
+
+            # No workspace or cached buildtree, stage source from source cache
             else:
-                # No workspace or cached buildtree, stage source directly
-                for source in self.sources():
-                    source._stage(import_dir)
+                # Ensure sources are cached
+                self.__cache_sources()
+
+                if list(self.sources()):
+
+                    sourcecache = self._get_context().sourcecache
+                    try:
+                        import_dir = sourcecache.export(list(self.sources())[-1])
+                    except SourceCacheError as e:
+                        raise ElementError("Error trying to export source for {}: {}"
+                                           .format(self.name, e))
 
             with utils._deterministic_umask():
                 vdirectory.import_files(import_dir)
@@ -1946,8 +1969,12 @@ class Element(Plugin):
         os.makedirs(context.builddir, exist_ok=True)
         with utils._tempdir(dir=context.builddir, prefix='workspace-{}'
                             .format(self.normal_name)) as temp:
+            last_source = None
             for source in self.sources():
-                source._init_workspace(temp)
+                last_source = source
+
+            if last_source:
+                last_source._init_workspace(temp)
 
             # Now hardlink the files into the workspace target.
             utils.link_files(temp, workspace.get_absolute_path())
@@ -2038,12 +2065,25 @@ class Element(Plugin):
     # Raises:
     #    SourceError: If one of the element sources has an error
     #
-    def _fetch(self):
+    def _fetch(self, fetch_original=False):
         previous_sources = []
+        source = None
+        sourcecache = self._get_context().sourcecache
+
+        # check whether the final source is cached
         for source in self.sources():
-            if source._get_consistency() < Consistency.CACHED:
+            pass
+
+        if source and not fetch_original and sourcecache.contains(source):
+            return
+
+        for source in self.sources():
+            source_consistency = source._get_consistency()
+            if source_consistency != Consistency.CACHED:
                 source._fetch(previous_sources)
             previous_sources.append(source)
+
+        self.__cache_sources()
 
     # _calculate_cache_key():
     #
@@ -2093,6 +2133,27 @@ class Element(Plugin):
 
         return _cachekey.generate_key(cache_key_dict)
 
+    def _source_cached(self):
+        source = None
+        for source in self.sources():
+            pass
+        if source:
+            return self._get_context().sourcecache.contains(source)
+        else:
+            return True
+
+    def _should_fetch(self, fetch_original=False):
+        """ return bool of if we need to run the fetch stage for this element
+
+        Args:
+            fetch_original (bool): whether we need to original unstaged source
+        """
+        if (self._get_consistency() == Consistency.CACHED and fetch_original) or \
+           (self._source_cached() and not fetch_original):
+            return False
+        else:
+            return True
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
@@ -2124,8 +2185,7 @@ class Element(Plugin):
             # Determine overall consistency of the element
             for source in self.__sources:
                 source._update_state()
-                source_consistency = source._get_consistency()
-                self.__consistency = min(self.__consistency, source_consistency)
+                self.__consistency = min(self.__consistency, source._get_consistency())
 
     # __can_build_incrementally()
     #
@@ -2831,6 +2891,17 @@ class Element(Plugin):
             excluded_subdirs.remove(subdir)
 
         return (subdir, excluded_subdirs)
+
+    # __cache_sources():
+    #
+    # Caches the sources into the local CAS
+    #
+    def __cache_sources(self):
+        sources = list(self.sources())
+        if sources:
+            sourcecache = self._get_context().sourcecache
+            if not sourcecache.contains(sources[-1]):
+                sources[-1]._cache(sources[:-1])
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
