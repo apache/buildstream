@@ -29,6 +29,7 @@ variables:
   # Diagnostics
   - mount
   - df -h
+  - tox --version
 
   script:
   - mkdir -p "${INTEGRATION_CACHE}"
@@ -157,6 +158,7 @@ tests-wsl:
   before_script:
   - mount
   - df -h
+  - tox --version
 
   script:
   - "${TEST_COMMAND}"
