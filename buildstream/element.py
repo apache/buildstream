@@ -2028,17 +2028,7 @@ class Element(Plugin):
     #             not its contents.
     #
     def _cached_buildtree(self):
-        context = self._get_context()
-
-        if not self._cached():
-            return False
-
-        key_strength = _KeyStrength.STRONG if context.get_strict() else _KeyStrength.WEAK
-        if not self.__artifacts.contains_subdir_artifact(self, self._get_cache_key(strength=key_strength),
-                                                         'buildtree'):
-            return False
-
-        return True
+        return self.__artifact.cached_buildtree()
 
     # _fetch()
     #

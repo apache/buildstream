@@ -200,6 +200,33 @@ class Artifact():
 
         return artifact_size
 
+    # cached_buildtree()
+    #
+    # Check if artifact is cached with expected buildtree. A
+    # buildtree will not be present if the res tof the partial artifact
+    # is not cached.
+    #
+    # Returns:
+    #     (bool): True if artifact cached with buildtree, False if
+    #             element not cached or missing expected buildtree.
+    #             Note this only confirms if a buildtree is present,
+    #             not its contents.
+    #
+    def cached_buildtree(self):
+
+        context = self._context
+        element = self._element
+
+        if not element._cached():
+            return False
+
+        key_strength = _KeyStrength.STRONG if context.get_strict() else _KeyStrength.WEAK
+        if not self._artifacts.contains_subdir_artifact(element, element._get_cache_key(strength=key_strength),
+                                                        'buildtree'):
+            return False
+
+        return True
+
     # _get_directory():
     #
     # Get a virtual directory for the artifact contents
