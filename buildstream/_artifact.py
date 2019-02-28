@@ -273,6 +273,155 @@ class Artifact():
 
         return build_result
 
+    # get_metadata_keys():
+    #
+    # Retrieve the strong and weak keys from the given artifact.
+    #
+    # Args:
+    #    key (str): The artifact key, or None for the default key
+    #    metadata_keys (dict): The elements cached strong/weak
+    #                          metadata keys, empty if not yet cached
+    #
+    # Returns:
+    #    (str): The strong key
+    #    (str): The weak key
+    #    (dict): The key dict, None if not updated
+    #
+    def get_metadata_keys(self, key, metadata_keys):
+
+        # Now extract it and possibly derive the key
+        artifact_vdir, key = self._get_directory(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in metadata_keys:
+            return (metadata_keys[key]['strong'],
+                    metadata_keys[key]['weak'], None)
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = artifact_vdir._objpath(['meta', 'keys.yaml'])
+        meta = _yaml.load(meta_file, shortname='meta/keys.yaml')
+        strong_key = meta['strong']
+        weak_key = meta['weak']
+
+        assert key in (strong_key, weak_key)
+
+        metadata_keys[strong_key] = meta
+        metadata_keys[weak_key] = meta
+
+        return (strong_key, weak_key, metadata_keys)
+
+    # get_metadata_dependencies():
+    #
+    # Retrieve the hash of dependency keys from the given artifact.
+    #
+    # Args:
+    #    key (str): The artifact key, or None for the default key
+    #    metadata_dependencies (dict): The elements cached dependency metadata keys,
+    #                                  empty if not yet cached
+    #    metadata_keys (dict): The elements cached strong/weak
+    #                          metadata keys, empty if not yet cached
+    #
+    # Returns:
+    #    (dict): A dictionary of element names and their keys
+    #    (dict): The depedencies key dict, None if not updated
+    #    (dict): The elements key dict, None if not updated
+    #
+    def get_metadata_dependencies(self, key, metadata_dependencies, metadata_keys):
+
+        # Extract it and possibly derive the key
+        artifact_vdir, key = self._get_directory(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in metadata_dependencies:
+            return (metadata_dependencies[key], None, None)
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = artifact_vdir._objpath(['meta', 'dependencies.yaml'])
+        meta = _yaml.load(meta_file, shortname='meta/dependencies.yaml')
+
+        # Cache it under both strong and weak keys
+        strong_key, weak_key, metadata_keys = self.get_metadata_keys(key, metadata_keys)
+        metadata_dependencies[strong_key] = meta
+        metadata_dependencies[weak_key] = meta
+
+        return (meta, metadata_dependencies, metadata_keys)
+
+    # get_metadata_workspaced():
+    #
+    # Retrieve the hash of dependency from the given artifact.
+    #
+    # Args:
+    #    key (str): The artifact key, or None for the default key
+    #    meta_data_workspaced (dict): The elements cached boolean metadata
+    #                                 of whether it's workspaced, empty if
+    #                                 not yet cached
+    #    metadata_keys (dict): The elements cached strong/weak
+    #                          metadata keys, empty if not yet cached
+    #
+    # Returns:
+    #    (bool): Whether the given artifact was workspaced
+    #    (dict): The workspaced key dict, None if not updated
+    #    (dict): The elements key dict, None if not updated
+    #
+    def get_metadata_workspaced(self, key, metadata_workspaced, metadata_keys):
+
+        # Extract it and possibly derive the key
+        artifact_vdir, key = self._get_directory(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in metadata_workspaced:
+            return (metadata_workspaced[key], None, None)
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = artifact_vdir._objpath(['meta', 'workspaced.yaml'])
+        meta = _yaml.load(meta_file, shortname='meta/workspaced.yaml')
+        workspaced = meta['workspaced']
+
+        # Cache it under both strong and weak keys
+        strong_key, weak_key, metadata_keys = self.get_metadata_keys(key, metadata_keys)
+        metadata_workspaced[strong_key] = workspaced
+        metadata_workspaced[weak_key] = workspaced
+
+        return (workspaced, metadata_workspaced, metadata_keys)
+
+    # get_metadata_workspaced_dependencies():
+    #
+    # Retrieve the hash of workspaced dependencies keys from the given artifact.
+    #
+    # Args:
+    #    key (str): The artifact key, or None for the default key
+    #    metadata_workspaced_dependencies (dict): The elements cached metadata of
+    #                                             which dependencies are workspaced,
+    #                                             empty if not yet cached
+    #    metadata_keys (dict): The elements cached strong/weak
+    #                           metadata keys, empty if not yet cached
+    #
+    # Returns:
+    #    (list): List of which dependencies are workspaced
+    #    (dict): The workspaced depedencies key dict, None if not updated
+    #    (dict): The elements key dict, None if not updated
+    #
+    def get_metadata_workspaced_dependencies(self, key, metadata_workspaced_dependencies,
+                                             metadata_keys):
+
+        # Extract it and possibly derive the key
+        artifact_vdir, key = self._get_directory(key)
+
+        # Now try the cache, once we're sure about the key
+        if key in metadata_workspaced_dependencies:
+            return (metadata_workspaced_dependencies[key], None, None)
+
+        # Parse the expensive yaml now and cache the result
+        meta_file = artifact_vdir._objpath(['meta', 'workspaced-dependencies.yaml'])
+        meta = _yaml.load(meta_file, shortname='meta/workspaced-dependencies.yaml')
+        workspaced = meta['workspaced-dependencies']
+
+        # Cache it under both strong and weak keys
+        strong_key, weak_key, metadata_keys = self.get_metadata_keys(key, metadata_keys)
+        metadata_workspaced_dependencies[strong_key] = workspaced
+        metadata_workspaced_dependencies[weak_key] = workspaced
+        return (workspaced, metadata_workspaced_dependencies, metadata_keys)
+
     # _get_directory():
     #
     # Get a virtual directory for the artifact contents
